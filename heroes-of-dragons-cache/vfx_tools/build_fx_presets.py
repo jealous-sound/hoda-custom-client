@@ -17,12 +17,13 @@ def _patched(cls, version):
     return _orig(cls, version)
 UV.UnityVersion.from_str = classmethod(_patched)
 
-CACHE = "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache"
+CACHE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+REPO = os.path.dirname(CACHE)
 SHARED = CACHE + "/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/files/UnityCache/Shared"
 PARTICLES = CACHE + "/vfx/particles"
 TEXTURES = CACHE + "/vfx/textures"
-UNIT_VFX = "/Users/vladislav/heroes-of-dragons/data/unit_vfx.json"
-OUT = "/Users/vladislav/heroes-of-dragons/data/fx_presets.json"
+UNIT_VFX = os.path.join(REPO, "data", "unit_vfx.json")
+OUT = os.path.join(REPO, "data", "fx_presets.json")
 REPORT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_report.json")
 
 ALIASES = {

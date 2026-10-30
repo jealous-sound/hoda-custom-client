@@ -11,7 +11,7 @@ from muscle_solver import HumanSolver
 from bake_generic import promote_skeleton_joints
 import glb_writer
 
-CHAR_PACK = '/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/char_pack'
+CHAR_PACK = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'char_pack')
 UNITS = [
     ('hm_sw_fereldan_ashwarrior', 'hm_sw_fereldan_ashwarrior_t4', 'hm_sw_fereldan_ashwarrior_t4_avatar.json', 'sw_ready_ani.json'),
     ('hm_mw_circleapprentice', 'hm_mw_circleapprentice_t4', 'hm_mw_circleapprentice_t4_avatar.json', 'mw_ready06_ani.json'),

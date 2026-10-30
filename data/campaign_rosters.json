@@ -12,7 +12,7 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=HroUWwGXZ-g",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -44,7 +44,7 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=7pUj8aDpKXw",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -77,7 +77,7 @@
      "sources": [
       "https://www.youtube.com/watch?v=LiDe9PNI5Sc",
       "https://www.youtube.com/watch?v=ErNb-h7Y3HU",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -109,7 +109,7 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=MskwjRpTTHc",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -146,7 +146,7 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=ai7gfcdQ1x4",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -189,7 +189,7 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=bU_b8oFxKMw (AnthonyJoker HoDA #2, t=1092-1093s pre-battle detail panel 'Нападение сильванов': 'Сильван I' large slot lvl9 193/603, 'Эльф-разбойник I' lvl9 57/128, 'Эльф-разбойник I' lvl10 61/133 — both small labels legible on frame-grab)",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (node 1 cta_en 'Defeat the trespassing elves and their sylvan.')"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (node 1 cta_en 'Defeat the trespassing elves and their sylvan.')"
      ],
      "roster": [
       {
@@ -221,7 +221,7 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=bU_b8oFxKMw (AnthonyJoker HoDA #2, t=1370-1384s: board shows 2 Werewolf + 2 striped Wolf models, no enemy giant; Results screen vs 'Лагерь долийцев', MVP row 'Волк IV' — verified by frame-grab)",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (node 2 cta_en 'Defeat the werewolf and its Brecilian allies.')"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (node 2 cta_en 'Defeat the werewolf and its Brecilian allies.')"
      ],
      "roster": [
       {
@@ -258,7 +258,7 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=rZOYdOD9cxI (AnthonyJoker HoDA #3, t=252-274s: 'В лес' board, 3 werewolf models on small pads + large brown Bear in enemy giant slot behind the detail panel — verified by frame-grab; player's own bear on the left)",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (node 3 cta_en 'Defeat Witherfang's werewolf pack.')"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (node 3 cta_en 'Defeat Witherfang's werewolf pack.')"
      ],
      "roster": [
       {
@@ -300,7 +300,7 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=cJ9SS0MEwHE (AnthonyJoker HoDA #4, t=210s: fully labelled 'Проклятые руины' panel — 'Медведь III' large 123/303, 'Оборотень I' 47/207, 'Оборотень II' 60/269, 'Восставший из мертвых IV' 177/440 — verified verbatim by frame-grab)",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (node 4 cta_en 'Defeat the werewolves.')"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (node 4 cta_en 'Defeat the werewolves.')"
      ],
      "roster": [
       {
@@ -338,7 +338,7 @@
      "sources": [
       "https://www.youtube.com/watch?v=cJ9SS0MEwHE (AnthonyJoker HoDA #4, t=366s 'Хозяйка Леса' board, t=780s Results MVP 'Хозяйка Леса III' — verified by frame-grab)",
       "https://www.youtube.com/watch?v=lrnMaqXvEio (AnthonyJoker HoDA #7, t=741s board: pale Lady model + 2 dark werewolves + striped wolf, enemy giant pad empty — verified by frame-grab)",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (node 5 cta_en 'Defeat the Lady of the Forest.')",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (node 5 cta_en 'Defeat the Lady of the Forest.')",
       "recon/wiki_challenges.wikitext (Map 2 themed pool includes Shadow Werewolf, Sylvan)"
      ],
      "roster": [
@@ -376,7 +376,7 @@
      "authenticity": "sourced",
      "sources": [
       "recon/hoda_challenge_rewards.csv (row 2: 'Brecillian Challenge' / 'Map 2 - Zathrian's Curse', Enemy Description 'Level 73 Bear IV' — single-enemy squad; verified verbatim in the CSV)",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (node 6 desc_en 'A giant bear... squads with single heroes')"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (node 6 desc_en 'A giant bear... squads with single heroes')"
      ],
      "roster": [
       null,
@@ -403,8 +403,8 @@
      "name_en": "Magisters Corrupted",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/characters.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/characters.json"
      ],
      "roster": [
       {
@@ -435,9 +435,9 @@
      "name_en": "Dumat's Army",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_quests.wikitext",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/characters.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "scratchpad/recon/wiki_quests.wikitext",
+      "heroes-of-dragons-cache/characters.json"
      ],
      "roster": [
       {
@@ -473,9 +473,9 @@
      "name_en": "Fall of the Dwarves",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_rewards.csv",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/characters.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "scratchpad/recon/hoda_challenge_rewards.csv",
+      "heroes-of-dragons-cache/characters.json"
      ],
      "roster": [
       {
@@ -516,8 +516,8 @@
      "name_en": "An Endless Blight",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/characters.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/characters.json"
      ],
      "roster": [
       {
@@ -558,9 +558,9 @@
      "name_en": "Sealing the Doors",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_quests.wikitext",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/characters.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "scratchpad/recon/wiki_quests.wikitext",
+      "heroes-of-dragons-cache/characters.json"
      ],
      "roster": [
       {
@@ -602,9 +602,9 @@
      "authenticity": "sourced",
      "sources": [
       "https://docs.google.com/spreadsheets/d/1f0mpB1yrGt-ctKgsmfdbDLlSr-A5VHvKuDwj7xpclEg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_rewards.csv",
+      "scratchpad/recon/hoda_challenge_rewards.csv",
       "https://web.archive.org/web/20141101000220/http://forums.capitalgames.com:80/showthread.php/70480-Challenge-Quest-Drops",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -642,7 +642,7 @@
      "authenticity": "inferred",
      "sources": [
       "https://web.archive.org/web/20131224033804/http://forums.capitalgames.com:80/showthread.php/61546-8-man-squad-(w-stats)-advice-appreciated-Arlathan-Map-6",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -673,8 +673,8 @@
      "name_en": "Duster's Revenge",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/enemy_pool.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "scratchpad/recon/enemy_pool.json"
      ],
      "roster": [
       {
@@ -710,8 +710,8 @@
      "name_en": "Dust Town",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_quests.wikitext"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "scratchpad/recon/wiki_quests.wikitext"
      ],
      "roster": [
       {
@@ -747,8 +747,8 @@
      "name_en": "Surfaced Carta",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/enemy_pool.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "scratchpad/recon/enemy_pool.json"
      ],
      "roster": [
       {
@@ -789,9 +789,9 @@
      "name_en": "Rogue Carta",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://web.archive.org/web/20140309174933/http://forums.capitalgames.com:80/showthread.php/64372-Mastered-Last-Carta-Node-Without-Speed-Runes",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_quests.wikitext"
+      "scratchpad/recon/wiki_quests.wikitext"
      ],
      "roster": [
       {
@@ -828,9 +828,9 @@
      "authenticity": "sourced",
      "sources": [
       "https://docs.google.com/spreadsheets/d/1f0mpB1yrGt-ctKgsmfdbDLlSr-A5VHvKuDwj7xpclEg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_rewards.csv",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_challenge_quest_drops.txt",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "scratchpad/recon/hoda_challenge_rewards.csv",
+      "scratchpad/recon/wb_challenge_quest_drops.txt",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -872,10 +872,10 @@
      "name_en": "Fall of Arlathan",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_05 step 1: 'Using blood magic, the Tevinter mages attempt to destroy the elven city' / 'Defend Arlathan from the Tevinter.')",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_quests.wikitext (Map 5 section)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/enemy_pool.json (UNIT_TEVINTERSLAVER = the catalog's Tevinter Blood_Mage)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_arlathan_map6.txt (forum: blue Tevinter squads, back-row mages)"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_05 step 1: 'Using blood magic, the Tevinter mages attempt to destroy the elven city' / 'Defend Arlathan from the Tevinter.')",
+      "scratchpad/recon/wiki_quests.wikitext (Map 5 section)",
+      "scratchpad/recon/enemy_pool.json (UNIT_TEVINTERSLAVER = the catalog's Tevinter Blood_Mage)",
+      "scratchpad/recon/wb_arlathan_map6.txt (forum: blue Tevinter squads, back-row mages)"
      ],
      "roster": [
       {
@@ -911,10 +911,10 @@
      "name_en": "Tevinter Expands",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_05 step 2: 'Push back the invading Tevinter.')",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_arlathan_map6.txt (thread 61546: blue Tevinter squads, back-row mages, high-HP fights)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_challenges.wikitext (Tevinter Arcane Warrior in map-5 Magic and Stone pool)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/enemy_pool.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_05 step 2: 'Push back the invading Tevinter.')",
+      "scratchpad/recon/wb_arlathan_map6.txt (thread 61546: blue Tevinter squads, back-row mages, high-HP fights)",
+      "scratchpad/recon/wiki_challenges.wikitext (Tevinter Arcane Warrior in map-5 Magic and Stone pool)",
+      "scratchpad/recon/enemy_pool.json"
      ],
      "roster": [
       {
@@ -950,9 +950,9 @@
      "name_en": "The Alamarri",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_05 step 3: 'fight several campaigns against the Alamarri' / 'Defend the Alamarri.')",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/enemy_pool.json (chapter Tevinter pool)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_quests.wikitext"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_05 step 3: 'fight several campaigns against the Alamarri' / 'Defend the Alamarri.')",
+      "scratchpad/recon/enemy_pool.json (chapter Tevinter pool)",
+      "scratchpad/recon/wiki_quests.wikitext"
      ],
      "roster": [
       {
@@ -988,9 +988,9 @@
      "name_en": "Building the Highway",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_05 step 4: 'Defeat the stationed Imperium workers.')",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_challenges.wikitext (lines 96-115: Magic and Stone 'forces behind the construction' — Dwarven Warrior, Silent Sister, Tevinter Arcane Warrior, Tevinter Slaver, Inferno Golem, Stone Golem)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_quests.wikitext (line 69: 'the Imperial Highway was constructed of magic and stone')"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_05 step 4: 'Defeat the stationed Imperium workers.')",
+      "scratchpad/recon/wiki_challenges.wikitext (lines 96-115: Magic and Stone 'forces behind the construction' — Dwarven Warrior, Silent Sister, Tevinter Arcane Warrior, Tevinter Slaver, Inferno Golem, Stone Golem)",
+      "scratchpad/recon/wiki_quests.wikitext (line 69: 'the Imperial Highway was constructed of magic and stone')"
      ],
      "roster": [
       {
@@ -1031,10 +1031,10 @@
      "name_en": "Civil War",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_05 step 5: 'Defeat the enchanter leading the Imperial platoon.')",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_quests.wikitext (line 62: map goal 'Clear the map by defeating an Imperium slave boss.')",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_05 step 5: 'Defeat the enchanter leading the Imperial platoon.')",
+      "scratchpad/recon/wiki_quests.wikitext (line 62: map goal 'Clear the map by defeating an Imperium slave boss.')",
       "https://web.archive.org/web/20140118045922/http://forums.capitalgames.com:80/showthread.php/62567-Mastered-the-last-Node-of-Map-10 ('hardest one was the last node on the highway' — saved as recon/wb_map10_lastnode.txt)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/enemy_pool.json"
+      "scratchpad/recon/enemy_pool.json"
      ],
      "roster": [
       {
@@ -1075,10 +1075,10 @@
      "name_en": "Fereldan Challenge",
      "authenticity": "sourced",
      "sources": [
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_rewards.csv (line 33: enemy = 'Level 173 Fereldan Knight IV', single unit)",
-      "https://web.archive.org/web/20140106005243/http://forums.capitalgames.com:80/showthread.php/61652-Did-the-Fereldan-grind-node-just-get-harder (lone stunnable 'him' — saved as /private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/map5_61652.html)",
-      "https://web.archive.org/web/20140106003318/http://forums.capitalgames.com:80/showthread.php/61619-Questions-on-Ferelden-Knight-amp-Stun-characters (saved as /private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/map5_61619.html)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_capforum_comprehensive_68692.txt (line 128: stun-farm target, Ferelden Challenge)"
+      "scratchpad/recon/hoda_challenge_rewards.csv (line 33: enemy = 'Level 173 Fereldan Knight IV', single unit)",
+      "https://web.archive.org/web/20140106005243/http://forums.capitalgames.com:80/showthread.php/61652-Did-the-Fereldan-grind-node-just-get-harder (lone stunnable 'him' — saved as scratchpad/map5_61652.html)",
+      "https://web.archive.org/web/20140106003318/http://forums.capitalgames.com:80/showthread.php/61619-Questions-on-Ferelden-Knight-amp-Stun-characters (saved as scratchpad/map5_61619.html)",
+      "scratchpad/recon/wb_capforum_comprehensive_68692.txt (line 128: stun-farm target, Ferelden Challenge)"
      ],
      "roster": [
       null,
@@ -1106,9 +1106,9 @@
      "name_en": "Elvhenan",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_06 step 1)",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_06 step 1)",
       "https://web.archive.org/web/20131231174338/http://forums.capitalgames.com:80/showthread.php/61546-8-man-squad-(w-stats)-advice-appreciated-Arlathan-Map-6",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_arlathan_map6.txt"
+      "scratchpad/recon/wb_arlathan_map6.txt"
      ],
      "roster": [
       {
@@ -1144,10 +1144,10 @@
      "name_en": "Arlathan",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_06 step 2)",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_06 step 2)",
       "https://web.archive.org/web/20140113210532/http://forums.capitalgames.com:80/showthread.php/61992-Need-help-on-Map-6",
       "https://web.archive.org/web/20131231174338/http://forums.capitalgames.com:80/showthread.php/61546-8-man-squad-(w-stats)-advice-appreciated-Arlathan-Map-6",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_map6_help.txt"
+      "scratchpad/recon/wb_map6_help.txt"
      ],
      "roster": [
       {
@@ -1183,7 +1183,7 @@
      "name_en": "Arlathan Forest Edge",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_06 step 3)",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_06 step 3)",
       "Dragon Age canon: fall of Arlathan (Tevinter blood magic, demons, dragons)"
      ],
      "roster": [
@@ -1225,11 +1225,11 @@
      "name_en": "Enslaved",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_06 step 4)",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_06 step 4)",
       "https://web.archive.org/web/20140113212657/http://forums.capitalgames.com/showthread.php/61969-Need-Help!-Team-Configuration-Stuck-on-Map-6",
       "https://web.archive.org/web/20131229202648/http://forums.capitalgames.com:80/showthread.php/61747-Tevinter-Challenge-TBM-Drops",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/enemy_pool.json",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_map6_stuck.txt"
+      "scratchpad/recon/enemy_pool.json",
+      "scratchpad/recon/wb_map6_stuck.txt"
      ],
      "roster": [
       {
@@ -1270,9 +1270,9 @@
      "name_en": "Arlathan's End",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_06 step 5)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_quests.wikitext (Map 6: 'Clear the map by defeating an Imperium slave boss')",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/enemy_pool.json (enemy-only 'Slave Master Danarius' variant)"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_06 step 5)",
+      "scratchpad/recon/wiki_quests.wikitext (Map 6: 'Clear the map by defeating an Imperium slave boss')",
+      "scratchpad/recon/enemy_pool.json (enemy-only 'Slave Master Danarius' variant)"
      ],
      "roster": [
       {
@@ -1314,7 +1314,7 @@
      "authenticity": "sourced",
      "sources": [
       "https://docs.google.com/spreadsheets/d/1f0mpB1yrGt-ctKgsmfdbDLlSr-A5VHvKuDwj7xpclEg (HoDA Challenge Node Drop Rates — Map 6 enemy squad: L37 TAW IV, L37 TBM IV x2, L38 TAW IV)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_rewards.csv",
+      "scratchpad/recon/hoda_challenge_rewards.csv",
       "https://web.archive.org/web/20140102145704/http://forums.capitalgames.com:80/showthread.php/61560-Tevinter-Challenge-help (4 units, all blue)",
       "https://web.archive.org/web/20140105044502/http://forums.capitalgames.com:80/showthread.php/62041-Challenge-quest-map-7-halp (TBM in the front row)",
       "https://web.archive.org/web/20140309141142/http://forums.capitalgames.com:80/showthread.php/62215-The-Almighty-Tevinter-Challenge",
@@ -1363,7 +1363,7 @@
      "sources": [
       "https://web.archive.org/web/20140106005349/http://forums.capitalgames.com:80/showthread.php/61934-What-s-my-best-option-for-team-layout-stuck-on-map-7",
       "scratchpad/recon/wb_map7_stuck.txt",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       null,
@@ -1394,7 +1394,7 @@
      "name_en": "Uldred's Turn",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Quests_(Heroes_of_Dragon_Age)",
       "lore: DA:O Broken Circle (Uldred's blood mages become abominations)"
      ],
@@ -1432,7 +1432,7 @@
      "name_en": "Extreme Measures",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "scratchpad/recon/desc_enemy_hints.json",
       "lore: DA:O Broken Circle first-floor encounters (Shades, Rage demons)"
      ],
@@ -1470,7 +1470,7 @@
      "name_en": "A Tower Infested",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://web.archive.org/web/20140106005349/http://forums.capitalgames.com:80/showthread.php/61934-What-s-my-best-option-for-team-layout-stuck-on-map-7",
       "https://4pda.to/forum/index.php?showtopic=552176 (scratchpad/recon/4pda_pages/st460.html)",
       "lore: DA:O Broken Circle mid/upper floors (abominations, Arcane Horrors)"
@@ -1509,7 +1509,7 @@
      "name_en": "Pride's Demise",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Quests_(Heroes_of_Dragon_Age)",
       "lore: DA:O Broken Circle finale (Uldred-as-Pride-Demon + 3 abominations in the Harrowing Chamber)"
      ],
@@ -1597,9 +1597,9 @@
      "name_en": "Apathy",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: Defend Montsimmard from darkspawn)",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: Defend Montsimmard from darkspawn)",
       "https://web.archive.org/web/20140105084004/http://forums.capitalgames.com:80/showthread.php/62020-Finished-the-final-map-and-heres-a-few-tips-for-everyone (rk_ace: exactly 3 enemies, all Slow, 'battle tanks'; saved: recon/wb_finalmap_tips.html, quote verified)",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/characters.json (Slow darkspawn candidate pool)"
+      "heroes-of-dragons-cache/characters.json (Slow darkspawn candidate pool)"
      ],
      "roster": [
       {
@@ -1630,8 +1630,8 @@
      "name_en": "Rage",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: Defend Red Crossing from the elves)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_challenge_quest_drops.txt (map-8 Dalish enemy/drop pool)",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: Defend Red Crossing from the elves)",
+      "scratchpad/recon/wb_challenge_quest_drops.txt (map-8 Dalish enemy/drop pool)",
       "lore: Dragon Age canon, Elandrin incident / Exalted March of the Dales"
      ],
      "roster": [
@@ -1668,8 +1668,8 @@
      "name_en": "Blame",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: Defeat the elves of the Dales; desc: blood-magic accusations)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_challenge_quest_drops.txt (pool: Dalish Mage / Elven Mage / Sylvans)"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: Defeat the elves of the Dales; desc: blood-magic accusations)",
+      "scratchpad/recon/wb_challenge_quest_drops.txt (pool: Dalish Mage / Elven Mage / Sylvans)"
      ],
      "roster": [
       {
@@ -1742,8 +1742,8 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=sO4Q8W06Tgo (Mio DK, Mar 2014, 'Map 8 Node 5 Mastering the map'; frames: scratchpad/map8_vid/; pre-battle frame re-verified: 'Defeat' header, Sylvan giant + 3 identical green-spear arcane warriors + 1 dark-robed unit)",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: Defeat the elves and their Sylvan ally)",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/character_vfx_map.json (dark-robed elf model match = unit.ef_mw_alliana_t4_pre = UNIT_ELVENMAGE; alternative UNIT_DALISHMAGE model is white-haired, ruled out)"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: Defeat the elves and their Sylvan ally)",
+      "heroes-of-dragons-cache/character_vfx_map.json (dark-robed elf model match = unit.ef_mw_alliana_t4_pre = UNIT_ELVENMAGE; alternative UNIT_DALISHMAGE model is white-haired, ruled out)"
      ],
      "roster": [
       {
@@ -1784,7 +1784,7 @@
      "name_en": "Dalish Challenge",
      "authenticity": "sourced",
      "sources": [
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_rewards.csv (row verified: 'Dalish Challenge','Map 8 - March on the Dales',...,'Level 120 Sylvan I')",
+      "scratchpad/recon/hoda_challenge_rewards.csv (row verified: 'Dalish Challenge','Map 8 - March on the Dales',...,'Level 120 Sylvan I')",
       "https://web.archive.org/web/20140101190447/http://forums.capitalgames.com:80/showthread.php/61315-Dalish-Challenge-Merrill (lone Slow row-hitting tree, stun-locked by Normal-speed squads; saved: recon/map8/dalish_challenge_merrill.txt, quotes verified)",
       "https://web.archive.org/web/20140118045826/http://forums.capitalgames.com:80/showthread.php/62524-Just-curious-on-Dalish-challenge (saved: recon/map8/dalish_challenge_curious.txt)",
       "https://web.archive.org/web/20140309175736/http://forums.capitalgames.com:80/showthread.php/64208-Farming-dalish-event-node-advice-needed (saved: recon/map8/dalish_farming.txt)"
@@ -1814,8 +1814,8 @@
      "name_en": "Arrival",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_09 step 1 desc: Qunari land on the coast of Par Vollen)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_quests.wikitext (Map 9, 3 wins to master)",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (PVE_MAP_09 step 1 desc: Qunari land on the coast of Par Vollen)",
+      "scratchpad/recon/wiki_quests.wikitext (Map 9, 3 wins to master)",
       "https://web.archive.org/web/20141101000220/http://forums.capitalgames.com:80/showthread.php/70480-Challenge-Quest-Drops (Karashok in the Map 9 themed pool)"
      ],
      "roster": [
@@ -1847,9 +1847,9 @@
      "name_en": "Invasion",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (step 2 desc: warships land in Seheron and Rivain, First Qunari War begins)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_challenge_quest_drops.txt (Tal-Vashoth Marauder in the official Map 9 drop pool)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/enemy_pool.json (Qunari-group enemy catalog)"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (step 2 desc: warships land in Seheron and Rivain, First Qunari War begins)",
+      "scratchpad/recon/wb_challenge_quest_drops.txt (Tal-Vashoth Marauder in the official Map 9 drop pool)",
+      "scratchpad/recon/enemy_pool.json (Qunari-group enemy catalog)"
      ],
      "roster": [
       {
@@ -1885,9 +1885,9 @@
      "name_en": "Domination",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (step 3 desc: Qunari assault Minrathous; Tevinter is the victim, Qunari the enemy)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/desc_enemy_hints.json (map 9 step 3)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_challenges_hoda_wikitext.txt (Tal-Vashoth Berserker in Map 9 themed pool)"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (step 3 desc: Qunari assault Minrathous; Tevinter is the victim, Qunari the enemy)",
+      "scratchpad/recon/desc_enemy_hints.json (map 9 step 3)",
+      "scratchpad/recon/wb_challenges_hoda_wikitext.txt (Tal-Vashoth Berserker in Map 9 themed pool)"
      ],
      "roster": [
       {
@@ -1924,7 +1924,7 @@
      "authenticity": "sourced",
      "sources": [
       "https://web.archive.org/web/20140113082718/http://forums.capitalgames.com/showthread.php/62326-beat-qunari-challenge-wow",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_map9_qunari_62326.txt (node 4 account: 2 Stens, 2 Ashaads, one Sten back row, level 40+ era)"
+      "scratchpad/recon/wb_map9_qunari_62326.txt (node 4 account: 2 Stens, 2 Ashaads, one Sten back row, level 40+ era)"
      ],
      "roster": [
       {
@@ -1961,8 +1961,8 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=k7w-PQVlXrc (Mio DK 'Map 9 Node 5 Mastering the map': pre-battle squads + both result screens)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/vid/f9n5hi/f_040.png + f_060.png + /private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/vid/res2_mvp.png (2x Karashok front, Ashaad back; enemy MVP 'The Arishok IV' in battle 2)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_map9_qunari_62326.txt (corroborates node-5 Ashaads)"
+      "scratchpad/vid/f9n5hi/f_040.png + f_060.png + scratchpad/vid/res2_mvp.png (2x Karashok front, Ashaad back; enemy MVP 'The Arishok IV' in battle 2)",
+      "scratchpad/recon/wb_map9_qunari_62326.txt (corroborates node-5 Ashaads)"
      ],
      "roster": [
       {
@@ -1999,9 +1999,9 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=xLK1yh_HNOE (Mio DK, in-game inspect overlay at 0:44 with all 4 enemy name/level/stat labels)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/vid/gi_44.png (75|Sten IV 1110/2761, 75|Ashaad IV 1050/2346, 2x 76|Karashok IV 1733/6683)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_rewards.csv (community sheet, identical squad)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_map9_qunari_64252.txt (Sten+Ashaad front, Karashoks back, single-hit)"
+      "scratchpad/vid/gi_44.png (75|Sten IV 1110/2761, 75|Ashaad IV 1050/2346, 2x 76|Karashok IV 1733/6683)",
+      "scratchpad/recon/hoda_challenge_rewards.csv (community sheet, identical squad)",
+      "scratchpad/recon/wb_map9_qunari_64252.txt (Sten+Ashaad front, Karashoks back, single-hit)"
      ],
      "roster": [
       {
@@ -2044,7 +2044,7 @@
      "authenticity": "inferred",
      "sources": [
       "https://web.archive.org/web/20140105084004/http://forums.capitalgames.com:80/showthread.php/62020-Finished-the-final-map-and-heres-a-few-tips-for-everyone",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "pattern from video-verified nodes 2-5 (fqqFeVAfE6M, 6zrTlkaL6OM, XmZQBTHXw-4)"
      ],
      "roster": [
@@ -2082,7 +2082,7 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=fqqFeVAfE6M",
-      "/Users/vladislav/heroes-of-dragons/.claude/skills/hoda-reference/data/localization/Loc_RUS_RU.json"
+      ".claude/skills/hoda-reference/data/localization/Loc_RUS_RU.json"
      ],
      "roster": [
       {
@@ -2273,8 +2273,8 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=cyyRg7SGWls @ ~1:10 (Easy) / ~12:00 (Medium)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0015.jpg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0062.jpg"
+      "scratchpad/m11f5/g_0015.jpg",
+      "scratchpad/m11f5/g_0062.jpg"
      ],
      "roster": [
       {
@@ -2306,8 +2306,8 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=cyyRg7SGWls @ ~5:40 and ~6:40",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0069.jpg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0081.jpg"
+      "scratchpad/m11f5/g_0069.jpg",
+      "scratchpad/m11f5/g_0081.jpg"
      ],
      "roster": [
       {
@@ -2339,8 +2339,8 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=cyyRg7SGWls @ ~7:15 and ~8:00",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0088.jpg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0097.jpg"
+      "scratchpad/m11f5/g_0088.jpg",
+      "scratchpad/m11f5/g_0097.jpg"
      ],
      "roster": [
       {
@@ -2377,8 +2377,8 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=cyyRg7SGWls @ ~8:35 and ~9:20",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0104.jpg",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "scratchpad/m11f5/g_0104.jpg",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -2415,8 +2415,8 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=cyyRg7SGWls @ ~9:55 and ~10:40",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0120.jpg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0129.jpg"
+      "scratchpad/m11f5/g_0120.jpg",
+      "scratchpad/m11f5/g_0129.jpg"
      ],
      "roster": [
       {
@@ -2453,9 +2453,9 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=cyyRg7SGWls @ ~11:10 and ~12:25",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0135.jpg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0150.jpg",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "scratchpad/m11f5/g_0135.jpg",
+      "scratchpad/m11f5/g_0150.jpg",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -2492,9 +2492,9 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=cyyRg7SGWls @ ~13:05-14:00",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0159.jpg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0169.jpg",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "scratchpad/m11f5/g_0159.jpg",
+      "scratchpad/m11f5/g_0169.jpg",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -2531,9 +2531,9 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=cyyRg7SGWls @ ~14:30 and ~15:10",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0175.jpg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0183.jpg",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "scratchpad/m11f5/g_0175.jpg",
+      "scratchpad/m11f5/g_0183.jpg",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -2575,9 +2575,9 @@
      "authenticity": "inferred",
      "sources": [
       "https://www.youtube.com/watch?v=cyyRg7SGWls @ ~15:40 and ~16:20",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0189.jpg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0197.jpg",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "scratchpad/m11f5/g_0189.jpg",
+      "scratchpad/m11f5/g_0197.jpg",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -2619,8 +2619,8 @@
      "authenticity": "sourced",
      "sources": [
       "https://www.youtube.com/watch?v=cyyRg7SGWls @ ~17:05 and ~17:50",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0206.jpg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0215.jpg"
+      "scratchpad/m11f5/g_0206.jpg",
+      "scratchpad/m11f5/g_0215.jpg"
      ],
      "roster": [
       {
@@ -2662,9 +2662,9 @@
      "authenticity": "inferred",
      "sources": [
       "https://www.youtube.com/watch?v=cyyRg7SGWls @ ~18:40 and ~19:55",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/m11f5/g_0225.jpg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_rewards.csv",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_challenge_quest_drops.txt"
+      "scratchpad/m11f5/g_0225.jpg",
+      "scratchpad/recon/hoda_challenge_rewards.csv",
+      "scratchpad/recon/wb_challenge_quest_drops.txt"
      ],
      "roster": [
       {
@@ -2711,7 +2711,7 @@
      "name_en": "Into the Darkness",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Quests_(Heroes_of_Dragon_Age)",
       "https://dragonage.fandom.com/wiki/The_Deep_Roads_Expedition"
      ],
@@ -2749,7 +2749,7 @@
      "name_en": "A Lost Sandal",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Sandal"
      ],
      "roster": [
@@ -2786,9 +2786,9 @@
      "name_en": "Spider Nest",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Quests_(Heroes_of_Dragon_Age)",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/units.json"
+      "heroes-of-dragons-cache/data_tables/units.json"
      ],
      "roster": [
       {
@@ -2829,9 +2829,9 @@
      "name_en": "Charging Ogre",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Ogre",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/units.json"
+      "heroes-of-dragons-cache/data_tables/units.json"
      ],
      "roster": [
       {
@@ -2872,7 +2872,7 @@
      "name_en": "Primeval Thaig",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Primeval_Thaig"
      ],
      "roster": [
@@ -2909,7 +2909,7 @@
      "name_en": "Tears in the Veil",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Veil"
      ],
      "roster": [
@@ -2946,7 +2946,7 @@
      "name_en": "A History Lesson",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Primeval_Thaig"
      ],
      "roster": [
@@ -2983,7 +2983,7 @@
      "name_en": "Betrayed!",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/The_Deep_Roads_Expedition"
      ],
      "roster": [
@@ -3020,7 +3020,7 @@
      "name_en": "A Great Escape",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Quests_(Heroes_of_Dragon_Age)"
      ],
      "roster": [
@@ -3057,7 +3057,7 @@
      "name_en": "Ancient Rock Wraith",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Ancient_rock_wraith",
       "https://dragonage.fandom.com/wiki/Challenges_(Heroes_of_Dragon_Age)"
      ],
@@ -3101,8 +3101,8 @@
      "authenticity": "sourced",
      "sources": [
       "https://docs.google.com/spreadsheets/d/1f0mpB1yrGt-ctKgsmfdbDLlSr-A5VHvKuDwj7xpclEg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_rewards.csv",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "scratchpad/recon/hoda_challenge_rewards.csv",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -3144,7 +3144,7 @@
      "name_en": "Toth Awakens",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Quests_(Heroes_of_Dragon_Age)"
      ],
      "roster": [
@@ -3181,7 +3181,7 @@
      "name_en": "First of the Fallen",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -3222,7 +3222,7 @@
      "name_en": "Grey Warden Reinforcements",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -3263,7 +3263,7 @@
      "name_en": "Suspicious Allies",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -3304,8 +3304,8 @@
      "name_en": "End of the Blight",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/HoDA_character_info/UnitData.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/HoDA_character_info/UnitData.json"
      ],
      "roster": [
       {
@@ -3346,7 +3346,7 @@
      "name_en": "Double Crossed",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://web.archive.org/web/20141101000220/http://forums.capitalgames.com:80/showthread.php/70480-Challenge-Quest-Drops"
      ],
      "roster": [
@@ -3383,7 +3383,7 @@
      "name_en": "Nevarra Invaded",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://web.archive.org/web/20141101000220/http://forums.capitalgames.com:80/showthread.php/70480-Challenge-Quest-Drops"
      ],
      "roster": [
@@ -3425,8 +3425,8 @@
      "name_en": "Hunter Fell Invaded",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_rewards.csv"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "scratchpad/recon/hoda_challenge_rewards.csv"
      ],
      "roster": [
       {
@@ -3467,7 +3467,7 @@
      "name_en": "Liberate Hunter Fell",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -3508,7 +3508,7 @@
      "name_en": "Making it Right",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://web.archive.org/web/20140907070122/http://forums.capitalgames.com:80/showthread.php/69049-need-squad-tips-for-map-13-node-10",
       "https://web.archive.org/web/20140804130143/http://forums.capitalgames.com:80/showthread.php/69017-Need-help-mastering-map-13-amp-14"
      ],
@@ -3552,8 +3552,8 @@
      "authenticity": "sourced",
      "sources": [
       "https://docs.google.com/spreadsheets/d/1f0mpB1yrGt-ctKgsmfdbDLlSr-A5VHvKuDwj7xpclEg",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_rewards.csv",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "scratchpad/recon/hoda_challenge_rewards.csv",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -3585,7 +3585,7 @@
      "name_en": "An Invitation",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: 'Fend off the hired assassins')",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: 'Fend off the hired assassins')",
       "lore: DA2 Mark of the Assassin — assassins-for-hire at Duke Prosper's fete"
      ],
      "roster": [
@@ -3622,7 +3622,7 @@
      "name_en": "Wyvern Hunt",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: 'Search the hunting grounds for a wyvern')",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: 'Search the hunting grounds for a wyvern')",
       "https://web.archive.org/web/20141101000220/http://forums.capitalgames.com:80/showthread.php/70480-Challenge-Quest-Drops (Wyvern is an official Map 14 drop)"
      ],
      "roster": [
@@ -3659,7 +3659,7 @@
      "name_en": "Ghast Nests",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: 'Kill the swarm of attacking Ghasts')",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: 'Kill the swarm of attacking Ghasts')",
       "https://web.archive.org/web/20141101000220/http://forums.capitalgames.com:80/showthread.php/70480-Challenge-Quest-Drops (Ghast Archer + Velghast documented Map 14 drops)"
      ],
      "roster": [
@@ -3696,7 +3696,7 @@
      "name_en": "Almost Wyverns",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (desc: 'the drakes and dragons are distant cousins'; cta: 'Kill the dragons')",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (desc: 'the drakes and dragons are distant cousins'; cta: 'Kill the dragons')",
       "https://web.archive.org/web/20140804130143/http://forums.capitalgames.com/showthread.php/69017-Need-help-mastering-map-13-amp-14 (player confirms 'kill the dragons' objective)",
       "https://dragonage.fandom.com/wiki/Challenges_(Heroes_of_Dragon_Age) (High Dragon is a Chateau Challenge drop)"
      ],
@@ -3739,7 +3739,7 @@
      "name_en": "The Hunt is On",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (desc: alpha wyvern; cta: 'Slay the wyvern and win the hunt!')",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (desc: alpha wyvern; cta: 'Slay the wyvern and win the hunt!')",
       "lore: Mark of the Assassin hunt climax vs the alpha wyvern"
      ],
      "roster": [
@@ -3771,7 +3771,7 @@
      "name_en": "Infiltration",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: 'sneak past the Orlesian Guards')",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: 'sneak past the Orlesian Guards')",
       "https://web.archive.org/web/20141101000220/http://forums.capitalgames.com:80/showthread.php/70480-Challenge-Quest-Drops (Chevalier is a documented Map 14 drop)",
       "recon/wb_origins_gauntlet_nodes.txt (Chateau-themed pool includes Chevalier + Armored Bear)"
      ],
@@ -3814,7 +3814,7 @@
      "name_en": "Deep in the Dungeons",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (desc: traps 'awaken ancient golems')",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (desc: traps 'awaken ancient golems')",
       "https://web.archive.org/web/20141101000220/http://forums.capitalgames.com:80/showthread.php/70480-Challenge-Quest-Drops (Stone Golem added to Map 14 drops, Sept-2014 revision)"
      ],
      "roster": [
@@ -3851,8 +3851,8 @@
      "name_en": "Chasind Cahir",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: 'Defeat the Chasind, Cahir'; desc: his 'pets' are crazed mages)",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/HoDA_character_info/UnitData.json (UNIT_CAHIR exists, Legendary)"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: 'Defeat the Chasind, Cahir'; desc: his 'pets' are crazed mages)",
+      "heroes-of-dragons-cache/HoDA_character_info/UnitData.json (UNIT_CAHIR exists, Legendary)"
      ],
      "roster": [
       {
@@ -3888,7 +3888,7 @@
      "name_en": "The Exchange",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (desc: 'a group of Tal-Vashoth led by a Saarebas'; cta: 'Stop the exchange')",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (desc: 'a group of Tal-Vashoth led by a Saarebas'; cta: 'Stop the exchange')",
       "https://dragonage.fandom.com/wiki/Quests_(Heroes_of_Dragon_Age) (map blurb names Salit as the Tal-Vashoth making the exchange)"
      ],
      "roster": [
@@ -3925,7 +3925,7 @@
      "name_en": "Heart of the Many",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: 'Defeat Duke Prosper and Leopold')",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (cta: 'Defeat Duke Prosper and Leopold')",
       "https://web.archive.org/web/20141101000220/http://forums.capitalgames.com:80/showthread.php/70480-Challenge-Quest-Drops (Duke Prosper is #1 in the official Map 14 drop list)",
       "https://web.archive.org/web/20140804130143/http://forums.capitalgames.com/showthread.php/69017-Need-help-mastering-map-13-amp-14 (player confirms final objective)"
      ],
@@ -3969,7 +3969,7 @@
      "authenticity": "sourced",
      "sources": [
       "https://docs.google.com/spreadsheets/d/1f0mpB1yrGt-ctKgsmfdbDLlSr-A5VHvKuDwj7xpclEg (recon/hoda_challenge_rewards.csv lines 133-136: 'Lvl272 Leopold IV, Lvl272 Drake IV, Lvl272 Drake IV')",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (hint: multi-target giants, bring stunners)"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json (hint: multi-target giants, bring stunners)"
      ],
      "roster": [
       {
@@ -4006,7 +4006,7 @@
      "name_en": "Brecilian Cave",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "lore: Dragon Age: Origins — Dalish Elf Origin"
      ],
      "roster": [
@@ -4043,9 +4043,9 @@
      "name_en": "Ancient Ruins",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "lore: Dragon Age: Origins — Dalish Elf Origin",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/units.csv"
+      "heroes-of-dragons-cache/data_tables/units.csv"
      ],
      "roster": [
       {
@@ -4086,8 +4086,8 @@
      "name_en": "The Eluvian",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/units.csv",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/units.csv",
       "lore: Dragon Age: Origins — Dalish Elf Origin"
      ],
      "roster": [
@@ -4129,8 +4129,8 @@
      "name_en": "Tainted Mirror",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/units.csv",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/units.csv",
       "lore: Dragon Age: Origins — Dalish Elf Origin"
      ],
      "roster": [
@@ -4172,11 +4172,11 @@
      "name_en": "Keeper Marethari",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Quests_(Heroes_of_Dragon_Age)",
       "https://dragonage.fandom.com/wiki/Challenges_(Heroes_of_Dragon_Age)",
       "lore: Dragon Age II — Mirror Image",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/units.csv"
+      "heroes-of-dragons-cache/data_tables/units.csv"
      ],
      "roster": [
       {
@@ -4218,7 +4218,7 @@
      "authenticity": "inferred",
      "sources": [
       "lore: Dragon Age II — Long Way Home",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -4254,8 +4254,8 @@
      "name_en": "Sundermount Foothills",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/units.csv",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/units.csv",
       "lore: Dragon Age II — Sundermount graveyard encounters"
      ],
      "roster": [
@@ -4292,9 +4292,9 @@
      "name_en": "Historic Battlegrounds",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "lore: Dragon Age II codex — Sundermount",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_drop_rates.xlsx"
+      "scratchpad/recon/hoda_challenge_drop_rates.xlsx"
      ],
      "roster": [
       {
@@ -4336,7 +4336,7 @@
      "authenticity": "inferred",
      "sources": [
       "lore: Dragon Age II — A New Path",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -4372,9 +4372,9 @@
      "name_en": "The Tainted Mirror",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Quests_(Heroes_of_Dragon_Age)",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/units.csv",
+      "heroes-of-dragons-cache/data_tables/units.csv",
       "lore: Dragon Age II — A New Path"
      ],
      "roster": [
@@ -4416,10 +4416,10 @@
      "name_en": "Eluvian Challenge",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://web.archive.org/web/20141101000220/http://forums.capitalgames.com:80/showthread.php/70480-Challenge-Quest-Drops",
       "https://dragonage.fandom.com/wiki/Challenges_(Heroes_of_Dragon_Age)",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/hoda_challenge_drop_rates.xlsx"
+      "scratchpad/recon/hoda_challenge_drop_rates.xlsx"
      ],
      "roster": [
       {
@@ -4466,7 +4466,7 @@
      "name_en": "Enter the Marsh",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Shadows_of_the_Blackmarsh"
      ],
      "roster": [
@@ -4503,7 +4503,7 @@
      "name_en": "The First",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Shadows_of_the_Blackmarsh"
      ],
      "roster": [
@@ -4546,7 +4546,7 @@
      "authenticity": "inferred",
      "sources": [
       "https://dragonage.fandom.com/wiki/Shadows_of_the_Blackmarsh",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -4583,7 +4583,7 @@
      "authenticity": "inferred",
      "sources": [
       "https://dragonage.fandom.com/wiki/Shadows_of_the_Blackmarsh",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -4619,7 +4619,7 @@
      "name_en": "Enter the crypt.",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Shadows_of_the_Blackmarsh"
      ],
      "roster": [
@@ -4662,7 +4662,7 @@
      "authenticity": "inferred",
      "sources": [
       "https://dragonage.fandom.com/wiki/Shadows_of_the_Blackmarsh",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -4704,7 +4704,7 @@
      "authenticity": "inferred",
      "sources": [
       "https://dragonage.fandom.com/wiki/Shadows_of_the_Blackmarsh",
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json"
      ],
      "roster": [
       {
@@ -4740,7 +4740,7 @@
      "name_en": "First and Last",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Shadows_of_the_Blackmarsh"
      ],
      "roster": [
@@ -4782,7 +4782,7 @@
      "name_en": "Pleading Freedom",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Baroness",
       "https://dragonage.fandom.com/wiki/Shadows_of_the_Blackmarsh"
      ],
@@ -4820,7 +4820,7 @@
      "name_en": "The Baroness",
      "authenticity": "inferred",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
       "https://dragonage.fandom.com/wiki/Shadows_of_the_Blackmarsh"
      ],
      "roster": [
@@ -4862,10 +4862,10 @@
      "name_en": "Blackmarsh Challenge",
      "authenticity": "sourced",
      "sources": [
-      "/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_characters_leg1.wikitext",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wiki_challenges.wikitext",
-      "/private/tmp/claude-501/-Users-vladislav-heroes-of-dragons/9a8de236-e04a-487d-8f9f-34719f442737/scratchpad/recon/wb_challenge_quest_drops.txt"
+      "heroes-of-dragons-cache/data_tables/campaign_map_nodes.json",
+      "scratchpad/recon/wiki_characters_leg1.wikitext",
+      "scratchpad/recon/wiki_challenges.wikitext",
+      "scratchpad/recon/wb_challenge_quest_drops.txt"
      ],
      "roster": [
       {

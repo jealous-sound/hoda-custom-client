@@ -7,7 +7,7 @@ import traceback
 import zlib
 
 TOOLS = os.path.dirname(os.path.abspath(__file__))
-CHAR_PACK = '/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/char_pack'
+CHAR_PACK = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'char_pack')
 SCRATCH = os.path.join(TOOLS, 'generic_tmp')
 
 RACE_PREFIXES = {'hm', 'hf', 'dm', 'df', 'em', 'ef', 'qm', 'qf', 'gm', 'gf'}

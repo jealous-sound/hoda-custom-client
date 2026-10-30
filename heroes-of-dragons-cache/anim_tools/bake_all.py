@@ -14,8 +14,9 @@ from PIL import Image
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, TOOLS)
 CACHE_DIR = os.path.join(TOOLS, 'cache')
-CHAR_PACK = '/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/char_pack'
-SHARED = ('/Users/vladislav/heroes-of-dragons/heroes-of-dragons-cache/'
+CACHE_ROOT = os.path.normpath(os.path.join(TOOLS, '..'))
+CHAR_PACK = os.path.join(CACHE_ROOT, 'char_pack')
+SHARED = os.path.join(CACHE_ROOT,
           'Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/'
           'files/UnityCache/Shared')
 REPORT_PATH = os.path.join(TOOLS, 'bake_report.json')
