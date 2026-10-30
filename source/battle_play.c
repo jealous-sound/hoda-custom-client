@@ -645,6 +645,7 @@ static void BpEnterAction(BattlePlay *bp, Battle *b) {
     if (a->newround) {
         bp->cur_round++;
         bp->action++;
+        for (int unit = 0; unit < SIM_UNIT_COUNT; unit++) BpResetInitiative(bp, b, unit);
         BpTelegraphCrits(bp, b);
         BpEnterAction(bp, b);
         return;
@@ -653,7 +654,6 @@ static void BpEnterAction(BattlePlay *bp, Battle *b) {
     if (a->ailments & wear) {
         if (a->actor >= 0) {
             int side = a->actor / SQUAD_SLOT_COUNT, slot = a->actor % SQUAD_SLOT_COUNT;
-            BpResetInitiative(bp, b, a->actor);
             if (a->ailments & AIL_UNSTUNNED) BattleFxStatusClear(b, FX_AURA_STUN, side, slot);
             if (a->ailments & AIL_UNCURSE_POWER) BattleFxStatusClear(b, FX_AURA_CURSE_POWER, side, slot);
             if (a->ailments & AIL_UNCURSE_HEALTH) BattleFxStatusClear(b, FX_AURA_CURSE_HEALTH, side, slot);
@@ -1024,7 +1024,6 @@ void BattlePlayUpdate(BattlePlay *bp, Battle *b, float raw_dt) {
                     }
                     u->pos = u->home;
                     u->phase = BPU_IDLE;
-                    BpResetInitiative(bp, b, side * SQUAD_SLOT_COUNT + slot);
                     if (!u->clip_hold) u->clip = NULL;
                 }
             }

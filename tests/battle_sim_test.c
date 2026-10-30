@@ -371,6 +371,29 @@ static void TestAllyCritGain(void) {
     assert(fabsf(s.actions[0].targets[0].crit_delta - 5.0f) < 0.001f);
 }
 
+static void TestSlowCarriesIntoNextRound(void) {
+    BattleSim s = {.rng = 12};
+    Character slowed, enemy;
+    Ability slowed_ability, enemy_ability;
+    TestCharacter(&slowed, &slowed_ability, "slowed", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &slowed);
+    SimUnitInit(&s, 1, 0, &enemy);
+
+    s.units[0].cur_initiative = -50;
+    SimTakeTurn(&s, 0);
+    assert(s.units[0].cur_initiative == -50);
+
+    s.units[0].stunned = true;
+    SimTakeTurn(&s, 0);
+    assert(s.units[0].cur_initiative == -50);
+
+    int order[SIM_UNIT_COUNT];
+    assert(SimRollRoundOrder(&s, order) == 2);
+    assert(order[0] == SQUAD_SLOT_COUNT && order[1] == 0);
+    assert(s.units[0].cur_initiative == 0);
+}
+
 static void TestTwoRoundCurse(void) {
     BattleSim s = {.rng = 16};
     Character actor, enemy;
@@ -3492,6 +3515,7 @@ int main(void) {
     TestPowerDrain();
     TestAllyPowerGain();
     TestAllySlow();
+    TestSlowCarriesIntoNextRound();
     TestAllyCritGain();
     TestTwoRoundCurse();
     TestBackRowCurse();

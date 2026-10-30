@@ -1405,7 +1405,6 @@ static void SimTakeTurn(BattleSim *s, int actor_idx) {
 
     if (u->stunned) {
         SimExpireAilments(s, actor_idx, true);
-        u->cur_initiative = 0;
         return;
     }
 
@@ -1433,12 +1432,33 @@ static void SimTakeTurn(BattleSim *s, int actor_idx) {
         }
     }
     SimExpireAilments(s, actor_idx, false);
-    u->cur_initiative = 0;
 }
 
 static int SimRollInitiative(BattleSim *s, const SimUnit *u) {
     int lo = u->init_class * 40, hi = u->init_class * 40 + 39;
     return SimRange(s, lo, hi) + u->cur_initiative;
+}
+
+static int SimRollRoundOrder(BattleSim *s, int order[SIM_UNIT_COUNT]) {
+    int inits[SIM_UNIT_COUNT], count = 0;
+    for (int i = 0; i < SIM_UNIT_COUNT; i++) {
+        if (!s->units[i].alive) continue;
+        order[count] = i;
+        inits[count] = SimRollInitiative(s, &s->units[i]);
+        s->units[i].cur_initiative = 0;
+        count++;
+    }
+    for (int i = 1; i < count; i++) {
+        int oi = order[i], vi = inits[i], j = i - 1;
+        while (j >= 0 && (inits[j] < vi || (inits[j] == vi && order[j] > oi))) {
+            order[j + 1] = order[j];
+            inits[j + 1] = inits[j];
+            j--;
+        }
+        order[j + 1] = oi;
+        inits[j + 1] = vi;
+    }
+    return count;
 }
 
 #define SIM_ROUND_CAP 10
@@ -1477,23 +1497,8 @@ void BattleSimRun(BattleSim *s, const Player *player, const BattleRoster *enemy,
             BattleSimAction *nr = SimEmit(s, -1);
             if (nr) nr->newround = true;
         }
-        int order[SIM_UNIT_COUNT], inits[SIM_UNIT_COUNT], count = 0;
-        for (int i = 0; i < SIM_UNIT_COUNT; i++) {
-            if (!s->units[i].alive) continue;
-            order[count] = i;
-            inits[count] = SimRollInitiative(s, &s->units[i]);
-            count++;
-        }
-        for (int i = 1; i < count; i++) {
-            int oi = order[i], vi = inits[i], j = i - 1;
-            while (j >= 0 && (inits[j] < vi || (inits[j] == vi && order[j] > oi))) {
-                order[j + 1] = order[j];
-                inits[j + 1] = inits[j];
-                j--;
-            }
-            order[j + 1] = oi;
-            inits[j + 1] = vi;
-        }
+        int order[SIM_UNIT_COUNT];
+        int count = SimRollRoundOrder(s, order);
         for (int i = 0; i < count; i++) {
             SimTakeTurn(s, order[i]);
             if (SimTeamDead(s, 0) || SimTeamDead(s, 1)) {
