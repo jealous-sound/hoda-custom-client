@@ -81,6 +81,14 @@ def normalized_shape(extents: tuple[float, float, float]) -> tuple[float, float,
     return tuple(value / scale for value in ordered)
 
 
+def accessor_rows(blob: memoryview, fmt: str, start: int, stride: int, count: int):
+    row_format = "<" + fmt
+    row_size = struct.calcsize(row_format)
+    if stride == row_size:
+        return struct.iter_unpack(row_format, blob[start:start + count * row_size])
+    return (struct.unpack_from(row_format, blob, start + row * stride) for row in range(count))
+
+
 def weight_errors(gltf: dict, blob: memoryview) -> tuple[int, int]:
     bad = total = 0
     seen: set[int] = set()
@@ -98,12 +106,11 @@ def weight_errors(gltf: dict, blob: memoryview) -> tuple[int, int]:
             stride = view.get("byteStride", component_size * 4)
             start = view.get("byteOffset", 0) + accessor.get("byteOffset", 0)
             integer_scale = {5121: 1 / 255.0, 5123: 1 / 65535.0}.get(component, 1.0)
-            for row in range(accessor["count"]):
-                values = struct.unpack_from("<" + fmt * 4, blob, start + row * stride)
-                values = [float(value) * integer_scale for value in values]
+            for values in accessor_rows(blob, fmt * 4, start, stride, accessor["count"]):
                 total += 1
-                if (any(not math.isfinite(value) or value < -1e-6 for value in values)
-                        or abs(sum(values) - 1.0) > 0.02):
+                weight_sum = sum(values) * integer_scale
+                if (not math.isfinite(weight_sum) or min(values) * integer_scale < -1e-6
+                        or abs(weight_sum - 1.0) > 0.02):
                     bad += 1
     return bad, total
 
@@ -133,8 +140,7 @@ def index_errors(gltf: dict, blob: memoryview) -> tuple[int, int, list[str]]:
             stride = view.get("byteStride", size)
             start = view.get("byteOffset", 0) + accessor.get("byteOffset", 0)
             maximum = max(
-                (struct.unpack_from("<" + fmt, blob, start + row * stride)[0]
-                 for row in range(accessor["count"])),
+                (row[0] for row in accessor_rows(blob, fmt, start, stride, accessor["count"])),
                 default=-1,
             )
             vertex_count = gltf["accessors"][position]["count"]
