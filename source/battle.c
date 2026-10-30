@@ -564,6 +564,10 @@ static BattleKind BattleKindFromStr(const char *k) {
     return BK_LIGHTMAP;
 }
 
+static bool BattleSceneRangeFits(int bin_size, int offset, int size) {
+    return offset >= 0 && size >= 0 && offset <= bin_size - size;
+}
+
 static void BattleLoadScene(Battle *b, const char *mesh_dir) {
     const char *base = TextFormat("%s/bg_plains_01_pre/reconstructed", mesh_dir);
     int bin_size = 0;
@@ -579,6 +583,12 @@ static void BattleLoadScene(Battle *b, const char *mesh_dir) {
         int vc = JsonInt(m, "vcount"), ic = JsonInt(m, "icount");
         int pos_off = JsonInt(m, "pos_off"), uv0_off = JsonInt(m, "uv0_off");
         int uv1_off = JsonInt(m, "uv1_off"), idx_off = JsonInt(m, "idx_off");
+
+        if (!BattleSceneRangeFits(bin_size, pos_off, vc * 3 * (int)sizeof(float)) ||
+            !BattleSceneRangeFits(bin_size, uv0_off, vc * 2 * (int)sizeof(float)) ||
+            !BattleSceneRangeFits(bin_size, uv1_off, vc * 2 * (int)sizeof(float)) ||
+            !BattleSceneRangeFits(bin_size, idx_off, ic * (int)sizeof(unsigned short)))
+            TraceLog(LOG_FATAL, "Battle: scene.json mesh %d overruns scene.bin in %s", b->mesh_count, base);
 
         BattleMesh *bm = &b->meshes[b->mesh_count];
         Mesh mesh = {0};

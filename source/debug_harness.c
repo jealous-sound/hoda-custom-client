@@ -317,8 +317,8 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     DebugPrepareNexusBattle(game, shot);
     DebugPrepareBattle(game, shot);
     DebugPrepareMapProgress(game, shot);
-    const char *selected_hero = getenv("HOD_SELECT");
-    if (selected_hero) game->heroes.selected = atoi(selected_hero);
+    int selected_hero = EnvInt("HOD_SELECT", -1);
+    if (selected_hero >= 0 && selected_hero < game->heroes.card_count) game->heroes.selected = selected_hero;
     DebugOpenResourceDialog(game, shot);
     DebugBurstBattleFx(game, shot);
 }
