@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_RECIPES = ROOT / "data" / "ability_recipes_440.json"
 DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
 DEFAULT_REFERENCE = (
-    ROOT / ".agents" / "skills" / "hoda-reference" / "data" / "characters.json"
+    ROOT / ".claude" / "skills" / "hoda-reference" / "data" / "characters.json"
 )
 DEFAULT_OUTPUT = ROOT / "data" / "intrinsic_passives_440.json"
 

@@ -30,7 +30,7 @@ CLI_DESCRIPTION = 'Validate complete HoDA attack-VFX wiring and local preset cov
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "data" / "unit_vfx.json"
 DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
-DEFAULT_REFERENCE = ROOT / ".agents" / "skills" / "hoda-reference" / "data" / "characters.json"
+DEFAULT_REFERENCE = ROOT / ".claude" / "skills" / "hoda-reference" / "data" / "characters.json"
 DEFAULT_CAB_INDEX = ROOT / "heroes-of-dragons-cache" / "anim_tools" / "cache" / "cab_paths.json"
 DEFAULT_PRESETS = ROOT / "data" / "fx_presets.json"
 

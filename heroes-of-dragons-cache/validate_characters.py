@@ -13,7 +13,7 @@ from ability_metadata import MECHANIC_ORDER, infer_ability_mechanics, normalize_
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CATALOG = os.path.join(HERE, "characters.json")
-REFERENCE_DIR = os.path.join(HERE, "..", ".agents", "skills", "hoda-reference", "data")
+REFERENCE_DIR = os.path.join(HERE, "..", ".claude", "skills", "hoda-reference", "data")
 UNIT_DATA = os.path.join(HERE, "HoDA_character_info", "UnitData.json")
 
 

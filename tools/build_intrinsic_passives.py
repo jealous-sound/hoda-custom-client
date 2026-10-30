@@ -11,7 +11,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
-DEFAULT_REFERENCE = ROOT / ".agents" / "skills" / "hoda-reference" / "data" / "characters.json"
+DEFAULT_REFERENCE = ROOT / ".claude" / "skills" / "hoda-reference" / "data" / "characters.json"
 DEFAULT_OUTPUT = ROOT / "data" / "intrinsic_passives.json"
 
 TARGET_WEIGHTS: dict[str, tuple[float, str]] = {

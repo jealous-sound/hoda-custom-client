@@ -8,7 +8,7 @@ from ability_metadata import infer_ability_mechanics, normalize_text
 HERE = os.path.dirname(os.path.abspath(__file__))
 INFO = os.path.join(HERE, "HoDA_character_info")
 REFERENCE_CHARACTERS = os.path.join(
-    HERE, "..", ".agents", "skills", "hoda-reference", "data", "characters.json"
+    HERE, "..", ".claude", "skills", "hoda-reference", "data", "characters.json"
 )
 
 units = json.load(open(os.path.join(INFO, "UnitData.json")))

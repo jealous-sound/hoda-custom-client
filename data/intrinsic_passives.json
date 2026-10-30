@@ -1,7 +1,7 @@
 {
   "version": 1,
   "source": "heroes-of-dragons-cache/characters.json",
-  "reference_source": ".agents/skills/hoda-reference/data/characters.json",
+  "reference_source": ".claude/skills/hoda-reference/data/characters.json",
   "conventions": {
     "percent_unit": "whole percentage points",
     "hero_aura_stacking": "base * (1 + sum(hero aura percentages) / 100)",

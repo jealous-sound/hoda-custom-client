@@ -20,7 +20,7 @@ DEFAULT_PLAYER = ROOT / "heroes-of-dragons-cache" / "player_starter.json"
 DEFAULT_CHAR_PACK = ROOT / "heroes-of-dragons-cache" / "char_pack"
 DEFAULT_CAB_INDEX = ANIM_TOOLS / "cache" / "cab_paths.json"
 DEFAULT_REFERENCE_FBX = (
-    ROOT / ".agents" / "skills" / "hoda-reference" / "references" / "fbx"
+    ROOT / ".claude" / "skills" / "hoda-reference" / "references" / "fbx"
 )
 DEFAULT_INVENTORY = ANIM_TOOLS / "cache" / "current_tier_inventory.json"
 
