@@ -322,8 +322,8 @@ typedef struct {
 
 typedef struct {
     char name[36];
-    char file[40];
-} BattleAudioFileDef;
+    char ref[64];
+} BattleAudioSourceDef;
 
 typedef struct {
     char name[48];
@@ -404,8 +404,8 @@ typedef struct {
     int unit_audio_character_count;
     BattleAudioProfileDef *unit_audio_profiles;
     int unit_audio_profile_count;
-    BattleAudioFileDef *unit_audio_files;
-    int unit_audio_file_count;
+    BattleAudioSourceDef *unit_audio_sources;
+    int unit_audio_source_count;
     BattleUnitAudio unit_audio[2][SQUAD_SLOT_COUNT];
     bool audio_trace;
     Music combat_intro, combat_loop, result_music;
@@ -536,8 +536,8 @@ static void BattleVfxUpdate(Battle *b, float dt) {
     }
 }
 
-static Texture2D BattleLoadTex(const char *path, bool clamp) {
-    Texture2D t = LoadTexture(path);
+static Texture2D BattleLoadTex(const char *ref, bool clamp) {
+    Texture2D t = ResourceLoadTexture(ref);
     GenTextureMipmaps(&t);
     SetTextureFilter(t, TEXTURE_FILTER_TRILINEAR);
     SetTextureFilter(t, TEXTURE_FILTER_ANISOTROPIC_8X);
@@ -625,24 +625,24 @@ void BattleInitialize(Battle *b, const char *mesh_dir) {
     b->ground_sh.locs[SHADER_LOC_MAP_OCCLUSION] = GetShaderLocation(b->ground_sh, "texture4");
     b->ground_sh.locs[SHADER_LOC_MAP_EMISSION] = GetShaderLocation(b->ground_sh, "texture5");
 
-    b->lightmap = BattleLoadTex(TextFormat("%s/bg_plains_01_pre/reconstructed/plains_lm1.png", mesh_dir), true);
-    b->t_woodfort = BattleLoadTex(TextFormat("%s/_shared_textures/woodfort_atlas_dif.png", mesh_dir), false);
-    b->t_rock = BattleLoadTex(TextFormat("%s/bg_plains_01_pre/terrain_rock_dif.png", mesh_dir), false);
-    b->t_forest = BattleLoadTex(TextFormat("%s/_shared_textures/Forest_atlas.png", mesh_dir), false);
-    b->t_grass = BattleLoadTex(TextFormat("%s/_shared_textures/tallgrass_atlas.png", mesh_dir), false);
-    b->t_backdrop = BattleLoadTex(TextFormat("%s/bg_plains_01_pre/plains_background_01.png", mesh_dir), false);
-    b->t_fairy = BattleLoadTex(TextFormat("%s/bg_plains_01_pre/fairydust.png", mesh_dir), true);
-    b->t_grassbase = BattleLoadTex(TextFormat("%s/bg_plains_01_pre/woodfort_grass_dif.png", mesh_dir), false);
-    b->t_dirt = BattleLoadTex(TextFormat("%s/_shared_textures/forest_dirt_dif.png", mesh_dir), false);
-    b->t_scorched = BattleLoadTex(TextFormat("%s/bg_plains_01_pre/scorched_grass.png", mesh_dir), false);
-    b->t_dgrass = BattleLoadTex(TextFormat("%s/bg_plains_01_pre/dalishforest_grass04.png", mesh_dir), false);
-    b->t_mask = BattleLoadTex(TextFormat("%s/bg_plains_01_pre/plains_ground_mask_rgb.png", mesh_dir), true);
-    b->t_particle = BattleLoadTex(TextFormat("%s/bg_plains_01_pre/Default-Particle.png", mesh_dir), true);
-    b->t_fire = BattleLoadTex(TextFormat("%s/bg_plains_01_pre/vfx_lvl_fire01.png", mesh_dir), true);
+    b->lightmap = BattleLoadTex(CACHE_RESOURCE("plains_lm1"), true);
+    b->t_woodfort = BattleLoadTex(CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "woodfort_atlas_dif"), false);
+    b->t_rock = BattleLoadTex(CACHE_RESOURCE("terrain_rock_dif"), false);
+    b->t_forest = BattleLoadTex(CACHE_RESOURCE("Forest_atlas"), false);
+    b->t_grass = BattleLoadTex(CACHE_RESOURCE("tallgrass_atlas"), false);
+    b->t_backdrop = BattleLoadTex(CACHE_RESOURCE("plains_background_01"), false);
+    b->t_fairy = BattleLoadTex(CACHE_RESOURCE("fairydust"), true);
+    b->t_grassbase = BattleLoadTex(CACHE_RESOURCE("woodfort_grass_dif"), false);
+    b->t_dirt = BattleLoadTex(CACHE_RESOURCE("forest_dirt_dif"), false);
+    b->t_scorched = BattleLoadTex(CACHE_RESOURCE("scorched_grass"), false);
+    b->t_dgrass = BattleLoadTex(CACHE_RESOURCE("dalishforest_grass04"), false);
+    b->t_mask = BattleLoadTex(CACHE_RESOURCE("plains_ground_mask_rgb"), true);
+    b->t_particle = BattleLoadTex(CACHE_RESOURCE("Default-Particle"), true);
+    b->t_fire = BattleLoadTex(CACHE_RESOURCE("vfx_lvl_fire01"), true);
     b->ring_sh = LoadShaderFromMemory(VS_UNLIT, BATTLE_FS_RING);
     b->ring_cutoff_loc = GetShaderLocation(b->ring_sh, "uCutoff");
     b->ring_color_loc = GetShaderLocation(b->ring_sh, "uColor");
-    b->ring_tex = BattleLoadTex(HOD_CACHE "vfx/textures/CircularHealthBarAlpha__health_ring_new.png", true);
+    b->ring_tex = BattleLoadTex(CACHE_RESOURCE("health_ring_new"), true);
     b->ring_mesh = GenMeshPlane(1.128f, 1.128f, 1, 1);
     b->ring_mat = LoadMaterialDefault();
     b->ring_mat.shader = b->ring_sh;
@@ -651,9 +651,9 @@ void BattleInitialize(Battle *b, const char *mesh_dir) {
     BattleWiresLoad(b, "data/unit_vfx.json");
     BattleFxRegistryLoad(b, "data/fx_presets.json");
     BattleAudioManifestLoad(b, "data/unit_audio.json");
-    b->t_foam = BattleLoadTex(TextFormat("%s/_shared_textures/foam.png", mesh_dir), true);
-    b->t_dots = BattleLoadTex(TextFormat("%s/_shared_textures/vfx_small_dots2.png", mesh_dir), true);
-    b->t_smoke = BattleLoadTex(TextFormat("%s/_shared_textures/smoke2.png", mesh_dir), true);
+    b->t_foam = BattleLoadTex(CACHE_RESOURCE("foam"), true);
+    b->t_dots = BattleLoadTex(CACHE_RESOURCE("vfx_small_dots2"), true);
+    b->t_smoke = BattleLoadTex(CACHE_RESOURCE("smoke2"), true);
 
     for (int i = 0; i < BATTLE_FIRE_EMITTERS; i++) {
         b->fires[i] = (BattleFireEmitter){0};
@@ -2217,7 +2217,7 @@ static Texture2D BattleFxTex(Battle *b, const char *name, int keyout) {
     for (int i = 0; i < b->fxtex_count; i++)
         if (strcmp(b->fxtex[i].name, id) == 0) return b->fxtex[i].tex;
     Texture2D tex = {0};
-    Image img = LoadImage(TextFormat(HOD_CACHE "vfx/textures/%s", name));
+    Image img = ResourceLoadImage(name);
     if (img.data) {
         if (keyout) {
             ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
@@ -3014,14 +3014,14 @@ static int BattleAudioClipIntern(Battle *b, const char *name) {
 static void BattleAudioManifestUnload(Battle *b) {
     if (b->unit_audio_characters) MemFree(b->unit_audio_characters);
     if (b->unit_audio_profiles) MemFree(b->unit_audio_profiles);
-    if (b->unit_audio_files) MemFree(b->unit_audio_files);
+    if (b->unit_audio_sources) MemFree(b->unit_audio_sources);
     if (b->unit_audio_clips) MemFree(b->unit_audio_clips);
     b->unit_audio_characters = NULL;
     b->unit_audio_profiles = NULL;
-    b->unit_audio_files = NULL;
+    b->unit_audio_sources = NULL;
     b->unit_audio_clips = NULL;
     b->unit_audio_character_count = b->unit_audio_profile_count = 0;
-    b->unit_audio_file_count = b->unit_audio_clip_count = 0;
+    b->unit_audio_source_count = b->unit_audio_clip_count = 0;
 }
 
 static void BattleAudioManifestLoad(Battle *b, const char *path) {
@@ -3030,13 +3030,13 @@ static void BattleAudioManifestLoad(Battle *b, const char *path) {
     if (JsonInt(root, "version") != 1) TraceLog(LOG_FATAL, "Battle: unsupported unit audio manifest %s", path);
     cJSON *characters = cJSON_GetObjectItemCaseSensitive(root, "characters");
     cJSON *profiles = cJSON_GetObjectItemCaseSensitive(root, "profiles");
-    cJSON *files = cJSON_GetObjectItemCaseSensitive(root, "audio_files");
-    if (!cJSON_IsObject(characters) || !cJSON_IsObject(profiles) || !cJSON_IsObject(files))
+    cJSON *sources = cJSON_GetObjectItemCaseSensitive(root, "audio_sources");
+    if (!cJSON_IsObject(characters) || !cJSON_IsObject(profiles) || !cJSON_IsObject(sources))
         TraceLog(LOG_FATAL, "Battle: malformed unit audio manifest %s", path);
 
-    int n_files = 0, n_profiles = 0, n_characters = 0, n_clip_refs = 0;
+    int n_sources = 0, n_profiles = 0, n_characters = 0, n_clip_refs = 0;
     cJSON *item = NULL;
-    cJSON_ArrayForEach(item, files) n_files++;
+    cJSON_ArrayForEach(item, sources) n_sources++;
     cJSON_ArrayForEach(item, characters) n_characters++;
     cJSON_ArrayForEach(item, profiles) {
         n_profiles++;
@@ -3044,16 +3044,16 @@ static void BattleAudioManifestLoad(Battle *b, const char *path) {
         cJSON_ArrayForEach(pool, item) n_clip_refs +=
             cJSON_GetArraySize(cJSON_GetObjectItemCaseSensitive(pool, "clips"));
     }
-    if (n_files > 0) b->unit_audio_files = MemAlloc(sizeof(*b->unit_audio_files) * n_files);
+    if (n_sources > 0) b->unit_audio_sources = MemAlloc(sizeof(*b->unit_audio_sources) * n_sources);
     if (n_profiles > 0) b->unit_audio_profiles = MemAlloc(sizeof(*b->unit_audio_profiles) * n_profiles);
     if (n_characters > 0) b->unit_audio_characters = MemAlloc(sizeof(*b->unit_audio_characters) * n_characters);
     if (n_clip_refs > 0) b->unit_audio_clips = MemAlloc(sizeof(*b->unit_audio_clips) * n_clip_refs);
 
-    cJSON_ArrayForEach(item, files) {
+    cJSON_ArrayForEach(item, sources) {
         if (!cJSON_IsString(item) || !item->string) continue;
-        BattleAudioFileDef *f = &b->unit_audio_files[b->unit_audio_file_count++];
-        StrCopy(f->name, sizeof(f->name), item->string);
-        StrCopy(f->file, sizeof(f->file), item->valuestring);
+        BattleAudioSourceDef *source = &b->unit_audio_sources[b->unit_audio_source_count++];
+        StrCopy(source->name, sizeof(source->name), item->string);
+        StrCopy(source->ref, sizeof(source->ref), item->valuestring);
     }
     cJSON_ArrayForEach(item, profiles) {
         if (!cJSON_IsObject(item) || !item->string) continue;
@@ -3128,10 +3128,10 @@ static const BattleAudioProfileDef *BattleAudioProfileFind(const Battle *b, cons
     return NULL;
 }
 
-static const char *BattleAudioFileName(const Battle *b, const char *name) {
-    for (int i = 0; i < b->unit_audio_file_count; i++)
-        if (!strcasecmp(b->unit_audio_files[i].name, name)) return b->unit_audio_files[i].file;
-    return NULL;
+static const char *BattleAudioSourceRef(const Battle *b, const char *name) {
+    for (int i = 0; i < b->unit_audio_source_count; i++)
+        if (!strcasecmp(b->unit_audio_sources[i].name, name)) return b->unit_audio_sources[i].ref;
+    return TextFormat(CACHE_RESOURCE("%s"), name);
 }
 
 static bool BattleSfxReserve(Battle *b, int count) {
@@ -3164,20 +3164,13 @@ static BattleSfx *BattleSfxGet(Battle *b, const char *name) {
     memset(entry, 0, sizeof(*entry));
     StrCopy(entry->name, sizeof(entry->name), name);
 
-    const char *filename = BattleAudioFileName(b, name);
-    char fallback[64];
-    if (!filename) {
-        snprintf(fallback, sizeof(fallback), "%s.mp3", name);
-        filename = fallback;
-    }
-    char path[512];
-    snprintf(path, sizeof(path), HOD_CACHE "vfx/audio/%s", filename);
-    if (!FileExists(path)) {
-        TraceLog(LOG_WARNING, "Battle: audio pool has no clip %s (%s)", name, path);
+    const char *ref = BattleAudioSourceRef(b, name);
+    if (!ResourceExists(ref)) {
+        TraceLog(LOG_WARNING, "Battle: audio pool has no clip %s (%s)", name, ref);
         return entry;
     }
-    entry->source = LoadSound(path);
-    if (!IsSoundValid(entry->source)) TraceLog(LOG_WARNING, "Battle: failed to load SFX %s", path);
+    entry->source = ResourceLoadSound(ref);
+    if (!IsSoundValid(entry->source)) TraceLog(LOG_WARNING, "Battle: failed to load SFX %s", ref);
     return entry;
 }
 

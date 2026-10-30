@@ -8,6 +8,8 @@ from pathlib import Path
 import re
 from typing import Any
 
+import original_cache
+
 
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
@@ -18,7 +20,6 @@ REPORT = ROOT / "heroes-of-dragons-cache" / "vfx_tools" / "build_report.json"
 CAB_PATHS = ROOT / "heroes-of-dragons-cache" / "anim_tools" / "cache" / "cab_paths.json"
 PLAYER = ROOT / "heroes-of-dragons-cache" / "player_starter.json"
 CAMPAIGNS = ROOT / "data" / "campaign_rosters.json"
-TEXTURES = ROOT / "heroes-of-dragons-cache" / "vfx" / "textures"
 PARTICLES = ROOT / "heroes-of-dragons-cache" / "vfx" / "particles"
 SHARED = (
     ROOT
@@ -207,7 +208,6 @@ def main() -> None:
             "none" if not combined else "unique" if len(combined) == 1 else "ambiguous"
         ] += 1
 
-    texture_names = {path.name for path in TEXTURES.glob("*.png")}
     preset_texture_names = {
         emitter["tex"] for preset in preset_root["presets"] for emitter in preset["emitters"] if emitter.get("tex")
     }
@@ -339,7 +339,9 @@ def main() -> None:
             "emitters": sum(len(preset["emitters"]) for preset in preset_root["presets"]),
             "presets_with_exact_duplicate_emitters": exact_duplicate_presets,
             "unique_textures_referenced": len(preset_texture_names),
-            "missing_texture_files": sorted(preset_texture_names - texture_names),
+            "unresolved_texture_refs": sorted(
+                ref for ref in preset_texture_names if not original_cache.resolves(ref, original_cache.TEXTURE_2D)
+            ),
             "build_missing": [
                 name for name in build_report.get("missing", []) if name != "fx_null_pre"
             ],
@@ -351,7 +353,7 @@ def main() -> None:
             "cab_files": sum(1 for path in SHARED.rglob("CAB-*") if path.is_file()),
             "particle_dumps": len(particle_files),
             "particle_bundles": len(particle_bundles),
-            "texture_pngs": len(texture_names),
+            "cache_textures": len(original_cache.names(original_cache.TEXTURE_2D)),
         },
     }
     print(json.dumps(output, indent=2, sort_keys=True))

@@ -113,7 +113,7 @@ static void BattleSquadsLoad(
 
     sq->pads = SquadPadAssetsLoad(mesh_dir, sq->unit_sh);
     sq->shadow_mesh = GenMeshPlane(1.0f, 1.0f, 1, 1);
-    sq->shadow_tex = LoadSprite(TextFormat("%s/charbase_t4_pre/base_shadow2.png", mesh_dir));
+    sq->shadow_tex = LoadSprite(CACHE_RESOURCE("base shadow2"));
 
     sq->shadow_mat = LoadMaterialDefault();
     sq->shadow_mat.shader = sq->mult_sh;
@@ -149,8 +149,8 @@ static void BattleSquadsLoad(
             }
             sq->present[side][s] = true;
 
-            SquadPadRarityLoad(mesh_dir, ch, &sq->pad_tex[side][s], &sq->stars[side][s]);
-            sq->fac_tex[side][s] = SquadFacTexLoad(mesh_dir, ch->faction);
+            SquadPadRarityLoad(ch, &sq->pad_tex[side][s], &sq->stars[side][s]);
+            sq->fac_tex[side][s] = SquadFacTexLoad(ch->faction);
             SquadPadPlaceAtFeet(
                 (Vector3){spot->x, BATTLE_MARKER_Y, spot->z},
                 k,

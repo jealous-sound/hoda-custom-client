@@ -87,14 +87,12 @@ static void TestHeroRowBonusReferencePresentation(void) {
     HeroRowBonusSpec none = HeroRowBonusForSlot(SQUAD_SLOT_LARGE);
     assert(none.effect == HFX_NONE && none.vfx_name == NULL && none.texture == GUI_COUNT && none.percent == 0);
 
-    static const char *const health_path =
-        HOD_CACHE "vfx/textures/rowbonus_front_health__tex.rowbonus_front_health.png";
-    static const char *const crit_path =
-        HOD_CACHE "vfx/textures/rowbonus_back_critchance__tex.rowbonus_back_critchance.png";
-    assert(strcmp(gui_paths[GUI_HEROES_ROW_HEALTH], health_path) == 0);
-    assert(strcmp(gui_paths[GUI_HEROES_ROW_CRIT], crit_path) == 0);
-    assert(FileExists(health_path) && FileExists(crit_path));
-    Image health = LoadImage(health_path), crit = LoadImage(crit_path);
+    static const char *const health_ref = CACHE_RESOURCE("tex.rowbonus_front_health");
+    static const char *const crit_ref = CACHE_RESOURCE("tex.rowbonus_back_critchance");
+    assert(strcmp(gui_paths[GUI_HEROES_ROW_HEALTH], health_ref) == 0);
+    assert(strcmp(gui_paths[GUI_HEROES_ROW_CRIT], crit_ref) == 0);
+    assert(ResourceExists(health_ref) && ResourceExists(crit_ref));
+    Image health = ResourceLoadImage(health_ref), crit = ResourceLoadImage(crit_ref);
     assert(health.data && health.width == 512 && health.height == 512);
     assert(crit.data && crit.width == 512 && crit.height == 512);
     UnloadImage(health);
@@ -147,10 +145,7 @@ static void TestHeroRowBonusReferencePresentation(void) {
     }
     assert(smoke == 8);
 
-    LocLoad(
-        HOD_CACHE
-        "Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_RUS_RU.txt"
-    );
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
     assert(strcmp(LocGet("SQUAD_ROW_BONUS"), "Бонус шеренги!") == 0);
     LocUnload();
 }
@@ -245,8 +240,8 @@ static void TestIntroQueueShowsOnlyPlayerFactionBonus(void) {
 
 static void TestFactionIntroAssetsAndText(void) {
     assert(BATTLE_UI_FACTION_INTRO_ICON == GUI_DETAILS_POWER);
-    assert(FileExists(HOD_CACHE "gui/misc/tex.Ico_Power.png"));
-    assert(strcmp(gui_paths[GUI_DETAILS_POWER], HOD_CACHE "gui/misc/tex.Ico_Power.png") == 0);
+    assert(ResourceExists(CACHE_RESOURCE("tex.Ico_Power")));
+    assert(strcmp(gui_paths[GUI_DETAILS_POWER], CACHE_RESOURCE("tex.Ico_Power")) == 0);
     Battle *battle = calloc(1, sizeof(*battle));
     assert(battle != NULL);
     BattleFxRegistryLoad(battle, "data/fx_presets.json");
@@ -271,10 +266,7 @@ static void TestFactionIntroAssetsAndText(void) {
     assert(instance >= 0);
     assert(battle->fxi[instance].anchor == 2 && !battle->fxi[instance].loop);
 
-    LocLoad(
-        HOD_CACHE
-        "Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_RUS_RU.txt"
-    );
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
     BpIntroEvent event = {.value = 10.0f};
     char text[128];
     BattleUiIntroText(&event, text, sizeof(text));
@@ -1731,10 +1723,10 @@ static void TestLegendaryStars(void) {
     }
     assert(ratings[1] > 0 && ratings[2] > 0 && ratings[3] > 0);
 
-    assert(FileExists("assets/legendary_base/base_gold_star.png"));
-    assert(FileExists("assets/legendary_base/stars_1.obj"));
-    assert(FileExists("assets/legendary_base/stars_2.obj"));
-    assert(FileExists("assets/legendary_base/stars_3.obj"));
+    assert(ResourceExists(CACHE_RESOURCE("base_gold_star")));
+    assert(FileExists(HOD_CACHE "meshes/legendary_base/stars_1.obj"));
+    assert(FileExists(HOD_CACHE "meshes/legendary_base/stars_2.obj"));
+    assert(FileExists(HOD_CACHE "meshes/legendary_base/stars_3.obj"));
     cJSON_Delete(root);
 }
 
@@ -1853,10 +1845,9 @@ static void TestPortraitCoverage(void) {
         CharacterParse(entry, &ch, &ability);
         for (int tier = 0; tier < TIER_COUNT; tier++) {
             assert(ch.icon_prefab[tier][0]);
-            char path[512];
-            snprintf(path, sizeof(path), HOD_CACHE "gui/portraits/%s.png", ch.icon_prefab[tier]);
-            if (!FileExists(path)) fprintf(stderr, "missing portrait: %s\n", path);
-            assert(FileExists(path));
+            const char *ref = GuiPortraitRef(ch.icon_prefab[tier]);
+            if (!ResourceExists(ref)) fprintf(stderr, "missing portrait: %s\n", ref);
+            assert(ResourceExists(ref));
             checked++;
         }
     }
@@ -2168,12 +2159,11 @@ static void TestAttackPresentationBindings(void) {
 
     BattleAudioManifestLoad(battle, "data/unit_audio.json");
     assert(battle->unit_audio_character_count == 676);
-    const char *faction_sound = BattleAudioFileName(battle, "gui_bonus_faction");
-    assert(faction_sound != NULL);
-    assert(strcmp(faction_sound, "gui_bonus_faction.mp3") == 0);
-    assert(FileExists(HOD_CACHE "vfx/audio/gui_bonus_faction.mp3"));
-    const char *dwarf_vox = BattleAudioFileName(battle, "Dark_Dwarves_Attack_VOX_01");
-    assert(dwarf_vox && strcmp(dwarf_vox, "Dark_Dwarves_Attack_VOX_01.mp3") == 0);
+    const char *faction_sound = BattleAudioSourceRef(battle, "gui_bonus_faction");
+    assert(strcmp(faction_sound, CACHE_RESOURCE("gui_bonus_faction")) == 0);
+    assert(ResourceExists(faction_sound));
+    const char *dwarf_vox = BattleAudioSourceRef(battle, "Dark_Dwarves_Attack_VOX_01");
+    assert(strcmp(dwarf_vox, CACHE_RESOURCE("Dark_Dwarves_Attack_VOX_01")) == 0);
     Character unit = {0};
     StrCopy(unit.id, sizeof(unit.id), "UNIT_NECROMANCERDORIAN");
     unit.tier = TIER_IV;
@@ -2300,10 +2290,7 @@ static void TestBattlePreviewUsesFinalSetupStats(void) {
     assert(strcmp(BattleUiDifficultyKey(ratio), "PVE_COLORED_EASY") == 0);
     assert(strcmp(BattleUiDifficultyKey(1.2f), "PVE_COLORED_MEDIUM") == 0);
 
-    LocLoad(
-        HOD_CACHE
-        "Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_RUS_RU.txt"
-    );
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
     BattleUi ui = {0};
     BattleUiEnterNode(&ui, &player, &enemy, NULL, "PVE_MAP_01", 1);
     assert(ui.plates[0][0].power == 156 && ui.plates[0][0].health == 1500);
@@ -3417,8 +3404,84 @@ static void TestFxKeyoutPreservesSourceTransparency(void) {
     assert(white_key.a == 127 && black_key.a == 128);
 }
 
+static unsigned int ImageFnv(Image image) {
+    unsigned int hash = 2166136261u;
+    const unsigned char *pixels = image.data;
+    for (int i = 0; i < image.width * image.height * 4; i++) hash = (hash ^ pixels[i]) * 16777619u;
+    return hash;
+}
+
+static void TestOriginalResourcesDecodeLikeUnityPy(void) {
+    static const struct {
+        const char *ref;
+        int width, height;
+        unsigned int unitypy_hash;
+    } textures[] = {
+        {CACHE_RESOURCE("Bg_PlayerRow"), 32, 32, 0x975c18aau},
+        {CACHE_RESOURCE("SmallButtonDarkBlue"), 35, 31, 0xce5ffbddu},
+        {CACHE_RESOURCE("Default-Particle"), 64, 64, 0x7d8d4582u},
+        {CACHE_RESOURCE("tex.c_abomination_t1_pt"), 128, 128, 0xbe28c1fau},
+        {CACHE_RESOURCE("tex.Btn_MapPVE_map_08"), 256, 256, 0xafb8507cu},
+        {APK_RESOURCE("Btn_CTA_gold_cost"), 256, 64, 0xb57fbb67u},
+        {APK_RESOURCE("Btn_CTA_gold"), 256, 64, 0x1d6ea15cu},
+    };
+    for (int i = 0; i < (int)(sizeof(textures) / sizeof(textures[0])); i++) {
+        Image image = ResourceLoadImage(textures[i].ref);
+        assert(image.data && image.format == PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+        assert(image.width == textures[i].width && image.height == textures[i].height);
+        assert(ImageFnv(image) == textures[i].unitypy_hash);
+        UnloadImage(image);
+    }
+
+    Wave wave = ResourceLoadWave(CACHE_RESOURCE("gui_bonus_faction"));
+    assert(IsWaveValid(wave));
+    UnloadWave(wave);
+
+    unsigned int object_size = 0;
+    unsigned char *font = ResourceLoadObject(APK_RESOURCE("inquisition"), UNITY_CLASS_FONT, &object_size);
+    int ttf_size = 0;
+    const unsigned char *ttf = font ? UnityFontData(font, object_size, &ttf_size) : NULL;
+    static const unsigned char truetype_magic[4] = {0x00, 0x01, 0x00, 0x00};
+    assert(ttf && ttf_size == 98036 && memcmp(ttf, truetype_magic, sizeof(truetype_magic)) == 0);
+    MemFree(font);
+
+    assert(ResourceExists(CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "base_T1")));
+    assert(!ResourceExists(CACHE_BUNDLE_RESOURCE("PackOpening_pre", "base_T2")));
+    assert(!ResourceExists(CACHE_RESOURCE("no_such_texture")));
+}
+
+static void TestEveryReferencedResourceResolves(void) {
+    for (int i = 0; i < GUI_COUNT; i++) assert(ResourceExists(gui_paths[i]));
+    for (int i = 0; i < SND_COUNT; i++) assert(ResourceExists(sound_paths[i]));
+    for (int i = 0; i < MUS_COUNT; i++) assert(ResourceExists(music_defs[i].path));
+    for (int i = 0; i < FNT_COUNT; i++) assert(ResourceExists(font_paths[i]));
+    for (int r = RARITY_COMMON; r <= RARITY_MYTHIC; r++) assert(ResourceExists(RarityBaseRef((Rarity)r)));
+    for (int f = FACTION_LARGE; f < FACTION_ALL; f++) {
+        const char *emblem = HomeFactionTexName((Faction)f);
+        if (emblem) assert(ResourceExists(TextFormat(CACHE_RESOURCE("%s"), emblem)));
+    }
+
+    cJSON *root = JsonLoadFile("data/fx_presets.json");
+    int textures = 0;
+    cJSON *preset = NULL;
+    cJSON_ArrayForEach(preset, cJSON_GetObjectItemCaseSensitive(root, "presets")) {
+        cJSON *emitter = NULL;
+        cJSON_ArrayForEach(emitter, cJSON_GetObjectItemCaseSensitive(preset, "emitters")) {
+            const char *tex = JsonStr(emitter, "tex");
+            if (!tex[0]) continue;
+            if (!ResourceExists(tex)) fprintf(stderr, "unresolved fx texture: %s\n", tex);
+            assert(ResourceExists(tex));
+            textures++;
+        }
+    }
+    assert(textures > 2000);
+    cJSON_Delete(root);
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_WARNING);
+    TestOriginalResourcesDecodeLikeUnityPy();
+    TestEveryReferencedResourceResolves();
     TestSquadSlotReferenceLayout();
     TestBattleRowBonuses();
     TestHeroRowBonusReferencePresentation();

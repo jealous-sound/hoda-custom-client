@@ -11,6 +11,7 @@ import struct
 from urllib.parse import unquote
 
 
+CLI_DESCRIPTION = 'Audit every runtime character GLB and every catalog tier binding'
 ROOT = Path(__file__).resolve().parents[1]
 CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
 CHAR_PACK = ROOT / "heroes-of-dragons-cache" / "char_pack"
@@ -322,7 +323,7 @@ def run(deep: bool) -> dict:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
     parser.add_argument("--deep", action="store_true", help="scan every binary WEIGHTS_0 row")
     parser.add_argument("--json", type=Path, help="write the detailed summary")
     parser.add_argument(

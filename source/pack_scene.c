@@ -6,10 +6,6 @@
 #include <stdbool.h>
 #include <string.h>
 
-#ifndef HOD_CACHE
-#define HOD_CACHE "heroes-of-dragons-cache/"
-#endif
-
 #define PACK_SCENE_EXPECTED_MESH_COUNT 38
 #define PACK_SCENE_PARTS_MATERIAL 7
 #define PACK_SCENE_MATERIAL_MAP_COUNT (MATERIAL_MAP_BRDF + 1)
@@ -193,8 +189,8 @@ static void PackSceneApplyMaterials(PackScene *scene) {
     scene->foliage_vcscale_loc = GetShaderLocation(scene->foliage_sh, "uVcScale");
     scene->foliage_vcshift_loc = GetShaderLocation(scene->foliage_sh, "uVcShift");
 
-    scene->ground_detail = LoadTiled(HOD_CACHE "meshes/PackOpening_pre/background_grass_01.png");
-    scene->ground_mask = LoadTiled(HOD_CACHE "meshes/_shared_textures/background_platform_01_mask.png");
+    scene->ground_detail = LoadTiled(CACHE_RESOURCE("background_grass_01"));
+    scene->ground_mask = LoadTiled(CACHE_RESOURCE("background_platform_01_mask"));
 
     for (int i = 0; i < scene->model.materialCount; i++) {
         Material *material = &scene->model.materials[i];
@@ -295,8 +291,8 @@ bool PackSceneInitialize(PackScene *scene) {
     scene->pads_loaded = true;
     scene->fac_loaded = FACTION_ALL;
     for (int rarity = RARITY_COMMON; rarity <= RARITY_MYTHIC; rarity++)
-        scene->base_tex[rarity] = LoadSprite(TextFormat(HOD_CACHE "meshes/_shared_textures/base_T%d.png", rarity));
-    scene->base_default = LoadSprite(HOD_CACHE "meshes/PackOpening_pre/base_T1.png");
+        scene->base_tex[rarity] = LoadSprite(RarityBaseRef((Rarity)rarity));
+    scene->base_default = LoadSprite(CACHE_BUNDLE_RESOURCE("PackOpening_pre", "base_T1"));
     if (scene->pads.pad_model.meshCount <= 0)
         TraceLog(LOG_WARNING, "PackScene: the charbase pedestal is unavailable; the reveal lands on nothing");
 
@@ -315,14 +311,14 @@ bool PackSceneInitialize(PackScene *scene) {
         if (parts->maps) diffuse = parts->maps[MATERIAL_MAP_DIFFUSE].texture;
         bool missing = diffuse.id == 0 || diffuse.id == rlGetTextureIdDefault();
         if (missing && parts->maps) {
-            const char *atlas_path = HOD_CACHE "meshes/PackOpening_pre/PackOpenPartsAtlas.png";
-            scene->atlas = LoadTexture(atlas_path);
+            const char *atlas_ref = CACHE_RESOURCE("PackOpenPartsAtlas");
+            scene->atlas = ResourceLoadTexture(atlas_ref);
             scene->atlas_loaded = IsTextureValid(scene->atlas);
             if (scene->atlas_loaded) {
                 parts->maps[MATERIAL_MAP_DIFFUSE].texture = scene->atlas;
                 parts->maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
             } else {
-                TraceLog(LOG_WARNING, "PackScene: failed to load %s", atlas_path);
+                TraceLog(LOG_WARNING, "PackScene: failed to load %s", atlas_ref);
             }
         }
     } else {
@@ -387,8 +383,7 @@ static Texture2D PackSceneFactionTexture(PackScene *scene, Faction faction) {
     if (faction != scene->fac_loaded) {
         SceneTexUnload(scene->fac_texture);
         scene->fac_texture = (Texture2D){0};
-        const char *name = HomeFactionTexName(faction);
-        if (name) scene->fac_texture = LoadSprite(TextFormat(HOD_CACHE "meshes/_shared_textures/%s.png", name));
+        scene->fac_texture = SquadFacTexLoad(faction);
         scene->fac_loaded = faction;
     }
     return scene->fac_texture;

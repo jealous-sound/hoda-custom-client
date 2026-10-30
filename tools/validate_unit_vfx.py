@@ -26,6 +26,7 @@ from build_unit_vfx import (
 )
 
 
+CLI_DESCRIPTION = 'Validate complete HoDA attack-VFX wiring and local preset coverage'
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "data" / "unit_vfx.json"
 DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
@@ -412,7 +413,7 @@ def validate(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
     parser.add_argument("--reference", type=Path, default=DEFAULT_REFERENCE)

@@ -13,6 +13,10 @@
 
 #include "config.c"
 #include "vendors/cJSON.c"
+#include "unity_texture.c"
+#include "unity_asset.c"
+#include "apk_archive.c"
+#include "resource.c"
 #include "utils.c"
 #include "ui.c"
 #include "assets.c"

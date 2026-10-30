@@ -71,7 +71,7 @@ static Texture2D SceneTexLoad(const char *path, bool tiled) {
             return e->tex;
         }
     }
-    Texture2D tex = LoadTexture(path);
+    Texture2D tex = ResourceLoadTexture(path);
     if (tex.id == 0) return tex;
     if (tiled) {
         SetTextureWrap(tex, TEXTURE_WRAP_REPEAT);

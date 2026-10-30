@@ -264,8 +264,8 @@ static void HeroesSquadLoad(HeroesBackground *scene, const Player *player) {
             &scene->fac_xform[s],
             &xform
         );
-        SquadPadRarityLoad(scene->mesh_dir, ch, &scene->pad_tex[s], &scene->stars[s]);
-        scene->fac_tex[s] = SquadFacTexLoad(scene->mesh_dir, ch->faction);
+        SquadPadRarityLoad(ch, &scene->pad_tex[s], &scene->stars[s]);
+        scene->fac_tex[s] = SquadFacTexLoad(ch->faction);
         HomeSquadUnitLoad(&scene->units[s], path, scene->plain_sh, xform, s);
     }
 }
@@ -810,10 +810,8 @@ bool HeroesBackgroundDragStart(HeroesBackground *scene, const Player *player, in
     const char *prefab = HomeSquadResolvePrefab(scene->char_dir, ch, path, sizeof(path));
     if (!prefab) return false;
     HomeSquadUnitLoad(&scene->drag.unit, path, scene->plain_sh, MatrixTranslate(0, -1000.0f, 0), roster_index);
-    const char *fac = HomeFactionTexName(ch->faction);
-    scene->drag.fac_tex =
-        fac ? LoadSprite(TextFormat("%s/_shared_textures/%s.png", scene->mesh_dir, fac)) : (Texture2D){0};
-    SquadPadRarityLoad(scene->mesh_dir, ch, &scene->drag.pad_tex, &scene->drag.stars);
+    scene->drag.fac_tex = SquadFacTexLoad(ch->faction);
+    SquadPadRarityLoad(ch, &scene->drag.pad_tex, &scene->drag.stars);
     scene->drag.pk = ch->giant ? HERO_GIANT_SCALE : 1.0f;
     scene->drag.ds = UnitDisplayScale(prefab);
     scene->drag.roster_index = roster_index;
@@ -1013,18 +1011,18 @@ void HeroesBackgroundInitialize(
     for (int i = 0; i < 3; i++)
         SetShaderValue(gain_shaders[i], GetShaderLocation(gain_shaders[i], "uBright"), &gain, SHADER_UNIFORM_FLOAT);
 
-    scene->t_terr_grass = LoadTiled(TextFormat("%s/_shared_textures/background_grass_01_PSD.png", mesh_dir));
-    scene->t_terr_stone = LoadTiled(TextFormat("%s/_shared_textures/background_stone_01_PSD.png", mesh_dir));
-    scene->t_mask = LoadTiled(TextFormat("%s/MainMenuContainer/background_platform_02_mask.png", mesh_dir));
-    scene->t_rock = LoadTiled(TextFormat("%s/_shared_textures/background_layer_stone_03.png", mesh_dir));
-    scene->t_rock2 = LoadTiled(TextFormat("%s/_shared_textures/background_main_stone_02.png", mesh_dir));
-    scene->t_spike = LoadTiled(TextFormat("%s/_shared_textures/Sticks_barricade_Tex.png", mesh_dir));
-    scene->t_pole = LoadTiled(TextFormat("%s/MainMenuContainer/flag_pole.png", mesh_dir));
-    scene->t_grass = LoadTiled(TextFormat("%s/_shared_textures/grass_01.png", mesh_dir));
-    scene->t_fern = LoadTiled(TextFormat("%s/_shared_textures/plant_atlas_UI.png", mesh_dir));
-    scene->t_flag = LoadTiled(TextFormat("%s/_shared_textures/flag_Txture.png", mesh_dir));
+    scene->t_terr_grass = LoadTiled(CACHE_RESOURCE("background_grass_01_PSD"));
+    scene->t_terr_stone = LoadTiled(CACHE_RESOURCE("background_stone_01_PSD"));
+    scene->t_mask = LoadTiled(CACHE_RESOURCE("background_platform_02_mask"));
+    scene->t_rock = LoadTiled(CACHE_RESOURCE("background_layer_stone_03"));
+    scene->t_rock2 = LoadTiled(CACHE_RESOURCE("background_main_stone_02"));
+    scene->t_spike = LoadTiled(CACHE_RESOURCE("Sticks_barricade_Tex"));
+    scene->t_pole = LoadTiled(CACHE_RESOURCE("flag_pole"));
+    scene->t_grass = LoadTiled(CACHE_RESOURCE("grass_01"));
+    scene->t_fern = LoadTiled(CACHE_RESOURCE("plant_atlas_UI"));
+    scene->t_flag = LoadTiled(CACHE_RESOURCE("flag_Txture"));
 
-    scene->t_circle = LoadSprite(TextFormat("%s/MainMenuContainer/formation_location_circle.png", mesh_dir));
+    scene->t_circle = LoadSprite(CACHE_RESOURCE("formation_location_circle"));
     scene->circle_mesh = GenMeshPlane(1.0f, 1.0f, 1, 1);
     scene->circle_mat = LoadMaterialDefault();
     scene->circle_mat.shader = scene->decal_sh;
@@ -1038,7 +1036,7 @@ void HeroesBackgroundInitialize(
         );
     }
 
-    scene->t_rockshadow = LoadSprite(TextFormat("%s/MainMenuContainer/rockbase_shadow.png", mesh_dir));
+    scene->t_rockshadow = LoadSprite(CACHE_RESOURCE("rockbase_shadow"));
     scene->rockshadow_mat = LoadMaterialDefault();
     scene->rockshadow_mat.shader = scene->mult_sh;
     scene->rockshadow_mat.maps[MATERIAL_MAP_DIFFUSE].texture = scene->t_rockshadow;
@@ -1056,7 +1054,7 @@ void HeroesBackgroundInitialize(
             MatrixTranslate(rockshadow_pos[i].x, rockshadow_pos[i].y + HERO_DECAL_LIFT * 0.6f, rockshadow_pos[i].z)
         );
     }
-    scene->t_shine = LoadSprite(TextFormat("%s/_shared_textures/shine.png", mesh_dir));
+    scene->t_shine = LoadSprite(CACHE_RESOURCE("shine"));
     scene->glow_time = 0.0f;
 
     scene->model = LoadModel(TextFormat("%s/MainMenuContainer/MainMenuContainer_vertexcolor.glb", mesh_dir));
@@ -1131,7 +1129,7 @@ void HeroesBackgroundInitialize(
     );
 
     scene->backdrop = LoadModel(TextFormat("%s/MainMenuContainer/pPlane1.obj", mesh_dir));
-    scene->t_woodfort = LoadSprite(TextFormat("%s/main_screen_scene_pre/woodfort_background.png", mesh_dir));
+    scene->t_woodfort = LoadSprite(CACHE_RESOURCE("woodfort_background"));
     scene->backdrop_mat = LoadMaterialDefault();
     scene->backdrop_mat.shader = scene->plain_sh;
     scene->backdrop_mat.maps[MATERIAL_MAP_DIFFUSE].texture = scene->t_woodfort;
@@ -1157,14 +1155,14 @@ void HeroesBackgroundInitialize(
     scene->pads = SquadPadAssetsLoad(mesh_dir, scene->plain_sh);
 
     static const char *const fx_paths[HFXT_COUNT] = {
-        [HFXT_BLOB] = HOD_CACHE "vfx/textures/fx_heal_pre__Default-Particle.png",
-        [HFXT_SMOKE3] = HOD_CACHE "vfx/textures/fx_heal_pre__smoke3.png",
-        [HFXT_SPARKDOT] = HOD_CACHE "meshes/_shared_textures/chargespark.png",
-        [HFXT_FLARE] = HOD_CACHE "meshes/_shared_textures/vfx_flare_01.png",
-        [HFXT_SQUARE] = HOD_CACHE "vfx/textures/fx_crit_pre__Square.png",
-        [HFXT_WISPY] = HOD_CACHE "meshes/_shared_textures/vfx_smoke_whispy_cs.png",
-        [HFXT_ARC] = HOD_CACHE "vfx/textures/fx_crit_pre__ARC_Strip003.png",
-        [HFXT_RADIAL] = HOD_CACHE "vfx/textures/fx_crit_pre__radial_lines.png",
+        [HFXT_BLOB] = CACHE_RESOURCE("Default-Particle"),
+        [HFXT_SMOKE3] = CACHE_RESOURCE("smoke3"),
+        [HFXT_SPARKDOT] = CACHE_RESOURCE("chargespark"),
+        [HFXT_FLARE] = CACHE_RESOURCE("vfx_flare_01"),
+        [HFXT_SQUARE] = CACHE_RESOURCE("Square"),
+        [HFXT_WISPY] = CACHE_RESOURCE("vfx_smoke_whispy_cs"),
+        [HFXT_ARC] = CACHE_RESOURCE("ARC_Strip003"),
+        [HFXT_RADIAL] = CACHE_RESOURCE("radial_lines"),
     };
     for (int t = 0; t < HFXT_COUNT; t++) scene->fx_tex[t] = LoadSprite(fx_paths[t]);
     memset(scene->fx, 0, sizeof(scene->fx));
@@ -1174,11 +1172,11 @@ void HeroesBackgroundInitialize(
     memset(&scene->drag, 0, sizeof(scene->drag));
     scene->shake_time = 0.0f;
 
-    scene->snd_pickup[0] = LoadSound(HOD_CACHE "vfx/audio/fly_leather_dark_normal_medium_1.mp3");
-    scene->snd_pickup[1] = LoadSound(HOD_CACHE "vfx/audio/fly_leather_dark_normal_medium_3.mp3");
-    scene->snd_pickup[2] = LoadSound(HOD_CACHE "vfx/audio/fly_leather_dark_normal_medium_5.mp3");
-    scene->snd_place = LoadSound(HOD_CACHE "vfx/audio/gui_character_place_stone1.mp3");
-    scene->snd_fail = LoadSound(HOD_CACHE "vfx/audio/gui_character_place_fail.mp3");
+    scene->snd_pickup[0] = ResourceLoadSound(CACHE_RESOURCE("fly_leather_dark_normal_medium_1"));
+    scene->snd_pickup[1] = ResourceLoadSound(CACHE_RESOURCE("fly_leather_dark_normal_medium_3"));
+    scene->snd_pickup[2] = ResourceLoadSound(CACHE_RESOURCE("fly_leather_dark_normal_medium_5"));
+    scene->snd_place = ResourceLoadSound(CACHE_RESOURCE("gui_character_place_stone1"));
+    scene->snd_fail = ResourceLoadSound(CACHE_RESOURCE("gui_character_place_fail"));
 
     HeroesSquadLoad(scene, player);
 }

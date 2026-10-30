@@ -13,11 +13,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import original_cache
 
+
+CLI_DESCRIPTION = 'Extract HoDA UnitAudio tables and build the battle-audio manifest'
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache/characters.json"
 DEFAULT_CAB_INDEX = ROOT / "heroes-of-dragons-cache/anim_tools/cache/cab_paths.json"
-DEFAULT_AUDIO_DIR = ROOT / "heroes-of-dragons-cache/vfx/audio"
 DEFAULT_OUTPUT = ROOT / "data/unit_audio.json"
 
 TIERS = ("I", "II", "III", "IV")
@@ -331,16 +333,13 @@ def extract_profiles(
     return profiles, unavailable
 
 
-def build_manifest(
-    catalog_path: Path, cab_index_path: Path, audio_dir: Path, unitypy: Any
-) -> dict[str, Any]:
+def build_manifest(catalog_path: Path, cab_index_path: Path, unitypy: Any) -> dict[str, Any]:
     catalog_root = json.loads(catalog_path.read_text())
     characters = catalog_root["characters"]
     cab_index = json.loads(cab_index_path.read_text())
-    audio_files = {
-        path.stem.casefold(): path.name
-        for path in audio_dir.iterdir()
-        if path.is_file() and path.suffix.casefold() in {".mp3", ".wav", ".ogg"}
+    audio_sources = {
+        name.casefold(): original_cache.cache_ref(name)
+        for name in original_cache.names(original_cache.AUDIO_CLIP)
     }
     prefabs = sorted(
         {
@@ -350,7 +349,7 @@ def build_manifest(
             if prefab
         }
     )
-    profiles, unavailable = extract_profiles(prefabs, cab_index, set(audio_files), unitypy)
+    profiles, unavailable = extract_profiles(prefabs, cab_index, set(audio_sources), unitypy)
     family_donors = choose_family_donors(profiles)
 
     character_map: dict[str, Any] = {}
@@ -405,7 +404,7 @@ def build_manifest(
         for slot in (*[item[0] for item in ARRAY_FIELDS], *[item[0] for item in SINGLE_FIELDS])
         for clip in profile[slot]["clips"]
     }
-    missing_clips = sorted(referenced - set(audio_files))
+    missing_clips = sorted(referenced - set(audio_sources))
     attack_capable_tiers = [
         tier
         for character in character_map.values()
@@ -418,7 +417,7 @@ def build_manifest(
         "source": {
             "catalog": os.path.relpath(catalog_path, ROOT),
             "reference": "UnitAudio MonoBehaviour on each HoDA tier prefab",
-            "audio_pool": os.path.relpath(audio_dir, ROOT),
+            "audio": "AudioClip objects in the original 4.4.0 cache",
         },
         "semantics": {
             "vocal": "attack animation start; random vocal plus random animation cue",
@@ -432,7 +431,7 @@ def build_manifest(
             "land": "arrival on the battle stage",
             "ui": "unit UI action",
         },
-        "audio_files": dict(sorted(audio_files.items())),
+        "audio_sources": dict(sorted(audio_sources.items())),
         "profiles": dict(sorted(profiles.items())),
         "families": dict(sorted(family_bindings.items())),
         "characters": character_map,
@@ -452,15 +451,14 @@ def build_manifest(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
     parser.add_argument("--cab-index", type=Path, default=DEFAULT_CAB_INDEX)
-    parser.add_argument("--audio-dir", type=Path, default=DEFAULT_AUDIO_DIR)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     args = parser.parse_args()
 
     unitypy = configure_unitypy()
-    manifest = build_manifest(args.catalog, args.cab_index, args.audio_dir, unitypy)
+    manifest = build_manifest(args.catalog, args.cab_index, unitypy)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n")
     coverage = manifest["coverage"]

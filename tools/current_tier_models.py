@@ -12,6 +12,7 @@ import sys
 from typing import Any
 
 
+CLI_DESCRIPTION = "Audit and rebuild the player's exact current-tier model bakes"
 ROOT = Path(__file__).resolve().parents[1]
 ANIM_TOOLS = ROOT / "heroes-of-dragons-cache" / "anim_tools"
 DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
@@ -250,7 +251,7 @@ def print_summary(report: dict[str, Any]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
     parser.add_argument("--player", type=Path, default=DEFAULT_PLAYER)
     parser.add_argument("--char-pack", type=Path, default=DEFAULT_CHAR_PACK)

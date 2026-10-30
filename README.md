@@ -11,6 +11,23 @@ deterministic battle simulation.
 - `data/`: version-pinned rule tables and Nexus maps and rosters.
 - `heroes-of-dragons-cache/`: model and animation bakers; the rest of the directory is the git-ignored local asset cache.
 
+## Game data
+
+The client reads the original 4.4.0 files as shipped, from `heroes-of-dragons-cache/`:
+
+- `Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/`: the Unity bundle cache. Textures, audio and localization load
+  from it directly.
+- `Heroes-of-Dragon-Age-v4-4-0-androidp1.com.apk`: the APK. Fonts and the boot UI textures load from it directly.
+
+Everything else it needs is derived or post-4.4:
+
+- `meshes/`, `char_pack/`: scene geometry and baked unit models.
+- `characters.json`, `player_starter.json`, `anim_tools/display_scales.json`: derived catalogs.
+- `extra/`: files the 4.4.0 data lacks (post-4.4 portraits, the curse icons, the click sound).
+
+In code, `CACHE_RESOURCE("name")`, `CACHE_BUNDLE_RESOURCE("bundle", "name")` and `APK_RESOURCE("name")` name an
+original object; any other string is a file path.
+
 ## Commands
 
 ```sh

@@ -16,6 +16,7 @@ from urllib.parse import unquote
 import glb_writer
 
 
+CLI_DESCRIPTION = 'Import one reference FBX as a donor-bake source GLB'
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_FBX_ROOT = ROOT / "heroes-of-dragons-cache" / "fbx"
 DEFAULT_CHAR_PACK = ROOT / "heroes-of-dragons-cache" / "char_pack"
@@ -368,7 +369,7 @@ def import_one(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
     parser.add_argument("base", nargs="*", help="Prefab base without unit. or _pre")
     parser.add_argument("--inventory", type=Path, help="bake_all-style JSON with a todo list")
     parser.add_argument("--fbx-root", type=Path, default=DEFAULT_FBX_ROOT)

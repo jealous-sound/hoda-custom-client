@@ -226,10 +226,7 @@ void GameInitialize(Game *g) {
     ProgressionInitializePlayerDefaults(&g->player);
 
     AssetsLoad();
-    LocLoad(
-        HOD_CACHE
-        "Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_RUS_RU.txt"
-    );
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
 
     PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
     ProgressionLoad(&g->player);
@@ -663,4 +660,5 @@ void GameDestroy(Game *g) {
     BattleDestroy(&g->battle);
     PassiveManifestUnload();
     AssetsUnload();
+    ResourceShutdown();
 }

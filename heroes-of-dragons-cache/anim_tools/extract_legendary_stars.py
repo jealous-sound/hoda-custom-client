@@ -17,7 +17,7 @@ SHARED = (
     / "com.ea.game.dragonage_row"
     / "files/UnityCache/Shared"
 )
-OUT = ROOT / "assets/legendary_base"
+OUT = CACHE / "meshes/legendary_base"
 BUNDLES = {
     1: SHARED / "e2846eb8bf9efa9529d25fe92a2695b6499c0fcb/CAB-charbase_t5_s1_pre",
     2: SHARED / "c258037195b866237574f23f52717a51d5a5b650/CAB-charbase_t5_s2_pre",
@@ -138,7 +138,7 @@ def _write_obj(path, mesh, stars, children, spacing_scale):
 def main():
     OUT.mkdir(parents=True, exist_ok=True)
     for rating, bundle in BUNDLES.items():
-        env, mesh, stars, children = _read_bundle(bundle)
+        _, mesh, stars, children = _read_bundle(bundle)
         assert len(children) == rating * 2
         _write_obj(
             OUT / f"stars_{rating}.obj",
@@ -147,13 +147,6 @@ def main():
             children,
             STAR_SPACING_SCALE[rating],
         )
-        if rating == 3:
-            texture = next(
-                obj.read()
-                for obj in env.objects
-                if obj.type.name == "Texture2D" and obj.read().m_Name == "base_gold_star"
-            )
-            texture.image.save(OUT / "base_gold_star.png")
         print(f"stars_{rating}.obj: {len(children)} instances")
 
 

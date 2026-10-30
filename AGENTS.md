@@ -23,6 +23,9 @@ Setup, run and test details are in `README.md`.
 - `tools/`: data builders and validators.
 - `data/`: version-pinned rule tables.
 - `heroes-of-dragons-cache/`: tracked bakers plus a local, git-ignored asset cache; never commit the cache.
+- `source/resource.c`: loads textures, audio and fonts straight from the original 4.4.0 cache and APK
+  (`unity_asset.c`, `unity_texture.c`, `apk_archive.c`). Prefer an original object over an extracted file; put
+  anything the 4.4.0 data lacks in `heroes-of-dragons-cache/extra/`.
 
 ## Working here
 

@@ -21,7 +21,7 @@ CACHE = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(CACHE)
 SHARED = CACHE + "/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/files/UnityCache/Shared"
 PARTICLES = CACHE + "/vfx/particles"
-TEXTURES = CACHE + "/vfx/textures"
+DEFAULT_PARTICLE_REF = "cache:Default-Particle"
 UNIT_VFX = os.path.join(REPO, "data", "unit_vfx.json")
 OUT = os.path.join(REPO, "data", "fx_presets.json")
 REPORT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "build_report.json")
@@ -156,10 +156,6 @@ class SharedContainer:
                         pass
 
 
-def safe_name(n):
-    return n.replace(" ", "_")
-
-
 def shader_class(name):
     n = name.lower()
     if "add" in n or "premultiply" in n:
@@ -171,7 +167,7 @@ def shader_class(name):
     return (0, 0)
 
 
-def probe_bundle(bundle, cab_path, shared_res, shared_shd, tex_files):
+def probe_bundle(bundle, cab_path, shared_res, shared_shd):
     env = UnityPy.load(cab_path)
     exts = []
     for _name, f in env.files.items():
@@ -237,37 +233,18 @@ def probe_bundle(bundle, cab_path, shared_res, shared_shd, tex_files):
             scale *= s
         return pos, rot, scale
 
-    def texture_file(tref):
+    def texture_ref(tref):
         fid, pid = tref
         if fid == 0:
             if pid in texs:
-                fn = f"{bundle}__{safe_name(texs[pid][0])}.png"
-                if fn in tex_files:
-                    return fn, None
-                try:
-                    texs[pid][1].read().image.save(os.path.join(TEXTURES, fn))
-                    tex_files.add(fn)
-                    return fn, f"exported in-bundle tex {fn}"
-                except Exception as e:
-                    return None, f"in-bundle tex export failed: {e}"
+                return f"cache:{bundle}/{texs[pid][0]}", None
             return None, f"tex path_id {pid} not in bundle"
         path = resolve_ext(fid)
         if "shared_resourcecontainer" in path:
             if pid in shared_res.tex:
-                name = safe_name(shared_res.tex[pid][0])
-                hits = [f for f in tex_files if f.endswith(f"__{name}.png")]
-                if hits:
-                    return sorted(hits)[0], None
-                fn = f"shared__{name}.png"
-                try:
-                    shared_res.tex[pid][1].read().image.save(os.path.join(TEXTURES, fn))
-                    tex_files.add(fn)
-                    return fn, f"exported shared tex {fn}"
-                except Exception as e:
-                    return None, f"shared tex export failed: {e}"
+                return f"cache:shared_resourcecontainer/{shared_res.tex[pid][0]}", None
             return None, f"shared tex p{pid} unknown"
-        hits = [f for f in tex_files if f.endswith("__Default-Particle.png")]
-        return (sorted(hits)[0], None) if hits else (None, "no Default-Particle")
+        return DEFAULT_PARTICLE_REF, None
 
     out = {}
     for go_pid, renderer in renderers.items():
@@ -301,13 +278,11 @@ def probe_bundle(bundle, cab_path, shared_res, shared_shd, tex_files):
                 except Exception as e:
                     note = f"texenv error: {e}"
                 if tref is not None:
-                    tex_fn, note = texture_file(tref)
+                    tex_fn, note = texture_ref(tref)
             else:
                 path = resolve_ext(fid) if fid else ""
                 if "unity default resources" in path.lower() and pid == 10754:
-                    hits = [f for f in tex_files if f.endswith("__Default-Particle.png")]
-                    tex_fn = sorted(hits)[0] if hits else None
-                    note = None if tex_fn else "no Default-Particle"
+                    tex_fn, note = DEFAULT_PARTICLE_REF, None
                 else:
                     note = f"material (f{fid},p{pid}) unresolved"
         offset, rot, scale = compose(go_pid)
@@ -533,7 +508,7 @@ def decode_ps(bundle, psid, dump, probe):
     return ems, meta
 
 
-def convert_bundle(bundle, cab_path, shared_res, shared_shd, tex_files):
+def convert_bundle(bundle, cab_path, shared_res, shared_shd):
     dumps = {}
     for path in glob.glob(f"{PARTICLES}/{glob.escape(bundle)}__*.json"):
         psid = int(os.path.basename(path)[len(bundle) + 2:-5])
@@ -541,7 +516,7 @@ def convert_bundle(bundle, cab_path, shared_res, shared_shd, tex_files):
     if not dumps:
         warn(bundle, "no particle dumps")
         return None
-    probe = probe_bundle(bundle, cab_path, shared_res, shared_shd, tex_files)
+    probe = probe_bundle(bundle, cab_path, shared_res, shared_shd)
     if probe is None:
         warn(bundle, "CAB probe failed")
         return None
@@ -651,7 +626,6 @@ def main():
     cab_idx = build_cab_index()
     shared_res = SharedContainer(cab_idx["shared_resourcecontainer"])
     shared_shd = SharedContainer(cab_idx["shared_shadercontainer"])
-    tex_files = set(os.listdir(TEXTURES))
 
     presets, aliases, missing = [], {}, []
     for bundle, wire_names in sorted(targets.items()):
@@ -659,7 +633,7 @@ def main():
         if cab is None:
             missing.append(bundle)
             continue
-        p = convert_bundle(bundle, cab, shared_res, shared_shd, tex_files)
+        p = convert_bundle(bundle, cab, shared_res, shared_shd)
         if p is None:
             missing.append(bundle)
             continue

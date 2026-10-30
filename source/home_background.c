@@ -128,12 +128,12 @@ typedef struct {
 static const ScenePiece SCENE_PIECES[] = {
     { "main_screen_scene_pre/ply_vertexcolor/ground.ply",              NULL,                                             true,  NULL        },
     { "main_screen_scene_pre/ply_vertexcolor/main_terrain_top_04.ply", NULL,                                             true,  NULL        },
-    { "main_screen_scene_pre/ply_vertexcolor/rocks.ply",               "_shared_textures/background_layer_stone_03.png", false, NULL        },
-    { "main_screen_scene_pre/ply_vertexcolor/spikes.ply",              "_shared_textures/Sticks_barricade_Tex.png",      false, NULL        },
-    { "main_screen_scene_pre/ply_vertexcolor/grass_a.ply",             "_shared_textures/grass_01.png",                  false, &SCENE_WIND_GRASS },
-    { "main_screen_scene_pre/ply_vertexcolor/ferns.ply",               "_shared_textures/plant_atlas_UI.png",            false, &SCENE_WIND_FERN  },
-    { "main_screen_scene_pre/ply_vertexcolor/env_flag_cloth1.ply",     "_shared_textures/flag_Txture.png",               false, &SCENE_WIND_CLOTH1 },
-    { "main_screen_scene_pre/ply_vertexcolor/env_flag_cloth2.ply",     "_shared_textures/flag_Txture.png",               false, &SCENE_WIND_CLOTH2 },
+    { "main_screen_scene_pre/ply_vertexcolor/rocks.ply",               CACHE_RESOURCE("background_layer_stone_03"),       false, NULL        },
+    { "main_screen_scene_pre/ply_vertexcolor/spikes.ply",              CACHE_RESOURCE("Sticks_barricade_Tex"),            false, NULL        },
+    { "main_screen_scene_pre/ply_vertexcolor/grass_a.ply",             CACHE_RESOURCE("grass_01"),                        false, &SCENE_WIND_GRASS },
+    { "main_screen_scene_pre/ply_vertexcolor/ferns.ply",               CACHE_RESOURCE("plant_atlas_UI"),                  false, &SCENE_WIND_FERN  },
+    { "main_screen_scene_pre/ply_vertexcolor/env_flag_cloth1.ply",     CACHE_RESOURCE("flag_Txture"),                     false, &SCENE_WIND_CLOTH1 },
+    { "main_screen_scene_pre/ply_vertexcolor/env_flag_cloth2.ply",     CACHE_RESOURCE("flag_Txture"),                     false, &SCENE_WIND_CLOTH2 },
 };
 #define SCENE_PIECE_COUNT ((int)(sizeof(SCENE_PIECES)/sizeof(SCENE_PIECES[0])))
 
@@ -299,9 +299,9 @@ static Texture2D MakeShadowTexture(void)
     return tex;
 }
 
-static Texture2D LoadSpriteX2(const char *path)
+static Texture2D LoadSpriteX2(const char *ref)
 {
-    Image img = LoadImage(path);
+    Image img = ResourceLoadImage(ref);
     ImageFormat(&img, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
     unsigned char *px = img.data;
     for (int i = 0; i < img.width*img.height*4; i++) px[i] = px[i] > 127 ? 255 : px[i]*2;
@@ -526,10 +526,10 @@ void HomeBackgroundInitialize(HomeBackground *scene, const char *mesh_dir, const
     float plain_bright = 1.0f;
     SetShaderValue(scene->plain_sh, GetShaderLocation(scene->plain_sh, "brightness"), &plain_bright, SHADER_UNIFORM_FLOAT);
 
-    scene->stone    = LoadTiled(TextFormat("%s/_shared_textures/background_layer_stone.png", mesh_dir));
-    scene->grass    = LoadTiled(TextFormat("%s/main_screen_scene_pre/background_grass_01.png", mesh_dir));
-    scene->mask     = LoadTiled(TextFormat("%s/_shared_textures/background_platform_01_mask.png", mesh_dir));
-    scene->rock_top = LoadTiled(TextFormat("%s/_shared_textures/background_main_stone_02.png", mesh_dir));
+    scene->stone    = LoadTiled(CACHE_RESOURCE("background_layer_stone"));
+    scene->grass    = LoadTiled(CACHE_RESOURCE("background_grass_01"));
+    scene->mask     = LoadTiled(CACHE_RESOURCE("background_platform_01_mask"));
+    scene->rock_top = LoadTiled(CACHE_RESOURCE("background_main_stone_02"));
 
     for (int i = 0; i < SCENE_PIECE_COUNT; i++) {
         scene->meshes[i] = LoadPlyMesh(TextFormat("%s/%s", mesh_dir, SCENE_PIECES[i].ply));
@@ -543,19 +543,19 @@ void HomeBackgroundInitialize(HomeBackground *scene, const char *mesh_dir, const
             scene->mats[i].maps[MATERIAL_MAP_NORMAL].texture   = scene->mask;
         } else if (SCENE_PIECES[i].wind) {
             scene->mats[i].shader = scene->wind_sh;
-            scene->mats[i].maps[MATERIAL_MAP_DIFFUSE].texture  = LoadTiled(TextFormat("%s/%s", mesh_dir, SCENE_PIECES[i].tex));
+            scene->mats[i].maps[MATERIAL_MAP_DIFFUSE].texture  = LoadTiled(SCENE_PIECES[i].tex);
         } else if (i == 2) {
             scene->mats[i].shader = scene->rock_sh;
             scene->mats[i].maps[MATERIAL_MAP_DIFFUSE].texture  = scene->rock_top;
-            scene->mats[i].maps[MATERIAL_MAP_SPECULAR].texture = LoadTiled(TextFormat("%s/%s", mesh_dir, SCENE_PIECES[i].tex));
+            scene->mats[i].maps[MATERIAL_MAP_SPECULAR].texture = LoadTiled(SCENE_PIECES[i].tex);
         } else {
             scene->mats[i].shader = scene->diff_sh;
-            scene->mats[i].maps[MATERIAL_MAP_DIFFUSE].texture  = LoadTiled(TextFormat("%s/%s", mesh_dir, SCENE_PIECES[i].tex));
+            scene->mats[i].maps[MATERIAL_MAP_DIFFUSE].texture  = LoadTiled(SCENE_PIECES[i].tex);
         }
     }
 
     scene->bg_model = LoadModel(TextFormat("%s/main_screen_scene_pre/pPlane1.obj", mesh_dir));
-    scene->bg_tex   = LoadSprite(TextFormat("%s/main_screen_scene_pre/woodfort_background.png", mesh_dir));
+    scene->bg_tex   = LoadSprite(CACHE_RESOURCE("woodfort_background"));
     if (scene->bg_model.meshCount > 0) {
         scene->bg_model.materials[0].shader = scene->plain_sh;
         scene->bg_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = scene->bg_tex;
@@ -568,7 +568,7 @@ void HomeBackgroundInitialize(HomeBackground *scene, const char *mesh_dir, const
         MatrixScale(1.0f, 1.0f, -1.0f));
 
     scene->castle_model = LoadModel(TextFormat("%s/main_screen_scene_pre/pPlane1_1.obj", mesh_dir));
-    scene->castle_tex   = LoadSprite(TextFormat("%s/_shared_textures/Castle3.png", mesh_dir));
+    scene->castle_tex   = LoadSprite(CACHE_RESOURCE("Castle3"));
     if (scene->castle_model.meshCount > 0) {
         scene->castle_model.materials[0].shader = scene->plain_sh;
         scene->castle_model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = scene->castle_tex;
@@ -581,13 +581,13 @@ void HomeBackgroundInitialize(HomeBackground *scene, const char *mesh_dir, const
         MatrixTranslate(-212.6689f, 1.6166f, -61.3985f)),
         MatrixScale(1.0f, 1.0f, -1.0f));
 
-    scene->tex_godray = LoadSpriteX2(TextFormat("%s/main_screen_scene_pre/mask_godray2_c.png", mesh_dir));
-    scene->tex_bird   = LoadSprite(TextFormat("%s/main_screen_scene_pre/vfx_bird_01.png", mesh_dir));
-    scene->tex_shine  = LoadSprite(TextFormat("%s/_shared_textures/shine.png", mesh_dir));
-    scene->tex_fluff  = LoadSpriteX2(TextFormat("%s/main_screen_scene_pre/vfx_fire_ring_fb.png", mesh_dir));
-    scene->tex_arc    = LoadSprite(TextFormat("%s/_shared_textures/vfx_lightning_2.png", mesh_dir));
-    scene->tex_smoke  = LoadSprite(TextFormat("%s/main_screen_scene_pre/DustPoof.png", mesh_dir));
-    scene->tex_banner = LoadSprite(TextFormat("%s/_shared_textures/flag_Txture.png", mesh_dir));
+    scene->tex_godray = LoadSpriteX2(CACHE_RESOURCE("mask_godray2_c"));
+    scene->tex_bird   = LoadSprite(CACHE_RESOURCE("vfx_bird_01"));
+    scene->tex_shine  = LoadSprite(CACHE_RESOURCE("shine"));
+    scene->tex_fluff  = LoadSpriteX2(CACHE_RESOURCE("vfx_fire_ring_fb"));
+    scene->tex_arc    = LoadSprite(CACHE_RESOURCE("vfx_lightning_2"));
+    scene->tex_smoke  = LoadSprite(CACHE_RESOURCE("DustPoof"));
+    scene->tex_banner = LoadSprite(CACHE_RESOURCE("flag_Txture"));
 
     scene->sun_pos    = (Vector3){ -202.0074f, 20.1058f, 55.7182f };
     scene->ray_ground = (Vector3){ -204.0965f, 5.8276f, 43.0511f };

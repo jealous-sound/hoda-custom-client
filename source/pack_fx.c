@@ -8,10 +8,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#ifndef HOD_CACHE
-#define HOD_CACHE "heroes-of-dragons-cache/"
-#endif
-
 #define PACK_FX_FIRE_COLUMNS 8
 #define PACK_FX_FIRE_ROWS 8
 #define PACK_FX_STROBE_COLUMNS 4
@@ -31,37 +27,34 @@
 #define PACK_FX_REVEAL 8.0503f
 #define PACK_FX_BURST_END 10.05f
 
-#define PACK_FX_SCENE_DIR HOD_CACHE "meshes/PackOpening_pre/"
-#define PACK_FX_SHARED_DIR HOD_CACHE "meshes/_shared_textures/"
-
 // clang-format off
-#define PACK_FX_TEXTURES(X)                                        \
-    X(fire, PACK_FX_SCENE_DIR, "fire_anim03.png")                  \
-    X(flamebits, PACK_FX_SCENE_DIR, "Fire_Still01.png")            \
-    X(embers, PACK_FX_SCENE_DIR, "dust_mote_2x2_01.png")           \
-    X(square, PACK_FX_SCENE_DIR, "Square.png")                     \
-    X(strobe, PACK_FX_SCENE_DIR, "image2.png")                     \
-    X(volt, PACK_FX_SCENE_DIR, "fxa_cen_volt2.png")                \
-    X(arc, PACK_FX_SCENE_DIR, "ARC_Strip003.png")                  \
-    X(radial, PACK_FX_SCENE_DIR, "radial_lines.png")               \
-    X(glow, PACK_FX_SCENE_DIR, "GlowDot.png")                      \
-    X(spark, PACK_FX_SCENE_DIR, "spark.png")                       \
-    X(shockwave, PACK_FX_SCENE_DIR, "Shockwave.png")               \
-    X(star, PACK_FX_SCENE_DIR, "Projectile_Head.png")              \
-    X(ring, PACK_FX_SCENE_DIR, "vfx_wt_circleBeamCornea.png")      \
-    X(ring_explode, PACK_FX_SCENE_DIR, "vfx_wt_circleBeamCorneaExplode.png") \
-    X(cloud, PACK_FX_SCENE_DIR, "cloud001.png")                    \
-    X(cloud_flash, PACK_FX_SCENE_DIR, "cloud002.png")              \
-    X(wisp, PACK_FX_SHARED_DIR, "wispy10.png")                     \
-    X(gobo, PACK_FX_SHARED_DIR, "FlashlightGobo_01_Diff.png")      \
-    X(flare, PACK_FX_SHARED_DIR, "vfx_flare_01.png")               \
-    X(beam, PACK_FX_SHARED_DIR, "Beam_004.png")                    \
-    X(shine, PACK_FX_SHARED_DIR, "shine.png")                      \
-    X(light, PACK_FX_SHARED_DIR, "Light.png")
+#define PACK_FX_TEXTURES(X)                                           \
+    X(fire, CACHE_RESOURCE("fire_anim03"))                            \
+    X(flamebits, CACHE_RESOURCE("Fire_Still01"))                      \
+    X(embers, CACHE_RESOURCE("dust_mote_2x2_01"))                     \
+    X(square, CACHE_RESOURCE("Square"))                               \
+    X(strobe, CACHE_RESOURCE("image2"))                               \
+    X(volt, CACHE_RESOURCE("fxa_cen_volt2"))                          \
+    X(arc, CACHE_RESOURCE("ARC_Strip003"))                            \
+    X(radial, CACHE_RESOURCE("radial_lines"))                         \
+    X(glow, CACHE_RESOURCE("GlowDot"))                                \
+    X(spark, CACHE_BUNDLE_RESOURCE("PackOpening_pre", "spark"))       \
+    X(shockwave, CACHE_RESOURCE("Shockwave"))                         \
+    X(star, CACHE_RESOURCE("Projectile_Head"))                        \
+    X(ring, CACHE_RESOURCE("vfx_wt_circleBeamCornea"))                \
+    X(ring_explode, CACHE_RESOURCE("vfx_wt_circleBeamCorneaExplode")) \
+    X(cloud, CACHE_RESOURCE("cloud001"))                              \
+    X(cloud_flash, CACHE_RESOURCE("cloud002"))                        \
+    X(wisp, CACHE_RESOURCE("wispy10"))                                \
+    X(gobo, CACHE_RESOURCE("FlashlightGobo_01_Diff"))                 \
+    X(flare, CACHE_RESOURCE("vfx_flare_01"))                          \
+    X(beam, CACHE_RESOURCE("Beam_004"))                               \
+    X(shine, CACHE_RESOURCE("shine"))                                 \
+    X(light, CACHE_RESOURCE("Light"))
 // clang-format on
 
 typedef struct PackFx {
-#define X(field, dir, file) Texture2D field;
+#define X(field, ref) Texture2D field;
     PACK_FX_TEXTURES(X)
 #undef X
     bool initialized;
@@ -165,15 +158,15 @@ static void PackFxBillboard(
 
 void PackFxDestroy(PackFx *fx) {
     if (!fx) return;
-#define X(field, dir, file)                                                                                            \
+#define X(field, ref)                                                                                                  \
     if (IsTextureValid(fx->field)) UnloadTexture(fx->field);
     PACK_FX_TEXTURES(X)
 #undef X
     memset(fx, 0, sizeof(*fx));
 }
 
-static Texture2D PackFxLoadTexture(const char *path) {
-    Texture2D texture = LoadTexture(path);
+static Texture2D PackFxLoadTexture(const char *ref) {
+    Texture2D texture = ResourceLoadTexture(ref);
     if (IsTextureValid(texture)) SetTextureFilter(texture, TEXTURE_FILTER_BILINEAR);
     return texture;
 }
@@ -182,7 +175,7 @@ bool PackFxInitialize(PackFx *fx) {
     if (!fx) return false;
     memset(fx, 0, sizeof(*fx));
 
-#define X(field, dir, file) fx->field = PackFxLoadTexture(dir file);
+#define X(field, ref) fx->field = PackFxLoadTexture(ref);
     PACK_FX_TEXTURES(X)
 #undef X
 

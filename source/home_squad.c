@@ -67,18 +67,18 @@ static SquadPadAssets SquadPadAssetsLoad(const char *mesh_dir, Shader pad_shader
     if (!IsShaderValid(pad_shader)) pad_shader = (Shader){rlGetShaderIdDefault(), rlGetShaderLocsDefault()};
 
     a.pad_model = LoadModel(TextFormat("%s/charbase_t1_pre/char_base.obj", mesh_dir));
-    a.pad_tex = LoadSprite(TextFormat("%s/_shared_textures/base_T1.png", mesh_dir));
+    a.pad_tex = LoadSprite(CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "base_T1"));
     a.pad_mat = LoadMaterialDefault();
     a.pad_mat.shader = pad_shader;
     for (int i = 0; i < 3; i++) {
-        Model stars = LoadModel(TextFormat("assets/legendary_base/stars_%d.obj", i + 1));
+        Model stars = LoadModel(TextFormat("%s/legendary_base/stars_%d.obj", mesh_dir, i + 1));
         if (stars.meshCount > 0) {
             for (int row = 0; row < 2; row++)
                 a.star_row[i][row] = MeshSplitHalf(&stars.meshes[0], 1, row ? -1.0f : 1.0f, &a.star_row_pivot[i][row]);
         }
         UnloadModel(stars);
     }
-    a.star_tex = LoadSprite("assets/legendary_base/base_gold_star.png");
+    a.star_tex = LoadSprite(CACHE_RESOURCE("base_gold_star"));
     a.star_mat = LoadMaterialDefault();
     a.star_mat.shader = pad_shader;
     a.star_mat.maps[MATERIAL_MAP_DIFFUSE].texture = a.star_tex;
@@ -97,8 +97,20 @@ static int LegendaryStarRating(const Character *ch) {
     return ch->stars >= 1 && ch->stars <= 3 ? ch->stars : 0;
 }
 
-static void SquadPadRarityLoad(const char *mesh_dir, const Character *ch, Texture2D *pad_tex, unsigned char *stars) {
-    *pad_tex = LoadSprite(TextFormat("%s/_shared_textures/base_T%d.png", mesh_dir, RarityBaseTier(ch->rarity)));
+static const char *RarityBaseRef(Rarity r) {
+    static const char *const refs[] = {
+        [RARITY_COMMON] = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "base_T1"),
+        [RARITY_UNCOMMON] = CACHE_RESOURCE("base_T2"),
+        [RARITY_RARE] = CACHE_RESOURCE("base_T3"),
+        [RARITY_EPIC] = CACHE_RESOURCE("base_T4"),
+        [RARITY_LEGENDARY] = CACHE_RESOURCE("base_T5"),
+        [RARITY_MYTHIC] = CACHE_RESOURCE("base_T6"),
+    };
+    return refs[RarityBaseTier(r)];
+}
+
+static void SquadPadRarityLoad(const Character *ch, Texture2D *pad_tex, unsigned char *stars) {
+    *pad_tex = LoadSprite(RarityBaseRef(ch->rarity));
     *stars = (unsigned char)LegendaryStarRating(ch);
 }
 
@@ -212,10 +224,10 @@ static const char *HomeFactionTexName(Faction f) {
     return names[f];
 }
 
-static Texture2D SquadFacTexLoad(const char *mesh_dir, Faction faction) {
+static Texture2D SquadFacTexLoad(Faction faction) {
     const char *name = HomeFactionTexName(faction);
     if (!name) return (Texture2D){0};
-    return LoadSprite(TextFormat("%s/_shared_textures/%s.png", mesh_dir, name));
+    return LoadSprite(TextFormat(CACHE_RESOURCE("%s"), name));
 }
 
 static void HomeSquadBaseName(char *base, int cap, const char *prefab) {
@@ -376,7 +388,7 @@ static void HomeSquadLoad(
     memset(squad, 0, sizeof(*squad));
     squad->pads = SquadPadAssetsLoad(mesh_dir, pad_shader);
     squad->shadow_mesh = GenMeshPlane(1.0f, 1.0f, 1, 1);
-    squad->shadow_tex = LoadSprite(TextFormat("%s/charbase_t4_pre/base_shadow2.png", mesh_dir));
+    squad->shadow_tex = LoadSprite(CACHE_RESOURCE("base shadow2"));
     squad->shadow_mat = LoadMaterialDefault();
     squad->shadow_mat.shader = mult_shader;
     squad->shadow_mat.maps[MATERIAL_MAP_DIFFUSE].texture = squad->shadow_tex;
@@ -420,8 +432,8 @@ static void HomeSquadLoad(
             )
         );
 
-        SquadPadRarityLoad(mesh_dir, ch, &squad->pad_tex[s], &squad->stars[s]);
-        squad->fac_tex[s] = SquadFacTexLoad(mesh_dir, ch->faction);
+        SquadPadRarityLoad(ch, &squad->pad_tex[s], &squad->stars[s]);
+        squad->fac_tex[s] = SquadFacTexLoad(ch->faction);
     }
 }
 

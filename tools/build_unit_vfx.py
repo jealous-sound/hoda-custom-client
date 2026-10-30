@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 
+CLI_DESCRIPTION = 'Build the HoDA per-character attack-VFX manifest'
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
 DEFAULT_REFERENCE = ROOT / ".agents" / "skills" / "hoda-reference" / "data" / "characters.json"
@@ -686,7 +687,7 @@ def build_manifest(
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
     parser.add_argument("--reference", type=Path, default=DEFAULT_REFERENCE)
     parser.add_argument("--cab-index", type=Path, default=DEFAULT_CAB_INDEX)

@@ -8,7 +8,10 @@ import json
 from pathlib import Path
 from typing import Any
 
+import original_cache
 
+
+CLI_DESCRIPTION = 'Validate per-unit battle audio coverage against the original 4.4.0 cache'
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "data/unit_audio.json"
 DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache/characters.json"
@@ -31,7 +34,7 @@ def fail(message: str) -> None:
     raise ValueError(message)
 
 
-def validate_profile(key: str, profile: dict[str, Any], audio_files: dict[str, str]) -> set[str]:
+def validate_profile(key: str, profile: dict[str, Any], audio_sources: dict[str, str]) -> set[str]:
     referenced: set[str] = set()
     for slot in SLOTS:
         value = profile.get(slot)
@@ -46,8 +49,8 @@ def validate_profile(key: str, profile: dict[str, Any], audio_files: dict[str, s
         for clip in clips:
             normalized = clip.casefold()
             referenced.add(normalized)
-            if normalized not in audio_files:
-                fail(f"profile {key}: clip {clip!r} is absent from audio_files")
+            if normalized not in audio_sources:
+                fail(f"profile {key}: clip {clip!r} is absent from audio_sources")
     limit = profile.get("impact_time_limit")
     if not isinstance(limit, (int, float)) or not 0.0 <= limit <= 10.0:
         fail(f"profile {key}: impact_time_limit out of range")
@@ -63,23 +66,21 @@ def validate(manifest_path: Path, catalog_path: Path, check_assets: bool) -> dic
     profiles = manifest.get("profiles")
     characters = manifest.get("characters")
     families = manifest.get("families")
-    audio_files = manifest.get("audio_files")
-    if not all(isinstance(value, dict) for value in (profiles, characters, families, audio_files)):
-        fail("unit_audio.json: profiles/characters/families/audio_files must be objects")
+    audio_sources = manifest.get("audio_sources")
+    if not all(isinstance(value, dict) for value in (profiles, characters, families, audio_sources)):
+        fail("unit_audio.json: profiles/characters/families/audio_sources must be objects")
 
-    audio_dir = ROOT / manifest["source"]["audio_pool"]
-    if check_assets:
-        for key, filename in audio_files.items():
-            if key != Path(filename).stem.casefold():
-                fail(f"audio_files: key {key!r} does not match {filename!r}")
-            if not (audio_dir / filename).is_file():
-                fail(f"audio_files: missing local asset {filename}")
+    for key, ref in audio_sources.items():
+        if key != ref.rpartition(":")[2].rpartition("/")[2].casefold():
+            fail(f"audio_sources: key {key!r} does not match {ref!r}")
+        if check_assets and not original_cache.resolves(ref, original_cache.AUDIO_CLIP):
+            fail(f"audio_sources: {ref} is not an AudioClip in the original cache")
 
     referenced: set[str] = set()
     for key, profile in profiles.items():
         if key != key.casefold():
             fail(f"profile key is not normalized: {key}")
-        referenced.update(validate_profile(key, profile, audio_files))
+        referenced.update(validate_profile(key, profile, audio_sources))
 
     catalog_by_id = {character["id"]: character for character in catalog}
     if set(characters) != set(catalog_by_id):
@@ -161,10 +162,10 @@ def validate(manifest_path: Path, catalog_path: Path, check_assets: bool) -> dic
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
-    parser.add_argument("--skip-assets", action="store_true", help="do not require the local reference audio directory")
+    parser.add_argument("--skip-assets", action="store_true", help="do not require the original 4.4.0 cache")
     args = parser.parse_args()
     counts = validate(args.manifest, args.catalog, not args.skip_assets)
     print(
