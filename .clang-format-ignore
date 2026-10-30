@@ -1,0 +1,2 @@
+# Hand-formatted GLSL shader macros — clang-format mangles the string literals
+source/home_background.c

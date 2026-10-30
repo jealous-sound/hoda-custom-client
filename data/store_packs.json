@@ -1,0 +1,97 @@
+{
+  "version": 2,
+  "balance_note_ru": "Каталог магазина сервер отдавал удалённо, и в дампе его нет. Названия, описания и подсказки паков берутся из Loc_RUS_RU.txt клиента 4.4.0 (loc_id); численные шансы, гарантии и цены в золоте/самоцветах заданы явно как локальный баланс. Лестница самоцветов (количество и цены USD) восстановлена точно из строк локализации.",
+  "packs": [
+    {
+      "id": "recruit",
+      "loc_id": "ITEM_BRONZE_IDENTIFIER",
+      "name_ru": "Набор новичка",
+      "info_ru": "Дает 1 героя. Как минимум обычный боец; есть шанс на необычного, редкого, эпического или легендарного.",
+      "currency": "gold",
+      "price": 350,
+      "hero_count": 1,
+      "minimum_rarity": "Common",
+      "guaranteed_legendary": 0,
+      "guaranteed_epic": 0,
+      "legendary_pity": 0,
+      "weights": {
+        "Common": 7500,
+        "Uncommon": 2000,
+        "Rare": 400,
+        "Epic": 90,
+        "Legendary": 10
+      }
+    },
+    {
+      "id": "soldier",
+      "loc_id": "ITEM_SILVER_IDENTIFIER",
+      "name_ru": "Набор воина",
+      "info_ru": "Дает 1 героя или крупное существо. Как минимум необычный боец; есть шанс на редкого, эпического или легендарного.",
+      "currency": "gold",
+      "price": 1500,
+      "hero_count": 1,
+      "minimum_rarity": "Uncommon",
+      "guaranteed_legendary": 0,
+      "guaranteed_epic": 0,
+      "legendary_pity": 0,
+      "weights": {
+        "Common": 0,
+        "Uncommon": 7000,
+        "Rare": 2200,
+        "Epic": 700,
+        "Legendary": 100
+      }
+    },
+    {
+      "id": "champion",
+      "loc_id": "ITEM_GOLD_IDENTIFIER",
+      "name_ru": "Набор защитника",
+      "info_ru": "Дает 1 героя или крупное существо. Как минимум редкий боец; есть шанс на эпического или легендарного.",
+      "currency": "gems",
+      "price": 30,
+      "hero_count": 1,
+      "minimum_rarity": "Rare",
+      "guaranteed_legendary": 0,
+      "guaranteed_epic": 0,
+      "legendary_pity": 4,
+      "bullets_ru": ["Легендарный не позже 4-го"],
+      "weights": {
+        "Common": 0,
+        "Uncommon": 0,
+        "Rare": 6600,
+        "Epic": 2700,
+        "Legendary": 700
+      }
+    },
+    {
+      "id": "grand_champion",
+      "loc_id": "CHAMP_GREY_WARDEN_BULK",
+      "name_ru": "Большой набор защитника",
+      "info_ru": "Дает 10 героев или крупных существ. Как минимум редкие бойцы; 2 легендарных и 3 эпических гарантировано.",
+      "currency": "gems",
+      "price": 270,
+      "hero_count": 10,
+      "minimum_rarity": "Rare",
+      "guaranteed_legendary": 2,
+      "guaranteed_epic": 3,
+      "legendary_pity": 0,
+      "bullets_ru": ["10 наборов по цене 9!", "2 легендарных и 3 эпических гарантировано"],
+      "weights": {
+        "Common": 0,
+        "Uncommon": 0,
+        "Rare": 6000,
+        "Epic": 3200,
+        "Legendary": 800
+      }
+    }
+  ],
+  "gem_skus": [
+    { "id": "sackofgems", "gems": 22, "icon": 0 },
+    { "id": "bagofgems", "gems": 46, "icon": 1 },
+    { "id": "pileofgems", "gems": 121, "icon": 2, "banner": "STORE_MOST_POPULAR" },
+    { "id": "boxofgems", "gems": 275, "icon": 3 },
+    { "id": "heapofgems", "gems": 425, "icon": 4 },
+    { "id": "chestofgems", "gems": 720, "icon": 5 },
+    { "id": "bagfulloffunk", "gems": 1600, "icon": 6, "banner": "STORE_BEST_VALUE" }
+  ]
+}

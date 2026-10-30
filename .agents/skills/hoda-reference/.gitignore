@@ -1,0 +1,4 @@
+# Downloaded Heroes of Dragon Age card art = EA/BioWare IP.
+# Kept local-only as visual reference; never commit the image files.
+# (The factual roster data + image URLs in data/ and the docs ARE tracked.)
+references/

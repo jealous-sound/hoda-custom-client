@@ -1,0 +1,64 @@
+# --- Secrets: never commit API keys ---
+**/secrets/
+*.key
+.env
+.env.*
+
+# --- Generated game assets from asset-gen skill ---
+.claude/skills/asset-gen/out/
+.agents/skills/asset-gen/out/
+
+# --- Reference asset payload (keep skill docs/data, not the 2.2G of art/models) ---
+.agents/skills/hoda-reference/references/
+
+# --- Build artifacts ---
+game
+sceneview
+sceneview_mainscreen
+*.o
+*.dSYM/
+a.out
+
+# --- Python ---
+__pycache__/
+*.pyc
+
+# --- macOS ---
+.DS_Store
+**/.DS_Store
+
+# --- Cache ---
+heroes-of-dragons-cache/*
+!heroes-of-dragons-cache/ability_metadata.py
+!heroes-of-dragons-cache/build_characters.py
+!heroes-of-dragons-cache/characters.json
+!heroes-of-dragons-cache/validate_characters.py
+!heroes-of-dragons-cache/anim_tools/
+heroes-of-dragons-cache/anim_tools/*
+!heroes-of-dragons-cache/anim_tools/bake_all.py
+!heroes-of-dragons-cache/anim_tools/bake_idle.py
+!heroes-of-dragons-cache/anim_tools/glb_writer.py
+!heroes-of-dragons-cache/anim_tools/donor_bake.py
+!heroes-of-dragons-cache/anim_tools/extract_legendary_stars.py
+!heroes-of-dragons-cache/anim_tools/import_fbx.py
+!heroes-of-dragons-cache/anim_tools/rebuild_stub_src.py
+!heroes-of-dragons-cache/anim_tools/README.md
+!heroes-of-dragons-cache/vfx_tools/
+heroes-of-dragons-cache/vfx_tools/*
+!heroes-of-dragons-cache/vfx_tools/build_fx_presets.py
+tests/battle_sim_test
+player_save.dat
+player_save.dat.tmp
+
+# Local visual QA
+scratchpad/
+/character_text_*.png
+/envy_description_*.png
+/audio_trace_*.png
+/curse_probe*.png
+/legendary_stars_*.png
+/model_audit_*.png
+/final_star_green.png
+/*_after.png
+/*_before.png
+/*_current.png

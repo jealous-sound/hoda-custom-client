@@ -1,0 +1,5 @@
+# Belt-and-suspenders: keep secrets and generated output out of git even if
+# this skill folder is committed on its own.
+secrets/
+*.key
+out/

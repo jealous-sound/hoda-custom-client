@@ -1,0 +1,3509 @@
+#define main hod_game_main
+#include "../source/main.c"
+#undef main
+
+#include <assert.h>
+
+static void TestCharacter(
+    Character *ch, Ability *ability, const char *id, const char *key, TargetPattern target, int power, int health
+) {
+    memset(ch, 0, sizeof(*ch));
+    memset(ability, 0, sizeof(*ability));
+    StrCopy(ch->id, sizeof(ch->id), id);
+    StrCopy(ability->key, sizeof(ability->key), key);
+    ability->target = target;
+    ch->ability = ability;
+    ch->tier = TIER_I;
+    ch->level = 1;
+    ch->speed = SPEED_NORMAL;
+    ch->stats[TIER_I].base_power = power;
+    ch->stats[TIER_I].base_health = health;
+}
+
+static void SimUnitInit(BattleSim *s, int side, int slot, const Character *ch) {
+    SimUnitsInit(s->units, side, slot, ch);
+}
+
+static void SimApplyBattleStartPassives(BattleSim *s) {
+    SimUnitsBattleStartPassives(s->units);
+}
+
+static void SimApplyFormationBonus(BattleSim *s, int side) {
+    SimUnitsFormationBonus(s->units, side, &s->formation_faction[side], &s->formation_bonus_pct[side]);
+}
+
+static void TestSquadSlotReferenceLayout(void) {
+    const int expected_position[SQUAD_SLOT_COUNT] = {2, 0, 3, 1, -1};
+    const int expected_x[SQUAD_SLOT_COUNT] = {1, 0, 1, 0, -1};
+    const int expected_y[SQUAD_SLOT_COUNT] = {0, 0, 1, 1, -1};
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        assert(SquadSlotReferencePosition(slot) == expected_position[slot]);
+        assert(SquadSlotReferenceX(slot) == expected_x[slot]);
+        assert(SquadSlotReferenceY(slot) == expected_y[slot]);
+        assert(SquadSlotIsFront(slot) == (slot == 1 || slot == 3));
+        assert(SquadSlotIsBack(slot) == (slot == 0 || slot == 2));
+    }
+    assert(SquadSlotReferencePosition(-1) == -1);
+    assert(SquadSlotReferenceX(SQUAD_SLOT_COUNT) == -1);
+    assert(SquadSlotReferenceY(SQUAD_SLOT_COUNT) == -1);
+    assert(!SquadSlotIsFront(-1) && !SquadSlotIsBack(-1));
+    assert(!SquadSlotIsFront(SQUAD_SLOT_COUNT) && !SquadSlotIsBack(SQUAD_SLOT_COUNT));
+}
+
+static void TestBattleRowBonuses(void) {
+    BattleSim s = {0};
+    Character characters[SQUAD_SLOT_COUNT];
+    Ability abilities[SQUAD_SLOT_COUNT];
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        TestCharacter(&characters[slot], &abilities[slot], "row_bonus", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 1001);
+        characters[slot].giant = slot == SQUAD_SLOT_LARGE;
+        SimUnitInit(&s, 0, slot, &characters[slot]);
+    }
+
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        const SimUnit *unit = &s.units[slot];
+        int expected_health = SquadSlotIsFront(slot) ? 1502 : 1001;
+        float expected_crit = SquadSlotIsBack(slot) ? 1.5f : 1.0f;
+        assert(unit->max_health == expected_health);
+        assert(unit->health == expected_health);
+        assert(fabsf(unit->crit_pct - expected_crit) < 0.001f);
+    }
+}
+
+static void TestHeroRowBonusReferencePresentation(void) {
+    const int front_slots[] = {1, 3};
+    const int back_slots[] = {0, 2};
+    for (int i = 0; i < 2; i++) {
+        HeroRowBonusSpec front = HeroRowBonusForSlot(front_slots[i]);
+        assert(front.effect == HFX_HEAL);
+        assert(strcmp(front.vfx_name, "vfx.fx_heal_pre") == 0);
+        assert(front.texture == GUI_HEROES_ROW_HEALTH && front.percent == 50);
+
+        HeroRowBonusSpec back = HeroRowBonusForSlot(back_slots[i]);
+        assert(back.effect == HFX_CRIT);
+        assert(strcmp(back.vfx_name, "vfx.fx_crit_pre") == 0);
+        assert(back.texture == GUI_HEROES_ROW_CRIT && back.percent == 50);
+    }
+    HeroRowBonusSpec none = HeroRowBonusForSlot(SQUAD_SLOT_LARGE);
+    assert(none.effect == HFX_NONE && none.vfx_name == NULL && none.texture == GUI_COUNT && none.percent == 0);
+
+    static const char *const health_path =
+        HOD_CACHE "vfx/textures/rowbonus_front_health__tex.rowbonus_front_health.png";
+    static const char *const crit_path =
+        HOD_CACHE "vfx/textures/rowbonus_back_critchance__tex.rowbonus_back_critchance.png";
+    assert(strcmp(gui_paths[GUI_HEROES_ROW_HEALTH], health_path) == 0);
+    assert(strcmp(gui_paths[GUI_HEROES_ROW_CRIT], crit_path) == 0);
+    assert(FileExists(health_path) && FileExists(crit_path));
+    Image health = LoadImage(health_path), crit = LoadImage(crit_path);
+    assert(health.data && health.width == 512 && health.height == 512);
+    assert(crit.data && crit.width == 512 && crit.height == 512);
+    UnloadImage(health);
+    UnloadImage(crit);
+
+    assert(HERO_ROW_BONUS_MOVE_TIME == 0.5f);
+    assert(HERO_ROW_BONUS_DISPLAY_TIME == 2.0f);
+    assert(HERO_ROW_BONUS_FADE_TIME == 0.375f);
+    assert(HeroRowBonusAlphaAt(0.0f) == 0.0f);
+    assert(HeroRowBonusAlphaAt(0.25f) > 0.0f && HeroRowBonusAlphaAt(0.25f) < 1.0f);
+    assert(HeroRowBonusAlphaAt(0.5f) == 1.0f);
+    assert(HeroRowBonusAlphaAt(2.0f) == 1.0f);
+    assert(HeroRowBonusAlphaAt(2.1875f) > 0.0f && HeroRowBonusAlphaAt(2.1875f) < 1.0f);
+    assert(HeroRowBonusAlphaAt(2.375f) == 0.0f);
+    const HeroFxHermiteKey reference_curve[] = {{0, 1, 0, 0}, {1, 0, -2, -2}};
+    assert(fabsf(HeroFxHermiteCurve(reference_curve, 2, 0.25f) - 0.9375f) < 0.000001f);
+    assert(fabsf(HeroFxHermiteCurve(reference_curve, 2, 0.5f) - 0.75f) < 0.000001f);
+    Rectangle start = HeroRowBonusRectAt(0.0f, 1280.0f, 720.0f);
+    Rectangle target = HeroRowBonusRectAt(0.5f, 1280.0f, 720.0f);
+    assert(start.y > target.y && target.y == 73.0f);
+    assert(target.width == 404.0f && target.height == 202.0f);
+
+    HeroesBackground scene = {0};
+    HeroRowBonusStart(&scene, 1);
+    assert(scene.fx_effect == HFX_HEAL && scene.row_bonus_effect == HFX_HEAL);
+    assert(Vector3Distance(scene.fx_origin, HERO_FORMATION_SLOTS[1].pos) < 0.000001f);
+    scene.fx[0].alive = true;
+    HeroRowBonusStart(&scene, 0);
+    assert(scene.fx_effect == HFX_CRIT && scene.row_bonus_effect == HFX_CRIT && !scene.fx[0].alive);
+    assert(Vector3Distance(scene.fx_origin, HERO_FORMATION_SLOTS[0].pos) < 0.000001f);
+    HeroRowBonusStart(&scene, SQUAD_SLOT_LARGE);
+    assert(scene.fx_effect == HFX_NONE && scene.row_bonus_effect == HFX_NONE);
+    HeroRowBonusStart(&scene, 1);
+    HeroesBackgroundClearRowBonus(&scene);
+    assert(scene.fx_effect == HFX_NONE && scene.row_bonus_effect == HFX_NONE && scene.row_bonus_time == 0.0f);
+
+    HeroFxStart(&scene, HFX_HEAL, (Vector3){0});
+    HeroFxUpdate(&scene, 0.01f);
+    int heal_dots = 0;
+    for (int i = 0; i < HERO_FX_MAX; i++) heal_dots += scene.fx[i].alive && scene.fx[i].kind == HFXP_HEAL_DOT;
+    assert(heal_dots == 6);
+
+    HeroFxStart(&scene, HFX_CRIT, (Vector3){0});
+    HeroFxUpdate(&scene, 0.001f);
+    int smoke = 0;
+    for (int i = 0; i < HERO_FX_MAX; i++) {
+        if (!scene.fx[i].alive || scene.fx[i].kind != HFXP_CRIT_SMOKE) continue;
+        assert(scene.fx[i].frame == 1 || scene.fx[i].frame == 3);
+        smoke++;
+    }
+    assert(smoke == 8);
+
+    LocLoad(
+        HOD_CACHE
+        "Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_RUS_RU.txt"
+    );
+    assert(strcmp(LocGet("SQUAD_ROW_BONUS"), "Бонус шеренги!") == 0);
+    LocUnload();
+}
+
+static int RecordedPowerDelta(const BattleSim *s, int unit) {
+    int total = 0;
+    for (int i = 0; i < s->action_count; i++)
+        for (int t = 0; t < s->actions[i].target_count; t++)
+            if (s->actions[i].targets[t].unit == unit) total += s->actions[i].targets[t].power_delta;
+    return total;
+}
+
+static void TestFormationBonusMetadata(void) {
+    BattleSim s = {0};
+    Character units[10];
+    Ability abilities[10];
+    const Rarity rarity[4] = {RARITY_COMMON, RARITY_UNCOMMON, RARITY_RARE, RARITY_EPIC};
+    for (int side = 0; side < 2; side++) {
+        for (int slot = 0; slot < 4; slot++) {
+            int i = side * 5 + slot;
+            TestCharacter(&units[i], &abilities[i], "formation", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 1000);
+            units[i].rarity = side == 0 ? rarity[slot] : RARITY_LEGENDARY;
+            units[i].faction = side == 0 ? FACTION_WHITE : FACTION_BLACK;
+            SimUnitInit(&s, side, slot, &units[i]);
+        }
+        int i = side * 5 + 4;
+        TestCharacter(&units[i], &abilities[i], "giant", "ABILITY_DAMAGE_ONE", TARGET_ONE, 500, 5000);
+        units[i].rarity = RARITY_LEGENDARY;
+        units[i].giant = true;
+        units[i].faction = FACTION_LARGE;
+        SimUnitInit(&s, side, 4, &units[i]);
+        SimApplyFormationBonus(&s, side);
+    }
+
+    assert(s.formation_faction[0] == 2u);
+    assert(fabsf(s.formation_bonus_pct[0] - 10.0f) < 0.001f);
+    assert(s.units[0].power == 110 && s.units[3].power == 110);
+    assert(s.units[4].power == 500);
+
+    assert(s.formation_faction[1] == 1u);
+    assert(fabsf(s.formation_bonus_pct[1] - 20.0f) < 0.001f);
+    assert(s.units[SQUAD_SLOT_COUNT].power == 120);
+
+    BattlePlay bp = {.sim = s};
+    BpBuildIntroEvents(&bp);
+    assert(bp.intro_event_count == 1);
+    assert(bp.intro_events[0].affected_slots == 0x0fu);
+    assert(strcmp(BpFactionFx(bp.intro_events[0].faction), "fx_eff_faction_charge_pre") == 0);
+
+    bp.sim.formation_bonus_pct[0] = 0.0f;
+    BpBuildIntroEvents(&bp);
+    assert(bp.intro_event_count == 0 && bp.intro_event == -1);
+}
+
+static void TestFormationBonusRequiresSharedFaction(void) {
+    BattleSim s = {0};
+    Character units[4];
+    Ability abilities[4];
+    const Faction faction[4] = {FACTION_WHITE, FACTION_WHITE_RED, FACTION_WHITE_BLUE, FACTION_BLACK};
+    for (int slot = 0; slot < 4; slot++) {
+        TestCharacter(&units[slot], &abilities[slot], "formation", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 1000);
+        units[slot].rarity = RARITY_LEGENDARY;
+        units[slot].faction = faction[slot];
+        SimUnitInit(&s, 0, slot, &units[slot]);
+    }
+    SimApplyFormationBonus(&s, 0);
+    assert(s.formation_faction[0] == 0u && s.formation_bonus_pct[0] == 0.0f);
+    for (int slot = 0; slot < 4; slot++) assert(s.units[slot].power == 100);
+}
+
+static void TestIntroQueueShowsOnlyPlayerFactionBonus(void) {
+    BattlePlay bp = {0};
+    Character characters[8] = {0};
+    for (int side = 0; side < 2; side++) {
+        for (int slot = 0; slot < 4; slot++) {
+            SimUnit *unit = &bp.sim.units[side * SQUAD_SLOT_COUNT + slot];
+            unit->present = true;
+            unit->ch = &characters[side * 4 + slot];
+        }
+    }
+
+    bp.sim.formation_faction[0] = 2u;
+    bp.sim.formation_faction[1] = 1u;
+    bp.sim.formation_bonus_pct[0] = 10.0f;
+    bp.sim.formation_bonus_pct[1] = 20.0f;
+
+    BpBuildIntroEvents(&bp);
+
+    assert(bp.intro_event_count == 1);
+    assert(bp.intro_events[0].faction == 2u);
+}
+
+static void TestFactionIntroAssetsAndText(void) {
+    assert(BATTLE_UI_FACTION_INTRO_ICON == GUI_DETAILS_POWER);
+    assert(FileExists(HOD_CACHE "gui/misc/tex.Ico_Power.png"));
+    assert(strcmp(gui_paths[GUI_DETAILS_POWER], HOD_CACHE "gui/misc/tex.Ico_Power.png") == 0);
+    Battle *battle = calloc(1, sizeof(*battle));
+    assert(battle != NULL);
+    BattleFxRegistryLoad(battle, "data/fx_presets.json");
+    static const char *const names[] = {
+        "fx_eff_faction_charge_pre",
+        "fx_eff_redfaction_charge_pre",
+        "fx_eff_bluefaction_charge_pre",
+        "fx_eff_blackfaction_charge_pre",
+    };
+    for (int i = 0; i < 4; i++) {
+        const FxPreset *preset = BattleFxFindPreset(battle, names[i]);
+        assert(preset && preset->em_count > 0 && preset->length >= 0.7f);
+    }
+    battle->rings[0][2].pos = (Vector3){1, 2, 3};
+    BattleFxUnitBurst(battle, names[1], 0, 2, (Vector3){0, 0, 0});
+    int instance = -1;
+    for (int i = 0; i < FX_MAX_INSTANCES; i++)
+        if (battle->fxi[i].alive) {
+            instance = i;
+            break;
+        }
+    assert(instance >= 0);
+    assert(battle->fxi[instance].anchor == 2 && !battle->fxi[instance].loop);
+
+    LocLoad(
+        HOD_CACHE
+        "Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_RUS_RU.txt"
+    );
+    BpIntroEvent event = {.value = 10.0f};
+    char text[128];
+    BattleUiIntroText(&event, text, sizeof(text));
+    assert(strcmp(text, "Бонус за фракцию! +10 %") == 0);
+    LocUnload();
+
+    if (battle->fx_reg) MemFree(battle->fx_reg);
+    if (battle->fx_alias) MemFree(battle->fx_alias);
+    free(battle);
+}
+
+static void TestPowerDrain(void) {
+    BattleSim s = {.rng = 7};
+    Character actor, enemy_a, enemy_b;
+    Ability actor_ability, enemy_a_ability, enemy_b_ability;
+    TestCharacter(&actor, &actor_ability, "actor", "attack_all_drain65_crit7", TARGET_ALL, 200, 10000);
+    TestCharacter(&enemy_a, &enemy_a_ability, "enemy-a", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy_b, &enemy_b_ability, "enemy-b", "ABILITY_DAMAGE_ONE", TARGET_ONE, 300, 10000);
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 1, 0, &enemy_a);
+    SimUnitInit(&s, 1, 1, &enemy_b);
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    SimAttack(&s, 0, recipe, &recipe->hit, true, true);
+
+    assert(s.units[SQUAD_SLOT_COUNT].power == 0);
+    assert(s.units[SQUAD_SLOT_COUNT + 1].power == 170);
+    assert(RecordedPowerDelta(&s, SQUAD_SLOT_COUNT) == -100);
+    assert(RecordedPowerDelta(&s, SQUAD_SLOT_COUNT + 1) == -130);
+}
+
+static void TestAllyPowerGain(void) {
+    BattleSim s = {.rng = 11};
+    Character actor, ally_a, ally_b, enemy;
+    Ability actor_ability, ally_a_ability, ally_b_ability, enemy_ability;
+    TestCharacter(&actor, &actor_ability, "actor", "attack_all_slow_allypowergain20", TARGET_ALL, 200, 10000);
+    TestCharacter(&ally_a, &ally_a_ability, "ally-a", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&ally_b, &ally_b_ability, "ally-b", "ABILITY_DAMAGE_ONE", TARGET_ONE, 150, 10000);
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 0, 1, &ally_a);
+    SimUnitInit(&s, 0, 2, &ally_b);
+    SimUnitInit(&s, 1, 0, &enemy);
+    s.units[2].curse_power = true;
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    SimAttack(&s, 0, recipe, &recipe->hit, true, true);
+
+    assert(s.units[0].power == 200);
+    assert(s.units[1].power == 120);
+    assert(s.units[2].power == 150);
+    assert(RecordedPowerDelta(&s, 1) == 20);
+    assert(RecordedPowerDelta(&s, 2) == 0);
+}
+
+static void TestAllySlow(void) {
+    BattleSim s = {.rng = 12};
+    Character actor, ally, enemy;
+    Ability actor_ability, ally_ability, enemy_ability;
+    TestCharacter(&actor, &actor_ability, "actor", "attack_column_slow_all_slow_ally", TARGET_COLUMN, 200, 10000);
+    TestCharacter(&ally, &ally_ability, "ally", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 0, 1, &ally);
+    SimUnitInit(&s, 1, 0, &enemy);
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    SimAttack(&s, 0, recipe, &recipe->hit, true, true);
+
+    assert(s.units[0].cur_initiative == 0);
+    assert(s.units[1].cur_initiative == -50);
+    assert(s.action_count == 2);
+    assert(s.actions[1].target_count == 1);
+    assert(s.actions[1].targets[0].initiative_delta == -50);
+}
+
+static void TestAllyCritGain(void) {
+    BattleSim s = {.rng = 14};
+    Character actor, ally, enemy;
+    Ability actor_ability, ally_ability, enemy_ability;
+    TestCharacter(
+        &actor,
+        &actor_ability,
+        "UNIT_MOTHERGISELLE",
+        "ability_heal_allies_crit_boost_allies5_no_attack",
+        TARGET_ALL,
+        200,
+        10000
+    );
+    TestCharacter(&ally, &ally_ability, "ally", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    actor_ability.mechanics = ABILITY_ATTACK_NONE | ABILITY_HEAL_ALLIES | ABILITY_GAIN_CRIT_ALLIES;
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 0, 1, &ally);
+    SimUnitInit(&s, 1, 0, &enemy);
+
+    SimTakeTurn(&s, 0);
+
+    assert(fabsf(s.units[0].crit_pct - 1.5f) < 0.001f);
+    assert(fabsf(s.units[1].crit_pct - 6.0f) < 0.001f);
+    assert(s.action_count == 1 && s.actions[0].target_count == 1);
+    assert(fabsf(s.actions[0].targets[0].crit_delta - 5.0f) < 0.001f);
+}
+
+static void TestTwoRoundCurse(void) {
+    BattleSim s = {.rng = 16};
+    Character actor, enemy;
+    Ability actor_ability, enemy_ability;
+    TestCharacter(
+        &actor,
+        &actor_ability,
+        "UNIT_XENONTHEANTIQUARIAN",
+        "heals_and_powergains_allies_15_and_curses_enemies_2_rounds_no_attack",
+        TARGET_ALL,
+        200,
+        10000
+    );
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 1, 0, &enemy);
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    AttackRecipe hit = recipe->hit;
+    hit.status_only = true;
+    SimAttack(&s, 0, recipe, &hit, true, false);
+    int target = SQUAD_SLOT_COUNT;
+    assert(s.units[target].curse_power && s.units[target].curse_health);
+    assert(s.units[target].curse_power_turns == 2 && s.units[target].curse_health_turns == 2);
+
+    SimExpireAilments(&s, target, false);
+    assert(s.units[target].curse_power && s.units[target].curse_health);
+    assert(s.units[target].curse_power_turns == 1 && s.units[target].curse_health_turns == 1);
+
+    SimExpireAilments(&s, target, false);
+    assert(!s.units[target].curse_power && !s.units[target].curse_health);
+    assert(
+        (s.actions[s.action_count - 1].ailments & (AIL_UNCURSE_POWER | AIL_UNCURSE_HEALTH)) ==
+        (AIL_UNCURSE_POWER | AIL_UNCURSE_HEALTH)
+    );
+}
+
+static void TestBackRowCurse(void) {
+    BattleSim s = {.rng = 18};
+    Character actor, enemies[4];
+    Ability actor_ability, enemy_abilities[4];
+    TestCharacter(
+        &actor,
+        &actor_ability,
+        "UNIT_FERELDENBANNER",
+        "slows_all_curse_power_backrow_stun_column",
+        TARGET_ALL,
+        200,
+        10000
+    );
+    SimUnitInit(&s, 0, 0, &actor);
+    for (int slot = 0; slot < 4; slot++) {
+        TestCharacter(&enemies[slot], &enemy_abilities[slot], "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+        SimUnitInit(&s, 1, slot, &enemies[slot]);
+    }
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    SimAttack(&s, 0, recipe, &recipe->effect, true, false);
+
+    assert(s.units[SQUAD_SLOT_COUNT + 0].curse_power);
+    assert(!s.units[SQUAD_SLOT_COUNT + 1].curse_power);
+    assert(s.units[SQUAD_SLOT_COUNT + 2].curse_power);
+    assert(!s.units[SQUAD_SLOT_COUNT + 3].curse_power);
+}
+
+static void TestFallbackSelfCosts(void) {
+    BattleSim s = {.rng = 20};
+    Character actor, enemy;
+    Ability actor_ability, enemy_ability;
+    TestCharacter(&actor, &actor_ability, "actor", "unknown_self_cost", TARGET_ONE, 200, 10000);
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    actor_ability.mechanics = ABILITY_ATTACK | ABILITY_DAMAGE_SELF | ABILITY_LOSE_POWER_SELF;
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 1, 0, &enemy);
+
+    SimTakeTurn(&s, 0);
+
+    assert(s.units[0].health == 9990);
+    assert(s.units[0].power == 180);
+}
+
+static void TestCombinedAilments(void) {
+    BattleSim s = {.rng = 13};
+    Character actor, enemy;
+    Ability actor_ability, enemy_ability;
+    TestCharacter(&actor, &actor_ability, "actor", "test", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 1, 0, &enemy);
+    AbilityRecipe recipe = {
+        .key = "test",
+        .hit = {.stun_pct = 100, .curse_power_pct = 100, .curse_health_pct = 100},
+    };
+
+    SimAttack(&s, 0, &recipe, &recipe.hit, true, true);
+
+    const SimUnit *target = &s.units[SQUAD_SLOT_COUNT];
+    assert(target->stunned && target->curse_power && target->curse_health);
+    assert(s.action_count == 1);
+    assert(
+        (s.actions[0].ailments & (AIL_STUNNED | AIL_CURSE_POWER | AIL_CURSE_HEALTH)) ==
+        (AIL_STUNNED | AIL_CURSE_POWER | AIL_CURSE_HEALTH)
+    );
+}
+
+static void TestMarkLandsOnStruckTargets(void) {
+    BattleSim s = {.rng = 23};
+    Character actor, enemies[SQUAD_SLOT_COUNT];
+    Ability actor_ability, enemy_abilities[SQUAD_SLOT_COUNT];
+    TestCharacter(&actor, &actor_ability, "actor", "test_mark_row", TARGET_ROW, 200, 10000);
+    SimUnitInit(&s, 0, 0, &actor);
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        TestCharacter(&enemies[slot], &enemy_abilities[slot], "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+        if (slot == SQUAD_SLOT_LARGE) enemies[slot].giant = true;
+        SimUnitInit(&s, 1, slot, &enemies[slot]);
+    }
+    AbilityRecipe recipe = {.key = "test_mark_row", .hit = {.mark_pct = 20}};
+
+    SimAttack(&s, 0, &recipe, &recipe.hit, true, true);
+
+    bool struck[SQUAD_SLOT_COUNT] = {false};
+    int struck_count = 0;
+    for (int i = 0; i < s.action_count; i++)
+        for (int t = 0; t < s.actions[i].target_count; t++)
+            if (s.actions[i].targets[t].unit >= SQUAD_SLOT_COUNT)
+                struck[s.actions[i].targets[t].unit - SQUAD_SLOT_COUNT] = true;
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        if (struck[slot]) struck_count++;
+        assert(s.units[SQUAD_SLOT_COUNT + slot].marked == (struck[slot] ? 20 : 0));
+    }
+    assert(struck_count == 2);
+    assert(s.units[SQUAD_SLOT_COUNT + SQUAD_SLOT_LARGE].marked == 0);
+
+    BattleSim plain_sim = {.rng = 23};
+    SimUnitInit(&plain_sim, 0, 0, &actor);
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) SimUnitInit(&plain_sim, 1, slot, &enemies[slot]);
+    AbilityRecipe plain = {.key = "test_mark_row"};
+    SimAttack(&plain_sim, 0, &plain, &plain.hit, true, true);
+    assert(plain_sim.rng == s.rng);
+    assert(plain_sim.action_count == s.action_count);
+    for (int i = 0; i < s.action_count; i++) {
+        assert(plain_sim.actions[i].target_count == s.actions[i].target_count);
+        for (int t = 0; t < s.actions[i].target_count; t++)
+            assert(plain_sim.actions[i].targets[t].health_delta == s.actions[i].targets[t].health_delta);
+    }
+
+    BattleSim f = {.rng = 29};
+    Character follow_actor, follow_enemies[4];
+    Ability follow_actor_ability, follow_enemy_abilities[4];
+    TestCharacter(
+        &follow_actor,
+        &follow_actor_ability,
+        "actor",
+        "damage_all_drainpower_25_and_slow_50_followup_single_followup_mark",
+        TARGET_ALL,
+        200,
+        10000
+    );
+    SimUnitInit(&f, 0, 0, &follow_actor);
+    for (int slot = 0; slot < 4; slot++) {
+        TestCharacter(
+            &follow_enemies[slot], &follow_enemy_abilities[slot], "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000
+        );
+        SimUnitInit(&f, 1, slot, &follow_enemies[slot]);
+    }
+    const AbilityRecipe *r = SimRecipe(&follow_actor);
+    AttackRecipe followup = SimFollowupAttack(r, 0);
+    SimAttack(&f, 0, r, &followup, true, false);
+    assert(f.action_count == 1 && f.actions[0].target_count == 1);
+    int struck_unit = f.actions[0].targets[0].unit;
+    for (int slot = 0; slot < 4; slot++) {
+        int idx = SQUAD_SLOT_COUNT + slot;
+        assert(f.units[idx].marked == (idx == struck_unit ? 30 : 0));
+    }
+}
+
+static void TestSplitAilmentSwing(void) {
+    BattleSim s = {.rng = 2};
+    Character actor, enemies[4];
+    Ability actor_ability, enemy_abilities[4];
+    TestCharacter(&actor, &actor_ability, "actor", "test", TARGET_ALL, 100, 10000);
+    SimUnitInit(&s, 0, 0, &actor);
+    for (int i = 0; i < 4; i++) {
+        TestCharacter(&enemies[i], &enemy_abilities[i], "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+        SimUnitInit(&s, 1, i, &enemies[i]);
+    }
+    AbilityRecipe recipe = {
+        .key = "test",
+        .hit = {.stun_pct = 50, .target = RECIPE_TARGET_ALL, .status_only = true},
+    };
+
+    SimAttack(&s, 0, &recipe, &recipe.hit, true, false);
+
+    assert(s.action_count == 2);
+    assert(!s.actions[0].same_swing && s.actions[1].same_swing);
+    bool recorded[SIM_UNIT_COUNT] = {false};
+    for (int i = 0; i < s.action_count; i++) {
+        const BattleSimAction *a = &s.actions[i];
+        assert(a->actor == 0 && !a->replay_attack);
+        for (int t = 0; t < a->target_count; t++) {
+            int unit = a->targets[t].unit;
+            assert(!recorded[unit]);
+            recorded[unit] = true;
+            assert(s.units[unit].stunned == !!(a->ailments & AIL_STUNNED));
+        }
+    }
+
+    int targets[SIM_MAX_TARGETS];
+    int target_count = BpCollectSwingTargets(&s, 0, targets);
+    assert(target_count == 4);
+    bool collected[SIM_UNIT_COUNT] = {false};
+    for (int i = 0; i < target_count; i++) {
+        assert(!collected[targets[i]]);
+        collected[targets[i]] = true;
+    }
+    for (int i = 0; i < 4; i++) {
+        int unit = SQUAD_SLOT_COUNT + i;
+        assert(recorded[unit] && collected[unit]);
+    }
+
+    for (int i = 0; i < s.action_count; i++) {
+        s.actions[i].crit = true;
+        for (int t = 0; t < s.actions[i].target_count; t++) {
+            s.actions[i].targets[t].health_delta = -10;
+            s.actions[i].targets[t].health_faction_delta = -2;
+        }
+    }
+    BattlePlay bp = {.sim = s};
+    BattleSummary summary;
+    BattlePlaySummary(&bp, &summary);
+    assert(summary.dmg[0] == 48);
+    assert(summary.crits[0] == 1);
+    assert(summary.fac_hits[0] == 1);
+    assert(BattlePlayCriticalGold(&bp) == BP_CRIT_GOLD_REWARD);
+}
+
+static void TestCurseLastsThroughTurn(void) {
+    BattleSim s = {.rng = 17};
+    Character actor, enemy;
+    Ability actor_ability, enemy_ability;
+    TestCharacter(&actor, &actor_ability, "actor", "ABILITY_DAMAGE_ONE_INCREASE_POWER", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 1, 0, &enemy);
+    s.units[0].curse_power = true;
+
+    SimTakeTurn(&s, 0);
+
+    assert(s.units[0].power == 100);
+    assert(!s.units[0].curse_power);
+    assert(s.actions[s.action_count - 1].ailments & AIL_UNCURSE_POWER);
+}
+
+static void TestNecromancerDorianCurse(void) {
+    BattleSim s = {.rng = 23};
+    Character dorian, enemy_a, enemy_b;
+    Ability dorian_ability, enemy_a_ability, enemy_b_ability;
+    TestCharacter(
+        &dorian, &dorian_ability, "UNIT_NECROMANCERDORIAN", "damage_all_cursehealth_chance_stun", TARGET_ALL, 100, 10000
+    );
+    TestCharacter(&enemy_a, &enemy_a_ability, "enemy-a", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy_b, &enemy_b_ability, "enemy-b", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &dorian);
+    SimUnitInit(&s, 1, 0, &enemy_a);
+    SimUnitInit(&s, 1, 1, &enemy_b);
+
+    const AbilityRecipe *recipe = SimRecipe(&dorian);
+    SimAttack(&s, 0, recipe, &recipe->hit, true, true);
+
+    assert(s.units[SQUAD_SLOT_COUNT].curse_health);
+    assert(s.units[SQUAD_SLOT_COUNT + 1].curse_health);
+    assert(s.actions[0].ailments & AIL_CURSE_HEALTH);
+}
+
+static void TestCurseFx(void) {
+    static Battle b;
+    memset(&b, 0, sizeof(b));
+
+    const FxPreset *power = BattleFxFindPreset(&b, "fx_status_curse_power_pre");
+    const FxPreset *health = BattleFxFindPreset(&b, "fx_status_curse_health_pre");
+    assert(power && health);
+
+    assert(strcmp(health->em[0].tex, "fx_status_burning_pre__fire_u_02.png") == 0);
+    assert(health->em[0].cols == 0 && health->em[0].rows == 0);
+    assert(strcmp(health->em[1].tex, "fx_status_burning_pre__fx_flamefb01.png") == 0);
+    assert(health->em[1].cols == 4 && health->em[1].rows == 4);
+    assert(fabsf(health->em[1].sheet_cycles - 2.0f) < 0.001f);
+    assert(health->em[0].one_shot && health->em[1].one_shot);
+    assert(power->em[0].one_shot && !power->em[1].one_shot);
+    assert(health->em[0].box.z > health->em[0].box.x);
+    assert(power->em[0].box.x > 0.6f && power->em[0].size_curve.count == 2);
+
+    FxEmitter inert = {.life0 = 2.0f, .life1 = 2.0f};
+    b.rings[0][0].pos = (Vector3){1, 2, 3};
+    b.fxp[0] = (FxParticle){
+        .em = &inert,
+        .pre = health,
+        .pos = {1.25f, 2.5f, 3.75f},
+        .anchor_pos = {1, 2, 3},
+        .life = 2.0f,
+        .anchor = 0,
+    };
+    b.fxp_count = 1;
+    b.rings[0][0].pos = (Vector3){2, 4, 6};
+    BattleFxUpdate(&b, 0.1f);
+    assert(fabsf(b.fxp[0].pos.x - 2.25f) < 0.001f);
+    assert(fabsf(b.fxp[0].pos.y - 4.5f) < 0.001f);
+    assert(fabsf(b.fxp[0].pos.z - 6.75f) < 0.001f);
+
+    b.fxi[0] = (FxInstance){.pre = health, .alive = true, .loop = true, .anchor = 0, .aura_slot = FX_AURA_CURSE_HEALTH};
+    b.fxp[0].pre = health;
+    b.fxp[0].aura_slot = FX_AURA_CURSE_HEALTH;
+    b.fxp[1] = (FxParticle){.pre = power, .anchor = 0, .aura_slot = FX_AURA_CURSE_POWER};
+    b.fxp_count = 2;
+    BattleFxStatusClear(&b, FX_AURA_CURSE_HEALTH, 0, 0);
+    assert(!b.fxi[0].alive);
+    assert(b.fxp_count == 1 && b.fxp[0].pre == power);
+}
+
+static void TestSlowFx(void) {
+    static Battle b;
+    memset(&b, 0, sizeof(b));
+
+    const FxPreset *slow = BattleFxFindPreset(&b, "eff_initiativedown_pre");
+    assert(slow && slow->em_count == 5);
+    assert(fabsf(slow->length - 5.0f) < 0.001f);
+
+    assert(slow->em[0].orient == 3);
+    assert(slow->em[1].orient == 1);
+    assert(slow->em[4].orient == 1);
+    assert(slow->em[2].one_shot && slow->em[3].one_shot);
+    assert(slow->em[0].prewarm && slow->em[0].sheet_cycles == 6.0f);
+    assert(slow->em[1].max_screen_size == 0.5f && slow->em[1].size0 == 40.0f);
+    assert(fabsf(slow->em[1].render_scale - 0.05f) < 0.001f);
+    assert(fabsf(slow->em[1].size0 * slow->em[1].render_scale - 2.0f) < 0.001f);
+    assert(slow->em[4].size0 == 50.0f && slow->em[4].size1 == 60.0f);
+    assert(fabsf(slow->em[4].render_scale - 0.05f) < 0.001f);
+    assert(fabsf(slow->em[4].size0 * slow->em[4].render_scale - 2.5f) < 0.001f);
+    assert(fabsf(slow->em[4].size1 * slow->em[4].render_scale - 3.0f) < 0.001f);
+    assert(slow->em[1].alpha_curve.count == 4 && slow->em[4].alpha_curve.count == 4);
+    assert(slow->em[4].spin_curve.count == 2);
+
+    Vector3 seam = FxCylinderRingPoint(1.0f, 0.0f, 0);
+    Vector3 next = FxCylinderRingPoint(1.0f, 0.0f, 1);
+    assert(fabsf(seam.x - 0.309017f) < 0.00001f && fabsf(seam.z - 0.951057f) < 0.00001f);
+    assert(fabsf(next.x - 0.587785f) < 0.00001f && fabsf(next.z - 0.809017f) < 0.00001f);
+    assert(fabsf(FX_CYLINDER_U[0] - 0.003064275f) < 0.0000001f);
+    assert(fabsf(FX_CYLINDER_U[1] - 0.065215617f) < 0.0000001f);
+
+    FxPreset warm = {
+        .name = "test_slow_prewarm",
+        .em_count = 1,
+        .em = {
+            {.prewarm = 1,
+             .max_particles = 16,
+             .rate = 4.0f,
+             .duration = 0.6f,
+             .period = 0.6f,
+             .life0 = 1.0f,
+             .life1 = 1.0f,
+             .dir = {0, 1, 0}}
+        },
+    };
+    static Battle warmed;
+    memset(&warmed, 0, sizeof(warmed));
+    warmed.fxi[0] = (FxInstance){.pre = &warm, .alive = true, .loop = true, .anchor = -1, .serial = 1};
+    warmed.fxi[0].accum[0] = 1.0f;
+    BattleFxUpdate(&warmed, 0.0f);
+    assert(warmed.fxi[0].prewarm_done[0]);
+    assert(warmed.fxp_count == 2);
+    assert(warmed.fxp[0].age <= warm.em[0].duration && warmed.fxp[1].age <= warm.em[0].duration);
+    assert(fabsf(warmed.fxi[0].accum[0] - 0.4f) < 0.001f);
+    BattleFxUpdate(&warmed, 0.14f);
+    assert(warmed.fxp_count == 2);
+    BattleFxUpdate(&warmed, 0.02f);
+    assert(warmed.fxp_count == 3);
+}
+
+static void TestStatusPrefabCabParameters(void) {
+    static Battle b;
+    memset(&b, 0, sizeof(b));
+    const FxPreset *up = BattleFxFindPreset(&b, "vfx_powerup_pre");
+    const FxPreset *down = BattleFxFindPreset(&b, "vfx_powerdown_pre");
+    const FxPreset *stun = BattleFxFindPreset(&b, "vfx_stunned_pre");
+    const FxPreset *heal = BattleFxFindPreset(&b, "fx_heal_pre");
+    assert(up && down && stun && heal);
+
+    assert(up->em_count == 2);
+    assert(up->em[0].one_shot && up->em[1].one_shot);
+    assert(fabsf(up->em[0].offset.y - 0.5904f) < 0.0001f);
+    assert(fabsf(up->em[1].offset.y - 0.8225f) < 0.0001f);
+    assert(fabsf(FxCurveSample(&up->em[0].size_curve, 0.4158f, 0) - 1.8464f) < 0.0001f);
+    assert(up->em[1].color_curve.count == 2);
+
+    assert(down->em_count == 3);
+    assert(fabsf(down->em[0].offset.y - 1.0833f) < 0.0001f);
+    assert(strcmp(down->em[2].tex, "shared__vfx_lightning_2.png") == 0);
+    assert(down->em[2].cols == 2 && down->em[2].rows == 2 && !down->em[2].sheet_once);
+    assert(down->em[0].alpha_curve.count == 2 && down->em[0].color_curve.count == 2);
+
+    assert(stun->em_count == 2 && stun->em[0].prewarm && stun->em[1].prewarm);
+    assert(stun->em[0].rate == 12 && stun->em[1].rate == 20);
+    assert(fabsf(stun->em[0].offset.y - 2.0642f) < 0.0001f);
+    assert(fabsf(stun->em[1].offset.y - 2.1716f) < 0.0001f);
+    assert(stun->em[0].spin_bias_deg == -300.0f && stun->em[0].spin_deg == 0);
+    assert(stun->em[0].alpha_curve.count == 4 && stun->em[0].color_curve.count == 3);
+    assert(stun->em[1].alpha_curve.count == 4 && stun->em[1].color_curve.count == 2);
+
+    assert(heal->em_count == 3);
+    assert(strcmp(heal->em[1].tex, "shared__chargespark.png") == 0);
+    assert(heal->em[0].additive && heal->em[0].orient == 1);
+    assert(heal->em[1].max_particles == 60 && heal->em[2].orient == 1);
+    assert(heal->em[0].alpha_curve.count == 2 && heal->em[0].alpha_curve.key[1][1] == 1);
+    assert(heal->em[1].alpha_curve.count == 2 && heal->em[1].alpha_curve.key[1][1] == 1);
+}
+
+static void TestCriticalFxAndReward(void) {
+    static Battle b;
+    memset(&b, 0, sizeof(b));
+
+    const FxPreset *crit = BattleFxFindPreset(&b, "fx_crit_pre");
+    assert(crit && crit->em_count == 6);
+    const FxEmitter *arc = &crit->em[0];
+    assert(strcmp(arc->tex, "fx_crit_pre__ARC_Strip003.png") == 0);
+    assert(arc->additive && arc->orient == 2 && arc->cols == 1 && arc->rows == 4);
+    assert(arc->max_particles == 6 && fabsf(arc->rate - 30.0f) < 0.001f);
+    assert(arc->birth_emitter[0] == 5 && arc->birth_emitter[1] == 6);
+    assert(arc->dir.y == -1.0f && arc->size0 == 1.5f && arc->size1 == 2.0f);
+    assert(fabsf(arc->stretch_length - 3.0f) < 0.001f);
+    assert(fabsf(arc->offset.y - 0.894454f) < 0.000001f);
+    assert(arc->alpha_curve.count == 8 && arc->color_curve.count == 2);
+
+    const FxEmitter *glow = &crit->em[1];
+    assert(glow->max_particles == 3 && glow->count == 1);
+    assert(fabsf(glow->rate - 5.0f) < 0.001f && glow->rate_curve.count == 3);
+    assert(fabsf(glow->life0 - 0.4f) < 0.001f && glow->size0 == 6.0f && glow->size1 == 10.0f);
+    assert(glow->size_curve.count == 5 && glow->alpha_curve.count == 2 && glow->color_curve.count == 3);
+
+    const FxEmitter *sparks = &crit->em[2];
+    assert(sparks->orient == 2 && sparks->max_particles == 100 && sparks->count == 100);
+    assert(fabsf(sparks->delay - 0.04f) < 0.001f && sparks->life0 == 0.3f && sparks->life1 == 0.8f);
+    assert(sparks->speed0 == 10.0f && sparks->speed1 == 30.0f && sparks->gravity > 12.7f);
+    assert(sparks->stretch_length == 0.0f && fabsf(sparks->stretch_velocity - 0.05f) < 0.001f);
+    assert(fabsf(sparks->offset.y - 0.934932f) < 0.000001f);
+    assert(sparks->alpha_curve.count == 4 && sparks->color_curve.count == 3);
+
+    const FxEmitter *smoke = &crit->em[3];
+    assert(smoke->max_particles == 8 && smoke->count == 8 && smoke->cols == 2 && smoke->rows == 2);
+    assert(smoke->life0 == 0.7f && smoke->life1 == 1.2f && smoke->speed0 == 5.0f && smoke->speed1 == 10.0f);
+    assert(fabsf(smoke->gravity + 2.943f) < 0.001f && smoke->size_curve.count == 5);
+    assert(smoke->tint.r == 152 && smoke->tint.g == 182 && smoke->tint.b == 255 && smoke->tint.a == 209);
+
+    const FxEmitter *arc_glow = &crit->em[4];
+    assert(arc_glow->orient == 1 && arc_glow->max_particles == 4 && arc_glow->count == 0);
+    assert(arc_glow->life0 == 0.12f && arc_glow->size0 == 4.0f && arc_glow->size1 == 5.0f);
+    assert(arc_glow->color_curve.count == 5 && arc_glow->spin_bias_deg == 50.0f && arc_glow->spin_deg == 50.0f);
+
+    const FxEmitter *radial = &crit->em[5];
+    assert(radial->max_particles == 4 && radial->count == 0 && radial->life0 == 0.12f);
+    assert(radial->size0 == 6.0f && radial->size1 == 8.0f && radial->size_curve.count == 9);
+    assert(radial->color_curve.count == 5 && radial->rot_bias_deg == 180.0f && radial->rot_deg == 180.0f);
+
+    FxPreset nested = {
+        .name = "test_birth_subemitters",
+        .em_count = 3,
+        .em = {
+            {.birth_emitter = {2, 3}, .life0 = 1, .life1 = 1, .dir = {0, 1, 0}, .offset = {0.2f, 0.3f, 0.4f}},
+            {.max_particles = 4, .life0 = 0.12f, .life1 = 0.12f, .dir = {0, 1, 0}, .offset = {7, 8, 9}},
+            {.max_particles = 4, .life0 = 0.12f, .life1 = 0.12f, .dir = {0, 1, 0}, .offset = {-7, -8, -9}},
+        },
+    };
+    static Battle nested_battle;
+    memset(&nested_battle, 0, sizeof(nested_battle));
+    FxInstance nested_instance = {
+        .pre = &nested, .anchor = -1, .serial = 77, .pos = {1, 2, 3}, .offset = {0.1f, 0.2f, 0.3f}
+    };
+    FxParticle *parent = FxEmitOne(&nested_battle, &nested_instance, &nested.em[0]);
+    assert(parent && nested_battle.fxp_count == 3);
+    assert(nested_battle.fxp[1].em == &nested.em[1] && nested_battle.fxp[2].em == &nested.em[2]);
+    assert(Vector3Distance(nested_battle.fxp[1].pos, parent->pos) < 0.000001f);
+    assert(Vector3Distance(nested_battle.fxp[2].pos, parent->pos) < 0.000001f);
+    assert(FxEmitOne(&nested_battle, &nested_instance, &nested.em[0]));
+    assert(nested_battle.fxp_count == 6);
+
+    BattleSfx silent[2] = {0};
+    StrCopy(silent[0].name, sizeof(silent[0].name), "vfx_critical_hit");
+    StrCopy(silent[1].name, sizeof(silent[1].name), "gui_add_gold1");
+    b.sfx = silent;
+    b.sfx_count = b.sfx_capacity = 2;
+
+    BattlePlay bp = {0};
+    bp.units[1][0] = (BpUnit){.health = 100, .max_health = 100, .pos = {2.0f, 0.45f, 3.0f}};
+    bp.units[1][1] = (BpUnit){.health = 100, .max_health = 100, .pos = {4.0f, 0.45f, 5.0f}};
+    BattleSimAction action = {
+        .actor = 0,
+        .crit = true,
+        .replay_attack = true,
+        .target_count = 2,
+        .targets = {
+            {.unit = SQUAD_SLOT_COUNT, .health_delta = -10}, {.unit = SQUAD_SLOT_COUNT + 1, .health_delta = -10}
+        },
+    };
+    BpApplyAction(&bp, &b, &action);
+
+    int strike_count = 0;
+    for (int i = 0; i < FX_MAX_INSTANCES; i++) {
+        const FxInstance *ins = &b.fxi[i];
+        if (!ins->alive || ins->pre != crit) continue;
+        assert(ins->anchor == -1);
+        Vector3 expected = bp.units[1][strike_count].pos;
+        assert(Vector3Distance(ins->pos, expected) < 0.001f);
+        strike_count++;
+    }
+    assert(strike_count == 2);
+    assert(bp.message_count == 2);
+    assert(bp.messages[0].order_key == BP_MSG_DAMAGE);
+    assert(bp.messages[1].order_key == BP_MSG_CRIT_REWARD);
+    assert(bp.messages[1].icon == GUI_MSG_CRIT_REWARD);
+    assert(bp.messages[1].gold_reward == BP_CRIT_GOLD_REWARD);
+
+    BpRevealMessageAt(&bp, &b, 1);
+    BpRevealMessageAt(&bp, &b, 1);
+    assert(bp.total_bonus_gold == BP_CRIT_GOLD_REWARD);
+    assert(bp.messages[1].reward_applied);
+
+    BattlePlay enemy_bp = {0};
+    enemy_bp.units[0][0] = (BpUnit){.health = 100, .max_health = 100, .pos = {-2, 0.45f, -1}};
+    BattleSimAction enemy_action = {
+        .actor = SQUAD_SLOT_COUNT,
+        .crit = true,
+        .replay_attack = true,
+        .target_count = 1,
+        .targets = {{.unit = 0, .health_delta = -10}},
+    };
+    BpApplyAction(&enemy_bp, &b, &enemy_action);
+    assert(enemy_bp.message_count == 1 && enemy_bp.messages[0].gold_reward == 0);
+}
+
+static void TestBattleMessageDictionary(void) {
+    BattlePlay bp = {0};
+    Color white = WHITE;
+    assert(BpQueueMessage(&bp, BP_MSG_CURSE_HEALTH, 2, -1, "health curse", NULL, white, 1.0f));
+    assert(BpQueueMessage(&bp, BP_MSG_DAMAGE, 2, -1, "first damage", NULL, white, 1.0f));
+    assert(BpQueueMessage(&bp, BP_MSG_POWER_DOWN, 2, -1, "power down", NULL, white, 1.0f));
+    assert(BpQueueMessage(&bp, BP_MSG_DAMAGE, 1, -1, "last damage", NULL, white, 1.7f));
+
+    assert(bp.message_count == 3);
+    assert(bp.messages[0].order_key == BP_MSG_DAMAGE);
+    assert(bp.messages[1].order_key == BP_MSG_POWER_DOWN);
+    assert(bp.messages[2].order_key == BP_MSG_CURSE_HEALTH);
+    assert(strcmp(bp.messages[0].text, "last damage") == 0);
+    assert(bp.messages[0].slot == 1 && fabsf(bp.messages[0].big - 1.7f) < 0.001f);
+
+    for (int key = 20; bp.message_count < BP_MAX_MESSAGES; key++)
+        assert(BpQueueMessage(&bp, key, 0, -1, "filler", NULL, white, 1.0f));
+    assert(BpQueueMessage(&bp, BP_MSG_DAMAGE, 0, -1, "replacement", NULL, white, 1.0f));
+    assert(strcmp(bp.messages[0].text, "replacement") == 0);
+    assert(!BpQueueMessage(&bp, 1000, 0, -1, "overflow", NULL, white, 1.0f));
+}
+
+static void TestBattleRewardMessageTiming(void) {
+    Rectangle actor = BattleUiCombatMessageRect(1280.0f, 0, 0.0f);
+    Rectangle actor_raised = BattleUiCombatMessageRect(1280.0f, 0, 72.0f);
+    assert(fabsf(actor.x - 424.0f) < 0.001f && fabsf(actor.y - 270.0f) < 0.001f);
+    assert(fabsf(actor_raised.y - 198.0f) < 0.001f);
+
+    Vector2 start = BattleUiRewardCoinStart(1280.0f);
+    Vector2 wide_start = BattleUiRewardCoinStart(1600.0f);
+    assert(fabsf(start.x - 642.0f) < 0.001f && fabsf(start.y - 258.75f) < 0.001f);
+    assert(fabsf(wide_start.x - 762.0f) < 0.001f && fabsf(wide_start.y - 258.75f) < 0.001f);
+
+    assert(fabsf(BP_REWARD_ANIM_TIME - 0.9f) < 0.001f);
+    assert(BattleUiRewardCoinAlpha(0.0f) == 0.0f);
+    assert(fabsf(BattleUiRewardCoinAlpha(0.075f) - 0.5f) < 0.001f);
+    assert(BattleUiRewardCoinAlpha(0.15f) == 1.0f);
+    assert(BattleUiRewardCoinAlpha(0.45f) == 1.0f);
+    assert(fabsf(BattleUiRewardCoinAlpha(0.475f) - 0.5f) < 0.001f);
+    assert(BattleUiRewardCoinAlpha(0.5f) == 0.0f);
+
+    BattleSfx silent = {0};
+    StrCopy(silent.name, sizeof(silent.name), "gui_add_gold1");
+    Battle b = {.sfx = &silent, .sfx_count = 1, .sfx_capacity = 1};
+    BattlePlay bp = {.message_count = 2};
+    bp.messages[0].order_key = BP_MSG_DAMAGE;
+    bp.messages[1] = (BpMessage){.order_key = BP_MSG_CRIT_REWARD, .gold_reward = BP_CRIT_GOLD_REWARD};
+    BpRevealMessagesBetween(&bp, &b, 0.25f, BP_MESSAGE_TIME * 2.5f);
+    assert(bp.total_bonus_gold == BP_CRIT_GOLD_REWARD);
+    assert(bp.messages[1].reward_applied && bp.reward_anim_active);
+    BpRevealMessagesBetween(&bp, &b, 0.0f, BP_MESSAGE_TIME * 3.0f);
+    assert(bp.total_bonus_gold == BP_CRIT_GOLD_REWARD);
+
+    BattlePlay timing = {
+        .state = BP_INTRO,
+        .slowmo = 0.5f,
+        .speed_mult = 1.0f,
+        .reward_anim_active = true,
+    };
+    BattlePlayUpdate(&timing, &b, 0.2f);
+    assert(fabsf(timing.reward_anim_t - 0.1f) < 0.001f);
+}
+
+static void TestBattleCameraTransitions(void) {
+    Battle b = {0};
+    b.cam_matchmaking = (Camera3D){
+        .position = {8, 7, 6}, .target = {8, 7, -4}, .up = {0, 1, 0}, .fovy = 37, .projection = CAMERA_PERSPECTIVE
+    };
+    b.cam_tactical = (Camera3D){
+        .position = {0, 11, 7}, .target = {0, 1, 7}, .up = {0, 0, -1}, .fovy = 40, .projection = CAMERA_PERSPECTIVE
+    };
+    b.cam_base = (Camera3D){
+        .position = {0, 7, 4},
+        .target = {0, 1, -10},
+        .up = {0, 0.919145f, -0.393919f},
+        .fovy = 40,
+        .projection = CAMERA_PERSPECTIVE
+    };
+    b.cam = b.cam_matchmaking;
+
+    BattleSetTactical(&b, true);
+    BattleCameraUpdatePose(&b, 0.25f);
+    assert(fabsf(b.tac_t - 0.5f) < 0.001f);
+    assert(
+        Vector3Distance(b.cam.position, Vector3Lerp(b.cam_matchmaking.position, b.cam_tactical.position, 0.5f)) < 0.001f
+    );
+    assert(fabsf(b.cam.fovy - 38.5f) < 0.001f);
+
+    Camera3D transition_from = b.cam;
+    BattleBeginCombatCamera(&b);
+    assert(b.combat_camera && !b.tactical && b.combat_cam_t == 0);
+    BattleCameraUpdatePose(&b, 0.25f);
+    assert(Vector3Distance(b.cam.position, Vector3Lerp(transition_from.position, b.cam_base.position, 0.5f)) < 0.001f);
+    BattleCameraUpdatePose(&b, 0.25f);
+    assert(Vector3Distance(b.cam.position, b.cam_base.position) < 0.001f);
+    assert(Vector3Distance(b.cam.target, b.cam_base.target) < 0.001f);
+    assert(Vector3Distance(b.cam.up, b.cam_base.up) < 0.001f);
+    assert(fabsf(b.cam.fovy - 40.0f) < 0.001f);
+
+    BattleSetTactical(&b, true);
+    assert(!b.tactical);
+}
+
+static FxInstance *TestStatusInstance(Battle *b, int anchor, FxAuraSlot aura_slot) {
+    for (int i = 0; i < FX_MAX_INSTANCES; i++) {
+        FxInstance *ins = &b->fxi[i];
+        if (ins->alive && ins->loop && ins->anchor == anchor && ins->aura_slot == aura_slot) return ins;
+    }
+    return NULL;
+}
+
+static void TestStatusDeltaFxRules(void) {
+    BpUnit power = {.health = 100, .power = 100, .start_power = 100};
+    assert(BpApplyPowerDelta(&power, 20) == BP_STAT_FX_POWER_UP && power.power == 120);
+    assert(BpApplyPowerDelta(&power, -10) == BP_STAT_FX_NONE && power.power == 110);
+    assert(BpApplyPowerDelta(&power, -10) == BP_STAT_FX_NONE && power.power == 100);
+    assert(BpApplyPowerDelta(&power, -1) == BP_STAT_FX_POWER_DOWN && power.power == 99);
+    assert(BpApplyPowerDelta(&power, 1) == BP_STAT_FX_NONE && power.power == 100);
+    assert(BpApplyPowerDelta(&power, 1) == BP_STAT_FX_POWER_UP && power.power == 101);
+
+    BpUnit initiative = {.health = 100};
+    assert(BpApplyInitiativeDelta(&initiative, -20) == BP_STAT_FX_INIT_DOWN);
+    assert(BpApplyInitiativeDelta(&initiative, 10) == BP_STAT_FX_NONE);
+    assert(BpApplyInitiativeDelta(&initiative, -10) == BP_STAT_FX_INIT_DOWN);
+    assert(BpApplyInitiativeDelta(&initiative, 20) == BP_STAT_FX_NONE);
+    assert(initiative.current_initiative == 0);
+    assert(BpApplyInitiativeDelta(&initiative, 1) == BP_STAT_FX_INIT_UP);
+
+    power.health = 0;
+    assert(BpApplyPowerDelta(&power, -200) == BP_STAT_FX_NONE);
+    assert(power.power == -99);
+    initiative.health = 0;
+    assert(BpApplyInitiativeDelta(&initiative, -10) == BP_STAT_FX_NONE);
+}
+
+static void TestStatusAuraSlots(void) {
+    static Battle b;
+    memset(&b, 0, sizeof(b));
+    b.rings[0][0].pos = (Vector3){1, 2, 3};
+
+    BattleFxStatusSet(&b, FX_AURA_POWER, "vfx_powerup_pre", 0, 0, (Vector3){0});
+    BattleFxStatusSet(&b, FX_AURA_INITIATIVE, "vfx_powerup_pre", 0, 0, (Vector3){0});
+    FxInstance *power = TestStatusInstance(&b, 0, FX_AURA_POWER);
+    FxInstance *initiative = TestStatusInstance(&b, 0, FX_AURA_INITIATIVE);
+    assert(power && initiative && power != initiative && power->pre == initiative->pre);
+    unsigned initiative_serial = initiative->serial;
+
+    b.fxp[0] = (FxParticle){.pre = power->pre, .anchor = 0, .aura_slot = FX_AURA_POWER, .serial = power->serial};
+    b.fxp[1] = (FxParticle){
+        .pre = initiative->pre, .anchor = 0, .aura_slot = FX_AURA_INITIATIVE, .serial = initiative->serial
+    };
+    b.fxp_count = 2;
+    BattleFxStatusSet(&b, FX_AURA_POWER, "vfx_powerdown_pre", 0, 0, (Vector3){0});
+    power = TestStatusInstance(&b, 0, FX_AURA_POWER);
+    initiative = TestStatusInstance(&b, 0, FX_AURA_INITIATIVE);
+    assert(power && strcmp(power->pre->name, "vfx_powerdown_pre") == 0);
+    assert(initiative && initiative->serial == initiative_serial);
+    assert(b.fxp_count == 1 && b.fxp[0].aura_slot == FX_AURA_INITIATIVE);
+
+    BattleFxStatusClear(&b, FX_AURA_INITIATIVE, 0, 0);
+    assert(!TestStatusInstance(&b, 0, FX_AURA_INITIATIVE));
+    assert(TestStatusInstance(&b, 0, FX_AURA_POWER));
+    assert(b.fxp_count == 0);
+}
+
+static void TestStatusOffsetsAndShake(void) {
+    static Battle b;
+    memset(&b, 0, sizeof(b));
+    BattleSfx silent[4] = {0};
+    static const char *const names[] = {"gui_fx_power_down", "gui_fx_init_down", "gui_fx_stun", "gui_fx_power_up"};
+    for (int i = 0; i < 4; i++) StrCopy(silent[i].name, sizeof(silent[i].name), names[i]);
+    b.sfx = silent;
+    b.sfx_count = b.sfx_capacity = 4;
+
+    BattlePlay bp = {0};
+    Character normal = {0};
+    bp.sim.units[0] = (SimUnit){.present = true, .alive = true, .ch = &normal};
+    bp.units[0][0] = (BpUnit){.health = 100, .max_health = 100, .power = 100, .start_power = 100};
+    BattleSimAction action = {
+        .actor = 1,
+        .ailments = AIL_STUNNED | AIL_CURSE_POWER | AIL_CURSE_HEALTH,
+        .target_count = 1,
+        .targets = {{.unit = 0, .power_delta = -1, .initiative_delta = -1}},
+    };
+    BpApplyAction(&bp, &b, &action);
+
+    static const FxAuraSlot slots[] = {
+        FX_AURA_POWER,
+        FX_AURA_INITIATIVE,
+        FX_AURA_STUN,
+        FX_AURA_CURSE_POWER,
+        FX_AURA_CURSE_HEALTH,
+    };
+    for (int i = 0; i < 5; i++) {
+        FxInstance *ins = TestStatusInstance(&b, 0, slots[i]);
+        assert(ins);
+        assert(ins->offset.x == 0 && ins->offset.y == 0 && ins->offset.z == 0);
+    }
+    assert(fabsf(bp.units[0][0].damage_shake_left - BP_DAMAGE_SHAKE_TIME) < 0.001f);
+
+    Character giant = {.giant = true};
+    bp.sim.units[0].ch = &giant;
+    bp.units[0][0].damage_shake_left = 0;
+    BattleSimAction stun = {.actor = 1, .ailments = AIL_STUNNED, .target_count = 1, .targets = {{.unit = 0}}};
+    BpApplyAction(&bp, &b, &stun);
+    FxInstance *giant_stun = TestStatusInstance(&b, 0, FX_AURA_STUN);
+    assert(giant_stun && fabsf(giant_stun->offset.y - 1.0f) < 0.001f);
+    assert(fabsf(bp.units[0][0].damage_shake_left - BP_DAMAGE_SHAKE_TIME) < 0.001f);
+
+    bp.units[0][0] = (BpUnit){.health = 100, .max_health = 100, .power = 150, .start_power = 100};
+    BattleFxStatusSet(&b, FX_AURA_POWER, "vfx_powerup_pre", 0, 0, (Vector3){0});
+    unsigned serial = TestStatusInstance(&b, 0, FX_AURA_POWER)->serial;
+    BattleSimAction partial = {.actor = 1, .target_count = 1, .targets = {{.unit = 0, .power_delta = -10}}};
+    BpApplyAction(&bp, &b, &partial);
+    assert(bp.units[0][0].power == 140 && bp.units[0][0].damage_shake_left == 0);
+    assert(TestStatusInstance(&b, 0, FX_AURA_POWER)->serial == serial);
+}
+
+static void TestInitiativeAndStatusCleanup(void) {
+    static Battle b;
+    memset(&b, 0, sizeof(b));
+    BattlePlay bp = {0};
+    bp.units[0][0].current_initiative = 25;
+    BattleFxStatusSet(&b, FX_AURA_POWER, "vfx_powerup_pre", 0, 0, (Vector3){0});
+    BattleFxStatusSet(&b, FX_AURA_INITIATIVE, "vfx_powerup_pre", 0, 0, (Vector3){0});
+    BpResetInitiative(&bp, &b, 0);
+    assert(bp.units[0][0].current_initiative == 0);
+    assert(!TestStatusInstance(&b, 0, FX_AURA_INITIATIVE));
+    assert(TestStatusInstance(&b, 0, FX_AURA_POWER));
+
+    BattleFxStatusSet(&b, FX_AURA_INITIATIVE, "eff_initiativedown_pre", 0, 0, (Vector3){0});
+    BattleFxStatusSet(&b, FX_AURA_STUN, "vfx_stunned_pre", 0, 0, (Vector3){0});
+    BattleFxStatusSet(&b, FX_AURA_CURSE_POWER, "fx_status_curse_power_pre", 0, 0, (Vector3){0});
+    BattleFxStatusSet(&b, FX_AURA_CURSE_HEALTH, "fx_status_curse_health_pre", 0, 0, (Vector3){0});
+    const FxPreset *world = BattleFxFindPreset(&b, "fx_heal_pre");
+    b.fxi[FX_MAX_INSTANCES - 1] =
+        (FxInstance){.pre = world, .alive = true, .anchor = -1, .serial = ++b.fx_serial, .pos = {9, 9, 9}};
+    BpCleanupStatusFx(&b);
+    for (int slot = FX_AURA_POWER; slot <= FX_AURA_CURSE_HEALTH; slot++)
+        assert(!TestStatusInstance(&b, 0, (FxAuraSlot)slot));
+    assert(b.fxi[FX_MAX_INSTANCES - 1].alive && !b.fxi[FX_MAX_INSTANCES - 1].loop);
+}
+
+static void TestFollowupTarget(void) {
+    BattleSim s = {.rng = 19};
+    Character actor, enemy_a, enemy_b;
+    Ability actor_ability, enemy_a_ability, enemy_b_ability;
+    TestCharacter(&actor, &actor_ability, "actor", "attack_single_drain_power_and_attack_all", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy_a, &enemy_a_ability, "enemy-a", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy_b, &enemy_b_ability, "enemy-b", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 1, 0, &enemy_a);
+    SimUnitInit(&s, 1, 1, &enemy_b);
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    SimAttack(&s, 0, recipe, &recipe->hit, true, true);
+    int first_count = s.action_count;
+    SimAttack(&s, 0, recipe, &recipe->followup, true, false);
+
+    assert(recipe->followup.target == RECIPE_TARGET_ALL);
+    assert(s.action_count == first_count + 1);
+    assert(s.actions[first_count].target_count == 2);
+}
+
+static int RecordedAttackDamage(const BattleSim *s, int actor, int target, int out[], int cap) {
+    int count = 0;
+    for (int i = 0; i < s->action_count; i++) {
+        const BattleSimAction *a = &s->actions[i];
+        if (a->actor != actor || !a->replay_attack) continue;
+        for (int t = 0; t < a->target_count; t++) {
+            const BattleSimTarget *bt = &a->targets[t];
+            if (bt->unit != target || bt->health_delta >= 0) continue;
+            if (count < cap) out[count] = -bt->health_delta;
+            count++;
+        }
+    }
+    return count;
+}
+
+static void TestRedJennySeraFinalHit(void) {
+    BattleSim s = {.rng = 43};
+    Character sera, enemy;
+    Ability sera_ability, enemy_ability;
+    TestCharacter(&sera, &sera_ability, "UNIT_REDJENNYSERA", "damage_one_5x_150", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &sera);
+    SimUnitInit(&s, 1, 0, &enemy);
+    s.units[0].crit_pct = 0.0f;
+
+    SimTakeTurn(&s, 0);
+
+    int damage[5] = {0};
+    assert(RecordedAttackDamage(&s, 0, SQUAD_SLOT_COUNT, damage, 5) == 5);
+    assert(damage[0] == 100 && damage[1] == 100 && damage[2] == 100 && damage[3] == 100);
+    assert(damage[4] == 150);
+}
+
+static void TestColeProfanePerHitGrowth(void) {
+    BattleSim s = {.rng = 47};
+    Character actor, enemy;
+    Ability actor_ability, enemy_ability;
+    TestCharacter(
+        &actor,
+        &actor_ability,
+        "UNIT_COLE",
+        "damage_one_10x_heal5_crit2_small_chance_neg_ailment",
+        TARGET_ONE,
+        100,
+        10000
+    );
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 1, 0, &enemy);
+    s.units[0].health = 8000;
+    s.units[0].crit_pct = 0.0f;
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    SimAttack(&s, 0, recipe, &recipe->hit, true, true);
+    SimAttack(&s, 0, recipe, &recipe->followup, true, false);
+
+    assert(s.units[0].health == 9000);
+    assert(fabsf(s.units[0].crit_pct - 4.0f) < 0.001f);
+    int per_hit_packets = 0;
+    for (int i = 0; i < s.action_count; i++) {
+        const BattleSimAction *a = &s.actions[i];
+        for (int t = 0; t < a->target_count; t++) {
+            const BattleSimTarget *bt = &a->targets[t];
+            if (bt->unit == 0 && bt->health_delta == 500 && fabsf(bt->crit_delta - 2.0f) < 0.001f) per_hit_packets++;
+        }
+    }
+    assert(per_hit_packets == 2);
+}
+
+static void TestVivienneIncreasingFollowups(void) {
+    BattleSim s = {.rng = 53};
+    Character vivienne, enemy;
+    Ability vivienne_ability, enemy_ability;
+    TestCharacter(
+        &vivienne,
+        &vivienne_ability,
+        "UNIT_KNIGHT-ENCHANTERVIVIENNE",
+        "damage_single_heal_all_medium_chance_followup3x_plus_damage",
+        TARGET_ONE,
+        100,
+        10000
+    );
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &vivienne);
+    SimUnitInit(&s, 1, 0, &enemy);
+    s.units[0].crit_pct = 0.0f;
+
+    const AbilityRecipe *recipe = SimRecipe(&vivienne);
+    SimAttack(&s, 0, recipe, &recipe->hit, true, true);
+    for (int i = 0; i < recipe->followup_count; i++) {
+        AttackRecipe hit = SimFollowupAttack(recipe, i);
+        SimAttack(&s, 0, recipe, &hit, true, false);
+    }
+
+    int damage[4] = {0};
+    assert(RecordedAttackDamage(&s, 0, SQUAD_SLOT_COUNT, damage, 4) == 4);
+    assert(damage[0] == 100 && damage[1] == 150 && damage[2] == 200 && damage[3] == 250);
+}
+
+static void TestRiverDanePersistentAllyDamage(void) {
+    BattleSim s = {.rng = 59};
+    Character river, ally, enemy;
+    Ability river_ability, ally_ability, enemy_ability;
+    TestCharacter(
+        &river,
+        &river_ability,
+        "UNIT_HEROOFRIVERDANE",
+        "attack_one_levy50_stun_crit5all_bnsdmg3all_assassinate15",
+        TARGET_ONE,
+        100,
+        10000
+    );
+    TestCharacter(&ally, &ally_ability, "ally", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &river);
+    SimUnitInit(&s, 0, 1, &ally);
+    SimUnitInit(&s, 1, 0, &enemy);
+    s.units[0].crit_pct = 0.0f;
+    s.units[1].crit_pct = 0.0f;
+
+    AbilityRecipe river_recipe = *SimRecipe(&river);
+    river_recipe.hit.assassinate_pct = 0;
+    SimAttack(&s, 0, &river_recipe, &river_recipe.hit, true, true);
+
+    assert(fabsf(s.units[1].crit_pct - 5.0f) < 0.001f);
+    assert(fabsf(s.units[1].damage_bonus_pct - 3.0f) < 0.001f);
+    bool recorded = false;
+    for (int i = 0; i < s.action_count; i++) {
+        for (int t = 0; t < s.actions[i].target_count; t++) {
+            const BattleSimTarget *bt = &s.actions[i].targets[t];
+            if (bt->unit == 1 && fabsf(bt->damage_bonus_delta - 3.0f) < 0.001f) recorded = true;
+        }
+    }
+    assert(recorded);
+
+    int enemy_health = s.units[SQUAD_SLOT_COUNT].health;
+    const AbilityRecipe *ally_recipe = SimRecipe(&ally);
+    SimAttack(&s, 1, ally_recipe, &ally_recipe->hit, true, true);
+    assert(enemy_health - s.units[SQUAD_SLOT_COUNT].health == 103);
+}
+
+static void TestBonusDamageRecipes(void) {
+    Character actor, ally, enemy;
+    Ability actor_ability, ally_ability, enemy_ability;
+    TestCharacter(
+        &actor,
+        &actor_ability,
+        "UNIT_THEGRANDOAK",
+        "attack_single_levy35_heal40all_2bnsdmgall_damage5all",
+        TARGET_ONE,
+        100,
+        10000
+    );
+    TestCharacter(&ally, &ally_ability, "ally", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    BattleSim s = {.rng = 61};
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 0, 1, &ally);
+    SimUnitInit(&s, 1, 0, &enemy);
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    SimAttack(&s, 0, recipe, &recipe->hit, true, true);
+    assert(fabsf(s.units[1].damage_bonus_pct - 2.0f) < 0.001f);
+
+    TestCharacter(
+        &actor, &actor_ability, "UNIT_CILLIAN", "attack_row_drain10self_stun50all_gain5bnsdmg", TARGET_ROW, 100, 10000
+    );
+    memset(&s, 0, sizeof(s));
+    s.rng = 67;
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 1, 0, &enemy);
+    recipe = SimRecipe(&actor);
+    SimAttack(&s, 0, recipe, &recipe->hit, true, true);
+    assert(s.units[0].power == 90);
+    assert(fabsf(s.units[0].damage_bonus_pct - 5.0f) < 0.001f);
+
+    TestCharacter(
+        &actor,
+        &actor_ability,
+        "UNIT_ZITHER",
+        "attack_all_chance75_slow_drain35_5bnsdmgall_gain5critall",
+        TARGET_ALL,
+        100,
+        10000
+    );
+    recipe = SimRecipe(&actor);
+    assert(recipe->hit.slow_pct == 75 && recipe->hit.drain_pct == 35 && recipe->hit.drain_chance == 75);
+    assert(recipe->fx.ally_crit_pct == 5 && recipe->fx.ally_damage_bonus_pct == 5);
+}
+
+static void TestMechanicsFallback(void) {
+    Character actor;
+    Ability ability;
+    TestCharacter(&actor, &ability, "fallback", "unknown_hoda_key", TARGET_ALL, 100, 10000);
+    ability.mechanics =
+        ABILITY_ATTACK | ABILITY_POWER_DRAIN | ABILITY_STUN | ABILITY_CURSE_HEALTH | ABILITY_GAIN_POWER_ALLIES;
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    assert(recipe != &SIM_RECIPE_DEFAULT);
+    assert(recipe->hit.drain_pct > 0);
+    assert(recipe->hit.stun_pct > 0);
+    assert(recipe->hit.curse_health_pct > 0);
+    assert(recipe->fx.ally_power_pct > 0);
+}
+
+static void TestNoAttackFallback(void) {
+    BattleSim s = {.rng = 37};
+    Character actor, ally, enemy_a, enemy_b;
+    Ability actor_ability, ally_ability, enemy_a_ability, enemy_b_ability;
+    TestCharacter(&actor, &actor_ability, "banner", "unknown_status_banner", TARGET_ALL, 200, 10000);
+    TestCharacter(&ally, &ally_ability, "ally", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy_a, &enemy_a_ability, "enemy-a", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy_b, &enemy_b_ability, "enemy-b", "ABILITY_DAMAGE_ONE", TARGET_ONE, 300, 10000);
+    actor_ability.mechanics =
+        ABILITY_ATTACK_NONE | ABILITY_POWER_DRAIN | ABILITY_SLOW | ABILITY_CURSE_HEALTH | ABILITY_GAIN_POWER_ALLIES;
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 0, 1, &ally);
+    SimUnitInit(&s, 1, 0, &enemy_a);
+    SimUnitInit(&s, 1, 1, &enemy_b);
+    int health_a = s.units[SQUAD_SLOT_COUNT].health;
+    int health_b = s.units[SQUAD_SLOT_COUNT + 1].health;
+
+    SimTakeTurn(&s, 0);
+
+    assert(s.units[SQUAD_SLOT_COUNT].health == health_a);
+    assert(s.units[SQUAD_SLOT_COUNT + 1].health == health_b);
+    assert(s.units[SQUAD_SLOT_COUNT].power == 50);
+    assert(s.units[SQUAD_SLOT_COUNT + 1].power == 250);
+    assert(s.units[SQUAD_SLOT_COUNT].cur_initiative == -50);
+    assert(s.units[SQUAD_SLOT_COUNT + 1].cur_initiative == -50);
+    assert(s.units[SQUAD_SLOT_COUNT].curse_health && s.units[SQUAD_SLOT_COUNT + 1].curse_health);
+    assert(s.units[1].power == 125);
+    for (int i = 0; i < s.action_count; i++) {
+        assert(!s.actions[i].replay_attack);
+        for (int t = 0; t < s.actions[i].target_count; t++) assert(s.actions[i].targets[t].health_delta == 0);
+    }
+}
+
+static void TestNoAttackCompoundTargets(void) {
+    BattleSim s = {.rng = 41};
+    Character vaea, enemy_a, enemy_b;
+    Ability vaea_ability, enemy_a_ability, enemy_b_ability;
+    TestCharacter(
+        &vaea, &vaea_ability, "UNIT_VAEA", "stun_single_drain_all25_critgain10_allies_no_attack", TARGET_ONE, 200, 10000
+    );
+    TestCharacter(&enemy_a, &enemy_a_ability, "enemy-a", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy_b, &enemy_b_ability, "enemy-b", "ABILITY_DAMAGE_ONE", TARGET_ONE, 300, 10000);
+    vaea_ability.mechanics = ABILITY_ATTACK_NONE | ABILITY_POWER_DRAIN | ABILITY_STUN;
+    SimUnitInit(&s, 0, 0, &vaea);
+    SimUnitInit(&s, 1, 0, &enemy_a);
+    SimUnitInit(&s, 1, 1, &enemy_b);
+    int health_a = s.units[SQUAD_SLOT_COUNT].health;
+    int health_b = s.units[SQUAD_SLOT_COUNT + 1].health;
+
+    SimTakeTurn(&s, 0);
+
+    assert(s.units[SQUAD_SLOT_COUNT].health == health_a);
+    assert(s.units[SQUAD_SLOT_COUNT + 1].health == health_b);
+    assert(s.units[SQUAD_SLOT_COUNT].power == 50);
+    assert(s.units[SQUAD_SLOT_COUNT + 1].power == 250);
+    assert(s.units[SQUAD_SLOT_COUNT].stunned != s.units[SQUAD_SLOT_COUNT + 1].stunned);
+}
+
+static void TestStatusOnlyTargetPacket(void) {
+    BattleSim s = {.rng = 29};
+    Character actor, enemy_a, enemy_b;
+    Ability actor_ability, enemy_a_ability, enemy_b_ability;
+    TestCharacter(
+        &actor,
+        &actor_ability,
+        "actor",
+        "attack_row_slowall_stun50column_attack_ally5_chance10heal80self",
+        TARGET_ROW,
+        100,
+        10000
+    );
+    TestCharacter(&enemy_a, &enemy_a_ability, "enemy-a", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy_b, &enemy_b_ability, "enemy-b", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 1, 0, &enemy_a);
+    SimUnitInit(&s, 1, 1, &enemy_b);
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    SimAttack(&s, 0, recipe, &recipe->effect, true, false);
+
+    assert(s.units[SQUAD_SLOT_COUNT].health == 10000);
+    assert(s.units[SQUAD_SLOT_COUNT + 1].health == 15000);
+    assert(s.units[SQUAD_SLOT_COUNT].cur_initiative == -50);
+    assert(s.units[SQUAD_SLOT_COUNT + 1].cur_initiative == -50);
+    assert(s.action_count == 1 && !s.actions[0].replay_attack);
+}
+
+static void TestRandomAllyAttack(void) {
+    BattleSim s = {.rng = 31};
+    Character actor, ally_a, ally_b, enemy;
+    Ability actor_ability, ally_a_ability, ally_b_ability, enemy_ability;
+    TestCharacter(
+        &actor,
+        &actor_ability,
+        "actor",
+        "attack_row_cursepower_drain50_followup25random50_followup25ally50",
+        TARGET_ROW,
+        100,
+        10000
+    );
+    TestCharacter(&ally_a, &ally_a_ability, "ally-a", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&ally_b, &ally_b_ability, "ally-b", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 0, 1, &ally_a);
+    SimUnitInit(&s, 0, 2, &ally_b);
+    SimUnitInit(&s, 1, 0, &enemy);
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    SimAttack(&s, 0, recipe, &recipe->effect, true, false);
+
+    assert(s.action_count == 1 && s.actions[0].target_count == 1);
+    int target = s.actions[0].targets[0].unit;
+    assert(target == 1 || target == 2);
+    assert(s.actions[0].targets[0].health_delta == -50);
+    assert(s.units[SQUAD_SLOT_COUNT].health == 10000);
+}
+
+static void TestGeneratedCorypheusRecipe(void) {
+    Character actor, enemy;
+    Ability actor_ability, enemy_ability;
+    TestCharacter(
+        &actor,
+        &actor_ability,
+        "UNIT_CORYPHEUS",
+        "damage_all_and_drainpower_and_10pctchance_attackagain",
+        TARGET_ALL,
+        200,
+        10000
+    );
+    actor_ability.mechanics = ABILITY_ATTACK | ABILITY_POWER_DRAIN | ABILITY_MULTIATTACK;
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 300, 10000);
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    assert(recipe->generated && recipe->generated_step_count == 2);
+    assert(recipe->generated_steps[0].attack.target == RECIPE_TARGET_ALL);
+    assert(recipe->generated_steps[0].attack.drain_pct == 50);
+    assert(recipe->generated_steps[1].chance_pct == 10);
+    assert(recipe->generated_steps[1].attack.drain_pct == 50);
+
+    bool saw_followup = false;
+    for (unsigned seed = 1; seed < 1000 && !saw_followup; seed++) {
+        BattleSim s = {.rng = seed};
+        SimUnitInit(&s, 0, 0, &actor);
+        SimUnitInit(&s, 1, 0, &enemy);
+        SimTakeTurn(&s, 0);
+        if (s.units[SQUAD_SLOT_COUNT].health == 9600) {
+            assert(s.units[SQUAD_SLOT_COUNT].power == 100);
+            saw_followup = true;
+        }
+    }
+    assert(saw_followup);
+}
+
+static void TestGeneratedLoghainRecipes(void) {
+    Character actor, enemy_a, enemy_b;
+    Ability actor_ability, enemy_a_ability, enemy_b_ability;
+    TestCharacter(
+        &actor,
+        &actor_ability,
+        "UNIT_LOGHAINMACTIR",
+        "attack_one_levy25_drain75_followup35_column_stun",
+        TARGET_ONE,
+        200,
+        10000
+    );
+    actor_ability.mechanics = ABILITY_ATTACK | ABILITY_POWER_DRAIN | ABILITY_STUN | ABILITY_MULTIATTACK | ABILITY_LEVY;
+    TestCharacter(&enemy_a, &enemy_a_ability, "enemy-a", "ABILITY_DAMAGE_ONE", TARGET_ONE, 200, 10000);
+    TestCharacter(&enemy_b, &enemy_b_ability, "enemy-b", "ABILITY_DAMAGE_ONE", TARGET_ONE, 300, 10000);
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    assert(recipe->generated && recipe->generated_step_count == 2);
+    assert(recipe->generated_steps[0].attack.target == RECIPE_TARGET_ONE);
+    assert(recipe->generated_steps[0].attack.levy_pct == 25);
+    assert(recipe->generated_steps[0].attack.drain_pct == 75);
+    assert(recipe->generated_steps[1].chance_pct == 35);
+    assert(recipe->generated_steps[1].attack.target == RECIPE_TARGET_COLUMN);
+    assert(recipe->generated_steps[1].attack.stun_pct == 100);
+
+    bool saw_column_stun = false;
+    for (unsigned seed = 1; seed < 1000 && !saw_column_stun; seed++) {
+        BattleSim s = {.rng = seed};
+        SimUnitInit(&s, 0, 0, &actor);
+        SimUnitInit(&s, 1, 0, &enemy_a);
+        SimUnitInit(&s, 1, 1, &enemy_b);
+        SimTakeTurn(&s, 0);
+        if (s.units[SQUAD_SLOT_COUNT].stunned || s.units[SQUAD_SLOT_COUNT + 1].stunned) {
+            assert(s.units[SQUAD_SLOT_COUNT].power == 50 || s.units[SQUAD_SLOT_COUNT + 1].power == 150);
+            saw_column_stun = true;
+        }
+    }
+    assert(saw_column_stun);
+
+    TestCharacter(
+        &actor,
+        &actor_ability,
+        "UNIT_GREYWARDENLOGHAIN",
+        "attack_row_stun75_followup30_single200_drain40",
+        TARGET_ROW,
+        200,
+        10000
+    );
+    actor_ability.mechanics = ABILITY_ATTACK | ABILITY_POWER_DRAIN | ABILITY_STUN | ABILITY_MULTIATTACK;
+    recipe = SimRecipe(&actor);
+    assert(recipe->generated && recipe->generated_step_count == 2);
+    assert(recipe->generated_steps[0].attack.target == RECIPE_TARGET_ROW);
+    assert(recipe->generated_steps[0].attack.stun_pct == 75);
+    assert(recipe->generated_steps[1].chance_pct == 30);
+    assert(recipe->generated_steps[1].attack.target == RECIPE_TARGET_ONE);
+    assert(recipe->generated_steps[1].attack.dmg_pct == 200);
+    assert(recipe->generated_steps[1].attack.drain_pct == 40);
+
+    recipe = SimGeneratedRecipe("attackcolumn_20pwrdrn_secondattack30stun_heal20all");
+    assert(recipe->generated && recipe->generated_step_count == 2);
+    assert(recipe->generated_steps[0].attack.drain_pct == 20);
+    assert(recipe->generated_steps[0].fx.ally_heal_pct == 20);
+    assert(recipe->generated_steps[1].chance_pct == 30);
+    assert(recipe->generated_steps[1].attack.target == RECIPE_TARGET_COLUMN);
+    assert(recipe->generated_steps[1].attack.stun_pct == 100);
+}
+
+static void TestGeneratedChanceGroup(void) {
+    Character actor, enemy_a, enemy_b;
+    Ability actor_ability, enemy_a_ability, enemy_b_ability;
+    TestCharacter(
+        &actor,
+        &actor_ability,
+        "UNIT_KALTENZAHN",
+        "attack_all_curse_followup50_single_slow_all_chance25_heal50",
+        TARGET_ALL,
+        200,
+        10000
+    );
+    actor_ability.mechanics = ABILITY_ATTACK | ABILITY_SLOW | ABILITY_CURSE_POWER | ABILITY_CURSE_HEALTH |
+                              ABILITY_HEAL_SELF | ABILITY_MULTIATTACK;
+    TestCharacter(&enemy_a, &enemy_a_ability, "enemy-a", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&enemy_b, &enemy_b_ability, "enemy-b", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+
+    const AbilityRecipe *recipe = SimRecipe(&actor);
+    assert(recipe->generated && recipe->generated_step_count == 4);
+    assert(recipe->generated_steps[1].chance_group == 1);
+    assert(recipe->generated_steps[2].chance_group == 1);
+
+    bool saw_proc = false, saw_skip = false;
+    for (unsigned seed = 1; seed < 300; seed++) {
+        BattleSim s = {.rng = seed};
+        SimUnitInit(&s, 0, 0, &actor);
+        SimUnitInit(&s, 1, 0, &enemy_a);
+        SimUnitInit(&s, 1, 1, &enemy_b);
+        SimTakeTurn(&s, 0);
+        int damaging_actions = 0;
+        for (int action = 0; action < s.action_count; action++) {
+            bool damaged = false;
+            for (int target = 0; target < s.actions[action].target_count; target++)
+                damaged |= s.actions[action].targets[target].health_delta < 0;
+            damaging_actions += damaged;
+        }
+        bool attacked = damaging_actions == 2;
+        bool slowed =
+            s.units[SQUAD_SLOT_COUNT].cur_initiative == -50 && s.units[SQUAD_SLOT_COUNT + 1].cur_initiative == -50;
+        assert(attacked == slowed);
+        saw_proc |= attacked;
+        saw_skip |= !attacked;
+        if (saw_proc && saw_skip) break;
+    }
+    assert(saw_proc && saw_skip);
+}
+
+static void TestTimelineCapacity(void) {
+    BattleSim s = {.rng = 1};
+    Character actor, enemy;
+    Ability actor_ability, enemy_ability;
+    TestCharacter(&actor, &actor_ability, "actor", "ABILITY_DAMAGE_ONE", TARGET_ONE, 1, 10000);
+    TestCharacter(&enemy, &enemy_ability, "enemy", "ABILITY_DAMAGE_ONE", TARGET_ONE, 1, 100000);
+    SimUnitInit(&s, 0, 0, &actor);
+    SimUnitInit(&s, 1, 0, &enemy);
+
+    AbilityRecipe recipe = {
+        .generated = true,
+        .generated_step_count = 1,
+        .generated_steps = {{
+            .attack = {.self_crit_pct = 1},
+            .chance_pct = 100,
+            .repeat = 10,
+        }},
+    };
+    for (int turn = 0; turn < 100; turn++) {
+        SimGeneratedTakeTurn(&s, 0, &recipe, false);
+        s.units[0].curse_power = true;
+        s.units[0].curse_power_turns = 1;
+        SimExpireAilments(&s, 0, false);
+    }
+    for (int round = 1; round < 10; round++) {
+        BattleSimAction *action = SimEmit(&s, -1);
+        action->newround = true;
+    }
+
+    assert(s.action_count == 2109);
+}
+
+static void TestLegendaryStars(void) {
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    static const struct {
+        const char *id;
+        int stars;
+    } cases[] = {
+        {"UNIT_HIGHDRAGON", 1},
+        {"UNIT_ADVISORMORRIGAN", 2},
+        {"UNIT_NECROMANCERDORIAN", 3},
+    };
+
+    for (int i = 0; i < (int)(sizeof(cases) / sizeof(cases[0])); i++) {
+        Character ch;
+        Ability ability;
+        CharacterParse(CatalogFindCharacter(catalog, cases[i].id), &ch, &ability);
+        assert(ch.rarity == RARITY_LEGENDARY);
+        assert(ch.stars == cases[i].stars);
+        assert(LegendaryStarRating(&ch) == cases[i].stars);
+    }
+
+    Character mythic = {.rarity = RARITY_MYTHIC, .stars = 3};
+    Character epic = {.rarity = RARITY_EPIC, .stars = 3};
+    assert(LegendaryStarRating(&mythic) == 0);
+    assert(LegendaryStarRating(&epic) == 0);
+    assert(RarityBaseTier(RARITY_LEGENDARY) == 5);
+    assert(RarityBaseTier(RARITY_MYTHIC) == 6);
+    assert(RarityBaseTier(RARITY_EPIC) == 4);
+
+    int ratings[4] = {0};
+    cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, catalog) {
+        Character ch;
+        Ability ability;
+        CharacterParse(entry, &ch, &ability);
+        if (ch.rarity == RARITY_LEGENDARY) {
+            assert(ch.stars >= 1 && ch.stars <= 3);
+            assert(LegendaryStarRating(&ch) == ch.stars);
+            ratings[ch.stars]++;
+        } else {
+            assert(LegendaryStarRating(&ch) == 0);
+            if (ch.rarity <= RARITY_EPIC) assert(ch.stars == 0);
+        }
+    }
+    assert(ratings[1] > 0 && ratings[2] > 0 && ratings[3] > 0);
+
+    assert(FileExists("assets/legendary_base/base_gold_star.png"));
+    assert(FileExists("assets/legendary_base/stars_1.obj"));
+    assert(FileExists("assets/legendary_base/stars_2.obj"));
+    assert(FileExists("assets/legendary_base/stars_3.obj"));
+    cJSON_Delete(root);
+}
+
+static void TestCatalogStatGrowth(void) {
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    Character ch;
+    Ability ability;
+
+    CharacterParse(CatalogFindCharacter(catalog, "UNIT_CARTASMUGGLER"), &ch, &ability);
+    ch.tier = TIER_II;
+    ch.level = 20;
+    assert(ch.stats[TIER_II].power_per_level == 9);
+    assert(CharacterStatPower(&ch) == 278);
+    assert(CharacterStatHealth(&ch) == 534);
+
+    CharacterParse(CatalogFindCharacter(catalog, "UNIT_ELVENMAGE"), &ch, &ability);
+    ch.tier = TIER_II;
+    ch.level = 25;
+    assert(ch.stats[TIER_II].power_per_level == 10);
+    assert(CharacterStatPower(&ch) == 395);
+    assert(CharacterStatHealth(&ch) == 1278);
+
+    cJSON_Delete(root);
+}
+
+static void TestFxPresetLiveEmitterSizes(void) {
+    cJSON *root = JsonLoadFile("data/fx_presets.json");
+    assert(root);
+    cJSON *presets = cJSON_GetObjectItemCaseSensitive(root, "presets");
+    assert(cJSON_IsArray(presets));
+
+    int checked = 0;
+    cJSON *preset = NULL;
+    cJSON_ArrayForEach(preset, presets) {
+        cJSON *emitters = cJSON_GetObjectItemCaseSensitive(preset, "emitters");
+        assert(cJSON_IsArray(emitters));
+        cJSON *emitter = NULL;
+        cJSON_ArrayForEach(emitter, emitters) {
+            if (JsonInt(emitter, "count") <= 0 && JsonFloat(emitter, "rate") <= 0) continue;
+            float size0 = JsonFloat(emitter, "size0");
+            float size1 = JsonFloat(emitter, "size1");
+            assert(size0 > 0 || size1 > 0);
+            checked++;
+        }
+    }
+    assert(checked > 0);
+    cJSON_Delete(root);
+}
+
+static void TestGeneratedFxCurvesAndDragonJet(void) {
+    Battle *battle = calloc(1, sizeof(*battle));
+    assert(battle);
+    BattleFxRegistryLoad(battle, "data/fx_presets.json");
+
+    const FxPreset *dragon = BattleFxFindPreset(battle, "vfx_dragonfire_pre");
+    assert(dragon);
+    const FxEmitter *fire = NULL, *beam = NULL;
+    for (int i = 0; i < dragon->em_count; i++) {
+        const FxEmitter *emitter = &dragon->em[i];
+        if (strstr(emitter->tex, "Fire_Still01")) fire = emitter;
+        if (emitter->box.z > 0.9f && emitter->orient == 2) beam = emitter;
+    }
+    assert(fire && fire->size0 == 8.0f && fire->size1 == 12.0f);
+    assert(fire->size_end == 0.0f && fire->size_curve.count == 3);
+    assert(fabsf(FxCurveSample(&fire->size_curve, 0.0f, 1.0f) - 0.023579f) < 0.00001f);
+    assert(fire->size1 * FxCurveSample(&fire->size_curve, 1.0f, 1.0f) < 7.5f);
+    assert(beam && beam->dir.z < -0.9f && beam->size_curve.count == 2);
+
+    BattleFxBurstDirected(battle, "vfx_dragonfire_pre", (Vector3){0}, (Vector3){1, 0, 0});
+    int directed_instance = -1;
+    for (int i = 0; i < FX_MAX_INSTANCES; i++)
+        if (battle->fxi[i].alive && battle->fxi[i].directed) directed_instance = i;
+    assert(directed_instance >= 0);
+    Vector3 facing = Vector3RotateByQuaternion((Vector3){0, 0, -1}, battle->fxi[directed_instance].rotation);
+    assert(facing.x > 0.999f && fabsf(facing.y) < 0.001f && fabsf(facing.z) < 0.001f);
+
+    const FxPreset *inquisitor = BattleFxFindPreset(battle, "fx_abelas_pre");
+    assert(inquisitor);
+    bool found_keyout_smoke = false;
+    for (int i = 0; i < inquisitor->em_count; i++) {
+        const FxEmitter *emitter = &inquisitor->em[i];
+        if (emitter->keyout == 1) {
+            found_keyout_smoke = true;
+            assert(emitter->alpha_curve.count >= 2 && emitter->max_screen_size > 0.0f);
+        }
+    }
+    assert(found_keyout_smoke);
+
+    for (int p = 0; p < battle->fx_reg_count; p++)
+        for (int e = 0; e < battle->fx_reg[p].pre.em_count; e++) {
+            const FxEmitter *emitter = &battle->fx_reg[p].pre.em[e];
+            assert(emitter->size_end <= 8.0f);
+            assert(emitter->size_curve.count <= FX_MAX_CURVE_KEYS);
+            assert(emitter->alpha_curve.count <= FX_MAX_CURVE_KEYS);
+            assert(emitter->color_curve.count <= FX_MAX_CURVE_KEYS);
+            assert(emitter->rate_curve.count <= FX_MAX_CURVE_KEYS);
+        }
+
+    if (battle->fx_reg) MemFree(battle->fx_reg);
+    if (battle->fx_alias) MemFree(battle->fx_alias);
+    free(battle);
+}
+
+static void TestPortraitCoverage(void) {
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    assert(root);
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    assert(cJSON_IsArray(catalog));
+
+    int checked = 0;
+    cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, catalog) {
+        Character ch;
+        Ability ability;
+        CharacterParse(entry, &ch, &ability);
+        for (int tier = 0; tier < TIER_COUNT; tier++) {
+            assert(ch.icon_prefab[tier][0]);
+            char path[512];
+            snprintf(path, sizeof(path), HOD_CACHE "gui/portraits/%s.png", ch.icon_prefab[tier]);
+            if (!FileExists(path)) fprintf(stderr, "missing portrait: %s\n", path);
+            assert(FileExists(path));
+            checked++;
+        }
+    }
+
+    assert(checked == cJSON_GetArraySize(catalog) * TIER_COUNT);
+    cJSON_Delete(root);
+}
+
+static bool HasNonAscii(const char *text) {
+    for (const unsigned char *c = (const unsigned char *)text; *c; c++)
+        if (*c >= 0x80) return true;
+    return false;
+}
+
+static bool TestFontIncludesCodepoint(int codepoint) {
+    int codepoints[256];
+    int count = FillRussianFontCodepoints(codepoints);
+    for (int i = 0; i < count; i++)
+        if (codepoints[i] == codepoint) return true;
+    return false;
+}
+
+static int TestUtf8Codepoint(const unsigned char *text, int *bytes) {
+    unsigned char a = text[0];
+    if (a < 0x80) {
+        *bytes = 1;
+        return a;
+    }
+    int n = a < 0xE0 ? 2 : a < 0xF0 ? 3 : a < 0xF8 ? 4 : 0;
+    if (!n) return -1;
+    int value = a & (0x7F >> n);
+    for (int i = 1; i < n; i++) {
+        if ((text[i] & 0xC0) != 0x80) return -1;
+        value = (value << 6) | (text[i] & 0x3F);
+    }
+    *bytes = n;
+    return value;
+}
+
+static void TestRichText(const char *text) {
+    const char *cursor = text;
+    int steps = 0;
+    while (*cursor) {
+        HeroesRichToken token = HeroesRichNextToken(cursor, WHITE);
+        assert(token.kind != HEROES_RICH_END && token.bytes > 0);
+        assert(!(token.kind == HEROES_RICH_TEXT && *cursor == '<'));
+        cursor += token.bytes;
+        assert(++steps <= (int)strlen(text));
+    }
+
+    for (const unsigned char *c = (const unsigned char *)text; *c;) {
+        int bytes = 0;
+        int codepoint = TestUtf8Codepoint(c, &bytes);
+        assert(codepoint >= 0 && codepoint != 0xFFFD);
+        if (codepoint >= 0x80) assert(TestFontIncludesCodepoint(codepoint));
+        c += bytes;
+    }
+}
+
+static void TestRichTextParserFallback(void) {
+    HeroesRichToken token = HeroesRichNextToken("<Color=green>text</Color>", WHITE);
+    assert(token.kind == HEROES_RICH_COLOR_OPEN && token.bytes == 13);
+    assert(token.color.g == 128 && token.color.r == 0);
+    token = HeroesRichNextToken("<color=\"orange\">text", WHITE);
+    assert(token.kind == HEROES_RICH_COLOR_OPEN && token.color.r == 255 && token.color.g == 165);
+    token = HeroesRichNextToken("<unknown>", WHITE);
+    assert(token.kind == HEROES_RICH_TEXT && token.bytes == 1);
+
+    assert(TestFontIncludesCodepoint(0x00A0));
+    assert(TestFontIncludesCodepoint(0x00AB));
+    assert(TestFontIncludesCodepoint(0x00BB));
+    assert(TestFontIncludesCodepoint(0x2212));
+}
+
+static void TestCharacterTextCoverage(void) {
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    assert(root && JsonInt(root, "version") >= 2);
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    assert(cJSON_IsArray(catalog) && cJSON_GetArraySize(catalog) == 676);
+
+    int checked = 0;
+    cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, catalog) {
+        Character ch;
+        Ability ability;
+        CharacterParse(entry, &ch, &ability);
+        assert(ch.id[0] && ch.name[0] && ch.name_ru[0] && HasNonAscii(ch.name_ru));
+        assert(ability.key[0] && ability.text[0] && ability.text_ru[0] && HasNonAscii(ability.text_ru));
+        assert(ability.mechanics != 0);
+        assert(!!(ability.mechanics & ABILITY_ATTACK) != !!(ability.mechanics & ABILITY_ATTACK_NONE));
+        ch.tier = TIER_I;
+        ch.level = 1;
+        HeroCard card = {0};
+        HeroCardBuild(&card, &ch);
+        TestRichText(card.info_ru);
+        TestRichText(card.desc_ru);
+        checked++;
+    }
+    assert(checked == 676);
+
+    Character ch;
+    Ability ability;
+    CharacterParse(CatalogFindCharacter(catalog, "UNIT_SHAPESHIFTERMORRIGANI"), &ch, &ability);
+    assert(ability.mechanics & ABILITY_POWER_DRAIN);
+    CharacterParse(CatalogFindCharacter(catalog, "UNIT_SHAPESHIFTERMORRIGANII"), &ch, &ability);
+    assert(!(ability.mechanics & ABILITY_POWER_DRAIN));
+    assert(ability.mechanics & ABILITY_GAIN_POWER_ALLIES);
+    CharacterParse(CatalogFindCharacter(catalog, "UNIT_NECROMANCERDORIAN"), &ch, &ability);
+    assert((ability.mechanics & (ABILITY_CURSE_HEALTH | ABILITY_STUN)) == (ABILITY_CURSE_HEALTH | ABILITY_STUN));
+    assert(!(ability.mechanics & ABILITY_POWER_DRAIN));
+    CharacterParse(CatalogFindCharacter(catalog, "UNIT_LAMBERTVANREEVES"), &ch, &ability);
+    assert(ability.mechanics & ABILITY_GAIN_POWER_ALLIES);
+    CharacterParse(CatalogFindCharacter(catalog, "UNIT_THORNTON"), &ch, &ability);
+    assert(
+        (ability.mechanics & (ABILITY_CURSE_POWER | ABILITY_MULTIATTACK)) == (ABILITY_CURSE_POWER | ABILITY_MULTIATTACK)
+    );
+    assert(strstr(ability.text, "Chance for second attack"));
+
+    cJSON_Delete(root);
+}
+
+static void TestAbilityMechanicParsing(void) {
+    static const struct {
+        const char *name;
+        unsigned mechanic;
+    } cases[] = {
+        {"ATTACK", ABILITY_ATTACK},
+        {"ATTACK_NONE", ABILITY_ATTACK_NONE},
+        {"POWER_DRAIN", ABILITY_POWER_DRAIN},
+        {"STUN", ABILITY_STUN},
+        {"SLOW", ABILITY_SLOW},
+        {"CURSE_POWER", ABILITY_CURSE_POWER},
+        {"CURSE_HEALTH", ABILITY_CURSE_HEALTH},
+        {"HEAL_ALLIES", ABILITY_HEAL_ALLIES},
+        {"HEAL_SELF", ABILITY_HEAL_SELF},
+        {"GAIN_POWER_ALLIES", ABILITY_GAIN_POWER_ALLIES},
+        {"GAIN_POWER_SELF", ABILITY_GAIN_POWER_SELF},
+        {"MULTIATTACK", ABILITY_MULTIATTACK},
+        {"MARK", ABILITY_MARK},
+        {"LEVY", ABILITY_LEVY},
+        {"ASSASSINATE", ABILITY_ASSASSINATE},
+        {"ATTACK_FRIENDLY", ABILITY_ATTACK_FRIENDLY},
+        {"DAMAGE_SELF", ABILITY_DAMAGE_SELF},
+        {"LOSE_POWER_SELF", ABILITY_LOSE_POWER_SELF},
+        {"SLOW_ALLIES", ABILITY_SLOW_ALLIES},
+        {"GAIN_CRIT_ALLIES", ABILITY_GAIN_CRIT_ALLIES},
+        {"CURSE_TWO_ROUNDS", ABILITY_CURSE_TWO_ROUNDS},
+        {"GAIN_DAMAGE_ALLIES", ABILITY_GAIN_DAMAGE_ALLIES},
+        {"GAIN_DAMAGE_SELF", ABILITY_GAIN_DAMAGE_SELF},
+    };
+    for (int i = 0; i < (int)(sizeof(cases) / sizeof(cases[0])); i++)
+        assert(AbilityMechanicFromString(cases[i].name) == cases[i].mechanic);
+    assert(AbilityMechanicFromString("UNKNOWN") == 0);
+}
+
+static unsigned RecipeMechanics(const AbilityRecipe *recipe) {
+    unsigned mechanics = ABILITY_ATTACK;
+    if (recipe->hit.drain_pct || recipe->effect.drain_pct || recipe->followup.drain_pct)
+        mechanics |= ABILITY_POWER_DRAIN;
+    if (recipe->hit.stun_pct || recipe->effect.stun_pct || recipe->followup.stun_pct) mechanics |= ABILITY_STUN;
+    if (recipe->hit.slow_pct || recipe->effect.slow_pct || recipe->followup.slow_pct) mechanics |= ABILITY_SLOW;
+    if (recipe->hit.curse_power_pct || recipe->effect.curse_power_pct || recipe->followup.curse_power_pct)
+        mechanics |= ABILITY_CURSE_POWER;
+    if (recipe->hit.curse_health_pct || recipe->effect.curse_health_pct || recipe->followup.curse_health_pct)
+        mechanics |= ABILITY_CURSE_HEALTH;
+    if (recipe->fx.ally_heal_pct) mechanics |= ABILITY_HEAL_ALLIES;
+    if (recipe->fx.self_heal_pct || recipe->hit.self_heal_pct || recipe->effect.self_heal_pct ||
+        recipe->followup.self_heal_pct)
+        mechanics |= ABILITY_HEAL_SELF;
+    if (recipe->fx.ally_power_pct || recipe->fx.ally_power_from_actor_pct) mechanics |= ABILITY_GAIN_POWER_ALLIES;
+    if (recipe->fx.self_power_pct > 0) mechanics |= ABILITY_GAIN_POWER_SELF;
+    if (recipe->fx.self_power_pct < 0) mechanics |= ABILITY_LOSE_POWER_SELF;
+    if (recipe->fx.self_damage_pct < 0) mechanics |= ABILITY_DAMAGE_SELF;
+    if (recipe->fx.ally_slow_amt < 0) mechanics |= ABILITY_SLOW_ALLIES;
+    if (recipe->fx.ally_crit_pct > 0) mechanics |= ABILITY_GAIN_CRIT_ALLIES;
+    if (recipe->fx.ally_damage_bonus_pct > 0) mechanics |= ABILITY_GAIN_DAMAGE_ALLIES;
+    if (recipe->fx.self_damage_bonus_pct > 0) mechanics |= ABILITY_GAIN_DAMAGE_SELF;
+    if (recipe->hit.curse_turns > 1 || recipe->effect.curse_turns > 1 || recipe->followup.curse_turns > 1)
+        mechanics |= ABILITY_CURSE_TWO_ROUNDS;
+    if (recipe->followup_count && !recipe->followup.status_only) mechanics |= ABILITY_MULTIATTACK;
+    if (recipe->hit.mark_pct || recipe->effect.mark_pct || recipe->followup.mark_pct) mechanics |= ABILITY_MARK;
+    if (recipe->hit.levy_pct || recipe->effect.levy_pct || recipe->followup.levy_pct) mechanics |= ABILITY_LEVY;
+    if (recipe->hit.assassinate_pct || recipe->effect.assassinate_pct || recipe->followup.assassinate_pct)
+        mechanics |= ABILITY_ASSASSINATE;
+    if (recipe->fx.ally_damage_pct || recipe->effect.target == RECIPE_TARGET_ONE_ALLY ||
+        recipe->followup.target == RECIPE_TARGET_ONE_ALLY)
+        mechanics |= ABILITY_ATTACK_FRIENDLY;
+    return mechanics;
+}
+
+static void TestExactRecipesMatchDescriptions(void) {
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    unsigned core = ABILITY_POWER_DRAIN | ABILITY_STUN | ABILITY_SLOW | ABILITY_CURSE_POWER | ABILITY_CURSE_HEALTH |
+                    ABILITY_HEAL_ALLIES | ABILITY_HEAL_SELF | ABILITY_GAIN_POWER_ALLIES | ABILITY_GAIN_POWER_SELF |
+                    ABILITY_MULTIATTACK | ABILITY_MARK | ABILITY_LEVY | ABILITY_ASSASSINATE | ABILITY_ATTACK_FRIENDLY |
+                    ABILITY_DAMAGE_SELF | ABILITY_LOSE_POWER_SELF | ABILITY_SLOW_ALLIES | ABILITY_GAIN_CRIT_ALLIES |
+                    ABILITY_CURSE_TWO_ROUNDS | ABILITY_GAIN_DAMAGE_ALLIES | ABILITY_GAIN_DAMAGE_SELF;
+    cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, catalog) {
+        Character ch;
+        Ability ability;
+        CharacterParse(entry, &ch, &ability);
+        const AbilityRecipe *recipe = SimExactRecipe(&ch);
+        if (recipe == &SIM_RECIPE_DEFAULT) continue;
+        unsigned expected = ability.mechanics & core;
+        unsigned implemented = RecipeMechanics(recipe) & core;
+        unsigned missing = expected & ~implemented;
+        unsigned extra = implemented & ~expected;
+        if (missing) fprintf(stderr, "recipe missing mechanics: %s (%s) mask=%u\n", ch.id, ability.key, missing);
+        if (extra) fprintf(stderr, "recipe has extra mechanics: %s (%s) mask=%u\n", ch.id, ability.key, extra);
+        assert(missing == 0);
+        assert(extra == 0);
+    }
+    cJSON_Delete(root);
+}
+
+static void TestGeneratedRecipeCoverage(void) {
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    char keys[421][128] = {{0}};
+    int key_count = 0, generated_count = 0;
+    cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, catalog) {
+        Character ch;
+        Ability ability;
+        CharacterParse(entry, &ch, &ability);
+        bool seen = false;
+        for (int i = 0; i < key_count; i++)
+            if (!strcmp(keys[i], ability.key)) seen = true;
+        if (seen) continue;
+        assert(key_count < 421);
+        StrCopy(keys[key_count++], sizeof(keys[0]), ability.key);
+        const AbilityRecipe *recipe = SimRecipe(&ch);
+        assert(recipe != &SIM_RECIPE_DEFAULT);
+        if (recipe->generated) generated_count++;
+    }
+    assert(key_count == 421);
+    assert(generated_count >= 300);
+    cJSON_Delete(root);
+}
+
+static void CheckExactRecipe(const cJSON *catalog, const char *id, int *checked) {
+    cJSON *def = CatalogFindCharacter(catalog, id);
+    assert(def != NULL);
+    Character ch;
+    Ability ability;
+    CharacterParse(def, &ch, &ability);
+    assert(SimExactRecipe(&ch) != &SIM_RECIPE_DEFAULT);
+    (*checked)++;
+}
+
+static void TestRecipeCoverage(void) {
+    cJSON *catalog_root = JsonLoadFile(HOD_CACHE "characters.json");
+    cJSON *player_root = JsonLoadFile(HOD_CACHE "player_starter.json");
+    cJSON *campaign_root = JsonLoadFile("data/campaign_rosters.json");
+    assert(catalog_root && player_root && campaign_root);
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
+    int checked = 0;
+
+    cJSON *squads = cJSON_GetObjectItemCaseSensitive(player_root, "squads");
+    cJSON *squad = cJSON_GetArrayItem(squads, JsonInt(player_root, "current_squad"));
+    cJSON *id = NULL;
+    cJSON_ArrayForEach(id, squad) {
+        if (cJSON_IsString(id)) CheckExactRecipe(catalog, id->valuestring, &checked);
+    }
+    cJSON *campaign = NULL;
+    cJSON_ArrayForEach(campaign, cJSON_GetObjectItemCaseSensitive(campaign_root, "campaigns")) {
+        cJSON *node = NULL;
+        cJSON_ArrayForEach(node, cJSON_GetObjectItemCaseSensitive(campaign, "nodes")) {
+            cJSON *unit = NULL;
+            cJSON_ArrayForEach(unit, cJSON_GetObjectItemCaseSensitive(node, "roster")) {
+                if (cJSON_IsObject(unit)) CheckExactRecipe(catalog, JsonStr(unit, "id"), &checked);
+            }
+        }
+    }
+    assert(checked > 45);
+    cJSON_Delete(campaign_root);
+    cJSON_Delete(player_root);
+    cJSON_Delete(catalog_root);
+}
+
+static void TestAttackPresentationBindings(void) {
+    Battle *battle = calloc(1, sizeof(*battle));
+    assert(battle != NULL);
+
+    BattleWiresLoad(battle, "data/unit_vfx.json");
+    assert(battle->wire_count == 676 * TIER_COUNT);
+
+    const BattleVfxWire *nug_i = BattleUnitWire(battle, "UNIT_CHOCOLATENUG", TIER_I);
+    const BattleVfxWire *nug_ii = BattleUnitWire(battle, "UNIT_CHOCOLATENUG", TIER_II);
+    assert(nug_i && nug_ii);
+    assert(strcmp(nug_i->ability, "vfx_fangs_pre") == 0);
+    assert(strcmp(nug_ii->ability, "fx_NugShmooples_pre") == 0);
+
+    const BattleVfxWire *wisp = BattleUnitWire(battle, "UNIT_COMMONWHITEWISP", TIER_I);
+    assert(wisp && wisp->vfx_type == 0);
+    assert(wisp->ability[0] == '\0');
+    assert(strcmp(wisp->muzzle, "fx_wispchar_t1_imp_pre") == 0);
+
+    const BattleVfxWire *sandal = BattleUnitWire(battle, "UNIT_SANDAL", TIER_I);
+    const BattleVfxWire *meredith = BattleUnitWire(battle, "UNIT_REDLYRIUMMEREDITH", TIER_IV);
+    const BattleVfxWire *josephine = BattleUnitWire(battle, "UNIT_JOSEPHINE", TIER_I);
+    assert(sandal && sandal->ability_type == 6 && sandal->vfx_type == 2 && sandal->cone_delay == 5.0f);
+    assert(meredith && meredith->ability_type == 6 && meredith->vfx_type == 2 && meredith->cone_delay == 2.5f);
+    assert(josephine && josephine->ability_type == 0 && josephine->vfx_type == 1 && josephine->cone_delay == 2.5f);
+    assert(BpConeImpactDelay(sandal) == 5.0f && BpConeImpactDelay(meredith) == 2.5f);
+    assert(BpConeImpactDelay(josephine) == 0.0f);
+
+    BattleAudioManifestLoad(battle, "data/unit_audio.json");
+    assert(battle->unit_audio_character_count == 676);
+    const char *faction_sound = BattleAudioFileName(battle, "gui_bonus_faction");
+    assert(faction_sound != NULL);
+    assert(strcmp(faction_sound, "gui_bonus_faction.mp3") == 0);
+    assert(FileExists(HOD_CACHE "vfx/audio/gui_bonus_faction.mp3"));
+    const char *dwarf_vox = BattleAudioFileName(battle, "Dark_Dwarves_Attack_VOX_01");
+    assert(dwarf_vox && strcmp(dwarf_vox, "Dark_Dwarves_Attack_VOX_01.mp3") == 0);
+    Character unit = {0};
+    StrCopy(unit.id, sizeof(unit.id), "UNIT_NECROMANCERDORIAN");
+    unit.tier = TIER_IV;
+    assert(BattleAudioBindUnit(battle, 0, 0, &unit));
+    const BattleAudioPool *dorian = &battle->unit_audio[0][0].pools[UNIT_SFX_ATTACK];
+    assert(dorian->count == 1);
+    assert(strcmp(dorian->clips[0], "vfx_NecroDorian_01") == 0);
+
+    StrCopy(unit.id, sizeof(unit.id), "UNIT_SEEKERCASSANDRA");
+    unit.tier = TIER_I;
+    assert(BattleAudioBindUnit(battle, 0, 0, &unit));
+    unit.tier = TIER_II;
+    assert(BattleAudioBindUnit(battle, 0, 1, &unit));
+    const char *cassandra_i = battle->unit_audio[0][0].pools[UNIT_SFX_ATTACK].clips[0];
+    const char *cassandra_ii = battle->unit_audio[0][1].pools[UNIT_SFX_ATTACK].clips[0];
+    assert(strcmp(cassandra_i, "vfx_Aveline_01") == 0);
+    assert(strcmp(cassandra_ii, "vfx_Leliana_Imp_01") == 0);
+
+    BattleAudioManifestUnload(battle);
+    MemFree(battle->wires);
+    free(battle);
+}
+
+static void TestConeDelayDefersImpact(void) {
+    Battle *battle = calloc(1, sizeof(*battle));
+    assert(battle);
+    BattleVfxWire wire = {
+        .tier = TIER_I,
+        .vfx_type = 2,
+        .ability_type = 6,
+        .cone_delay = 0.5f,
+    };
+    StrCopy(wire.unit, sizeof(wire.unit), "TEST_DELAYED_CONE");
+    StrCopy(wire.ability, sizeof(wire.ability), "test_missing_cone_pre");
+    battle->wires = &wire;
+    battle->wire_count = 1;
+    battle->unit_audio[0][0].bound = true;
+
+    Character actor = {.tier = TIER_I};
+    Character target = {.tier = TIER_I};
+    StrCopy(actor.id, sizeof(actor.id), wire.unit);
+    BattlePlay bp = {
+        .state = BP_ACT_WINDUP,
+        .t = 0.2f,
+        .speed_mult = 1.0f,
+        .slowmo = 0.5f,
+    };
+    bp.sim.action_count = 1;
+    bp.sim.units[0] = (SimUnit){.present = true, .alive = true, .ch = &actor};
+    bp.sim.units[SQUAD_SLOT_COUNT] = (SimUnit){.present = true, .alive = true, .ch = &target};
+    bp.sim.actions[0] = (BattleSimAction){
+        .actor = 0,
+        .replay_attack = true,
+        .target_count = 1,
+        .targets = {{.unit = SQUAD_SLOT_COUNT, .health_delta = -25}},
+    };
+    bp.units[0][0] = (BpUnit){.health = 100, .max_health = 100, .pos = {0, BATTLE_MARKER_Y, 0}};
+    bp.units[1][0] = (BpUnit){.health = 100, .max_health = 100, .pos = {2, BATTLE_MARKER_Y, 2}};
+
+    BpFire(&bp, battle);
+    assert(bp.state == BP_ACT_CONE_DELAY);
+    assert(bp.cone_impact_at == 0.5f);
+    assert(bp.units[1][0].health == 100 && bp.message_count == 0);
+
+    BattlePlayUpdate(&bp, battle, 0.58f);
+    assert(bp.state == BP_ACT_CONE_DELAY && bp.units[1][0].health == 100);
+    BattlePlayUpdate(&bp, battle, 0.04f);
+    assert(bp.state == BP_ACT_MESSAGES && bp.units[1][0].health == 75);
+    assert(bp.message_count == 1 && bp.cone_impact_at == 0.0f);
+
+    battle->wires = NULL;
+    free(battle);
+}
+
+static void TestAddGroup(Character *ch, const char *group) {
+    assert(ch->group_count < MAX_GROUPS);
+    StrCopy(ch->groups[ch->group_count++], sizeof(ch->groups[0]), group);
+}
+
+static void TestAddSpecialty(Character *ch, Specialty specialty) {
+    assert(ch->specialty_count < MAX_SPECIALTIES);
+    ch->specialties[ch->specialty_count++] = specialty;
+}
+
+static void TestBattlePreviewUsesFinalSetupStats(void) {
+    Character characters[4];
+    Ability abilities[4];
+    BattleRoster enemy = {0};
+    for (int slot = 0; slot < 4; slot++) {
+        char id[32];
+        snprintf(id, sizeof(id), "preview-demon-%d", slot);
+        TestCharacter(&characters[slot], &abilities[slot], id, "test", TARGET_ONE, 100, 1000);
+        characters[slot].faction = FACTION_BLACK;
+        characters[slot].rarity = RARITY_COMMON;
+        TestAddGroup(&characters[slot], "Demon");
+
+        snprintf(id, sizeof(id), "preview-enemy-%d", slot);
+        TestCharacter(&enemy.chars[slot], &enemy.abilities[slot], id, "test", TARGET_ONE, 120, 1000);
+        enemy.chars[slot].faction = FACTION_BLACK;
+        enemy.chars[slot].rarity = RARITY_COMMON;
+        enemy.present[slot] = true;
+    }
+    StrCopy(characters[0].id, sizeof(characters[0].id), "UNIT_ENVYDEMON");
+
+    Player player = {.roster = characters, .roster_abilities = abilities, .roster_count = 4};
+    for (int squad = 0; squad < PLAYER_MAX_SQUADS; squad++)
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) player.squads[squad][slot] = -1;
+    for (int slot = 0; slot < 4; slot++) player.squads[0][slot] = slot;
+
+    BattleSim *setup = (BattleSim *)calloc(1, sizeof(*setup));
+    assert(setup != NULL);
+    BattleSimSetup(setup, &player, &enemy);
+    assert(setup->units[0].start_power == 156 && setup->units[0].max_health == 1500);
+    assert(setup->units[1].start_power == 156 && setup->units[1].max_health == 2250);
+    assert(setup->units[SQUAD_SLOT_COUNT].start_power == 125);
+    assert(setup->formation_faction[0] == 1u && setup->formation_bonus_pct[0] == 4.0f);
+
+    SimUnit preview[SIM_UNIT_COUNT];
+    BattleSimPreview(preview, &player, &enemy);
+    assert(memcmp(preview, setup->units, sizeof(preview)) == 0);
+
+    float ratio = BattleUiDifficultyRatio(preview);
+    assert(ratio < 0.85f);
+    assert(strcmp(BattleUiDifficultyKey(ratio), "PVE_COLORED_EASY") == 0);
+    assert(strcmp(BattleUiDifficultyKey(1.2f), "PVE_COLORED_MEDIUM") == 0);
+
+    LocLoad(
+        HOD_CACHE
+        "Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_RUS_RU.txt"
+    );
+    BattleUi ui = {0};
+    BattleUiEnterNode(&ui, &player, &enemy, NULL, "PVE_MAP_01", 1);
+    assert(ui.plates[0][0].power == 156 && ui.plates[0][0].health == 1500);
+    assert(ui.plates[0][1].power == 156 && ui.plates[0][1].health == 2250);
+    assert(ui.plates[1][0].power == 125 && ui.plates[1][0].health == 1000);
+
+    char easy[64];
+    Color easy_color = WHITE;
+    BattleUiParseColored(LocGet("PVE_COLORED_EASY"), easy, sizeof(easy), &easy_color);
+    assert(strcmp(ui.diff_value, easy) == 0);
+
+    BattleUiOpenPlateDetails(&ui, &ui.plates[0][1]);
+    assert(ui.detail_open);
+    assert(ui.detail_card.power == 100 && ui.detail_card.health == 1000);
+    assert(ui.detail_card.power != ui.plates[0][1].power);
+    assert(ui.detail_card.health != ui.plates[0][1].health);
+    LocUnload();
+    free(setup);
+}
+
+static void TestIntrinsicPassiveManifest(void) {
+    PassiveManifestEnsure();
+    assert(passive_manifest.loaded);
+    assert(passive_manifest.character_count >= 500);
+    const PassiveCharacter *envy = PassiveManifestFind("UNIT_ENVYDEMON");
+    assert(envy && envy->effect_count == 7);
+    assert(envy->effects[0].kind == PASSIVE_STAT_PERCENT);
+    assert(envy->effects[0].stats == PASSIVE_STAT_HEALTH);
+    assert(envy->effects[0].value_pct == 50.0f);
+    assert(envy->effects[3].kind == PASSIVE_INCOMING_TARGET_WEIGHT);
+    assert(envy->effects[3].value_multiplier == 0.25f);
+    assert(envy->effects[4].kind == PASSIVE_HEAL_PERCENT_MAX_HEALTH);
+    assert(envy->effects[5].kind == PASSIVE_BONUS_DAMAGE_PERCENT);
+    assert(envy->effects[6].selector == PASSIVE_SELECTOR_LOWEST_HEALTH_PERCENT);
+}
+
+static void TestEnvyBattleStartAuras(void) {
+    PassiveManifestEnsure();
+    BattleSim s = {0};
+    Character envy, demon_red, red, lucius, plain;
+    Ability abilities[5];
+    TestCharacter(&envy, &abilities[0], "UNIT_ENVYDEMON", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&demon_red, &abilities[1], "demon-red", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&red, &abilities[2], "red", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&lucius, &abilities[3], "UNIT_LUCIUSCORIN", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&plain, &abilities[4], "plain", "test", TARGET_ONE, 100, 1000);
+    TestAddGroup(&envy, "Demon");
+    TestAddGroup(&demon_red, "Demon");
+    TestAddGroup(&demon_red, "Red_Lyrium");
+    TestAddGroup(&red, "Red_Lyrium");
+    SimUnitInit(&s, 0, 0, &envy);
+    SimUnitInit(&s, 0, 1, &demon_red);
+    SimUnitInit(&s, 0, 2, &red);
+    SimUnitInit(&s, 0, 3, &lucius);
+    SimUnitInit(&s, 0, 4, &plain);
+
+    SimApplyBattleStartPassives(&s);
+
+    assert(s.units[0].max_health == 1500 && s.units[0].power == 150);
+    assert(s.units[1].max_health == 2250 && s.units[1].power == 150);
+    assert(s.units[2].max_health == 1000 && s.units[2].power == 150);
+    assert(s.units[3].max_health == 1500 && s.units[3].power == 125);
+    assert(s.units[4].max_health == 1000 && s.units[4].power == 100);
+}
+
+static void TestAvvarWarNugCompositionHealth(void) {
+    PassiveManifestEnsure();
+    Character characters[4];
+    Ability abilities[4];
+    TestCharacter(&characters[0], &abilities[0], "UNIT_AVVARWARNUG", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&characters[1], &abilities[1], "avvar-a", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&characters[2], &abilities[2], "avvar-b", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&characters[3], &abilities[3], "plain", "test", TARGET_ONE, 100, 1000);
+    characters[0].giant = true;
+    TestAddGroup(&characters[0], "Avvar");
+    TestAddGroup(&characters[1], "Avvar");
+    TestAddGroup(&characters[2], "Avvar");
+
+    Player player = {.roster = characters, .roster_abilities = abilities, .roster_count = 4};
+    for (int squad = 0; squad < PLAYER_MAX_SQUADS; squad++)
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) player.squads[squad][slot] = -1;
+    player.squads[0][SQUAD_SLOT_LARGE] = 0;
+    player.squads[0][0] = 1;
+    player.squads[0][2] = 2;
+    player.squads[0][1] = 3;
+
+    BattleRoster enemy = {0};
+    BattleSim *setup = calloc(1, sizeof(*setup));
+    assert(setup != NULL);
+    BattleSimSetup(setup, &player, &enemy);
+
+    assert(setup->units[SQUAD_SLOT_LARGE].max_health == 2300);
+    assert(setup->units[0].max_health == 1600);
+    assert(setup->units[2].max_health == 1600);
+
+    player.squads[0][0] = player.squads[0][1] = player.squads[0][2] = -1;
+    BattleSimSetup(setup, &player, &enemy);
+    assert(setup->units[SQUAD_SLOT_LARGE].max_health == 1600);
+    free(setup);
+}
+
+static void TestPowerVsTargetDamage(void) {
+    PassiveManifestEnsure();
+    static const struct {
+        const char *unit_id;
+        const char *group;
+        const char *second_group;
+        int value_pct;
+    } cases[] = {
+        {"UNIT_MALIPHANT", "Inquisition", NULL, 35},
+        {"UNIT_NIGHTMAREASPECT", "Mage", "Spirit", 15},
+        {"UNIT_THELOST", "Blight", NULL, 30},
+    };
+
+    for (int i = 0; i < (int)(sizeof(cases) / sizeof(cases[0])); i++) {
+        BattleSim s = {.rng = (unsigned)(100 + i)};
+        Character attacker, matching, plain;
+        Ability abilities[3];
+        TestCharacter(&attacker, &abilities[0], cases[i].unit_id, "test", TARGET_ONE, 100, 1000);
+        TestCharacter(&matching, &abilities[1], "matching", "test", TARGET_ONE, 100, 1000);
+        TestCharacter(&plain, &abilities[2], "plain", "test", TARGET_ONE, 100, 1000);
+        TestAddGroup(&matching, cases[i].group);
+        if (cases[i].second_group) TestAddGroup(&matching, cases[i].second_group);
+        SimUnitInit(&s, 0, 0, &attacker);
+        SimUnitInit(&s, 1, 0, &matching);
+        SimUnitInit(&s, 1, 2, &plain);
+
+        assert(
+            fabsf(SimPassiveBonusDamagePct(&s, &s.units[0], &s.units[SQUAD_SLOT_COUNT]) - cases[i].value_pct) < 0.001f
+        );
+        assert(fabsf(SimPassiveBonusDamagePct(&s, &s.units[0], &s.units[SQUAD_SLOT_COUNT + 2])) < 0.001f);
+
+        s.units[0].crit_pct = 0.0f;
+        s.units[SQUAD_SLOT_COUNT + 2].alive = false;
+        AbilityRecipe recipe = {.key = "test"};
+        SimAttack(&s, 0, &recipe, &recipe.hit, true, false);
+        int damage = (int)lroundf(100.0f * (1.0f + cases[i].value_pct / 100.0f));
+        assert(s.units[0].start_power == 100 && s.units[0].power == 100);
+        assert(s.units[SQUAD_SLOT_COUNT].health == 1000 - damage);
+        assert(s.actions[0].targets[0].health_delta == -damage);
+    }
+}
+
+static void TestStackingAuraMatchMode(void) {
+    PassiveManifestEnsure();
+    BattleSim s = {0};
+    Character solas, triple_match, single_match;
+    Ability abilities[3];
+    TestCharacter(&solas, &abilities[0], "UNIT_APOSTATESOLAS", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&triple_match, &abilities[1], "triple", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&single_match, &abilities[2], "single", "test", TARGET_ONE, 100, 1000);
+    TestAddGroup(&triple_match, "Spirit");
+    TestAddGroup(&triple_match, "Elves");
+    triple_match.faction = FACTION_BLUE;
+    TestAddGroup(&single_match, "Spirit");
+    SimUnitInit(&s, 0, 0, &solas);
+    SimUnitInit(&s, 0, 2, &triple_match);
+    SimUnitInit(&s, 0, 4, &single_match);
+
+    SimApplyBattleStartPassives(&s);
+
+    assert(s.units[0].max_health == 1000 && s.units[0].power == 100);
+    assert(s.units[2].max_health == 1450 && s.units[2].power == 145);
+    assert(s.units[4].max_health == 1150 && s.units[4].power == 115);
+}
+
+static void TestPassivePredicatesAndSignedEnemyAura(void) {
+    PassiveManifestEnsure();
+    Character target;
+    Ability ability;
+    TestCharacter(&target, &ability, "UNIT_TARGET", "test", TARGET_ONE, 100, 1000);
+    TestAddGroup(&target, "Demon");
+    TestAddSpecialty(&target, SPEC_POWERGAIN);
+    target.faction = FACTION_BLUE_BLACK;
+    target.rarity = RARITY_LEGENDARY;
+    target.stars = 3;
+    assert(SimPassiveTermMatches(&(PassiveMatchTerm){PASSIVE_TERM_GROUP, "Demon"}, &target));
+    assert(SimPassiveTermMatches(&(PassiveMatchTerm){PASSIVE_TERM_FACTION, "Blue"}, &target));
+    assert(SimPassiveTermMatches(&(PassiveMatchTerm){PASSIVE_TERM_CHARACTER_ID, "UNIT_TARGET"}, &target));
+    assert(SimPassiveTermMatches(&(PassiveMatchTerm){PASSIVE_TERM_SPECIALTY, "POWERGAIN"}, &target));
+    assert(SimPassiveTermMatches(&(PassiveMatchTerm){PASSIVE_TERM_RARITY, "Legendary"}, &target));
+    target.speed = SPEED_QUICK;
+    assert(SimPassiveTermMatches(&(PassiveMatchTerm){PASSIVE_TERM_SPEED, "Quick"}, &target));
+    assert(!SimPassiveTermMatches(&(PassiveMatchTerm){PASSIVE_TERM_SPEED, "Slow"}, &target));
+    assert(SimPassiveTermMatches(&(PassiveMatchTerm){PASSIVE_TERM_TAG, "3STAR"}, &target));
+    target.giant = true;
+    assert(SimPassiveTermMatches(&(PassiveMatchTerm){PASSIVE_TERM_TAG, "GIANT"}, &target));
+    target.giant = false;
+
+    BattleSim s = {0};
+    Character source;
+    Ability source_ability;
+    TestCharacter(&source, &source_ability, "source", "test", TARGET_ONE, 100, 1000);
+    SimUnitInit(&s, 0, 0, &source);
+    SimUnitInit(&s, 1, 0, &target);
+    PassiveEffect effect = {
+        .kind = PASSIVE_STAT_PERCENT,
+        .trigger = PASSIVE_TRIGGER_BATTLE_START,
+        .stats = PASSIVE_STAT_HEALTH | PASSIVE_STAT_POWER,
+        .value_pct = -200.0f,
+        .recipient = {.scope = PASSIVE_SCOPE_ENEMIES, .include_source = true},
+        .additive = true,
+    };
+    PassiveCharacter passives = {.effects = &effect, .effect_count = 1};
+    s.units[0].passives = &passives;
+
+    SimApplyBattleStartPassives(&s);
+
+    assert(s.units[SQUAD_SLOT_COUNT].max_health == 1);
+    assert(s.units[SQUAD_SLOT_COUNT].health == 1);
+    assert(s.units[SQUAD_SLOT_COUNT].power == 0);
+
+    BattleSim reference = {0};
+    Character dragon, demon, plain;
+    Ability reference_abilities[3];
+    TestCharacter(&dragon, &reference_abilities[0], "UNIT_ABYSSALHIGHDRAGON", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&demon, &reference_abilities[1], "demon", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&plain, &reference_abilities[2], "plain", "test", TARGET_ONE, 100, 1000);
+    TestAddGroup(&demon, "Demon");
+    SimUnitInit(&reference, 0, 0, &dragon);
+    SimUnitInit(&reference, 1, 0, &demon);
+    SimUnitInit(&reference, 1, 2, &plain);
+
+    SimApplyBattleStartPassives(&reference);
+
+    assert(reference.units[SQUAD_SLOT_COUNT].power == 85);
+    assert(reference.units[SQUAD_SLOT_COUNT + 2].power == 100);
+
+    BattleSim hivernal_battle = {0};
+    Character hivernal, quick, normal;
+    Ability speed_abilities[3];
+    TestCharacter(&hivernal, &speed_abilities[0], "UNIT_HIVERNAL", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&quick, &speed_abilities[1], "quick", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&normal, &speed_abilities[2], "normal", "test", TARGET_ONE, 100, 1000);
+    quick.speed = SPEED_QUICK;
+    normal.speed = SPEED_NORMAL;
+    SimUnitInit(&hivernal_battle, 0, 0, &hivernal);
+    SimUnitInit(&hivernal_battle, 1, 0, &quick);
+    SimUnitInit(&hivernal_battle, 1, 2, &normal);
+
+    SimApplyBattleStartPassives(&hivernal_battle);
+
+    assert(hivernal_battle.units[SQUAD_SLOT_COUNT].power == 85);
+    assert(hivernal_battle.units[SQUAD_SLOT_COUNT + 2].power == 100);
+}
+
+static void TestAurasAddAcrossSources(void) {
+    PassiveManifestEnsure();
+    BattleSim s = {0};
+    Character envy_a, envy_b, demon;
+    Ability abilities[3];
+    TestCharacter(&envy_a, &abilities[0], "UNIT_ENVYDEMON", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&envy_b, &abilities[1], "UNIT_ENVYDEMON", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&demon, &abilities[2], "demon", "test", TARGET_ONE, 100, 1000);
+    TestAddGroup(&envy_a, "Demon");
+    TestAddGroup(&envy_b, "Demon");
+    TestAddGroup(&demon, "Demon");
+    SimUnitInit(&s, 0, 0, &envy_a);
+    SimUnitInit(&s, 0, 2, &envy_b);
+    SimUnitInit(&s, 0, 4, &demon);
+
+    SimApplyBattleStartPassives(&s);
+
+    for (int i = 0; i <= 4; i += 2) {
+        assert(s.units[i].max_health == 2000);
+        assert(s.units[i].power == 200);
+    }
+}
+
+static void TestPassivePrecedesFormationRounding(void) {
+    Character characters[4];
+    Ability abilities[4];
+    for (int i = 0; i < 4; i++) {
+        char id[32];
+        snprintf(id, sizeof(id), "black-%d", i);
+        TestCharacter(&characters[i], &abilities[i], id, "test", TARGET_ONE, 9, 1000);
+        characters[i].faction = FACTION_BLACK;
+        characters[i].rarity = RARITY_COMMON;
+    }
+    StrCopy(characters[0].id, sizeof(characters[0].id), "UNIT_ENVYDEMON");
+    TestAddGroup(&characters[0], "Demon");
+
+    Player player = {.roster = characters, .roster_abilities = abilities, .roster_count = 4};
+    for (int squad = 0; squad < PLAYER_MAX_SQUADS; squad++)
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) player.squads[squad][slot] = -1;
+    for (int slot = 0; slot < 4; slot++) player.squads[0][slot] = slot;
+    BattleRoster enemy = {0};
+    BattleSim s;
+
+    BattleSimSetup(&s, &player, &enemy);
+
+    assert(s.units[0].start_power == 15);
+    assert(s.formation_bonus_pct[0] == 4.0f);
+    assert(s.action_count == 0 && s.rounds == 0);
+}
+
+static void TestEnvyTargetWeights(void) {
+    PassiveManifestEnsure();
+    BattleSim s = {0};
+    Character envy, attacker, high, low;
+    Ability abilities[4];
+    TestCharacter(&envy, &abilities[0], "UNIT_ENVYDEMON", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&attacker, &abilities[1], "attacker", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&high, &abilities[2], "high", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&low, &abilities[3], "low", "test", TARGET_ONE, 100, 1000);
+    TestAddSpecialty(&envy, SPEC_ELUSIVE);
+    SimUnitInit(&s, 0, 0, &envy);
+    SimUnitInit(&s, 0, 2, &attacker);
+    SimUnitInit(&s, 1, 0, &high);
+    SimUnitInit(&s, 1, 2, &low);
+    s.units[SQUAD_SLOT_COUNT + 0].health = 900;
+    s.units[SQUAD_SLOT_COUNT + 2].health = 200;
+
+    assert(fabsf(SimTargetWeight(&s, &s.units[2], &s.units[0]) - 0.25f) < 0.001f);
+    assert(fabsf(SimTargetWeight(&s, &s.units[0], &s.units[SQUAD_SLOT_COUNT + 0]) - 1.0f) < 0.001f);
+    assert(fabsf(SimTargetWeight(&s, &s.units[0], &s.units[SQUAD_SLOT_COUNT + 2]) - 2.0f) < 0.001f);
+}
+
+static void TestEnvyDamageAndEnemyDeathHeal(void) {
+    PassiveManifestEnsure();
+    BattleSim s = {.rng = 99};
+    Character envy, power_gainer;
+    Ability abilities[2];
+    TestCharacter(&envy, &abilities[0], "UNIT_ENVYDEMON", "test", TARGET_ONE, 100, 1000);
+    TestCharacter(&power_gainer, &abilities[1], "power-gainer", "test", TARGET_ONE, 100, 1000);
+    TestAddSpecialty(&power_gainer, SPEC_POWERGAIN);
+    SimUnitInit(&s, 0, 0, &envy);
+    SimUnitInit(&s, 1, 0, &power_gainer);
+    s.units[0].crit_pct = 0.0f;
+    s.units[0].health = 500;
+    s.units[SQUAD_SLOT_COUNT].health = 100;
+    AbilityRecipe recipe = {.key = "test"};
+
+    SimAttack(&s, 0, &recipe, &recipe.hit, true, false);
+
+    assert(!s.units[SQUAD_SLOT_COUNT].alive);
+    assert(s.units[0].health == 750);
+    assert(s.action_count == 1 && s.actions[0].target_count == 2);
+    assert(s.actions[0].targets[0].health_delta == -135);
+    assert(s.actions[0].targets[1].unit == 0 && s.actions[0].targets[1].health_delta == 250);
+
+    assert(!BpPassiveHealEntry(&s.actions[0].targets[0]));
+    assert(BpPassiveHealEntry(&s.actions[0].targets[1]));
+    int targets[SIM_MAX_TARGETS];
+    int swing_count = BpCollectSwingTargets(&s, 0, targets);
+    assert(swing_count == 1 && targets[0] == SQUAD_SLOT_COUNT);
+
+    BattleSim h = {.action_count = 1};
+    h.actions[0].actor = 0;
+    h.actions[0].target_count = 2;
+    h.actions[0].targets[0] = (BattleSimTarget){.unit = 1, .health_delta = 120};
+    h.actions[0].targets[1] = (BattleSimTarget){.unit = 2, .health_delta = 80};
+    assert(BpCollectSwingTargets(&h, 0, targets) == 2 && targets[0] == 1 && targets[1] == 2);
+}
+
+static void TestBattleClipAliases(void) {
+    BattleSquads squads = {0};
+    ModelAnimation clips[4] = {0};
+    StrCopy(clips[0].name, sizeof(clips[0].name), "TwoHanded_GetHit");
+    clips[0].frameCount = 20;
+    StrCopy(clips[1].name, sizeof(clips[1].name), "ProjectileAbility");
+    clips[1].frameCount = 30;
+    StrCopy(clips[2].name, sizeof(clips[2].name), "hit");
+    clips[2].frameCount = 10;
+    StrCopy(clips[3].name, sizeof(clips[3].name), "death");
+    clips[3].frameCount = 0;
+    squads.clips[0][0] = clips;
+    squads.clip_counts[0][0] = 4;
+
+    assert(BattleSquadClip(&squads, 0, 0, "hit") == &clips[2]);
+    clips[2].frameCount = 0;
+    assert(BattleSquadClip(&squads, 0, 0, "hit") == &clips[0]);
+    assert(BattleSquadClip(&squads, 0, 0, "attack") == &clips[1]);
+    assert(BattleSquadClip(&squads, 0, 0, "death") == NULL);
+}
+
+static void TestTierlessWispModelAlias(void) {
+    char path[512];
+    assert(HomeSquadModelPath(path, sizeof(path), HOD_CACHE "char_pack", "unit.c_wisp_common_pre"));
+    assert(strstr(path, "/c_wisp_common/c_wisp_common_t0_rl.glb") != NULL);
+}
+
+static void TestExactTierModelResolution(void) {
+    Character ch = {.tier = TIER_I};
+    StrCopy(ch.model_prefab[TIER_I], sizeof(ch.model_prefab[TIER_I]), "unit.missing_t1_pre");
+    StrCopy(ch.model_prefab[TIER_IV], sizeof(ch.model_prefab[TIER_IV]), "unit.hm_sw_alistairking_t4_pre");
+    char path[512];
+    assert(HomeSquadResolvePrefab(HOD_CACHE "char_pack", &ch, path, sizeof(path)) == ch.model_prefab[TIER_IV]);
+    assert(strstr(path, "hm_sw_alistairking_t4_rl.glb") != NULL);
+
+    ch.tier = TIER_II;
+    StrCopy(ch.model_prefab[TIER_I], sizeof(ch.model_prefab[TIER_I]), "unit.hm_sw_alistairking_t1_pre");
+    StrCopy(ch.model_prefab[TIER_II], sizeof(ch.model_prefab[TIER_II]), "unit.missing_t2_pre");
+    assert(HomeSquadResolvePrefab(HOD_CACHE "char_pack", &ch, path, sizeof(path)) == ch.model_prefab[TIER_I]);
+    assert(strstr(path, "hm_sw_alistairking_t1_rl.glb") != NULL);
+}
+
+static void TestDisplayScaleManifestIsFullyLoaded(void) {
+    cJSON *root = JsonLoadFile(HOD_CACHE "anim_tools/display_scales.json");
+    assert(root);
+    int expected = cJSON_GetArraySize(root);
+    assert(fabsf(UnitDisplayScale("unit.c_titanheartguardian_t1_pre") - 0.65f) < 0.0001f);
+    assert(unit_scale_count == expected);
+    cJSON_Delete(root);
+}
+
+static void TestDamageShakeFallback(void) {
+    BpUnit unit = {.damage_shake_left = BP_DAMAGE_SHAKE_TIME};
+    Vector3 start = BpDamageShakeOffset(&unit, 0);
+    assert(fabsf(start.x) <= 0.25f && fabsf(start.z) <= 1.0f);
+    assert(fabsf(start.x) + fabsf(start.z) > 0.01f);
+
+    unit.damage_shake_left = BP_DAMAGE_SHAKE_TIME * 0.5f;
+    Vector3 half = BpDamageShakeOffset(&unit, 0);
+    assert(fabsf(half.x) <= 0.1251f && fabsf(half.z) <= 0.5001f);
+
+    unit.damage_shake_left = 0.0f;
+    Vector3 done = BpDamageShakeOffset(&unit, 0);
+    assert(done.x == 0.0f && done.y == 0.0f && done.z == 0.0f);
+}
+
+static void TestAttackClipReturnsToIdle(void) {
+    ModelAnimation attack = {.frameCount = 12};
+    BpUnit windup = {
+        .phase = BPU_WINDUP,
+        .clip = &attack,
+        .clip_time = 10.0f,
+        .clip_speed = 1.0f,
+    };
+    BpAdvanceClip(&windup, 1.0f / BP_CLIP_FPS);
+    assert(windup.clip == NULL);
+
+    BpUnit returning = windup;
+    returning.phase = BPU_RETURN;
+    returning.clip = &attack;
+    returning.clip_time = 10.0f;
+    BpAdvanceClip(&returning, 1.0f / BP_CLIP_FPS);
+    assert(returning.clip == NULL);
+
+    BpUnit death = {
+        .phase = BPU_RETURN,
+        .clip = &attack,
+        .clip_time = 10.0f,
+        .clip_speed = 1.0f,
+        .clip_hold = true,
+    };
+    BpAdvanceClip(&death, 1.0f / BP_CLIP_FPS);
+    assert(death.clip == &attack);
+    assert(death.clip_time == 11.0f);
+
+    HomeSquadUnit rendered = {.anim_override = true, .last_frame = 11};
+    BpSetAnimationOverride(&rendered, false);
+    assert(!rendered.anim_override && rendered.last_frame == -1);
+}
+
+static Campaign TestProgressionCampaign(void) {
+    Campaign campaign = {.map_count = 2};
+    campaign.maps[0].node_count = 4;
+    campaign.maps[0].nodes[0] =
+        (CampaignNode){.gold = 55, .xp = 5, .first_win_gems = 3, .mastery_gems = 2, .wins_to_master = 3};
+    campaign.maps[0].nodes[1] =
+        (CampaignNode){.gold = 80, .xp = 100, .first_win_gems = 4, .mastery_gems = 1, .wins_to_master = 5};
+    campaign.maps[0].nodes[2] =
+        (CampaignNode){.gold = 140, .xp = 20, .first_win_gems = 10, .mastery_gems = 1, .wins_to_master = 7};
+    campaign.maps[0].nodes[3] = (CampaignNode){
+        .gold = 280,
+        .xp = 40,
+        .challenge_gold = 17,
+        .challenge_xp = 9,
+        .challenge_gems = 2,
+        .grind_gold = 5,
+        .grind_xp = 3,
+        .grind_gems = 1,
+        .grind = true,
+    };
+    campaign.maps[1].node_count = 3;
+    campaign.maps[1].nodes[0] = (CampaignNode){.gold = 110, .xp = 15, .mastery_gems = 1, .wins_to_master = 3};
+    campaign.maps[1].nodes[1] =
+        (CampaignNode){.gold = 280, .xp = 40, .first_win_gems = 10, .mastery_gems = 1, .wins_to_master = 5};
+    campaign.maps[1].nodes[2] = (CampaignNode){.gold = 560, .xp = 80, .grind = true};
+    return campaign;
+}
+
+static void TestCriticalGoldCommitOnce(void) {
+    static Game g;
+    memset(&g, 0, sizeof(g));
+    g.map = TestProgressionCampaign();
+    ProgressionInitializePlayerDefaults(&g.player);
+    g.battle_map_index = 0;
+    g.battle_node_index = 0;
+    g.battle_play.sim.action_count = 1;
+    g.battle_play.sim.actions[0] = (BattleSimAction){
+        .actor = 0,
+        .crit = true,
+        .replay_attack = true,
+        .target_count = 1,
+        .targets = {{.unit = SQUAD_SLOT_COUNT, .health_delta = -10}},
+    };
+
+    char previous[32] = {0};
+    const char *old_no_save = getenv("HOD_NO_SAVE");
+    if (old_no_save) StrCopy(previous, sizeof(previous), old_no_save);
+    setenv("HOD_NO_SAVE", "1", 1);
+
+    int gold_before = g.player.gold;
+    GameCommitBattleOutcome(&g, true);
+    assert(g.battle_outcome_committed);
+    assert(g.battle_reward.crit_gold_reward == BP_CRIT_GOLD_REWARD);
+    assert(g.battle_reward.gold_reward == 55 + BP_CRIT_GOLD_REWARD);
+    assert(g.player.gold == gold_before + 55 + BP_CRIT_GOLD_REWARD);
+    BattleResultsPresentation snapshot = GameBattleResultsSnapshot(&g);
+    assert(snapshot.gold == 55 + BP_CRIT_GOLD_REWARD);
+
+    int committed_gold = g.player.gold;
+    GameCommitBattleOutcome(&g, true);
+    assert(g.player.gold == committed_gold);
+    assert(g.battle_reward.gold_reward == 55 + BP_CRIT_GOLD_REWARD);
+
+    memset(&g, 0, sizeof(g));
+    g.map = TestProgressionCampaign();
+    ProgressionInitializePlayerDefaults(&g.player);
+    g.battle_map_index = 0;
+    g.battle_node_index = 0;
+    g.battle_play.sim.action_count = 1;
+    g.battle_play.sim.actions[0] = (BattleSimAction){
+        .actor = 0,
+        .crit = true,
+        .replay_attack = true,
+        .target_count = 1,
+        .targets = {{.unit = SQUAD_SLOT_COUNT, .health_delta = -10}},
+    };
+    assert(BattlePlayCriticalGold(&g.battle_play) == BP_CRIT_GOLD_REWARD);
+    gold_before = g.player.gold;
+    GameCommitBattleOutcome(&g, false);
+    assert(g.battle_reward.resolved);
+    assert(g.battle_reward.crit_gold_reward == 0);
+    assert(g.battle_reward.gold_reward == 0);
+    assert(g.player.gold == gold_before);
+
+    if (old_no_save)
+        setenv("HOD_NO_SAVE", previous, 1);
+    else
+        unsetenv("HOD_NO_SAVE");
+}
+
+static void TestCampaignOpenerCanBeWon(void) {
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+
+    BattleRoster enemy = {0};
+    BattleRosterLoad(&enemy, "data/campaign_rosters.json", HOD_CACHE "characters.json", "PVE_MAP_01", 1);
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        if (enemy.present[slot]) assert(enemy.chars[slot].level <= 2);
+    }
+
+    BattleSim *sim = (BattleSim *)calloc(1, sizeof(*sim));
+    assert(sim != NULL);
+    int wins = 0;
+    for (unsigned seed = 1; seed <= 32; seed++) {
+        BattleSimRun(sim, &player, &enemy, seed);
+        wins += sim->player_won;
+    }
+    assert(wins > 0);
+
+    free(sim);
+    PlayerUnloadRoster(&player);
+}
+
+static void TestCampaignNodeCoordinates(void) {
+    const float origin = -173.25f;
+    const float world_w = 4096.0f;
+    const float positions[] = {0.165f, 0.37f, 0.535f, 0.695f, 0.875f, 0.13f, 0.275f, 0.43f, 0.58f, 0.72f, 0.87f};
+    const float icon_width = 256.0f;
+    for (int p = 0; p < (int)(sizeof(positions) / sizeof(positions[0])); p++) {
+        float legacy_left = origin + positions[p] * world_w - icon_width / 2.0f;
+        float center = CampaignNodeCenterX(origin, positions[p], world_w, icon_width);
+        float animated_left_at_rest = center - (icon_width / 2.0f) / 2.0f;
+        assert(fabsf(animated_left_at_rest - legacy_left) < 0.0001f);
+    }
+
+    Campaign same_map_pan = {.progression_from_map = 0, .progression_to_map = 0};
+    Campaign map_change_pan = {.progression_from_map = 0, .progression_to_map = 1};
+    assert(CampaignProgressionPanEnd(&same_map_pan) == 2.0f);
+    assert(CampaignProgressionPanEnd(&map_change_pan) == 3.5f);
+}
+
+static void TestCampaignMapRewardSchema(void) {
+    cJSON *maps = JsonLoadFile("data/campaign_maps.json");
+    assert(cJSON_IsArray(maps));
+    assert(cJSON_GetArraySize(maps) == CAMPAIGN_MAX_MAPS);
+    for (int map = 0; map < cJSON_GetArraySize(maps); map++) {
+        cJSON *chapter = cJSON_GetArrayItem(maps, map);
+        cJSON *nodes = cJSON_GetObjectItemCaseSensitive(chapter, "nodes");
+        int node_count = cJSON_GetArraySize(nodes);
+        assert(node_count == JsonInt(chapter, "node_count"));
+        cJSON *last = cJSON_GetArrayItem(nodes, node_count - 1);
+        cJSON *boss = cJSON_GetArrayItem(nodes, node_count - (map == 0 ? 1 : 2));
+        assert(JsonInt(boss, "gems") == 10);
+        if (map == 0) {
+            assert(!JsonBool(last, "grind"));
+        } else {
+            assert(JsonBool(last, "grind"));
+            assert(JsonInt(last, "gems") == 0);
+        }
+        int story_count = node_count - (JsonBool(last, "grind") ? 1 : 0);
+        for (int node = 0; node < story_count; node++) {
+            int override = JsonInt(cJSON_GetArrayItem(nodes, node), "wins_to_master");
+            int wins_to_master = override > 0 ? override : CampaignOfflineWinsToMaster(node);
+            static const int expected[] = {3, 5, 7, 10, 12};
+            assert(wins_to_master == expected[node % 5]);
+        }
+    }
+    cJSON_Delete(maps);
+}
+
+static void TestCampaignProgressionRewards(void) {
+    Campaign campaign = TestProgressionCampaign();
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    player.energy = 2;
+    player.stamina = 3;
+
+    const int historical_mastery[] = {3, 5, 7, 10, 12, 3, 5, 7, 10, 12};
+    for (int node = 0; node < 10; node++) assert(CampaignOfflineWinsToMaster(node) == historical_mastery[node]);
+
+    assert(ProgressionXpForNextLevel(1) == 20);
+    assert(ProgressionXpForCurrentLevel(4) == 90);
+    assert(ProgressionXpForNextLevel(4) == 140);
+    assert(ProgressionEnergyMaxForLevel(1) == 12);
+    assert(ProgressionEnergyMaxForLevel(4) == 15);
+    Player max_level_player = {0};
+    ProgressionInitializePlayerDefaults(&max_level_player);
+    max_level_player.level = 100;
+    max_level_player.experience_min = ProgressionXpForCurrentLevel(max_level_player.level);
+    max_level_player.experience_max = ProgressionXpForNextLevel(max_level_player.level);
+    max_level_player.experience = max_level_player.experience_max;
+    assert(max_level_player.experience_min == max_level_player.experience_max);
+    assert(HudDisplayedXpMinimum(&max_level_player) == 0);
+    assert(CampaignMapUnlocked(&campaign, &player.campaign_progress, 0));
+    assert(!CampaignMapUnlocked(&campaign, &player.campaign_progress, 1));
+    assert(CampaignFrontierForMap(&campaign, &player.campaign_progress, 0) == 0);
+    assert(CampaignBossNodeIndex(&campaign, 0) == 2);
+    assert(CampaignBossNodeIndex(&campaign, 1) == 1);
+    Campaign no_grind = {.map_count = 1};
+    no_grind.maps[0].node_count = 5;
+    assert(CampaignBossNodeIndex(&no_grind, 0) == 4);
+
+    BattleRewardResult loss = CampaignResolveBattle(&player, &campaign, 0, 0, false, 0);
+    assert(loss.resolved && !loss.won && !loss.first_win);
+    assert(loss.gold_reward == 0 && loss.xp_reward == 0 && loss.gems_reward == 0);
+    assert(player.gold == 1725 && player.experience == 0);
+    assert(player.campaign_progress.node_completions[0][0] == 0);
+
+    BattleRewardResult locked = CampaignResolveBattle(&player, &campaign, 0, 1, true, 0);
+    assert(!locked.resolved);
+    assert(player.campaign_progress.node_completions[0][1] == 0);
+
+    BattleRewardResult first = CampaignResolveBattle(&player, &campaign, 0, 0, true, 0);
+    assert(first.resolved && first.won && first.first_win && first.advanced && !first.unlocked_map);
+    assert(first.gold_reward == 55 && first.xp_reward == 5);
+    assert(first.first_win_gems_reward == 3 && first.mastery_gems_reward == 0 && first.gems_reward == 3);
+    assert(first.next_map_index == 0 && first.next_node_index == 1);
+    PlayerCampaignAnimation first_animation = GamePendingCampaignAnimation(&campaign, &first);
+    assert(first_animation.active && first_animation.unlock_next);
+    assert(first_animation.from_map == 0 && first_animation.from_node == 0);
+    assert(first_animation.to_map == 0 && first_animation.to_node == 1);
+    assert(player.campaign_progress.node_index == 1);
+    assert(player.gold == 1780 && player.gems == 44 && player.experience == 5);
+
+    BattleRewardResult replay = CampaignResolveBattle(&player, &campaign, 0, 0, true, 0);
+    assert(replay.resolved && replay.won && !replay.first_win && !replay.advanced);
+    assert(replay.gold_reward == 55 && replay.xp_reward == 5 && replay.gems_reward == 0);
+    assert(replay.next_node_index == 1);
+    assert(!GamePendingCampaignAnimation(&campaign, &replay).active);
+    assert(player.campaign_progress.node_completions[0][0] == 2);
+    assert(player.gold == 1835 && player.gems == 44 && player.experience == 10);
+
+    BattleRewardResult levels = CampaignResolveBattle(&player, &campaign, 0, 1, true, 0);
+    assert(levels.first_win && levels.levels_gained == 3);
+    assert(levels.player_level_pre == 1 && levels.player_level_post == 4);
+    assert(levels.player_xp_pre == 10 && levels.player_xp_post == 110);
+    assert(levels.player_xp_min_post == 90 && levels.player_xp_max_post == 140);
+    assert(levels.energy_max_pre == 12 && levels.energy_max_post == 15);
+    assert(levels.energy_post == 15 && levels.stamina_post == 8);
+    assert(levels.first_win_gems_reward == 4 && levels.gems_reward == 4);
+    assert(player.gems == 48);
+    assert(player.campaign_progress.node_index == 2);
+
+    BattleRewardResult boss = CampaignResolveBattle(&player, &campaign, 0, 2, true, 0);
+    assert(boss.first_win && boss.advanced && boss.unlocked_map);
+    assert(boss.first_win_gems_reward == 10 && boss.mastery_gems_reward == 0 && boss.gems_reward == 10);
+    assert(boss.next_map_index == 0 && boss.next_node_index == 3);
+    PlayerCampaignAnimation boss_animation = GamePendingCampaignAnimation(&campaign, &boss);
+    assert(boss_animation.active && boss_animation.unlock_next && boss_animation.from_node == 2);
+    assert(boss_animation.to_map == 0 && boss_animation.to_node == 3);
+    assert(CampaignMapUnlocked(&campaign, &player.campaign_progress, 1));
+    assert(CampaignFrontierForMap(&campaign, &player.campaign_progress, 0) == 3);
+    assert(player.campaign_progress.campaign_index == 0);
+
+    BattleRewardResult boss_replay = CampaignResolveBattle(&player, &campaign, 0, 2, true, 0);
+    assert(!boss_replay.first_win && !boss_replay.advanced && boss_replay.gems_reward == 0);
+    assert(boss_replay.next_map_index == 0 && boss_replay.next_node_index == 3);
+
+    BattleRewardResult grind = CampaignResolveBattle(&player, &campaign, 0, 3, true, 0);
+    assert(grind.resolved && grind.won && grind.first_win && grind.grind);
+    assert(!grind.mastered && grind.advanced && !grind.unlocked_map);
+    assert(grind.wins_to_master == 0 && grind.gold_reward == 297 && grind.xp_reward == 49);
+    assert(grind.challenge_gold_reward == 17 && grind.challenge_xp_reward == 9);
+    assert(grind.challenge_gems_reward == 2 && grind.gems_reward == 2);
+    assert(grind.next_map_index == 1 && grind.next_node_index == 0);
+    player.campaign_progress.node_completions[0][3] = 99;
+    player.campaign_progress.campaign_index = 0;
+    BattleRewardResult grind_replay = CampaignResolveBattle(&player, &campaign, 0, 3, true, 0);
+    assert(grind_replay.resolved && !grind_replay.mastered);
+    assert(grind_replay.gold_reward == 285 && grind_replay.xp_reward == 43 && grind_replay.gems_reward == 1);
+    assert(grind_replay.grind_gold_reward == 5 && grind_replay.grind_xp_reward == 3);
+    assert(grind_replay.grind_gems_reward == 1);
+    assert(!grind_replay.advanced && grind_replay.next_map_index == 0 && grind_replay.next_node_index == 3);
+
+    Player mastery_player = {0};
+    ProgressionInitializePlayerDefaults(&mastery_player);
+    mastery_player.campaign_progress.node_completions[0][0] = campaign.maps[0].nodes[0].wins_to_master - 1;
+    BattleRewardResult mastery = CampaignResolveBattle(&mastery_player, &campaign, 0, 0, true, 0);
+    assert(mastery.resolved && mastery.mastered && !mastery.first_win && !mastery.advanced);
+    assert(mastery.completions_post == campaign.maps[0].nodes[0].wins_to_master);
+    assert(mastery.first_win_gems_reward == 0 && mastery.mastery_gems_reward == 2);
+    assert(mastery.gems_reward == 2 && mastery_player.gems == 43);
+    PlayerCampaignAnimation mastery_animation = GamePendingCampaignAnimation(&campaign, &mastery);
+    assert(mastery_animation.active && !mastery_animation.unlock_next);
+    assert(mastery_animation.from_node == 0 && mastery_animation.to_node == 1);
+
+    Campaign final_mastery_campaign = {.map_count = 2};
+    final_mastery_campaign.maps[0].node_count = 1;
+    final_mastery_campaign.maps[0].nodes[0] = (CampaignNode){.gold = 10, .mastery_gems = 1, .wins_to_master = 3};
+    final_mastery_campaign.maps[1].node_count = 1;
+    final_mastery_campaign.maps[1].nodes[0] = (CampaignNode){.gold = 20, .wins_to_master = 3};
+    Player final_mastery_player = {0};
+    ProgressionInitializePlayerDefaults(&final_mastery_player);
+    final_mastery_player.campaign_progress.node_completions[0][0] = 2;
+    BattleRewardResult final_mastery =
+        CampaignResolveBattle(&final_mastery_player, &final_mastery_campaign, 0, 0, true, 0);
+    assert(final_mastery.mastered && !final_mastery.first_win);
+    assert(!final_mastery.advanced && !final_mastery.unlocked_map);
+    assert(final_mastery.next_map_index == 1 && final_mastery.next_node_index == 0);
+    assert(final_mastery_player.campaign_progress.campaign_index == 1);
+    assert(final_mastery_player.campaign_progress.node_index == 0);
+    assert(!GamePendingCampaignAnimation(&final_mastery_campaign, &final_mastery).active);
+
+    CampaignNode gem_node = {.default_gems = 2, .first_win_gems = 10, .mastery_gems = 1, .wins_to_master = 12};
+    BattleUi preview = {.node = &gem_node};
+    BattleUiSetNodeWins(&preview, 0);
+    assert(preview.gems == 12);
+    BattleUiSetNodeWins(&preview, 1);
+    assert(preview.gems == 2);
+    BattleUiSetNodeWins(&preview, 11);
+    assert(preview.gems == 3);
+    assert(strcmp(preview.mastery, "Закрыто (11 / 12)") == 0);
+    BattleUiSetNodeWins(&preview, 12);
+    assert(preview.gems == 2);
+    CampaignNode grind_node = {
+        .gold = 10,
+        .xp = 4,
+        .default_gems = 3,
+        .challenge_gold = 5,
+        .challenge_xp = 3,
+        .challenge_gems = 2,
+        .grind_gold = 7,
+        .grind_xp = 6,
+        .grind_gems = 1,
+        .grind = true,
+    };
+    preview = (BattleUi){.node = &grind_node};
+    BattleUiSetNodeWins(&preview, 0);
+    assert(preview.gold == 15 && preview.xp == 7 && preview.gems == 5 && preview.mastery[0] == '\0');
+    BattleUiSetNodeWins(&preview, 1);
+    assert(preview.gold == 17 && preview.xp == 10 && preview.gems == 4 && preview.mastery[0] == '\0');
+
+    Campaign bucket_campaign = {.map_count = 1};
+    bucket_campaign.maps[0].node_count = 1;
+    bucket_campaign.maps[0].nodes[0] = (CampaignNode){
+        .gold = 10,
+        .xp = 4,
+        .default_gems = 3,
+        .first_win_gold = 5,
+        .first_win_xp = 3,
+        .mastery_gold = 7,
+        .mastery_xp = 6,
+        .first_win_gems = 2,
+        .mastery_gems = 1,
+        .wins_to_master = 3,
+    };
+    Player bucket_player = {0};
+    ProgressionInitializePlayerDefaults(&bucket_player);
+    BattleRewardResult bucket_first = CampaignResolveBattle(&bucket_player, &bucket_campaign, 0, 0, true, 0);
+    assert(bucket_first.gold_reward == 15 && bucket_first.xp_reward == 7 && bucket_first.gems_reward == 5);
+    assert(bucket_first.default_gold_reward == 10);
+    assert(bucket_first.default_gems_reward == 3);
+    assert(bucket_first.first_win_gold_reward == 5 && bucket_first.first_win_xp_reward == 3);
+    BattleRewardResult bucket_replay = CampaignResolveBattle(&bucket_player, &bucket_campaign, 0, 0, true, 0);
+    assert(bucket_replay.gold_reward == 10 && bucket_replay.xp_reward == 4 && bucket_replay.gems_reward == 3);
+
+    Player bucket_mastery_player = {0};
+    ProgressionInitializePlayerDefaults(&bucket_mastery_player);
+    bucket_mastery_player.campaign_progress.node_completions[0][0] = 2;
+    BattleRewardResult bucket_mastery = CampaignResolveBattle(&bucket_mastery_player, &bucket_campaign, 0, 0, true, 0);
+    assert(bucket_mastery.mastered);
+    assert(bucket_mastery.gold_reward == 17 && bucket_mastery.xp_reward == 10 && bucket_mastery.gems_reward == 4);
+    assert(bucket_mastery.mastery_gold_reward == 7 && bucket_mastery.mastery_xp_reward == 6);
+
+    BattleUi bucket_preview = {.node = &bucket_campaign.maps[0].nodes[0]};
+    BattleUiSetNodeWins(&bucket_preview, 0);
+    assert(bucket_preview.gold == 15 && bucket_preview.xp == 7 && bucket_preview.gems == 5);
+    BattleUiSetNodeWins(&bucket_preview, 1);
+    assert(bucket_preview.gold == 10 && bucket_preview.xp == 4 && bucket_preview.gems == 3);
+    BattleUiSetNodeWins(&bucket_preview, 2);
+    assert(bucket_preview.gold == 17 && bucket_preview.xp == 10 && bucket_preview.gems == 4);
+
+    Campaign one_win = {.map_count = 1};
+    one_win.maps[0].node_count = 1;
+    one_win.maps[0].nodes[0] = (CampaignNode){
+        .gold = 10,
+        .first_win_gold = 5,
+        .mastery_gold = 7,
+        .first_win_gems = 2,
+        .mastery_gems = 1,
+        .wins_to_master = 1,
+    };
+    Player one_win_player = {0};
+    ProgressionInitializePlayerDefaults(&one_win_player);
+    BattleRewardResult one_win_result = CampaignResolveBattle(&one_win_player, &one_win, 0, 0, true, 0);
+    assert(one_win_result.first_win && !one_win_result.mastered);
+    assert(one_win_result.gold_reward == 15 && one_win_result.gems_reward == 2);
+    assert(one_win_result.mastery_gold_reward == 0 && one_win_result.mastery_gems_reward == 0);
+
+    player.campaign_progress.campaign_index = 15;
+    player.campaign_progress.node_index = 11;
+    CampaignProgressSync(&campaign, &player.campaign_progress);
+    assert(player.campaign_progress.campaign_index == 1);
+    assert(player.campaign_progress.node_index == 0);
+}
+
+static void TestProgressionPersistence(void) {
+    const char *path = "tests/progression_save_test.dat";
+    const char *temporary = "tests/progression_save_test.dat.tmp";
+    remove(path);
+    remove(temporary);
+
+    Player source = {0};
+    ProgressionInitializePlayerDefaults(&source);
+    source.level = 4;
+    source.experience = 109;
+    source.experience_min = ProgressionXpForCurrentLevel(source.level);
+    source.experience_max = ProgressionXpForNextLevel(source.level);
+    source.energy_max = ProgressionEnergyMaxForLevel(source.level);
+    source.energy = 7;
+    source.energy_regen_timer = 123.5f;
+    source.stamina = 5;
+    source.stamina_regen_timer = 42.25f;
+    source.gold = 9876;
+    source.gems = 77;
+    source.store_rng_state = 0x1234abcdu;
+    source.store_opened_total = 10;
+    source.store_opened_by_pack[0] = 1;
+    source.store_opened_by_pack[1] = 2;
+    source.store_opened_by_pack[2] = 3;
+    source.store_opened_by_pack[3] = 4;
+    source.champion_since_legendary = 2;
+    source.campaign_progress.campaign_index = 1;
+    source.campaign_progress.node_index = 1;
+    source.campaign_progress.node_completions[0][0] = 3;
+    source.campaign_progress.node_completions[0][2] = 1;
+    source.campaign_progress.node_completions[1][0] = 2;
+    source.campaign_progress.pending_animation = (PlayerCampaignAnimation){
+        .active = true,
+        .unlock_next = false,
+        .from_map = 0,
+        .from_node = 0,
+        .to_map = 0,
+        .to_node = 1,
+    };
+    assert(ProgressionSaveToPath(&source, path));
+    assert(FileExists(path) && !FileExists(temporary));
+
+    char *json = LoadFileText(path);
+    assert(json && strstr(json, "\"version\"") && strstr(json, "\"completions\""));
+    assert(strstr(json, "\"roster\"") && strstr(json, "\"store\""));
+    UnloadFileText(json);
+
+    Character sentinel_roster = {0};
+    Player loaded = {.roster = &sentinel_roster, .roster_count = 1};
+    assert(ProgressionLoadFromPath(&loaded, path));
+    assert(loaded.roster == &sentinel_roster && loaded.roster_count == 1);
+    assert(loaded.level == 4 && loaded.experience == 109);
+    assert(loaded.experience_min == 90 && loaded.experience_max == 140);
+    assert(loaded.energy == 7 && loaded.energy_max == 15);
+    assert(fabsf(loaded.energy_regen_timer - 123.5f) < 0.001f);
+    assert(loaded.stamina == 5 && fabsf(loaded.stamina_regen_timer - 42.25f) < 0.001f);
+    assert(loaded.gold == 9876 && loaded.gems == 77);
+    assert(loaded.store_rng_state == 0x1234abcdu && loaded.store_opened_total == 10);
+    assert(loaded.store_opened_by_pack[0] == 1 && loaded.store_opened_by_pack[3] == 4);
+    assert(loaded.champion_since_legendary == 2);
+    assert(loaded.campaign_progress.node_completions[0][0] == 3);
+    assert(loaded.campaign_progress.node_completions[1][0] == 2);
+    assert(loaded.campaign_progress.pending_animation.active);
+    assert(!loaded.campaign_progress.pending_animation.unlock_next);
+    assert(loaded.campaign_progress.pending_animation.from_map == 0);
+    assert(loaded.campaign_progress.pending_animation.from_node == 0);
+    assert(loaded.campaign_progress.pending_animation.to_map == 0);
+    assert(loaded.campaign_progress.pending_animation.to_node == 1);
+
+    json = LoadFileText(path);
+    cJSON *legacy_root = cJSON_Parse(json);
+    UnloadFileText(json);
+    cJSON_ReplaceItemInObjectCaseSensitive(legacy_root, "version", cJSON_CreateNumber(2));
+    cJSON *legacy_campaign = cJSON_GetObjectItemCaseSensitive(legacy_root, "campaign");
+    cJSON_DeleteItemFromObjectCaseSensitive(legacy_campaign, "pending_animation");
+    cJSON_DeleteItemFromObjectCaseSensitive(legacy_root, "store");
+    cJSON_DeleteItemFromObjectCaseSensitive(legacy_root, "roster");
+    cJSON_DeleteItemFromObjectCaseSensitive(legacy_root, "squads");
+    cJSON_DeleteItemFromObjectCaseSensitive(legacy_root, "current_squad");
+    char *legacy_json = cJSON_Print(legacy_root);
+    cJSON_Delete(legacy_root);
+    assert(legacy_json && SaveFileText(path, legacy_json));
+    cJSON_free(legacy_json);
+    Player legacy_loaded = {0};
+    ProgressionInitializePlayerDefaults(&legacy_loaded);
+    uint32_t legacy_rng = legacy_loaded.store_rng_state;
+    assert(ProgressionLoadFromPath(&legacy_loaded, path));
+    assert(legacy_loaded.level == 4 && legacy_loaded.campaign_progress.node_completions[0][0] == 3);
+    assert(!legacy_loaded.campaign_progress.pending_animation.active);
+    assert(legacy_loaded.store_rng_state == legacy_rng && legacy_loaded.store_opened_total == 0);
+
+    char corrupt[] = "{\"version\":999,\"account\":{},\"campaign\":{}}";
+    assert(SaveFileText(path, corrupt));
+    Player before = loaded;
+    assert(!ProgressionLoadFromPath(&loaded, path));
+    assert(memcmp(&before, &loaded, sizeof(loaded)) == 0);
+
+    remove(path);
+    remove(temporary);
+}
+
+static void TestRosterInstancesAndPersistence(void) {
+    const char *path = "tests/roster_save_test.dat";
+    const char *temporary = "tests/roster_save_test.dat.tmp";
+    remove(path);
+    remove(temporary);
+
+    Player source = {0};
+    ProgressionInitializePlayerDefaults(&source);
+    PlayerLoadRoster(&source, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    assert(source.roster_capacity == PLAYER_ROSTER_CAPACITY);
+    assert(source.starter_roster_count == source.roster_count);
+    assert(source.roster_capacity >= source.starter_roster_count + 100);
+    for (int i = 0; i < source.roster_count; i++) {
+        assert(source.roster[i].instance_id == (uint64_t)i + 1);
+        assert(source.roster[i].ability == &source.roster_abilities[i]);
+    }
+
+    cJSON *catalog_root = JsonLoadFile(HOD_CACHE "characters.json");
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
+    cJSON *def = CatalogFindCharacter(catalog, "UNIT_ELVENMAGE");
+    assert(def);
+    int definition_count = PlayerRosterDefinitionCount(&source, "UNIT_ELVENMAGE");
+    int initial_count = source.roster_count;
+    uint64_t initial_next = source.next_instance_id;
+    const cJSON *defs[2] = {def, def};
+    int first = -1;
+    assert(PlayerRosterHasCapacity(&source, 2));
+    assert(PlayerRosterAppendDefinitions(&source, defs, 2, &first));
+    assert(first == initial_count && source.roster_count == initial_count + 2);
+    assert(source.next_instance_id == initial_next + 2);
+    assert(source.roster[first].instance_id == initial_next);
+    assert(source.roster[first + 1].instance_id == initial_next + 1);
+    assert(source.roster[first].instance_id != source.roster[first + 1].instance_id);
+    assert(source.roster[first].ability == &source.roster_abilities[first]);
+    assert(PlayerRosterDefinitionCount(&source, "UNIT_ELVENMAGE") == definition_count + 2);
+
+    cJSON *invalid = cJSON_CreateObject();
+    const cJSON *bad_defs[2] = {def, invalid};
+    int count_before_failure = source.roster_count;
+    uint64_t next_before_failure = source.next_instance_id;
+    int first_bad = 123;
+    assert(!PlayerRosterAppendDefinitions(&source, bad_defs, 2, &first_bad));
+    assert(first_bad == -1);
+    assert(source.roster_count == count_before_failure && source.next_instance_id == next_before_failure);
+    cJSON_Delete(invalid);
+
+    int gold = source.gold;
+    int gems = source.gems;
+    assert(PlayerSpendGold(&source, 25) && source.gold == gold - 25);
+    assert(PlayerSpendGems(&source, 3) && source.gems == gems - 3);
+    gold = source.gold;
+    gems = source.gems;
+    assert(!PlayerSpendGold(&source, -1) && !PlayerSpendGold(&source, gold + 1));
+    assert(!PlayerSpendGems(&source, -1) && !PlayerSpendGems(&source, gems + 1));
+    assert(source.gold == gold && source.gems == gems);
+
+    source.store_rng_state = 0x76543210u;
+    source.store_opened_total = 10;
+    source.store_opened_by_pack[0] = 1;
+    source.store_opened_by_pack[1] = 2;
+    source.store_opened_by_pack[2] = 3;
+    source.store_opened_by_pack[3] = 4;
+    source.champion_since_legendary = 2;
+    assert(PlayerSquadPlace(&source, 2, 0, first));
+    PlayerSquadSelect(&source, 2);
+    assert(ProgressionSaveToPath(&source, path));
+    assert(FileExists(path) && !FileExists(temporary));
+
+    Player loaded = {0};
+    ProgressionInitializePlayerDefaults(&loaded);
+    PlayerLoadRoster(&loaded, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    assert(ProgressionLoadFromPath(&loaded, path));
+    assert(loaded.roster_count == source.roster_count);
+    assert(loaded.starter_roster_count == source.starter_roster_count);
+    assert(loaded.next_instance_id == source.next_instance_id);
+    assert(loaded.roster[first].instance_id == source.roster[first].instance_id);
+    assert(loaded.roster[first + 1].instance_id == source.roster[first + 1].instance_id);
+    assert(strcmp(loaded.roster[first].id, "UNIT_ELVENMAGE") == 0);
+    assert(loaded.roster[first].ability == &loaded.roster_abilities[first]);
+    assert(PlayerRosterDefinitionCount(&loaded, "UNIT_ELVENMAGE") == definition_count + 2);
+    assert(loaded.store_rng_state == source.store_rng_state && loaded.store_opened_total == 10);
+    assert(loaded.store_opened_by_pack[2] == 3 && loaded.champion_since_legendary == 2);
+    assert(loaded.current_squad == 2 && loaded.squads[2][0] == first);
+
+    Character addition_before = loaded.roster[first];
+    Player player_before = loaded;
+    char *json = LoadFileText(path);
+    cJSON *corrupt_root = cJSON_Parse(json);
+    UnloadFileText(json);
+    cJSON *corrupt_roster = cJSON_GetObjectItemCaseSensitive(corrupt_root, "roster");
+    cJSON *corrupt_additions = cJSON_GetObjectItemCaseSensitive(corrupt_roster, "additions");
+    cJSON *corrupt_entry = cJSON_GetArrayItem(corrupt_additions, 0);
+    cJSON_ReplaceItemInObjectCaseSensitive(corrupt_entry, "id", cJSON_CreateString("UNIT_DOES_NOT_EXIST"));
+    char *corrupt_json = cJSON_Print(corrupt_root);
+    cJSON_Delete(corrupt_root);
+    assert(corrupt_json && SaveFileText(path, corrupt_json));
+    cJSON_free(corrupt_json);
+    assert(!ProgressionLoadFromPath(&loaded, path));
+    assert(memcmp(&player_before, &loaded, sizeof(loaded)) == 0);
+    assert(memcmp(&addition_before, &loaded.roster[first], sizeof(addition_before)) == 0);
+
+    cJSON_Delete(catalog_root);
+    PlayerUnloadRoster(&loaded);
+    PlayerUnloadRoster(&source);
+    remove(path);
+    remove(temporary);
+}
+
+static void TestAllCampaignMapsAdvance(void) {
+    Campaign campaign = {.map_count = CAMPAIGN_MAX_MAPS};
+    for (int map = 0; map < CAMPAIGN_MAX_MAPS; map++) {
+        campaign.maps[map].node_count = 1;
+        campaign.maps[map].nodes[0] = (CampaignNode){.gold = 1, .xp = 1};
+    }
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+
+    for (int map = 0; map < CAMPAIGN_MAX_MAPS; map++) {
+        assert(CampaignMapUnlocked(&campaign, &player.campaign_progress, map));
+        BattleRewardResult result = CampaignResolveBattle(&player, &campaign, map, 0, true, 0);
+        assert(result.resolved && result.first_win);
+        if (map + 1 < CAMPAIGN_MAX_MAPS) {
+            assert(result.advanced && result.unlocked_map);
+            assert(result.next_map_index == map + 1 && result.next_node_index == 0);
+        } else {
+            assert(!result.advanced && !result.unlocked_map);
+            assert(result.next_map_index == map && result.next_node_index == 0);
+        }
+    }
+}
+
+static void TestEnergyAndStaminaPools(void) {
+    Player player = {
+        .energy = 1,
+        .energy_max = 3,
+        .stamina = 2,
+        .stamina_max = 4,
+        .energy_regen_timer = 299.0f,
+        .stamina_regen_timer = 298.0f,
+        .gems = ENERGY_REFILL_GEM_COST + STAMINA_REFILL_GEM_COST,
+    };
+
+    assert(fabsf(PlayerEnergyRegenRemaining(&player) - 1.0f) < 0.001f);
+    assert(fabsf(PlayerStaminaRegenRemaining(&player) - 2.0f) < 0.001f);
+    PlayerUpdate(&player, 2.0f);
+    assert(player.energy == 2 && fabsf(player.energy_regen_timer - 1.0f) < 0.001f);
+    assert(player.stamina == 3 && fabsf(player.stamina_regen_timer) < 0.001f);
+
+    assert(PlayerRefillEnergy(&player));
+    assert(player.energy == player.energy_max && player.energy_regen_timer == 0.0f);
+    assert(PlayerRefillStamina(&player));
+    assert(player.stamina == player.stamina_max && player.stamina_regen_timer == 0.0f);
+    assert(player.gems == 0);
+    assert(!PlayerRefillEnergy(&player) && !PlayerRefillStamina(&player));
+    assert(PlayerEnergyRegenRemaining(&player) == 0.0f);
+    assert(PlayerStaminaRegenRemaining(&player) == 0.0f);
+}
+
+static void TestFxKeyoutPreservesSourceTransparency(void) {
+    Color transparent_grey = {128, 128, 128, 0};
+    Color white_key = FxKeyoutPixel(transparent_grey, 1);
+    Color black_key = FxKeyoutPixel(transparent_grey, 2);
+    assert(white_key.a == 0 && black_key.a == 0);
+
+    Color opaque_grey = {128, 128, 128, 255};
+    white_key = FxKeyoutPixel(opaque_grey, 1);
+    black_key = FxKeyoutPixel(opaque_grey, 2);
+    assert(white_key.a == 127 && black_key.a == 128);
+}
+
+int main(void) {
+    SetTraceLogLevel(LOG_WARNING);
+    TestSquadSlotReferenceLayout();
+    TestBattleRowBonuses();
+    TestHeroRowBonusReferencePresentation();
+    TestFormationBonusMetadata();
+    TestFormationBonusRequiresSharedFaction();
+    TestIntroQueueShowsOnlyPlayerFactionBonus();
+    TestFactionIntroAssetsAndText();
+    TestPowerDrain();
+    TestAllyPowerGain();
+    TestAllySlow();
+    TestAllyCritGain();
+    TestTwoRoundCurse();
+    TestBackRowCurse();
+    TestFallbackSelfCosts();
+    TestCombinedAilments();
+    TestMarkLandsOnStruckTargets();
+    TestSplitAilmentSwing();
+    TestCurseLastsThroughTurn();
+    TestNecromancerDorianCurse();
+    TestCurseFx();
+    TestSlowFx();
+    TestStatusPrefabCabParameters();
+    TestCriticalFxAndReward();
+    TestBattleMessageDictionary();
+    TestBattleRewardMessageTiming();
+    TestBattleCameraTransitions();
+    TestStatusDeltaFxRules();
+    TestStatusAuraSlots();
+    TestStatusOffsetsAndShake();
+    TestInitiativeAndStatusCleanup();
+    TestFollowupTarget();
+    TestRedJennySeraFinalHit();
+    TestColeProfanePerHitGrowth();
+    TestVivienneIncreasingFollowups();
+    TestRiverDanePersistentAllyDamage();
+    TestBonusDamageRecipes();
+    TestMechanicsFallback();
+    TestNoAttackFallback();
+    TestNoAttackCompoundTargets();
+    TestStatusOnlyTargetPacket();
+    TestRandomAllyAttack();
+    TestGeneratedCorypheusRecipe();
+    TestGeneratedLoghainRecipes();
+    TestGeneratedChanceGroup();
+    TestTimelineCapacity();
+    TestLegendaryStars();
+    TestCatalogStatGrowth();
+    TestFxPresetLiveEmitterSizes();
+    TestGeneratedFxCurvesAndDragonJet();
+    TestPortraitCoverage();
+    TestRichTextParserFallback();
+    TestCharacterTextCoverage();
+    TestAbilityMechanicParsing();
+    TestExactRecipesMatchDescriptions();
+    TestGeneratedRecipeCoverage();
+    TestRecipeCoverage();
+    TestAttackPresentationBindings();
+    TestConeDelayDefersImpact();
+    TestBattlePreviewUsesFinalSetupStats();
+    TestIntrinsicPassiveManifest();
+    TestEnvyBattleStartAuras();
+    TestAvvarWarNugCompositionHealth();
+    TestPowerVsTargetDamage();
+    TestStackingAuraMatchMode();
+    TestPassivePredicatesAndSignedEnemyAura();
+    TestAurasAddAcrossSources();
+    TestPassivePrecedesFormationRounding();
+    TestEnvyTargetWeights();
+    TestEnvyDamageAndEnemyDeathHeal();
+    TestBattleClipAliases();
+    TestTierlessWispModelAlias();
+    TestExactTierModelResolution();
+    TestDisplayScaleManifestIsFullyLoaded();
+    TestDamageShakeFallback();
+    TestAttackClipReturnsToIdle();
+    TestCampaignOpenerCanBeWon();
+    TestCriticalGoldCommitOnce();
+    TestCampaignNodeCoordinates();
+    TestCampaignMapRewardSchema();
+    TestCampaignProgressionRewards();
+    TestProgressionPersistence();
+    TestRosterInstancesAndPersistence();
+    TestAllCampaignMapsAdvance();
+    TestEnergyAndStaminaPools();
+    TestFxKeyoutPreservesSourceTransparency();
+    puts("battle_sim_test: ok");
+    return 0;
+}
