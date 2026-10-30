@@ -486,12 +486,6 @@ bool PlayerSpendKeys(Player *p, int inventory_id, int count) {
     return true;
 }
 
-void PlayerAddKeys(Player *p, int inventory_id, int count) {
-    int index = PlayerKeyIndexForId(inventory_id);
-    if (!p || index < 0 || count <= 0) return;
-    p->keys[index] = p->keys[index] + count > NEXUS_KEY_MAX ? NEXUS_KEY_MAX : p->keys[index] + count;
-}
-
 bool PlayerRefillStamina(Player *p) {
     if (p->stamina >= p->stamina_max || p->gems < STAMINA_REFILL_GEM_COST) return false;
     p->gems -= STAMINA_REFILL_GEM_COST;

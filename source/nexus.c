@@ -413,12 +413,6 @@ bool NexusMapOpen(const Nexus *n) {
     return n->bg_loaded && NexusActiveDifficulty(n) != NULL;
 }
 
-const NexusNode *NexusSelectedNode(const Nexus *n) {
-    const NexusDifficulty *d = NexusActiveDifficulty(n);
-    if (!d || n->selected_node < 0 || n->selected_node >= d->node_count) return NULL;
-    return &d->nodes[n->selected_node];
-}
-
 void NexusBeginProgressionAnimation(Nexus *n, int from_step, int to_step) {
     const NexusDifficulty *d = NexusActiveDifficulty(n);
     if (!d) return;

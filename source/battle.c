@@ -3420,12 +3420,6 @@ void BattleEnterNode(Battle *b, const Player *player, const char *map_id, int st
     BattleEnterNodeFrom(b, player, "data/campaign_rosters.json", map_id, step);
 }
 
-static bool BattleFlycam(void) {
-    static int cached = -1;
-    if (cached < 0) cached = (getenv("HOD_FLYCAM") != NULL) ? 1 : 0;
-    return cached == 1;
-}
-
 void BattleUpdate(Battle *b, float dt) {
     BattleVfxUpdate(b, dt);
     BattleFxUpdate(b, dt);
@@ -3456,7 +3450,7 @@ void BattleUpdate(Battle *b, float dt) {
         UpdateMusicStream(b->music_loop);
     }
 
-    if (!BattleFlycam()) {
+    if (!FlycamEnabled()) {
         BattleCameraUpdatePose(b, dt);
         return;
     }
@@ -3722,7 +3716,7 @@ void BattleDraw(Battle *b) {
     rlEnableBackfaceCulling();
     rlSetClipPlanes(RL_CULL_DISTANCE_NEAR, RL_CULL_DISTANCE_FAR);
 
-    if (BattleFlycam()) {
+    if (FlycamEnabled()) {
         Vector3 p = b->cam.position, t = b->cam.target;
         const char *info = TextFormat(
             "FLYCAM pos (%.2f,%.2f,%.2f) target (%.2f,%.2f,%.2f) fovy %.1f", p.x, p.y, p.z, t.x, t.y, t.z, b->cam.fovy

@@ -1,3 +1,23 @@
+static bool EnvFlag(const char *name) {
+    return getenv(name) != NULL;
+}
+
+static int EnvInt(const char *name, int fallback) {
+    const char *value = getenv(name);
+    return value ? atoi(value) : fallback;
+}
+
+static float EnvFloat(const char *name, float fallback) {
+    const char *value = getenv(name);
+    return value ? (float)atof(value) : fallback;
+}
+
+static bool FlycamEnabled(void) {
+    static int cached = -1;
+    if (cached < 0) cached = EnvFlag("HOD_FLYCAM");
+    return cached == 1;
+}
+
 static void StrCopy(char *dst, int cap, const char *src) {
     if (!src) src = "";
     int n = (int)strlen(src);

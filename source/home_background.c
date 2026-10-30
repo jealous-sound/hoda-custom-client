@@ -164,23 +164,23 @@ static void WindPhaseAt(const float phase[4], Vector3 centre, float out[4])
     out[3] = fmodf(phase[0]*centre.x + phase[1]*centre.y + phase[2]*centre.z + phase[3], 2.0f*PI);
 }
 
-static void SetWindUniforms(Shader sh, WindLocs loc, const SceneWind *w, Vector3 centre, float time)
+static void SetWindUniforms(Shader sh, WindLocs locs, const SceneWind *w, Vector3 centre, float time)
 {
     float a[4], b[4];
     WindPhaseAt(w->phase_a, centre, a);
     WindPhaseAt(w->phase_b, centre, b);
     float wind[4] = {w->wind[0]*w->gain, w->wind[1]*w->gain, w->wind[2]*w->gain, w->wind[3]};
-    SetShaderValue(sh, loc.wind,     wind,         SHADER_UNIFORM_VEC4);
-    SetShaderValue(sh, loc.phase_a,  a,            SHADER_UNIFORM_VEC4);
-    SetShaderValue(sh, loc.phase_b,  b,            SHADER_UNIFORM_VEC4);
-    SetShaderValue(sh, loc.origin,   &centre,      SHADER_UNIFORM_VEC3);
-    SetShaderValue(sh, loc.flutter,  &w->flutter,  SHADER_UNIFORM_FLOAT);
-    SetShaderValue(sh, loc.freq,     &w->flutter_hz, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(sh, loc.time,     &time,        SHADER_UNIFORM_FLOAT);
-    SetShaderValue(sh, loc.cutoff,   &w->cutoff,   SHADER_UNIFORM_FLOAT);
-    SetShaderValue(sh, loc.vc_scale, &w->vc_scale, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(sh, loc.vc_shift, &w->vc_shift, SHADER_UNIFORM_FLOAT);
-    SetShaderValue(sh, loc.tint,     w->tint,      SHADER_UNIFORM_VEC3);
+    SetShaderValue(sh, locs.wind,     wind,         SHADER_UNIFORM_VEC4);
+    SetShaderValue(sh, locs.phase_a,  a,            SHADER_UNIFORM_VEC4);
+    SetShaderValue(sh, locs.phase_b,  b,            SHADER_UNIFORM_VEC4);
+    SetShaderValue(sh, locs.origin,   &centre,      SHADER_UNIFORM_VEC3);
+    SetShaderValue(sh, locs.flutter,  &w->flutter,  SHADER_UNIFORM_FLOAT);
+    SetShaderValue(sh, locs.freq,     &w->flutter_hz, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(sh, locs.time,     &time,        SHADER_UNIFORM_FLOAT);
+    SetShaderValue(sh, locs.cutoff,   &w->cutoff,   SHADER_UNIFORM_FLOAT);
+    SetShaderValue(sh, locs.vc_scale, &w->vc_scale, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(sh, locs.vc_shift, &w->vc_shift, SHADER_UNIFORM_FLOAT);
+    SetShaderValue(sh, locs.tint,     w->tint,      SHADER_UNIFORM_VEC3);
 }
 
 static Mesh LoadPlyMesh(const char *path)
@@ -519,7 +519,7 @@ void HomeBackgroundInitialize(HomeBackground *scene, const char *mesh_dir, const
     scene->mult_sh  = LoadShaderFromMemory(VS_UNLIT, FS_MULTIPLY);
     scene->wind_loc = WindLocsGet(scene->wind_sh);
 
-    float gain = getenv("HOD_GAIN") ? (float)atof(getenv("HOD_GAIN")) : 0.25f;
+    float gain = EnvFloat("HOD_GAIN", 0.25f);
     Shader gain_shaders[3] = { scene->mix_sh, scene->rock_sh, scene->diff_sh };
     for (int i = 0; i < 3; i++)
         SetShaderValue(gain_shaders[i], GetShaderLocation(gain_shaders[i], "uBright"), &gain, SHADER_UNIFORM_FLOAT);

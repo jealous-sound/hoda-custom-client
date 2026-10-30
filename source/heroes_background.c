@@ -1008,7 +1008,7 @@ void HeroesBackgroundInitialize(
     scene->mult_sh = LoadShaderFromMemory(VS_UNLIT, FS_MULTIPLY);
     scene->wind_loc = WindLocsGet(scene->wind_sh);
 
-    float gain = getenv("HOD_GAIN") ? (float)atof(getenv("HOD_GAIN")) : 0.25f;
+    float gain = EnvFloat("HOD_GAIN", 0.25f);
     Shader gain_shaders[3] = {scene->mix_sh, scene->rock_sh, scene->diff_sh};
     for (int i = 0; i < 3; i++)
         SetShaderValue(gain_shaders[i], GetShaderLocation(gain_shaders[i], "uBright"), &gain, SHADER_UNIFORM_FLOAT);
@@ -1183,12 +1183,6 @@ void HeroesBackgroundInitialize(
     HeroesSquadLoad(scene, player);
 }
 
-static bool HeroFlycam(void) {
-    static int cached = -1;
-    if (cached < 0) cached = (getenv("HOD_FLYCAM") != NULL) ? 1 : 0;
-    return cached == 1;
-}
-
 void HeroesBackgroundUpdate(HeroesBackground *scene, float dt) {
     for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HomeSquadUnitUpdate(&scene->units[s], dt);
     if (scene->drag.active) HomeSquadUnitUpdate(&scene->drag.unit, dt);
@@ -1206,7 +1200,7 @@ void HeroesBackgroundUpdate(HeroesBackground *scene, float dt) {
     const char *fx = getenv("HOD_FX");
     if (fx && scene->row_bonus_effect == HFX_NONE) HeroRowBonusStart(scene, strcmp(fx, "crit") == 0 ? 0 : 1);
 
-    if (!HeroFlycam()) return;
+    if (!FlycamEnabled()) return;
     UpdateCamera(&scene->cam, CAMERA_FREE);
     if (IsKeyDown(KEY_LEFT_BRACKET)) scene->cam.fovy = fmaxf(10.0f, scene->cam.fovy - 30.0f * dt);
     if (IsKeyDown(KEY_RIGHT_BRACKET)) scene->cam.fovy = fminf(120.0f, scene->cam.fovy + 30.0f * dt);
@@ -1399,7 +1393,7 @@ void HeroesBackgroundDraw(HeroesBackground *scene) {
     rlSetCullFace(RL_CULL_FACE_BACK);
     rlEnableBackfaceCulling();
 
-    if (HeroFlycam()) {
+    if (FlycamEnabled()) {
         Vector3 p = scene->cam.position, tg = scene->cam.target;
         const char *info = TextFormat(
             "FLYCAM  pos (%.2f, %.2f, %.2f)   target (%.2f, %.2f, %.2f)   fovy %.1f\n"

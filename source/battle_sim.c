@@ -1223,7 +1223,7 @@ static void SimAttack(
         int extra =
             t->side != actor->side && SimHasAdvantage(actor->faction, t->faction) ? (int)lroundf(0.25f * base[i]) : 0;
 
-        BattleSimTarget bt = {picked[i], -base[i], 0, 0, -extra};
+        BattleSimTarget bt = {.unit = picked[i], .health_delta = -base[i], .health_faction_delta = -extra};
         BattleAilment ailments = AIL_NONE;
         if (SimChance(s, hit->stun_pct)) ailments |= AIL_STUNNED;
         if (SimChance(s, hit->slow_pct)) bt.initiative_delta += hit->slow_amt;
@@ -1290,7 +1290,7 @@ static void SimAttack(
         BattleSimAction *sec = SimEmit(s, actor_idx);
         if (!sec) return;
         sec->replay_attack = false;
-        BattleSimTarget st = {actor_idx, 0, 0, 0, 0};
+        BattleSimTarget st = {.unit = actor_idx};
         if (self_power) st.power_delta += (int)lroundf(actor->start_power * (fx->self_power_pct / 100.0f));
         if (actor->curse_power && st.power_delta > 0) st.power_delta = 0;
         if (self_heal && !actor->curse_health)
@@ -1303,7 +1303,7 @@ static void SimAttack(
                 int idx = actor->side * SQUAD_SLOT_COUNT + slot;
                 SimUnit *ally = &s->units[idx];
                 if (!ally->alive || idx == actor_idx) continue;
-                BattleSimTarget at = {idx, 0, 0, 0, 0};
+                BattleSimTarget at = {.unit = idx};
                 if (ally_heal && !ally->curse_health)
                     at.health_delta += (int)lroundf(actor->power * (fx->ally_heal_pct / 100.0f));
                 if (ally_power && !ally->curse_power)
