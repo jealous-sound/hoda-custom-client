@@ -804,7 +804,7 @@ static const FxPreset
              .em_count = 3,
              .em =
                  {
-                     {.tex = "fx_atk_lineslash_pre__sword_slash.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_atk_lineslash_pre", "sword slash"),
                       .additive = 1,
                       .cols = 4,
                       .rows = 2,
@@ -816,7 +816,7 @@ static const FxPreset
                       .size1 = 2.5f,
                       .alpha_hold = 0.85f,
                       .rot_deg = 20},
-                     {.tex = "fx_atk_lineslash_pre__sword_slash.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_atk_lineslash_pre", "sword slash"),
                       .additive = 1,
                       .cols = 4,
                       .rows = 2,
@@ -829,7 +829,7 @@ static const FxPreset
                       .size1 = 2.3f,
                       .alpha_hold = 0.85f,
                       .rot_deg = 200},
-                     {.tex = "fx_atk_lineslash_pre__blood_splat.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_atk_lineslash_pre", "blood splat"),
                       .keyout = 1,
                       .cols = 5,
                       .rows = 5,
@@ -853,7 +853,7 @@ static const FxPreset
              .em_count = 3,
              .em =
                  {
-                     {.tex = "fx_heal_pre__smoke3.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_heal_pre", "smoke3"),
                       .additive = 1,
                       .orient = 1,
                       .max_particles = 10,
@@ -868,7 +868,7 @@ static const FxPreset
                       .alpha_curve = {.count = 2, .key = {{0, 1}, {1, 1}}},
                       .tint = {152, 255, 0, 255},
                       .offset = {0, 0.1f, 0}},
-                     {.tex = "shared__chargespark.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "chargespark"),
                       .additive = 1,
                       .max_particles = 60,
                       .rate = 300,
@@ -884,7 +884,7 @@ static const FxPreset
                       .rot_bias_deg = 50.0f,
                       .tint = {152, 255, 0, 255},
                       .offset = {0, 0.2f, 0}},
-                     {.tex = "fx_heal_pre__Default-Particle.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_heal_pre", "Default-Particle"),
                       .additive = 1,
                       .orient = 1,
                       .max_particles = 1,
@@ -904,7 +904,7 @@ static const FxPreset
              .em_count = 6,
              .em =
                  {
-                     {.tex = "fx_crit_pre__ARC_Strip003.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_crit_pre", "ARC_Strip003"),
                       .additive = 1,
                       .orient = 2,
                       .cols = 1,
@@ -941,7 +941,7 @@ static const FxPreset
                                {{.time = 0, .color = {62, 97, 227, 255}}, {.time = 1, .color = {159, 129, 118, 255}}}},
                       .stretch_length = 3.0f,
                       .offset = {-0.190658f, 0.894454f, -0.052110f}},
-                     {.tex = "fx_imp_desiccate_pre__vfx_flare_01.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "vfx_flare_01"),
                       .additive = 1,
                       .max_screen_size = 2.0f,
                       .max_particles = 3,
@@ -963,7 +963,7 @@ static const FxPreset
                                 {.time = 0.489845f, .color = {26, 72, 240, 255}},
                                 {.time = 1, .color = {0, 0, 0, 255}}}},
                       .offset = {-0.190658f, 0.894454f, -0.052110f}},
-                     {.tex = "fx_crit_pre__Square.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_crit_pre", "Square"),
                       .additive = 1,
                       .orient = 2,
                       .max_screen_size = 0.5f,
@@ -990,7 +990,7 @@ static const FxPreset
                                 {.time = 1, .color = {60, 25, 7, 175}}}},
                       .stretch_velocity = 0.05f,
                       .offset = {-0.190658f, 0.934932f, -0.052110f}},
-                     {.tex = "fx_imp_desiccate_pre__vfx_smoke_whispy_cs.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "vfx_smoke_whispy_cs"),
                       .additive = 1,
                       .cols = 2,
                       .rows = 2,
@@ -1018,7 +1018,7 @@ static const FxPreset
                       .spin_deg = 30.0f,
                       .tint = {152, 182, 255, 209},
                       .offset = {0, 0.252f, 0}},
-                     {.tex = "fx_imp_desiccate_pre__vfx_flare_01.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "vfx_flare_01"),
                       .additive = 1,
                       .orient = 1,
                       .max_screen_size = 10.0f,
@@ -1041,7 +1041,7 @@ static const FxPreset
                       .spin_bias_deg = 50.0f,
                       .spin_deg = 50.0f,
                       .offset = {-0.190658f, 0.894454f, -0.052110f}},
-                     {.tex = "fx_crit_pre__radial_lines.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_crit_pre", "radial_lines"),
                       .additive = 1,
                       .max_screen_size = 10.0f,
                       .max_particles = 4,
@@ -1081,7 +1081,7 @@ static const FxPreset
              .em_count = 2,
              .em =
                  {
-                     {.tex = "fx_placeunit_noLoop_pre__smoke.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_placeunit_noLoop_pre", "smoke"),
                       .count = 30,
                       .life0 = 0.8f,
                       .life1 = 0.8f,
@@ -1097,7 +1097,7 @@ static const FxPreset
                       .rot_deg = 180,
                       .spin_deg = 60,
                       .tint = {255, 255, 255, 84}},
-                     {.tex = "fx_placeunit_noLoop_pre__RockA_4x4_CA.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_placeunit_noLoop_pre", "RockA_4x4_CA"),
                       .cols = 4,
                       .rows = 4,
                       .count = 10,
@@ -1121,7 +1121,7 @@ static const FxPreset
              .em_count = 2,
              .em =
                  {
-                     {.tex = "fx_imp_fireball_pre__fireballexp.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "fireballexp"),
                       .additive = 1,
                       .cols = 2,
                       .rows = 1,
@@ -1135,7 +1135,7 @@ static const FxPreset
                       .alpha_hold = 0.67f,
                       .rot_deg = 75,
                       .tint = {255, 184, 118, 255}},
-                     {.tex = "fx_imp_fireball_pre__fireball06.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "fireball06"),
                       .additive = 1,
                       .rate = 10,
                       .duration = 0.5f,
@@ -1152,7 +1152,7 @@ static const FxPreset
              .em_count = 3,
              .em =
                  {
-                     {.tex = "fx_primallightning_pre__arc1a.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_primallightning_pre", "arc1a"),
                       .additive = 1,
                       .cols = 1,
                       .rows = 2,
@@ -1163,7 +1163,7 @@ static const FxPreset
                       .size0 = 1.6f,
                       .size1 = 1.6f,
                       .tint = {97, 135, 255, 255}},
-                     {.tex = "fx_primallightning_pre__vfx_streak01.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_primallightning_pre", "vfx_streak01"),
                       .additive = 1,
                       .rate = 50,
                       .duration = 0.4f,
@@ -1179,7 +1179,7 @@ static const FxPreset
                       .rot_deg = 180,
                       .spin_deg = 45,
                       .tint = {112, 129, 255, 150}},
-                     {.tex = "fx_chainlightning_pre__ColorFlare.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_chainlightning_pre", "ColorFlare"),
                       .additive = 1,
                       .count = 1,
                       .delay = 0.01f,
@@ -1198,7 +1198,7 @@ static const FxPreset
              .em_count = 4,
              .em =
                  {
-                     {.tex = "fx_chainstrike_red_pre__sword_slash.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_chainstrike_red_pre", "sword slash"),
                       .additive = 1,
                       .cols = 4,
                       .rows = 2,
@@ -1211,7 +1211,7 @@ static const FxPreset
                       .alpha_hold = 0.8f,
                       .rot_deg = 15,
                       .tint = {236, 60, 60, 255}},
-                     {.tex = "fx_chainstrike_red_pre__sword_slash.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_chainstrike_red_pre", "sword slash"),
                       .additive = 1,
                       .cols = 4,
                       .rows = 2,
@@ -1225,7 +1225,7 @@ static const FxPreset
                       .alpha_hold = 0.8f,
                       .rot_deg = 100,
                       .tint = {255, 148, 148, 255}},
-                     {.tex = "fx_chainstrike_red_pre__sword_slash.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_chainstrike_red_pre", "sword slash"),
                       .additive = 1,
                       .cols = 4,
                       .rows = 2,
@@ -1239,7 +1239,7 @@ static const FxPreset
                       .alpha_hold = 0.8f,
                       .rot_deg = 170,
                       .tint = {255, 148, 148, 255}},
-                     {.tex = "fx_chainstrike_red_pre__blood_splat.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_chainstrike_red_pre", "blood splat"),
                       .keyout = 1,
                       .cols = 5,
                       .rows = 5,
@@ -1263,7 +1263,7 @@ static const FxPreset
              .em_count = 2,
              .em =
                  {
-                     {.tex = "vfx_tripplehit_pre__tripple_strike.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_tripplehit_pre", "tripple strike"),
                       .additive = 1,
                       .cols = 3,
                       .rows = 3,
@@ -1276,7 +1276,7 @@ static const FxPreset
                       .size1 = 3.0f,
                       .alpha_hold = 0.8f,
                       .tint = {255, 60, 40, 255}},
-                     {.tex = "fx_assail_pre__vfx_streakExplode.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_assail_pre", "vfx_streakExplode"),
                       .additive = 1,
                       .rate = 3,
                       .duration = 1.2f,
@@ -1294,7 +1294,7 @@ static const FxPreset
              .em_count = 4,
              .em =
                  {
-                     {.tex = "vfx_ogresmash_pre__RockA_4x4_CA.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_ogresmash_pre", "RockA_4x4_CA"),
                       .cols = 4,
                       .rows = 4,
                       .count = 15,
@@ -1310,7 +1310,7 @@ static const FxPreset
                       .size_end = 0.66f,
                       .alpha_hold = 0.63f,
                       .rot_deg = 180},
-                     {.tex = "fx_chainlightning_pre__ColorFlare.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_chainlightning_pre", "ColorFlare"),
                       .additive = 1,
                       .count = 3,
                       .delay = 0.03f,
@@ -1320,7 +1320,7 @@ static const FxPreset
                       .size1 = 2.8f,
                       .rot_deg = 180,
                       .tint = {255, 144, 0, 255}},
-                     {.tex = "vfx_ogresmash_pre__centerbattlesubtract.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_ogresmash_pre", "centerbattlesubtract"),
                       .keyout = 2,
                       .count = 2,
                       .delay = 0.03f,
@@ -1332,7 +1332,7 @@ static const FxPreset
                       .orient = 1,
                       .tint = {25, 16, 10, 235},
                       .offset = {0, -0.82f, 0}},
-                     {.tex = "fx_packOpen_legendary_pre__Shockwave.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_packOpen_legendary_pre", "Shockwave"),
                       .additive = 1,
                       .count = 4,
                       .life0 = 0.15f,
@@ -1349,7 +1349,7 @@ static const FxPreset
              .em_count = 3,
              .em =
                  {
-                     {.tex = "vfx_assassinate_pre__Skullxbones.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_assassinate_pre", "Skullxbones"),
                       .additive = 1,
                       .cols = 6,
                       .rows = 6,
@@ -1363,7 +1363,7 @@ static const FxPreset
                       .size0 = 1.4f,
                       .size1 = 1.4f,
                       .tint = {255, 0, 0, 255}},
-                     {.tex = "fx_imp_desiccate_baroness_pre__smoke.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_imp_desiccate_baroness_pre", "smoke"),
                       .rate = 70,
                       .duration = 0.3f,
                       .delay = 0.1f,
@@ -1379,7 +1379,7 @@ static const FxPreset
                       .alpha_in = 0.28f,
                       .rot_deg = 135,
                       .tint = {0, 0, 0, 255}},
-                     {.tex = "fx_imp_desiccate_baroness_pre__smokepuff1.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_imp_desiccate_baroness_pre", "smokepuff1"),
                       .additive = 1,
                       .rate = 25,
                       .duration = 0.45f,
@@ -1402,7 +1402,7 @@ static const FxPreset
              .em_count = 4,
              .em =
                  {
-                     {.tex = "fx_lrgcrtr_massiveattack_pre__vfx_streakExplode.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_lrgcrtr_massiveattack_pre", "vfx_streakExplode"),
                       .additive = 1,
                       .count = 4,
                       .delay = 0.01f,
@@ -1418,7 +1418,7 @@ static const FxPreset
                       .rot_deg = 180,
                       .spin_deg = 90,
                       .tint = {200, 151, 63, 128}},
-                     {.tex = "fx_atk_scattershot_pre__vfx_crack01.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_atk_scattershot_pre", "vfx_crack01"),
                       .keyout = 2,
                       .count = 1,
                       .delay = 0.03f,
@@ -1431,7 +1431,7 @@ static const FxPreset
                       .orient = 1,
                       .tint = {30, 22, 16, 235},
                       .offset = {0, -0.82f, 0}},
-                     {.tex = "fx_lrgcrtr_massiveattack_pre__vfx_streakExplode.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_lrgcrtr_massiveattack_pre", "vfx_streakExplode"),
                       .additive = 1,
                       .count = 4,
                       .delay = 0.1f,
@@ -1442,7 +1442,7 @@ static const FxPreset
                       .size_end = 2.6f,
                       .alpha_hold = 0.57f,
                       .tint = {255, 115, 51, 180}},
-                     {.tex = "fx_lrgcrtr_massiveattack_pre__vfx_wt_circleBeam_90degree.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_lrgcrtr_massiveattack_pre", "vfx_wt_circleBeam_90degree"),
                       .additive = 1,
                       .count = 1,
                       .delay = 0.1f,
@@ -1461,7 +1461,7 @@ static const FxPreset
              .em_count = 2,
              .em =
                  {
-                     {.tex = "vfx_perforate_pre__perforate_1.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_perforate_pre", "perforate 1"),
                       .additive = 1,
                       .cols = 4,
                       .rows = 4,
@@ -1474,7 +1474,7 @@ static const FxPreset
                       .size0 = 1.8f,
                       .size1 = 1.8f,
                       .alpha_hold = 0.83f},
-                     {.tex = "fx_imp_desiccate_pre__vfx_flare_01.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "vfx_flare_01"),
                       .additive = 1,
                       .rate = 3,
                       .duration = 1.2f,
@@ -1492,7 +1492,7 @@ static const FxPreset
              .em_count = 3,
              .em =
                  {
-                     {.tex = "fx_c_desiccate_pre__chargegradient.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_c_desiccate_pre", "chargegradient"),
                       .additive = 1,
                       .rate = 25,
                       .duration = 0.6f,
@@ -1505,7 +1505,7 @@ static const FxPreset
                       .rot_deg = 180,
                       .spin_deg = 30,
                       .tint = {49, 255, 65, 255}},
-                     {.tex = "fx_chartraining_lvlup_pre__GlowDot.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_chartraining_lvlup_pre", "GlowDot"),
                       .additive = 1,
                       .rate = 8,
                       .duration = 0.6f,
@@ -1516,7 +1516,7 @@ static const FxPreset
                       .size_end = 2.5f,
                       .alpha_in = 0.2f,
                       .tint = {91, 255, 104, 255}},
-                     {.tex = "fx_atk_scattershot_pre__vfx_crack01.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_atk_scattershot_pre", "vfx_crack01"),
                       .additive = 1,
                       .rate = 40,
                       .duration = 0.6f,
@@ -1537,7 +1537,7 @@ static const FxPreset
              .em_count = 4,
              .em =
                  {
-                     {.tex = "fx_imp_desiccate_pre__vfx_flare_01.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "vfx_flare_01"),
                       .additive = 1,
                       .count = 1,
                       .life0 = 0.4f,
@@ -1548,7 +1548,7 @@ static const FxPreset
                       .alpha_in = 0.05f,
                       .alpha_hold = 0.25f,
                       .tint = {99, 225, 83, 255}},
-                     {.tex = "fx_imp_desiccate_pre__vfx_lvl_leaf.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "vfx_lvl_leaf"),
                       .cols = 4,
                       .rows = 4,
                       .count = 50,
@@ -1565,7 +1565,7 @@ static const FxPreset
                       .rot_deg = 180,
                       .spin_deg = 300,
                       .tint = {110, 190, 110, 255}},
-                     {.tex = "fx_imp_desiccate_pre__vfx_smoke_whispy_cs.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "vfx_smoke_whispy_cs"),
                       .cols = 2,
                       .rows = 2,
                       .count = 8,
@@ -1585,7 +1585,7 @@ static const FxPreset
                       .rot_deg = 180,
                       .spin_deg = 30,
                       .tint = {66, 101, 93, 209}},
-                     {.tex = "fx_imp_desiccate_pre__shockwave01_02.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "shockwave01_02"),
                       .additive = 1,
                       .count = 1,
                       .life0 = 0.45f,
@@ -1601,7 +1601,7 @@ static const FxPreset
              .em_count = 2,
              .em =
                  {
-                     {.tex = "vfx_bolter_pre__arrowsinglewhite2_tex.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_bolter_pre", "arrowsinglewhite2_tex"),
                       .additive = 1,
                       .orient = 2,
                       .rate = 4.2f,
@@ -1611,7 +1611,7 @@ static const FxPreset
                       .size0 = 0.5f,
                       .size1 = 0.5f,
                       .tint = {255, 48, 0, 255}},
-                     {.tex = "vfx_bolter_pre__arrowsinglewhite2_tex.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_bolter_pre", "arrowsinglewhite2_tex"),
                       .additive = 1,
                       .orient = 2,
                       .rate = 60,
@@ -1627,7 +1627,7 @@ static const FxPreset
              .em_count = 3,
              .em =
                  {
-                     {.tex = "fx_imp_spiritbolt_pre__vfx_swordtornado_tex.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "vfx_swordtornado_tex"),
                       .additive = 1,
                       .rate = 120,
                       .duration = 0.3f,
@@ -1641,7 +1641,7 @@ static const FxPreset
                       .size_end = 0.1f,
                       .rot_deg = 360,
                       .spin_deg = 2000},
-                     {.tex = "vfx_pro_spiritball_pre__llblue_laser_texture.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_pro_spiritball_pre", "llblue_laser_texture"),
                       .additive = 1,
                       .orient = 2,
                       .rate = 40,
@@ -1651,7 +1651,7 @@ static const FxPreset
                       .size0 = 0.8f,
                       .size1 = 0.8f,
                       .size_end = 0.38f},
-                     {.tex = "vfx_pro_spiritball_pre__plasma05.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_pro_spiritball_pre", "plasma05"),
                       .additive = 1,
                       .orient = 2,
                       .rate = 40,
@@ -1667,7 +1667,7 @@ static const FxPreset
              .em_count = 2,
              .em =
                  {
-                     {.tex = "fx_imp_spiritbolt_pre__fireballexp.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "fireballexp"),
                       .additive = 1,
                       .cols = 2,
                       .rows = 1,
@@ -1681,7 +1681,7 @@ static const FxPreset
                       .alpha_hold = 0.67f,
                       .rot_deg = 75,
                       .tint = {143, 217, 255, 255}},
-                     {.tex = "fx_imp_spiritbolt_pre__vfx_swordtornado_tex.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "vfx_swordtornado_tex"),
                       .additive = 1,
                       .rate = 100,
                       .duration = 0.2f,
@@ -1702,7 +1702,7 @@ static const FxPreset
              .em_count = 4,
              .em =
                  {
-                     {.tex = "vfx_crit_charge_pre__battlerune.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_crit_charge_pre", "battlerune"),
                       .additive = 1,
                       .count = 2,
                       .life0 = 0.5f,
@@ -1717,7 +1717,7 @@ static const FxPreset
                       .spin_deg = 2014,
                       .tint = {255, 70, 0, 255},
                       .offset = {0, 0.3f, 0}},
-                     {.tex = "vfx_crit_charge_pre__perforate_1.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_crit_charge_pre", "perforate 1"),
                       .additive = 1,
                       .cols = 2,
                       .rows = 2,
@@ -1734,7 +1734,7 @@ static const FxPreset
                       .alpha_hold = 0.68f,
                       .tint = {255, 70, 0, 255},
                       .offset = {0, 0.9f, 0}},
-                     {.tex = "fx_imp_spiritbolt_pre__fireballexp.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "fireballexp"),
                       .additive = 1,
                       .cols = 2,
                       .rows = 1,
@@ -1750,7 +1750,7 @@ static const FxPreset
                       .spin_deg = 1386,
                       .tint = {255, 166, 49, 255},
                       .offset = {0, 0.1f, 0}},
-                     {.tex = "vfx_crit_charge_pre__battlerune.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_crit_charge_pre", "battlerune"),
                       .additive = 1,
                       .orient = 2,
                       .rate = 40,
@@ -1773,7 +1773,7 @@ static const FxPreset
              .em_count = 2,
              .em =
                  {
-                     {.tex = "vfx_powerup_pre__SwipeArrow.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_powerup_pre", "SwipeArrow"),
                       .additive = 1,
                       .one_shot = 1,
                       .max_particles = 5,
@@ -1796,7 +1796,7 @@ static const FxPreset
                                 {.time = 0.542f, .color = {255, 251, 0, 255}},
                                 {.time = 1, .color = {194, 255, 0, 255}}}},
                       .offset = {0, 0.5904f, 0}},
-                     {.tex = "vfx_powerup_pre__powerup.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_powerup_pre", "powerup"),
                       .additive = 1,
                       .cols = 3,
                       .rows = 3,
@@ -1822,7 +1822,7 @@ static const FxPreset
              .em_count = 3,
              .em =
                  {
-                     {.tex = "vfx_powerdown_pre__SwipeArrow.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_powerdown_pre", "SwipeArrow"),
                       .additive = 1,
                       .max_particles = 18,
                       .rate = 6.2f,
@@ -1844,7 +1844,7 @@ static const FxPreset
                            .key = {{.time = 0, .color = {130, 0, 255, 255}}, {.time = 1, .color = {18, 0, 139, 255}}}},
                       .rot_bias_deg = 180.0f,
                       .offset = {0, 1.0833f, 0}},
-                     {.tex = "vfx_powerdown_pre__powerdown.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_powerdown_pre", "powerdown"),
                       .additive = 1,
                       .cols = 3,
                       .rows = 3,
@@ -1864,7 +1864,7 @@ static const FxPreset
                           {.count = 2,
                            .key = {{.time = 0, .color = {130, 0, 255, 255}}, {.time = 1, .color = {18, 0, 139, 255}}}},
                       .offset = {0, 1.8518f, 0}},
-                     {.tex = "shared__vfx_lightning_2.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "vfx_lightning_2"),
                       .additive = 1,
                       .cols = 2,
                       .rows = 2,
@@ -1893,7 +1893,7 @@ static const FxPreset
              .em_count = 2,
              .em =
                  {
-                     {.tex = "vfx_stunned_pre__halfring01.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_stunned_pre", "halfring01"),
                       .additive = 1,
                       .orient = 1,
                       .prewarm = 1,
@@ -1915,7 +1915,7 @@ static const FxPreset
                                 {.time = 1, .color = {118, 50, 5, 255}}}},
                       .spin_bias_deg = -300.0f,
                       .offset = {0, 2.0642f, 0}},
-                     {.tex = "vfx_stunned_pre__Star02.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("vfx_stunned_pre", "Star02"),
                       .additive = 1,
                       .prewarm = 1,
                       .max_particles = 40,
@@ -1946,7 +1946,7 @@ static const FxPreset
              .em_count = 2,
              .em =
                  {
-                     {.tex = "fx_status_poison_pre__shroomCloud_CA.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_status_poison_pre", "shroomCloud_CA"),
                       .cols = 5,
                       .rows = 5,
                       .sheet_once = 1,
@@ -1968,7 +1968,7 @@ static const FxPreset
                       .rot_deg = 101.4f,
                       .tint = {139, 255, 0, 255},
                       .offset = {0, 0.1487f, 0}},
-                     {.tex = "fx_status_poison_pre__ColorFlare.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_status_poison_pre", "ColorFlare"),
                       .additive = 1,
                       .max_particles = 10,
                       .rate = 20.0f,
@@ -1992,7 +1992,7 @@ static const FxPreset
              .em_count = 2,
              .em =
                  {
-                     {.tex = "fx_status_burning_pre__fire_u_02.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("fx_status_burning_pre", "fire_u_02"),
                       .additive = 1,
                       .one_shot = 1,
                       .max_particles = 15,
@@ -2013,7 +2013,7 @@ static const FxPreset
                       .tint = {255, 188, 43, 255},
                       .offset = {0, 0.1477f, 0}},
                      {
-                         .tex = "fx_status_burning_pre__fx_flamefb01.png",
+                         .tex = CACHE_BUNDLE_RESOURCE("fx_status_burning_pre", "fx_flamefb01"),
                          .additive = 1,
                          .cols = 4,
                          .rows = 4,
@@ -2045,7 +2045,7 @@ static const FxPreset
              .em_count = 5,
              .em =
                  {
-                     {.tex = "eff_initiativedown_pre__sword_slash.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("eff_initiativedown_pre", "sword slash"),
                       .additive = 1,
                       .orient = 3,
                       .cols = 4,
@@ -2066,7 +2066,7 @@ static const FxPreset
                       .spin_bias_deg = 200.0f,
                       .tint = {221, 138, 9, 255},
                       .offset = {0, -0.3f, 0}},
-                     {.tex = "eff_initiativedown_pre__Rune01.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("eff_initiativedown_pre", "Rune01"),
                       .additive = 1,
                       .orient = 1,
                       .max_screen_size = 0.5f,
@@ -2090,7 +2090,7 @@ static const FxPreset
                       .rot_bias_deg = 90.0f,
                       .spin_bias_deg = -200.0f,
                       .tint = {210, 87, 24, 255}},
-                     {.tex = "eff_initiativedown_pre__GlowDot.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("eff_initiativedown_pre", "GlowDot"),
                       .additive = 1,
                       .one_shot = 1,
                       .max_particles = 5,
@@ -2105,7 +2105,7 @@ static const FxPreset
                       .spin_bias_deg = 20.0f,
                       .tint = {221, 69, 49, 255},
                       .offset = {0, 0.3465f, 0}},
-                     {.tex = "eff_initiativedown_pre__GlowDot.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("eff_initiativedown_pre", "GlowDot"),
                       .additive = 1,
                       .one_shot = 1,
                       .max_particles = 5,
@@ -2121,7 +2121,7 @@ static const FxPreset
                       .spin_bias_deg = 20.0f,
                       .tint = {221, 69, 49, 255},
                       .offset = {0, 0.3465f, 0}},
-                     {.tex = "eff_initiativedown_pre__Rune01.png",
+                     {.tex = CACHE_BUNDLE_RESOURCE("eff_initiativedown_pre", "Rune01"),
                       .additive = 1,
                       .orient = 1,
                       .max_screen_size = 0.5f,
@@ -2151,7 +2151,7 @@ static const FxPreset
              .length = 0.8f,
              .em_count = 1,
              .em = {
-                 {.tex = "eff_initiativedown_pre__GlowDot.png",
+                 {.tex = CACHE_BUNDLE_RESOURCE("eff_initiativedown_pre", "GlowDot"),
                   .additive = 1,
                   .orient = 1,
                   .rate = 1.3f,
@@ -2669,8 +2669,8 @@ static void BattleProjDraw(Battle *b, Vector3 right, Vector3 up) {
             bool arrow = pr->look == PROJ_ARROW;
             Texture2D tex = BattleFxTex(
                 b,
-                arrow ? "vfx_bolter_pre__arrowsinglewhite2_tex.png"
-                      : "vfx_pro_spiritball_pre__llblue_laser_texture.png",
+                arrow ? CACHE_BUNDLE_RESOURCE("vfx_bolter_pre", "arrowsinglewhite2_tex")
+                      : CACHE_BUNDLE_RESOURCE("vfx_pro_spiritball_pre", "llblue_laser_texture"),
                 0
             );
             rlSetTexture(tex.id);
@@ -2684,8 +2684,8 @@ static void BattleProjDraw(Battle *b, Vector3 right, Vector3 up) {
         } else {
             Texture2D tex = BattleFxTex(
                 b,
-                pr->look == PROJ_DESICCATE ? "fx_c_desiccate_pre__chargegradient.png"
-                                           : "fx_heal_pre__Default-Particle.png",
+                pr->look == PROJ_DESICCATE ? CACHE_BUNDLE_RESOURCE("fx_c_desiccate_pre", "chargegradient")
+                                           : CACHE_BUNDLE_RESOURCE("fx_heal_pre", "Default-Particle"),
                 0
             );
             rlSetTexture(tex.id);

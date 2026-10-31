@@ -582,19 +582,19 @@ static void BattleUiDrawCombat(BattleUi *ui, BattlePlay *bp) {
 
     int actor = BattlePlayCurrentActor(bp);
     if (actor >= 0) {
-        const SimUnit *su = &bp->sim.units[actor];
+        int init_class = BattlePlayActorInitiativeClass(bp);
         Texture2D banner = GuiTex(GUI_COMBAT_BANNER);
         Rectangle dst = {cx - 172.8f + 26.0f, 98.0f, 293.8f, 76.5f};
         UiDrawTexture(banner, dst, WHITE);
-        int icon_id = su->init_class == 2   ? GUI_DETAILS_INIT_QUICK
-                      : su->init_class == 0 ? GUI_DETAILS_INIT_SLOW
-                                            : GUI_DETAILS_INIT_NORMAL;
+        int icon_id = init_class == SIM_INIT_CLASS_FAST   ? GUI_DETAILS_INIT_QUICK
+                      : init_class == SIM_INIT_CLASS_SLOW ? GUI_DETAILS_INIT_SLOW
+                                                          : GUI_DETAILS_INIT_NORMAL;
         Texture2D icon = GuiTex(icon_id);
         UiDrawTexture(icon, (Rectangle){cx + 86.0f, 91.0f, 81, 90}, WHITE);
         const char *label = LocGet(
-            su->init_class == 2   ? "INITIATIVE_FAST"
-            : su->init_class == 0 ? "INITIATIVE_SLOW"
-                                  : "INITIATIVE_MEDIUM"
+            init_class == SIM_INIT_CLASS_FAST   ? "INITIATIVE_FAST"
+            : init_class == SIM_INIT_CLASS_SLOW ? "INITIATIVE_SLOW"
+                                                : "INITIATIVE_MEDIUM"
         );
         float fs = 30.0f;
         Vector2 tsz = MeasureTextEx(cool, label, fs, 1.0f);

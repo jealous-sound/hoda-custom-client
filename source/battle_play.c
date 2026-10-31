@@ -118,6 +118,8 @@ typedef struct {
     float t;
     int action;
     int cur_round;
+    int actor_init_class;
+    int returning_actor;
     BpUnit units[2][SQUAD_SLOT_COUNT];
     BpProjectile projectiles[BP_MAX_PROJECTILES];
     BpMessage messages[BP_MAX_MESSAGES];
@@ -152,6 +154,14 @@ static BpStatFx BpApplyInitiativeDelta(BpUnit *u, int delta) {
     if (delta > 0 && u->current_initiative > 0) return BP_STAT_FX_INIT_UP;
     if (delta < 0 && u->health > 0 && u->current_initiative < 0) return BP_STAT_FX_INIT_DOWN;
     return BP_STAT_FX_NONE;
+}
+
+static int BpInitiativeClass(const BattlePlay *bp, int unit) {
+    int modifier = bp->units[unit / SQUAD_SLOT_COUNT][unit % SQUAD_SLOT_COUNT].current_initiative;
+    int roll_high = (bp->sim.units[unit].init_class + 1) * SIM_INIT_CLASS_SPAN - 1 + modifier;
+    if (roll_high < SIM_INIT_CLASS_SPAN) return SIM_INIT_CLASS_SLOW;
+    if (roll_high < 2 * SIM_INIT_CLASS_SPAN) return SIM_INIT_CLASS_MEDIUM;
+    return SIM_INIT_CLASS_FAST;
 }
 
 static const BattleSpot *BpSpot(int side, int slot) {
@@ -645,7 +655,6 @@ static void BpEnterAction(BattlePlay *bp, Battle *b) {
     if (a->newround) {
         bp->cur_round++;
         bp->action++;
-        for (int unit = 0; unit < SIM_UNIT_COUNT; unit++) BpResetInitiative(bp, b, unit);
         BpTelegraphCrits(bp, b);
         BpEnterAction(bp, b);
         return;
@@ -657,12 +666,14 @@ static void BpEnterAction(BattlePlay *bp, Battle *b) {
             if (a->ailments & AIL_UNSTUNNED) BattleFxStatusClear(b, FX_AURA_STUN, side, slot);
             if (a->ailments & AIL_UNCURSE_POWER) BattleFxStatusClear(b, FX_AURA_CURSE_POWER, side, slot);
             if (a->ailments & AIL_UNCURSE_HEALTH) BattleFxStatusClear(b, FX_AURA_CURSE_HEALTH, side, slot);
+            BpResetInitiative(bp, b, a->actor);
         }
         bp->action++;
         bp->state = BP_ACT_DELAY;
         bp->t = 0.0f;
         return;
     }
+    bp->actor_init_class = BpInitiativeClass(bp, a->actor);
     BpStageAction(bp, b, bp->action);
     bp->state = BP_ACT_START;
     bp->t = 0.0f;
@@ -831,6 +842,7 @@ static void BpAfterMessages(BattlePlay *bp, Battle *b) {
     }
     BpUnstageAction(b);
     bp->slowmo = 1.0f;
+    bp->returning_actor = actor;
     BpUnit *u = BpUnitAt(bp, actor);
     u->phase = BPU_RETURN;
     bp->state = BP_ACT_RETURN;
@@ -1028,6 +1040,7 @@ void BattlePlayUpdate(BattlePlay *bp, Battle *b, float raw_dt) {
                 }
             }
             if (arrived) {
+                BpResetInitiative(bp, b, bp->returning_actor);
                 bp->slowmo = 1.0f;
                 bp->state = BP_ACT_DELAY;
                 bp->t = 0.0f;
@@ -1128,6 +1141,10 @@ float BattlePlayTeamPct(const BattlePlay *bp, int side) {
         max += u->max_health;
     }
     return max > 0 ? (float)cur / (float)max : 0.0f;
+}
+
+int BattlePlayActorInitiativeClass(const BattlePlay *bp) {
+    return bp->actor_init_class;
 }
 
 int BattlePlayCurrentActor(const BattlePlay *bp) {

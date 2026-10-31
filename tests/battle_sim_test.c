@@ -676,9 +676,9 @@ static void TestCurseFx(void) {
     const FxPreset *health = BattleFxFindPreset(&b, "fx_status_curse_health_pre");
     assert(power && health);
 
-    assert(strcmp(health->em[0].tex, "fx_status_burning_pre__fire_u_02.png") == 0);
+    assert(strcmp(health->em[0].tex, CACHE_BUNDLE_RESOURCE("fx_status_burning_pre", "fire_u_02")) == 0);
     assert(health->em[0].cols == 0 && health->em[0].rows == 0);
-    assert(strcmp(health->em[1].tex, "fx_status_burning_pre__fx_flamefb01.png") == 0);
+    assert(strcmp(health->em[1].tex, CACHE_BUNDLE_RESOURCE("fx_status_burning_pre", "fx_flamefb01")) == 0);
     assert(health->em[1].cols == 4 && health->em[1].rows == 4);
     assert(fabsf(health->em[1].sheet_cycles - 2.0f) < 0.001f);
     assert(health->em[0].one_shot && health->em[1].one_shot);
@@ -790,7 +790,7 @@ static void TestStatusPrefabCabParameters(void) {
 
     assert(down->em_count == 3);
     assert(fabsf(down->em[0].offset.y - 1.0833f) < 0.0001f);
-    assert(strcmp(down->em[2].tex, "shared__vfx_lightning_2.png") == 0);
+    assert(strcmp(down->em[2].tex, CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "vfx_lightning_2")) == 0);
     assert(down->em[2].cols == 2 && down->em[2].rows == 2 && !down->em[2].sheet_once);
     assert(down->em[0].alpha_curve.count == 2 && down->em[0].color_curve.count == 2);
 
@@ -803,7 +803,7 @@ static void TestStatusPrefabCabParameters(void) {
     assert(stun->em[1].alpha_curve.count == 4 && stun->em[1].color_curve.count == 2);
 
     assert(heal->em_count == 3);
-    assert(strcmp(heal->em[1].tex, "shared__chargespark.png") == 0);
+    assert(strcmp(heal->em[1].tex, CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "chargespark")) == 0);
     assert(heal->em[0].additive && heal->em[0].orient == 1);
     assert(heal->em[1].max_particles == 60 && heal->em[2].orient == 1);
     assert(heal->em[0].alpha_curve.count == 2 && heal->em[0].alpha_curve.key[1][1] == 1);
@@ -817,7 +817,7 @@ static void TestCriticalFxAndReward(void) {
     const FxPreset *crit = BattleFxFindPreset(&b, "fx_crit_pre");
     assert(crit && crit->em_count == 6);
     const FxEmitter *arc = &crit->em[0];
-    assert(strcmp(arc->tex, "fx_crit_pre__ARC_Strip003.png") == 0);
+    assert(strcmp(arc->tex, CACHE_BUNDLE_RESOURCE("fx_crit_pre", "ARC_Strip003")) == 0);
     assert(arc->additive && arc->orient == 2 && arc->cols == 1 && arc->rows == 4);
     assert(arc->max_particles == 6 && fabsf(arc->rate - 30.0f) < 0.001f);
     assert(arc->birth_emitter[0] == 5 && arc->birth_emitter[1] == 6);
@@ -1173,6 +1173,20 @@ static void TestInitiativeAndStatusCleanup(void) {
     for (int slot = FX_AURA_POWER; slot <= FX_AURA_CURSE_HEALTH; slot++)
         assert(!TestStatusInstance(&b, 0, (FxAuraSlot)slot));
     assert(b.fxi[FX_MAX_INSTANCES - 1].alive && !b.fxi[FX_MAX_INSTANCES - 1].loop);
+}
+
+static void TestInitiativeBannerFollowsModifier(void) {
+    static BattlePlay bp;
+    memset(&bp, 0, sizeof(bp));
+    bp.sim.units[0].init_class = SIM_INIT_CLASS_MEDIUM;
+    assert(BpInitiativeClass(&bp, 0) == SIM_INIT_CLASS_MEDIUM);
+    bp.units[0][0].current_initiative = -50;
+    assert(BpInitiativeClass(&bp, 0) == SIM_INIT_CLASS_SLOW);
+    bp.units[0][0].current_initiative = 50;
+    assert(BpInitiativeClass(&bp, 0) == SIM_INIT_CLASS_FAST);
+    bp.sim.units[0].init_class = SIM_INIT_CLASS_FAST;
+    bp.units[0][0].current_initiative = -40;
+    assert(BpInitiativeClass(&bp, 0) == SIM_INIT_CLASS_MEDIUM);
 }
 
 static void TestFollowupTarget(void) {
@@ -3513,6 +3527,14 @@ static void TestEveryReferencedResourceResolves(void) {
     }
     assert(textures > 2000);
     cJSON_Delete(root);
+
+    for (int i = 0; i < (int)(sizeof(FX_PRESETS) / sizeof(FX_PRESETS[0])); i++)
+        for (int e = 0; e < FX_PRESETS[i].em_count; e++) {
+            const char *tex = FX_PRESETS[i].em[e].tex;
+            if (!tex || !tex[0]) continue;
+            if (!ResourceExists(tex)) fprintf(stderr, "unresolved hand fx texture: %s\n", tex);
+            assert(ResourceExists(tex));
+        }
 }
 
 int main(void) {
@@ -3550,6 +3572,7 @@ int main(void) {
     TestStatusAuraSlots();
     TestStatusOffsetsAndShake();
     TestInitiativeAndStatusCleanup();
+    TestInitiativeBannerFollowsModifier();
     TestFollowupTarget();
     TestRedJennySeraFinalHit();
     TestColeProfanePerHitGrowth();

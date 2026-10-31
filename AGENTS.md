@@ -26,6 +26,9 @@ Setup, run and test details are in `README.md`.
 - `source/resource.c`: loads textures, audio and fonts straight from the original 4.4.0 cache and APK
   (`unity_asset.c`, `unity_texture.c`, `apk_archive.c`). Prefer an original object over an extracted file; put
   anything the 4.4.0 data lacks in `client-additional-data/extra/`.
+- Name every original object with `CACHE_RESOURCE` / `CACHE_BUNDLE_RESOURCE` / `APK_RESOURCE`, including FX
+  emitter textures in `battle.c`; a bare string is read as a file path and silently fails.
+  `python3 tools/validate_cache_refs.py` (part of `make test`) rejects literal refs that miss the cache.
 
 ## Working here
 

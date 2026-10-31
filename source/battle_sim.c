@@ -22,6 +22,9 @@ typedef struct {
 #define SIM_UNIT_COUNT (2 * SQUAD_SLOT_COUNT)
 #define SIM_MAX_TARGETS SIM_UNIT_COUNT
 #define SIM_MAX_ACTIONS 4096
+#define SIM_INIT_CLASS_SPAN 40
+
+typedef enum { SIM_INIT_CLASS_SLOW, SIM_INIT_CLASS_MEDIUM, SIM_INIT_CLASS_FAST } SimInitiativeClass;
 
 typedef struct {
     int actor;
@@ -746,7 +749,9 @@ static void SimUnitsInit(SimUnit *units, int side, int slot, const Character *ch
     u->power = u->start_power = CharacterStatPower(ch);
     u->max_health = CharacterStatHealth(ch);
     u->crit_pct = 1.0f;
-    u->init_class = ch->speed == SPEED_QUICK ? 2 : ch->speed == SPEED_SLOW ? 0 : 1;
+    u->init_class = ch->speed == SPEED_QUICK  ? SIM_INIT_CLASS_FAST
+                    : ch->speed == SPEED_SLOW ? SIM_INIT_CLASS_SLOW
+                                              : SIM_INIT_CLASS_MEDIUM;
     u->faction = ch->giant ? 0 : SimFactionMask(ch->faction);
     if (!ch->giant && SquadSlotIsFront(slot)) u->max_health = (u->max_health * 3 + 1) / 2;
     if (!ch->giant && SquadSlotIsBack(slot)) u->crit_pct *= 1.5f;
@@ -1435,7 +1440,7 @@ static void SimTakeTurn(BattleSim *s, int actor_idx) {
 }
 
 static int SimRollInitiative(BattleSim *s, const SimUnit *u) {
-    int lo = u->init_class * 40, hi = u->init_class * 40 + 39;
+    int lo = u->init_class * SIM_INIT_CLASS_SPAN, hi = lo + SIM_INIT_CLASS_SPAN - 1;
     return SimRange(s, lo, hi) + u->cur_initiative;
 }
 
