@@ -2884,16 +2884,30 @@ static void TestCampaignOpenerCanBeWon(void) {
 }
 
 static void TestCampaignNodeCoordinates(void) {
-    const float origin = -173.25f;
-    const float world_w = 4096.0f;
-    const float positions[] = {0.165f, 0.37f, 0.535f, 0.695f, 0.875f, 0.13f, 0.275f, 0.43f, 0.58f, 0.72f, 0.87f};
-    const float icon_width = 256.0f;
-    for (int p = 0; p < (int)(sizeof(positions) / sizeof(positions[0])); p++) {
-        float legacy_left = origin + positions[p] * world_w - icon_width / 2.0f;
-        float center = CampaignNodeCenterX(origin, positions[p], world_w, icon_width);
-        float animated_left_at_rest = center - (icon_width / 2.0f) / 2.0f;
-        assert(fabsf(animated_left_at_rest - legacy_left) < 0.0001f);
+    const Vector2 centre = {512.0f, 300.0f};
+    const float world_w = 2880.0f;
+    const float screen_h = 720.0f;
+    cJSON *maps = JsonLoadFile("data/campaign_maps.json");
+    assert(cJSON_IsArray(maps));
+    cJSON *chapter = NULL;
+    cJSON_ArrayForEach(chapter, maps) {
+        const char *id = JsonStr(chapter, "id");
+        CampaignNodeLayout layout =
+            CampaignReadNodeLayout(cJSON_GetObjectItemCaseSensitive(chapter, "node_layout"), id);
+        Rectangle icon = CampaignLayoutRect(layout.icon, centre, world_w, screen_h);
+        assert(fabsf(icon.x + icon.width / 2.0f - centre.x) < 0.5f);
+        assert(icon.y < centre.y && icon.y + icon.height > centre.y);
+        Rectangle banner = CampaignLayoutRect(layout.banner, centre, world_w, screen_h);
+        assert(banner.y > centre.y);
+        cJSON *node = NULL;
+        cJSON_ArrayForEach(node, cJSON_GetObjectItemCaseSensitive(chapter, "nodes")) {
+            cJSON *position = cJSON_GetObjectItemCaseSensitive(node, "position");
+            assert(cJSON_IsObject(position));
+            float x = JsonFloat(position, "x"), y = JsonFloat(position, "y");
+            assert(x > 0.0f && x < 1.0f && y > 0.0f && y < 1.0f);
+        }
     }
+    cJSON_Delete(maps);
 
     Campaign same_map_pan = {.progression_from_map = 0, .progression_to_map = 0};
     Campaign map_change_pan = {.progression_from_map = 0, .progression_to_map = 1};

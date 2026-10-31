@@ -68,6 +68,8 @@ typedef struct {
     Rectangle options;
 } HudLayout;
 
+#define HUD_TOP_HEIGHT 73.0f
+
 static float HudRectValue(float parent, float input) {
     if (input <= -2.0f || input >= 2.0f) return ceilf(input);
     return ceilf(parent * input);
@@ -103,7 +105,7 @@ static HudLayout HudGetLayout(void) {
 
     l.background = HudFitRect(screen, 0.5f, 0.0f, 1.9f, 0.12f, 16.0f);
 
-    Rectangle sizing = {2.0f, 0.0f, fmaxf(0.0f, ceilf(UiWidth()) - 2.0f), 73.0f};
+    Rectangle sizing = {2.0f, 0.0f, fmaxf(0.0f, ceilf(UiWidth()) - 2.0f), HUD_TOP_HEIGHT};
     Rectangle left = HudFitRect(sizing, 0.0f, 0.0f, 1.0f, 0.9f, 8.0f);
     l.home = HudFitRect(left, 0.0f, 0.0f, 1.0f, 1.0f, 2.0f);
 
@@ -351,11 +353,17 @@ HudAction HudDraw(Hud *hud, Player *player, bool interactive, bool on_home) {
     );
 
     HudDrawCurrency(
-        hud, hud->store_selection == HUD_GOLD ? hud->gold_selected : hud->gold, layout.gold_icon, layout.gold_label,
+        hud,
+        hud->store_selection == HUD_GOLD ? hud->gold_selected : hud->gold,
+        layout.gold_icon,
+        layout.gold_label,
         player->gold
     );
     HudDrawCurrency(
-        hud, hud->store_selection == HUD_GEMS ? hud->gems_selected : hud->gems, layout.gems_icon, layout.gems_label,
+        hud,
+        hud->store_selection == HUD_GEMS ? hud->gems_selected : hud->gems,
+        layout.gems_icon,
+        layout.gems_label,
         player->gems
     );
     UiDrawTexture(hud->options, layout.options, WHITE);

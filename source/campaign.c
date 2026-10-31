@@ -1,5 +1,40 @@
 #define CAMPAIGN_MAP_LEFT 184
 #define CAMPAIGN_OFFLINE_MASTERY_GEMS 1
+#define CAMPAIGN_ID_PREFIX "PVE_MAP_"
+#define CAMPAIGN_TRAY_ICON_PREFIX "tex.Btn_MapPVE_map_"
+#define CAMPAIGN_ENERGY_TEXT_OF_BANNER 0.5f
+#define CAMPAIGN_TRAY_SCROLL_ITEMS 5
+#define CAMPAIGN_TRAY_SCROLL_SPEED 6.0f
+#define CAMPAIGN_TRAY_TOGGLE_LABEL_ANCHOR_Y 0.82f
+#define CAMPAIGN_TRAY_TOGGLE_LABEL_SCALE 0.17f
+#define CAMPAIGN_CTA_TITLE_OF_LABEL 0.7f
+#define CAMPAIGN_CTA_BODY_SIZE 17.0f
+#define CAMPAIGN_CTA_BODY_MIN_SIZE 11.0f
+
+typedef struct {
+    float x, y, width, height, aspect;
+} CampaignIguiAnchor;
+
+static const CampaignIguiAnchor CAMPAIGN_TRAY_BACKGROUND = {0.5f, 1.055f, 1.9f, 0.25f, 8.0f};
+static const CampaignIguiAnchor CAMPAIGN_TRAY_CONTAINER = {1.0f, 0.5f, 0.897f, 1.0f, 0.0f};
+static const CampaignIguiAnchor CAMPAIGN_TRAY_LIST = {0.44f, 1.0f, 0.84f, 0.16f, 0.0f};
+static const CampaignIguiAnchor CAMPAIGN_TRAY_BACK_ARROW = {0.0f, 0.97f, 1.0f, 0.1f, 1.0f};
+static const CampaignIguiAnchor CAMPAIGN_TRAY_FORWARD_ARROW = {0.98f, 0.97f, 1.0f, 0.1f, 1.0f};
+static const CampaignIguiAnchor CAMPAIGN_TRAY_TOGGLE_CONTAINER = {0.0f, 1.0f, 1.0f, 0.15f, 1.1f};
+static const CampaignIguiAnchor CAMPAIGN_TRAY_TOGGLE = {0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
+static const CampaignIguiAnchor CAMPAIGN_CTA_PANEL = {0.0f, 0.04f, 1.0f, 0.32f, 2.251f};
+static const CampaignIguiAnchor CAMPAIGN_CTA_TITLE = {0.1f, 0.2f, 0.8f, 0.2f, 0.0f};
+static const CampaignIguiAnchor CAMPAIGN_CTA_BODY = {0.775f, 0.725f, 0.725f, 0.38f, 0.0f};
+static const CampaignIguiAnchor CAMPAIGN_CTA_INFO = {0.925f, 0.175f, 1.0f, 0.275f, 1.0f};
+static const CampaignIguiAnchor CAMPAIGN_CTA_ICON = {-0.025f, 0.775f, 1.0f, 0.55f, 1.0f};
+
+static Rectangle CampaignIguiRect(Rectangle parent, CampaignIguiAnchor anchor) {
+    return HudFitRect(parent, anchor.x, anchor.y, anchor.width, anchor.height, anchor.aspect);
+}
+
+static Rectangle CampaignScreenRoot(float screen_w, float screen_h) {
+    return (Rectangle){0.0f, HUD_TOP_HEIGHT, screen_w, screen_h - HUD_TOP_HEIGHT};
+}
 
 typedef enum { CAMPAIGN_NONE = 0, CAMPAIGN_ENTER } CampaignAction;
 
@@ -22,9 +57,18 @@ typedef struct {
 } CampaignNode;
 
 typedef struct {
+    Rectangle icon;
+    Rectangle banner;
+    Rectangle flask;
+    Vector2 text;
+} CampaignNodeLayout;
+
+typedef struct {
     char id[32];
     char title[64];
     Texture2D background;
+    Texture2D tray_icon;
+    CampaignNodeLayout layout;
     int node_count;
     CampaignNode nodes[CAMPAIGN_MAX_NODES];
 } CampaignMap;
@@ -53,8 +97,19 @@ typedef struct {
     Texture2D gems;
     Texture2D reward_tag;
     Texture2D energy_flask;
+    Texture2D tray_bg;
+    Texture2D tray_node;
+    Texture2D tray_node_selected;
+    Texture2D tray_arrow;
+    Texture2D tray_arrow_on;
+    Texture2D cta_bg;
     Button change_map;
     Button enter_map;
+    bool tray_open;
+    bool press_blocked;
+    bool tray_pressed;
+    float tray_scroll;
+    float tray_scroll_target;
     float scroll_x;
     int scroll_map;
     int scroll_node;
@@ -132,6 +187,38 @@ void CampaignNodeMasteryLabel(const CampaignNode *node, int wins, char *out, int
         snprintf(out, (size_t)cap, "Закрыто (%d / %d)", wins, node->wins_to_master);
 }
 
+static Rectangle CampaignReadLayoutRect(const cJSON *layout, const char *key, const char *map_id) {
+    const cJSON *values = cJSON_GetObjectItemCaseSensitive(layout, key);
+    if (!cJSON_IsArray(values) || cJSON_GetArraySize(values) != 4)
+        TraceLog(LOG_FATAL, "Campaign: %s node_layout.%s is not [x, y, width, height]", map_id, key);
+    return (Rectangle){
+        (float)cJSON_GetArrayItem(values, 0)->valuedouble,
+        (float)cJSON_GetArrayItem(values, 1)->valuedouble,
+        (float)cJSON_GetArrayItem(values, 2)->valuedouble,
+        (float)cJSON_GetArrayItem(values, 3)->valuedouble,
+    };
+}
+
+static CampaignNodeLayout CampaignReadNodeLayout(const cJSON *layout, const char *map_id) {
+    if (!cJSON_IsObject(layout)) TraceLog(LOG_FATAL, "Campaign: %s lacks node_layout", map_id);
+    const cJSON *text = cJSON_GetObjectItemCaseSensitive(layout, "text");
+    if (!cJSON_IsArray(text) || cJSON_GetArraySize(text) != 2)
+        TraceLog(LOG_FATAL, "Campaign: %s node_layout.text is not [x, y]", map_id);
+    return (CampaignNodeLayout){
+        .icon = CampaignReadLayoutRect(layout, "icon", map_id),
+        .banner = CampaignReadLayoutRect(layout, "banner", map_id),
+        .flask = CampaignReadLayoutRect(layout, "flask", map_id),
+        .text = {(float)cJSON_GetArrayItem(text, 0)->valuedouble, (float)cJSON_GetArrayItem(text, 1)->valuedouble},
+    };
+}
+
+static Texture2D CampaignLoadTrayIcon(const char *map_id) {
+    size_t prefix = strlen(CAMPAIGN_ID_PREFIX);
+    if (strncmp(map_id, CAMPAIGN_ID_PREFIX, prefix) != 0)
+        TraceLog(LOG_FATAL, "Campaign: map id %s does not start with %s", map_id, CAMPAIGN_ID_PREFIX);
+    return LoadSprite(TextFormat("%s%s%s", CACHE_RESOURCE_PREFIX, CAMPAIGN_TRAY_ICON_PREFIX, map_id + prefix));
+}
+
 void CampaignMapsInitialize(Campaign *c, const char *path) {
     static const GuiId backgrounds[CAMPAIGN_MAX_MAPS] = {
         GUI_MAP_BG_0,
@@ -169,8 +256,9 @@ void CampaignMapsInitialize(Campaign *c, const char *path) {
         StrCopy(m->id, sizeof(m->id), id);
         StrCopy(m->title, sizeof(m->title), JsonStr(chapter, "chapter"));
 
+        m->layout = CampaignReadNodeLayout(cJSON_GetObjectItemCaseSensitive(chapter, "node_layout"), id);
+        m->tray_icon = CampaignLoadTrayIcon(id);
         m->node_count = 0;
-        int authored_node_count = JsonInt(chapter, "node_count");
         cJSON *n = NULL;
         cJSON_ArrayForEach(n, cJSON_GetObjectItemCaseSensitive(chapter, "nodes")) {
             if (m->node_count >= CAMPAIGN_MAX_NODES)
@@ -183,13 +271,9 @@ void CampaignMapsInitialize(Campaign *c, const char *path) {
             cJSON *energy = cJSON_GetObjectItemCaseSensitive(n, "energy_cost");
             if (!cJSON_IsNumber(energy))
                 TraceLog(LOG_FATAL, "Campaign: %s node %d (%s) lacks energy data", id, m->node_count + 1, node->name);
-            if (cJSON_IsObject(position)) {
-                node->position = (Vector2){JsonFloat(position, "x"), JsonFloat(position, "y")};
-            } else {
-                float u = (float)(m->node_count + 1) / (float)(authored_node_count + 1);
-                static const float lanes[] = {0.70f, 0.57f, 0.74f, 0.61f, 0.69f, 0.55f};
-                node->position = (Vector2){0.04f + 0.92f * u, lanes[m->node_count % 6]};
-            }
+            if (!cJSON_IsObject(position))
+                TraceLog(LOG_FATAL, "Campaign: %s node %d (%s) lacks a position", id, m->node_count + 1, node->name);
+            node->position = (Vector2){JsonFloat(position, "x"), JsonFloat(position, "y")};
             node->energy_cost = energy->valueint;
             cJSON *default_gold = cJSON_GetObjectItemCaseSensitive(n, "default_gold");
             cJSON *default_xp = cJSON_GetObjectItemCaseSensitive(n, "default_xp");
@@ -278,7 +362,23 @@ void CampaignInitialize(Campaign *c, const char *maps_path) {
     c->reward_tag = GuiTex(GUI_MAP_REWARD_TAG);
     c->energy_flask = GuiTex(GUI_HUD_ENERGY);
 
-    c->change_map = ButtonLoadText(GUI_BTN_MAPS, GUI_BTN_MAPS, "Кампании", c->font, (Vector2){0.5f, 0.82f}, 0.17f);
+    c->tray_bg = GuiTex(GUI_MAP_TRAY_BG);
+    c->tray_node = GuiTex(GUI_MAP_TRAY_NODE);
+    c->tray_node_selected = GuiTex(GUI_MAP_TRAY_NODE_SELECTED);
+    c->tray_arrow = GuiTex(GUI_MAP_TRAY_ARROW);
+    c->tray_arrow_on = GuiTex(GUI_MAP_TRAY_ARROW_ON);
+    c->cta_bg = GuiTex(GUI_MAP_TRAY_CTA_BG);
+    c->tray_open = false;
+    c->tray_scroll = 0.0f;
+    c->tray_scroll_target = 0.0f;
+    c->change_map = ButtonLoadText(
+        GUI_BTN_MAPS,
+        GUI_BTN_MAPS,
+        LocGetOr("PVE_MAP_LABEL", "Карты"),
+        c->font,
+        (Vector2){0.5f, CAMPAIGN_TRAY_TOGGLE_LABEL_ANCHOR_Y},
+        CAMPAIGN_TRAY_TOGGLE_LABEL_SCALE
+    );
     c->enter_map = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "Войти", c->font, (Vector2){0.5f, 0.5f}, 0.35f);
     ButtonDisableClickSound(&c->change_map);
 
@@ -388,8 +488,9 @@ static float CampaignProgressionPanEnd(const Campaign *c) {
     return c->progression_from_map == c->progression_to_map ? 2.0f : 3.5f;
 }
 
-static float CampaignNodeCenterX(float origin, float position_x, float world_w, float icon_width) {
-    return origin + position_x * world_w - icon_width / 4.0f;
+static Rectangle CampaignLayoutRect(Rectangle part, Vector2 centre, float world_w, float screen_h) {
+    return (Rectangle
+    ){centre.x + part.x * world_w, centre.y + part.y * screen_h, part.width * world_w, part.height * screen_h};
 }
 
 static void CampaignDrawWrapped(
@@ -422,6 +523,149 @@ static void CampaignDrawWrapped(
         while (*w == ' ') w++;
     }
     if (line[0]) DrawTextEx(font, line, (Vector2){pos.x, y}, size, spacing, tint);
+}
+
+typedef struct {
+    Rectangle background;
+    Rectangle list;
+    Rectangle back_arrow;
+    Rectangle forward_arrow;
+} CampaignTrayLayout;
+
+static CampaignTrayLayout CampaignTrayLayoutFor(float screen_w, float screen_h) {
+    Rectangle root = CampaignScreenRoot(screen_w, screen_h);
+    Rectangle container = CampaignIguiRect(root, CAMPAIGN_TRAY_CONTAINER);
+    return (CampaignTrayLayout){
+        .background = CampaignIguiRect(root, CAMPAIGN_TRAY_BACKGROUND),
+        .list = CampaignIguiRect(container, CAMPAIGN_TRAY_LIST),
+        .back_arrow = CampaignIguiRect(container, CAMPAIGN_TRAY_BACK_ARROW),
+        .forward_arrow = CampaignIguiRect(container, CAMPAIGN_TRAY_FORWARD_ARROW),
+    };
+}
+
+static Rectangle CampaignTrayToggleRect(float screen_w, float screen_h) {
+    Rectangle container = CampaignIguiRect(CampaignScreenRoot(screen_w, screen_h), CAMPAIGN_TRAY_TOGGLE_CONTAINER);
+    return CampaignIguiRect(container, CAMPAIGN_TRAY_TOGGLE);
+}
+
+static int CampaignUnlockedMapCount(const Campaign *c, const PlayerCampaignProgress *pcp) {
+    int count = 0;
+    while (count < c->map_count && CampaignMapUnlocked(c, pcp, count)) count++;
+    return count;
+}
+
+static float CampaignTrayItemSize(const CampaignTrayLayout *layout) {
+    return layout->list.height;
+}
+
+static float CampaignTrayStride(float list_w, float item_size, int count) {
+    float fit = list_w / item_size;
+    int visible = (int)floorf(fit);
+    if (visible > count) visible = count;
+    if (visible < 1) visible = 1;
+    float margin = roundf((fit - (float)visible) * item_size / (2.0f * (float)visible));
+    return item_size + 2.0f * margin;
+}
+
+static float CampaignTrayMaxScroll(const CampaignTrayLayout *layout, int count) {
+    return fmaxf(
+        0.0f, count * CampaignTrayStride(layout->list.width, CampaignTrayItemSize(layout), count) - layout->list.width
+    );
+}
+
+static void CampaignTrayRevealMap(Campaign *c, const CampaignTrayLayout *layout, int count, int map) {
+    float stride = CampaignTrayStride(layout->list.width, CampaignTrayItemSize(layout), count);
+    float left = map * stride, right = left + stride;
+    if (left < c->tray_scroll_target) c->tray_scroll_target = left;
+    if (right > c->tray_scroll_target + layout->list.width) c->tray_scroll_target = right - layout->list.width;
+    c->tray_scroll_target = Clamp(c->tray_scroll_target, 0.0f, CampaignTrayMaxScroll(layout, count));
+    c->tray_scroll = c->tray_scroll_target;
+}
+
+static bool CampaignDrawTrayArrow(const Campaign *c, Rectangle rect, bool back, bool enabled, bool interactive) {
+    bool hover = enabled && interactive && CheckCollisionPointRec(UiMouse(), rect);
+    Texture2D texture = hover ? c->tray_arrow_on : c->tray_arrow;
+    Rectangle src = {0.0f, 0.0f, (float)texture.width, (float)texture.height};
+    if (back) src.width = -src.width;
+    DrawTexturePro(texture, src, rect, (Vector2){0}, 0.0f, enabled ? WHITE : (Color){110, 110, 110, 140});
+    return hover && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+}
+
+static int CampaignDrawTray(
+    Campaign *c, const PlayerCampaignProgress *pcp, const CampaignTrayLayout *layout, bool interactive, float dt
+) {
+    int count = CampaignUnlockedMapCount(c, pcp);
+    float stride = CampaignTrayStride(layout->list.width, CampaignTrayItemSize(layout), count);
+    float max_scroll = CampaignTrayMaxScroll(layout, count);
+    UiDrawTexture(c->tray_bg, layout->background, WHITE);
+
+    if (CampaignDrawTrayArrow(c, layout->back_arrow, true, c->tray_scroll_target > 0.0f, interactive)) {
+        c->tray_scroll_target -= CAMPAIGN_TRAY_SCROLL_ITEMS * stride;
+        GuiSoundPlay(SND_UI_TAB);
+    }
+    if (CampaignDrawTrayArrow(c, layout->forward_arrow, false, c->tray_scroll_target < max_scroll, interactive)) {
+        c->tray_scroll_target += CAMPAIGN_TRAY_SCROLL_ITEMS * stride;
+        GuiSoundPlay(SND_UI_TAB);
+    }
+    if (interactive && CheckCollisionPointRec(UiMouse(), layout->list))
+        c->tray_scroll_target -= GetMouseWheelMove() * stride;
+    c->tray_scroll_target = Clamp(c->tray_scroll_target, 0.0f, max_scroll);
+    c->tray_scroll += (c->tray_scroll_target - c->tray_scroll) * fminf(1.0f, dt * CAMPAIGN_TRAY_SCROLL_SPEED);
+
+    int clicked = -1;
+    float item_size = CampaignTrayItemSize(layout);
+    float scale = UiScale();
+    BeginScissorMode(
+        (int)(layout->list.x * scale),
+        (int)(layout->list.y * scale),
+        (int)(layout->list.width * scale),
+        (int)(layout->list.height * scale)
+    );
+    for (int map = 0; map < count; map++) {
+        Rectangle item = {
+            layout->list.x + map * stride - c->tray_scroll + (stride - item_size) * 0.5f,
+            layout->list.y + (layout->list.height - item_size) * 0.5f,
+            item_size,
+            item_size,
+        };
+        bool current = map == pcp->campaign_index;
+        UiDrawTexture(current ? c->tray_node_selected : c->tray_node, item, WHITE);
+        UiDrawTexture(c->maps[map].tray_icon, item, WHITE);
+        if (interactive && c->tray_pressed && !c->dragged && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) &&
+            CheckCollisionPointRec(UiMouse(), item) && CheckCollisionPointRec(UiMouse(), layout->list))
+            clicked = map;
+    }
+    EndScissorMode();
+    return clicked;
+}
+
+static float CampaignFitWrappedSize(Font font, const char *text, Rectangle box, float size, float min_size) {
+    while (size > min_size && HeroesRichLayout(font, text, box, size, WHITE, false) > box.height) size -= 0.5f;
+    return size;
+}
+
+static void CampaignDrawTrayCallToAction(const Campaign *c, const CampaignMap *m, float screen_w, float screen_h) {
+    Rectangle panel = CampaignIguiRect(CampaignScreenRoot(screen_w, screen_h), CAMPAIGN_CTA_PANEL);
+    Rectangle title_box = CampaignIguiRect(panel, CAMPAIGN_CTA_TITLE);
+    Rectangle body_box = CampaignIguiRect(panel, CAMPAIGN_CTA_BODY);
+    Rectangle icon_box = CampaignIguiRect(panel, CAMPAIGN_CTA_ICON);
+    UiDrawTexture(c->cta_bg, panel, WHITE);
+
+    const char *title = LocGetOr(TextFormat("%s_header", m->id), m->title);
+    float title_size = title_box.height * CAMPAIGN_CTA_TITLE_OF_LABEL;
+    float title_w = MeasureTextEx(c->font, title, title_size, 1.0f).x;
+    if (title_w > title_box.width) title_size *= title_box.width / title_w;
+    UiDrawTextLeftMiddle(c->font, title, title_box, title_size, (Color){235, 232, 220, 255});
+
+    Font body_font = GuiFont(FNT_MENU);
+    const char *body = LocGet(TextFormat("%s_CTA", m->id));
+    float body_size =
+        CampaignFitWrappedSize(body_font, body, body_box, CAMPAIGN_CTA_BODY_SIZE, CAMPAIGN_CTA_BODY_MIN_SIZE);
+    HeroesDrawRich(body_font, body, body_box, body_size, (Color){214, 210, 198, 255});
+
+    UiDrawTexture(c->help, CampaignIguiRect(panel, CAMPAIGN_CTA_INFO), WHITE);
+    UiDrawTexture(c->tray_node, icon_box, WHITE);
+    UiDrawTexture(m->tray_icon, icon_box, WHITE);
 }
 
 int CampaignSelectedEnergyCost(const Campaign *c, const PlayerCampaignProgress *pcp) {
@@ -493,16 +737,23 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
     }
 
     bool progression_input_locked = (c->progression_active && !c->progression_camera_finished) || UiInputBlocked();
+    CampaignTrayLayout tray = CampaignTrayLayoutFor(screen_w, screen_h);
+    Rectangle toggle_rect = CampaignTrayToggleRect(screen_w, screen_h);
+    bool over_tray = c->tray_open && UiMouse().y >= tray.list.y;
     if (!progression_input_locked && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         c->press_pos = UiMouse();
         c->dragged = false;
+        c->tray_pressed = over_tray;
+        c->press_blocked = over_tray || CheckCollisionPointRec(c->press_pos, toggle_rect);
     }
     if (!progression_input_locked && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-        c->scroll_x -= UiMouseDelta().x;
-        c->scroll_node = c->selected_node;
         if (fabsf(UiMouse().x - c->press_pos.x) > 6.0f) c->dragged = true;
+        if (!c->press_blocked) {
+            c->scroll_x -= UiMouseDelta().x;
+            c->scroll_node = c->selected_node;
+        }
     }
-    if (!progression_input_locked) c->scroll_x -= GetMouseWheelMove() * 60.0f;
+    if (!progression_input_locked && !over_tray) c->scroll_x -= GetMouseWheelMove() * 60.0f;
     c->scroll_x = Clamp(c->scroll_x, 0.0f, max_scroll);
 
     float origin = CAMPAIGN_MAP_LEFT - c->scroll_x;
@@ -518,7 +769,8 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
         UiDrawTexture(c->separator, dst, WHITE);
     }
 
-    bool tap = !progression_input_locked && !c->dragged && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+    bool tap =
+        !progression_input_locked && !c->dragged && !c->press_blocked && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
     Vector2 mouse = UiMouse();
 
     for (int j = 0; j < m->node_count; j++) {
@@ -551,25 +803,20 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
             transition_phase = phase;
             flip_scale = CampaignFlipScale(phase);
         }
-        Texture2D icon = CampaignNodeIcon(c, m, j, frontier, completions, j == c->selected_node);
-        float icon_w = icon.width / 2.0f;
-        float icon_h = icon.height / 1.5f;
-        float node_cx = CampaignNodeCenterX(origin, m->nodes[j].position.x, world_w, icon.width);
-        Rectangle dst = {
-            node_cx - icon_w * flip_scale / 2.0f,
-            m->nodes[j].position.y * screen_h - icon.width / 2.0f,
-            icon_w * flip_scale,
-            icon_h
-        };
+        bool selected = j == c->selected_node && !c->tray_open;
+        Texture2D icon = CampaignNodeIcon(c, m, j, frontier, completions, selected);
+        Vector2 centre = {origin + m->nodes[j].position.x * world_w, m->nodes[j].position.y * screen_h};
+        Rectangle dst = CampaignLayoutRect(m->layout.icon, centre, world_w, screen_h);
+        dst.x += dst.width * (1.0f - flip_scale) * 0.5f;
+        dst.width *= flip_scale;
         if (transition_phase >= 0.0f && transition_phase <= 1.0f) {
             float pulse = sinf(transition_phase * PI);
-            float cy = dst.y + dst.height * 0.5f;
             float glow_size = 92.0f + 70.0f * pulse;
             Texture2D glow = GuiTex(GUI_NODE_UNLOCK_GLOW);
             BeginBlendMode(BLEND_ADDITIVE);
             UiDrawTexture(
                 glow,
-                (Rectangle){node_cx - glow_size * 0.5f, cy - glow_size * 0.5f, glow_size, glow_size},
+                (Rectangle){centre.x - glow_size * 0.5f, centre.y - glow_size * 0.5f, glow_size, glow_size},
                 (Color){246, 216, 111, (unsigned char)(175.0f * pulse)}
             );
             EndBlendMode();
@@ -577,128 +824,127 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
         UiDrawTexture(icon, dst, WHITE);
 
         {
-            float bw = 112.0f, bh = 56.0f;
-            Rectangle banner = {node_cx - bw / 2.0f, dst.y + dst.height - 6.0f, bw, bh};
+            Rectangle banner = CampaignLayoutRect(m->layout.banner, centre, world_w, screen_h);
             UiDrawTexture(c->icons.energy, banner, WHITE);
-
+            UiDrawTexture(c->energy_flask, CampaignLayoutRect(m->layout.flask, centre, world_w, screen_h), WHITE);
             const char *txt = TextFormat("%d", m->nodes[j].energy_cost);
-            float fs = 24.0f, flask = 30.0f, gap = 8.0f;
+            float fs = banner.height * CAMPAIGN_ENERGY_TEXT_OF_BANNER;
             Vector2 tsz = MeasureTextEx(c->font, txt, fs, 1.0f);
-            float gx = node_cx - (flask + gap + tsz.x) / 2.0f, gcy = banner.y + bh / 2.0f;
-            UiDrawTexture(c->energy_flask, (Rectangle){gx, gcy - flask / 2.0f, flask, flask}, WHITE);
-            DrawTextEx(c->font, txt, (Vector2){gx + flask + gap, gcy - tsz.y / 2.0f}, fs, 1.0f, WHITE);
+            Vector2 anchor = {centre.x + m->layout.text.x * world_w, centre.y + m->layout.text.y * screen_h};
+            DrawTextEx(c->font, txt, (Vector2){anchor.x - tsz.x / 2.0f, anchor.y - tsz.y / 2.0f}, fs, 1.0f, WHITE);
         }
 
         if (tap && CheckCollisionPointRec(mouse, dst)) {
             GuiSoundPlay(SND_PVE_NODE_SELECTED);
             c->selected_node = j;
+            c->tray_open = false;
         }
     }
 
-    {
-        if (ButtonDrawEx(
-                &c->change_map, (Rectangle){0.0f, screen_h - 88.0f, 88.0f, 88.0f}, !progression_input_locked
-            )) {
-            int next = pcp->campaign_index;
-            for (int tries = 0; tries < c->map_count; tries++) {
-                next = (next + 1) % c->map_count;
-                if (CampaignMapUnlocked(c, pcp, next)) break;
-            }
-            GuiClickSoundPlayDuplicate();
-            if (next != pcp->campaign_index) {
-                GuiSoundPlay(SND_MAP_TRANSITION);
-            }
-            CampaignSelectMap(c, pcp, next);
+    if (c->tray_open) {
+        int picked = CampaignDrawTray(c, pcp, &tray, !progression_input_locked, dt);
+        if (picked >= 0 && picked != pcp->campaign_index) {
+            GuiSoundPlay(SND_MAP_TRANSITION);
+            CampaignSelectMap(c, pcp, picked);
         }
+        CampaignDrawTrayCallToAction(c, &c->maps[pcp->campaign_index], screen_w, screen_h);
     }
 
-    {
-        bool unlocked = c->selected_node <= pcp->node_index;
-        if (ButtonDrawEx(
-                &c->enter_map, (Rectangle){screen_w - 264.0f, screen_h - 72.0f, -1, -1}, !progression_input_locked
-            ) &&
-            unlocked)
-            action = CAMPAIGN_ENTER;
+    if (ButtonDrawEx(&c->change_map, toggle_rect, !progression_input_locked)) {
+        GuiSoundPlay(SND_UI_TAB);
+        c->tray_open = !c->tray_open;
+        if (c->tray_open) CampaignTrayRevealMap(c, &tray, CampaignUnlockedMapCount(c, pcp), pcp->campaign_index);
     }
 
-    Rectangle lore = {screen_w - c->lore.width / 1.3f, 72.0f, c->lore.width / 1.3f, c->lore.height / 1.3f};
-    {
-        Rectangle src = {2, 0, c->lore.width, c->lore.height};
-        DrawTexturePro(c->lore, src, lore, (Vector2){0, 0}, 0.0f, WHITE);
-    }
+    if (!c->tray_open) {
+        {
+            bool unlocked = c->selected_node <= pcp->node_index;
+            if (ButtonDrawEx(
+                    &c->enter_map, (Rectangle){screen_w - 264.0f, screen_h - 72.0f, -1, -1}, !progression_input_locked
+                ) &&
+                unlocked)
+                action = CAMPAIGN_ENTER;
+        }
 
-    CampaignNode *n = &m->nodes[c->selected_node];
-    {
-        float size = 22.0f, spacing = 1.0f;
-        Vector2 tw = MeasureTextEx(c->font, n->name, size, spacing);
-        Vector2 pos = {lore.x + lore.width - tw.x - 8.0f, lore.y + 44.0f};
-        DrawTextEx(c->font, n->name, pos, size, spacing, (Color){235, 232, 220, 255});
-    }
+        Rectangle lore = {screen_w - c->lore.width / 1.3f, 72.0f, c->lore.width / 1.3f, c->lore.height / 1.3f};
+        {
+            Rectangle src = {2, 0, c->lore.width, c->lore.height};
+            DrawTexturePro(c->lore, src, lore, (Vector2){0, 0}, 0.0f, WHITE);
+        }
 
-    {
-        Rectangle dst = {screen_w - 356.0f, 106, 48, 48};
-        UiDrawTexture(c->help, dst, WHITE);
-    }
+        CampaignNode *n = &m->nodes[c->selected_node];
+        {
+            float size = 22.0f, spacing = 1.0f;
+            Vector2 tw = MeasureTextEx(c->font, n->name, size, spacing);
+            Vector2 pos = {lore.x + lore.width - tw.x - 8.0f, lore.y + 44.0f};
+            DrawTextEx(c->font, n->name, pos, size, spacing, (Color){235, 232, 220, 255});
+        }
 
-    {
-        Font font = GuiFont(FNT_MENU);
-        float size = 16.0f, spacing = 1.0f;
-        Vector2 pos = {lore.x + 42.0f, lore.y + 148.0f};
-        float wrap_w = lore.width - 46.0f;
-        CampaignDrawWrapped(font, n->desc, pos, size, spacing, 4.0f, wrap_w, (Color){178, 178, 178, 255});
-    }
+        {
+            Rectangle dst = {screen_w - 356.0f, 106, 48, 48};
+            UiDrawTexture(c->help, dst, WHITE);
+        }
 
-    {
-        Rectangle dst = {lore.x + 24.0f, lore.y + 84.0f, 364, 64};
-        UiDrawTexture(c->progress_bar, dst, WHITE);
+        {
+            Font font = GuiFont(FNT_MENU);
+            float size = 16.0f, spacing = 1.0f;
+            Vector2 pos = {lore.x + 42.0f, lore.y + 148.0f};
+            float wrap_w = lore.width - 46.0f;
+            CampaignDrawWrapped(font, n->desc, pos, size, spacing, 4.0f, wrap_w, (Color){178, 178, 178, 255});
+        }
 
-        bool unlocked = c->selected_node <= pcp->node_index;
-        int wins = pcp->node_completions[pcp->campaign_index][c->selected_node];
-        char progress[64] = {0};
-        if (!unlocked)
-            StrCopy(progress, sizeof(progress), LocGet("PVE_NODE_NODE_LOCKED"));
-        else
-            CampaignNodeMasteryLabel(n, wins, progress, sizeof(progress));
-        Color tint = unlocked ? (Color){240, 236, 224, 255} : (Color){150, 145, 138, 255};
-        float size = 24.0f, spacing = 1.0f;
-        Vector2 tw = MeasureTextEx(c->font, progress, size, spacing);
-        Vector2 pos = {dst.x + 40.0f, dst.y + (dst.height - tw.y) / 2.0f};
-        DrawTextEx(c->font, progress, pos, size, spacing, tint);
-    }
+        {
+            Rectangle dst = {lore.x + 24.0f, lore.y + 84.0f, 364, 64};
+            UiDrawTexture(c->progress_bar, dst, WHITE);
 
-    {
-        float size = 15.0f, spacing = 1.0f;
-        Vector2 pos = {lore.x + 42.0f, lore.y + lore.height - 78.0f};
-        float wrap_w = lore.width - 84.0f;
-        CampaignDrawWrapped(c->font, n->cta, pos, size, spacing, 4.0f, wrap_w, (Color){228, 224, 212, 255});
-    }
+            bool unlocked = c->selected_node <= pcp->node_index;
+            int wins = pcp->node_completions[pcp->campaign_index][c->selected_node];
+            char progress[64] = {0};
+            if (!unlocked)
+                StrCopy(progress, sizeof(progress), LocGet("PVE_NODE_NODE_LOCKED"));
+            else
+                CampaignNodeMasteryLabel(n, wins, progress, sizeof(progress));
+            Color tint = unlocked ? (Color){240, 236, 224, 255} : (Color){150, 145, 138, 255};
+            float size = 24.0f, spacing = 1.0f;
+            Vector2 tw = MeasureTextEx(c->font, progress, size, spacing);
+            Vector2 pos = {dst.x + 40.0f, dst.y + (dst.height - tw.y) / 2.0f};
+            DrawTextEx(c->font, progress, pos, size, spacing, tint);
+        }
 
-    {
-        Texture2D icons[3] = {c->gold, c->xp, c->gems};
-        int wins = pcp->node_completions[pcp->campaign_index][c->selected_node];
-        CampaignRewards rewards = CampaignNodeRewardsForWins(n, wins);
-        int values[3] = {rewards.gold, rewards.xp, rewards.gems};
-        int count = rewards.gems > 0 ? 3 : 2;
+        {
+            float size = 15.0f, spacing = 1.0f;
+            Vector2 pos = {lore.x + 42.0f, lore.y + lore.height - 78.0f};
+            float wrap_w = lore.width - 84.0f;
+            CampaignDrawWrapped(c->font, n->cta, pos, size, spacing, 4.0f, wrap_w, (Color){228, 224, 212, 255});
+        }
 
-        float icon_box = 44.0f, row_h = 42.0f, tag_w = 96.0f, tag_h = 36.0f;
-        float icon_x = screen_w - 44.0f - icon_box;
-        float start_y = screen_h - 84.0f - count * row_h;
+        {
+            Texture2D icons[3] = {c->gold, c->xp, c->gems};
+            int wins = pcp->node_completions[pcp->campaign_index][c->selected_node];
+            CampaignRewards rewards = CampaignNodeRewardsForWins(n, wins);
+            int values[3] = {rewards.gold, rewards.xp, rewards.gems};
+            int count = rewards.gems > 0 ? 3 : 2;
 
-        for (int i = 0; i < count; i++) {
-            float cy = start_y + i * row_h + row_h / 2.0f;
+            float icon_box = 44.0f, row_h = 42.0f, tag_w = 96.0f, tag_h = 36.0f;
+            float icon_x = screen_w - 44.0f - icon_box;
+            float start_y = screen_h - 84.0f - count * row_h;
 
-            Rectangle tag = {icon_x - tag_w, cy - tag_h / 2.0f, tag_w, tag_h};
-            Rectangle tag_src = {0, 0, c->reward_tag.width, c->reward_tag.height};
-            DrawTexturePro(c->reward_tag, tag_src, tag, (Vector2){0, 0}, 0.0f, WHITE);
+            for (int i = 0; i < count; i++) {
+                float cy = start_y + i * row_h + row_h / 2.0f;
 
-            const char *txt = TextFormat("+%d", values[i]);
-            float size = 26.0f, spacing = 1.0f;
-            Vector2 tw = MeasureTextEx(c->font, txt, size, spacing);
-            Vector2 tpos = {icon_x - 6.0f - tw.x, cy - tw.y / 2.0f};
-            DrawTextEx(c->font, txt, tpos, size, spacing, (Color){245, 244, 238, 255});
+                Rectangle tag = {icon_x - tag_w, cy - tag_h / 2.0f, tag_w, tag_h};
+                Rectangle tag_src = {0, 0, c->reward_tag.width, c->reward_tag.height};
+                DrawTexturePro(c->reward_tag, tag_src, tag, (Vector2){0, 0}, 0.0f, WHITE);
 
-            Rectangle idst = {icon_x, cy - icon_box / 2.0f, icon_box, icon_box};
-            UiDrawTexture(icons[i], idst, WHITE);
+                const char *txt = TextFormat("+%d", values[i]);
+                float size = 26.0f, spacing = 1.0f;
+                Vector2 tw = MeasureTextEx(c->font, txt, size, spacing);
+                Vector2 tpos = {icon_x - 6.0f - tw.x, cy - tw.y / 2.0f};
+                DrawTextEx(c->font, txt, tpos, size, spacing, (Color){245, 244, 238, 255});
+
+                Rectangle idst = {icon_x, cy - icon_box / 2.0f, icon_box, icon_box};
+                UiDrawTexture(icons[i], idst, WHITE);
+            }
         }
     }
 
