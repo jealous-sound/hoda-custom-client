@@ -22,6 +22,7 @@ test: $(TEST_TARGET)
 	python3 tools/validate_intrinsic_passives.py
 	python3 tools/validate_unit_audio.py
 	python3 tools/validate_unit_vfx.py
+	python3 tools/build_campaign_node_layout.py --check
 	./$(TEST_TARGET)
 
 run: $(TARGET)
