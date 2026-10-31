@@ -1,7 +1,6 @@
 
 #define HEROES_CARD_COLS 2
 #define HEROES_DRAG_THRESHOLD 51.0f
-#define HEROES_BADGE_MAX 99
 
 typedef enum {
     HEROES_NONE,
@@ -585,18 +584,7 @@ static void HeroesDrawCard(const HeroCard *card, Rectangle cell) {
     }
 }
 
-static void HeroesDrawNavBadge(Rectangle button, int count) {
-    if (count <= 0) return;
-    char text[8];
-    snprintf(text, sizeof(text), "%d", count > HEROES_BADGE_MAX ? HEROES_BADGE_MAX : count);
-    Vector2 center = {button.x + button.width * 0.8f, button.y + button.height * 0.2f};
-    DrawCircleV(center, 14.0f, (Color){190, 30, 30, 255});
-    UiDrawTextCentered(
-        GuiFont(FNT_MENU), text, (Rectangle){center.x - 14.0f, center.y - 14.0f, 28.0f, 28.0f}, 18.0f, WHITE
-    );
-}
-
-HeroesButton HeroesDrawNav(Heroes *h, HeroesButton active, bool interactive, int runes_badge) {
+HeroesButton HeroesDrawNav(Heroes *h, HeroesButton active, bool interactive, int runes_badge, int gallery_badge) {
     HeroesButton clicked = HEROES_NONE;
     float w = 112.0f;
     float x = UiWidth() - w;
@@ -612,9 +600,12 @@ HeroesButton HeroesDrawNav(Heroes *h, HeroesButton active, bool interactive, int
         ButtonDrawSelected(&h->runes, runes);
     else if (ButtonDrawEx(&h->runes, runes, interactive))
         clicked = HEROES_RUNES;
-    HeroesDrawNavBadge(runes, runes_badge);
+    ButtonDrawBadge(runes, runes_badge);
     y += w + gap;
-    ButtonDrawEx(&h->gallery, (Rectangle){x, y, w, w}, false);
+    Rectangle gallery = {x, y, w, w};
+    if (ButtonDrawEx(&h->gallery, gallery, interactive)) clicked = HEROES_GALLERY;
+    if (active == HEROES_GALLERY) ButtonDrawVisual(&h->gallery, gallery, true);
+    ButtonDrawBadge(gallery, gallery_badge);
     y += w + gap;
     Rectangle squad = {x, y, w, w};
     if (active == HEROES_SQUAD)
@@ -788,7 +779,8 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
     }
 
     {
-        HeroesButton nav = HeroesDrawNav(h, HEROES_SQUAD, buttons_active, RuneUnseenCount(&p->runes, RuneNow()));
+        HeroesButton nav =
+            HeroesDrawNav(h, HEROES_SQUAD, buttons_active, RuneUnseenCount(&p->runes, RuneNow()), p->gallery.badge);
         if (nav != HEROES_NONE) clicked = nav;
     }
 

@@ -92,8 +92,15 @@ typedef enum {
     SPEC_ASSASSIN,
     SPEC_MARK,
     SPEC_ATTACKNONE,
-    SPEC_PERCEPTIVE
+    SPEC_PERCEPTIVE,
+    SPECIALTY_COUNT
 } Specialty;
+
+static const char *const SPECIALTY_NAMES[SPECIALTY_COUNT] = {
+    "POWERGAIN", "ATTACKSINGLE", "HEAL",           "ATTACKALL", "STUN",     "POWERDRAIN", "ATTACKROW",   "MULTIATTACK",
+    "SLOW",      "ATTACKCOLUMN", "CURSEPOWER",     "TAUNT",     "DEFENDER", "ELUSIVE",    "CURSEHEALTH", "LEVY",
+    "FLANK",     "RETALIATE",    "ATTACKFRIENDLY", "STEALTH",   "ASSASSIN", "MARK",       "ATTACKNONE",  "PERCEPTIVE"
+};
 
 typedef struct {
     char key[160];
@@ -214,13 +221,8 @@ static Tier TierFromString(const char *s) {
 }
 
 static int SpecialtyFromString(const char *s) {
-    static const char *names[] = {"POWERGAIN",  "ATTACKSINGLE", "HEAL",        "ATTACKALL",      "STUN",
-                                  "POWERDRAIN", "ATTACKROW",    "MULTIATTACK", "SLOW",           "ATTACKCOLUMN",
-                                  "CURSEPOWER", "TAUNT",        "DEFENDER",    "ELUSIVE",        "CURSEHEALTH",
-                                  "LEVY",       "FLANK",        "RETALIATE",   "ATTACKFRIENDLY", "STEALTH",
-                                  "ASSASSIN",   "MARK",         "ATTACKNONE",  "PERCEPTIVE"};
-    for (int i = 0; i < (int)(sizeof(names) / sizeof(names[0])); i++) {
-        if (!strcmp(s, names[i])) return i;
+    for (int i = 0; i < SPECIALTY_COUNT; i++) {
+        if (!strcmp(s, SPECIALTY_NAMES[i])) return i;
     }
     return -1;
 }

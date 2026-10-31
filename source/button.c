@@ -1,3 +1,5 @@
+#define BUTTON_BADGE_MAX 99
+
 typedef struct {
     Texture2D idle;
     Texture2D active;
@@ -94,6 +96,17 @@ bool ButtonDrawEx(Button *b, Rectangle dst, bool interactive) {
         GuiSoundPlayHandle(b->click, b->click_allow_duplicate);
     }
     return clicked;
+}
+
+void ButtonDrawBadge(Rectangle button, int count) {
+    if (count <= 0) return;
+    char text[8];
+    snprintf(text, sizeof(text), "%d", count > BUTTON_BADGE_MAX ? BUTTON_BADGE_MAX : count);
+    Vector2 center = {button.x + button.width * 0.8f, button.y + button.height * 0.2f};
+    DrawCircleV(center, 14.0f, (Color){190, 30, 30, 255});
+    UiDrawTextCentered(
+        GuiFont(FNT_MENU), text, (Rectangle){center.x - 14.0f, center.y - 14.0f, 28.0f, 28.0f}, 18.0f, WHITE
+    );
 }
 
 bool ButtonDraw(Button *b, Rectangle dst) {

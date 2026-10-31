@@ -110,6 +110,7 @@ typedef struct {
     PlayerNexusEvents nexus_events;
 
     PlayerRunes runes;
+    PlayerGallery gallery;
 } Player;
 
 static cJSON *CatalogFindCharacter(const cJSON *characters, const char *id) {
@@ -396,7 +397,16 @@ bool PlayerSquadWithdraw(Player *p, int squad, int slot) {
     return true;
 }
 
+void PlayerGallerySync(Player *p) {
+    bool initial = !p->gallery.seeded;
+    for (int i = p->gallery.synced_roster_count; i < p->roster_count; i++)
+        GalleryRecordOwned(&p->gallery, p->roster[i].id, p->roster[i].tier, initial);
+    p->gallery.seeded = true;
+    p->gallery.synced_roster_count = p->roster_count;
+}
+
 void PlayerUnloadRoster(Player *p) {
+    GalleryFree(&p->gallery);
     MemFree(p->roster);
     MemFree(p->roster_abilities);
     PlayerRosterReset(p);

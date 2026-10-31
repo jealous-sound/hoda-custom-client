@@ -31,7 +31,7 @@ void HomeUIInitialize(HomeUI *hui) {
     ButtonSetClickSound(&hui->pvp, SND_UI_BIG_BUTTON);
 }
 
-HomeButton HomeUIDraw(HomeUI *hui, bool interactive) {
+HomeButton HomeUIDraw(HomeUI *hui, bool interactive, int heroes_badge) {
     float size = 88.0f;
     float pad = 12.0f;
     float gap = 6.0f;
@@ -43,8 +43,9 @@ HomeButton HomeUIDraw(HomeUI *hui, bool interactive) {
     if (ButtonDrawEx(&hui->store, (Rectangle){pad, y, size, size}, interactive)) clicked = HOME_STORE;
     ButtonDrawEx(&hui->history, (Rectangle){pad + size + gap, y, size, size}, false);
 
-    if (ButtonDrawEx(&hui->heroes, (Rectangle){(screen_w - size) * 0.5f, y, size, size}, interactive))
-        clicked = HOME_HEROES;
+    Rectangle heroes = {(screen_w - size) * 0.5f, y, size, size};
+    if (ButtonDrawEx(&hui->heroes, heroes, interactive)) clicked = HOME_HEROES;
+    ButtonDrawBadge(heroes, heroes_badge);
 
     float pvp_x = screen_w - pad - size;
     float quests_x = pvp_x - gap - size;

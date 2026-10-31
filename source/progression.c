@@ -1,6 +1,6 @@
 #include <limits.h>
 
-#define PROGRESSION_SAVE_VERSION 5
+#define PROGRESSION_SAVE_VERSION 6
 #define PROGRESSION_LOCAL_MAX_LEVEL 100
 #define PROGRESSION_START_ENERGY_MAX 12
 #define PROGRESSION_START_STAMINA_MAX 8
@@ -550,6 +550,26 @@ static cJSON *ProgressionSaveRunes(const PlayerRunes *runes) {
     return NULL;
 }
 
+static cJSON *ProgressionSaveGallery(const PlayerGallery *gallery) {
+    cJSON *root = cJSON_CreateObject();
+    cJSON *units = cJSON_AddArrayToObject(root, "units");
+    bool ok = root && units && cJSON_AddNumberToObject(root, "badge", gallery->badge);
+    for (int i = 0; ok && i < gallery->count; i++) {
+        const GalleryRecord *record = &gallery->records[i];
+        cJSON *entry = cJSON_CreateObject();
+        ok = entry && cJSON_AddItemToArray(units, entry) && cJSON_AddStringToObject(entry, "id", record->id) &&
+             cJSON_AddNumberToObject(entry, "owned_tiers", record->owned_tiers) &&
+             cJSON_AddBoolToObject(entry, "fought", record->fought) &&
+             cJSON_AddBoolToObject(entry, "defeated", record->defeated) &&
+             cJSON_AddBoolToObject(entry, "new_owned", record->new_owned) &&
+             cJSON_AddBoolToObject(entry, "new_fought", record->new_fought) &&
+             cJSON_AddBoolToObject(entry, "new_defeated", record->new_defeated);
+    }
+    if (ok) return root;
+    cJSON_Delete(root);
+    return NULL;
+}
+
 bool ProgressionSaveToPath(const Player *player, const char *path) {
     if (!player || !path || !path[0]) return false;
     bool managed_roster = player->roster && player->roster_abilities && player->roster_capacity > 0;
@@ -783,6 +803,12 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
         goto save_json_failed;
     }
 
+    cJSON *gallery = ProgressionSaveGallery(&player->gallery);
+    if (!gallery || !cJSON_AddItemToObject(root, "gallery", gallery)) {
+        cJSON_Delete(gallery);
+        goto save_json_failed;
+    }
+
     serialized = cJSON_Print(root);
     cJSON_Delete(root);
     root = NULL;
@@ -901,6 +927,29 @@ static bool ProgressionLoadRunes(const cJSON *json, PlayerRunes *runes) {
             runes->squad_slots[squad][slot] = RuneByUuid(runes, uuid) ? uuid : 0;
         }
     }
+    return true;
+}
+
+static bool ProgressionLoadGallery(const cJSON *json, PlayerGallery *gallery) {
+    const cJSON *units = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "units");
+    if (!cJSON_IsArray(units) || !ProgressionJsonInt(json, "badge", 0, INT_MAX, &gallery->badge)) return false;
+    const cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, (cJSON *)units) {
+        int owned_tiers = 0;
+        const char *id = JsonStr(entry, "id");
+        if (!id[0] || strlen(id) >= GALLERY_RECORD_ID_CAP ||
+            !ProgressionJsonInt(entry, "owned_tiers", 0, (1 << TIER_COUNT) - 1, &owned_tiers))
+            return false;
+        GalleryRecord *record = GalleryRecordObtain(gallery, id);
+        if (!record) return false;
+        record->owned_tiers = (unsigned char)owned_tiers;
+        record->fought = JsonBool(entry, "fought");
+        record->defeated = JsonBool(entry, "defeated");
+        record->new_owned = JsonBool(entry, "new_owned");
+        record->new_fought = JsonBool(entry, "new_fought");
+        record->new_defeated = JsonBool(entry, "new_defeated");
+    }
+    gallery->seeded = true;
     return true;
 }
 
@@ -1197,8 +1246,13 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
         valid = loaded_runes && ProgressionLoadRunes(cJSON_GetObjectItemCaseSensitive(root, "runes"), loaded_runes);
     }
 
+    PlayerGallery loaded_gallery = {0};
+    if (valid && version >= 6)
+        valid = ProgressionLoadGallery(cJSON_GetObjectItemCaseSensitive(root, "gallery"), &loaded_gallery);
+
     cJSON_Delete(root);
     if (!valid) {
+        GalleryFree(&loaded_gallery);
         free(loaded_runes);
         free(loaded_additions);
         TraceLog(LOG_WARNING, "Progression: rejected incompatible or corrupt save %s", path);
@@ -1247,6 +1301,8 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
         }
     }
     if (loaded_runes) player->runes = *loaded_runes;
+    GalleryFree(&player->gallery);
+    player->gallery = loaded_gallery;
     free(loaded_runes);
     free(loaded_additions);
     return true;

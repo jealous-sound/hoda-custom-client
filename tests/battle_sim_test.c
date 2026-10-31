@@ -3803,8 +3803,133 @@ static void TestPrestigeSlotCostsGems(void) {
     assert(!PlayerUnlockPrestigeRuneSlot(&player, 0));
 }
 
+static void TestGalleryRecordsTrackDiscoveryAndBadge(void) {
+    PlayerGallery gallery = {0};
+    GalleryRecordOwned(&gallery, "UNIT_A", TIER_I, true);
+    assert(gallery.badge == 0);
+    const GalleryRecord *record = GalleryRecordFind(&gallery, "UNIT_A");
+    assert(record && record->owned_tiers == 1 && !record->new_owned);
+
+    GalleryRecordOwned(&gallery, "UNIT_A", TIER_I, false);
+    assert(gallery.badge == 0);
+    GalleryRecordOwned(&gallery, "UNIT_A", TIER_III, false);
+    record = GalleryRecordFind(&gallery, "UNIT_A");
+    assert(gallery.badge == 1 && record->owned_tiers == 5 && record->new_owned);
+
+    GalleryRecordBattleUnit(&gallery, "UNIT_B", false);
+    assert(gallery.badge == 2);
+    GalleryRecordBattleUnit(&gallery, "UNIT_B", false);
+    assert(gallery.badge == 2);
+    GalleryRecordBattleUnit(&gallery, "UNIT_B", true);
+    record = GalleryRecordFind(&gallery, "UNIT_B");
+    assert(gallery.badge == 3 && record->fought && record->defeated && record->new_defeated);
+
+    assert(GalleryRecordClearNew(&gallery, "UNIT_B"));
+    assert(!GalleryRecordClearNew(&gallery, "UNIT_B"));
+    assert(gallery.badge == 3);
+    GalleryFree(&gallery);
+}
+
+static void TestGalleryCatalogMatchesReferenceRules(void) {
+    GalleryCatalog catalog;
+    GalleryCatalogLoad(&catalog, HOD_CACHE "characters.json");
+    assert(catalog.count > 0 && catalog.group_count > 0 && catalog.specialty_count > 0);
+    for (int i = 0; i < catalog.count; i++) {
+        const Character *unit = &catalog.units[i];
+        assert(unit->rarity != RARITY_MYTHIC);
+        assert(unit->ability->key[0] == '\0' || unit->ability == &catalog.abilities[i]);
+        if (i == 0) continue;
+        const Character *previous = &catalog.units[i - 1];
+        assert(previous->rarity >= unit->rarity);
+        if (previous->rarity == unit->rarity)
+            assert(
+                previous->stats[GalleryLowestTier(previous)].base_power >= unit->stats[GalleryLowestTier(unit)].base_power
+            );
+    }
+    for (int g = 1; g < catalog.group_count; g++) assert(strcasecmp(catalog.groups[g - 1], catalog.groups[g]) < 0);
+
+    PlayerGallery gallery = {0};
+    int *matches = (int *)MemAlloc((unsigned int)catalog.count * sizeof(int));
+    GalleryProgress progress;
+    GallerySelection selection = {.category = GALLERY_CATEGORY_RARITY, .rarity = RARITY_COMMON};
+    int commons = GalleryQuery(&catalog, &gallery, &selection, GALLERY_FILTER_NONE, matches, &progress);
+    assert(commons > 0 && progress.total == commons && progress.owned == 0);
+    const char *first_id = catalog.units[matches[0]].id;
+
+    GalleryRecordOwned(&gallery, first_id, GalleryLowestTier(&catalog.units[matches[0]]), false);
+    GalleryRecordBattleUnit(&gallery, first_id, true);
+    assert(GalleryQuery(&catalog, &gallery, &selection, GALLERY_FILTER_OWNED, matches, &progress) == 1);
+    assert(progress.total == commons && progress.owned == 1 && progress.defeated == 1 && progress.new_owned);
+    assert(GalleryQuery(&catalog, &gallery, &selection, GALLERY_FILTER_DEFEATED, matches, &progress) == 1);
+
+    GalleryTotals totals = GalleryTotalsCompute(&catalog, &gallery);
+    assert(totals.total == catalog.count && totals.owned == 1);
+    assert(totals.rarity_owned[RARITY_COMMON - RARITY_COMMON] == 1);
+
+    selection = (GallerySelection){.category = GALLERY_CATEGORY_FACTION, .faction = GALLERY_FACTION_DUAL};
+    assert(GalleryQuery(&catalog, &gallery, &selection, GALLERY_FILTER_NONE, matches, &progress) > 0);
+    for (int i = 0; i < progress.total; i++) assert(catalog.units[matches[i]].faction >= FACTION_WHITE_RED);
+
+    char key[GALLERY_KEY_CAP];
+    GallerySubcategoryTitleKey(key, sizeof(key), &catalog, &selection);
+    assert(!strcmp(key, "GALLERY_DUAL_TITLE"));
+
+    assert(GalleryRarityStep(RARITY_LEGENDARY, 1) == RARITY_COMMON);
+    assert(GalleryRarityStep(RARITY_COMMON, -1) == RARITY_LEGENDARY);
+    assert(GalleryFactionStep(GALLERY_FACTION_BLACK, -1) == GALLERY_FACTION_DUAL);
+    assert(GalleryCategoryStep(GALLERY_CATEGORY_SPECIALTY, 1) == GALLERY_CATEGORY_ALL);
+    assert(GalleryCategoryStep(GALLERY_CATEGORY_ALL, -1) == GALLERY_CATEGORY_SPECIALTY);
+
+    MemFree(matches);
+    GalleryFree(&gallery);
+    GalleryCatalogUnload(&catalog);
+}
+
+static void TestGalleryRecordsBattleCasualties(void) {
+    static BattleRoster enemies;
+    static BattleSim sim;
+    memset(&enemies, 0, sizeof(enemies));
+    memset(&sim, 0, sizeof(sim));
+    StrCopy(enemies.chars[0].id, sizeof(enemies.chars[0].id), "UNIT_FALLEN");
+    StrCopy(enemies.chars[1].id, sizeof(enemies.chars[1].id), "UNIT_STANDING");
+    enemies.present[0] = enemies.present[1] = true;
+    sim.units[SQUAD_SLOT_COUNT + 1].health = 10;
+
+    PlayerGallery gallery = {0};
+    GalleryRecordBattle(&gallery, &enemies, &sim);
+    assert(gallery.count == 2);
+    assert(GalleryRecordFind(&gallery, "UNIT_FALLEN")->defeated);
+    assert(GalleryRecordFind(&gallery, "UNIT_STANDING")->fought);
+    assert(!GalleryRecordFind(&gallery, "UNIT_STANDING")->defeated);
+    GalleryFree(&gallery);
+}
+
+static void TestGalleryPersistence(void) {
+    Player source = {0}, loaded = {0};
+    ProgressionInitializePlayerDefaults(&source);
+    ProgressionInitializePlayerDefaults(&loaded);
+    GalleryRecordOwned(&source.gallery, "UNIT_A", TIER_II, false);
+    GalleryRecordBattleUnit(&source.gallery, "UNIT_B", true);
+    const char *path = "/tmp/hod_gallery_save_test.dat";
+    assert(ProgressionSaveToPath(&source, path));
+    assert(ProgressionLoadFromPath(&loaded, path));
+    remove(path);
+
+    assert(loaded.gallery.seeded && loaded.gallery.badge == 2 && loaded.gallery.count == 2);
+    const GalleryRecord *owned = GalleryRecordFind(&loaded.gallery, "UNIT_A");
+    const GalleryRecord *fought = GalleryRecordFind(&loaded.gallery, "UNIT_B");
+    assert(owned && owned->owned_tiers == 2 && owned->new_owned);
+    assert(fought && fought->fought && fought->defeated && fought->new_fought && fought->new_defeated);
+    GalleryFree(&source.gallery);
+    GalleryFree(&loaded.gallery);
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_WARNING);
+    TestGalleryRecordsTrackDiscoveryAndBadge();
+    TestGalleryCatalogMatchesReferenceRules();
+    TestGalleryRecordsBattleCasualties();
+    TestGalleryPersistence();
     TestRuneCatalogCraftChains();
     TestRuneSlotRulesAndReplacement();
     TestRuneExpiry();

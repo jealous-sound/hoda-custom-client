@@ -3,6 +3,7 @@ typedef enum {
     SCREEN_STORE,
     SCREEN_HEROES,
     SCREEN_RUNES,
+    SCREEN_GALLERY,
     SCREEN_QUESTS,
     SCREEN_MAP,
     SCREEN_NEXUS,
@@ -23,6 +24,7 @@ typedef struct {
     Heroes heroes;
     RunesScreen runes;
     Screen runes_return_screen;
+    Gallery gallery;
     Store store;
     Screen store_return_screen;
     Quests quests;
@@ -118,6 +120,7 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
     if (g->battle_outcome_committed) return;
 
     g->battle_outcome_committed = true;
+    GalleryRecordBattle(&g->player.gallery, &g->battle.enemy_roster, &g->battle_play.sim);
     if (g->battle_is_nexus) {
         PlayerNexusRun *run = &g->player.nexus_run;
         int from_step = g->battle_node_index + 1;
@@ -233,6 +236,7 @@ void GameInitialize(Game *g) {
 
     PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
     ProgressionLoad(&g->player);
+    PlayerGallerySync(&g->player);
 
     HudInitialize(&g->hud);
     HomeUIInitialize(&g->home_ui);
@@ -244,6 +248,7 @@ void GameInitialize(Game *g) {
     MusicPlayerInitialize(&g->music);
     HeroesInitialize(&g->heroes, &g->player);
     RunesInitialize(&g->runes);
+    GalleryInitialize(&g->gallery, HOD_CACHE "characters.json");
     RuneGrantStarterSet(&g->player.runes, RuneNow());
     StoreInitialize(&g->store, "data/store_packs.json", HOD_CACHE "characters.json");
     QuestsInitialize(&g->quests);
@@ -279,6 +284,12 @@ bool GameHandlePopupBack(Game *g) {
     EnergyDialog *top = GameTopResourceDialog(g);
     if (top) {
         EnergyDialogClose(top);
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+        return true;
+    }
+    if (GalleryHandleBack(&g->gallery)) return true;
+    if (g->screen == SCREEN_GALLERY) {
+        g->screen = SCREEN_HEROES;
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return true;
     }
@@ -341,6 +352,10 @@ static void GameHandleRunesLeave(Game *g, RunesLeave leave) {
             StoreOpen(&g->store);
             StoreShowRunes(&g->store);
             g->screen = SCREEN_STORE;
+            break;
+        case RUNES_LEAVE_GALLERY:
+            GameLeaveRunesTo(g, SCREEN_HEROES);
+            GalleryOpenPopup(&g->gallery, &g->player);
             break;
         case RUNES_LEAVE_SELECT_SQUAD:
             PlayerSquadSelect(&g->player, g->runes.leave_squad);
@@ -414,11 +429,19 @@ static void GameHandleHudAction(Game *g, HudAction a) {
     }
 }
 
+static void GameDrawGalleryPopup(Game *g, bool resource_modal) {
+    UiSetInputBlocked(resource_modal);
+    if (GalleryPopupDraw(&g->gallery, &g->player) != GALLERY_ACTION_SHOW_UNIT) return;
+    GalleryScreenEnter(&g->gallery, &g->player, &g->scene);
+    g->screen = SCREEN_GALLERY;
+}
+
 void GameDraw(Game *g) {
     float dt = GetFrameTime();
     Screen screen_at_frame_start = g->screen;
     if (g->screen != SCREEN_BATTLE) MusicPlayerUpdate(&g->music);
     PlayerUpdate(&g->player, dt);
+    if (g->player.roster_count != g->player.gallery.synced_roster_count) PlayerGallerySync(&g->player);
 
     ClearBackground(RAYWHITE);
 
@@ -433,7 +456,7 @@ void GameDraw(Game *g) {
             UiFrameBegin();
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, true));
 
-            HomeButton pressed = HomeUIDraw(&g->home_ui, true);
+            HomeButton pressed = HomeUIDraw(&g->home_ui, true, g->player.gallery.badge);
             UiFrameEnd();
             if (pressed == HOME_HEROES) {
                 g->screen = SCREEN_HEROES;
@@ -484,18 +507,24 @@ void GameDraw(Game *g) {
 
             UiFrameBegin();
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
+            bool gallery_modal = GalleryPopupOpen(&g->gallery);
+            bool heroes_modal = resource_modal || gallery_modal;
+            UiSetInputBlocked(heroes_modal);
             int prev_squad = g->player.current_squad;
             HeroesButton heroes_action = HeroesDraw(&g->heroes, &g->player);
             bool squad_tab_changed = g->player.current_squad != prev_squad;
             if (squad_tab_changed || g->screen != SCREEN_HEROES || heroes_action == HEROES_QUEST)
                 HeroesBackgroundClearRowBonus(&g->heroes_scene);
             HeroesBackgroundDrawRowBonus(&g->heroes_scene);
+            if (gallery_modal) GameDrawGalleryPopup(g, resource_modal);
             UiFrameEnd();
 
             if (heroes_action == HEROES_QUEST) {
                 g->screen = SCREEN_QUESTS;
             } else if (heroes_action == HEROES_RUNES) {
                 GameOpenRunes(g, SCREEN_HEROES);
+            } else if (heroes_action == HEROES_GALLERY) {
+                GalleryOpenPopup(&g->gallery, &g->player);
             } else if (heroes_action != HEROES_NONE && heroes_action != HEROES_SQUAD) {
                 TraceLog(LOG_INFO, "Heroes action %d has no local target screen yet", heroes_action);
             }
@@ -503,7 +532,7 @@ void GameDraw(Game *g) {
             bool squad_changed = false;
             int req = HeroesTakeDragRequest(&g->heroes);
             if (req >= 0 && HeroesBackgroundDragStart(&g->heroes_scene, &g->player, req, -1)) g->heroes.drag_icon = req;
-            if (!resource_modal && !HeroesBackgroundDragActive(&g->heroes_scene) &&
+            if (!heroes_modal && !HeroesBackgroundDragActive(&g->heroes_scene) &&
                 IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && UiMouse().x > 256.0f) {
                 int slot = HeroesBackgroundSlotAtMouse(&g->heroes_scene, &g->player);
                 if (slot >= 0) {
@@ -511,7 +540,7 @@ void GameDraw(Game *g) {
                     HeroesBackgroundDragStart(&g->heroes_scene, &g->player, unit, slot);
                 }
             }
-            if (!resource_modal && HeroesBackgroundDragActive(&g->heroes_scene)) {
+            if (!heroes_modal && HeroesBackgroundDragActive(&g->heroes_scene)) {
                 bool over_tray = UiMouse().x < 256.0f;
                 g->heroes.drag_icon = over_tray && !HeroesBackgroundDragFromBoard(&g->heroes_scene)
                                           ? HeroesBackgroundDragRosterIndex(&g->heroes_scene)
@@ -548,13 +577,38 @@ void GameDraw(Game *g) {
             GameHandleHudAction(g, hud_action);
             break;
         }
+        case SCREEN_GALLERY: {
+            HomeBackgroundUpdate(&g->scene, dt);
+            HomeBackgroundSetGalleryView(&g->scene, true);
+            HomeBackgroundDraw(&g->scene);
+            HomeBackgroundSetGalleryView(&g->scene, false);
+
+            UiFrameBegin();
+            if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
+            bool gallery_modal = GalleryPopupOpen(&g->gallery);
+            UiSetInputBlocked(resource_modal || gallery_modal);
+            GalleryScreenAction gallery_action = GalleryScreenDraw(&g->gallery, &g->heroes, &g->player, &g->scene);
+            if (gallery_modal) GameDrawGalleryPopup(g, resource_modal);
+            UiFrameEnd();
+
+            if (g->screen == SCREEN_GALLERY) {
+                if (gallery_action == GALLERY_SCREEN_ACTION_SQUAD) {
+                    g->screen = SCREEN_HEROES;
+                } else if (gallery_action == GALLERY_SCREEN_ACTION_RUNES) {
+                    GameOpenRunes(g, SCREEN_HEROES);
+                } else if (gallery_action == GALLERY_SCREEN_ACTION_POPUP) {
+                    GalleryOpenPopup(&g->gallery, &g->player);
+                }
+            }
+            break;
+        }
         case SCREEN_QUESTS: {
             HomeBackgroundUpdate(&g->scene, dt);
             HomeBackgroundDraw(&g->scene);
 
             UiFrameBegin();
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
-            HomeUIDraw(&g->home_ui, false);
+            HomeUIDraw(&g->home_ui, false, g->player.gallery.badge);
 
             QuestButton pressed = QuestsDraw(&g->quests, &g->nexus, &g->player, &g->map);
             UiFrameEnd();
@@ -738,6 +792,10 @@ void GameDraw(Game *g) {
     if (screen_at_frame_start == SCREEN_HEROES && g->screen != SCREEN_HEROES && g->screen != SCREEN_RUNES)
         HeroesBackgroundClearRowBonus(&g->heroes_scene);
     if (screen_at_frame_start == SCREEN_QUESTS && g->screen != SCREEN_QUESTS) QuestsClose(&g->quests);
+    if (g->screen != SCREEN_HEROES && g->screen != SCREEN_GALLERY && GalleryPopupOpen(&g->gallery))
+        GalleryClosePopup(&g->gallery);
+    if (screen_at_frame_start == SCREEN_GALLERY && g->screen != SCREEN_GALLERY && g->screen != SCREEN_STORE)
+        HomeBackgroundGalleryClear(&g->scene);
     if (screen_at_frame_start == SCREEN_NEXUS && g->screen != SCREEN_NEXUS && g->screen != SCREEN_BATTLE &&
         NexusRunComplete(&g->nexus, &g->player.nexus_run)) {
         NexusAwardEscrow(&g->player);
@@ -747,6 +805,7 @@ void GameDraw(Game *g) {
 
 void GameDestroy(Game *g) {
     StoreDestroy(&g->store);
+    GalleryDestroy(&g->gallery);
     RuneIconsUnload();
     HeroesDestroy(&g->heroes);
     LocUnload();

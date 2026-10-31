@@ -396,12 +396,41 @@ static void DebugPrepareRunes(Game *game, DebugShot *shot) {
     }
 }
 
+static void DebugPrepareGallery(Game *game, DebugShot *shot) {
+    bool show_unit = DebugShotIs(shot, "gallery_unit");
+    if (!show_unit && !DebugShotIs(shot, "gallery")) return;
+    game->screen = SCREEN_HEROES;
+    if (shot->flow_started) return;
+    Gallery *gallery = &game->gallery;
+    gallery->selection.category =
+        (GalleryCategory)Clamp(EnvInt("HOD_GALLERY_CATEGORY", GALLERY_CATEGORY_ALL), 0, GALLERY_CATEGORY_COUNT - 1);
+    if (show_unit && gallery->selection.category == GALLERY_CATEGORY_ALL)
+        gallery->selection.category = GALLERY_CATEGORY_RARITY;
+    gallery->selection.rarity =
+        (Rarity)Clamp(EnvInt("HOD_GALLERY_RARITY", RARITY_COMMON), RARITY_COMMON, RARITY_LEGENDARY);
+    GalleryOpenPopup(gallery, &game->player);
+    gallery->page = EnvInt("HOD_GALLERY_PAGE", 0);
+    GalleryRefresh(gallery, &game->player, false);
+    if (show_unit && gallery->match_count > 0) {
+        GalleryPrepareUnitList(
+            gallery, gallery->matches[(int)Clamp(EnvInt("HOD_GALLERY_UNIT", 0), 0, gallery->match_count - 1)]
+        );
+        GalleryClosePopup(gallery);
+        GalleryScreenEnter(gallery, &game->player, &game->scene);
+        gallery->selected_level = (Tier)Clamp(EnvInt("HOD_GALLERY_TIER", 0), 0, TIER_COUNT - 1);
+        GalleryShowCurrentUnit(gallery, &game->player, &game->scene);
+    }
+    shot->flow_started = true;
+}
+
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
     game->screen = SCREEN_HEROES;
     if (DebugShotIs(shot, "home")) game->screen = SCREEN_HOME;
     if (DebugShotIs(shot, "quests")) game->screen = SCREEN_QUESTS;
     DebugActivateBattleRunes(game, shot);
     DebugPrepareRunes(game, shot);
+    DebugPrepareGallery(game, shot);
+    if (DebugShotIs(shot, "gallery_unit")) game->screen = SCREEN_GALLERY;
     DebugPrepareStore(game, shot);
     DebugPrepareNexus(game, shot);
     DebugPrepareCampaignMap(game, shot);
