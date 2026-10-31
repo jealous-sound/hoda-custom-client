@@ -57,20 +57,24 @@ const char *LocGetAbility(const char *ability_key) {
     return text;
 }
 
-void LocFormat2(char *out, size_t size, const char *key, const char *first, const char *second) {
+void LocFormatArgs(char *out, size_t size, const char *key, const char *const *args, int arg_count) {
     const char *format = LocGet(key);
     size_t written = 0;
     for (const char *c = format; *c && written + 1 < size;) {
-        const char *insert = NULL;
-        if (c[0] == '{' && c[2] == '}' && (c[1] == '0' || c[1] == '1')) insert = c[1] == '0' ? first : second;
-        if (!insert) {
+        int slot = c[0] == '{' && c[1] >= '0' && c[1] <= '9' && c[2] == '}' ? c[1] - '0' : -1;
+        if (slot < 0 || slot >= arg_count) {
             out[written++] = *c++;
             continue;
         }
-        for (; *insert && written + 1 < size; insert++) out[written++] = *insert;
+        for (const char *insert = args[slot]; *insert && written + 1 < size; insert++) out[written++] = *insert;
         c += 3;
     }
     out[written] = '\0';
+}
+
+void LocFormat2(char *out, size_t size, const char *key, const char *first, const char *second) {
+    const char *args[] = {first, second};
+    LocFormatArgs(out, size, key, args, 2);
 }
 
 void LocUnload(void) {

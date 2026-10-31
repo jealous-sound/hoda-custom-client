@@ -42,11 +42,14 @@ typedef struct {
     char id[48];
     char name[96];
     char kind[16];
+    char subtitle[64];
+    char hub_image[64];
     int weekday;
     char prefab[64];
     Color highlight;
     int unlock_key, unlock_key_qty, max_runs;
     long long duration;
+    long long unlock_duration;
     int node_count;
     int difficulty_count;
     NexusDifficulty difficulties[NEXUS_MAX_DIFFICULTIES];
@@ -147,11 +150,14 @@ void NexusInitialize(Nexus *n, const char *maps_path) {
         StrCopy(e->name, sizeof(e->name), JsonStr(event_json, "name"));
         StrCopy(e->kind, sizeof(e->kind), JsonStr(event_json, "kind"));
         StrCopy(e->prefab, sizeof(e->prefab), JsonStr(event_json, "prefab"));
+        StrCopy(e->subtitle, sizeof(e->subtitle), JsonStr(event_json, "subtitle"));
+        StrCopy(e->hub_image, sizeof(e->hub_image), JsonStr(event_json, "hub_image"));
         e->weekday = JsonInt(event_json, "weekday");
         e->unlock_key = JsonInt(event_json, "unlock_key");
         e->unlock_key_qty = JsonInt(event_json, "unlock_key_qty");
         e->max_runs = JsonInt(event_json, "max_runs");
         e->duration = JsonInt(event_json, "duration");
+        e->unlock_duration = JsonInt(event_json, "unlock_duration");
         e->node_count = JsonInt(event_json, "node_count");
 
         cJSON *colour = cJSON_GetObjectItemCaseSensitive(event_json, "highlight_color");
@@ -305,11 +311,65 @@ int NexusWeekdayToday(void) {
     return local->tm_wday == 0 ? 7 : local->tm_wday;
 }
 
+bool NexusEventCommitted(const Player *player, int event) {
+    return player->nexus_run.committed && player->nexus_run.event_index == event;
+}
+
+bool NexusEventTimeGated(const NexusEvent *e) {
+    return e && e->unlock_duration > 0;
+}
+
+bool NexusEventRunGated(const NexusEvent *e) {
+    return e && e->max_runs > 0;
+}
+
+bool NexusEventGated(const NexusEvent *e) {
+    return NexusEventTimeGated(e) || NexusEventRunGated(e);
+}
+
+bool NexusEventLocked(const Nexus *n, const Player *player, int event, long long now) {
+    const NexusEvent *e = NexusEventAt(n, event);
+    if (!e) return true;
+    long long unlocked_at = player->nexus_events.unlocked_at[event];
+    if (NexusEventTimeGated(e) && (unlocked_at == 0 || now - unlocked_at > e->unlock_duration)) return true;
+    if (NexusEventRunGated(e) && player->nexus_events.remaining_runs[event] <= 0 && !NexusEventCommitted(player, event))
+        return true;
+    return false;
+}
+
+static long long NexusSecondsToLocalMidnight(long long now) {
+    time_t t = (time_t)now;
+    struct tm *local = localtime(&t);
+    if (!local) return 0;
+    long long elapsed = (long long)local->tm_hour * 3600 + local->tm_min * 60 + local->tm_sec;
+    return NEXUS_SECONDS_PER_DAY - elapsed;
+}
+
+static long long NexusEventWindowRemaining(const NexusEvent *e, long long now) {
+    if (e->weekday != 0) return NexusSecondsToLocalMidnight(now);
+    if (e->duration <= 0) return 0;
+    return e->duration - now % e->duration;
+}
+
+long long NexusEventUnlockRemaining(const Nexus *n, const Player *player, int event, long long now) {
+    const NexusEvent *e = NexusEventAt(n, event);
+    if (!NexusEventTimeGated(e) || NexusEventLocked(n, player, event, now)) return 0;
+    return player->nexus_events.unlocked_at[event] + e->unlock_duration - now;
+}
+
+long long NexusEventTimeRemaining(const Nexus *n, const Player *player, int event, long long now) {
+    const NexusEvent *e = NexusEventAt(n, event);
+    if (!e) return 0;
+    long long window = NexusEventWindowRemaining(e, now);
+    long long unlock = NexusEventUnlockRemaining(n, player, event, now);
+    long long remaining = window > unlock ? window : unlock;
+    return remaining > 0 ? remaining : 0;
+}
+
 bool NexusEventUnlocked(const Nexus *n, const Player *player, int event) {
     const NexusEvent *e = NexusEventAt(n, event);
     if (!e || !NexusEventLive(e, NexusWeekdayToday())) return false;
-    if (e->unlock_key == 0) return true;
-    return player->nexus_events.unlocked_at[event] > 0;
+    return !NexusEventLocked(n, player, event, (long long)time(NULL));
 }
 
 bool NexusRunBlocking(const Nexus *n, const Player *player) {

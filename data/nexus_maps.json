@@ -4,6 +4,8 @@
   "name": "Порченая кровь",
   "name_en": "Tainted Blood",
   "kind": "chase",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "nexus_map2_pre",
   "node_count": 6,
   "highlight_color": [
@@ -15,6 +17,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -335,6 +338,8 @@
   "name": "Задание \"Эльфы-маги\"",
   "name_en": "Elven Mages",
   "kind": "chase",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "nexus_map2_pre",
   "node_count": 5,
   "highlight_color": [
@@ -346,6 +351,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -592,6 +598,8 @@
   "name": "Эльфы-разбойники",
   "name_en": "Elven Rogues",
   "kind": "chase",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "nexus_map3_pre",
   "node_count": 6,
   "highlight_color": [
@@ -603,6 +611,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -856,6 +865,8 @@
   "name": "Враги Тевинтера",
   "name_en": "Enemies of Tevinter",
   "kind": "chase",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_VenatoriGladiator",
   "prefab": "SnexusRC_map12_pre",
   "node_count": 5,
   "highlight_color": [
@@ -867,6 +878,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -1144,6 +1156,8 @@
   "name": "Король Ферелдена",
   "name_en": "King of Ferelden",
   "kind": "chase",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_KingMaric",
   "prefab": "nexus_map3_pre",
   "node_count": 6,
   "highlight_color": [
@@ -1155,6 +1169,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -1471,6 +1486,8 @@
   "name": "Суматошный маскарад",
   "name_en": "Masked Mayhem",
   "kind": "chase",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "SnexusVR_map11_pre",
   "node_count": 5,
   "highlight_color": [
@@ -1482,6 +1499,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -1821,6 +1839,8 @@
   "name": "Событие узла \"Кошмар небесный\"",
   "name_en": "Sky Horror Nexus Event",
   "kind": "chase",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_SkyHorror",
   "prefab": "nexus_map3_pre",
   "node_count": 6,
   "highlight_color": [
@@ -1832,6 +1852,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -2085,6 +2106,8 @@
   "name": "Поход кунари",
   "name_en": "Qunari Quest",
   "kind": "chase",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_Tallis",
   "prefab": "nexus_map3_pre",
   "node_count": 6,
   "highlight_color": [
@@ -2096,6 +2119,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -2487,6 +2511,8 @@
   "name": "Узел: Зимняя Стражляндия",
   "name_en": "Winter Wardenland",
   "kind": "chase",
+  "subtitle": "Nexus_Seasonal_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "nexus_map1_pre",
   "node_count": 8,
   "highlight_color": [
@@ -2498,6 +2524,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -3002,6 +3029,8 @@
   "name": "Узел \"Природа\"",
   "name_en": "Nature Nexus",
   "kind": "chase",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "nexus_map2_pre",
   "node_count": 5,
   "highlight_color": [
@@ -3013,6 +3042,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -3379,6 +3409,8 @@
   "name": "Лесные духи",
   "name_en": "Woodland Spirits",
   "kind": "chase",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "nexus_map2_pre",
   "node_count": 5,
   "highlight_color": [
@@ -3390,6 +3422,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -3697,6 +3730,8 @@
   "name": "Сон, ставший явью",
   "name_en": "A Dream Made Reality",
   "kind": "boss",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "nexus_map2_pre",
   "node_count": 5,
   "highlight_color": [
@@ -3708,6 +3743,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -4014,6 +4050,8 @@
   "name": "Брешь",
   "name_en": "The Breach Opens",
   "kind": "boss",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "SnexusB_map10_pre",
   "node_count": 6,
   "highlight_color": [
@@ -4025,6 +4063,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -4284,6 +4323,8 @@
   "name": "Брешь открывается вновь",
   "name_en": "The Breach Opens Again",
   "kind": "boss",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "SnexusB_map10_pre",
   "node_count": 6,
   "highlight_color": [
@@ -4295,6 +4336,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -4618,6 +4660,8 @@
   "name": "Событие: задание \"Хэллоуин\"",
   "name_en": "Halloween Quest Event",
   "kind": "boss",
+  "subtitle": "Nexus_Seasonal_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "SnexusFH_map7_pre",
   "node_count": 6,
   "highlight_color": [
@@ -4629,6 +4673,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -4949,6 +4994,8 @@
   "name": "Долг Искателя",
   "name_en": "Seeker's Duty",
   "kind": "boss",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_HighSeekerAldren",
   "prefab": "nexus_map6_pre",
   "node_count": 6,
   "highlight_color": [
@@ -4960,6 +5007,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -5134,6 +5182,8 @@
   "name": "Урна Священного Праха",
   "name_en": "The Urn of Sacred Ashes",
   "kind": "boss",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_Kolgrim",
   "prefab": "SnexusAA_map6_pre",
   "node_count": 6,
   "highlight_color": [
@@ -5145,6 +5195,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -5317,6 +5368,8 @@
   "name": "Последняя капля",
   "name_en": "The Last Straw...",
   "kind": "gauntlet",
+  "subtitle": "Nexus_Gauntlet_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "SnexusAD_map5_pre",
   "node_count": 4,
   "highlight_color": [
@@ -5328,6 +5381,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -5501,6 +5555,8 @@
   "name": "Ведьма из Диких земель",
   "name_en": "The Witch of the Wilds",
   "kind": "gauntlet",
+  "subtitle": "Nexus_Gauntlet_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_DragonFlemeth",
   "prefab": "nexus_map5_pre",
   "node_count": 4,
   "highlight_color": [
@@ -5512,6 +5568,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -5783,6 +5840,8 @@
   "name": "Событие: Благодарственное задание",
   "name_en": "Thanksgiving Quest Event",
   "kind": "raid",
+  "subtitle": "Nexus_Raid_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "nexus_map2_pre",
   "node_count": 1,
   "highlight_color": [
@@ -5794,6 +5853,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -5869,6 +5929,8 @@
   "name": "Наковальня Пустоты",
   "name_en": "Anvil Of The Void",
   "kind": "map",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "SnexusAV_map3_pre",
   "node_count": 5,
   "highlight_color": [
@@ -5880,6 +5942,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -6278,6 +6341,8 @@
   "name": "Забытая равнина",
   "name_en": "The Banished Plane",
   "kind": "map",
+  "subtitle": "NEXUS_EVENT_TYPE_KEY_TITLE",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "SnexusDEM_map12_pre",
   "node_count": 6,
   "highlight_color": [
@@ -6288,7 +6353,8 @@
   "unlock_key": 2004,
   "unlock_key_qty": 1,
   "max_runs": 1,
-  "duration": 0,
+  "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -6621,6 +6687,8 @@
   "name": "Событие \"Удвоенный опыт\"",
   "name_en": "Double Exp Event",
   "kind": "map",
+  "subtitle": "NEXUS_EVENT_TYPE_KEY_TITLE",
+  "hub_image": "tex.NexusEvent_XP",
   "prefab": "nexus_map4_pre",
   "node_count": 1,
   "highlight_color": [
@@ -6631,7 +6699,8 @@
   "unlock_key": 2001,
   "unlock_key_qty": 1,
   "max_runs": 0,
-  "duration": 3600,
+  "duration": 259200,
+  "unlock_duration": 3600,
   "positions": [
    {
     "step": 1,
@@ -6661,6 +6730,8 @@
   "name": "Событие: задание \"Гигантские огоньки\"",
   "name_en": "Giant Wisp Quest Event",
   "kind": "map",
+  "subtitle": "NEXUS_EVENT_TYPE_KEY_TITLE",
+  "hub_image": "tex.NexusEvent_Wisp",
   "prefab": "nexus_map4_pre",
   "node_count": 4,
   "highlight_color": [
@@ -6671,7 +6742,8 @@
   "unlock_key": 2002,
   "unlock_key_qty": 1,
   "max_runs": 0,
-  "duration": 3600,
+  "duration": 259200,
+  "unlock_duration": 3600,
   "positions": [
    {
     "step": 1,
@@ -6757,6 +6829,8 @@
   "name": "Событие: задание \"Гиганты\"",
   "name_en": "Giants Quest Event",
   "kind": "map",
+  "subtitle": "NEXUS_EVENT_TYPE_KEY_TITLE",
+  "hub_image": "tex.Interstitial_GiantWisps",
   "prefab": "nexus_map4_pre",
   "node_count": 2,
   "highlight_color": [
@@ -6767,7 +6841,8 @@
   "unlock_key": 2002,
   "unlock_key_qty": 1,
   "max_runs": 0,
-  "duration": 3600,
+  "duration": 259200,
+  "unlock_duration": 3600,
   "positions": [
    {
     "step": 1,
@@ -6819,6 +6894,8 @@
   "name": "Событие \"Зелья\"",
   "name_en": "Potion Drop Event",
   "kind": "map",
+  "subtitle": "NEXUS_EVENT_TYPE_KEY_TITLE",
+  "hub_image": "tex.NexusEvent_RevivePotionEvent",
   "prefab": "nexus_map6_pre",
   "node_count": 1,
   "highlight_color": [
@@ -6829,7 +6906,8 @@
   "unlock_key": 2003,
   "unlock_key_qty": 1,
   "max_runs": 0,
-  "duration": 3600,
+  "duration": 259200,
+  "unlock_duration": 3600,
   "positions": [
    {
     "step": 1,
@@ -6860,6 +6938,8 @@
   "name": "Западный предел: инквизиция поднимает голову",
   "name_en": "Western Approach: Inquisition Rising",
   "kind": "map",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "SnexusWA_map13_pre",
   "node_count": 5,
   "highlight_color": [
@@ -6871,6 +6951,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -7280,6 +7361,8 @@
   "name": "Западный предел: красным по белому",
   "name_en": "Western Approach: Written in Red",
   "kind": "map",
+  "subtitle": "Limited_Time_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_RedLyriumMeredith",
   "prefab": "SnexusWA_map13_pre",
   "node_count": 5,
   "highlight_color": [
@@ -7291,6 +7374,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -7700,6 +7784,8 @@
   "name": "Нечестивая защита",
   "name_en": "Unholy Defense",
   "kind": "puzzle",
+  "subtitle": "Nexus_Puzzle_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "nexus_map6_pre",
   "node_count": 6,
   "highlight_color": [
@@ -7711,6 +7797,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 259200,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -7953,6 +8040,8 @@
   "name_en": "Monday Event: Red Faction",
   "kind": "daily",
   "weekday": 1,
+  "subtitle": "Nexus_Daily_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_FactionRed",
   "prefab": "nexus_map1_pre",
   "node_count": 5,
   "highlight_color": [
@@ -7964,6 +8053,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 86400,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -8185,6 +8275,8 @@
   "name_en": "Tuesday Event: Blue Faction",
   "kind": "daily",
   "weekday": 2,
+  "subtitle": "Nexus_Daily_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_FactionBlue",
   "prefab": "nexus_map3_pre",
   "node_count": 5,
   "highlight_color": [
@@ -8196,6 +8288,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 86400,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -8417,6 +8510,8 @@
   "name_en": "Wednesday Event: Black Faction",
   "kind": "daily",
   "weekday": 3,
+  "subtitle": "Nexus_Daily_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_FactionBlack",
   "prefab": "nexus_map2_pre",
   "node_count": 5,
   "highlight_color": [
@@ -8428,6 +8523,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 86400,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -8649,6 +8745,8 @@
   "name_en": "Thursday Event: White Faction",
   "kind": "daily",
   "weekday": 4,
+  "subtitle": "Nexus_Daily_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_FactionWhite",
   "prefab": "nexus_map4_pre",
   "node_count": 5,
   "highlight_color": [
@@ -8660,6 +8758,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 86400,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -8881,6 +8980,8 @@
   "name_en": "Friday Event: Multi-faction",
   "kind": "daily",
   "weekday": 5,
+  "subtitle": "Nexus_Daily_Event_Loc_Key",
+  "hub_image": "tex.Interstitial_GenericAnnouncement",
   "prefab": "nexus_map6_pre",
   "node_count": 5,
   "highlight_color": [
@@ -8892,6 +8993,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 86400,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -9110,6 +9212,8 @@
   "name_en": "Saturday Event: Wisps",
   "kind": "daily",
   "weekday": 6,
+  "subtitle": "Nexus_Daily_Event_Loc_Key",
+  "hub_image": "tex.NexusEvent_Wisp",
   "prefab": "nexus_map5_pre",
   "node_count": 5,
   "highlight_color": [
@@ -9121,6 +9225,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 86400,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,
@@ -9341,6 +9446,8 @@
   "name_en": "Sunday Event: Gold and XP",
   "kind": "daily",
   "weekday": 7,
+  "subtitle": "Nexus_Daily_Event_Loc_Key",
+  "hub_image": "tex.NexusEvent_GoldCoins",
   "prefab": "nexus_map3_pre",
   "node_count": 5,
   "highlight_color": [
@@ -9352,6 +9459,7 @@
   "unlock_key_qty": 0,
   "max_runs": 0,
   "duration": 86400,
+  "unlock_duration": 0,
   "positions": [
    {
     "step": 1,

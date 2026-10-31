@@ -277,6 +277,7 @@ bool GameHandlePopupBack(Game *g) {
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return true;
     }
+    if (g->screen == SCREEN_QUESTS && QuestsHandleBack(&g->quests)) return true;
     if (g->screen == SCREEN_STORE) {
         if (StoreHandleBack(&g->store, &g->heroes) == STORE_ACTION_CLOSE) g->screen = SCREEN_HOME;
         return true;
@@ -468,7 +469,7 @@ void GameDraw(Game *g) {
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
             HomeUIDraw(&g->home_ui, false);
 
-            QuestButton pressed = QuestsDraw(&g->quests, &g->nexus, &g->player);
+            QuestButton pressed = QuestsDraw(&g->quests, &g->nexus, &g->player, &g->map);
             UiFrameEnd();
             if (pressed == QUESTS_MAP) {
                 g->screen = SCREEN_MAP;
@@ -476,12 +477,18 @@ void GameDraw(Game *g) {
             } else if (pressed == QUESTS_NEXUS) {
                 int event = QuestsSelectedNexusEvent(&g->quests);
                 int difficulty = QuestsSelectedNexusDifficulty(&g->quests);
-                bool ready =
-                    NexusEventUnlocked(&g->nexus, &g->player, event) || NexusUnlockEvent(&g->player, &g->nexus, event);
-                if (ready && NexusEnterMap(&g->nexus, &g->player, event, difficulty)) {
+                if (NexusEventUnlocked(&g->nexus, &g->player, event) &&
+                    NexusEnterMap(&g->nexus, &g->player, event, difficulty)) {
                     ProgressionSave(&g->player);
                     g->screen = SCREEN_NEXUS;
                 }
+            } else if (pressed == QUESTS_UNLOCK) {
+                if (NexusUnlockEvent(&g->player, &g->nexus, QuestsPendingNexusEvent(&g->quests)))
+                    ProgressionSave(&g->player);
+            } else if (pressed == QUESTS_FORFEIT) {
+                NexusResetRun(&g->player);
+                ProgressionSave(&g->player);
+                QuestsOpenLadder(&g->quests, QuestsPendingNexusEvent(&g->quests));
             } else if (pressed == QUESTS_CLOSE) {
                 g->screen = SCREEN_HOME;
             }

@@ -7,6 +7,7 @@
 #define NEXUS_KEY_COUNT 4
 #define NEXUS_KEY_FIRST_ID 2001
 #define NEXUS_KEY_MAX 99
+#define NEXUS_SECONDS_PER_DAY 86400LL
 
 typedef struct {
     const int game_width;
