@@ -95,7 +95,7 @@ int main(void) {
     unsigned int flags = FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI;
     if (screenshot_mode) flags |= FLAG_WINDOW_HIDDEN | FLAG_WINDOW_UNFOCUSED;
     SetConfigFlags(flags);
-    InitWindow(win_w, win_h, "Heroes of Dragons");
+    InitWindow(win_w, win_h, "Heroes of Dragon Age");
     SetExitKey(KEY_NULL);
     InitAudioDevice();
     if (screenshot_mode || EnvFlag("HOD_MUTE")) SetMasterVolume(0.0f);
