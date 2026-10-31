@@ -2,7 +2,7 @@
   "version": 1,
   "client_version": "4.4.0",
   "source": "data/ability_recipes_440.json",
-  "catalog_source": "heroes-of-dragons-cache/characters.json",
+  "catalog_source": "client-additional-data/characters.json",
   "reference_source": ".agents/skills/hoda-reference/data/characters.json",
   "conventions": {
     "percent_unit": "whole percentage points",

@@ -8,7 +8,7 @@
 #include <time.h>
 
 #ifndef HOD_CACHE
-#define HOD_CACHE "heroes-of-dragons-cache/"
+#define HOD_CACHE "client-additional-data/"
 #endif
 
 #include "config.c"

@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BUNDLE_DIR = (
     ROOT
-    / "heroes-of-dragons-cache/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/files/UnityCache/Shared"
+    / "client-additional-data/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/files/UnityCache/Shared"
 )
 BUNDLE_FILE_PREFIX = "CAB-"
 CACHE_REF_PREFIX = "cache:"

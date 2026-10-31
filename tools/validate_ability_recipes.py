@@ -9,7 +9,7 @@ from typing import Any, Iterable
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
+CATALOG = ROOT / "client-additional-data" / "characters.json"
 RECIPES = ROOT / "data" / "ability_recipes.json"
 TARGETS = {"one", "row", "column", "all", "one_ally", "back_row", "any"}
 

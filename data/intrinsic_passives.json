@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "heroes-of-dragons-cache/characters.json",
+  "source": "client-additional-data/characters.json",
   "reference_source": ".claude/skills/hoda-reference/data/characters.json",
   "conventions": {
     "percent_unit": "whole percentage points",

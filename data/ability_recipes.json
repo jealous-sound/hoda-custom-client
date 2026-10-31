@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source": "heroes-of-dragons-cache/characters.json",
+  "source": "client-additional-data/characters.json",
   "conventions": {
     "qualitative_amount_pct": {
       "tiny": 5,

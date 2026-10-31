@@ -10,7 +10,7 @@ from UnityPy.helpers.MeshHelper import MeshHandler
 
 
 ROOT = Path(__file__).resolve().parents[2]
-CACHE = ROOT / "heroes-of-dragons-cache"
+CACHE = ROOT / "client-additional-data"
 SHARED = (
     CACHE
     / "Heroes-of-Dragon-Age-v4-4-0-cache-androidp1"

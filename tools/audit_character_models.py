@@ -13,8 +13,8 @@ from urllib.parse import unquote
 
 CLI_DESCRIPTION = 'Audit every runtime character GLB and every catalog tier binding'
 ROOT = Path(__file__).resolve().parents[1]
-CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
-CHAR_PACK = ROOT / "heroes-of-dragons-cache" / "char_pack"
+CATALOG = ROOT / "client-additional-data" / "characters.json"
+CHAR_PACK = ROOT / "client-additional-data" / "char_pack"
 TIERS = ("I", "II", "III", "IV")
 TIER_SUFFIX = re.compile(r"_t\d+$", re.IGNORECASE)
 COMPONENT = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}

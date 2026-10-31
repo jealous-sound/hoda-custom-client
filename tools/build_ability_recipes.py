@@ -11,7 +11,7 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
+DEFAULT_CATALOG = ROOT / "client-additional-data" / "characters.json"
 DEFAULT_OUTPUT = ROOT / "data" / "ability_recipes.json"
 
 TARGETS = {"One": "one", "Row": "row", "Column": "column", "All": "all"}

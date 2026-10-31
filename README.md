@@ -9,15 +9,18 @@ deterministic battle simulation.
 - `tests/`: battle simulation test and Python unit tests.
 - `tools/`: build and validation scripts for data tables.
 - `data/`: version-pinned rule tables and Nexus maps and rosters.
-- `heroes-of-dragons-cache/`: model and animation bakers; the rest of the directory is the git-ignored local asset cache.
+- `client-additional-data/`: model and animation bakers; the rest of the directory is the git-ignored local asset cache.
 
 ## Game data
 
-The client reads the original 4.4.0 files as shipped, from `heroes-of-dragons-cache/`:
+The client reads the original 4.4.0 files as shipped, from `client-additional-data/`:
 
 - `Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/`: the Unity bundle cache. Textures, audio and localization load
   from it directly.
 - `Heroes-of-Dragon-Age-v4-4-0-androidp1.com.apk`: the APK. Fonts and the boot UI textures load from it directly.
+
+This directory used to be `heroes-of-dragons-cache/`. In an older clone, move the local files over once with
+`mv heroes-of-dragons-cache client-additional-data`.
 
 Everything else it needs is derived or post-4.4:
 

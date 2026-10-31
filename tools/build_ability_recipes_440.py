@@ -13,12 +13,12 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_UNITS = ROOT / "heroes-of-dragons-cache" / "data_tables" / "units.json"
+DEFAULT_UNITS = ROOT / "client-additional-data" / "data_tables" / "units.json"
 DEFAULT_RECIPES = ROOT / "data" / "ability_recipes.json"
 DEFAULT_OUTPUT = ROOT / "data" / "ability_recipes_440.json"
 LOCALIZATION_DIR = (
     ROOT
-    / "heroes-of-dragons-cache"
+    / "client-additional-data"
     / "Heroes-of-Dragon-Age-v4-4-0-cache-androidp1"
     / "com.ea.game.dragonage_row"
     / "cache"
@@ -26,7 +26,7 @@ LOCALIZATION_DIR = (
 )
 
 sys.path.insert(0, str(ROOT / "tools"))
-sys.path.insert(0, str(ROOT / "heroes-of-dragons-cache"))
+sys.path.insert(0, str(ROOT / "client-additional-data"))
 from build_ability_recipes import (  # noqa: E402
     QUALITATIVE_AMOUNT,
     QUALITATIVE_CHANCE,

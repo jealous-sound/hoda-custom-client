@@ -12,18 +12,18 @@ import original_cache
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
+CATALOG = ROOT / "client-additional-data" / "characters.json"
 WIRES = ROOT / "data" / "unit_vfx.json"
 PRESETS = ROOT / "data" / "fx_presets.json"
 BATTLE_C = ROOT / "source" / "battle.c"
-REPORT = ROOT / "heroes-of-dragons-cache" / "vfx_tools" / "build_report.json"
-CAB_PATHS = ROOT / "heroes-of-dragons-cache" / "anim_tools" / "cache" / "cab_paths.json"
-PLAYER = ROOT / "heroes-of-dragons-cache" / "player_starter.json"
+REPORT = ROOT / "client-additional-data" / "vfx_tools" / "build_report.json"
+CAB_PATHS = ROOT / "client-additional-data" / "anim_tools" / "cache" / "cab_paths.json"
+PLAYER = ROOT / "client-additional-data" / "player_starter.json"
 CAMPAIGNS = ROOT / "data" / "campaign_rosters.json"
-PARTICLES = ROOT / "heroes-of-dragons-cache" / "vfx" / "particles"
+PARTICLES = ROOT / "client-additional-data" / "vfx" / "particles"
 SHARED = (
     ROOT
-    / "heroes-of-dragons-cache"
+    / "client-additional-data"
     / "Heroes-of-Dragon-Age-v4-4-0-cache-androidp1"
     / "com.ea.game.dragonage_row"
     / "files"

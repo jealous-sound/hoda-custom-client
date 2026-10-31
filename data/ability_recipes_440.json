@@ -2,10 +2,10 @@
   "version": 1,
   "catalog_version": "4.4.0",
   "sources": {
-    "units": "heroes-of-dragons-cache/data_tables/units.json",
-    "localization_en": "heroes-of-dragons-cache/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_ENG_US.txt",
-    "localization_ru": "heroes-of-dragons-cache/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_RUS_RU.txt",
-    "localization_key_mapping": "heroes-of-dragons-cache/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_Key_Mapping.txt",
+    "units": "client-additional-data/data_tables/units.json",
+    "localization_en": "client-additional-data/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_ENG_US.txt",
+    "localization_ru": "client-additional-data/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_RUS_RU.txt",
+    "localization_key_mapping": "client-additional-data/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization/Loc_Key_Mapping.txt",
     "established_recipe_reference": "data/ability_recipes.json"
   },
   "conventions": {

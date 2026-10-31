@@ -10,7 +10,7 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-ANIM_TOOLS = ROOT / "heroes-of-dragons-cache" / "anim_tools"
+ANIM_TOOLS = ROOT / "client-additional-data" / "anim_tools"
 sys.path.insert(0, str(ANIM_TOOLS))
 
 import donor_bake

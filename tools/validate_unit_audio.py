@@ -14,7 +14,7 @@ import original_cache
 CLI_DESCRIPTION = 'Validate per-unit battle audio coverage against the original 4.4.0 cache'
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_MANIFEST = ROOT / "data/unit_audio.json"
-DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache/characters.json"
+DEFAULT_CATALOG = ROOT / "client-additional-data/characters.json"
 SLOTS = (
     "attack",
     "impact",

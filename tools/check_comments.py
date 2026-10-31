@@ -10,7 +10,7 @@ import tokenize
 ROOT = Path(__file__).resolve().parents[1]
 CLI_DESCRIPTION = 'Reject comments and docstrings in the project-owned C and Python code'
 C_DIRECTORIES = ('source', 'tests')
-PYTHON_DIRECTORIES = ('tools', 'tests', 'heroes-of-dragons-cache')
+PYTHON_DIRECTORIES = ('tools', 'tests', 'client-additional-data')
 VENDORED = ('source/vendors',)
 PYTHON_PRESERVED = ('#!', '# noqa', '# type:', '# pragma')
 C_PRESERVED = ('// clang-format', '// NOLINT')

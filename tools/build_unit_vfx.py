@@ -15,9 +15,9 @@ from typing import Any
 
 CLI_DESCRIPTION = 'Build the HoDA per-character attack-VFX manifest'
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
+DEFAULT_CATALOG = ROOT / "client-additional-data" / "characters.json"
 DEFAULT_REFERENCE = ROOT / ".claude" / "skills" / "hoda-reference" / "data" / "characters.json"
-DEFAULT_CAB_INDEX = ROOT / "heroes-of-dragons-cache" / "anim_tools" / "cache" / "cab_paths.json"
+DEFAULT_CAB_INDEX = ROOT / "client-additional-data" / "anim_tools" / "cache" / "cab_paths.json"
 DEFAULT_OUTPUT = ROOT / "data" / "unit_vfx.json"
 
 TIERS = ("I", "II", "III", "IV")
@@ -222,7 +222,7 @@ def configure_unitypy() -> Any:
     except ImportError as exc:
         raise SystemExit(
             "build_unit_vfx.py requires UnityPy; run it with "
-            "heroes-of-dragons-cache/vfx_tools/venv/bin/python"
+            "client-additional-data/vfx_tools/venv/bin/python"
         ) from exc
 
     original = UV.UnityVersion.from_str.__func__

@@ -1,7 +1,7 @@
 {
   "version": 1,
   "source": {
-    "catalog": "heroes-of-dragons-cache/characters.json",
+    "catalog": "client-additional-data/characters.json",
     "reference": "UnitAudio MonoBehaviour on each HoDA tier prefab",
     "audio": "AudioClip objects in the original 4.4.0 cache"
   },

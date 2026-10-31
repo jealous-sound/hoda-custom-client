@@ -14,10 +14,10 @@ from typing import Any
 
 CLI_DESCRIPTION = "Audit and rebuild the player's exact current-tier model bakes"
 ROOT = Path(__file__).resolve().parents[1]
-ANIM_TOOLS = ROOT / "heroes-of-dragons-cache" / "anim_tools"
-DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
-DEFAULT_PLAYER = ROOT / "heroes-of-dragons-cache" / "player_starter.json"
-DEFAULT_CHAR_PACK = ROOT / "heroes-of-dragons-cache" / "char_pack"
+ANIM_TOOLS = ROOT / "client-additional-data" / "anim_tools"
+DEFAULT_CATALOG = ROOT / "client-additional-data" / "characters.json"
+DEFAULT_PLAYER = ROOT / "client-additional-data" / "player_starter.json"
+DEFAULT_CHAR_PACK = ROOT / "client-additional-data" / "char_pack"
 DEFAULT_CAB_INDEX = ANIM_TOOLS / "cache" / "cab_paths.json"
 DEFAULT_REFERENCE_FBX = (
     ROOT / ".claude" / "skills" / "hoda-reference" / "references" / "fbx"

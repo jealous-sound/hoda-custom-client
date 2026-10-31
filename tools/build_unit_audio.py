@@ -18,8 +18,8 @@ import original_cache
 
 CLI_DESCRIPTION = 'Extract HoDA UnitAudio tables and build the battle-audio manifest'
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CATALOG = ROOT / "heroes-of-dragons-cache/characters.json"
-DEFAULT_CAB_INDEX = ROOT / "heroes-of-dragons-cache/anim_tools/cache/cab_paths.json"
+DEFAULT_CATALOG = ROOT / "client-additional-data/characters.json"
+DEFAULT_CAB_INDEX = ROOT / "client-additional-data/anim_tools/cache/cab_paths.json"
 DEFAULT_OUTPUT = ROOT / "data/unit_audio.json"
 
 TIERS = ("I", "II", "III", "IV")

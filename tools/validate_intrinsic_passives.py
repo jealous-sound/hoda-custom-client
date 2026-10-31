@@ -10,7 +10,7 @@ import build_intrinsic_passives as generator
 
 
 ROOT = Path(__file__).resolve().parents[1]
-CATALOG = ROOT / "heroes-of-dragons-cache" / "characters.json"
+CATALOG = ROOT / "client-additional-data" / "characters.json"
 REFERENCE = ROOT / ".claude" / "skills" / "hoda-reference" / "data" / "characters.json"
 MANIFEST = ROOT / "data" / "intrinsic_passives.json"
 MAX_TERMS = 16

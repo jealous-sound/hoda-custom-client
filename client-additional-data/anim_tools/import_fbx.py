@@ -18,8 +18,8 @@ import glb_writer
 
 CLI_DESCRIPTION = 'Import one reference FBX as a donor-bake source GLB'
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_FBX_ROOT = ROOT / "heroes-of-dragons-cache" / "fbx"
-DEFAULT_CHAR_PACK = ROOT / "heroes-of-dragons-cache" / "char_pack"
+DEFAULT_FBX_ROOT = ROOT / "client-additional-data" / "fbx"
+DEFAULT_CHAR_PACK = ROOT / "client-additional-data" / "char_pack"
 TIER_SUFFIX = re.compile(r"_t\d+$", re.IGNORECASE)
 
 SPECIAL_MANIFESTS = {

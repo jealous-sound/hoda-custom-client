@@ -11,7 +11,7 @@ import sys
 TOOLS = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, TOOLS)
 ROOT = os.path.dirname(os.path.dirname(TOOLS))
-CHAR_PACK = os.path.join(ROOT, 'heroes-of-dragons-cache', 'char_pack')
+CHAR_PACK = os.path.join(ROOT, 'client-additional-data', 'char_pack')
 REFERENCE_FBX = os.path.join(
     ROOT, '.agents', 'skills', 'hoda-reference', 'references', 'fbx')
 CAB_PATHS = os.path.join(TOOLS, 'cache', 'cab_paths.json')

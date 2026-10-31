@@ -11,7 +11,7 @@ Setup, run and test details are in `README.md`.
   or a test that pins the behaviour. Command-line help is code: give a tool a `CLI_DESCRIPTION` constant
   instead of reading `__doc__`.
 - Scope: C under `source/` and `tests/` (except `source/vendors/`) and Python under `tools/`, `tests/` and
-  `heroes-of-dragons-cache/`. Data, config and Markdown are out of scope.
+  `client-additional-data/`. Data, config and Markdown are out of scope.
 - Keep interpreter lines (`#!`) and machine-read directives (`# noqa`, `# type: ignore`, `# pragma`,
   `// clang-format on/off`, `// NOLINT`).
 - `python3 tools/check_comments.py` checks every owned file and exits non-zero on any comment or docstring.
@@ -22,10 +22,10 @@ Setup, run and test details are in `README.md`.
 - `tests/`: `battle_sim_test.c` and Python unit tests.
 - `tools/`: data builders and validators.
 - `data/`: version-pinned rule tables.
-- `heroes-of-dragons-cache/`: tracked bakers plus a local, git-ignored asset cache; never commit the cache.
+- `client-additional-data/`: tracked bakers plus a local, git-ignored asset cache; never commit the cache.
 - `source/resource.c`: loads textures, audio and fonts straight from the original 4.4.0 cache and APK
   (`unity_asset.c`, `unity_texture.c`, `apk_archive.c`). Prefer an original object over an extracted file; put
-  anything the 4.4.0 data lacks in `heroes-of-dragons-cache/extra/`.
+  anything the 4.4.0 data lacks in `client-additional-data/extra/`.
 
 ## Working here
 

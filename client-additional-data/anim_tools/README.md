@@ -19,8 +19,8 @@ game prefers `*_rl.glb` over the raw pack GLBs.
 python3 tools/current_tier_models.py
 uv run --with UnityPy --with Pillow tools/current_tier_models.py --bake --only em_mw_solas_t1
 uv run --with UnityPy --with Pillow tools/current_tier_models.py --bake --all --workers 4
-python3 heroes-of-dragons-cache/anim_tools/import_fbx.py --inventory INVENTORY.json --report REPORT.json
-uv run --offline --with UnityPy --with Pillow python heroes-of-dragons-cache/anim_tools/bake_all.py \
+python3 client-additional-data/anim_tools/import_fbx.py --inventory INVENTORY.json --report REPORT.json
+uv run --offline --with UnityPy --with Pillow python client-additional-data/anim_tools/bake_all.py \
   --inventory INVENTORY.json --workers 4
 ```
 
