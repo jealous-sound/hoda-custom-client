@@ -318,7 +318,7 @@ static void GameOpenRunes(Game *g, Screen return_screen) {
 }
 
 static void GameReturnFromRunes(Game *g) {
-    HomeBackgroundReloadSquad(&g->scene, &g->player);
+    HomeBackgroundMarkSquadStale(&g->scene);
     if (g->runes_return_screen != SCREEN_BATTLE) {
         g->screen = g->runes_return_screen;
         return;
@@ -360,7 +360,7 @@ static void GameHandleRunesLeave(Game *g, RunesLeave leave) {
         case RUNES_LEAVE_SELECT_SQUAD:
             PlayerSquadSelect(&g->player, g->runes.leave_squad);
             HeroesBackgroundReloadSquad(&g->heroes_scene, &g->player);
-            HomeBackgroundReloadSquad(&g->scene, &g->player);
+            HomeBackgroundMarkSquadStale(&g->scene);
             break;
         default:
             break;
@@ -556,7 +556,7 @@ void GameDraw(Game *g) {
                 HeroesBackgroundReloadSquad(&g->heroes_scene, &g->player);
                 squad_changed = true;
             }
-            if (squad_changed) HomeBackgroundReloadSquad(&g->scene, &g->player);
+            if (squad_changed) HomeBackgroundMarkSquadStale(&g->scene);
             break;
         }
         case SCREEN_RUNES: {
@@ -815,6 +815,7 @@ void GameDestroy(Game *g) {
     HeroesBackgroundDestroy(&g->heroes_scene);
     NexusUnload(&g->nexus);
     BattleDestroy(&g->battle);
+    UnitPoolClear();
     PassiveManifestUnload();
     AssetsUnload();
     ResourceShutdown();

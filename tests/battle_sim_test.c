@@ -4,6 +4,42 @@
 
 #include <assert.h>
 
+static HomeSquadUnit PooledTestUnit(const char *path) {
+    HomeSquadUnit unit = {.active = true, .phase = 7, .frame_time = 3.0f};
+    StrCopy(unit.path, sizeof(unit.path), path);
+    return unit;
+}
+
+static void TestUnitPoolReusesReleasedUnits(void) {
+    HomeSquadUnit unit = PooledTestUnit("a.glb");
+    HomeSquadUnitDestroy(&unit);
+    assert(!unit.active);
+    assert(unit_pool_count == 1);
+
+    HomeSquadUnit taken = {0};
+    assert(!UnitPoolTake(&taken, "b.glb"));
+    assert(UnitPoolTake(&taken, "a.glb"));
+    assert(taken.active && taken.phase == 7 && taken.frame_time == 3.0f);
+    assert(unit_pool_count == 0);
+    assert(!UnitPoolTake(&taken, "a.glb"));
+
+    HomeSquadUnit first = PooledTestUnit("first.glb");
+    UnitPoolPut(&first);
+    for (int i = 1; i < UNIT_POOL_CAPACITY; i++) {
+        HomeSquadUnit filler = PooledTestUnit(TextFormat("filler%d.glb", i));
+        UnitPoolPut(&filler);
+    }
+    assert(unit_pool_count == UNIT_POOL_CAPACITY);
+    HomeSquadUnit newest = PooledTestUnit("newest.glb");
+    UnitPoolPut(&newest);
+    assert(unit_pool_count == UNIT_POOL_CAPACITY);
+    assert(!UnitPoolTake(&taken, "first.glb"));
+    assert(UnitPoolTake(&taken, "filler1.glb"));
+    assert(UnitPoolTake(&taken, "newest.glb"));
+    UnitPoolClear();
+    assert(unit_pool_count == 0);
+}
+
 static void TestCharacter(
     Character *ch, Ability *ability, const char *id, const char *key, TargetPattern target, int power, int health
 ) {
@@ -4029,6 +4065,7 @@ int main(void) {
     TestRosterInstancesAndPersistence();
     TestAllCampaignMapsAdvance();
     TestEnergyAndStaminaPools();
+    TestUnitPoolReusesReleasedUnits();
     TestFxKeyoutPreservesSourceTransparency();
     puts("battle_sim_test: ok");
     return 0;

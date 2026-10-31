@@ -198,6 +198,7 @@ typedef struct {
         float pk;
         float ds;
         HomeSquadUnit unit;
+        char unit_path[HOME_UNIT_PATH_MAX];
         Texture2D fac_tex;
         Texture2D pad_tex;
         unsigned char stars;
@@ -807,13 +808,23 @@ int HeroesBackgroundSlotAtMouse(const HeroesBackground *scene, const Player *pla
     return best;
 }
 
+static void HeroesDragUnitLoad(HeroesBackground *scene) {
+    HomeSquadUnitLoad(
+        &scene->drag.unit,
+        scene->drag.unit_path,
+        scene->plain_sh,
+        MatrixTranslate(0, -1000.0f, 0),
+        scene->drag.roster_index
+    );
+}
+
 bool HeroesBackgroundDragStart(HeroesBackground *scene, const Player *player, int roster_index, int from_slot) {
     if (scene->drag.active) return false;
     const Character *ch = &player->roster[roster_index];
     char path[512];
     const char *prefab = HomeSquadResolvePrefab(scene->char_dir, ch, path, sizeof(path));
     if (!prefab) return false;
-    HomeSquadUnitLoad(&scene->drag.unit, path, scene->plain_sh, MatrixTranslate(0, -1000.0f, 0), roster_index);
+    StrCopy(scene->drag.unit_path, sizeof(scene->drag.unit_path), path);
     scene->drag.fac_tex = SquadFacTexLoad(ch->faction);
     SquadPadRarityLoad(ch, &scene->drag.pad_tex, &scene->drag.stars);
     scene->drag.pk = ch->giant ? HERO_GIANT_SCALE : 1.0f;
@@ -827,6 +838,7 @@ bool HeroesBackgroundDragStart(HeroesBackground *scene, const Player *player, in
     scene->drag.in_world = scene->drag.from_board;
     if (scene->drag.from_board) {
         HeroesSlotClear(scene, from_slot);
+        HeroesDragUnitLoad(scene);
         PlaySound(scene->snd_pickup[GetRandomValue(0, 2)]);
     }
     return true;
@@ -846,6 +858,7 @@ void HeroesBackgroundDragMove(HeroesBackground *scene, bool over_tray) {
         PlaySound(scene->snd_pickup[GetRandomValue(0, 2)]);
         if (scene->drag.from_slot >= 0 && scene->units[scene->drag.from_slot].active)
             HeroesSlotClear(scene, scene->drag.from_slot);
+        HeroesDragUnitLoad(scene);
     }
     scene->drag.shown = true;
     scene->drag.pos = p;

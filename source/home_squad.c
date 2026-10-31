@@ -3,6 +3,8 @@
 #define HOME_FAC_HEIGHT 0.115f
 #define HOME_FAC_DIAMETER 0.85f
 #define HOME_CLIP_FPS (1000.0f / 17.0f)
+#define HOME_UNIT_PATH_MAX 512
+#define UNIT_POOL_CAPACITY 12
 
 #define SQUAD_SHADOW_SX 1.8892f
 #define SQUAD_SHADOW_SZ 1.8434f
@@ -23,6 +25,7 @@ static const HomePadSpot HOME_PAD_SPOTS[SQUAD_SLOT_COUNT] = {
 };
 
 typedef struct {
+    char path[HOME_UNIT_PATH_MAX];
     bool active;
     bool anim_override;
     bool melee_playing;
@@ -36,6 +39,9 @@ typedef struct {
     Matrix xform;
     float fade;
 } HomeSquadUnit;
+
+static HomeSquadUnit unit_pool[UNIT_POOL_CAPACITY];
+static int unit_pool_count;
 
 typedef struct {
     Model pad_model;
@@ -320,12 +326,54 @@ static int SquadMeleeClipRank(const char *name) {
     return -1;
 }
 
-static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit_shader, Matrix xform, int phase_seed) {
+static void HomeSquadUnitFree(HomeSquadUnit *unit) {
+    if (unit->idle.frameCount > 0) UnloadModelAnimation(unit->idle);
+    if (unit->melee.frameCount > 0) UnloadModelAnimation(unit->melee);
+    for (int m = 0; m < unit->model.materialCount; m++) {
+        Texture2D tex = unit->model.materials[m].maps[MATERIAL_MAP_DIFFUSE].texture;
+        if (tex.id > 0 && tex.id != rlGetTextureIdDefault()) UnloadTexture(tex);
+    }
+    UnloadModel(unit->model);
+}
+
+static void UnitPoolRemoveAt(int index) {
+    unit_pool_count--;
+    memmove(&unit_pool[index], &unit_pool[index + 1], sizeof(unit_pool[0]) * (unit_pool_count - index));
+}
+
+static void UnitPoolPut(const HomeSquadUnit *unit) {
+    if (unit_pool_count == UNIT_POOL_CAPACITY) {
+        HomeSquadUnitFree(&unit_pool[0]);
+        UnitPoolRemoveAt(0);
+    }
+    unit_pool[unit_pool_count++] = *unit;
+}
+
+static bool UnitPoolTake(HomeSquadUnit *unit, const char *path) {
+    for (int i = unit_pool_count - 1; i >= 0; i--) {
+        if (strcmp(unit_pool[i].path, path) != 0) continue;
+        *unit = unit_pool[i];
+        UnitPoolRemoveAt(i);
+        return true;
+    }
+    return false;
+}
+
+static void UnitPoolClear(void) {
+    for (int i = 0; i < unit_pool_count; i++) HomeSquadUnitFree(&unit_pool[i]);
+    unit_pool_count = 0;
+}
+
+static void HomeSquadUnitBindShader(HomeSquadUnit *unit, Shader unit_shader) {
+    for (int m = 0; m < unit->model.materialCount; m++) unit->model.materials[m].shader = unit_shader;
+}
+
+static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase_seed) {
     *unit = (HomeSquadUnit){0};
+    StrCopy(unit->path, sizeof(unit->path), path);
     unit->model = LoadModel(path);
     if (unit->model.meshCount <= 0) TraceLog(LOG_FATAL, "Squad: failed to load %s", path);
     for (int m = 0; m < unit->model.materialCount; m++) {
-        unit->model.materials[m].shader = unit_shader;
         Texture2D tex = unit->model.materials[m].maps[MATERIAL_MAP_DIFFUSE].texture;
         if (tex.id > 0) SetTextureFilter(tex, TEXTURE_FILTER_BILINEAR);
     }
@@ -358,11 +406,17 @@ static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit
     }
     if (unit->idle.frameCount == 0) TraceLog(LOG_FATAL, "Squad: no usable idle clip in %s", path);
     unit->phase = (phase_seed * 47) % unit->idle.frameCount;
+    unit->active = true;
+}
+
+static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit_shader, Matrix xform, int phase_seed) {
+    if (!UnitPoolTake(unit, path)) HomeSquadUnitDecode(unit, path, phase_seed);
+    HomeSquadUnitBindShader(unit, unit_shader);
+    unit->anim_override = false;
+    unit->melee_playing = false;
     unit->last_frame = -1;
-    unit->frame_time = 0.0f;
     unit->xform = xform;
     unit->fade = 1.0f;
-    unit->active = true;
 }
 
 static bool HomeSquadUnitPlayMelee(HomeSquadUnit *unit) {
@@ -404,35 +458,18 @@ static void HomeSquadUnitDraw(HomeSquadUnit *unit) {
 
 static void HomeSquadUnitDestroy(HomeSquadUnit *unit) {
     if (!unit->active) return;
-    if (unit->idle.frameCount > 0) UnloadModelAnimation(unit->idle);
-    if (unit->melee.frameCount > 0) UnloadModelAnimation(unit->melee);
-    for (int m = 0; m < unit->model.materialCount; m++) {
-        Texture2D tex = unit->model.materials[m].maps[MATERIAL_MAP_DIFFUSE].texture;
-        if (tex.id > 0 && tex.id != rlGetTextureIdDefault()) UnloadTexture(tex);
-    }
-    UnloadModel(unit->model);
+    UnitPoolPut(unit);
     unit->active = false;
 }
 
-static void HomeSquadLoad(
+static void HomeSquadUnitsLoad(
     HomeSquad *squad,
     const Player *player,
-    const char *mesh_dir,
     const char *char_dir,
     const Mesh *terrain,
     int terrain_count,
-    Shader pad_shader,
-    Shader unit_shader,
-    Shader mult_shader
+    Shader unit_shader
 ) {
-    memset(squad, 0, sizeof(*squad));
-    squad->pads = SquadPadAssetsLoad(mesh_dir, pad_shader);
-    squad->shadow_mesh = GenMeshPlane(1.0f, 1.0f, 1, 1);
-    squad->shadow_tex = LoadSprite(CACHE_RESOURCE("base shadow2"));
-    squad->shadow_mat = LoadMaterialDefault();
-    squad->shadow_mat.shader = mult_shader;
-    squad->shadow_mat.maps[MATERIAL_MAP_DIFFUSE].texture = squad->shadow_tex;
-
     const Character *pad_char[SQUAD_SLOT_COUNT] = {0};
     int filled = 0;
     for (int slot = 0; slot < SQUAD_SLOT_LARGE; slot++) {
@@ -477,6 +514,27 @@ static void HomeSquadLoad(
     }
 }
 
+static void HomeSquadLoad(
+    HomeSquad *squad,
+    const Player *player,
+    const char *mesh_dir,
+    const char *char_dir,
+    const Mesh *terrain,
+    int terrain_count,
+    Shader pad_shader,
+    Shader unit_shader,
+    Shader mult_shader
+) {
+    memset(squad, 0, sizeof(*squad));
+    squad->pads = SquadPadAssetsLoad(mesh_dir, pad_shader);
+    squad->shadow_mesh = GenMeshPlane(1.0f, 1.0f, 1, 1);
+    squad->shadow_tex = LoadSprite(CACHE_RESOURCE("base shadow2"));
+    squad->shadow_mat = LoadMaterialDefault();
+    squad->shadow_mat.shader = mult_shader;
+    squad->shadow_mat.maps[MATERIAL_MAP_DIFFUSE].texture = squad->shadow_tex;
+    HomeSquadUnitsLoad(squad, player, char_dir, terrain, terrain_count, unit_shader);
+}
+
 static void HomeSquadUpdate(HomeSquad *squad, float dt) {
     for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HomeSquadUnitUpdate(&squad->units[s], dt);
 }
@@ -511,10 +569,17 @@ static void HomeSquadDrawShadows(HomeSquad *squad) {
     rlEnableDepthMask();
 }
 
+static void HomeSquadUnitsClear(HomeSquad *squad) {
+    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) {
+        HomeSquadUnitDestroy(&squad->units[s]);
+        SceneTexUnload(squad->fac_tex[s]);
+        squad->fac_tex[s] = (Texture2D){0};
+        SquadPadRarityUnload(&squad->pad_tex[s], &squad->stars[s]);
+    }
+}
+
 static void HomeSquadDestroy(HomeSquad *squad) {
-    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HomeSquadUnitDestroy(&squad->units[s]);
-    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) SceneTexUnload(squad->fac_tex[s]);
-    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) SquadPadRarityUnload(&squad->pad_tex[s], &squad->stars[s]);
+    HomeSquadUnitsClear(squad);
     SceneTexUnload(squad->shadow_tex);
     SceneMaterialUnload(squad->shadow_mat);
     UnloadMesh(squad->shadow_mesh);

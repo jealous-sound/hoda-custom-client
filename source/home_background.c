@@ -503,6 +503,8 @@ typedef struct {
     Camera3D cam;
 
     Shader gallery_shadow_sh;
+    const Player *squad_player;
+    bool squad_stale;
     HomeSquadUnit gallery_unit;
     Texture2D gallery_pad_tex, gallery_fac_tex;
     unsigned char gallery_stars;
@@ -660,6 +662,7 @@ void HomeBackgroundInitialize(HomeBackground *scene, const char *mesh_dir, const
 
     scene->mesh_dir = mesh_dir;
     scene->char_dir = char_dir;
+    scene->squad_player = player;
     HomeSquadLoad(&scene->squad, player, mesh_dir, char_dir, terrain_meshes, SCENE_TERRAIN_COUNT,
                   scene->plain_sh, scene->plain_sh, scene->mult_sh);
 
@@ -736,17 +739,24 @@ void HomeBackgroundSetGalleryView(HomeBackground *scene, bool active)
     scene->gallery_view = active;
 }
 
-void HomeBackgroundReloadSquad(HomeBackground *scene, const Player *player)
+void HomeBackgroundMarkSquadStale(HomeBackground *scene)
 {
-    HomeSquadDestroy(&scene->squad);
+    scene->squad_stale = true;
+}
+
+static void HomeBackgroundReloadSquad(HomeBackground *scene)
+{
+    scene->squad_stale = false;
+    HomeSquadUnitsClear(&scene->squad);
     Mesh terrain_meshes[SCENE_TERRAIN_COUNT];
     HomeBackgroundTerrain(scene, terrain_meshes);
-    HomeSquadLoad(&scene->squad, player, scene->mesh_dir, scene->char_dir, terrain_meshes, SCENE_TERRAIN_COUNT,
-                  scene->plain_sh, scene->plain_sh, scene->mult_sh);
+    HomeSquadUnitsLoad(&scene->squad, scene->squad_player, scene->char_dir, terrain_meshes, SCENE_TERRAIN_COUNT,
+                       scene->plain_sh);
 }
 
 void HomeBackgroundUpdate(HomeBackground *scene, float dt)
 {
+    if (scene->squad_stale) HomeBackgroundReloadSquad(scene);
     DustUpdate(scene->dust, dt);
     SmokeUpdate(scene->smoke, dt);
     HomeSquadUpdate(&scene->squad, dt);
