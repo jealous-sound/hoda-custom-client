@@ -1,5 +1,5 @@
 CC      = cc
-CFLAGS  = -Wall -std=c99 -I/opt/homebrew/opt/raylib/include
+CFLAGS  = -Wall -O2 -std=c99 -I/opt/homebrew/opt/raylib/include
 LDFLAGS = -L/opt/homebrew/opt/raylib/lib
 LIBS    = -lraylib -framework Cocoa -framework IOKit -framework OpenGL
 

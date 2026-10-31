@@ -242,10 +242,14 @@ static void GameReturnToBattleMatchmaking(Game *g) {
     GameEnterSelectedBattle(g);
 }
 
+#define STARTUP_IMAGE_MANIFEST HOD_CACHE "startup_images.txt"
+
 void GameInitialize(Game *g) {
     g->screen = SCREEN_HOME;
     ProgressionInitializePlayerDefaults(&g->player);
 
+    ResourcePrefetchImages(STARTUP_IMAGE_MANIFEST);
+    ResourceRecordImagesBegin();
     AssetsLoad();
     LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
 
@@ -281,6 +285,7 @@ void GameInitialize(Game *g) {
     g->battle_energy_spent = false;
     GameClearBattleOutcome(g);
     BattleResultsFlowInitialize(&g->battle_results);
+    ResourceRecordImagesEnd(STARTUP_IMAGE_MANIFEST);
 }
 
 static bool GameResourceDialogOpen(const Game *g) {

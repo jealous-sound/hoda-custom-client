@@ -884,8 +884,11 @@ static Font LoadCyrillicFont(const char *path, int size) {
 }
 
 void AssetsLoad(void) {
+    Image gui_images[GUI_COUNT] = {0};
+    ResourceLoadImages(gui_paths, GUI_COUNT, gui_images);
     for (int i = 0; i < GUI_COUNT; i++) {
-        gui_tex[i] = ResourceLoadTexture(gui_paths[i]);
+        if (gui_images[i].data) gui_tex[i] = LoadTextureFromImage(gui_images[i]);
+        UnloadImage(gui_images[i]);
         if (gui_tex[i].id == 0) TraceLog(LOG_FATAL, "Assets: failed to load %s", gui_paths[i]);
     }
     for (int i = 0; i < FNT_COUNT; i++) {
