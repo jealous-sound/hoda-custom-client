@@ -9,15 +9,28 @@ static void CampaignDrawWrapped(
 #define STORE_GEM_SKU_COUNT 7
 #define STORE_PACK_BULLET_MAX 4
 
-#define STORE_LIST_X 224.0f
-#define STORE_LIST_Y 182.0f
-#define STORE_LIST_W 836.4f
-#define STORE_LIST_H 474.4f
-#define STORE_CELL_STRIDE (STORE_LIST_H * 0.6f)
-#define STORE_SCROLL_STEP 639.5f
+#define STORE_PLATE_TOP 76.0f
+#define STORE_PLATE_HEIGHT 633.0f
+#define STORE_PLATE_ASPECT 1.482f
+#define STORE_CELL_ASPECT 0.582f
+#define STORE_SCROLL_STEP_OF_LIST 0.7645f
+#define STORE_ARROW_ASPECT 0.928f
 
-static const Rectangle STORE_ARROW_LEFT = {160.0f, 347.0f, 91.0f, 98.0f};
-static const Rectangle STORE_ARROW_RIGHT = {1030.0f, 347.0f, 91.0f, 98.0f};
+static const Rectangle STORE_CELL_HEADER = {0.0244f, 0.0229f, 0.9385f, 0.1013f};
+static const Rectangle STORE_CELL_CARD = {0.0393f, 0.1468f, 0.9193f, 0.661f};
+static const Rectangle STORE_CELL_ICON = {0.0993f, 0.1918f, 0.7989f, 0.464f};
+static const Rectangle STORE_CELL_INFO = {0.795f, 0.1667f, 0.1333f, 0.0779f};
+static const Rectangle STORE_CELL_BULLET = {0.06f, 0.724f, 0.88f, 0.06f};
+static const Rectangle STORE_CELL_BUY = {0.0244f, 0.8219f, 0.953f, 0.1013f};
+static const Rectangle STORE_CELL_TAP_AREA = {0.0f, 0.0f, 1.0f, 0.81f};
+#define STORE_HEADER_TEXT_OF_CELL 0.044f
+#define STORE_BULLET_TEXT_OF_CELL 0.04f
+#define STORE_PRICE_TEXT_OF_BAR 0.66f
+#define STORE_PRICE_RIGHT_OF_BAR 0.5f
+#define STORE_CURRENCY_CENTER_OF_BAR 0.609f
+#define STORE_CURRENCY_SIZE_OF_BAR 0.8f
+#define STORE_TITLE_TEXT_OF_PLATE 0.088f
+#define STORE_GEM_SUBTEXT_HEIGHT 21.0f
 
 typedef enum {
     STORE_PACK_RECRUIT,
@@ -88,8 +101,7 @@ typedef struct {
     Texture2D icons[STORE_PACK_COUNT];
     Texture2D card;
     Texture2D popup;
-    Texture2D title_bg;
-    Texture2D overlay;
+    Texture2D plate;
     Texture2D category_frame;
     Texture2D category_art[3];
     Texture2D scroll_arrow;
@@ -344,8 +356,7 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
     store->icons[3] = GuiTex(GUI_STORE_ICON_GRAND);
     store->card = GuiTex(GUI_STORE_CARD);
     store->popup = GuiTex(GUI_STORE_POPUP);
-    store->title_bg = GuiTex(GUI_STORE_TITLE);
-    store->overlay = GuiTex(GUI_STORE_OVERLAY);
+    store->plate = GuiTex(GUI_STORE_PLATE);
     store->category_frame = GuiTex(GUI_STORE_CATEGORY_FRAME);
     store->category_art[0] = GuiTex(GUI_STORE_CATEGORY_UNITS);
     store->category_art[1] = GuiTex(GUI_STORE_CATEGORY_GEMS);
@@ -664,22 +675,48 @@ static void StoreDrawTextureCover(Texture2D texture, Rectangle dst, Color tint) 
     DrawTexturePro(texture, src, dst, (Vector2){0}, 0.0f, tint);
 }
 
+static Rectangle StorePlateRect(void) {
+    float width = STORE_PLATE_HEIGHT * STORE_PLATE_ASPECT;
+    return (Rectangle){(UiWidth() - width) * 0.5f, STORE_PLATE_TOP, width, STORE_PLATE_HEIGHT};
+}
+
+static Rectangle StoreListRect(void) {
+    return UiRect(StorePlateRect(), 0.51f, 0.63f, 0.87f, 0.73f);
+}
+
+static float StoreCellStride(void) {
+    return StoreListRect().height * STORE_CELL_ASPECT;
+}
+
+static Rectangle StoreArrowRect(bool left) {
+    Rectangle plate = StorePlateRect();
+    float height = plate.height * 0.15f;
+    return UiRect(plate, left ? 0.0f : 1.0f, 0.5f, height * STORE_ARROW_ASPECT, height);
+}
+
+static Rectangle StoreCellPart(Rectangle cell, Rectangle part) {
+    return (Rectangle){
+        cell.x + part.x * cell.width, cell.y + part.y * cell.height, part.width * cell.width, part.height * cell.height
+    };
+}
+
 static int StoreDrawPopupChrome(Store *store, const char *title, bool show_back) {
     DrawRectangle(0, 72, (int)UiWidth(), (int)UiHeight() - 72, (Color){0, 0, 0, 132});
-    Rectangle popup = {160.0f, 72.0f, 961.0f, 655.0f};
-    StoreDrawNineSlice(store->overlay, popup, 25.0f, (Color){255, 255, 255, 248});
-    DrawRectangleLinesEx(
-        (Rectangle){popup.x + 6, popup.y + 6, popup.width - 12, popup.height - 12}, 2.0f, (Color){88, 91, 88, 255}
+    Rectangle popup = StorePlateRect();
+    UiDrawTexture(store->plate, popup, WHITE);
+
+    Rectangle title_rect = UiRect(popup, 0.51f, 0.02f, 0.37f, 0.1f);
+    StoreDrawCenteredFit(
+        store->title_font, title, title_rect, popup.height * STORE_TITLE_TEXT_OF_PLATE, (Color){242, 240, 228, 255}
     );
 
-    Rectangle title_rect = {469.0f, 84.0f, 356.0f, 65.0f};
-    UiDrawTexture(store->title_bg, title_rect, WHITE);
-    StoreDrawCenteredFit(store->title_font, title, title_rect, 36.0f, (Color){242, 240, 228, 255});
-
+    float back_size = popup.height * 0.1f;
+    float close_size = popup.height * 0.113f;
     int action = 0;
     bool interactive = !StoreInputBlocked(store);
-    if (show_back && ButtonDrawEx(&store->back, (Rectangle){178.0f, 116.0f, 65.0f, 65.0f}, interactive)) action = 2;
-    if (ButtonDrawEx(&store->close, (Rectangle){1034.0f, 110.0f, 74.0f, 74.0f}, interactive)) action = 1;
+    if (show_back && ButtonDrawEx(&store->back, UiRect(popup, 0.02f, 0.075f, back_size, back_size), interactive))
+        action = 2;
+    if (ButtonDrawEx(&store->close, UiRect(popup, 0.985f, 0.065f, close_size, close_size), interactive)) action = 1;
     if (!action && UiMouse().y > 72.0f && !CheckCollisionPointRec(UiMouse(), popup) &&
         StoreReleasedOn(store, (Rectangle){0.0f, 72.0f, UiWidth(), UiHeight() - 72.0f})) {
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
@@ -719,9 +756,10 @@ static StoreAction StoreDrawLanding(Store *store) {
     if (chrome == 1) return STORE_ACTION_CLOSE;
 
     static const char *const label_keys[3] = {"BUTTON_STORE_HERO_TAB", "BUTTON_STORE_GEMS_TAB", "RUNES_BUTTON_LABEL"};
-    float tile_w = STORE_LIST_W / 3.0f;
+    Rectangle list = StoreListRect();
+    float tile_w = list.width / 3.0f;
     for (int i = 0; i < 3; i++) {
-        Rectangle tile = {STORE_LIST_X + i * tile_w, STORE_LIST_Y, tile_w, STORE_LIST_H};
+        Rectangle tile = {list.x + i * tile_w, list.y, tile_w, list.height};
         if (!StoreDrawCategoryTile(store, tile, store->category_art[i], LocGet(label_keys[i]))) continue;
         if (i == 2) {
             StoreSetStatus(store, "Руны временно недоступны");
@@ -738,26 +776,28 @@ static StoreAction StoreDrawLanding(Store *store) {
 static void StoreDrawBuyPrice(Store *store, const StorePackDef *pack, Rectangle bar) {
     char price[16];
     snprintf(price, sizeof(price), "%d", pack->price);
-    float size = bar.height * 0.72f;
     UiDrawTextRight(
         store->title_font,
         price,
-        (Rectangle){bar.x, bar.y, bar.width * 0.5f, bar.height},
-        size,
+        (Rectangle){bar.x, bar.y, bar.width * STORE_PRICE_RIGHT_OF_BAR, bar.height},
+        bar.height * STORE_PRICE_TEXT_OF_BAR,
         (Color){235, 232, 220, 255}
     );
     Texture2D icon = pack->gems ? store->currency_gems : store->currency_gold;
-    float icon_size = bar.height * 0.62f;
+    float icon_size = bar.height * STORE_CURRENCY_SIZE_OF_BAR;
     UiDrawTexture(
         icon,
         (Rectangle){
-            bar.x + bar.width * 0.775f - icon_size * 0.5f, bar.y + (bar.height - icon_size) * 0.5f, icon_size, icon_size
+            bar.x + bar.width * STORE_CURRENCY_CENTER_OF_BAR - icon_size * 0.5f,
+            bar.y + (bar.height - icon_size) * 0.5f,
+            icon_size,
+            icon_size
         },
         WHITE
     );
 }
 
-static void StoreDrawPackBullets(Store *store, const StorePackDef *pack, Rectangle rect) {
+static void StoreDrawPackBullets(Store *store, const StorePackDef *pack, Rectangle rect, float size) {
     int index = 0;
     float alpha = 1.0f;
     if (pack->bullet_count > 1) {
@@ -773,27 +813,30 @@ static void StoreDrawPackBullets(Store *store, const StorePackDef *pack, Rectang
         }
     }
     Color color = {239, 234, 218, (unsigned char)(alpha * 255.0f)};
-    StoreDrawCenteredFit(store->body_font, pack->bullets[index], rect, 19.0f, color);
+    StoreDrawCenteredFit(store->title_font, pack->bullets[index], rect, size, color);
 }
 
-static bool StoreDrawPackCard(Store *store, Player *player, Heroes *heroes, int pack_index, Rectangle rect) {
+static bool StoreDrawPackCard(Store *store, Player *player, Heroes *heroes, int pack_index, Rectangle cell) {
     const StorePackDef *pack = &store->packs[pack_index];
     bool show_info = store->info_pack == pack_index;
-    bool in_viewport =
-        CheckCollisionPointRec(UiMouse(), (Rectangle){STORE_LIST_X, STORE_LIST_Y, STORE_LIST_W, STORE_LIST_H}) &&
-        !CheckCollisionPointRec(UiMouse(), STORE_ARROW_LEFT) && !CheckCollisionPointRec(UiMouse(), STORE_ARROW_RIGHT);
-    Rectangle art = {rect.x + 24.0f, rect.y + 89.0f, rect.width - 48.0f, 237.0f};
-    if (!show_info) StoreDrawTextureCover(store->icons[pack_index], art, WHITE);
-    UiDrawTexture(store->card, rect, WHITE);
+    Vector2 mouse = UiMouse();
+    bool in_viewport = CheckCollisionPointRec(mouse, StoreListRect()) &&
+                       !CheckCollisionPointRec(mouse, StoreArrowRect(true)) &&
+                       !CheckCollisionPointRec(mouse, StoreArrowRect(false));
+    Rectangle art = StoreCellPart(cell, STORE_CELL_ICON);
+    if (show_info)
+        DrawRectangleRec(art, BLACK);
+    else
+        StoreDrawTextureCover(store->icons[pack_index], art, WHITE);
+    UiDrawTexture(store->card, StoreCellPart(cell, STORE_CELL_CARD), WHITE);
 
-    float header_h = (rect.width + 14.0f) / 4.0f;
-    Rectangle top = {rect.x - 7.0f, rect.y, rect.width + 14.0f, header_h};
+    Rectangle top = StoreCellPart(cell, STORE_CELL_HEADER);
     UiDrawTexture(store->headers[pack_index], top, WHITE);
     StoreDrawCenteredFit(
         store->title_font,
         pack->name,
-        (Rectangle){top.x + 12.0f, top.y + header_h * 0.24f, top.width - 24.0f, header_h * 0.52f},
-        34.0f,
+        (Rectangle){top.x + top.width * 0.06f, top.y, top.width * 0.88f, top.height},
+        cell.height * STORE_HEADER_TEXT_OF_CELL,
         WHITE
     );
 
@@ -809,20 +852,20 @@ static bool StoreDrawPackCard(Store *store, Player *player, Heroes *heroes, int 
             (Color){236, 232, 220, 255}
         );
 
-    Rectangle info = {rect.x + rect.width - 60.0f, rect.y + 74.0f, 49.0f, 53.0f};
-    bool info_hover = !StoreInputBlocked(store) && CheckCollisionPointRec(UiMouse(), info);
+    Rectangle info = StoreCellPart(cell, STORE_CELL_INFO);
+    bool info_hover = !StoreInputBlocked(store) && CheckCollisionPointRec(mouse, info);
     UiDrawTexture(info_hover || show_info ? store->info_icon_on : store->info_icon, info, WHITE);
 
-    StoreDrawPackBullets(store, pack, (Rectangle){rect.x + 14.0f, rect.y + 343.0f, rect.width - 28.0f, 46.0f});
+    StoreDrawPackBullets(store, pack, StoreCellPart(cell, STORE_CELL_BULLET), cell.height * STORE_BULLET_TEXT_OF_CELL);
 
-    Rectangle buy = {rect.x - 5.5f, rect.y + 408.0f, rect.width + 11.0f, 62.0f};
+    Rectangle buy = StoreCellPart(cell, STORE_CELL_BUY);
     bool clicked = ButtonDrawEx(&store->buy[pack_index], buy, !StoreInputBlocked(store) && in_viewport);
     StoreDrawBuyPrice(store, pack, buy);
 
     if (in_viewport && StoreReleasedOn(store, info)) {
         store->info_pack = show_info ? -1 : pack_index;
         GuiSoundPlay(SND_STORE_INFO);
-    } else if (in_viewport && StoreReleasedOn(store, (Rectangle){rect.x, rect.y, rect.width, 394.0f})) {
+    } else if (in_viewport && StoreReleasedOn(store, StoreCellPart(cell, STORE_CELL_TAP_AREA))) {
         store->info_pack = show_info ? -1 : pack_index;
         GuiSoundPlay(SND_STORE_INFO);
     }
@@ -842,12 +885,13 @@ static void StoreDrawScrollArrow(Store *store, Rectangle rect, bool left, bool e
 }
 
 static float StoreMaxScroll(void) {
-    float content = STORE_PACK_COUNT * STORE_CELL_STRIDE;
-    return content > STORE_LIST_W ? content - STORE_LIST_W : 0.0f;
+    float content = STORE_PACK_COUNT * StoreCellStride();
+    float visible = StoreListRect().width;
+    return content > visible ? content - visible : 0.0f;
 }
 
 static void StoreUpdateScrollInput(Store *store) {
-    Rectangle viewport = {STORE_LIST_X, STORE_LIST_Y, STORE_LIST_W, STORE_LIST_H};
+    Rectangle viewport = StoreListRect();
     Vector2 mouse = UiMouse();
     if (store->dialog == STORE_DIALOG_NONE) {
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, viewport)) {
@@ -882,14 +926,18 @@ static StoreAction StoreDrawHeroesPage(Store *store, Player *player, Heroes *her
 
     bool can_left = store->scroll > 0.0f;
     bool can_right = store->scroll < StoreMaxScroll();
-    StoreDrawScrollArrow(store, STORE_ARROW_LEFT, true, can_left);
-    StoreDrawScrollArrow(store, STORE_ARROW_RIGHT, false, can_right);
-    if (can_left && StoreReleasedOn(store, STORE_ARROW_LEFT)) {
-        store->scroll -= STORE_SCROLL_STEP;
+    Rectangle list = StoreListRect();
+    float scroll_step = list.width * STORE_SCROLL_STEP_OF_LIST;
+    Rectangle arrow_left = StoreArrowRect(true);
+    Rectangle arrow_right = StoreArrowRect(false);
+    StoreDrawScrollArrow(store, arrow_left, true, can_left);
+    StoreDrawScrollArrow(store, arrow_right, false, can_right);
+    if (can_left && StoreReleasedOn(store, arrow_left)) {
+        store->scroll -= scroll_step;
         GuiSoundPlay(SND_UI_TAB);
     }
-    if (can_right && StoreReleasedOn(store, STORE_ARROW_RIGHT)) {
-        store->scroll += STORE_SCROLL_STEP;
+    if (can_right && StoreReleasedOn(store, arrow_right)) {
+        store->scroll += scroll_step;
         GuiSoundPlay(SND_UI_TAB);
     }
     store->scroll = Clamp(store->scroll, 0.0f, StoreMaxScroll());
@@ -897,15 +945,13 @@ static StoreAction StoreDrawHeroesPage(Store *store, Player *player, Heroes *her
     StoreAction action = STORE_ACTION_NONE;
     float scale = UiScale();
     BeginScissorMode(
-        (int)(STORE_LIST_X * scale),
-        (int)(STORE_LIST_Y * scale),
-        (int)(STORE_LIST_W * scale),
-        (int)(STORE_LIST_H * scale)
+        (int)(list.x * scale), (int)(list.y * scale), (int)(list.width * scale), (int)(list.height * scale)
     );
     for (int pack_index = 0; pack_index < STORE_PACK_COUNT; pack_index++) {
-        float cell_x = STORE_LIST_X + pack_index * STORE_CELL_STRIDE - store->scroll;
-        if (cell_x + STORE_CELL_STRIDE < STORE_LIST_X || cell_x > STORE_LIST_X + STORE_LIST_W) continue;
-        Rectangle card = {cell_x + STORE_CELL_STRIDE * 0.025f, STORE_LIST_Y, STORE_CELL_STRIDE * 0.95f, STORE_LIST_H};
+        float stride = StoreCellStride();
+        float cell_x = list.x + pack_index * stride - store->scroll;
+        if (cell_x + stride < list.x || cell_x > list.x + list.width) continue;
+        Rectangle card = {cell_x, list.y, stride, list.height};
         if (StoreDrawPackCard(store, player, heroes, pack_index, card)) {
             action = STORE_ACTION_PURCHASED;
             break;
@@ -925,10 +971,11 @@ static StoreAction StoreDrawGemsPage(Store *store) {
     }
 
     StoreAction action = STORE_ACTION_NONE;
-    float cell_w = STORE_LIST_W * 0.245f;
-    float cell_h = STORE_LIST_H * 0.5f;
+    Rectangle list = StoreListRect();
+    float cell_w = list.width * 0.245f;
+    float cell_h = list.height * 0.5f;
     for (int i = 0; i < STORE_GEM_SKU_COUNT + 1; i++) {
-        Rectangle cell = {STORE_LIST_X + (i % 4) * cell_w, STORE_LIST_Y + (i / 4) * cell_h, cell_w, cell_h};
+        Rectangle cell = {list.x + (i % 4) * cell_w, list.y + (i / 4) * cell_h, cell_w, cell_h};
         Rectangle card = {cell.x + cell.width * 0.05f, cell.y, cell.width * 0.9f, cell.height * 0.72f};
         UiDrawTexture(store->gem_card, card, WHITE);
 
@@ -1012,7 +1059,7 @@ static StoreAction StoreDrawGemsPage(Store *store) {
     StoreDrawCenteredFit(
         store->body_font,
         LocGet("STORE_SUBTEXT_GEMS"),
-        (Rectangle){222.0f, 655.0f, 836.0f, 26.0f},
+        (Rectangle){list.x, list.y + list.height, list.width, STORE_GEM_SUBTEXT_HEIGHT},
         19.0f,
         (Color){206, 202, 190, 255}
     );
@@ -1027,7 +1074,11 @@ static StoreAction StoreDrawGemsPage(Store *store) {
         display = tag_open + 1;
     }
     StoreDrawCenteredFit(
-        store->body_font, display, (Rectangle){222.0f, 686.0f, 836.0f, 26.0f}, 19.0f, (Color){255, 0, 255, 255}
+        store->body_font,
+        display,
+        (Rectangle){list.x, list.y + list.height + STORE_GEM_SUBTEXT_HEIGHT, list.width, STORE_GEM_SUBTEXT_HEIGHT},
+        19.0f,
+        (Color){255, 0, 255, 255}
     );
 
     StoreDrawToast(store);
