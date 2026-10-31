@@ -1,15 +1,7 @@
-#define CONSUME_PANEL_WIDTH 278.0f
-#define CONSUME_CELL 134.0f
-#define CONSUME_GRID_COLS 2
-#define CONSUME_GRID_TOP 160.0f
-#define CONSUME_GRID_HEIGHT 476.0f
-#define CONSUME_PREFAB_WIDTH 2030.0f
-#define CONSUME_PREFAB_HEIGHT 938.0f
-#define CONSUME_PREFAB_TOP 72.0f
+#define CONSUME_PANEL_WIDTH ROSTER_PANEL_WIDTH
+#define CONSUME_DETAILS_RIGHT_MARGIN 134.0f
 #define CONSUME_FLY_START_Y 418.0f
 #define CONSUME_FLY_END_Y 148.0f
-#define CONSUME_FILTER_ROW 65.0f
-#define CONSUME_SCROLL_STEP 50.0f
 #define CONSUME_DRAG_THRESHOLD 12.0f
 #define CONSUME_DOUBLE_CLICK_TIME 0.35f
 #define CONSUME_EASING_TIME 1.5f
@@ -63,33 +55,6 @@ typedef enum {
     CONSUME_MULTI_FACTION
 } ConsumeMultiType;
 
-typedef enum {
-    CONSUME_FILTER_ALL,
-    CONSUME_FILTER_NEWEST,
-    CONSUME_FILTER_RED,
-    CONSUME_FILTER_BLUE,
-    CONSUME_FILTER_WHITE,
-    CONSUME_FILTER_BLACK,
-    CONSUME_FILTER_LARGE,
-    CONSUME_FILTER_COMMON,
-    CONSUME_FILTER_UNCOMMON,
-    CONSUME_FILTER_RARE,
-    CONSUME_FILTER_COUNT
-} ConsumeFilter;
-
-static const char *const CONSUME_FILTER_KEYS[CONSUME_FILTER_COUNT] = {
-    "ROSTER_FILTER_ALL_HEROES",
-    "ROSTER_FILTER_NEWEST",
-    "ROSTER_FILTER_RED_FACTION",
-    "ROSTER_FILTER_BLUE_FACTION",
-    "ROSTER_FILTER_WHITE_FACTION",
-    "ROSTER_FILTER_BLACK_FACTION",
-    "ROSTER_FILTER_LARGE_CREATURES",
-    "ROSTER_FILTER_COMMON",
-    "ROSTER_FILTER_UNCOMMON",
-    "ROSTER_FILTER_RARE",
-};
-
 typedef enum { CONSUME_ATTACK_NONE, CONSUME_ATTACK_LEVEL, CONSUME_ATTACK_TIER } ConsumeAttackClip;
 
 typedef struct {
@@ -99,12 +64,7 @@ typedef struct {
 } ConsumeFlyText;
 
 typedef struct {
-    int order[PLAYER_ROSTER_CAPACITY];
-    int order_count;
-    bool sort_reversed;
-    ConsumeFilter filter;
-    bool filter_open;
-    float scroll;
+    Roster roster;
 
     int target;
     int seeds[CONSUME_MAX_SEEDS];
@@ -161,25 +121,24 @@ typedef struct {
 
     ConsumeLeave leave_done;
 
-    Button consume, multiple, cancel, sort, store, view_all, info, category, ladder_close;
+    Button consume, multiple, cancel, store, view_all, info, ladder_close;
     Button again, heroes, pve, pvp;
     Button dialog_yes, dialog_no, dialog_ok, dialog_identical, dialog_rarity, dialog_faction;
 } ConsumeScreen;
 
-void ConsumeInitialize(ConsumeScreen *c) {
+void ConsumeInitialize(ConsumeScreen *c, const Player *p) {
     memset(c, 0, sizeof(*c));
     Font font = GuiFont(FNT_COOL);
     Vector2 anchor = {0.5f, 0.5f};
     float scale = 0.33f, small = 0.24f;
     c->target = -1;
+    RosterInitialize(&c->roster, p);
     c->consume = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("CONSUME_BUTTON"), font, anchor, scale);
     c->multiple = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "Поглотить несколько", font, anchor, 0.2f);
     c->cancel = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("COMBINE_BUTTON_CANCEL"), font, anchor, scale);
-    c->sort = ButtonLoadText(GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "Сорт.", font, anchor, 0.34f);
     c->store = ButtonLoad(GUI_CONSUME_SHOP, GUI_CONSUME_SHOP_ON);
     c->info = ButtonLoad(GUI_CONSUME_INFO, GUI_CONSUME_INFO_ON);
     c->ladder_close = ButtonLoad(GUI_BTN_CLOSE, GUI_BTN_CLOSE);
-    c->category = ButtonLoadText(GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", font, anchor, 0.42f);
     c->view_all = ButtonLoadText(
         GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, LocGet("CONSUME_UI_PROGRESS_BUTTON"), font, anchor, 0.3f
     );
@@ -197,73 +156,19 @@ void ConsumeInitialize(ConsumeScreen *c) {
     c->dialog_faction = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "Та же фракция", font, anchor, 0.27f);
 }
 
-static Rectangle ConsumePx(float x, float y, float w, float h) {
-    float sx = UiWidth() / CONSUME_PREFAB_WIDTH;
-    float sy = (UiHeight() - CONSUME_PREFAB_TOP) / CONSUME_PREFAB_HEIGHT;
-    return (Rectangle){x * sx, CONSUME_PREFAB_TOP + y * sy, w * sx, h * sy};
-}
-
 static Rectangle ConsumePxSquare(float x, float y, float size) {
-    Rectangle box = ConsumePx(x, y, size, size);
+    Rectangle box = RosterPx(x, y, size, size);
     float side = fminf(box.width, box.height);
     return (Rectangle){box.x + (box.width - side) * 0.5f, box.y + (box.height - side) * 0.5f, side, side};
 }
 
 static float ConsumeFontScale(void) {
-    return (UiHeight() - CONSUME_PREFAB_TOP) / CONSUME_PREFAB_HEIGHT;
-}
-
-static bool ConsumeFilterAccepts(ConsumeFilter filter, const Character *ch) {
-    switch (filter) {
-        case CONSUME_FILTER_RED:
-            return !ch->giant && FactionIsRed(ch->faction);
-        case CONSUME_FILTER_BLUE:
-            return !ch->giant && FactionIsBlue(ch->faction);
-        case CONSUME_FILTER_WHITE:
-            return !ch->giant && FactionIsWhite(ch->faction);
-        case CONSUME_FILTER_BLACK:
-            return !ch->giant && FactionIsBlack(ch->faction);
-        case CONSUME_FILTER_LARGE:
-            return ch->giant;
-        case CONSUME_FILTER_COMMON:
-            return ch->rarity == RARITY_COMMON;
-        case CONSUME_FILTER_UNCOMMON:
-            return ch->rarity == RARITY_UNCOMMON;
-        case CONSUME_FILTER_RARE:
-            return ch->rarity == RARITY_RARE;
-        default:
-            return true;
-    }
+    return (UiHeight() - ROSTER_PREFAB_TOP) / ROSTER_PREFAB_HEIGHT;
 }
 
 void ConsumeRequestLeave(ConsumeScreen *c, ConsumeLeave leave) {
     if (c->dialog != CONSUME_DIALOG_NONE) return;
     c->leave_done = leave;
-}
-
-static int ConsumeCompareOrder(const Character *a, const Character *b) {
-    if (a->rarity != b->rarity) return (int)b->rarity - (int)a->rarity;
-    if (a->tier != b->tier) return (int)b->tier - (int)a->tier;
-    if (a->level != b->level) return b->level - a->level;
-    return strcmp(a->id, b->id);
-}
-
-static void ConsumeRefreshOrder(ConsumeScreen *c, const Player *p) {
-    c->order_count = 0;
-    bool newest = c->filter == CONSUME_FILTER_NEWEST;
-    for (int i = 0; i < p->roster_count; i++) {
-        if (!ConsumeFilterAccepts(c->filter, &p->roster[i])) continue;
-        int slot = c->order_count++;
-        while (slot > 0) {
-            const Character *prior = &p->roster[c->order[slot - 1]];
-            int order = newest ? (prior->instance_id < p->roster[i].instance_id ? 1 : -1)
-                               : ConsumeCompareOrder(prior, &p->roster[i]);
-            if ((c->sort_reversed ? -order : order) <= 0) break;
-            c->order[slot] = c->order[slot - 1];
-            slot--;
-        }
-        c->order[slot] = i;
-    }
 }
 
 static void ConsumeClearFly(ConsumeScreen *c) {
@@ -294,14 +199,14 @@ static void ConsumeClearBoard(ConsumeScreen *c) {
 void ConsumeOpen(ConsumeScreen *c, const Player *p) {
     ConsumeClearBoard(c);
     ConsumeResetPress(c);
-    c->scroll = 0.0f;
+    c->roster.scroll = 0.0f;
     c->dialog = CONSUME_DIALOG_NONE;
     c->details_index = -1;
     c->pending_details = -1;
     c->placed_spot = -1;
     c->last_click_index = -1;
     c->leave_done = CONSUME_LEAVE_NONE;
-    ConsumeRefreshOrder(c, p);
+    RosterRefreshOrder(&c->roster, p);
 }
 
 static bool ConsumeIsPlaced(const ConsumeScreen *c, int index) {
@@ -507,126 +412,45 @@ ConsumeDrawBar(Rectangle frame, Rectangle bar, GuiId old_fill, GuiId new_fill, f
     ConsumeDrawBarFill(old_fill, bar, base_frac);
 }
 
-static void ConsumeDrawCard(const HeroCard *card, Rectangle cell, bool in_squad, bool placed) {
+typedef struct {
+    const ConsumeScreen *screen;
+    const Player *player;
+} ConsumeCardContext;
+
+static void ConsumeDrawRosterCard(const HeroCard *card, Rectangle cell, int roster_index, const void *context) {
+    const ConsumeCardContext *c = (const ConsumeCardContext *)context;
     const Character *ch = card->ch;
     const ConsumeProfile *profile = ConsumeProfileFor(ch);
-    Font font = GuiFont(FNT_MENU);
-    Color tint = placed ? (Color){110, 110, 110, 255} : WHITE;
-    float pw = cell.width * 0.85f;
-    Rectangle portrait = {cell.x + (cell.width - pw) * 0.5f, cell.y + (cell.height - pw) * 0.5f, pw, pw};
-    UiDrawTexture(card->portrait, portrait, tint);
-
-    float bh = cell.height * 0.06f, bw = bh * 10.0f;
-    Rectangle bar = {cell.x + (cell.width - bw) * 0.68f, cell.y + (cell.height - bh) * 0.855f, bw, bh};
-    bool maxed = ch->consume_level >= profile->consume_table->count;
-    if (maxed) {
-        UiDrawTexture(GuiTex(GUI_CARD_BAR_BG), UiRect(bar, 0.5f, 0.5f, 1.05f, 1.5f), WHITE);
-        UiDrawTextCentered(font, LocGet("UNIT_PROGRESS_BAR_MAXED"), bar, bh * 1.6f, WHITE);
-    } else {
-        UiDrawTexture(GuiTex(GUI_CARD_BAR_BG), UiRect(bar, 0.5f, 0.5f, 1.05f, 1.5f), WHITE);
-        float frac = ConsumeBandFraction(profile->consume_table, ch->consume_level, ch->consume_xp);
-        Texture2D fill = GuiTex(GUI_CARD_BAR_FILL);
-        DrawTexturePro(
-            fill,
-            (Rectangle){0, 0, fill.width * frac, fill.height},
-            (Rectangle){bar.x, bar.y, bar.width * frac, bar.height},
-            (Vector2){0, 0},
-            0.0f,
-            (Color){170, 170, 170, 255}
-        );
-        char label[64];
-        Texture2D icon;
-        ConsumeLadderLabel(profile, ch->consume_level, label, sizeof(label), &icon);
-        float size = cell.height * 0.25f;
-        if (icon.id) UiDrawTexture(icon, (Rectangle){cell.x + 2.0f, bar.y - size * 0.6f, size, size}, tint);
-    }
-    if (in_squad) {
-        float size = cell.height * 0.26f;
-        UiDrawTexture(
-            GuiTex(GUI_GALLERY_IN_SQUAD),
-            (Rectangle){cell.x + cell.width - size - 6.0f, cell.y + 6.0f, size, size},
-            tint
-        );
-    }
-    if (placed) {
-        float size = cell.height * 0.4f;
-        UiDrawTexture(GuiTex(GUI_CONSUME_IN_USE), UiRect(cell, 0.5f, 0.45f, size, size), WHITE);
-    }
-}
-
-static Rectangle ConsumeTileRect(const ConsumeScreen *c, int index) {
-    return (Rectangle){
-        4.0f + (index % CONSUME_GRID_COLS) * CONSUME_CELL,
-        CONSUME_GRID_TOP + (index / CONSUME_GRID_COLS) * CONSUME_CELL - c->scroll,
-        CONSUME_CELL,
-        CONSUME_CELL
+    RosterCardState state = {
+        .maxed = ch->consume_level >= profile->consume_table->count,
+        .grey_bar = true,
+        .in_squad = PlayerSquadsContain(c->player, roster_index),
+        .in_use = ConsumeIsPlaced(c->screen, roster_index),
     };
-}
-
-static void ConsumeDrawFilterList(ConsumeScreen *c, const Player *p, bool input) {
-    Font font = GuiFont(FNT_COOL);
-    for (int i = 0; i < CONSUME_FILTER_COUNT; i++) {
-        Rectangle row = ConsumePx(8.0f, 124.0f + i * CONSUME_FILTER_ROW, 378.0f, 70.0f);
-        bool selected = c->filter == (ConsumeFilter)i;
-        UiDrawTexture(GuiTex(selected ? GUI_CONSUME_CATEGORY_ON : GUI_CONSUME_CATEGORY), row, WHITE);
-        UiDrawTextCentered(font, LocGet(CONSUME_FILTER_KEYS[i]), row, row.height * 0.42f, WHITE);
-        if (input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(UiMouse(), row)) {
-            c->filter = (ConsumeFilter)i;
-            c->filter_open = false;
-            c->scroll = 0.0f;
-            ConsumeRefreshOrder(c, p);
-            GuiSoundPlay(SND_UI_TAB);
-        }
+    if (!state.maxed) {
+        state.progress = ConsumeBandFraction(profile->consume_table, ch->consume_level, ch->consume_xp);
+        char label[64];
+        ConsumeLadderLabel(profile, ch->consume_level, label, sizeof(label), &state.unlock_icon);
     }
+    RosterDrawCard(card, cell, &state);
 }
 
 static void ConsumeDrawRoster(ConsumeScreen *c, const Heroes *h, const Player *p, bool input) {
-    UiDrawTexture(GuiTex(GUI_CONSUME_TRAY), ConsumePx(-7.0f, 0.0f, 455.0f, 938.0f), WHITE);
-
-    c->category.label = LocGet(CONSUME_FILTER_KEYS[c->filter]);
-    if (ButtonDrawEx(&c->category, ConsumePx(8.0f, 46.0f, 288.0f, 77.0f), input)) {
-        c->filter_open = !c->filter_open;
-        GuiSoundPlay(SND_UI_TAB);
-    }
-    if (ButtonDrawEx(&c->sort, ConsumePx(300.0f, 46.0f, 112.0f, 77.0f), input && !c->filter_open)) {
-        c->sort_reversed = !c->sort_reversed;
-        c->scroll = 0.0f;
-        ConsumeRefreshOrder(c, p);
+    ConsumeCardContext context = {c, p};
+    int hovered = RosterDraw(&c->roster, h->cards, p, input, ConsumeDrawRosterCard, &context);
+    if (hovered >= 0 && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        c->press_index = hovered;
+        c->press_spot = -1;
+        c->press_pos = UiMouse();
+        c->dragging = false;
     }
 
-    if (c->filter_open) {
-        ConsumeDrawFilterList(c, p, input);
-    } else {
-        Rectangle view = {0.0f, CONSUME_GRID_TOP, CONSUME_PANEL_WIDTH, CONSUME_GRID_HEIGHT};
-        int rows = (c->order_count + CONSUME_GRID_COLS - 1) / CONSUME_GRID_COLS;
-        float max_scroll = fmaxf(rows * CONSUME_CELL - view.height, 0.0f);
-        bool over = input && CheckCollisionPointRec(UiMouse(), view);
-        if (over) c->scroll -= GetMouseWheelMove() * CONSUME_SCROLL_STEP;
-        c->scroll = Clamp(c->scroll, 0.0f, max_scroll);
-
-        float ui = UiScale();
-        BeginScissorMode((int)(view.x * ui), (int)(view.y * ui), (int)(view.width * ui), (int)(view.height * ui));
-        for (int i = 0; i < c->order_count; i++) {
-            Rectangle cell = ConsumeTileRect(c, i);
-            if (cell.y + cell.height < view.y || cell.y > view.y + view.height) continue;
-            int index = c->order[i];
-            ConsumeDrawCard(&h->cards[index], cell, PlayerSquadsContain(p, index), ConsumeIsPlaced(c, index));
-            if (over && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(UiMouse(), cell)) {
-                c->press_index = index;
-                c->press_spot = -1;
-                c->press_pos = UiMouse();
-                c->dragging = false;
-            }
-        }
-        EndScissorMode();
-    }
-
-    if (ButtonDrawEx(&c->store, ConsumePx(13.0f, 828.0f, 81.0f, 61.0f), input))
+    if (ButtonDrawEx(&c->store, RosterPx(13.0f, 828.0f, 81.0f, 61.0f), input))
         ConsumeRequestLeave(c, CONSUME_LEAVE_STORE);
     UiDrawTextLeftMiddle(
         GuiFont(FNT_MENU),
         LocGet("TAP_PORTRAIT_FOR_INFO"),
-        ConsumePx(105.0f, 831.0f, 287.0f, 66.0f),
+        RosterPx(105.0f, 831.0f, 287.0f, 66.0f),
         15.0f,
         (Color){220, 216, 204, 255}
     );
@@ -701,8 +525,8 @@ static void ConsumeDrawDragged(const ConsumeScreen *c, const Heroes *h) {
 }
 
 static void ConsumeDrawCallToAction(ConsumeScreen *c, bool input) {
-    UiDrawTexture(GuiTex(GUI_COMBAT_PREBATTLE_BG), ConsumePx(734.0f, 25.0f, 814.0f, 92.0f), WHITE);
-    Rectangle text_box = ConsumePx(780.0f, 35.0f, 610.0f, 71.0f);
+    UiDrawTexture(GuiTex(GUI_COMBAT_PREBATTLE_BG), RosterPx(734.0f, 25.0f, 814.0f, 92.0f), WHITE);
+    Rectangle text_box = RosterPx(780.0f, 35.0f, 610.0f, 71.0f);
     const char *text = LocGet(c->target < 0 ? "CONSUME_CTA_TARGET" : "CONSUME_CTA_SEEDS");
     Font font = GuiFont(FNT_MENU);
     float size = 19.0f, width = MeasureTextEx(font, text, size, 1.0f).x;
@@ -727,21 +551,21 @@ static void ConsumeDrawProgressPanel(
 ) {
     Font title = GuiFont(FNT_COOL), body = GuiFont(FNT_MENU);
     float fs = ConsumeFontScale();
-    UiDrawTexture(GuiTex(GUI_CONSUME_HEADER), ConsumePx(691.0f, 29.0f, 924.0f, 187.0f), WHITE);
+    UiDrawTexture(GuiTex(GUI_CONSUME_HEADER), RosterPx(691.0f, 29.0f, 924.0f, 187.0f), WHITE);
 
     char key[96];
     snprintf(key, sizeof(key), "%s%s", shown->id, TIER_NAMES[shown->tier]);
     const char *name = LocGet(key);
     if (!name[0]) name = shown->name_ru[0] ? shown->name_ru : shown->name;
-    UiDrawTextCentered(title, name, ConsumePx(785.0f, 18.0f, 700.0f, 62.0f), 32.0f * fs, WHITE);
+    UiDrawTextCentered(title, name, RosterPx(785.0f, 18.0f, 700.0f, 62.0f), 32.0f * fs, WHITE);
 
     UiDrawTexture(GuiTex(GUI_CONSUME_ICON_XP), ConsumePxSquare(798.0f, 56.0f, 70.0f), WHITE);
     char number[16];
     snprintf(number, sizeof(number), "%d", level);
-    UiDrawTextCentered(title, number, ConsumePx(858.0f, 56.0f, 72.0f, 70.0f), 36.0f * fs, WHITE);
+    UiDrawTextCentered(title, number, RosterPx(858.0f, 56.0f, 72.0f, 70.0f), 36.0f * fs, WHITE);
     ConsumeDrawBar(
-        ConsumePx(929.0f, 70.0f, 448.0f, 46.0f),
-        ConsumePx(936.0f, 73.0f, 434.0f, 38.0f),
+        RosterPx(929.0f, 70.0f, 448.0f, 46.0f),
+        RosterPx(936.0f, 73.0f, 434.0f, 38.0f),
         GUI_HUD_XP_METER,
         GUI_CONSUME_BAR_XP_NEW,
         xp_frac,
@@ -751,7 +575,7 @@ static void ConsumeDrawProgressPanel(
         UiDrawTextCentered(
             body,
             LocGet("CONSUME_PROGRESS_BAR_INCREASED"),
-            ConsumePx(936.0f, 73.0f, 434.0f, 38.0f),
+            RosterPx(936.0f, 73.0f, 434.0f, 38.0f),
             26.0f * fs,
             (Color){120, 255, 120, 255}
         );
@@ -759,13 +583,13 @@ static void ConsumeDrawProgressPanel(
     UiDrawTextLeftMiddle(
         body,
         LocGet("CONSUME_UI_CONSUME_XP_TITLE"),
-        ConsumePx(778.0f, 138.0f, 146.0f, 51.0f),
+        RosterPx(778.0f, 138.0f, 146.0f, 51.0f),
         24.0f * fs,
         (Color){220, 216, 204, 255}
     );
     ConsumeDrawBar(
-        ConsumePx(928.0f, 145.0f, 383.0f, 46.0f),
-        ConsumePx(933.0f, 148.0f, 376.0f, 39.0f),
+        RosterPx(928.0f, 145.0f, 383.0f, 46.0f),
+        RosterPx(933.0f, 148.0f, 376.0f, 39.0f),
         GUI_CONSUME_BAR_OLD,
         GUI_CONSUME_BAR_NEW,
         consume_frac,
@@ -775,9 +599,9 @@ static void ConsumeDrawProgressPanel(
     char unlock[64];
     Texture2D icon;
     ConsumeLadderLabel(profile, consume_level, unlock, sizeof(unlock), &icon);
-    UiDrawTextCentered(body, unlock, ConsumePx(934.0f, 148.0f, 371.0f, 40.0f), 22.0f * fs, WHITE);
+    UiDrawTextCentered(body, unlock, RosterPx(934.0f, 148.0f, 371.0f, 40.0f), 22.0f * fs, WHITE);
     if (icon.id) UiDrawTexture(icon, ConsumePxSquare(1289.0f, 126.0f, 75.0f), WHITE);
-    if (ButtonDrawEx(&c->view_all, ConsumePx(1372.0f, 135.0f, 170.0f, 62.0f), input)) {
+    if (ButtonDrawEx(&c->view_all, RosterPx(1372.0f, 135.0f, 170.0f, 62.0f), input)) {
         c->ladder_open = !c->ladder_open;
         c->ladder_user_scrolled = false;
         GuiSoundPlay(SND_UI_TAB);
@@ -830,13 +654,13 @@ static void ConsumeDrawFlyText(ConsumeScreen *c, float dt) {
     Color tint = Fade(WHITE, alpha);
     Font font = GuiFont(FNT_COOL);
     float fs = ConsumeFontScale();
-    UiDrawTexture(GuiTex(GUI_CONSUME_FLY), ConsumePx(978.0f, y, 526.0f, 269.0f), tint);
-    if (fly->icon.id) UiDrawTexture(fly->icon, ConsumePxSquare(1340.0f, y + 72.0f, 108.0f), tint);
-    UiDrawTextCentered(font, fly->label, ConsumePx(1020.0f, y + 78.0f, 320.0f, 56.0f), 26.0f * fs, tint);
+    UiDrawTexture(GuiTex(GUI_CONSUME_FLY), RosterPx(978.0f, y - 3.0f, 526.0f, 269.0f), tint);
+    if (fly->icon.id) UiDrawTexture(fly->icon, ConsumePxSquare(1331.0f, y + 96.0f, 108.0f), tint);
+    UiDrawTextCentered(font, fly->label, RosterPx(1040.0f, y + 100.0f, 290.0f, 56.0f), 26.0f * fs, tint);
     UiDrawTextCentered(
         font,
         fly->amount,
-        ConsumePx(1020.0f, y + 134.0f, 320.0f, 56.0f),
+        RosterPx(1040.0f, y + 140.0f, 290.0f, 56.0f),
         34.0f * fs,
         Fade((Color){120, 255, 120, 255}, alpha)
     );
@@ -883,9 +707,9 @@ static void ConsumeDrawLadder(ConsumeScreen *c, const Character *ch, int base_xp
     float fs = ConsumeFontScale();
     float wx = c->results ? CONSUME_WINDOW_RESULTS_X : CONSUME_WINDOW_PREVIEW_X;
     float wy = c->results ? CONSUME_WINDOW_RESULTS_Y : CONSUME_WINDOW_PREVIEW_Y;
-    UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), ConsumePx(wx, wy, CONSUME_WINDOW_W, CONSUME_WINDOW_H), WHITE);
+    UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), RosterPx(wx, wy, CONSUME_WINDOW_W, CONSUME_WINDOW_H), WHITE);
     UiDrawTextCentered(
-        title, LocGet("CONSUME_PROGRESS_UI_TITLE"), ConsumePx(wx + 130.0f, wy + 48.0f, 612.0f, 66.0f), 34.0f * fs, WHITE
+        title, LocGet("CONSUME_PROGRESS_UI_TITLE"), RosterPx(wx + 130.0f, wy + 48.0f, 612.0f, 66.0f), 34.0f * fs, WHITE
     );
 
     char number[32], amount[96], extra[32] = "";
@@ -896,7 +720,7 @@ static void ConsumeDrawLadder(ConsumeScreen *c, const Character *ch, int base_xp
     } else {
         LocFormat2(amount, sizeof(amount), "CONSUME_PROGRESS_UI_XP_VALUE", number, "");
     }
-    Rectangle amount_box = ConsumePx(wx + 200.0f, wy + 110.0f, 473.0f, 60.0f);
+    Rectangle amount_box = RosterPx(wx + 200.0f, wy + 110.0f, 473.0f, 60.0f);
     float amount_size = 30.0f * fs;
     float amount_w = MeasureTextEx(body, TextFormat("%s %s", number, extra), amount_size, 1.0f).x + 90.0f * fs;
     HeroesDrawRich(
@@ -909,8 +733,8 @@ static void ConsumeDrawLadder(ConsumeScreen *c, const Character *ch, int base_xp
         WHITE
     );
 
-    Rectangle list = ConsumePx(wx + CONSUME_LIST_X, wy + CONSUME_LIST_Y, CONSUME_LIST_W, CONSUME_LIST_H);
-    float row_h = ConsumePx(0.0f, 0.0f, 0.0f, CONSUME_LIST_ROW_H).height;
+    Rectangle list = RosterPx(wx + CONSUME_LIST_X, wy + CONSUME_LIST_Y, CONSUME_LIST_W, CONSUME_LIST_H);
+    float row_h = RosterPx(0.0f, 0.0f, 0.0f, CONSUME_LIST_ROW_H).height;
     int rows = 0, next_row = -1;
     for (int level = 1; level < profile->progression->count; level++) {
         if (next_row < 0 && ConsumeXpForLevel(profile->consume_table, level + 1) > base_xp) next_row = rows;
@@ -921,7 +745,7 @@ static void ConsumeDrawLadder(ConsumeScreen *c, const Character *ch, int base_xp
     float wheel = over ? GetMouseWheelMove() : 0.0f;
     if (wheel != 0.0f) {
         c->ladder_user_scrolled = true;
-        c->ladder_scroll -= wheel * CONSUME_SCROLL_STEP;
+        c->ladder_scroll -= wheel * ROSTER_SCROLL_STEP;
     } else if (!c->ladder_user_scrolled && next_row >= 0) {
         float goal = next_row * row_h - list.height * 0.5f;
         float step = c->ladder_snap ? fabsf(goal - c->ladder_scroll) : CONSUME_LADDER_SCROLL_RATE * dt;
@@ -956,7 +780,7 @@ static void ConsumeBeginResults(ConsumeScreen *c, Heroes *h, Player *p) {
     }
     ProgressionSave(p);
     HeroesApplyConsume(h, p, seeds, count, target);
-    ConsumeRefreshOrder(c, p);
+    RosterRefreshOrder(&c->roster, p);
     c->target = target;
     c->seed_count = 0;
     c->multi_type = CONSUME_MULTI_NONE;
@@ -1017,10 +841,10 @@ static void ConsumeUpdateResults(ConsumeScreen *c, const Character *final, float
 }
 
 static ConsumeLeave ConsumeDrawResultsActions(ConsumeScreen *c, const Player *p, bool input) {
-    ButtonDrawEx(&c->pvp, ConsumePx(0.0f, 828.0f, 196.0f, 98.0f), false);
-    bool squad = ButtonDrawEx(&c->heroes, ConsumePx(196.0f, 828.0f, 196.0f, 98.0f), input);
-    bool quests = ButtonDrawEx(&c->pve, ConsumePx(392.0f, 828.0f, 196.0f, 98.0f), input);
-    bool again = ButtonDrawEx(&c->again, ConsumePx(1638.0f, 828.0f, 392.0f, 98.0f), input);
+    ButtonDrawEx(&c->pvp, RosterPx(0.0f, 828.0f, 196.0f, 98.0f), false);
+    bool squad = ButtonDrawEx(&c->heroes, RosterPx(196.0f, 828.0f, 196.0f, 98.0f), input);
+    bool quests = ButtonDrawEx(&c->pve, RosterPx(392.0f, 828.0f, 196.0f, 98.0f), input);
+    bool again = ButtonDrawEx(&c->again, RosterPx(1638.0f, 828.0f, 392.0f, 98.0f), input);
     if (again) {
         int target = c->target;
         ConsumeClearBoard(c);
@@ -1050,15 +874,15 @@ static void ConsumeDrawResults(ConsumeScreen *c, Heroes *h, const Player *p, boo
     float gain = ConsumeBandFraction(profile->consume_table, level, xp_now);
 
     float fs = ConsumeFontScale();
-    UiDrawTexture(GuiTex(GUI_CONSUME_RESULT_PANEL), ConsumePx(79.0f, 632.0f, 453.0f, 130.0f), WHITE);
+    UiDrawTexture(GuiTex(GUI_CONSUME_RESULT_PANEL), RosterPx(79.0f, 632.0f, 453.0f, 130.0f), WHITE);
     char unlock[64];
     Texture2D icon;
     ConsumeLadderLabel(profile, level, unlock, sizeof(unlock), &icon);
     if (icon.id) UiDrawTexture(icon, ConsumePxSquare(107.0f, 636.0f, 54.0f), WHITE);
-    UiDrawTextLeftMiddle(GuiFont(FNT_MENU), unlock, ConsumePx(169.0f, 649.0f, 363.0f, 46.0f), 26.0f * fs, WHITE);
+    UiDrawTextLeftMiddle(GuiFont(FNT_MENU), unlock, RosterPx(169.0f, 649.0f, 363.0f, 46.0f), 26.0f * fs, WHITE);
     ConsumeDrawBar(
-        ConsumePx(109.0f, 697.0f, 296.0f, 40.0f),
-        ConsumePx(112.0f, 701.0f, 290.0f, 32.0f),
+        RosterPx(109.0f, 697.0f, 296.0f, 40.0f),
+        RosterPx(112.0f, 701.0f, 290.0f, 32.0f),
         GUI_CONSUME_BAR_OLD,
         GUI_CONSUME_BAR_NEW,
         base,
@@ -1068,17 +892,17 @@ static void ConsumeDrawResults(ConsumeScreen *c, Heroes *h, const Player *p, boo
         UiDrawTextCentered(
             GuiFont(FNT_COOL),
             LocGet("CONSUME_PROGRESS_BAR_MAX"),
-            ConsumePx(112.0f, 691.0f, 290.0f, 52.0f),
+            RosterPx(112.0f, 691.0f, 290.0f, 52.0f),
             28.0f * fs,
             WHITE
         );
-    if (ButtonDrawEx(&c->view_all, ConsumePx(415.0f, 692.0f, 110.0f, 52.0f), input)) {
+    if (ButtonDrawEx(&c->view_all, RosterPx(415.0f, 692.0f, 110.0f, 52.0f), input)) {
         c->ladder_open = !c->ladder_open;
         c->ladder_user_scrolled = false;
         GuiSoundPlay(SND_UI_TAB);
     }
 
-    if (!c->ladder_open) HeroesDrawDetailsAt(&h->cards[c->target], ConsumePx(1092.0f, 38.0f, 585.0f, 750.0f));
+    if (!c->ladder_open) HeroesDrawDetailsAt(&h->cards[c->target], RosterPx(1092.0f, 38.0f, 585.0f, 750.0f));
     if (c->ladder_open) ConsumeDrawLadder(c, final, xp_now, final->consume_xp, input, dt);
     ConsumeLeave leave = ConsumeDrawResultsActions(c, p, input);
     if (leave != CONSUME_LEAVE_NONE) c->leave_done = leave;
@@ -1086,13 +910,13 @@ static void ConsumeDrawResults(ConsumeScreen *c, Heroes *h, const Player *p, boo
 
 static void ConsumeDrawActions(ConsumeScreen *c, Player *p, Heroes *h, bool input) {
     if (c->seed_count == 0) return;
-    if (ButtonDrawEx(&c->cancel, ConsumePx(552.0f, 828.0f, 392.0f, 98.0f), input)) {
+    if (ButtonDrawEx(&c->cancel, RosterPx(552.0f, 828.0f, 392.0f, 98.0f), input)) {
         ConsumeClearBoard(c);
         return;
     }
-    if (ButtonDrawEx(&c->multiple, ConsumePx(944.0f, 828.0f, 392.0f, 98.0f), input))
+    if (ButtonDrawEx(&c->multiple, RosterPx(944.0f, 828.0f, 392.0f, 98.0f), input))
         c->dialog = CONSUME_DIALOG_MULTI_TYPE;
-    if (ButtonDrawEx(&c->consume, ConsumePx(1336.0f, 828.0f, 392.0f, 98.0f), input)) ConsumeBeginResults(c, h, p);
+    if (ButtonDrawEx(&c->consume, RosterPx(1336.0f, 828.0f, 392.0f, 98.0f), input)) ConsumeBeginResults(c, h, p);
 }
 
 static Rectangle ConsumeMultiPopup(void) {
@@ -1243,7 +1067,9 @@ static void ConsumeDrawDialog(ConsumeScreen *c, HeroesBackground *scene, Heroes 
 
 static void ConsumeDrawUnitDetails(ConsumeScreen *c, Heroes *h, bool input) {
     if (c->details_index < 0) return;
-    HeroesDrawDetails(&h->cards[c->details_index], CONSUME_PANEL_WIDTH, UiWidth() - CONSUME_PANEL_WIDTH - CONSUME_CELL);
+    HeroesDrawDetails(
+        &h->cards[c->details_index], CONSUME_PANEL_WIDTH, UiWidth() - CONSUME_PANEL_WIDTH - CONSUME_DETAILS_RIGHT_MARGIN
+    );
     if (!input) return;
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) c->details_armed = true;
     if (c->details_armed && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {

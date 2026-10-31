@@ -49,35 +49,33 @@ static HeroRole HeroRoleForMat(int m) {
 
 #define HERO_MAX_MESH 256
 
-static const char *const FS_HERO_MIX =
-    "#version 330\n"
-    "in vec2 fragTexCoord; in vec4 fragColor;\n"
-    "uniform sampler2D texture0;\n"
-    "uniform sampler2D texture1;\n"
-    "uniform sampler2D texture2;\n"
-    "uniform float uBright;\n"
-    "out vec4 finalColor;\n"
-    "void main(){\n"
-    "  vec3 g = texture(texture0, fragTexCoord*5.0).rgb;\n"
-    "  vec3 st = texture(texture1, fragTexCoord*7.0).rgb;\n"
-    "  float m = texture(texture2, fragTexCoord).r;\n"
-    "  vec3 col = mix(g, st, m) * (10.0*(fragColor.rgb + 0.1)) * uBright;\n"
-    "  finalColor = vec4(col, 1.0);\n"
-    "}\n";
-static const char *const FS_HERO_ROCK =
-    "#version 330\n"
-    "in vec2 fragTexCoord; in vec4 fragColor; in vec3 fragNormal;\n"
-    "uniform sampler2D texture0;\n"
-    "uniform sampler2D texture1;\n"
-    "uniform float uBright;\n"
-    "out vec4 finalColor;\n"
-    "void main(){\n"
-    "  float f = clamp((normalize(fragNormal).y - 0.4148) * 1.9724, 0.0, 1.0);\n"
-    "  vec3 base = texture(texture0, fragTexCoord*1.5).rgb;\n"
-    "  vec3 gray = texture(texture1, fragTexCoord*1.5).rgb;\n"
-    "  vec3 col = mix(gray, base, f) * (16.0*(fragColor.rgb - 0.02)) * uBright;\n"
-    "  finalColor = vec4(col, 1.0);\n"
-    "}\n";
+static const char *const FS_HERO_MIX = "#version 330\n"
+                                       "in vec2 fragTexCoord; in vec4 fragColor;\n"
+                                       "uniform sampler2D texture0;\n"
+                                       "uniform sampler2D texture1;\n"
+                                       "uniform sampler2D texture2;\n"
+                                       "uniform float uBright;\n"
+                                       "out vec4 finalColor;\n"
+                                       "void main(){\n"
+                                       "  vec3 g = texture(texture0, fragTexCoord*5.0).rgb;\n"
+                                       "  vec3 st = texture(texture1, fragTexCoord*7.0).rgb;\n"
+                                       "  float m = texture(texture2, fragTexCoord).r;\n"
+                                       "  vec3 col = mix(g, st, m) * (10.0*(fragColor.rgb + 0.1)) * uBright;\n"
+                                       "  finalColor = vec4(col, 1.0);\n"
+                                       "}\n";
+static const char *const FS_HERO_ROCK = "#version 330\n"
+                                        "in vec2 fragTexCoord; in vec4 fragColor; in vec3 fragNormal;\n"
+                                        "uniform sampler2D texture0;\n"
+                                        "uniform sampler2D texture1;\n"
+                                        "uniform float uBright;\n"
+                                        "out vec4 finalColor;\n"
+                                        "void main(){\n"
+                                        "  float f = clamp((normalize(fragNormal).y - 0.4148) * 1.9724, 0.0, 1.0);\n"
+                                        "  vec3 base = texture(texture0, fragTexCoord*1.5).rgb;\n"
+                                        "  vec3 gray = texture(texture1, fragTexCoord*1.5).rgb;\n"
+                                        "  vec3 col = mix(gray, base, f) * (16.0*(fragColor.rgb - 0.02)) * uBright;\n"
+                                        "  finalColor = vec4(col, 1.0);\n"
+                                        "}\n";
 static const char *const FS_HERO_DIFF =
     "#version 330\n"
     "in vec2 fragTexCoord; in vec4 fragColor;\n"
@@ -95,29 +93,17 @@ static const char *const FS_HERO_WIND =
     "void main(){ vec4 c = texture(texture0, fragTexCoord); if (c.a < uCutoff) discard;\n"
     "  finalColor = vec4(c.rgb * uTint * (fragColor.rgb*uVcScale + uVcShift), c.a);\n"
     "}\n";
-static const char *const FS_HERO_DECAL =
-    "#version 330\n"
-    "in vec2 fragTexCoord; in vec4 fragColor;\n"
-    "uniform sampler2D texture0;\n"
-    "out vec4 finalColor;\n"
-    "void main(){ finalColor = texture(texture0, fragTexCoord); }\n";
-
-static const SceneWind SCENE_WIND_FLAG = {
-    {-0.126f, 0.0f, -0.126f, 0.30f},
-    {2.4f, 0, -2.4f, 0},
-    {2.4f, 2.4f, -2.4f, 0},
-    1.0f,
-    12.0f,
-    1.5f,
-    0.328f,
-    1.0f,
-    0.0f,
-    {1, 1, 1},
-};
+static const char *const FS_HERO_DECAL = "#version 330\n"
+                                         "in vec2 fragTexCoord; in vec4 fragColor;\n"
+                                         "uniform sampler2D texture0;\n"
+                                         "out vec4 finalColor;\n"
+                                         "void main(){ finalColor = texture(texture0, fragTexCoord); }\n";
 
 #define HERO_DRAG_PLANE_Y 1.561f
 
 #define HERO_FX_MAX 256
+
+static const Vector3 HERO_SUN_GLOW_POSITION = {44.6251f, 13.6060f, 58.3862f};
 
 #define HERO_ROW_BONUS_MOVE_TIME 0.5f
 #define HERO_ROW_BONUS_DISPLAY_TIME 2.0f
@@ -1391,10 +1377,9 @@ static const SceneWind *HeroWind(HeroRole role) {
     return (role == HR_GRASS) ? &SCENE_WIND_GRASS : (role == HR_FERN) ? &SCENE_WIND_FERN : &SCENE_WIND_FLAG;
 }
 
-static void HeroGlowDraw(HeroesBackground *scene) {
-    Vector3 pos = {44.6251f, 13.6060f, 58.3862f};
-    Vector3 fwd = Vector3Normalize(Vector3Subtract(scene->cam.target, scene->cam.position));
-    Vector3 right = Vector3Normalize(Vector3CrossProduct(fwd, scene->cam.up));
+static void HeroGlowDraw(HeroesBackground *scene, Camera3D camera, Vector3 pos) {
+    Vector3 fwd = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+    Vector3 right = Vector3Normalize(Vector3CrossProduct(fwd, camera.up));
     Vector3 up = Vector3CrossProduct(right, fwd);
 
     rlDrawRenderBatchActive();
@@ -1502,6 +1487,8 @@ static void HeroesBackgroundDrawConsume(HeroesBackground *scene) {
     for (int s = 0; s < HERO_SCENE_UNIT_COUNT; s++)
         if (s != scene->consume_hidden_spot) HomeSquadUnitDraw(&scene->units[s]);
     if (scene->drag.active && scene->drag.shown) HomeSquadUnitDraw(&scene->drag.unit);
+    ConsumeEnvDrawFoliage(&scene->consume_env);
+    HeroGlowDraw(scene, scene->consume_env.camera, scene->consume_env.sun_glow);
     ConsumeEnvDrawEffects(&scene->consume_env);
     EndMode3D();
     rlSetCullFace(RL_CULL_FACE_BACK);
@@ -1589,7 +1576,7 @@ void HeroesBackgroundDraw(HeroesBackground *scene) {
     }
     EndBlendMode();
 
-    HeroGlowDraw(scene);
+    HeroGlowDraw(scene, scene->cam, HERO_SUN_GLOW_POSITION);
     HeroFxDraw(scene);
 
     EndMode3D();

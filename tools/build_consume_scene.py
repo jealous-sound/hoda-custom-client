@@ -25,6 +25,8 @@ TARGET_SPOT = 'TargetPos'
 SEED_CIRCLE_PREFIX = 'arrow_direction_off_0'
 PEDESTAL_NODE = 'pedistal_upgrade'
 PEDESTAL_PLATE_HEIGHT = 0.22
+PEDESTAL_SHADOW_NODE = 'rockbase_shadow'
+SUN_GLOW_NODE = 'Particle System_Sun_glow'
 
 
 def quat_mul(a, b):
@@ -123,6 +125,10 @@ def build() -> dict:
             scene['seed_spots'][name] = right_handed_point(matrix)
         elif name == TARGET_SPOT:
             scene['target_spot'] = right_handed_point(matrix)
+        elif name == PEDESTAL_SHADOW_NODE:
+            scene['pedestal_shadow'] = column_major(to_right_handed(matrix))
+        elif name == SUN_GLOW_NODE:
+            scene['sun_glow'] = right_handed_point(matrix)
         elif node['mesh'] and name not in SKIPPED_NODES:
             scene['nodes'].append(
                 {

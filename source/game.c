@@ -263,7 +263,7 @@ void GameInitialize(Game *g) {
     MusicPlayerInitialize(&g->music);
     HeroesInitialize(&g->heroes, &g->player);
     RunesInitialize(&g->runes);
-    ConsumeInitialize(&g->consume);
+    ConsumeInitialize(&g->consume, &g->player);
     GalleryInitialize(&g->gallery, HOD_CACHE "characters.json");
     RuneGrantStarterSet(&g->player.runes, RuneNow());
     StoreInitialize(&g->store, "data/store_packs.json", HOD_CACHE "characters.json");
@@ -656,7 +656,7 @@ void GameDraw(Game *g) {
             int req = HeroesTakeDragRequest(&g->heroes);
             if (req >= 0 && HeroesBackgroundDragStart(&g->heroes_scene, &g->player, req, -1)) g->heroes.drag_icon = req;
             if (!heroes_modal && !HeroesBackgroundDragActive(&g->heroes_scene) &&
-                IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && UiMouse().x > 256.0f) {
+                IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && UiMouse().x > ROSTER_PANEL_WIDTH) {
                 int slot = HeroesBackgroundSlotAtMouse(&g->heroes_scene, &g->player);
                 if (slot >= 0) {
                     int unit = PlayerSquadUnitAt(&g->player, g->player.current_squad, slot);
@@ -664,7 +664,7 @@ void GameDraw(Game *g) {
                 }
             }
             if (!heroes_modal && HeroesBackgroundDragActive(&g->heroes_scene)) {
-                bool over_tray = UiMouse().x < 256.0f;
+                bool over_tray = UiMouse().x < ROSTER_PANEL_WIDTH;
                 g->heroes.drag_icon = over_tray && !HeroesBackgroundDragFromBoard(&g->heroes_scene)
                                           ? HeroesBackgroundDragRosterIndex(&g->heroes_scene)
                                           : -1;

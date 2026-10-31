@@ -120,6 +120,19 @@ static const SceneWind SCENE_WIND_CLOTH2 = {
     1.0f, 65.0f, 2.0f, 0.328f, 1.0f, 0.0f, {1,1,1},
 };
 
+static const SceneWind SCENE_WIND_FLAG = {
+    {-0.126f, 0.0f, -0.126f, 0.30f},
+    {2.4f, 0, -2.4f, 0},
+    {2.4f, 2.4f, -2.4f, 0},
+    1.0f,
+    12.0f,
+    1.5f,
+    0.328f,
+    1.0f,
+    0.0f,
+    {1, 1, 1},
+};
+
 typedef struct {
     const char *ply, *tex;
     bool mixer;

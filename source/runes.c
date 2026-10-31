@@ -5,6 +5,8 @@ static void CampaignDrawWrapped(
 );
 
 #define RUNES_PANEL_WIDTH 232.0f
+#define RUNES_SQUAD_TABS ((Rectangle){8.0f, 612.0f, 216.0f, 64.0f})
+#define RUNES_STAT_ROW_STRIDE 1.14f
 #define RUNES_CELL 112.0f
 #define RUNES_GRID_COLS 2
 #define RUNES_GRID_TOP 156.0f
@@ -396,7 +398,7 @@ void RunesDrawCard(const RuneDef *def, const PlayerRune *rune, Rectangle card, l
 
     Rectangle main = UiRect(card, 0.0f, 1.0f, 1.0f, 0.8f);
     float icon_height = main.height * 0.46f;
-    RunesDrawIcon(def->icon, UiRect(main, 0.5f, 0.305f, icon_height * RUNES_ICON_ASPECT, icon_height), WHITE);
+    RunesDrawIcon(def->icon, UiRect(main, 0.47f, 0.2f, icon_height * RUNES_ICON_ASPECT, icon_height), WHITE);
     HeroesRichLayout(
         body,
         def->desc_ru,
@@ -407,7 +409,7 @@ void RunesDrawCard(const RuneDef *def, const PlayerRune *rune, Rectangle card, l
     );
 
     Rectangle stats = UiRect(main, 0.47f, 0.8f, 0.815f, 0.32f);
-    float row = stats.height / 3.0f, font_size = row * 0.5f;
+    float row = stats.height / 3.0f, font_size = row * 0.5f, stride = row * RUNES_STAT_ROW_STRIDE;
     Color label = {196, 192, 180, 255};
     RunesDrawIcon(def->buff_icon, (Rectangle){stats.x, stats.y, row, row}, WHITE);
     Rectangle boost = {stats.x + row * 1.1f, stats.y, stats.width - row * 1.1f, row};
@@ -416,14 +418,14 @@ void RunesDrawCard(const RuneDef *def, const PlayerRune *rune, Rectangle card, l
 
     char text[32];
     RuneFormatClock(def->duration_minutes * RUNE_SECONDS_PER_MINUTE, text, sizeof(text));
-    Rectangle duration = {boost.x, stats.y + row, boost.width, row};
+    Rectangle duration = {boost.x, stats.y + stride, boost.width, row};
     UiDrawTextLeftMiddle(body, LocGet("RUNE_DURATION"), duration, font_size, label);
     UiDrawTextRight(body, text, duration, font_size, WHITE);
 
     if (!rune) return;
     bool active = RuneIsActivated(rune);
     RuneFormatExpiration((active ? rune->expire_at : rune->inventory_expire_at) - now, text, sizeof(text));
-    Rectangle expiration = {boost.x, stats.y + row * 2.0f, boost.width, row};
+    Rectangle expiration = {boost.x, stats.y + stride * 2.0f, boost.width, row};
     UiDrawTextLeftMiddle(body, LocGet("RUNE_EXPIRATION"), expiration, font_size, label);
     UiDrawTextRight(body, text, expiration, font_size, WHITE);
 }
@@ -970,7 +972,7 @@ RunesLeave RunesDraw(RunesScreen *r, Heroes *h, Player *p, float dt) {
         RunesDrawRoster(r, p, input);
         if (ButtonDrawEx(&r->store, (Rectangle){20.0f, 560.0f, 192.0f, 48.0f}, input))
             RunesRequestLeave(r, RUNES_LEAVE_STORE, 0);
-        int squad = HeroesDrawSquadTabs(h, p);
+        int squad = HeroesDrawSquadTabs(h, p, RUNES_SQUAD_TABS);
         if (squad >= 0 && !blocked) RunesRequestLeave(r, RUNES_LEAVE_SELECT_SQUAD, squad);
 
         RunesDrawInstructions(r);
