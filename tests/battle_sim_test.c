@@ -3775,6 +3775,24 @@ static void TestRuneSaveRoundTrip(void) {
     remove(path);
 }
 
+static void TestRuneActivationFx(void) {
+    RunesScreen runes = {0};
+    assert(!RunesTakeActivationFx(&runes));
+    RunesPlayActivationStep(&runes);
+    assert(RunesTakeActivationFx(&runes));
+    assert(!RunesTakeActivationFx(&runes));
+
+    cJSON *root = JsonLoadFile("data/fx_presets.json");
+    bool activation = false, aura = false;
+    const cJSON *preset = NULL;
+    cJSON_ArrayForEach(preset, cJSON_GetObjectItemCaseSensitive(root, "presets")) {
+        activation = activation || !strcmp(JsonStr(preset, "name"), RUNE_ACTIVATION_FX);
+        aura = aura || !strcmp(JsonStr(preset, "name"), BP_RUNE_AURA_FX);
+    }
+    cJSON_Delete(root);
+    assert(activation && aura);
+}
+
 static void TestPrestigeSlotCostsGems(void) {
     static Player player;
     player = (Player){.gems = RUNE_PRESTIGE_UNLOCK_GEMS - 1};
@@ -3797,6 +3815,7 @@ int main(void) {
     TestRuneStatsAndTargeting();
     TestRuneSaveRoundTrip();
     TestPrestigeSlotCostsGems();
+    TestRuneActivationFx();
     TestOriginalResourcesDecodeLikeUnityPy();
     TestEveryReferencedResourceResolves();
     TestSquadSlotReferenceLayout();

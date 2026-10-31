@@ -325,6 +325,10 @@ static void HeroFxStart(HeroesBackground *scene, HeroFxEffect effect, Vector3 or
     scene->fx_origin = origin;
 }
 
+Vector3 HeroesBackgroundSlotPosition(int slot) {
+    return HERO_FORMATION_SLOTS[slot].pos;
+}
+
 void HeroesBackgroundClearRowBonus(HeroesBackground *scene) {
     memset(scene->fx, 0, sizeof(scene->fx));
     scene->fx_effect = HFX_NONE;

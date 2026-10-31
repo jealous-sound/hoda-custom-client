@@ -5,6 +5,8 @@
 #define BP_MESSAGE_TIME 1.06f
 #define BP_INTRO_DELAY 1.0f
 #define BP_BANNER_TIME 1.0f
+#define BP_RUNE_AURA_FX "fx_eff_initiative_charge_pre"
+#define BP_RUNE_AURA_COLOR ((Color){0, 255, 0, 255})
 #define BP_CRIT_TIMESCALE 0.65f
 #define BP_CRIT_GOLD_REWARD 10
 #define BP_REWARD_COIN_COUNT 5
@@ -694,6 +696,8 @@ static const char *BpFactionFx(unsigned faction) {
 static void BpPlayIntroEvent(BattlePlay *bp, Battle *b, const BpIntroEvent *event) {
     if (event->rune_def >= 0) {
         BattleAudioPlayGlobal(b, "gui_bonus_rune");
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
+            if (bp->sim.units[slot].present) BattleFxUnitColorAura(b, BP_RUNE_AURA_FX, 0, slot, BP_RUNE_AURA_COLOR);
         return;
     }
     BattleAudioPlayGlobal(b, "gui_bonus_faction");

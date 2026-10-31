@@ -12,6 +12,8 @@
 #define RUNE_RESIST_MAX_PCT 100
 #define RUNE_OVERCHARGED_ID_MARK "-6-"
 #define RUNE_SPECIAL_ID_MARK "Special"
+#define RUNE_ACTIVATION_FX "fx_runeonunit_pre"
+#define RUNE_ACTIVATION_FX_LIFT ((Vector3){0.0f, 0.93f, 0.0f})
 #define RUNE_CATALOG_PATH "data/runes.json"
 #define RUNE_RESOURCE_CACHE_PREFIX "cache:"
 

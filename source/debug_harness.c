@@ -11,6 +11,7 @@ typedef struct {
 #define DEBUG_SHOT_DEFAULT_FRAMES 90
 #define DEBUG_BFX_DEFAULT_AGE 30
 #define DEBUG_PACK_FUNDS 999999
+#define DEBUG_RUNE_FX_START_FRAME 30
 #define DEBUG_WINS_TO_MASTER 3
 #define DEBUG_RESULTS_XP 20
 #define DEBUG_RESULTS_GOLD 140
@@ -350,6 +351,8 @@ static void DebugPrepareRunes(Game *game, DebugShot *shot) {
     if (!shot->screen || strncmp(shot->screen, "runes", 5) != 0) return;
     if (shot->flow_started) {
         game->screen = DebugShotIs(shot, "runes_store") ? SCREEN_STORE : SCREEN_RUNES;
+        if (DebugShotIs(shot, "runes_fx") && shot->frames_drawn == DEBUG_RUNE_FX_START_FRAME)
+            RunesBeginActivation(&game->runes, &game->player);
         return;
     }
     shot->flow_started = true;
@@ -367,6 +370,8 @@ static void DebugPrepareRunes(Game *game, DebugShot *shot) {
         RuneActivate(&player->runes, squad, RUNE_PRESTIGE_SLOT, sorted[0], RuneNow());
         RuneActivate(&player->runes, squad, 0, sorted[2], RuneNow());
         game->runes.pending[1] = sorted[3];
+    } else if (DebugShotIs(shot, "runes_fx")) {
+        game->runes.pending[0] = sorted[2];
     } else if (DebugShotIs(shot, "runes_details")) {
         game->runes.details_uuid = sorted[0];
     } else if (DebugShotIs(shot, "runes_craft")) {

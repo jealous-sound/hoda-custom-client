@@ -370,7 +370,7 @@ def decode_ps(bundle, psid, dump, probe):
                 tuple(float(shp.get(axis, 0.0)) * scale for axis in ("boxX", "boxY", "boxZ")),
             )
             base["box"] = [round(extents[0], 3), round(extents[1], 3), round(extents[2], 3)]
-            if speed[1] > 0.01 and not shp.get("randomDirection", False):
+            if max(abs(speed[0]), abs(speed[1])) > 0.01 and not shp.get("randomDirection", False):
                 d = qrot(rec["rot"], (0.0, 0.0, 1.0))
                 base["dir"] = [round(d[0], 3), round(d[1], 3), round(-d[2], 3)]
         else:
@@ -616,6 +616,8 @@ def main():
         "fx_eff_redfaction_charge_pre",
         "fx_eff_bluefaction_charge_pre",
         "fx_eff_blackfaction_charge_pre",
+        "fx_eff_initiative_charge_pre",
+        "fx_runeonunit_pre",
     })
     targets = {}
     for n in sorted(names):

@@ -25289,6 +25289,11 @@
 0.5,
 0.5
 ],
+"dir": [
+1.0,
+0.0,
+0.0
+],
 "size_curve": [
 [
 0.0,
@@ -32936,6 +32941,11 @@
 0.0,
 0.0,
 0.0
+],
+"dir": [
+0.0,
+1.0,
+-0.0
 ],
 "size_curve": [
 [
@@ -52692,6 +52702,255 @@
 ]
 },
 {
+"name": "fx_eff_initiative_charge_pre",
+"length": 1.1,
+"emitters": [
+{
+"tex": "cache:fx_eff_initiative_charge_pre/chargegradient",
+"additive": 1,
+"orient": 1,
+"duration": 0.5,
+"life0": 0.5,
+"life1": 0.5,
+"speed0": 0.27,
+"speed1": 0.54,
+"period": 0.5,
+"one_shot": 1,
+"max_particles": 2,
+"max_screen_size": 0.5,
+"dir": [
+0.0,
+1.0,
+-0.0
+],
+"size_curve": [
+[
+0.0,
+1.0
+],
+[
+0.873684,
+1.0
+],
+[
+1.0,
+1.5
+]
+],
+"color_curve": [
+[
+0.0,
+255,
+255,
+255,
+255
+],
+[
+1.0,
+255,
+255,
+255,
+255
+]
+],
+"alpha_curve": [
+[
+0.0,
+0.0
+],
+[
+0.572885,
+1.0
+],
+[
+1.0,
+0.0
+]
+],
+"size0": 0.5,
+"size1": 0.6,
+"rate": 4.0
+},
+{
+"tex": "cache:fx_eff_initiative_charge_pre/chargegradient",
+"additive": 1,
+"orient": 1,
+"duration": 0.5,
+"life0": 0.5,
+"life1": 0.5,
+"period": 0.5,
+"one_shot": 1,
+"max_particles": 2,
+"max_screen_size": 0.5,
+"size_curve": [
+[
+0.0,
+1.0
+],
+[
+0.921053,
+1.142857
+],
+[
+1.0,
+0.561688
+]
+],
+"color_curve": [
+[
+0.0,
+255,
+255,
+255,
+255
+],
+[
+1.0,
+255,
+255,
+255,
+255
+]
+],
+"alpha_curve": [
+[
+0.0,
+0.0
+],
+[
+0.317128,
+1.0
+],
+[
+0.572885,
+1.0
+],
+[
+0.677104,
+1.0
+],
+[
+1.0,
+0.0
+]
+],
+"size0": 0.4,
+"size1": 0.7,
+"rate": 4.0
+},
+{
+"tex": "cache:fx_eff_initiative_charge_pre/chargegradient",
+"additive": 1,
+"orient": 1,
+"life0": 0.5,
+"life1": 0.5,
+"period": 0.5,
+"one_shot": 1,
+"max_particles": 2,
+"max_screen_size": 0.5,
+"size_curve": [
+[
+0.0,
+1.0
+],
+[
+0.921053,
+1.142857
+],
+[
+1.0,
+0.561688
+]
+],
+"color_curve": [
+[
+0.0,
+255,
+255,
+255,
+255
+],
+[
+1.0,
+255,
+255,
+255,
+255
+]
+],
+"alpha_curve": [
+[
+0.0,
+0.0
+],
+[
+0.317128,
+1.0
+],
+[
+0.572885,
+1.0
+],
+[
+0.677104,
+1.0
+],
+[
+1.0,
+0.0
+]
+],
+"size0": 0.4,
+"size1": 0.7,
+"count": 2
+},
+{
+"tex": "cache:shared_resourcecontainer/chargespark",
+"additive": 1,
+"duration": 0.5,
+"life0": 0.1,
+"life1": 0.2,
+"speed0": 0.5,
+"speed1": 1.0,
+"offset": [
+0.0,
+0.77,
+0.0
+],
+"period": 0.5,
+"one_shot": 1,
+"max_particles": 15,
+"max_screen_size": 0.5,
+"radius": 0.752,
+"dir": [
+0.0,
+1.0,
+-0.0
+],
+"size_curve": [
+[
+0.0,
+1.0
+],
+[
+1.0,
+0.0
+]
+],
+"tint": [
+255,
+242,
+226,
+255
+],
+"alpha_hold": 1.0,
+"size0": 0.5,
+"size1": 0.5,
+"rate": 37.9
+}
+]
+},
+{
 "name": "fx_eff_redfaction_charge_pre",
 "length": 0.8,
 "emitters": [
@@ -67580,6 +67839,11 @@
 0.927,
 0.906,
 0.765
+],
+"dir": [
+0.831,
+-0.483,
+-0.276
 ],
 "size_curve": [
 [
@@ -83444,6 +83708,11 @@
 0.906,
 0.765
 ],
+"dir": [
+0.831,
+-0.483,
+-0.276
+],
 "size_curve": [
 [
 0.0,
@@ -91090,6 +91359,255 @@
 "size0": 0.24,
 "size1": 0.24,
 "count": 2
+}
+]
+},
+{
+"name": "fx_runeonunit_pre",
+"length": 1.6,
+"emitters": [
+{
+"tex": "cache:fx_runeonunit_pre/mask_godray",
+"additive": 1,
+"orient": 2,
+"delay": 0.2,
+"duration": 0.6,
+"life0": 0.5,
+"life1": 0.7,
+"speed0": -1.0,
+"speed1": -1.0,
+"offset": [
+0.0,
+-0.93,
+0.0
+],
+"period": 0.6,
+"one_shot": 1,
+"max_particles": 100,
+"max_screen_size": 0.5,
+"stretch_length": 10.0,
+"box": [
+0.2,
+0.2,
+0.2
+],
+"dir": [
+0.0,
+1.0,
+-0.0
+],
+"size_curve": [
+[
+0.0,
+0.630769
+],
+[
+0.654524,
+1.0
+],
+[
+0.733138,
+1.0
+],
+[
+0.997067,
+0.6
+]
+],
+"color_curve": [
+[
+0.0,
+255,
+225,
+64,
+255
+],
+[
+1.0,
+255,
+225,
+64,
+255
+]
+],
+"alpha_curve": [
+[
+0.0,
+0.0
+],
+[
+0.40882,
+1.0
+],
+[
+0.661769,
+1.0
+],
+[
+1.0,
+0.0
+]
+],
+"rot_bias_deg": 90.0,
+"rot_deg": 90.0,
+"size0": 1.5,
+"size1": 1.5,
+"rate": 5.0
+},
+{
+"tex": "cache:shared_resourcecontainer/vfx_cen_splash",
+"additive": 1,
+"orient": 1,
+"life0": 1.0,
+"life1": 1.2,
+"offset": [
+0.0,
+-0.223,
+0.0
+],
+"period": 1.2,
+"one_shot": 1,
+"max_particles": 100,
+"max_screen_size": 0.5,
+"box": [
+0.0,
+0.0,
+0.0
+],
+"size_curve": [
+[
+0.0,
+0.561538
+],
+[
+0.366969,
+0.876923
+],
+[
+0.831566,
+0.869231
+],
+[
+0.892537,
+1.0
+],
+[
+1.0,
+0.830769
+]
+],
+"color_curve": [
+[
+0.0,
+255,
+252,
+69,
+255
+],
+[
+1.0,
+255,
+252,
+69,
+255
+]
+],
+"alpha_curve": [
+[
+0.0,
+0.0
+],
+[
+0.338231,
+1.0
+],
+[
+0.797055,
+1.0
+],
+[
+1.0,
+0.0
+]
+],
+"spin_deg": 90.0,
+"size0": 50.0,
+"size1": 60.0,
+"count": 2
+},
+{
+"tex": "cache:fx_runeonunit_pre/rune_glow",
+"additive": 1,
+"life0": 0.8,
+"life1": 0.8,
+"speed0": 0.8,
+"speed1": 0.8,
+"offset": [
+0.0,
+1.3,
+0.0
+],
+"period": 0.7,
+"one_shot": 1,
+"max_particles": 100,
+"max_screen_size": 0.5,
+"box": [
+0.0,
+0.0,
+0.0
+],
+"dir": [
+0.0,
+1.0,
+-0.0
+],
+"size_curve": [
+[
+0.0,
+0.407692
+],
+[
+0.77776,
+1.0
+]
+],
+"color_curve": [
+[
+0.0,
+255,
+252,
+72,
+168
+],
+[
+1.0,
+255,
+252,
+72,
+168
+]
+],
+"alpha_curve": [
+[
+0.0,
+0.0
+],
+[
+0.349996,
+1.0
+],
+[
+0.708827,
+0.537255
+],
+[
+1.0,
+0.0
+]
+],
+"size0": 0.5,
+"size1": 0.5,
+"count": 1
 }
 ]
 },
@@ -109072,6 +109590,11 @@
 4.558,
 4.128
 ],
+"dir": [
+-0.866,
+-0.09,
+-0.492
+],
 "alpha_hold": 1.0,
 "size0": 0.65,
 "size1": 0.8,
@@ -123592,6 +124115,11 @@
 2.0,
 4.558,
 4.128
+],
+"dir": [
+-0.866,
+-0.09,
+-0.492
 ],
 "alpha_hold": 1.0,
 "size0": 0.65,

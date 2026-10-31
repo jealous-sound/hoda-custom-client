@@ -292,6 +292,14 @@ bool GameHandlePopupBack(Game *g) {
     return false;
 }
 
+static void GamePlayRuneActivationFx(Game *g) {
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
+        if (PlayerSquadUnitAt(&g->player, g->player.current_squad, slot) >= 0)
+            BattleFxBurst(
+                &g->battle, RUNE_ACTIVATION_FX, Vector3Add(HeroesBackgroundSlotPosition(slot), RUNE_ACTIVATION_FX_LIFT)
+            );
+}
+
 static void GameOpenRunes(Game *g, Screen return_screen) {
     g->runes_return_screen = return_screen;
     RunesOpen(&g->runes, &g->player);
@@ -525,6 +533,8 @@ void GameDraw(Game *g) {
         case SCREEN_RUNES: {
             HeroesBackgroundUpdate(&g->heroes_scene, dt);
             HeroesBackgroundDraw(&g->heroes_scene);
+            while (RunesTakeActivationFx(&g->runes)) GamePlayRuneActivationFx(g);
+            BattleFxPlayOnCamera(&g->battle, g->heroes_scene.cam, dt);
 
             UiFrameBegin();
             HudAction hud_action = resource_modal ? HUD_NONE : HudDraw(&g->hud, &g->player, true, false);

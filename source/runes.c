@@ -75,6 +75,7 @@ typedef struct {
 
     int activation_defs[RUNE_SLOT_COUNT];
     int activation_count;
+    int activation_fx_requests;
     int activation_index;
     float activation_time;
 
@@ -151,6 +152,7 @@ void RunesOpen(RunesScreen *r, Player *p) {
     r->leave_done = RUNES_LEAVE_NONE;
     r->details_uuid = 0;
     r->activation_count = 0;
+    r->activation_fx_requests = 0;
     r->scroll = 0.0f;
     RunesClearPending(r);
     RunesClearCraft(r);
@@ -197,6 +199,17 @@ static void RunesShowMessage(RunesScreen *r, const char *message) {
     GuiSoundPlay(SND_STORE_ERROR);
 }
 
+static void RunesPlayActivationStep(RunesScreen *r) {
+    GuiSoundPlay(SND_RUNE_ACTIVATE);
+    r->activation_fx_requests++;
+}
+
+bool RunesTakeActivationFx(RunesScreen *r) {
+    if (r->activation_fx_requests <= 0) return false;
+    r->activation_fx_requests--;
+    return true;
+}
+
 static void RunesBeginActivation(RunesScreen *r, Player *p) {
     long long now = RuneNow();
     r->activation_count = 0;
@@ -215,7 +228,7 @@ static void RunesBeginActivation(RunesScreen *r, Player *p) {
     RuneMarkSeen(&p->runes, now);
     ProgressionSave(p);
     if (expired) RunesShowMessage(r, LocGet("EXPIRED_RUNE_MESSAGE"));
-    if (r->activation_count > 0) GuiSoundPlay(SND_RUNE_ACTIVATE);
+    if (r->activation_count > 0) RunesPlayActivationStep(r);
 }
 
 static void RunesFinishLeave(RunesScreen *r) {
@@ -637,7 +650,7 @@ static void RunesDrawActivation(RunesScreen *r, float dt) {
     if (r->activation_index >= r->activation_count)
         r->activation_count = 0;
     else
-        GuiSoundPlay(SND_RUNE_ACTIVATE);
+        RunesPlayActivationStep(r);
 }
 
 static Rectangle RunesDialogPlate(float height) {
