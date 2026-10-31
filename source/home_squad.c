@@ -25,9 +25,12 @@ static const HomePadSpot HOME_PAD_SPOTS[SQUAD_SLOT_COUNT] = {
 typedef struct {
     bool active;
     bool anim_override;
+    bool melee_playing;
     Model model;
     ModelAnimation idle;
+    ModelAnimation melee;
     float frame_time;
+    float melee_frame;
     int phase;
     int last_frame;
     Matrix xform;
@@ -38,8 +41,7 @@ typedef struct {
     Model pad_model;
     Texture2D pad_tex;
     Material pad_mat;
-    Mesh star_row[3][2];
-    float star_row_pivot[3][2];
+    Model stars[3];
     Texture2D star_tex;
     Material star_mat;
     Model fac_model;
@@ -60,8 +62,6 @@ typedef struct {
     Matrix shadow_xform[SQUAD_SLOT_COUNT];
 } HomeSquad;
 
-#define SQUAD_STAR_TILT_DEG 45.0f
-
 static SquadPadAssets SquadPadAssetsLoad(const char *mesh_dir, Shader pad_shader) {
     SquadPadAssets a = {0};
     if (!IsShaderValid(pad_shader)) pad_shader = (Shader){rlGetShaderIdDefault(), rlGetShaderLocsDefault()};
@@ -70,14 +70,7 @@ static SquadPadAssets SquadPadAssetsLoad(const char *mesh_dir, Shader pad_shader
     a.pad_tex = LoadSprite(CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "base_T1"));
     a.pad_mat = LoadMaterialDefault();
     a.pad_mat.shader = pad_shader;
-    for (int i = 0; i < 3; i++) {
-        Model stars = LoadModel(TextFormat("%s/legendary_base/stars_%d.obj", mesh_dir, i + 1));
-        if (stars.meshCount > 0) {
-            for (int row = 0; row < 2; row++)
-                a.star_row[i][row] = MeshSplitHalf(&stars.meshes[0], 1, row ? -1.0f : 1.0f, &a.star_row_pivot[i][row]);
-        }
-        UnloadModel(stars);
-    }
+    for (int i = 0; i < 3; i++) a.stars[i] = LoadModel(TextFormat("%s/legendary_base/stars_%d.obj", mesh_dir, i + 1));
     a.star_tex = LoadSprite(CACHE_RESOURCE("base_gold_star"));
     a.star_mat = LoadMaterialDefault();
     a.star_mat.shader = pad_shader;
@@ -169,17 +162,8 @@ static Material SquadPadMaterial(SquadPadAssets *a, Texture2D tex) {
 
 static void SquadStarsDraw(SquadPadAssets *a, int stars, Matrix pad_xform) {
     if (stars < 1 || stars > 3) return;
-    for (int row = 0; row < 2; row++) {
-        Mesh mesh = a->star_row[stars - 1][row];
-        if (mesh.vertexCount <= 0) continue;
-        float pivot = a->star_row_pivot[stars - 1][row];
-        float tilt = (row ? SQUAD_STAR_TILT_DEG : -SQUAD_STAR_TILT_DEG) * DEG2RAD;
-        Matrix seat = MatrixMultiply(
-            MatrixMultiply(MatrixTranslate(0.0f, -pivot, -HOME_PAD_HALF_THICK), MatrixRotateX(tilt)),
-            MatrixTranslate(0.0f, pivot, HOME_PAD_HALF_THICK)
-        );
-        DrawMesh(mesh, a->star_mat, MatrixMultiply(seat, pad_xform));
-    }
+    Model *model = &a->stars[stars - 1];
+    if (model->meshCount > 0) DrawMesh(model->meshes[0], a->star_mat, pad_xform);
 }
 
 static void
@@ -198,9 +182,7 @@ static void SquadPadAssetsDestroy(SquadPadAssets *a) {
     UnloadModel(a->fac_model);
     SceneMaterialUnload(a->star_mat);
     SceneTexUnload(a->star_tex);
-    for (int i = 0; i < 3; i++)
-        for (int row = 0; row < 2; row++)
-            if (a->star_row[i][row].vertexCount > 0) UnloadMesh(a->star_row[i][row]);
+    for (int i = 0; i < 3; i++) UnloadModel(a->stars[i]);
     SceneTexUnload(a->pad_tex);
     SceneMaterialUnload(a->pad_mat);
     UnloadModel(a->pad_model);
@@ -314,6 +296,30 @@ static const char *HomeSquadResolvePrefab(const char *char_dir, const Character 
     return NULL;
 }
 
+static void SquadClipKey(char out[64], const char *name) {
+    int length = 0;
+    if (!name) name = "";
+    for (; *name && length < 63; name++) {
+        char c = *name;
+        if (c >= 'A' && c <= 'Z') c = (char)(c + ('a' - 'A'));
+        if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) out[length++] = c;
+    }
+    out[length] = '\0';
+}
+
+static int SquadMeleeClipRank(const char *name) {
+    char key[64];
+    SquadClipKey(key, name);
+    if (!key[0]) return -1;
+    if (!strcmp(key, "melee") || !strcmp(key, "meleeattack")) return 100;
+    if (strstr(key, "melee") && strstr(key, "attack")) return 95;
+    if (strstr(key, "attack")) return 90;
+    if (strstr(key, "attk") || strstr(key, "atk")) return 80;
+    if (strstr(key, "meleeability")) return 75;
+    if (strstr(key, "projectileability") || strstr(key, "fireball")) return 60;
+    return -1;
+}
+
 static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit_shader, Matrix xform, int phase_seed) {
     *unit = (HomeSquadUnit){0};
     unit->model = LoadModel(path);
@@ -327,12 +333,26 @@ static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit
     int clip_count = 0;
     ModelAnimation *clips = LoadModelAnimations(path, &clip_count);
     if (clips) {
+        int idle_clip = -1, melee_clip = -1, melee_rank = -1;
         for (int a = 0; a < clip_count; a++) {
-            if (unit->idle.frameCount == 0 && clips[a].frameCount > 0 && IsModelAnimationValid(unit->model, clips[a])) {
-                unit->idle = clips[a];
-            } else {
-                UnloadModelAnimation(clips[a]);
+            if (clips[a].frameCount <= 0 || !IsModelAnimationValid(unit->model, clips[a])) continue;
+            if (idle_clip < 0) {
+                idle_clip = a;
+                continue;
             }
+            int rank = SquadMeleeClipRank(clips[a].name);
+            if (rank > melee_rank) {
+                melee_clip = a;
+                melee_rank = rank;
+            }
+        }
+        for (int a = 0; a < clip_count; a++) {
+            if (a == idle_clip)
+                unit->idle = clips[a];
+            else if (a == melee_clip)
+                unit->melee = clips[a];
+            else
+                UnloadModelAnimation(clips[a]);
         }
         MemFree(clips);
     }
@@ -345,8 +365,27 @@ static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit
     unit->active = true;
 }
 
+static bool HomeSquadUnitPlayMelee(HomeSquadUnit *unit) {
+    if (!unit->active || unit->melee.frameCount <= 0) return false;
+    unit->melee_playing = true;
+    unit->melee_frame = 0.0f;
+    UpdateModelAnimation(unit->model, unit->melee, 0);
+    return true;
+}
+
 static void HomeSquadUnitUpdate(HomeSquadUnit *unit, float dt) {
-    if (!unit->active || unit->anim_override || unit->idle.frameCount <= 0) return;
+    if (!unit->active || unit->anim_override) return;
+    if (unit->melee_playing) {
+        unit->melee_frame += dt * HOME_CLIP_FPS;
+        int frame = (int)unit->melee_frame;
+        if (frame < unit->melee.frameCount) {
+            UpdateModelAnimation(unit->model, unit->melee, frame);
+            return;
+        }
+        unit->melee_playing = false;
+        unit->last_frame = -1;
+    }
+    if (unit->idle.frameCount <= 0) return;
     unit->frame_time = fmodf(unit->frame_time + dt * HOME_CLIP_FPS, (float)unit->idle.frameCount);
     int frame = ((int)unit->frame_time + unit->phase) % unit->idle.frameCount;
     if (frame == unit->last_frame) return;
@@ -366,6 +405,7 @@ static void HomeSquadUnitDraw(HomeSquadUnit *unit) {
 static void HomeSquadUnitDestroy(HomeSquadUnit *unit) {
     if (!unit->active) return;
     if (unit->idle.frameCount > 0) UnloadModelAnimation(unit->idle);
+    if (unit->melee.frameCount > 0) UnloadModelAnimation(unit->melee);
     for (int m = 0; m < unit->model.materialCount; m++) {
         Texture2D tex = unit->model.materials[m].maps[MATERIAL_MAP_DIFFUSE].texture;
         if (tex.id > 0 && tex.id != rlGetTextureIdDefault()) UnloadTexture(tex);

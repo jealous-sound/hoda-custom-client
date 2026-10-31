@@ -23,7 +23,6 @@ BUNDLES = {
     2: SHARED / "c258037195b866237574f23f52717a51d5a5b650/CAB-charbase_t5_s2_pre",
     3: SHARED / "1da8a87d9b0669a4b8e935614c88b26579e5f970/CAB-charbase_t5_s3_pre",
 }
-STAR_SPACING_SCALE = {1: 1.0, 2: 0.75, 3: 0.55}
 
 
 _original_version_parser = UV.UnityVersion.from_str.__func__
@@ -82,22 +81,14 @@ def _read_bundle(path):
     return env, mesh, stars, children
 
 
-def _write_obj(path, mesh, stars, children, spacing_scale):
+def _write_obj(path, mesh, stars, children):
     vertices = np.array([_vec(v, 3) for v in mesh.m_Vertices], dtype=np.float64)
     normals = np.array([_vec(v, 3) for v in mesh.m_Normals], dtype=np.float64)
     uv = np.array([_vec(v, 2) for v in mesh.m_UV0], dtype=np.float64)
     triangles = np.asarray(mesh.get_triangles()[0], dtype=np.int64).reshape(-1, 3)
 
     lines = ["# Original HoDA char_base_star2 mesh, authored transforms baked", "o legendary_stars"]
-    align_to_base = np.array(
-        [
-            [0.0, -1.0, 0.0, 0.0],
-            [1.0, 0.0, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0],
-        ]
-    )
-    parent = align_to_base @ _trs(stars)
+    parent = _trs(stars)
     baked = []
     for child in children:
         matrix = parent @ _trs(child)
@@ -110,18 +101,10 @@ def _write_obj(path, mesh, stars, children, spacing_scale):
         dirs[:, 0] *= -1
         baked.append((points[:, :3], dirs))
 
-    centers = [points.mean(axis=0) for points, _ in baked]
-    for side in (-1, 1):
-        group = [i for i, center in enumerate(centers) if (-1 if center[1] < 0 else 1) == side]
-        group_x = sum(centers[i][0] for i in group) / len(group)
-        for i in group:
-            target_x = group_x + (centers[i][0] - group_x) * spacing_scale
-            baked[i][0][:, 0] += target_x - centers[i][0]
-
     for points, _ in baked:
         lines.extend(f"v {p[0]:.9g} {p[1]:.9g} {p[2]:.9g}" for p in points)
     for _ in baked:
-        lines.extend(f"vt {t[0]:.9g} {1.0 - t[1]:.9g}" for t in uv)
+        lines.extend(f"vt {t[0]:.9g} {t[1]:.9g}" for t in uv)
     for _, dirs in baked:
         lines.extend(f"vn {n[0]:.9g} {n[1]:.9g} {n[2]:.9g}" for n in dirs)
 
@@ -140,13 +123,7 @@ def main():
     for rating, bundle in BUNDLES.items():
         _, mesh, stars, children = _read_bundle(bundle)
         assert len(children) == rating * 2
-        _write_obj(
-            OUT / f"stars_{rating}.obj",
-            mesh,
-            stars,
-            children,
-            STAR_SPACING_SCALE[rating],
-        )
+        _write_obj(OUT / f"stars_{rating}.obj", mesh, stars, children)
         print(f"stars_{rating}.obj: {len(children)} instances")
 
 

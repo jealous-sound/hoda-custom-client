@@ -124,54 +124,6 @@ static void SceneMaterialUnload(Material mat) {
     UnloadMaterial(mat);
 }
 
-static Mesh MeshSplitHalf(const Mesh *src, int axis, float sign, float *inner_edge) {
-    Mesh half = {0};
-    if (inner_edge) *inner_edge = 0.0f;
-    if (!src || src->triangleCount <= 0 || !src->vertices) return half;
-
-    float *vertices = MemAlloc((unsigned int)(src->triangleCount * 9 * (int)sizeof(float)));
-    float *texcoords = MemAlloc((unsigned int)(src->triangleCount * 6 * (int)sizeof(float)));
-    if (!vertices || !texcoords) {
-        MemFree(vertices);
-        MemFree(texcoords);
-        return half;
-    }
-
-    int kept = 0;
-    float inner = 0.0f;
-    for (int triangle = 0; triangle < src->triangleCount; triangle++) {
-        int index[3];
-        for (int corner = 0; corner < 3; corner++)
-            index[corner] = src->indices ? (int)src->indices[triangle * 3 + corner] : triangle * 3 + corner;
-        float centre = (src->vertices[index[0] * 3 + axis] + src->vertices[index[1] * 3 + axis] +
-                        src->vertices[index[2] * 3 + axis]) /
-                       3.0f;
-        if (centre * sign < 0.0f) continue;
-        for (int corner = 0; corner < 3; corner++) {
-            for (int component = 0; component < 3; component++)
-                vertices[kept * 9 + corner * 3 + component] = src->vertices[index[corner] * 3 + component];
-            texcoords[kept * 6 + corner * 2 + 0] = src->texcoords ? src->texcoords[index[corner] * 2 + 0] : 0.0f;
-            texcoords[kept * 6 + corner * 2 + 1] = src->texcoords ? src->texcoords[index[corner] * 2 + 1] : 0.0f;
-            float coordinate = src->vertices[index[corner] * 3 + axis];
-            if (kept == 0 || coordinate * sign < inner * sign) inner = coordinate;
-        }
-        kept++;
-    }
-    if (kept == 0) {
-        MemFree(vertices);
-        MemFree(texcoords);
-        return half;
-    }
-
-    half.triangleCount = kept;
-    half.vertexCount = kept * 3;
-    half.vertices = vertices;
-    half.texcoords = texcoords;
-    UploadMesh(&half, false);
-    if (inner_edge) *inner_edge = inner;
-    return half;
-}
-
 typedef struct {
     Vector3 c;
     float rx, rz, rot;

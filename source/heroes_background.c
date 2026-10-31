@@ -854,6 +854,7 @@ void HeroesBackgroundDragMove(HeroesBackground *scene, bool over_tray) {
 bool HeroesBackgroundDragDrop(HeroesBackground *scene, Player *player, bool over_tray) {
     if (!scene->drag.active) return false;
     bool changed = false;
+    int placed_slot = -1;
     int cur = player->current_squad;
     const Character *ch = &player->roster[scene->drag.roster_index];
 
@@ -874,6 +875,7 @@ bool HeroesBackgroundDragDrop(HeroesBackground *scene, Player *player, bool over
         }
         if (PlayerSquadPlace(player, cur, slot, scene->drag.roster_index)) {
             changed = true;
+            placed_slot = slot;
             PlaySound(scene->snd_place);
             HeroRowBonusStart(scene, slot);
         } else {
@@ -895,6 +897,7 @@ bool HeroesBackgroundDragDrop(HeroesBackground *scene, Player *player, bool over
     SquadPadRarityUnload(&scene->drag.pad_tex, &scene->drag.stars);
     memset(&scene->drag, 0, sizeof(scene->drag));
     HeroesBackgroundReloadSquad(scene, player);
+    if (placed_slot >= 0) HomeSquadUnitPlayMelee(&scene->units[placed_slot]);
     return changed;
 }
 

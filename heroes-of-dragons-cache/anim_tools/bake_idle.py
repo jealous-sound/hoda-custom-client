@@ -167,7 +167,7 @@ def bake_humanoid(src, dst, avatar_json, clip_json, use_rootx=False, use_tos=Fal
     hips_basis_fix, hips_basis = _promoted_hips_basis_fix(
         gltf, avatar, solver, hips_a_node)
 
-    def solve_clip(cj):
+    def solve_raw(cj):
         curves = MuscleCurves(cj)
         stop = curves.stop_time
         n = int(round(stop * FPS)) + 1
@@ -181,20 +181,18 @@ def bake_humanoid(src, dst, avatar_json, clip_json, use_rootx=False, use_tos=Fal
                     dof[attr] = v
             node_q, hips_x = solver.solve_frame(dof)
             hips_m = Xform(tuple(c / solver.units_per_meter for c in hips_x.t), hips_x.q, (1, 1, 1))
-            root_q = qnorm((dof.get(10, 0.0), dof.get(11, 0.0), dof.get(12, 0.0), dof.get(13, 1.0)))
-            raw.append((node_q, root_x.mul(hips_m), root_q))
+            raw.append((node_q, root_x.mul(hips_m)))
+        return raw
 
-        fwd = qrot(raw[0][2], (0, 0, 1))
-        theta = math.atan2(fwd[0], fwd[2])
-        yaw_fix = (0.0, math.sin(-theta/2), 0.0, math.cos(-theta/2))
-        orientation = (yaw_fix if hips_basis is None
-                       else qnorm(qmul(hips_basis_fix, yaw_fix)))
-        hip0 = raw[0][1].t
+    def shared_clip_fix(reference_raw):
+        orientation = (0.0, 0.0, 0.0, 1.0) if hips_basis is None else hips_basis_fix
+        hip0 = reference_raw[0][1].t
         centered = qrot(orientation, (hip0[0], 0.0, hip0[2]))
-        fix = Xform(tuple(-c for c in centered), orientation, (1, 1, 1))
+        return Xform(tuple(-c for c in centered), orientation, (1, 1, 1))
 
+    def solve_clip(raw, fix):
         out = []
-        for node_q, hips_world, _ in raw:
+        for node_q, hips_world in raw:
             frame = {}
             for hnode, q in node_q.items():
                 anode = avatar.h_to_avatar[hnode]
@@ -207,12 +205,14 @@ def bake_humanoid(src, dst, avatar_json, clip_json, use_rootx=False, use_tos=Fal
             out.append(frame)
         return out
 
-    frames = solve_clip(clip_json)
+    idle_raw = solve_raw(clip_json)
+    fix = shared_clip_fix(idle_raw)
+    frames = solve_clip(idle_raw, fix)
     clips = [('idle', frames)]
     clip_errors = {}
     for cname, cj in (extra_clips or []):
         try:
-            clips.append((cname, solve_clip(cj)))
+            clips.append((cname, solve_clip(solve_raw(cj), fix)))
         except (Exception, SystemExit) as e:
             clip_errors[cname] = f'{type(e).__name__}: {e}'
     n_frames = len(frames)

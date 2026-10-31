@@ -307,6 +307,12 @@ static void DebugBurstBattleFx(Game *game, const DebugShot *shot) {
         BattleFxBurst(&game->battle, effect, DEBUG_BFX_ORIGIN);
 }
 
+static void DebugPlayHeroMelee(Game *game, const DebugShot *shot) {
+    if (!EnvFlag("HOD_HERO_MELEE") || game->screen != SCREEN_HEROES) return;
+    if (shot->frames_drawn != shot->capture_frame - EnvInt("HOD_HERO_MELEE", 0)) return;
+    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HomeSquadUnitPlayMelee(&game->heroes_scene.units[s]);
+}
+
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
     game->screen = SCREEN_HEROES;
     if (DebugShotIs(shot, "home")) game->screen = SCREEN_HOME;
@@ -321,6 +327,7 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     if (selected_hero >= 0 && selected_hero < game->heroes.card_count) game->heroes.selected = selected_hero;
     DebugOpenResourceDialog(game, shot);
     DebugBurstBattleFx(game, shot);
+    DebugPlayHeroMelee(game, shot);
 }
 
 static bool DebugShotCapture(DebugShot *shot) {
