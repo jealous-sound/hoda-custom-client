@@ -280,6 +280,35 @@ typedef enum {
     GUI_SPLASH_GLOW,
     GUI_SPLASH_SMOKE,
 
+    GUI_CONSUME_TIER_UP,
+    GUI_CONSUME_POWER_SLOT,
+    GUI_CONSUME_IN_USE,
+    GUI_CONSUME_TRAY,
+    GUI_CONSUME_METER,
+    GUI_CONSUME_HEADER,
+    GUI_CONSUME_FLY,
+    GUI_CONSUME_ICON_TIER,
+    GUI_CONSUME_ICON_COMBINE,
+    GUI_CONSUME_ICON_XP,
+    GUI_CONSUME_RESULT_PANEL,
+    GUI_CONSUME_CATEGORY,
+    GUI_CONSUME_CATEGORY_ON,
+    GUI_CONSUME_SHOP,
+    GUI_CONSUME_SHOP_ON,
+    GUI_CONSUME_INFO,
+    GUI_CONSUME_INFO_ON,
+    GUI_CONSUME_RESULT_HEROES,
+    GUI_CONSUME_RESULT_HEROES_ON,
+    GUI_CONSUME_RESULT_PVE,
+    GUI_CONSUME_RESULT_PVE_ON,
+    GUI_CONSUME_RESULT_PVP,
+    GUI_CONSUME_RESULT_PVP_ON,
+    GUI_CONSUME_BAR_NEW,
+    GUI_CONSUME_CHECK_OFF,
+    GUI_CONSUME_CHECK_ON,
+    GUI_CONSUME_LINE,
+    GUI_CONSUME_BAR_OLD,
+    GUI_CONSUME_BAR_XP_NEW,
     GUI_COUNT
 } GuiId;
 
@@ -316,6 +345,11 @@ typedef enum {
     SND_PACK_RARE,
     SND_PACK_EPIC,
     SND_PACK_LEGENDARY,
+    SND_CONSUME_COMBINE,
+    SND_CONSUME_LEVEL_1,
+    SND_CONSUME_LEVEL_2,
+    SND_CONSUME_LEVEL_3,
+    SND_CONSUME_LEVEL_4,
     SND_COUNT
 } SoundId;
 
@@ -565,6 +599,35 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_MM_RUNE_SLOT] = CACHE_RESOURCE("tex.add_rune_slot"),
     [GUI_RUNE_EMPTY_SLOT] = CACHE_RESOURCE("tex.empty_rune_slot"),
     [GUI_RUNE_TILE] = CACHE_RESOURCE("Bg_RuneTile"),
+    [GUI_CONSUME_TIER_UP] = CACHE_RESOURCE("tex.Ico_TierUp"),
+    [GUI_CONSUME_POWER_SLOT] = CACHE_RESOURCE("tex.Ico_Power"),
+    [GUI_CONSUME_IN_USE] = CACHE_RESOURCE("Ico_InUseCheck"),
+    [GUI_CONSUME_TRAY] = CACHE_RESOURCE("bg_unittraybake"),
+    [GUI_CONSUME_METER] = CACHE_RESOURCE("MeterBaseConsume"),
+    [GUI_CONSUME_HEADER] = CACHE_RESOURCE("FrameStaticHeaderLgWidth"),
+    [GUI_CONSUME_FLY] = CACHE_RESOURCE("FrameFlyText"),
+    [GUI_CONSUME_ICON_TIER] = CACHE_RESOURCE("IconTierAdd"),
+    [GUI_CONSUME_ICON_COMBINE] = CACHE_RESOURCE("IconCombine"),
+    [GUI_CONSUME_ICON_XP] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "tex.xp_nonumber"),
+    [GUI_CONSUME_RESULT_PANEL] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "tex.bg_trainingcritstats"),
+    [GUI_CONSUME_CATEGORY] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Btn_Category_Default"),
+    [GUI_CONSUME_CATEGORY_ON] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Btn_Category_Select"),
+    [GUI_CONSUME_SHOP] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "ButtonShopQuarterSizeDefault"),
+    [GUI_CONSUME_SHOP_ON] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "ButtonShopQuarterSizeSelected"),
+    [GUI_CONSUME_INFO] = CACHE_RESOURCE("ico_help_info"),
+    [GUI_CONSUME_INFO_ON] = CACHE_RESOURCE("ico_help_info_select"),
+    [GUI_CONSUME_RESULT_HEROES] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Btn_ResultsHeroesDefault2"),
+    [GUI_CONSUME_RESULT_HEROES_ON] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Btn_ResultsHeroesDefault2_active"),
+    [GUI_CONSUME_RESULT_PVE] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Btn_PVEHUB"),
+    [GUI_CONSUME_RESULT_PVE_ON] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Btn_PVEHUB_active"),
+    [GUI_CONSUME_RESULT_PVP] = CACHE_RESOURCE("Btn_PVPDefault2"),
+    [GUI_CONSUME_RESULT_PVP_ON] = CACHE_RESOURCE("Btn_PVPDefault2_active"),
+    [GUI_CONSUME_BAR_NEW] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Bar_Fill_Green"),
+    [GUI_CONSUME_CHECK_OFF] = APK_RESOURCE("Btn_Checkbox_Empty"),
+    [GUI_CONSUME_CHECK_ON] = EXTRA_ASSET_DIR "gui/Btn_Checkbox_Filled.png",
+    [GUI_CONSUME_LINE] = CACHE_RESOURCE("tex.SingleLineSeparator"),
+    [GUI_CONSUME_BAR_OLD] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Bar_ProgressFill_Grey"),
+    [GUI_CONSUME_BAR_XP_NEW] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "stamina_bar_new"),
     [GUI_RUNE_DETAILS] = CACHE_RESOURCE("Bg_Rune_Details_Slim"),
     [GUI_RUNE_HIGHLIGHT] = CACHE_RESOURCE("IconRuneHighlight"),
     [GUI_MM_TAG] = CACHE_RESOURCE("BG_RewardsTagShort"),
@@ -683,6 +746,11 @@ static const char *const sound_paths[SND_COUNT] = {
     [SND_PACK_RARE] = CACHE_RESOURCE("gui_purchase_rare"),
     [SND_PACK_EPIC] = CACHE_RESOURCE("gui_purchase_epic"),
     [SND_PACK_LEGENDARY] = CACHE_RESOURCE("gui_purchase_legendary"),
+    [SND_CONSUME_COMBINE] = CACHE_RESOURCE("gui_combine"),
+    [SND_CONSUME_LEVEL_1] = CACHE_RESOURCE("gui_levelup_1"),
+    [SND_CONSUME_LEVEL_2] = CACHE_RESOURCE("gui_levelup_2"),
+    [SND_CONSUME_LEVEL_3] = CACHE_RESOURCE("gui_levelup_3"),
+    [SND_CONSUME_LEVEL_4] = CACHE_RESOURCE("gui_levelup_4"),
 };
 
 static Texture2D gui_tex[GUI_COUNT];
@@ -720,6 +788,10 @@ bool GuiSoundAllowsDuplicate(SoundId id) {
         case SND_PACK_RARE:
         case SND_PACK_EPIC:
         case SND_PACK_LEGENDARY:
+        case SND_CONSUME_LEVEL_1:
+        case SND_CONSUME_LEVEL_2:
+        case SND_CONSUME_LEVEL_3:
+        case SND_CONSUME_LEVEL_4:
             return true;
         default:
             return false;

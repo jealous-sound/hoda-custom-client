@@ -152,6 +152,10 @@ typedef struct {
 
     Tier tier;
     int level;
+    int xp;
+    int consume_xp;
+    int consume_level;
+    int crit_chance;
 } Character;
 
 static const char *TIER_NAMES[TIER_COUNT] = {"I", "II", "III", "IV"};

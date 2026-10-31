@@ -3394,7 +3394,7 @@ static void TestRosterInstancesAndPersistence(void) {
     PlayerLoadRoster(&loaded, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
     assert(ProgressionLoadFromPath(&loaded, path));
     assert(loaded.roster_count == source.roster_count);
-    assert(loaded.starter_roster_count == source.starter_roster_count);
+    assert(loaded.starter_roster_count == 0);
     assert(loaded.next_instance_id == source.next_instance_id);
     assert(loaded.roster[first].instance_id == source.roster[first].instance_id);
     assert(loaded.roster[first + 1].instance_id == source.roster[first + 1].instance_id);
@@ -3427,6 +3427,192 @@ static void TestRosterInstancesAndPersistence(void) {
     PlayerUnloadRoster(&source);
     remove(path);
     remove(temporary);
+}
+
+static Character *ConsumeTestAdd(Player *player, const cJSON *catalog, const char *id, int *index) {
+    const cJSON *definition = CatalogFindCharacter(catalog, id);
+    assert(definition && PlayerRosterAppendDefinitions(player, &definition, 1, index));
+    return &player->roster[*index];
+}
+
+static const char *ConsumeTestFirstId(const cJSON *catalog, const char *rarity, bool giant, bool full_tiers) {
+    const cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, (cJSON *)catalog) {
+        const cJSON *tiers = cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "tiers");
+        if (strcmp(JsonStr(entry, "rarity"), rarity) == 0 && JsonBool(entry, "giant") == giant &&
+            (cJSON_GetArraySize((cJSON *)tiers) == TIER_COUNT) == full_tiers)
+            return JsonStr(entry, "id");
+    }
+    assert(false);
+    return NULL;
+}
+
+static void TestConsumeTablesAndCurves(void) {
+    ConsumeXpTable table = {.xp = {0, 10, 30, 60}, .count = 4};
+    assert(ConsumeXpForLevel(&table, 1) == 0 && ConsumeXpForLevel(&table, 4) == 60);
+    assert(ConsumeLevelForXp(&table, 0) == 1 && ConsumeLevelForXp(&table, 9) == 1);
+    assert(ConsumeLevelForXp(&table, 10) == 2 && ConsumeLevelForXp(&table, 60) == 4);
+    assert(ConsumeLevelForXp(&table, 999) == 4);
+    assert(fabsf(ConsumeBandFraction(&table, 2, 20) - 0.5f) < 0.001f);
+    assert(ConsumeBandFraction(&table, 4, 60) == 1.0f);
+
+    ConsumeCatalogEnsure();
+    const ConsumeProgression *standard = ConsumeFindProgression("standard");
+    ConsumeProfile profile = {.progression = standard};
+    assert(ConsumeUnlockKindAt(&profile, 1) == CONSUME_UNLOCK_CRIT);
+    assert(ConsumeUnlockKindAt(&profile, 3) == CONSUME_UNLOCK_FORTIFY);
+    assert(ConsumeUnlockKindAt(&profile, 13) == CONSUME_UNLOCK_PROMOTION);
+    assert(ConsumeProgressionLevelOfTier(&profile, 1) == 13);
+    assert(ConsumeProgressionLevelOfTier(&profile, 3) == 32);
+    assert(ConsumeUnlockedTotal(&profile, 1, CONSUME_UNLOCK_CRIT) == 1);
+    assert(ConsumeUnlockedTotal(&profile, 2, CONSUME_UNLOCK_CRIT) == 2);
+    assert(ConsumeUnlockKindAt(&profile, standard->count) == CONSUME_UNLOCK_NONE);
+}
+
+static void TestConsumeSeedWorthAndBonuses(void) {
+    cJSON *root = ProgressionLoadCharacterCatalog();
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    const char *common = ConsumeTestFirstId(catalog, "Common", false, true);
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    int target_index, seed_index;
+    Character *target = ConsumeTestAdd(&player, catalog, common, &target_index);
+    Character *seed = ConsumeTestAdd(&player, catalog, common, &seed_index);
+    assert(target->consume_level == 1 && target->crit_chance == CONSUME_BASE_CRIT_CHANCE && target->xp == 0);
+
+    const Character *seeds[] = {seed};
+    ConsumeOutcome outcome = ConsumeCompute(target, seeds, 1);
+    const ConsumeProfile *profile = ConsumeProfileFor(target);
+    int combine = ConsumeXpForLevel(profile->consume_table, 14);
+    int expected_worth = (int)rint(100.0f * profile->worth[TIER_I] * (1.0f + CONSUME_SAME_FACTION_BONUS));
+    assert(outcome.consume_xp == combine + expected_worth);
+    assert(outcome.tier == TIER_II);
+    ConsumeSeedPreview preview = ConsumePreviewSeed(target, seed);
+    assert(preview.same_group && preview.shares_faction);
+    assert(preview.tier_bonus_pct == 0 && preview.faction_bonus_pct == 20 && preview.combine_bonus_pct == 0);
+    assert(preview.xp_gain == (int)rint(rint(100.0f * profile->worth[TIER_I]) * CONSUME_HERO_XP_SHARE_OF_WORTH));
+
+    PlayerUnloadRoster(&player);
+    cJSON_Delete(root);
+}
+
+static void TestConsumeCommitCompactsRoster(void) {
+    cJSON *root = ProgressionLoadCharacterCatalog();
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    const char *rare = ConsumeTestFirstId(catalog, "Rare", false, true);
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    int squad_unit = player.squads[0][0];
+    uint64_t squad_instance = player.roster[squad_unit].instance_id;
+    int count = player.roster_count;
+    int seed_a, target, seed_b;
+    ConsumeTestAdd(&player, catalog, rare, &seed_a);
+    ConsumeTestAdd(&player, catalog, rare, &target);
+    ConsumeTestAdd(&player, catalog, rare, &seed_b);
+    assert(PlayerSquadPlace(&player, 2, 0, target));
+    uint64_t target_instance = player.roster[target].instance_id;
+
+    int blocked[] = {squad_unit};
+    assert(!PlayerConsumeSeedAllowed(&player, target, squad_unit));
+    assert(PlayerConsumeUnits(&player, target, blocked, 1) == -1);
+    int self[] = {target};
+    assert(PlayerConsumeUnits(&player, target, self, 1) == -1);
+    int repeated[] = {seed_a, seed_a};
+    assert(PlayerConsumeUnits(&player, target, repeated, 2) == -1);
+    assert(player.roster_count == count + 3);
+
+    int seeds[] = {seed_a, seed_b};
+    int moved = PlayerConsumeUnits(&player, target, seeds, 2);
+    assert(moved == count);
+    assert(player.roster_count == count + 1);
+    assert(player.roster[moved].instance_id == target_instance);
+    assert(player.roster[moved].ability == &player.roster_abilities[moved]);
+    assert(player.roster[moved].tier == TIER_III);
+    assert(player.squads[2][0] == moved);
+    assert(player.roster[player.squads[0][0]].instance_id == squad_instance);
+    assert(player.roster[count + 1].instance_id == 0);
+
+    const char *path = "tests/consume_save_test.dat";
+    player.next_instance_id = PlayerRosterNextAvailableInstanceId(&player);
+    assert(ProgressionSaveToPath(&player, path));
+    Player loaded = {0};
+    ProgressionInitializePlayerDefaults(&loaded);
+    PlayerLoadRoster(&loaded, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    assert(ProgressionLoadFromPath(&loaded, path));
+    assert(loaded.roster_count == player.roster_count);
+    const Character *a = &player.roster[moved], *b = &loaded.roster[moved];
+    assert(b->tier == a->tier && b->level == a->level && b->xp == a->xp && b->consume_xp == a->consume_xp);
+    assert(b->consume_level == a->consume_level && b->crit_chance == a->crit_chance);
+    assert(loaded.squads[2][0] == moved);
+    remove(path);
+    PlayerUnloadRoster(&loaded);
+    PlayerUnloadRoster(&player);
+    cJSON_Delete(root);
+}
+
+static void TestWispWorthFollowsReferenceMultipliers(void) {
+    Character wisp = {.rarity = RARITY_RARE, .tier = TIER_I};
+    StrCopy(wisp.id, sizeof(wisp.id), "UNIT_RAREWHITEWISP");
+    Character hero = {.rarity = RARITY_RARE, .tier = TIER_I};
+    StrCopy(hero.id, sizeof(hero.id), "UNIT_ELVENMAGE");
+    float wisp_worth = ConsumeSeedBaseWorth(&wisp);
+    assert(wisp_worth == rint(600.0f * 2.5f * 1.15f));
+    wisp.tier = TIER_IV;
+    assert(fabsf(ConsumeSeedBaseWorth(&wisp) - wisp_worth * 4.0f) < 4.0f);
+    assert(ConsumeSeedBaseWorth(&hero) < wisp_worth);
+}
+
+static void TestConsumeRespectsCaps(void) {
+    cJSON *root = ProgressionLoadCharacterCatalog();
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+
+    int unique_index, seed_index;
+    const char *unique = ConsumeTestFirstId(catalog, "Legendary", false, false);
+    Character *target = ConsumeTestAdd(&player, catalog, unique, &unique_index);
+    Character *seed = ConsumeTestAdd(&player, catalog, unique, &seed_index);
+    const Character *seeds[] = {seed};
+    Tier before = target->tier;
+    assert(ConsumeCompute(target, seeds, 1).tier == before);
+
+    const ConsumeProfile *profile = ConsumeProfileFor(target);
+    target->consume_xp = ConsumeXpForLevel(profile->consume_table, profile->consume_table->count);
+    target->level = target->stats[target->tier].max_level;
+    target->xp = ConsumeXpForLevel(profile->level_table, target->level);
+    ConsumeNormalizeCharacter(target);
+    assert(ConsumeCharacterMaxed(target));
+    ConsumeOutcome outcome = ConsumeCompute(target, seeds, 1);
+    assert(outcome.consume_xp == target->consume_xp && outcome.xp == target->xp && outcome.level == target->level);
+    assert(outcome.crit_chance == 30);
+
+    int tiered_index;
+    Character *tiered = ConsumeTestAdd(&player, catalog, ConsumeTestFirstId(catalog, "Rare", false, true), &tiered_index);
+    tiered->tier = TIER_II;
+    tiered->consume_xp = 0;
+    ConsumeNormalizeCharacter(tiered);
+    assert(tiered->consume_level == 14 && tiered->crit_chance == 10);
+
+    for (int i = 0; i < player.roster_count; i++) assert(ConsumeProfileFor(&player.roster[i]));
+    PlayerUnloadRoster(&player);
+    cJSON_Delete(root);
+}
+
+static void TestSimUsesConsumedCritChance(void) {
+    Character ch = {.crit_chance = 12};
+    Ability ability = {0};
+    ch.ability = &ability;
+    SimUnit units[SQUAD_SLOT_COUNT * 2];
+    int front_slot = 1;
+    assert(SquadSlotIsFront(front_slot));
+    SimUnitsInit(units, 0, front_slot, &ch);
+    assert(units[front_slot].crit_pct == 12.0f);
+    ch.crit_chance = 0;
+    SimUnitsInit(units, 0, front_slot, &ch);
+    assert(units[front_slot].crit_pct == 1.0f);
 }
 
 static void TestAllCampaignMapsAdvance(void) {
@@ -4063,6 +4249,12 @@ int main(void) {
     TestCampaignProgressionRewards();
     TestProgressionPersistence();
     TestRosterInstancesAndPersistence();
+    TestConsumeTablesAndCurves();
+    TestConsumeSeedWorthAndBonuses();
+    TestConsumeCommitCompactsRoster();
+    TestConsumeRespectsCaps();
+    TestWispWorthFollowsReferenceMultipliers();
+    TestSimUsesConsumedCritChance();
     TestAllCampaignMapsAdvance();
     TestEnergyAndStaminaPools();
     TestUnitPoolReusesReleasedUnits();

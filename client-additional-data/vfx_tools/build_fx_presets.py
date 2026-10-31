@@ -597,6 +597,15 @@ def validate_presets(presets):
         raise ValueError("invalid generated emitters: " + "; ".join(errors))
 
 
+ADDITIVE_TINT_DOUBLED = {"fx_levelup_2p0_base"}
+
+
+def double_color_curves(preset):
+    for emitter in preset["emitters"]:
+        for key in emitter.get("color_curve", []):
+            key[1:4] = [min(255, channel * 2) for channel in key[1:4]]
+
+
 def main():
     only = None
     for i, a in enumerate(sys.argv):
@@ -618,6 +627,19 @@ def main():
         "fx_eff_blackfaction_charge_pre",
         "fx_eff_initiative_charge_pre",
         "fx_runeonunit_pre",
+        "fx_levelup_2p0_base",
+        "fx_chartraining_lvlup_pre",
+        "fx_tierup_common",
+        "fx_tierup_uncommon",
+        "fx_tierup_rare",
+        "fx_tierup_epic",
+        "fx_tierup_legendary",
+        "fx_wispchar_t1_pre",
+        "fx_wispchar_t2_pre",
+        "fx_wispchar_t3_pre",
+        "fx_wispchar_t4_pre",
+        "fx_wispchar_t5_pre",
+        "fx_wispchar_t6_pre",
     })
     targets = {}
     for n in sorted(names):
@@ -651,6 +673,9 @@ def main():
             print("WARN", w)
         return
 
+    for preset in presets:
+        if preset["name"] in ADDITIVE_TINT_DOUBLED:
+            double_color_curves(preset)
     presets.sort(key=lambda p: p["name"])
     validate_presets(presets)
     with open(OUT, "w") as f:

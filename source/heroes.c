@@ -171,8 +171,10 @@ static void HeroCardBuild(HeroCard *card, const Character *ch) {
     card->max_level = stats->max_level;
     card->power = CharacterStatPower(ch);
     card->health = CharacterStatHealth(ch);
-    card->crit = 1;
-    card->xp_frac = ch->level >= stats->max_level ? 1.0f : 0.0f;
+    card->crit = ch->crit_chance > CONSUME_BASE_CRIT_CHANCE ? ch->crit_chance : CONSUME_BASE_CRIT_CHANCE;
+    card->xp_frac = ch->level >= stats->max_level
+                        ? 1.0f
+                        : ConsumeBandFraction(ConsumeProfileFor(ch)->level_table, ch->level, ch->xp);
     card->desc_fs = 0.0f;
 }
 
@@ -235,6 +237,32 @@ bool HeroesSyncRoster(Heroes *h, const Player *p) {
     }
     h->card_count = p->roster_count;
     return true;
+}
+
+void HeroesApplyConsume(Heroes *h, const Player *p, const int *seeds, int seed_count, int target) {
+    bool *removed = (bool *)MemAlloc((unsigned int)h->card_count);
+    for (int i = 0; i < seed_count; i++) {
+        removed[seeds[i]] = true;
+        UnloadTexture(h->cards[seeds[i]].portrait);
+    }
+    int kept = 0;
+    for (int i = 0; i < h->card_count; i++) {
+        if (removed[i]) continue;
+        if (kept != i) h->cards[kept] = h->cards[i];
+        h->cards[kept].ch = &p->roster[kept];
+        kept++;
+    }
+    MemFree(removed);
+    h->card_count = kept;
+    h->selected = -1;
+    h->press_card = -1;
+    h->drag_icon = -1;
+
+    HeroCard *card = &h->cards[target];
+    const Character *ch = &p->roster[target];
+    UnloadTexture(card->portrait);
+    HeroCardBuild(card, ch);
+    card->portrait = GuiPortraitLoad(ch->icon_prefab[ch->tier]);
 }
 
 void HeroesDestroy(Heroes *h) {
@@ -591,7 +619,11 @@ HeroesButton HeroesDrawNav(Heroes *h, HeroesButton active, bool interactive, int
     float y = 84.0f;
     float gap = 4.0f;
 
-    ButtonDrawEx(&h->train, (Rectangle){x, y, w, w}, false);
+    Rectangle train = {x, y, w, w};
+    if (active == HEROES_CONSUME)
+        ButtonDrawSelected(&h->train, train);
+    else if (ButtonDrawEx(&h->train, train, interactive))
+        clicked = HEROES_CONSUME;
     y += w + gap;
     ButtonDrawEx(&h->fortify, (Rectangle){x, y, w, w}, false);
     y += w + gap;

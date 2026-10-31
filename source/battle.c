@@ -2399,6 +2399,30 @@ static void BattleFxBurstRotated(Battle *b, const char *name, Vector3 pos, Quate
     FxInstanceStart(b, ins);
 }
 
+int BattleFxLoopStart(Battle *b, const char *name, Vector3 pos, unsigned *serial) {
+    const FxPreset *pre = BattleFxFindPreset(b, name);
+    FxInstance *ins = pre ? FxInstanceClaim(b) : NULL;
+    if (!ins) return -1;
+    *ins = (FxInstance){.pre = pre, .alive = true, .loop = true, .anchor = -1, .pos = pos};
+    FxInstanceStart(b, ins);
+    *serial = ins->serial;
+    return (int)(ins - b->fxi);
+}
+
+bool BattleFxLoopMove(Battle *b, int index, unsigned serial, Vector3 pos) {
+    if (index < 0 || index >= FX_MAX_INSTANCES) return false;
+    FxInstance *ins = &b->fxi[index];
+    if (!ins->alive || ins->serial != serial) return false;
+    ins->pos = pos;
+    return true;
+}
+
+void BattleFxLoopStop(Battle *b, int index, unsigned serial) {
+    if (index < 0 || index >= FX_MAX_INSTANCES) return;
+    FxInstance *ins = &b->fxi[index];
+    if (ins->alive && ins->serial == serial) ins->alive = false;
+}
+
 void BattleFxBurst(Battle *b, const char *name, Vector3 pos) {
     BattleFxBurstRotated(b, name, pos, QuaternionIdentity(), false);
 }

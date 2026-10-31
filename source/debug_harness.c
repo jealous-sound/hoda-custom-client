@@ -6,6 +6,7 @@ typedef struct {
     bool flow_started;
     bool resource_opened;
     bool runes_seeded;
+    bool consume_opened;
 } DebugShot;
 
 #define DEBUG_SHOT_DEFAULT_FRAMES 90
@@ -372,6 +373,13 @@ static void DebugPrepareRunes(Game *game, DebugShot *shot) {
         game->runes.pending[1] = sorted[3];
     } else if (DebugShotIs(shot, "runes_fx")) {
         game->runes.pending[0] = sorted[2];
+    } else if (DebugShotIs(shot, "runes_message")) {
+        StrCopy(game->runes.message, sizeof(game->runes.message), LocGet("RUNE_NOT_CRAFTABLE"));
+        game->runes.dialog = RUNES_DIALOG_MESSAGE;
+    } else if (DebugShotIs(shot, "runes_replace")) {
+        game->runes.dialog = RUNES_DIALOG_REPLACE;
+    } else if (DebugShotIs(shot, "runes_prestige")) {
+        game->runes.dialog = RUNES_DIALOG_PRESTIGE;
     } else if (DebugShotIs(shot, "runes_details")) {
         game->runes.details_uuid = sorted[0];
     } else if (DebugShotIs(shot, "runes_craft")) {
@@ -423,12 +431,62 @@ static void DebugPrepareGallery(Game *game, DebugShot *shot) {
     shot->flow_started = true;
 }
 
+static const Character *DebugConsumeDefinition(Game *game, const char *id, int *index) {
+    cJSON *catalog_root = ProgressionLoadCharacterCatalog();
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
+    const cJSON *definition = CatalogFindCharacter(catalog, id);
+    bool added = definition && PlayerRosterAppendDefinitions(&game->player, &definition, 1, index);
+    cJSON_Delete(catalog_root);
+    if (!added) TraceLog(LOG_FATAL, "Debug: cannot add %s", id);
+    return &game->player.roster[*index];
+}
+
+static void DebugPrepareConsume(Game *game, DebugShot *shot) {
+    if (!shot->screen || strncmp(shot->screen, "consume", 7) != 0) return;
+    if (shot->consume_opened) {
+        if (game->screen == SCREEN_HEROES) game->screen = SCREEN_CONSUME;
+        return;
+    }
+    shot->consume_opened = true;
+    ConsumeScreen *c = &game->consume;
+    int target = -1, duplicate = -1, seed_a = -1, seed_b = -1;
+    if (!DebugShotIs(shot, "consume")) {
+        const char *override = getenv("HOD_CONSUME_HERO");
+        const char *hero = override ? override : game->player.roster[0].id;
+        DebugConsumeDefinition(game, hero, &target);
+        DebugConsumeDefinition(game, hero, &duplicate);
+        DebugConsumeDefinition(game, "UNIT_ELVENMAGE", &seed_a);
+        DebugConsumeDefinition(game, game->player.roster[0].id, &seed_b);
+    }
+    HeroesSyncRoster(&game->heroes, &game->player);
+    GameOpenConsume(game);
+    if (DebugShotIs(shot, "consume")) return;
+    memset(c->warnings_disabled, 1, sizeof(c->warnings_disabled));
+    ConsumePlaceUnit(c, &game->heroes_scene, &game->player, target);
+    ConsumePlaceUnit(c, &game->heroes_scene, &game->player, duplicate);
+    ConsumePlaceUnit(c, &game->heroes_scene, &game->player, seed_a);
+    ConsumePlaceUnit(c, &game->heroes_scene, &game->player, seed_b);
+    if (DebugShotIs(shot, "consume_squad"))
+        ConsumePlaceUnit(c, &game->heroes_scene, &game->player, PlayerSquadUnitAt(&game->player, 0, 0));
+    if (DebugShotIs(shot, "consume_ladder")) c->ladder_open = true;
+    if (DebugShotIs(shot, "consume_multi")) c->dialog = CONSUME_DIALOG_MULTI_TYPE;
+    if (DebugShotIs(shot, "consume_multi_confirm")) ConsumeMultiSelect(c, &game->player, CONSUME_MULTI_RARITY);
+    if (DebugShotIs(shot, "consume_warning")) {
+        memset(c->warnings_disabled, 0, sizeof(c->warnings_disabled));
+        c->warning_disable = false;
+        c->pending_seed = seed_a;
+        c->dialog = CONSUME_DIALOG_RARITY_WARNING;
+    }
+    if (DebugShotIs(shot, "consume_results")) ConsumeBeginResults(c, &game->heroes, &game->player);
+}
+
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
-    game->screen = SCREEN_HEROES;
+    game->screen = shot->consume_opened ? SCREEN_CONSUME : SCREEN_HEROES;
     if (DebugShotIs(shot, "home")) game->screen = SCREEN_HOME;
     if (DebugShotIs(shot, "quests")) game->screen = SCREEN_QUESTS;
     DebugActivateBattleRunes(game, shot);
     DebugPrepareRunes(game, shot);
+    DebugPrepareConsume(game, shot);
     DebugPrepareGallery(game, shot);
     if (DebugShotIs(shot, "gallery_unit")) game->screen = SCREEN_GALLERY;
     DebugPrepareStore(game, shot);

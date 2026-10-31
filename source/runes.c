@@ -30,7 +30,8 @@ typedef enum {
     RUNES_LEAVE_STORE,
     RUNES_LEAVE_RETURN,
     RUNES_LEAVE_SELECT_SQUAD,
-    RUNES_LEAVE_GALLERY
+    RUNES_LEAVE_GALLERY,
+    RUNES_LEAVE_CONSUME
 } RunesLeave;
 
 typedef enum {
@@ -82,6 +83,7 @@ typedef struct {
 
     Button assign, craft_mode, activate, cancel, sort, store;
     Button craft_one, craft_many;
+    Button message_ok, prestige_unlock;
     Button dialog_yes, dialog_no, dialog_ok, dialog_craft, dialog_cancel, dialog_type, dialog_rarity;
 } RunesScreen;
 
@@ -115,6 +117,10 @@ void RunesInitialize(RunesScreen *r) {
     r->craft_one = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("RUNE_CRAFT_BUTTON"), font, anchor, scale);
     r->craft_many =
         ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("RUNE_CRAFT_MULTIPLE_BUTTON"), font, anchor, 0.2f);
+    r->message_ok = ButtonLoadText(
+        GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("RUNE_SINGLE_CONFIRMATION_OK_BUTTON"), font, anchor, scale
+    );
+    r->prestige_unlock = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "Разблокировать", font, anchor, 0.27f);
     r->dialog_yes = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("CONFIRM_DIALOG_YES"), font, anchor, scale);
     r->dialog_no = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("CONFIRM_DIALOG_NO"), font, anchor, scale);
     r->dialog_ok = ButtonLoadText(
@@ -671,8 +677,8 @@ static Rectangle RunesDialogButton(Rectangle plate, int index, int count) {
 }
 
 static void RunesDrawDialogFrame(Rectangle plate, const char *title) {
-    DrawRectangle(0, 72, (int)UiWidth() + 1, (int)UiHeight() - 72 + 1, (Color){0, 0, 0, 150});
-    StoreDrawNineSlice(GuiTex(GUI_STORE_POPUP), plate, 34.0f, WHITE);
+    MessagePopupDrawScrim();
+    UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), plate, WHITE);
     if (title && title[0])
         UiDrawTextCentered(
             GuiFont(FNT_COOL),
@@ -698,33 +704,7 @@ static void RunesCloseDialog(RunesScreen *r) {
     r->dialog = RUNES_DIALOG_NONE;
 }
 
-static void RunesDrawConfirm(RunesScreen *r, Player *p) {
-    Rectangle plate = RunesDialogPlate(280.0f);
-    bool applying = r->dialog == RUNES_DIALOG_APPLY_CHANGES;
-    bool replacing = r->dialog == RUNES_DIALOG_REPLACE;
-    char body[RUNES_MESSAGE_CAP];
-    if (r->dialog == RUNES_DIALOG_PRESTIGE)
-        snprintf(
-            body,
-            sizeof(body),
-            "Разблокировать престижную ячейку этого отряда за %d самоцветов?",
-            RUNE_PRESTIGE_UNLOCK_GEMS
-        );
-    else
-        StrCopy(
-            body,
-            sizeof(body),
-            LocGet(applying ? "RUNE_APPLY_CHANGES_CONFIRMATION_MESSAGE" : "RUNE_REPLACEMENT_CONFIRMATION_MESSAGE")
-        );
-    const char *title = applying    ? LocGet("RUNE_APPLY_CHANGES_CONFIRMATION_TITLE")
-                        : replacing ? LocGet("RUNE_REPLACEMENT_CONFIRMATION_TITLE")
-                                    : RuneRarityLabel(RUNE_PRESTIGE_RARITY);
-    RunesDrawDialogFrame(plate, title);
-    RunesDrawDialogBody(plate, 80.0f, body);
-    bool yes = ButtonDraw(&r->dialog_yes, RunesDialogButton(plate, 0, 2));
-    bool no = ButtonDraw(&r->dialog_no, RunesDialogButton(plate, 1, 2));
-    if (!yes && !no) return;
-    RunesDialog dialog = r->dialog;
+static void RunesApplyConfirm(RunesScreen *r, Player *p, RunesDialog dialog, bool yes) {
     RunesCloseDialog(r);
     if (dialog == RUNES_DIALOG_APPLY_CHANGES) {
         if (yes) RunesBeginActivation(r, p);
@@ -734,12 +714,78 @@ static void RunesDrawConfirm(RunesScreen *r, Player *p) {
     } else if (dialog == RUNES_DIALOG_REPLACE && yes) {
         r->pending[r->replace_slot] = r->replace_uuid;
         GuiSoundPlay(SND_RUNE_PLACE);
-    } else if (dialog == RUNES_DIALOG_PRESTIGE && yes) {
-        if (PlayerUnlockPrestigeRuneSlot(p, p->current_squad))
-            ProgressionSave(p);
-        else
-            RunesShowMessage(r, LocGet("MESSAGE_CANT_AFFORD_BODY"));
     }
+}
+
+static void RunesDrawConfirm(RunesScreen *r, Player *p) {
+    bool applying = r->dialog == RUNES_DIALOG_APPLY_CHANGES;
+    Rectangle popup = MessagePopupDrawFrame();
+    Rectangle content = MessagePopupContent(popup);
+    MessagePopupDrawText(
+        GuiFont(FNT_COOL),
+        LocGet(applying ? "RUNE_APPLY_CHANGES_CONFIRMATION_TITLE" : "RUNE_REPLACEMENT_CONFIRMATION_TITLE"),
+        UiRect(content, 0.0f, 0.0f, 1.0f, 0.2f),
+        30.0f,
+        WHITE
+    );
+    MessagePopupDrawText(
+        GuiFont(FNT_MENU),
+        LocGet(applying ? "RUNE_APPLY_CHANGES_CONFIRMATION_MESSAGE" : "RUNE_REPLACEMENT_CONFIRMATION_MESSAGE"),
+        UiRect(content, 0.0f, 0.3f, 1.0f, 0.5f),
+        26.0f,
+        WHITE
+    );
+    Rectangle row = MessagePopupChoiceRow(popup);
+    bool yes = ButtonDraw(&r->dialog_yes, UiRect(row, 0.0f, 0.0f, 0.5f, 1.0f));
+    bool no = ButtonDraw(&r->dialog_no, UiRect(row, 1.0f, 0.0f, 0.5f, 1.0f));
+    if (yes || no) RunesApplyConfirm(r, p, r->dialog, yes);
+}
+
+static void RunesDrawPrestigeUnlock(RunesScreen *r, Player *p) {
+    MessagePopupDrawScrim();
+    Rectangle popup = UiRect(UiRoot(), 0.5f, 0.5f, 0.75f, 0.75f);
+    UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), popup, WHITE);
+    Rectangle content = UiRect(popup, 0.5f, 0.15f, 0.86f, 0.5f);
+    MessagePopupDrawText(
+        GuiFont(FNT_COOL),
+        RuneRarityLabel(RUNE_PRESTIGE_RARITY),
+        UiRect(content, 0.5f, 0.05f, 0.85f, 0.39f),
+        30.0f,
+        WHITE
+    );
+    MessagePopupDrawText(
+        GuiFont(FNT_MENU),
+        "Разблокировать престижную ячейку этого отряда?",
+        UiRect(content, 0.5f, 1.0f, 0.95f, 0.5f),
+        24.0f,
+        WHITE
+    );
+    Rectangle currency = UiRect(popup, 0.65f, 0.625f, 0.2f, 0.14f);
+    UiDrawTextRight(
+        GuiFont(FNT_MENU),
+        "Цена:",
+        (Rectangle){0.0f, currency.y + currency.height * 0.5f, currency.x - 12.0f, 0.0f},
+        22.0f,
+        WHITE
+    );
+    UiDrawTexture(GuiTex(GUI_REWARD_BRUSH), currency, WHITE);
+    UiDrawTexture(
+        GuiTex(GUI_MAP_GEMS), UiRect(currency, 0.9f, 0.4f, currency.height * 0.9f, currency.height * 0.9f), WHITE
+    );
+    char cost[16];
+    snprintf(cost, sizeof(cost), "%d", RUNE_PRESTIGE_UNLOCK_GEMS);
+    UiDrawTextLeftMiddle(GuiFont(FNT_COOL), cost, UiRect(currency, 0.1f, 0.3f, 0.4f, 0.6f), 26.0f, WHITE);
+
+    Rectangle choice = UiRect(popup, 0.5f, 0.85f, 0.8f, 0.2f);
+    bool cancel = ButtonDraw(&r->cancel, UiRect(choice, 0.1f, 0.5f, 0.4f, 0.9f));
+    bool unlock = ButtonDraw(&r->prestige_unlock, UiRect(choice, 0.95f, 0.5f, 0.4f, 0.9f));
+    if (!cancel && !unlock) return;
+    RunesCloseDialog(r);
+    if (!unlock) return;
+    if (PlayerUnlockPrestigeRuneSlot(p, p->current_squad))
+        ProgressionSave(p);
+    else
+        RunesShowMessage(r, LocGet("MESSAGE_CANT_AFFORD_BODY"));
 }
 
 static void RunesDrawCraftCardDialog(RunesScreen *r, Player *p, long long now) {
@@ -817,10 +863,11 @@ static void RunesDrawCraftDone(RunesScreen *r, long long now) {
 }
 
 static void RunesDrawMessage(RunesScreen *r) {
-    Rectangle plate = RunesDialogPlate(260.0f);
-    RunesDrawDialogFrame(plate, NULL);
-    RunesDrawDialogBody(plate, 50.0f, r->message);
-    if (ButtonDraw(&r->dialog_ok, RunesDialogButton(plate, 0, 1))) {
+    Rectangle popup = MessagePopupDrawFrame();
+    MessagePopupDrawText(
+        GuiFont(FNT_MENU), r->message, UiRect(MessagePopupContent(popup), 0.0f, 0.0f, 1.0f, 0.5f), 26.0f, WHITE
+    );
+    if (ButtonDraw(&r->message_ok, MessagePopupOkButton(popup))) {
         RunesCloseDialog(r);
         r->leave_pending = RUNES_LEAVE_NONE;
     }
@@ -833,8 +880,10 @@ static void RunesDrawDialog(RunesScreen *r, Player *p, long long now) {
             break;
         case RUNES_DIALOG_APPLY_CHANGES:
         case RUNES_DIALOG_REPLACE:
-        case RUNES_DIALOG_PRESTIGE:
             RunesDrawConfirm(r, p);
+            break;
+        case RUNES_DIALOG_PRESTIGE:
+            RunesDrawPrestigeUnlock(r, p);
             break;
         case RUNES_DIALOG_CRAFT_SINGLE:
         case RUNES_DIALOG_CRAFT_ALL_TYPE:
@@ -936,6 +985,7 @@ RunesLeave RunesDraw(RunesScreen *r, Heroes *h, Player *p, float dt) {
     HeroesButton nav = HeroesDrawNav(h, HEROES_RUNES, !blocked, 0, p->gallery.badge);
     if (nav == HEROES_SQUAD) RunesRequestLeave(r, RUNES_LEAVE_SQUAD, 0);
     if (nav == HEROES_GALLERY) RunesRequestLeave(r, RUNES_LEAVE_GALLERY, 0);
+    if (nav == HEROES_CONSUME) RunesRequestLeave(r, RUNES_LEAVE_CONSUME, 0);
 
     if (input || r->press_uuid) RunesUpdateDrag(r, p, !blocked, now);
     RunesDrawDragged(r, p);

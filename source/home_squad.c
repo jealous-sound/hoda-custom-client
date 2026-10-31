@@ -29,16 +29,53 @@ typedef struct {
     bool active;
     bool anim_override;
     bool melee_playing;
+    bool projectile_playing;
     Model model;
     ModelAnimation idle;
     ModelAnimation melee;
+    ModelAnimation projectile;
     float frame_time;
     float melee_frame;
     int phase;
     int last_frame;
     Matrix xform;
     float fade;
+    const char *wisp_fx;
+    int wisp_bone;
+    int wisp_loop;
+    unsigned wisp_loop_serial;
 } HomeSquadUnit;
+
+#define HOME_WISP_QUEUE_CAPACITY 16
+#define HOME_WISP_FX_LIFT 0.93f
+#define HOME_WISP_ANCHOR_BONE "default_Chest"
+
+typedef struct {
+    HomeSquadUnit *unit;
+    Vector3 pos;
+} HomeWispRequest;
+
+static HomeWispRequest home_wisp_queue[HOME_WISP_QUEUE_CAPACITY];
+static int home_wisp_queue_count;
+
+static const char *UnitWispFxFor(const char *path) {
+    static const struct {
+        const char *rarity, *fx;
+    } tiers[] = {
+        {"_common_", "fx_wispchar_t1_pre"},
+        {"_uncommon_", "fx_wispchar_t2_pre"},
+        {"_rare_", "fx_wispchar_t3_pre"},
+        {"_epic_", "fx_wispchar_t4_pre"},
+        {"_legendary_", "fx_wispchar_t5_pre"},
+        {"_mythic_", "fx_wispchar_t5_pre"},
+    };
+    const char *base = strrchr(path, '/');
+    base = base ? base + 1 : path;
+    if (strncmp(base, "c_wisp", 6) != 0) return NULL;
+    for (int i = 0; i < (int)(sizeof(tiers) / sizeof(tiers[0])); i++)
+        if (strstr(base, tiers[i].rarity)) return tiers[i].fx;
+    return NULL;
+}
 
 static HomeSquadUnit unit_pool[UNIT_POOL_CAPACITY];
 static int unit_pool_count;
@@ -326,9 +363,16 @@ static int SquadMeleeClipRank(const char *name) {
     return -1;
 }
 
+static bool SquadProjectileClip(const char *name) {
+    char key[64];
+    SquadClipKey(key, name);
+    return strstr(key, "attack2") || strstr(key, "projectile") || strstr(key, "attackv2");
+}
+
 static void HomeSquadUnitFree(HomeSquadUnit *unit) {
     if (unit->idle.frameCount > 0) UnloadModelAnimation(unit->idle);
     if (unit->melee.frameCount > 0) UnloadModelAnimation(unit->melee);
+    if (unit->projectile.frameCount > 0) UnloadModelAnimation(unit->projectile);
     for (int m = 0; m < unit->model.materialCount; m++) {
         Texture2D tex = unit->model.materials[m].maps[MATERIAL_MAP_DIFFUSE].texture;
         if (tex.id > 0 && tex.id != rlGetTextureIdDefault()) UnloadTexture(tex);
@@ -371,6 +415,7 @@ static void HomeSquadUnitBindShader(HomeSquadUnit *unit, Shader unit_shader) {
 static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase_seed) {
     *unit = (HomeSquadUnit){0};
     StrCopy(unit->path, sizeof(unit->path), path);
+    unit->wisp_fx = UnitWispFxFor(path);
     unit->model = LoadModel(path);
     if (unit->model.meshCount <= 0) TraceLog(LOG_FATAL, "Squad: failed to load %s", path);
     for (int m = 0; m < unit->model.materialCount; m++) {
@@ -399,6 +444,11 @@ static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase
                 unit->idle = clips[a];
             else if (a == melee_clip)
                 unit->melee = clips[a];
+            else if (
+                !unit->projectile.frameCount && SquadProjectileClip(clips[a].name) &&
+                IsModelAnimationValid(unit->model, clips[a])
+            )
+                unit->projectile = clips[a];
             else
                 UnloadModelAnimation(clips[a]);
         }
@@ -406,6 +456,11 @@ static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase
     }
     if (unit->idle.frameCount == 0) TraceLog(LOG_FATAL, "Squad: no usable idle clip in %s", path);
     unit->phase = (phase_seed * 47) % unit->idle.frameCount;
+    unit->wisp_bone = -1;
+    unit->wisp_loop = -1;
+    if (unit->wisp_fx)
+        for (int bone = 0; bone < unit->model.boneCount; bone++)
+            if (!strcmp(unit->model.bones[bone].name, HOME_WISP_ANCHOR_BONE)) unit->wisp_bone = bone;
     unit->active = true;
 }
 
@@ -414,6 +469,7 @@ static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit
     HomeSquadUnitBindShader(unit, unit_shader);
     unit->anim_override = false;
     unit->melee_playing = false;
+    unit->projectile_playing = false;
     unit->last_frame = -1;
     unit->xform = xform;
     unit->fade = 1.0f;
@@ -422,8 +478,17 @@ static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit
 static bool HomeSquadUnitPlayMelee(HomeSquadUnit *unit) {
     if (!unit->active || unit->melee.frameCount <= 0) return false;
     unit->melee_playing = true;
+    unit->projectile_playing = false;
     unit->melee_frame = 0.0f;
     UpdateModelAnimation(unit->model, unit->melee, 0);
+    return true;
+}
+
+static bool HomeSquadUnitPlayProjectile(HomeSquadUnit *unit) {
+    if (!HomeSquadUnitPlayMelee(unit)) return false;
+    if (unit->projectile.frameCount <= 0) return true;
+    unit->projectile_playing = true;
+    UpdateModelAnimation(unit->model, unit->projectile, 0);
     return true;
 }
 
@@ -432,8 +497,9 @@ static void HomeSquadUnitUpdate(HomeSquadUnit *unit, float dt) {
     if (unit->melee_playing) {
         unit->melee_frame += dt * HOME_CLIP_FPS;
         int frame = (int)unit->melee_frame;
-        if (frame < unit->melee.frameCount) {
-            UpdateModelAnimation(unit->model, unit->melee, frame);
+        ModelAnimation clip = unit->projectile_playing ? unit->projectile : unit->melee;
+        if (frame < clip.frameCount) {
+            UpdateModelAnimation(unit->model, clip, frame);
             return;
         }
         unit->melee_playing = false;
@@ -447,7 +513,20 @@ static void HomeSquadUnitUpdate(HomeSquadUnit *unit, float dt) {
     UpdateModelAnimation(unit->model, unit->idle, frame);
 }
 
+static Vector3 HomeSquadWispPosition(const HomeSquadUnit *unit) {
+    Matrix m = unit->xform;
+    if (unit->wisp_bone < 0 || unit->idle.frameCount <= 0) return (Vector3){m.m12, m.m13 + HOME_WISP_FX_LIFT, m.m14};
+    int frame = unit->last_frame >= 0 ? unit->last_frame % unit->idle.frameCount : 0;
+    return Vector3Transform(unit->idle.framePoses[frame][unit->wisp_bone].translation, m);
+}
+
 static void HomeSquadUnitDraw(HomeSquadUnit *unit) {
+    if (unit->active && unit->wisp_fx) {
+        if (home_wisp_queue_count < HOME_WISP_QUEUE_CAPACITY) {
+            home_wisp_queue[home_wisp_queue_count++] = (HomeWispRequest){unit, HomeSquadWispPosition(unit)};
+        }
+        return;
+    }
     if (!unit->active) return;
     unsigned char a = (unsigned char)(255.0f * fminf(fmaxf(unit->fade, 0.0f), 1.0f));
     for (int m = 0; m < unit->model.materialCount; m++)

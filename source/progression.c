@@ -1,6 +1,7 @@
 #include <limits.h>
 
-#define PROGRESSION_SAVE_VERSION 6
+#define PROGRESSION_SAVE_VERSION 7
+#define PROGRESSION_FIRST_FULL_ROSTER_VERSION 7
 #define PROGRESSION_LOCAL_MAX_LEVEL 100
 #define PROGRESSION_START_ENERGY_MAX 12
 #define PROGRESSION_START_STAMINA_MAX 8
@@ -674,27 +675,18 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
         if (!ProgressionJsonAddArrayNumber(opened, player->store_opened_by_pack[pack])) goto save_json_failed;
     PROGRESSION_SAVE_NUMBER(store, "champion_since_legendary", player->champion_since_legendary);
 
-    int starter_count = managed_roster ? player->starter_roster_count : 0;
     int roster_count = managed_roster ? player->roster_count : 0;
     uint64_t next_instance_id = managed_roster ? player->next_instance_id : 1;
-    PROGRESSION_SAVE_NUMBER(roster, "starter_count", starter_count);
+    PROGRESSION_SAVE_NUMBER(roster, "starter_count", 0);
     PROGRESSION_SAVE_NUMBER(roster, "next_instance_id", (double)next_instance_id);
-    for (int i = 0; i < starter_count; i++) {
-        cJSON *entry = cJSON_CreateObject();
-        if (!entry || !cJSON_AddStringToObject(entry, "id", player->roster[i].id) ||
-            !cJSON_AddNumberToObject(entry, "instance_id", (double)player->roster[i].instance_id)) {
-            cJSON_Delete(entry);
-            goto save_json_failed;
-        }
-        if (!ProgressionJsonAddArrayItem(starters, entry)) goto save_json_failed;
-    }
-    for (int i = starter_count; i < roster_count; i++) {
+    for (int i = 0; i < roster_count; i++) {
         const Character *ch = &player->roster[i];
         cJSON *entry = cJSON_CreateObject();
         if (!entry || !cJSON_AddStringToObject(entry, "id", ch->id) ||
             !cJSON_AddNumberToObject(entry, "instance_id", (double)ch->instance_id) ||
             !cJSON_AddStringToObject(entry, "tier", TIER_NAMES[ch->tier]) ||
-            !cJSON_AddNumberToObject(entry, "level", ch->level)) {
+            !cJSON_AddNumberToObject(entry, "level", ch->level) || !cJSON_AddNumberToObject(entry, "xp", ch->xp) ||
+            !cJSON_AddNumberToObject(entry, "consume_xp", ch->consume_xp)) {
             cJSON_Delete(entry);
             goto save_json_failed;
         }
@@ -1076,7 +1068,8 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
         bool target_managed = player->roster && player->roster_abilities && player->roster_capacity > 0;
         commit_roster = target_managed;
         if (valid && target_managed) {
-            valid = ProgressionRosterStateValid(player) && saved_starter_count == player->starter_roster_count &&
+            int expected_starters = version >= PROGRESSION_FIRST_FULL_ROSTER_VERSION ? 0 : player->starter_roster_count;
+            valid = ProgressionRosterStateValid(player) && saved_starter_count == expected_starters &&
                     cJSON_GetArraySize(starters) == saved_starter_count && addition_count >= 0 &&
                     addition_count <= player->roster_capacity - saved_starter_count;
         } else if (valid) {
@@ -1121,11 +1114,14 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
             valid = def && PlayerRosterParseDefinition(def, ch, ability);
             const char *tier_name = JsonStr(entry, "tier");
             Tier tier = TierFromString(tier_name);
-            int level_value = 0;
+            int level_value = 0, xp_value = 0, consume_xp_value = 0;
             uint64_t instance_id = 0;
             valid = valid && tier_name[0] && strcmp(tier_name, TIER_NAMES[tier]) == 0 && ch->has_tier[tier] &&
                     ProgressionJsonInt(entry, "level", 1, ch->stats[tier].max_level, &level_value) &&
                     ProgressionJsonU64(entry, "instance_id", 1, PROGRESSION_JSON_MAX_SAFE_INTEGER, &instance_id);
+            if (valid && version >= PROGRESSION_FIRST_FULL_ROSTER_VERSION)
+                valid = ProgressionJsonInt(entry, "xp", 0, INT_MAX, &xp_value) &&
+                        ProgressionJsonInt(entry, "consume_xp", 0, INT_MAX, &consume_xp_value);
             for (int starter = 0; starter < saved_starter_count && valid; starter++)
                 valid = player->roster[starter].instance_id != instance_id;
             for (int previous = 0; previous < n && valid; previous++)
@@ -1133,6 +1129,8 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
             if (valid) {
                 ch->tier = tier;
                 ch->level = level_value;
+                ch->xp = xp_value;
+                ch->consume_xp = consume_xp_value;
                 ch->instance_id = instance_id;
                 ch->ability = ability;
                 if (instance_id > max_instance_id) max_instance_id = instance_id;
@@ -1295,6 +1293,8 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
                 player->roster[i].ability = &player->roster_abilities[i];
             }
             player->roster_count = new_count;
+            player->starter_roster_count = saved_starter_count;
+            for (int i = 0; i < new_count; i++) ConsumeNormalizeCharacter(&player->roster[i]);
             player->next_instance_id = loaded_next_instance_id;
             memcpy(player->squads, loaded_squads, sizeof(loaded_squads));
             player->current_squad = loaded_current_squad;

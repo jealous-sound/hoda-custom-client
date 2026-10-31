@@ -30,6 +30,7 @@ typedef enum {
     GALLERY_SCREEN_ACTION_NONE,
     GALLERY_SCREEN_ACTION_SQUAD,
     GALLERY_SCREEN_ACTION_RUNES,
+    GALLERY_SCREEN_ACTION_CONSUME,
     GALLERY_SCREEN_ACTION_POPUP
 } GalleryScreenAction;
 
@@ -743,6 +744,7 @@ GalleryScreenAction GalleryScreenDraw(Gallery *g, Heroes *h, Player *p, HomeBack
 
     if (nav == HEROES_SQUAD) return GALLERY_SCREEN_ACTION_SQUAD;
     if (nav == HEROES_RUNES) return GALLERY_SCREEN_ACTION_RUNES;
+    if (nav == HEROES_CONSUME) return GALLERY_SCREEN_ACTION_CONSUME;
     if (nav == HEROES_GALLERY) return GALLERY_SCREEN_ACTION_POPUP;
     return GALLERY_SCREEN_ACTION_NONE;
 }

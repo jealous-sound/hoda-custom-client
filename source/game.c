@@ -3,12 +3,21 @@ typedef enum {
     SCREEN_STORE,
     SCREEN_HEROES,
     SCREEN_RUNES,
+    SCREEN_CONSUME,
     SCREEN_GALLERY,
     SCREEN_QUESTS,
     SCREEN_MAP,
     SCREEN_NEXUS,
     SCREEN_BATTLE
 } Screen;
+
+#define GAME_WISP_LOOP_CAPACITY 64
+
+typedef struct {
+    int index;
+    unsigned serial;
+    unsigned frame;
+} GameWispLoop;
 
 typedef struct {
     Screen screen;
@@ -24,6 +33,12 @@ typedef struct {
     Heroes heroes;
     RunesScreen runes;
     Screen runes_return_screen;
+    ConsumeScreen consume;
+    Character consume_shown_target;
+    ConsumeAttackClip consume_attack_pending;
+    GameWispLoop wisp_loops[GAME_WISP_LOOP_CAPACITY];
+    int wisp_loop_count;
+    unsigned wisp_frame;
     Gallery gallery;
     Store store;
     Screen store_return_screen;
@@ -248,6 +263,7 @@ void GameInitialize(Game *g) {
     MusicPlayerInitialize(&g->music);
     HeroesInitialize(&g->heroes, &g->player);
     RunesInitialize(&g->runes);
+    ConsumeInitialize(&g->consume);
     GalleryInitialize(&g->gallery, HOD_CACHE "characters.json");
     RuneGrantStarterSet(&g->player.runes, RuneNow());
     StoreInitialize(&g->store, "data/store_packs.json", HOD_CACHE "characters.json");
@@ -294,6 +310,7 @@ bool GameHandlePopupBack(Game *g) {
         return true;
     }
     if (g->screen == SCREEN_RUNES) return RunesHandleBack(&g->runes);
+    if (g->screen == SCREEN_CONSUME) return ConsumeHandleBack(&g->consume);
     if (g->screen == SCREEN_QUESTS && QuestsHandleBack(&g->quests)) return true;
     if (g->screen == SCREEN_MAP && CampaignHandleBack(&g->map)) return true;
     if (g->screen == SCREEN_STORE) {
@@ -330,6 +347,100 @@ static void GameReturnFromRunes(Game *g) {
         GameEnterSelectedBattle(g);
 }
 
+static void GameEmitWispFx(Game *g) {
+    for (int i = 0; i < home_wisp_queue_count; i++) {
+        HomeWispRequest *request = &home_wisp_queue[i];
+        HomeSquadUnit *unit = request->unit;
+        if (!BattleFxLoopMove(&g->battle, unit->wisp_loop, unit->wisp_loop_serial, request->pos))
+            unit->wisp_loop = BattleFxLoopStart(&g->battle, unit->wisp_fx, request->pos, &unit->wisp_loop_serial);
+        if (unit->wisp_loop < 0) continue;
+        g->wisp_loops[g->wisp_loop_count % GAME_WISP_LOOP_CAPACITY] =
+            (GameWispLoop){unit->wisp_loop, unit->wisp_loop_serial, g->wisp_frame};
+        g->wisp_loop_count = (g->wisp_loop_count + 1) % GAME_WISP_LOOP_CAPACITY;
+    }
+    home_wisp_queue_count = 0;
+}
+
+static void GameStopUnseenWispLoops(Game *g) {
+    home_wisp_queue_count = 0;
+    for (int i = 0; i < GAME_WISP_LOOP_CAPACITY; i++) {
+        GameWispLoop *loop = &g->wisp_loops[i];
+        if (loop->serial == 0) continue;
+        bool drawn_later = false;
+        for (int other = 0; other < GAME_WISP_LOOP_CAPACITY; other++)
+            drawn_later |= g->wisp_loops[other].serial == loop->serial && g->wisp_loops[other].frame == g->wisp_frame;
+        if (drawn_later) continue;
+        BattleFxLoopStop(&g->battle, loop->index, loop->serial);
+        *loop = (GameWispLoop){0};
+    }
+    g->wisp_frame++;
+}
+
+static void GameDrawSceneFx(Game *g, Camera3D camera, float dt) {
+    GameEmitWispFx(g);
+    BattleFxPlayOnCamera(&g->battle, camera, dt);
+}
+
+static void GameOpenConsume(Game *g) {
+    ConsumeOpen(&g->consume, &g->player);
+    g->consume_attack_pending = CONSUME_ATTACK_NONE;
+    const Character *empty[CONSUME_MAX_SEEDS + 1] = {0};
+    HeroesBackgroundShowConsumeBoard(&g->heroes_scene, empty);
+    ConsumeEnvSnapCamera(&g->heroes_scene.consume_env, CONSUME_CAM_BOARD);
+    ConsumeEnvUpdate(&g->heroes_scene.consume_env, 0.0f);
+    g->screen = SCREEN_CONSUME;
+}
+
+static void GameHandleConsumeLeave(Game *g, ConsumeLeave leave) {
+    switch (leave) {
+        case CONSUME_LEAVE_SQUAD:
+            g->screen = SCREEN_HEROES;
+            break;
+        case CONSUME_LEAVE_HOME:
+            g->screen = SCREEN_HOME;
+            break;
+        case CONSUME_LEAVE_QUESTS:
+            g->screen = SCREEN_QUESTS;
+            break;
+        case CONSUME_LEAVE_RUNES:
+            GameOpenRunes(g, SCREEN_HEROES);
+            break;
+        case CONSUME_LEAVE_STORE:
+            g->screen = SCREEN_HEROES;
+            g->store_return_screen = SCREEN_HEROES;
+            StoreOpen(&g->store);
+            g->screen = SCREEN_STORE;
+            break;
+        case CONSUME_LEAVE_GALLERY:
+            g->screen = SCREEN_HEROES;
+            GalleryOpenPopup(&g->gallery, &g->player);
+            break;
+        default:
+            break;
+    }
+}
+
+static void GameUpdateConsumeBoard(Game *g) {
+    const Character *units[CONSUME_MAX_SEEDS + 1];
+    if (ConsumeTakeBoardUpdate(&g->consume, &g->player, units, &g->consume_shown_target))
+        HeroesBackgroundShowConsumeBoard(&g->heroes_scene, units);
+    int placed_spot = ConsumeTakePlacedSpot(&g->consume);
+    if (placed_spot >= 0) HeroesBackgroundPlayMelee(&g->heroes_scene, placed_spot);
+    ConsumeEnvSetCamera(&g->heroes_scene.consume_env, ConsumeWantedCamera(&g->consume, &g->player));
+    Vector3 target_root = HeroesBackgroundConsumeTargetRoot(&g->heroes_scene);
+    const char *fx = ConsumeTakeFxRequest(&g->consume);
+    if (fx) BattleFxBurst(&g->battle, fx, target_root);
+    ConsumeAttackClip attack = ConsumeTakeAttackRequest(&g->consume);
+    if (attack == CONSUME_ATTACK_LEVEL) BattleFxBurst(&g->battle, CONSUME_LEVEL_BEAM_FX, target_root);
+    if (attack > g->consume_attack_pending) g->consume_attack_pending = attack;
+    if (g->consume_attack_pending == CONSUME_ATTACK_NONE || HeroesBackgroundAttackPlaying(&g->heroes_scene, 0)) return;
+    if (g->consume_attack_pending == CONSUME_ATTACK_TIER)
+        HeroesBackgroundPlayMelee(&g->heroes_scene, 0);
+    else
+        HeroesBackgroundPlayProjectile(&g->heroes_scene, 0);
+    g->consume_attack_pending = CONSUME_ATTACK_NONE;
+}
+
 static void GameLeaveRunesTo(Game *g, Screen destination) {
     if (g->runes_return_screen == SCREEN_BATTLE) GameExitBattleTo(g, destination);
     g->screen = destination;
@@ -356,6 +467,10 @@ static void GameHandleRunesLeave(Game *g, RunesLeave leave) {
         case RUNES_LEAVE_GALLERY:
             GameLeaveRunesTo(g, SCREEN_HEROES);
             GalleryOpenPopup(&g->gallery, &g->player);
+            break;
+        case RUNES_LEAVE_CONSUME:
+            GameLeaveRunesTo(g, SCREEN_HEROES);
+            GameOpenConsume(g);
             break;
         case RUNES_LEAVE_SELECT_SQUAD:
             PlayerSquadSelect(&g->player, g->runes.leave_squad);
@@ -452,6 +567,7 @@ void GameDraw(Game *g) {
         case SCREEN_HOME: {
             HomeBackgroundUpdate(&g->scene, dt);
             HomeBackgroundDraw(&g->scene);
+            GameDrawSceneFx(g, g->scene.cam, dt);
 
             UiFrameBegin();
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, true));
@@ -475,8 +591,10 @@ void GameDraw(Game *g) {
             if (StoreUsesHomeBackground(&g->store)) {
                 HomeBackgroundUpdate(&g->scene, resource_modal ? 0.0f : dt);
                 HomeBackgroundDraw(&g->scene);
+                GameDrawSceneFx(g, g->scene.cam, dt);
             } else {
                 StoreDrawWorld(&g->store, &g->heroes);
+                GameDrawSceneFx(g, g->store.opening_camera, dt);
             }
 
             UiFrameBegin();
@@ -498,12 +616,15 @@ void GameDraw(Game *g) {
                 GameStartPendingCampaignAnimation(g);
             } else if (store_action == STORE_ACTION_GOTO_SQUAD) {
                 g->screen = SCREEN_HEROES;
+            } else if (store_action == STORE_ACTION_GOTO_CONSUME) {
+                GameOpenConsume(g);
             }
             break;
         }
         case SCREEN_HEROES: {
             HeroesBackgroundUpdate(&g->heroes_scene, dt);
             HeroesBackgroundDraw(&g->heroes_scene);
+            GameDrawSceneFx(g, g->heroes_scene.cam, dt);
 
             UiFrameBegin();
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
@@ -525,6 +646,8 @@ void GameDraw(Game *g) {
                 GameOpenRunes(g, SCREEN_HEROES);
             } else if (heroes_action == HEROES_GALLERY) {
                 GalleryOpenPopup(&g->gallery, &g->player);
+            } else if (heroes_action == HEROES_CONSUME) {
+                GameOpenConsume(g);
             } else if (heroes_action != HEROES_NONE && heroes_action != HEROES_SQUAD) {
                 TraceLog(LOG_INFO, "Heroes action %d has no local target screen yet", heroes_action);
             }
@@ -563,7 +686,7 @@ void GameDraw(Game *g) {
             HeroesBackgroundUpdate(&g->heroes_scene, dt);
             HeroesBackgroundDraw(&g->heroes_scene);
             while (RunesTakeActivationFx(&g->runes)) GamePlayRuneActivationFx(g);
-            BattleFxPlayOnCamera(&g->battle, g->heroes_scene.cam, dt);
+            GameDrawSceneFx(g, g->heroes_scene.cam, dt);
 
             UiFrameBegin();
             HudAction hud_action = resource_modal ? HUD_NONE : HudDraw(&g->hud, &g->player, true, false);
@@ -577,11 +700,30 @@ void GameDraw(Game *g) {
             GameHandleHudAction(g, hud_action);
             break;
         }
+        case SCREEN_CONSUME: {
+            GameUpdateConsumeBoard(g);
+            HeroesBackgroundUpdate(&g->heroes_scene, dt);
+            HeroesBackgroundDraw(&g->heroes_scene);
+            GameDrawSceneFx(g, HeroesBackgroundConsumeCamera(&g->heroes_scene), dt);
+
+            UiFrameBegin();
+            HudAction hud_action = resource_modal ? HUD_NONE : HudDraw(&g->hud, &g->player, true, false);
+            if (hud_action == HUD_HOME) {
+                ConsumeRequestLeave(&g->consume, CONSUME_LEAVE_HOME);
+                hud_action = HUD_NONE;
+            }
+            ConsumeLeave leave = ConsumeDraw(&g->consume, &g->heroes_scene, &g->heroes, &g->player, dt);
+            UiFrameEnd();
+            GameHandleConsumeLeave(g, leave);
+            GameHandleHudAction(g, hud_action);
+            break;
+        }
         case SCREEN_GALLERY: {
             HomeBackgroundUpdate(&g->scene, dt);
             HomeBackgroundSetGalleryView(&g->scene, true);
             HomeBackgroundDraw(&g->scene);
             HomeBackgroundSetGalleryView(&g->scene, false);
+            GameDrawSceneFx(g, g->scene.cam, dt);
 
             UiFrameBegin();
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
@@ -596,6 +738,8 @@ void GameDraw(Game *g) {
                     g->screen = SCREEN_HEROES;
                 } else if (gallery_action == GALLERY_SCREEN_ACTION_RUNES) {
                     GameOpenRunes(g, SCREEN_HEROES);
+                } else if (gallery_action == GALLERY_SCREEN_ACTION_CONSUME) {
+                    GameOpenConsume(g);
                 } else if (gallery_action == GALLERY_SCREEN_ACTION_POPUP) {
                     GalleryOpenPopup(&g->gallery, &g->player);
                 }
@@ -605,6 +749,7 @@ void GameDraw(Game *g) {
         case SCREEN_QUESTS: {
             HomeBackgroundUpdate(&g->scene, dt);
             HomeBackgroundDraw(&g->scene);
+            GameDrawSceneFx(g, g->scene.cam, dt);
 
             UiFrameBegin();
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
@@ -697,6 +842,7 @@ void GameDraw(Game *g) {
             }
             BattleUpdate(&g->battle, showing_results ? dt : dt * BattlePlayTimeScale(&g->battle_play));
             BattleDraw(&g->battle);
+            GameEmitWispFx(g);
 
             UiFrameBegin();
             bool combat = BattlePlayActive(&g->battle_play);
@@ -791,6 +937,10 @@ void GameDraw(Game *g) {
     GameHandleHudAction(g, popup_hud_action);
     if (screen_at_frame_start == SCREEN_HEROES && g->screen != SCREEN_HEROES && g->screen != SCREEN_RUNES)
         HeroesBackgroundClearRowBonus(&g->heroes_scene);
+    if (screen_at_frame_start == SCREEN_CONSUME && g->screen != SCREEN_CONSUME) {
+        HeroesBackgroundReloadSquad(&g->heroes_scene, &g->player);
+        HomeBackgroundMarkSquadStale(&g->scene);
+    }
     if (screen_at_frame_start == SCREEN_QUESTS && g->screen != SCREEN_QUESTS) QuestsClose(&g->quests);
     if (g->screen != SCREEN_HEROES && g->screen != SCREEN_GALLERY && GalleryPopupOpen(&g->gallery))
         GalleryClosePopup(&g->gallery);
@@ -801,9 +951,11 @@ void GameDraw(Game *g) {
         NexusAwardEscrow(&g->player);
         ProgressionSave(&g->player);
     }
+    GameStopUnseenWispLoops(g);
 }
 
 void GameDestroy(Game *g) {
+    ConsumeCatalogUnload();
     StoreDestroy(&g->store);
     GalleryDestroy(&g->gallery);
     RuneIconsUnload();

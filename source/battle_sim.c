@@ -753,7 +753,7 @@ static void SimUnitsInit(SimUnit *units, int side, int slot, const Character *ch
     u->slot = slot;
     u->power = u->start_power = CharacterStatPower(ch);
     u->max_health = CharacterStatHealth(ch);
-    u->crit_pct = 1.0f;
+    u->crit_pct = (float)(ch->crit_chance > CONSUME_BASE_CRIT_CHANCE ? ch->crit_chance : CONSUME_BASE_CRIT_CHANCE);
     u->init_class = ch->speed == SPEED_QUICK  ? SIM_INIT_CLASS_FAST
                     : ch->speed == SPEED_SLOW ? SIM_INIT_CLASS_SLOW
                                               : SIM_INIT_CLASS_MEDIUM;

@@ -60,6 +60,7 @@ typedef enum {
     STORE_ACTION_PURCHASED,
     STORE_ACTION_GOTO_MAP,
     STORE_ACTION_GOTO_SQUAD,
+    STORE_ACTION_GOTO_CONSUME,
 } StoreAction;
 
 typedef enum {
@@ -158,6 +159,8 @@ typedef struct {
     Button buy_again;
     Button dialog_ok;
     Button nav_train, nav_runes, nav_squad;
+    bool nav_consume_clicked;
+    Camera3D opening_camera;
 
     StoreView view;
     int selected_pack;
@@ -568,6 +571,7 @@ void StoreDrawWorld(Store *store, Heroes *heroes) {
     Camera3D camera = PackSceneCamera(camera_mix, reveal.tall);
     float fx_time = final ? STORE_OPEN_COMPLETE + store->result_time : store->phase_time;
     PackFxDraw(&store->opening_fx, camera, fx_time, final, reveal.rarity);
+    store->opening_camera = camera;
     PackHeroDraw(&store->opening_hero, camera);
 }
 
@@ -1423,7 +1427,8 @@ static StoreAction StoreDrawOpening(Store *store, Heroes *heroes) {
 
 static bool StoreDrawResultNavigation(Store *store, bool last) {
     if (!last) return false;
-    ButtonDrawEx(&store->nav_train, (Rectangle){4.0f, 662.0f, 106.0f, 49.5f}, false);
+    store->nav_consume_clicked =
+        ButtonDrawEx(&store->nav_train, (Rectangle){4.0f, 662.0f, 106.0f, 49.5f}, !StoreInputBlocked(store));
     ButtonDrawEx(&store->nav_runes, (Rectangle){120.0f, 662.0f, 106.0f, 49.5f}, false);
     return ButtonDrawEx(&store->nav_squad, (Rectangle){236.0f, 662.0f, 106.0f, 49.5f}, !StoreInputBlocked(store));
 }
@@ -1461,6 +1466,10 @@ static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes)
         PackHeroClear(&store->opening_hero);
         return STORE_ACTION_GOTO_SQUAD;
     }
+    if (store->nav_consume_clicked) {
+        PackHeroClear(&store->opening_hero);
+        return STORE_ACTION_GOTO_CONSUME;
+    }
     if (again && StoreTryPurchase(store, player, heroes, store->selected_pack)) return STORE_ACTION_PURCHASED;
     StoreDrawToast(store);
     return STORE_ACTION_NONE;
@@ -1471,7 +1480,7 @@ static void StoreDrawDialog(Store *store) {
     const char *header =
         LocGet(store->dialog == STORE_DIALOG_CANT_AFFORD ? "MESSAGE_CANT_AFFORD_HEADER" : "MESSAGE_TOO_MANY_HEADER");
     const char *body = LocGet(
-        store->dialog == STORE_DIALOG_CANT_AFFORD ? "MESSAGE_CANT_AFFORD_BODY" : "MESSAGE_TOO_MANY_BODY_NO_CONSUME"
+        store->dialog == STORE_DIALOG_CANT_AFFORD ? "MESSAGE_CANT_AFFORD_BODY" : "MESSAGE_TOO_MANY_BODY_NEW_CONSUME"
     );
 
     DrawRectangle(0, 0, (int)UiWidth(), (int)UiHeight(), (Color){0, 0, 0, 150});

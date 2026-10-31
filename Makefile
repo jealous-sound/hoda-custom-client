@@ -25,6 +25,8 @@ test: $(TEST_TARGET)
 	python3 tools/validate_cache_refs.py
 	python3 tools/build_campaign_node_layout.py --check
 	python3 tools/build_runes.py --check
+	python3 tools/build_consume_tables.py --check
+	python3 tools/build_consume_scene.py --check
 	./$(TEST_TARGET)
 
 run: $(TARGET)
