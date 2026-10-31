@@ -235,6 +235,23 @@ static void QuestsEnsureHubImages(Quests *q, const Nexus *nexus) {
     }
 }
 
+static Texture2D QuestsLoadAlphaMaskSprite(const char *name) {
+    Image image = ResourceLoadImage(TextFormat("%s%s", CACHE_RESOURCE_PREFIX, name));
+    if (!image.data) return (Texture2D){0};
+    ImageFormat(&image, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+    unsigned char *pixels = image.data;
+    for (int i = 0; i < image.width * image.height; i++) {
+        pixels[i * 4 + 0] = 255;
+        pixels[i * 4 + 1] = 255;
+        pixels[i * 4 + 2] = 255;
+    }
+    Texture2D texture = LoadTextureFromImage(image);
+    UnloadImage(image);
+    SetTextureFilter(texture, TEXTURE_FILTER_BILINEAR);
+    SetTextureWrap(texture, TEXTURE_WRAP_CLAMP);
+    return texture;
+}
+
 static void QuestsEnsureCurrentMaps(Quests *q, const Campaign *campaign) {
     if (q->current_maps_loaded) return;
     q->current_maps_loaded = true;
@@ -242,7 +259,8 @@ static void QuestsEnsureCurrentMaps(Quests *q, const Campaign *campaign) {
     for (int i = 0; i < campaign->map_count && i < CAMPAIGN_MAX_MAPS; i++) {
         const char *id = campaign->maps[i].id;
         if (strncmp(id, QUESTS_CAMPAIGN_ID_PREFIX, prefix) != 0) continue;
-        q->current_maps[i] = QuestsLoadCacheSprite(TextFormat("%s%s", QUESTS_CURRENT_MAP_TEXTURE_PREFIX, id + prefix));
+        q->current_maps[i] =
+            QuestsLoadAlphaMaskSprite(TextFormat("%s%s", QUESTS_CURRENT_MAP_TEXTURE_PREFIX, id + prefix));
     }
 }
 
