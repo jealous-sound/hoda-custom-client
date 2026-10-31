@@ -88,12 +88,13 @@ enum {
 
 #define BP_MAX_MESSAGES 24
 #define BP_MAX_PROJECTILES 8
-#define BP_MAX_INTRO_EVENTS 1
+#define BP_MAX_INTRO_EVENTS (RUNE_SLOT_COUNT + 1)
 
 typedef struct {
     float value;
     unsigned affected_slots;
     unsigned faction;
+    int rune_def;
 } BpIntroEvent;
 
 typedef enum {
@@ -549,14 +550,7 @@ static void BpApplyAction(BattlePlay *bp, Battle *b, const BattleSimAction *a) {
         char amount[16];
         snprintf(amount, sizeof(amount), "+ %d ", BP_CRIT_GOLD_REWARD);
         BpMessage *reward = BpQueueMessage(
-            bp,
-            BP_MSG_CRIT_REWARD,
-            0,
-            GUI_MSG_CRIT_REWARD,
-            LocGet("BATTLE_CRITICAL_AWARD_MESSAGE"),
-            amount,
-            white,
-            1.0f
+            bp, BP_MSG_CRIT_REWARD, 0, GUI_MSG_CRIT_REWARD, LocGet("BATTLE_CRITICAL_AWARD_MESSAGE"), amount, white, 1.0f
         );
         if (reward) {
             reward->bonus_color = (Color){34, 204, 43, 255};
@@ -571,6 +565,7 @@ static void BpQueueIntroEvent(BattlePlay *bp, float value, unsigned affected_slo
         .value = value,
         .affected_slots = affected_slots,
         .faction = faction,
+        .rune_def = -1,
     };
 }
 
@@ -586,6 +581,9 @@ static unsigned BpFormationSlots(const BattleSim *sim, int side) {
 static void BpBuildIntroEvents(BattlePlay *bp) {
     bp->intro_event_count = 0;
     bp->intro_event = -1;
+
+    for (int i = 0; i < bp->sim.rune_def_count; i++)
+        bp->intro_events[bp->intro_event_count++] = (BpIntroEvent){.rune_def = bp->sim.rune_defs[i]};
 
     if (bp->sim.formation_bonus_pct[0] > 0.0f)
         BpQueueIntroEvent(
@@ -694,6 +692,10 @@ static const char *BpFactionFx(unsigned faction) {
 }
 
 static void BpPlayIntroEvent(BattlePlay *bp, Battle *b, const BpIntroEvent *event) {
+    if (event->rune_def >= 0) {
+        BattleAudioPlayGlobal(b, "gui_bonus_rune");
+        return;
+    }
     BattleAudioPlayGlobal(b, "gui_bonus_faction");
     const char *fx = BpFactionFx(event->faction);
     for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
@@ -1001,8 +1003,7 @@ void BattlePlayUpdate(BattlePlay *bp, Battle *b, float raw_dt) {
                     Vector3 vel = Vector3Scale(Vector3Normalize(d), p->speed);
                     p->pos = Vector3Add(p->pos, Vector3Scale(vel, dt));
                     p->age += dt;
-                    if (p->trail[0])
-                        BattleFxTrail(b, p->trail, p->pos, vel, p->age, dt, p->accum, p->trail_burst_done);
+                    if (p->trail[0]) BattleFxTrail(b, p->trail, p->pos, vel, p->age, dt, p->accum, p->trail_burst_done);
                     all_done = false;
                 }
             }

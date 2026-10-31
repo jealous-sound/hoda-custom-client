@@ -1,6 +1,7 @@
 
 #define HEROES_CARD_COLS 2
 #define HEROES_DRAG_THRESHOLD 51.0f
+#define HEROES_BADGE_MAX 99
 
 typedef enum {
     HEROES_NONE,
@@ -584,6 +585,110 @@ static void HeroesDrawCard(const HeroCard *card, Rectangle cell) {
     }
 }
 
+static void HeroesDrawNavBadge(Rectangle button, int count) {
+    if (count <= 0) return;
+    char text[8];
+    snprintf(text, sizeof(text), "%d", count > HEROES_BADGE_MAX ? HEROES_BADGE_MAX : count);
+    Vector2 center = {button.x + button.width * 0.8f, button.y + button.height * 0.2f};
+    DrawCircleV(center, 14.0f, (Color){190, 30, 30, 255});
+    UiDrawTextCentered(
+        GuiFont(FNT_MENU), text, (Rectangle){center.x - 14.0f, center.y - 14.0f, 28.0f, 28.0f}, 18.0f, WHITE
+    );
+}
+
+HeroesButton HeroesDrawNav(Heroes *h, HeroesButton active, bool interactive, int runes_badge) {
+    HeroesButton clicked = HEROES_NONE;
+    float w = 112.0f;
+    float x = UiWidth() - w;
+    float y = 84.0f;
+    float gap = 4.0f;
+
+    ButtonDrawEx(&h->train, (Rectangle){x, y, w, w}, false);
+    y += w + gap;
+    ButtonDrawEx(&h->fortify, (Rectangle){x, y, w, w}, false);
+    y += w + gap;
+    Rectangle runes = {x, y, w, w};
+    if (active == HEROES_RUNES)
+        ButtonDrawSelected(&h->runes, runes);
+    else if (ButtonDrawEx(&h->runes, runes, interactive))
+        clicked = HEROES_RUNES;
+    HeroesDrawNavBadge(runes, runes_badge);
+    y += w + gap;
+    ButtonDrawEx(&h->gallery, (Rectangle){x, y, w, w}, false);
+    y += w + gap;
+    Rectangle squad = {x, y, w, w};
+    if (active == HEROES_SQUAD)
+        ButtonDrawSelected(&h->squad, squad);
+    else if (ButtonDrawEx(&h->squad, squad, interactive))
+        clicked = HEROES_SQUAD;
+    return clicked;
+}
+
+int HeroesDrawSquadTabs(Heroes *h, const Player *p) {
+    int requested = -1;
+    Font font = GuiFont(FNT_MENU);
+    float size = 64.0f, stride = size - 3.0f;
+    Rectangle view = {8.0f, 612.0f, 216.0f, size};
+    float content = size + (PLAYER_MAX_SQUADS - 1) * stride;
+    float max_scroll = content > view.width ? content - view.width : 0.0f;
+
+    Vector2 mouse = UiMouse();
+    bool over = CheckCollisionPointRec(mouse, view);
+    bool ui_input = !UiInputBlocked();
+    if (ui_input && over && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        h->tab_dragging = true;
+        h->tab_dragged = false;
+        h->tab_drag_start = mouse.x;
+        h->tab_scroll_start = h->tab_scroll;
+    }
+    if (h->tab_dragging) {
+        float dx = mouse.x - h->tab_drag_start;
+        if (fabsf(dx) > 10.0f) h->tab_dragged = true;
+        if (h->tab_dragged) h->tab_scroll = h->tab_scroll_start - dx;
+    }
+    if (ui_input && over) h->tab_scroll -= GetMouseWheelMove() * stride;
+    if (h->tab_snap) {
+        float ax = p->current_squad * stride;
+        if (ax < h->tab_scroll) h->tab_scroll = ax;
+        if (ax + size > h->tab_scroll + view.width) h->tab_scroll = ax + size - view.width;
+        h->tab_snap = false;
+    }
+    if (h->tab_scroll > max_scroll) h->tab_scroll = max_scroll;
+    if (h->tab_scroll < 0.0f) h->tab_scroll = 0.0f;
+
+    bool released = ui_input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+    float ui = UiScale();
+    BeginScissorMode((int)(view.x * ui), (int)(view.y * ui), (int)(view.width * ui), (int)(view.height * ui));
+    for (int q = 0; q < PLAYER_MAX_SQUADS; q++) {
+        Rectangle r = {view.x + q * stride - h->tab_scroll, view.y, size, size};
+        bool active = p->current_squad == q;
+
+        Texture2D slab = GuiTex(
+            q == 0 ? (active ? GUI_TAB_DEFENSE_ON : GUI_TAB_DEFENSE) : (active ? GUI_TAB_SQUAD_ON : GUI_TAB_SQUAD)
+        );
+        UiDrawTexture(slab, r, WHITE);
+        if (q == 1) {
+            Texture2D cup = GuiTex(active ? GUI_TAB_TROPHY_ON : GUI_TAB_TROPHY);
+            float cw = size * 0.72f;
+            Rectangle cr = {r.x + (size - cw) * 0.5f, r.y + (size - cw) * 0.5f, cw, cw};
+            UiDrawTexture(cup, cr, WHITE);
+        }
+
+        char num[4];
+        snprintf(num, sizeof(num), "%d", q + 1);
+        float fs = size * 0.55f;
+        UiDrawTextCentered(font, num, (Rectangle){r.x, r.y, size, size}, fs, WHITE);
+
+        if (released && h->tab_dragging && !h->tab_dragged && !active && CheckCollisionPointRec(mouse, r)) {
+            GuiClickSoundPlay();
+            requested = q;
+        }
+    }
+    EndScissorMode();
+    if (released) h->tab_dragging = false;
+    return requested;
+}
+
 HeroesButton HeroesDraw(Heroes *h, Player *p) {
     HeroesButton clicked = HEROES_NONE;
 
@@ -632,66 +737,8 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
         EndScissorMode();
     }
     {
-        Font font = GuiFont(FNT_MENU);
-        float size = 64.0f, stride = size - 3.0f;
-        Rectangle view = {8.0f, 612.0f, 216.0f, size};
-        float content = size + (PLAYER_MAX_SQUADS - 1) * stride;
-        float max_scroll = content > view.width ? content - view.width : 0.0f;
-
-        Vector2 mouse = UiMouse();
-        bool over = CheckCollisionPointRec(mouse, view);
-        bool ui_input = !UiInputBlocked();
-        if (ui_input && over && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-            h->tab_dragging = true;
-            h->tab_dragged = false;
-            h->tab_drag_start = mouse.x;
-            h->tab_scroll_start = h->tab_scroll;
-        }
-        if (h->tab_dragging) {
-            float dx = mouse.x - h->tab_drag_start;
-            if (fabsf(dx) > 10.0f) h->tab_dragged = true;
-            if (h->tab_dragged) h->tab_scroll = h->tab_scroll_start - dx;
-        }
-        if (ui_input && over) h->tab_scroll -= GetMouseWheelMove() * stride;
-        if (h->tab_snap) {
-            float ax = p->current_squad * stride;
-            if (ax < h->tab_scroll) h->tab_scroll = ax;
-            if (ax + size > h->tab_scroll + view.width) h->tab_scroll = ax + size - view.width;
-            h->tab_snap = false;
-        }
-        if (h->tab_scroll > max_scroll) h->tab_scroll = max_scroll;
-        if (h->tab_scroll < 0.0f) h->tab_scroll = 0.0f;
-
-        bool released = ui_input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
-        float ui = UiScale();
-        BeginScissorMode((int)(view.x * ui), (int)(view.y * ui), (int)(view.width * ui), (int)(view.height * ui));
-        for (int q = 0; q < PLAYER_MAX_SQUADS; q++) {
-            Rectangle r = {view.x + q * stride - h->tab_scroll, view.y, size, size};
-            bool active = p->current_squad == q;
-
-            Texture2D slab = GuiTex(
-                q == 0 ? (active ? GUI_TAB_DEFENSE_ON : GUI_TAB_DEFENSE) : (active ? GUI_TAB_SQUAD_ON : GUI_TAB_SQUAD)
-            );
-            UiDrawTexture(slab, r, WHITE);
-            if (q == 1) {
-                Texture2D cup = GuiTex(active ? GUI_TAB_TROPHY_ON : GUI_TAB_TROPHY);
-                float cw = size * 0.72f;
-                Rectangle cr = {r.x + (size - cw) * 0.5f, r.y + (size - cw) * 0.5f, cw, cw};
-                UiDrawTexture(cup, cr, WHITE);
-            }
-
-            char num[4];
-            snprintf(num, sizeof(num), "%d", q + 1);
-            float fs = size * 0.55f;
-            UiDrawTextCentered(font, num, (Rectangle){r.x, r.y, size, size}, fs, WHITE);
-
-            if (released && h->tab_dragging && !h->tab_dragged && !active && CheckCollisionPointRec(mouse, r)) {
-                GuiClickSoundPlay();
-                PlayerSquadSelect(p, q);
-            }
-        }
-        EndScissorMode();
-        if (released) h->tab_dragging = false;
+        int requested_squad = HeroesDrawSquadTabs(h, p);
+        if (requested_squad >= 0) PlayerSquadSelect(p, requested_squad);
     }
 
     {
@@ -741,20 +788,8 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
     }
 
     {
-        float w = 112.0f;
-        float x = UiWidth() - w;
-        float y = 84.0f;
-        float gap = 4.0f;
-
-        ButtonDrawEx(&h->train, (Rectangle){x, y, w, w}, false);
-        y += w + gap;
-        ButtonDrawEx(&h->fortify, (Rectangle){x, y, w, w}, false);
-        y += w + gap;
-        ButtonDrawEx(&h->runes, (Rectangle){x, y, w, w}, false);
-        y += w + gap;
-        ButtonDrawEx(&h->gallery, (Rectangle){x, y, w, w}, false);
-        y += w + gap;
-        ButtonDrawSelected(&h->squad, (Rectangle){x, y, w, w});
+        HeroesButton nav = HeroesDrawNav(h, HEROES_SQUAD, buttons_active, RuneUnseenCount(&p->runes, RuneNow()));
+        if (nav != HEROES_NONE) clicked = nav;
     }
 
     if (h->selected >= 0) HeroesDrawDetails(&h->cards[h->selected], 156.0f, UiWidth() - 256.0f);

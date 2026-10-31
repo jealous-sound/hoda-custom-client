@@ -8,6 +8,11 @@ static void CampaignDrawWrapped(
 #define STORE_MAX_RESULTS 10
 #define STORE_GEM_SKU_COUNT 7
 #define STORE_PACK_BULLET_MAX 4
+#define STORE_RUNE_PACK_COUNT 5
+#define STORE_RUNE_PACK_SLOTS 3
+#define STORE_RUNE_SLOT_FAMILIES 4
+#define STORE_MAX_PACK_RUNES (STORE_MAX_RESULTS + STORE_RUNE_PACK_SLOTS)
+#define STORE_RUNE_REVEAL_STEP 0.5f
 
 #define STORE_PLATE_TOP 76.0f
 #define STORE_PLATE_HEIGHT 633.0f
@@ -45,6 +50,8 @@ typedef enum {
     STORE_VIEW_GEMS,
     STORE_VIEW_OPENING,
     STORE_VIEW_RESULT,
+    STORE_VIEW_RUNES,
+    STORE_VIEW_RUNE_REVEAL,
 } StoreView;
 
 typedef enum {
@@ -75,7 +82,29 @@ typedef struct {
     int guaranteed_epic;
     int legendary_pity;
     int weights[RARITY_LEGENDARY + 1];
+    int rune_chance_pct;
+    int rune_count;
+    int rune_min_rarity;
+    int rune_max_rarity;
 } StorePackDef;
+
+typedef struct {
+    const char *families[STORE_RUNE_SLOT_FAMILIES];
+    int family_count;
+    int min_rarity;
+    int max_rarity;
+} StoreRuneSlot;
+
+typedef struct {
+    const char *name;
+    const char *info;
+    const char *description;
+    const char *icon;
+    bool gems;
+    int price;
+    StoreRuneSlot slots[STORE_RUNE_PACK_SLOTS];
+    int slot_count;
+} StoreRunePackDef;
 
 typedef struct {
     const char *cost;
@@ -92,6 +121,7 @@ typedef struct {
     int rarity_pool_count[RARITY_LEGENDARY + 1];
     char balance_note_ru[256];
     StorePackDef packs[STORE_PACK_COUNT];
+    StoreRunePackDef rune_packs[STORE_RUNE_PACK_COUNT];
     StoreGemSku gem_skus[STORE_GEM_SKU_COUNT];
     PackScene opening_scene;
     PackFx opening_fx;
@@ -121,6 +151,7 @@ typedef struct {
     Button close;
     Button back;
     Button buy[STORE_PACK_COUNT];
+    Button rune_buy[STORE_RUNE_PACK_COUNT];
     Button next;
     Button skip;
     Button done;
@@ -139,6 +170,13 @@ typedef struct {
     float bullet_time;
     StoreDialog dialog;
     bool dialog_press_armed;
+    int rune_info_pack;
+    int rune_selected_pack;
+    int rune_results[STORE_MAX_PACK_RUNES];
+    int rune_result_count;
+    int rune_details;
+    float rune_reveal_time;
+    int pack_rune_def;
     int result_roster_indices[STORE_MAX_RESULTS];
     int result_count;
     int reveal_index;
@@ -255,6 +293,10 @@ static void StoreLoadPack(StorePackDef *pack, const cJSON *json, int index) {
     pack->guaranteed_legendary = JsonInt(json, "guaranteed_legendary");
     pack->guaranteed_epic = JsonInt(json, "guaranteed_epic");
     pack->legendary_pity = JsonInt(json, "legendary_pity");
+    pack->rune_chance_pct = JsonInt(json, "rune_chance_pct");
+    pack->rune_count = JsonInt(json, "rune_count");
+    pack->rune_min_rarity = JsonInt(json, "rune_min_rarity");
+    pack->rune_max_rarity = JsonInt(json, "rune_max_rarity");
 
     pack->bullet_count = 0;
     const char *description = StorePackLocText(json, "_PACK_DESCRIPTION", NULL);
@@ -280,6 +322,30 @@ static void StoreLoadPack(StorePackDef *pack, const cJSON *json, int index) {
         pack->guaranteed_legendary < 0 || pack->guaranteed_epic < 0 ||
         pack->guaranteed_legendary + pack->guaranteed_epic > pack->hero_count || total != 10000)
         TraceLog(LOG_FATAL, "Store: invalid pack definition at index %d", index);
+}
+
+static void StoreLoadRunePack(StoreRunePackDef *pack, const cJSON *json) {
+    pack->name = StorePackLocText(json, "_PACK_NAME", "name_ru");
+    pack->info = StorePackLocText(json, "_PACK_INFO", "info_ru");
+    pack->description = StorePackLocText(json, "_PACK_DESCRIPTION", "description_ru");
+    pack->icon = JsonStr(json, "icon");
+    pack->gems = !strcmp(JsonStr(json, "currency"), "gems");
+    pack->price = JsonInt(json, "price");
+    const cJSON *slot = NULL;
+    cJSON_ArrayForEach(slot, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "slots")) {
+        if (pack->slot_count >= STORE_RUNE_PACK_SLOTS)
+            TraceLog(LOG_FATAL, "Store: rune pack %s has too many slots", pack->name);
+        StoreRuneSlot *rune_slot = &pack->slots[pack->slot_count++];
+        rune_slot->min_rarity = JsonInt(slot, "min_rarity");
+        rune_slot->max_rarity = JsonInt(slot, "max_rarity");
+        const cJSON *family = NULL;
+        cJSON_ArrayForEach(family, cJSON_GetObjectItemCaseSensitive((cJSON *)slot, "families")) {
+            if (rune_slot->family_count < STORE_RUNE_SLOT_FAMILIES)
+                rune_slot->families[rune_slot->family_count++] = family->valuestring;
+        }
+    }
+    if (!pack->name[0] || !pack->info[0] || !pack->description[0] || pack->price <= 0 || pack->slot_count == 0)
+        TraceLog(LOG_FATAL, "Store: invalid rune pack definition %s", JsonStr(json, "id"));
 }
 
 static void StoreLoadGemSku(StoreGemSku *sku, const cJSON *json, int index) {
@@ -332,6 +398,11 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
     if (!cJSON_IsArray(packs) || cJSON_GetArraySize(packs) != STORE_PACK_COUNT)
         TraceLog(LOG_FATAL, "Store: expected %d packs in %s", STORE_PACK_COUNT, config_path);
     for (int i = 0; i < STORE_PACK_COUNT; i++) StoreLoadPack(&store->packs[i], cJSON_GetArrayItem(packs, i), i);
+    const cJSON *rune_packs = cJSON_GetObjectItemCaseSensitive(store->config_root, "rune_packs");
+    if (!cJSON_IsArray(rune_packs) || cJSON_GetArraySize(rune_packs) != STORE_RUNE_PACK_COUNT)
+        TraceLog(LOG_FATAL, "Store: expected %d rune packs in %s", STORE_RUNE_PACK_COUNT, config_path);
+    for (int i = 0; i < STORE_RUNE_PACK_COUNT; i++)
+        StoreLoadRunePack(&store->rune_packs[i], cJSON_GetArrayItem(rune_packs, i));
     const cJSON *gem_skus = cJSON_GetObjectItemCaseSensitive(store->config_root, "gem_skus");
     if (!cJSON_IsArray(gem_skus) || cJSON_GetArraySize(gem_skus) != STORE_GEM_SKU_COUNT)
         TraceLog(LOG_FATAL, "Store: expected %d gem skus in %s", STORE_GEM_SKU_COUNT, config_path);
@@ -383,6 +454,13 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
         store->buy[i] = ButtonLoad(GUI_STORE_BUY, GUI_STORE_BUY_ON);
         ButtonDisableClickSound(&store->buy[i]);
     }
+    for (int i = 0; i < STORE_RUNE_PACK_COUNT; i++) {
+        store->rune_buy[i] = ButtonLoad(GUI_STORE_BUY, GUI_STORE_BUY_ON);
+        ButtonDisableClickSound(&store->rune_buy[i]);
+    }
+    store->rune_info_pack = -1;
+    store->rune_details = -1;
+    store->pack_rune_def = -1;
     store->next =
         ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "ДАЛЕЕ", store->title_font, (Vector2){0.5f, 0.5f}, 0.34f);
     store->skip =
@@ -443,6 +521,12 @@ void StoreShowPage(Store *store, bool gems_page) {
     store->status_time = 0.0f;
 }
 
+void StoreShowRunes(Store *store) {
+    store->view = STORE_VIEW_RUNES;
+    store->rune_info_pack = -1;
+    store->rune_details = -1;
+}
+
 bool StoreDialogOpen(const Store *store) {
     return store->dialog != STORE_DIALOG_NONE;
 }
@@ -462,7 +546,8 @@ bool StoreTopHudHomeActive(const Store *store) {
 }
 
 bool StoreUsesHomeBackground(const Store *store) {
-    return store->view == STORE_VIEW_LANDING || store->view == STORE_VIEW_HEROES || store->view == STORE_VIEW_GEMS;
+    return store->view == STORE_VIEW_LANDING || store->view == STORE_VIEW_HEROES || store->view == STORE_VIEW_GEMS ||
+           store->view == STORE_VIEW_RUNES || store->view == STORE_VIEW_RUNE_REVEAL;
 }
 
 static float StoreCameraMix(const Store *store) {
@@ -499,8 +584,16 @@ StoreAction StoreHandleBack(Store *store, Heroes *heroes) {
     switch (store->view) {
         case STORE_VIEW_HEROES:
         case STORE_VIEW_GEMS:
+        case STORE_VIEW_RUNES:
             store->view = STORE_VIEW_LANDING;
             store->info_pack = -1;
+            GuiSoundPlay(SND_UI_POPUP_CLOSE);
+            return STORE_ACTION_NONE;
+        case STORE_VIEW_RUNE_REVEAL:
+            if (store->rune_details >= 0)
+                store->rune_details = -1;
+            else
+                store->view = STORE_VIEW_RUNES;
             GuiSoundPlay(SND_UI_POPUP_CLOSE);
             return STORE_ACTION_NONE;
         case STORE_VIEW_OPENING:
@@ -527,6 +620,87 @@ StoreAction StoreHandleBack(Store *store, Heroes *heroes) {
 static const cJSON *StoreRandomDefinition(Store *store, Rarity rarity, uint32_t *rng) {
     int count = store->rarity_pool_count[rarity];
     return count > 0 ? store->rarity_pool[rarity][StoreRngRange(rng, count)] : NULL;
+}
+
+static bool StoreRuneFamilyMatches(const RuneDef *def, const StoreRuneSlot *slot) {
+    for (int i = 0; i < slot->family_count; i++)
+        if (!strcmp(def->family, slot->families[i])) return true;
+    return slot->family_count == 0;
+}
+
+int StoreRollRune(const StoreRuneSlot *slot, uint32_t *rng) {
+    int candidates[RUNE_CATALOG_CAPACITY];
+    int count = 0;
+    for (int i = 0; i < RuneCatalogCount(); i++) {
+        const RuneDef *def = RuneDefAt(i);
+        if (RuneDefRollable(def) && def->rarity >= slot->min_rarity && def->rarity <= slot->max_rarity &&
+            StoreRuneFamilyMatches(def, slot))
+            candidates[count++] = i;
+    }
+    return count > 0 ? candidates[StoreRngRange(rng, count)] : -1;
+}
+
+static int StoreRollPackRunes(const StorePackDef *pack, uint32_t *rng, PlayerRunes *runes, long long now) {
+    StoreRuneSlot slot = {.min_rarity = pack->rune_min_rarity, .max_rarity = pack->rune_max_rarity};
+    int first = -1;
+    for (int i = 0; i < pack->rune_count; i++) {
+        if (StoreRngRange(rng, 100) >= pack->rune_chance_pct) continue;
+        int def = StoreRollRune(&slot, rng);
+        if (def >= 0 && RuneGrant(runes, def, now) && first < 0) first = def;
+    }
+    return first;
+}
+
+static void StoreOpenDialog(Store *store, StoreDialog dialog) {
+    store->dialog = dialog;
+    store->dialog_press_armed = false;
+    GuiSoundPlay(SND_STORE_ERROR);
+}
+
+static bool StoreTryBuyRunePack(Store *store, Player *player, int pack_index) {
+    const StoreRunePackDef *pack = &store->rune_packs[pack_index];
+    if (RUNE_INVENTORY_CAPACITY - player->runes.count < pack->slot_count) {
+        StoreOpenDialog(store, STORE_DIALOG_ROSTER_FULL);
+        return false;
+    }
+    if (player->gems < pack->price) {
+        StoreOpenDialog(store, STORE_DIALOG_CANT_AFFORD);
+        return false;
+    }
+    static PlayerRunes old_runes;
+    old_runes = player->runes;
+    uint32_t rng = player->store_rng_state;
+    int old_gems = player->gems;
+    uint32_t old_rng = rng;
+    long long now = RuneNow();
+    int defs[STORE_RUNE_PACK_SLOTS];
+    for (int i = 0; i < pack->slot_count; i++) {
+        defs[i] = StoreRollRune(&pack->slots[i], &rng);
+        if (defs[i] < 0 || !RuneGrant(&player->runes, defs[i], now)) {
+            player->runes = old_runes;
+            StoreSetStatus(store, "Этот пак временно недоступен");
+            GuiSoundPlay(SND_STORE_ERROR);
+            return false;
+        }
+    }
+    PlayerSpendGems(player, pack->price);
+    player->store_rng_state = rng;
+    if (!ProgressionSave(player)) {
+        player->runes = old_runes;
+        player->gems = old_gems;
+        player->store_rng_state = old_rng;
+        StoreSetStatus(store, "Не удалось сохранить покупку");
+        GuiSoundPlay(SND_STORE_ERROR);
+        return false;
+    }
+    store->rune_selected_pack = pack_index;
+    store->rune_result_count = pack->slot_count;
+    memcpy(store->rune_results, defs, (size_t)pack->slot_count * sizeof(int));
+    store->rune_reveal_time = 0.0f;
+    store->rune_details = -1;
+    store->view = STORE_VIEW_RUNE_REVEAL;
+    GuiSoundPlay(SND_PACK_RARE);
+    return true;
 }
 
 static void StoreSortResults(const cJSON **definitions, Rarity *rarities, int count) {
@@ -603,6 +777,9 @@ static bool StoreTryPurchase(Store *store, Player *player, Heroes *heroes, int p
     }
     bool spent = pack->gems ? PlayerSpendGems(player, pack->price) : PlayerSpendGold(player, pack->price);
     if (!spent) TraceLog(LOG_FATAL, "Store: validated currency spend failed");
+    static PlayerRunes old_runes;
+    old_runes = player->runes;
+    int pack_rune = StoreRollPackRunes(pack, &rng, &player->runes, RuneNow());
 
     player->store_rng_state = rng;
     player->store_opened_total++;
@@ -611,6 +788,7 @@ static bool StoreTryPurchase(Store *store, Player *player, Heroes *heroes, int p
 
     if (!ProgressionSave(player)) {
         PlayerRosterClearRange(player, old_roster_count, player->roster_count);
+        player->runes = old_runes;
         player->roster_count = old_roster_count;
         player->next_instance_id = old_next_instance_id;
         player->gold = old_gold;
@@ -626,6 +804,7 @@ static bool StoreTryPurchase(Store *store, Player *player, Heroes *heroes, int p
 
     if (!HeroesSyncRoster(heroes, player)) TraceLog(LOG_FATAL, "Store: persisted roster cannot sync to Heroes");
     store->selected_pack = pack_index;
+    store->pack_rune_def = pack_rune;
     store->result_count = pack->hero_count;
     for (int i = 0; i < pack->hero_count; i++) store->result_roster_indices[i] = first_index + i;
     store->reveal_index = 0;
@@ -762,8 +941,8 @@ static StoreAction StoreDrawLanding(Store *store) {
         Rectangle tile = {list.x + i * tile_w, list.y, tile_w, list.height};
         if (!StoreDrawCategoryTile(store, tile, store->category_art[i], LocGet(label_keys[i]))) continue;
         if (i == 2) {
-            StoreSetStatus(store, "Руны временно недоступны");
-            GuiSoundPlay(SND_STORE_INFO);
+            StoreShowRunes(store);
+            GuiSoundPlay(SND_UI_TAB);
         } else {
             StoreShowPage(store, i == 1);
             GuiSoundPlay(SND_UI_TAB);
@@ -773,9 +952,9 @@ static StoreAction StoreDrawLanding(Store *store) {
     return STORE_ACTION_NONE;
 }
 
-static void StoreDrawBuyPrice(Store *store, const StorePackDef *pack, Rectangle bar) {
+static void StoreDrawBuyPrice(Store *store, int cost, bool gems, Rectangle bar) {
     char price[16];
-    snprintf(price, sizeof(price), "%d", pack->price);
+    snprintf(price, sizeof(price), "%d", cost);
     UiDrawTextRight(
         store->title_font,
         price,
@@ -783,7 +962,7 @@ static void StoreDrawBuyPrice(Store *store, const StorePackDef *pack, Rectangle 
         bar.height * STORE_PRICE_TEXT_OF_BAR,
         (Color){235, 232, 220, 255}
     );
-    Texture2D icon = pack->gems ? store->currency_gems : store->currency_gold;
+    Texture2D icon = gems ? store->currency_gems : store->currency_gold;
     float icon_size = bar.height * STORE_CURRENCY_SIZE_OF_BAR;
     UiDrawTexture(
         icon,
@@ -860,7 +1039,7 @@ static bool StoreDrawPackCard(Store *store, Player *player, Heroes *heroes, int 
 
     Rectangle buy = StoreCellPart(cell, STORE_CELL_BUY);
     bool clicked = ButtonDrawEx(&store->buy[pack_index], buy, !StoreInputBlocked(store) && in_viewport);
-    StoreDrawBuyPrice(store, pack, buy);
+    StoreDrawBuyPrice(store, pack->price, pack->gems, buy);
 
     if (in_viewport && StoreReleasedOn(store, info)) {
         store->info_pack = show_info ? -1 : pack_index;
@@ -870,6 +1049,116 @@ static bool StoreDrawPackCard(Store *store, Player *player, Heroes *heroes, int 
         GuiSoundPlay(SND_STORE_INFO);
     }
     return clicked && StoreTryPurchase(store, player, heroes, pack_index);
+}
+
+static void StoreDrawRunePackCard(Store *store, Player *player, int pack_index, Rectangle cell) {
+    const StoreRunePackDef *pack = &store->rune_packs[pack_index];
+    bool show_info = store->rune_info_pack == pack_index;
+    Rectangle art = StoreCellPart(cell, STORE_CELL_ICON);
+    DrawRectangleRec(art, BLACK);
+    Texture2D icon = RuneIconLoad(pack->icon);
+    if (!show_info && icon.id != 0) StoreDrawTextureCover(icon, art, WHITE);
+    UiDrawTexture(store->card, StoreCellPart(cell, STORE_CELL_CARD), WHITE);
+
+    Rectangle top = StoreCellPart(cell, STORE_CELL_HEADER);
+    UiDrawTexture(store->headers[STORE_PACK_CHAMPION], top, WHITE);
+    StoreDrawCenteredFit(
+        store->title_font,
+        pack->name,
+        (Rectangle){top.x + top.width * 0.06f, top.y, top.width * 0.88f, top.height},
+        cell.height * STORE_HEADER_TEXT_OF_CELL,
+        WHITE
+    );
+    if (show_info)
+        CampaignDrawWrapped(
+            store->body_font,
+            pack->info,
+            (Vector2){art.x + 6.0f, art.y + 8.0f},
+            14.0f,
+            1.0f,
+            3.0f,
+            art.width - 12.0f,
+            (Color){236, 232, 220, 255}
+        );
+    StoreDrawCenteredFit(
+        store->body_font,
+        pack->description,
+        StoreCellPart(cell, STORE_CELL_BULLET),
+        cell.height * STORE_BULLET_TEXT_OF_CELL,
+        (Color){239, 234, 218, 255}
+    );
+
+    Rectangle buy = StoreCellPart(cell, STORE_CELL_BUY);
+    bool clicked = ButtonDrawEx(&store->rune_buy[pack_index], buy, !StoreInputBlocked(store));
+    StoreDrawBuyPrice(store, pack->price, pack->gems, buy);
+    if (StoreReleasedOn(store, StoreCellPart(cell, STORE_CELL_TAP_AREA))) {
+        store->rune_info_pack = show_info ? -1 : pack_index;
+        GuiSoundPlay(SND_STORE_INFO);
+    }
+    if (clicked) StoreTryBuyRunePack(store, player, pack_index);
+}
+
+static StoreAction StoreDrawRunesPage(Store *store, Player *player) {
+    int chrome = StoreDrawPopupChrome(store, LocGet("RUNES_BUTTON_LABEL"), true);
+    if (chrome == 1) return STORE_ACTION_CLOSE;
+    if (chrome == 2) {
+        store->view = STORE_VIEW_LANDING;
+        return STORE_ACTION_NONE;
+    }
+    Rectangle list = StoreListRect();
+    float cell_w = list.width / STORE_RUNE_PACK_COUNT;
+    float cell_h = cell_w / STORE_CELL_ASPECT;
+    for (int i = 0; i < STORE_RUNE_PACK_COUNT; i++) {
+        Rectangle cell = {list.x + i * cell_w, list.y + (list.height - cell_h) * 0.5f, cell_w, cell_h};
+        StoreDrawRunePackCard(store, player, i, cell);
+        if (store->view != STORE_VIEW_RUNES) return STORE_ACTION_NONE;
+    }
+    StoreDrawToast(store);
+    return STORE_ACTION_NONE;
+}
+
+static StoreAction StoreDrawRuneReveal(Store *store, Player *player, float dt) {
+    int chrome = StoreDrawPopupChrome(store, LocGet("RUNE_REVEAL_WINDOW_TITLE"), false);
+    if (chrome == 1) return STORE_ACTION_CLOSE;
+    store->rune_reveal_time += dt;
+    Rectangle list = StoreListRect();
+    float cell = 150.0f, gap = 20.0f;
+    float total = store->rune_result_count * cell + (store->rune_result_count - 1) * gap;
+    for (int i = 0; i < store->rune_result_count; i++) {
+        if (store->rune_reveal_time < i * STORE_RUNE_REVEAL_STEP) continue;
+        Rectangle rect = {
+            list.x + (list.width - total) * 0.5f + i * (cell + gap), list.y + (list.height - cell) * 0.4f, cell, cell
+        };
+        const RuneDef *def = RuneDefAt(store->rune_results[i]);
+        RunesDrawTile(def, rect, false);
+        StoreDrawCenteredFit(
+            store->body_font,
+            def->name_ru,
+            (Rectangle){rect.x - 10.0f, rect.y + cell + 4.0f, cell + 20.0f, 24.0f},
+            17.0f,
+            RuneRarityColor(def->rarity)
+        );
+        if (store->rune_details < 0 && StoreReleasedOn(store, rect)) {
+            store->rune_details = i;
+            GuiSoundPlay(SND_STORE_INFO);
+            return STORE_ACTION_NONE;
+        }
+    }
+    bool interactive = !StoreInputBlocked(store) && store->rune_details < 0;
+    Rectangle popup = StorePlateRect();
+    float y = popup.y + popup.height - 90.0f, cx = popup.x + popup.width * 0.5f;
+    bool again = ButtonDrawEx(&store->buy_again, (Rectangle){cx - 242.0f, y, 236.0f, 59.0f}, interactive);
+    bool done = ButtonDrawEx(&store->done, (Rectangle){cx + 6.0f, y, 236.0f, 59.0f}, interactive);
+    if (store->rune_details >= 0) {
+        float height = 480.0f;
+        const RuneDef *def = RuneDefAt(store->rune_results[store->rune_details]);
+        RunesDrawCard(def, NULL, (Rectangle){cx - height * 0.39f, 150.0f, height * 0.78f, height}, 0);
+        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) store->rune_details = -1;
+    }
+    if (done) store->view = STORE_VIEW_RUNES;
+    if (again) StoreTryBuyRunePack(store, player, store->rune_selected_pack);
+    StoreDrawToast(store);
+    return STORE_ACTION_NONE;
 }
 
 static void StoreDrawScrollArrow(Store *store, Rectangle rect, bool left, bool enabled) {
@@ -1155,6 +1444,12 @@ static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes)
         return STORE_ACTION_NONE;
     }
 
+    if (store->pack_rune_def >= 0) {
+        char message[128];
+        snprintf(message, sizeof(message), "Вы получили руну: %s!", RuneDefAt(store->pack_rune_def)->name_ru);
+        StoreSetStatus(store, message);
+        store->pack_rune_def = -1;
+    }
     bool again = ButtonDrawEx(&store->buy_again, (Rectangle){808.0f, 654.0f, 236.0f, 59.0f}, interactive);
     if (ButtonDrawEx(&store->done, (Rectangle){1044.0f, 654.0f, 236.0f, 59.0f}, interactive)) {
         store->view = STORE_VIEW_HEROES;
@@ -1266,6 +1561,12 @@ StoreAction StoreDraw(Store *store, Player *player, Heroes *heroes, float dt) {
             break;
         case STORE_VIEW_RESULT:
             action = StoreDrawResult(store, player, heroes);
+            break;
+        case STORE_VIEW_RUNES:
+            action = StoreDrawRunesPage(store, player);
+            break;
+        case STORE_VIEW_RUNE_REVEAL:
+            action = StoreDrawRuneReveal(store, player, dt);
             break;
     }
     StoreDrawDialog(store);

@@ -6,7 +6,7 @@
 
 static const GuiId BATTLE_UI_FACTION_INTRO_ICON = GUI_DETAILS_POWER;
 
-typedef enum { BATTLE_UI_NONE, BATTLE_UI_FIGHT, BATTLE_UI_RETREAT } BattleUiAction;
+typedef enum { BATTLE_UI_NONE, BATTLE_UI_FIGHT, BATTLE_UI_RETREAT, BATTLE_UI_RUNES } BattleUiAction;
 
 typedef struct {
     const Character *ch;
@@ -482,7 +482,11 @@ static void BattleUiDrawIntroBanner(const BpIntroEvent *event, float cx, Font co
     UiDrawTexture(bg, (Rectangle){cx - 237.5f, 198.0f, 475.0f, 65.0f}, WHITE);
 
     char text[128];
-    BattleUiIntroText(event, text, sizeof(text));
+    const RuneDef *rune = event->rune_def >= 0 ? RuneDefAt(event->rune_def) : NULL;
+    if (rune)
+        snprintf(text, sizeof(text), "%s %s", rune->name_ru, rune->value_ru);
+    else
+        BattleUiIntroText(event, text, sizeof(text));
     float fs = 24.0f;
     Vector2 size = MeasureTextEx(cool, text, fs, 1.0f);
     if (size.x > 620.0f) {
@@ -491,7 +495,7 @@ static void BattleUiDrawIntroBanner(const BpIntroEvent *event, float cx, Font co
     }
     DrawTextEx(cool, text, (Vector2){cx - size.x * 0.5f, 198.0f + (65.0f - size.y) * 0.5f}, fs, 1.0f, WHITE);
 
-    Texture2D icon = GuiTex(BATTLE_UI_FACTION_INTRO_ICON);
+    Texture2D icon = rune ? RuneIconLoad(rune->buff_icon) : GuiTex(BATTLE_UI_FACTION_INTRO_ICON);
     UiDrawTexture(icon, (Rectangle){cx - 36.0f, 252.0f, 72.0f, 72.0f}, WHITE);
 }
 
@@ -768,6 +772,31 @@ static void BattleUiDrawCombat(BattleUi *ui, BattlePlay *bp) {
     }
 }
 
+static void BattleUiDrawCombatRunes(const BattlePlay *bp) {
+    float size = 54.0f;
+    for (int i = 0; i < bp->sim.rune_def_count; i++) {
+        Texture2D icon = RuneIconLoad(RuneDefAt(bp->sim.rune_defs[i])->icon);
+        if (icon.id != 0) UiDrawTexture(icon, (Rectangle){8.0f, 92.0f + i * (size + 4.0f), size * 0.78f, size}, WHITE);
+    }
+}
+
+static bool BattleUiDrawRuneSlots(const Player *player, bool input_ok) {
+    long long now = RuneNow();
+    int squad = player->current_squad;
+    int slots = player->runes.prestige_unlocked[squad] ? RUNE_SLOT_COUNT : RUNE_NORMAL_SLOT_COUNT;
+    Rectangle area = {0, MM_Y(4), MM_X(76), 97 * MM_SY * slots};
+    for (int slot = 0; slot < slots; slot++) {
+        Rectangle rect = {0, MM_Y(4) + slot * 97 * MM_SY, MM_X(76), 98 * MM_SY};
+        const PlayerRune *rune = RuneInSlot(&player->runes, squad, slot);
+        Texture2D texture = rune ? RuneIconLoad(RuneDefFor(rune)->icon) : GuiTex(GUI_MM_RUNE_SLOT);
+        if (rune && !RuneIsExpired(rune, now) && texture.id != 0)
+            UiDrawTexture(texture, rect, WHITE);
+        else
+            UiDrawTexture(GuiTex(GUI_MM_RUNE_SLOT), rect, WHITE);
+    }
+    return input_ok && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(UiMouse(), area);
+}
+
 BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, BattlePlay *bp) {
     Font font = GuiFont(FNT_COOL);
     Color off_white = {230, 230, 230, 255};
@@ -780,6 +809,7 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
         ui->detail_open = false;
         if (ui->tactical) BattleUiSetTacticalEx(ui, battle, false, false);
         BattleUiDrawCombat(ui, bp);
+        BattleUiDrawCombatRunes(bp);
         return BATTLE_UI_NONE;
     }
 
@@ -846,11 +876,7 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
         }
     }
 
-    {
-        Texture2D slot = GuiTex(GUI_MM_RUNE_SLOT);
-        UiDrawTexture(slot, (Rectangle){0, MM_Y(4), MM_X(76), 98 * MM_SY}, WHITE);
-        UiDrawTexture(slot, (Rectangle){0, MM_Y(101), MM_X(76), 98 * MM_SY}, WHITE);
-    }
+    if (BattleUiDrawRuneSlots(player, input_ok)) result = BATTLE_UI_RUNES;
 
     if (!ui->tactical) {
         float row_h = 44 * MM_SY, stride = 40 * MM_SY;

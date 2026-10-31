@@ -201,6 +201,10 @@ typedef enum {
     GUI_MM_PANEL,
     GUI_MM_TROUGH,
     GUI_MM_RUNE_SLOT,
+    GUI_RUNE_EMPTY_SLOT,
+    GUI_RUNE_TILE,
+    GUI_RUNE_DETAILS,
+    GUI_RUNE_HIGHLIGHT,
     GUI_MM_TAG,
     GUI_MM_XP,
     GUI_MM_SQUAD_FRAME,
@@ -286,6 +290,9 @@ typedef enum {
     SND_PACK_SHUFFLE,
     SND_PACK_REVEAL,
     SND_STORE_INFO,
+    SND_RUNE_PICKUP,
+    SND_RUNE_PLACE,
+    SND_RUNE_ACTIVATE,
     SND_STORE_ERROR,
     SND_PACK_COMMON,
     SND_PACK_UNCOMMON,
@@ -517,6 +524,10 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_MM_PANEL] = CACHE_RESOURCE("FrameStaticHeaderLg"),
     [GUI_MM_TROUGH] = CACHE_RESOURCE("Bg_TipsSliced"),
     [GUI_MM_RUNE_SLOT] = CACHE_RESOURCE("tex.add_rune_slot"),
+    [GUI_RUNE_EMPTY_SLOT] = CACHE_RESOURCE("tex.empty_rune_slot"),
+    [GUI_RUNE_TILE] = CACHE_RESOURCE("Bg_RuneTile"),
+    [GUI_RUNE_DETAILS] = CACHE_RESOURCE("Bg_Rune_Details_Slim"),
+    [GUI_RUNE_HIGHLIGHT] = CACHE_RESOURCE("IconRuneHighlight"),
     [GUI_MM_TAG] = CACHE_RESOURCE("BG_RewardsTagShort"),
     [GUI_MM_XP] = CACHE_RESOURCE("tex.xp_nonumber"),
     [GUI_MM_SQUAD_FRAME] = CACHE_RESOURCE("squad_slot_container"),
@@ -624,6 +635,9 @@ static const char *const sound_paths[SND_COUNT] = {
     [SND_PACK_SHUFFLE] = CACHE_RESOURCE("gui_pack_open_shuffle"),
     [SND_PACK_REVEAL] = CACHE_RESOURCE("gui_pack_open_seq"),
     [SND_STORE_INFO] = CACHE_RESOURCE("gui_info"),
+    [SND_RUNE_PICKUP] = CACHE_RESOURCE("gui_rune_pickup"),
+    [SND_RUNE_PLACE] = CACHE_RESOURCE("gui_rune_place"),
+    [SND_RUNE_ACTIVATE] = CACHE_RESOURCE("gui_rune_activate"),
     [SND_STORE_ERROR] = CACHE_RESOURCE("gui_error"),
     [SND_PACK_COMMON] = CACHE_RESOURCE("gui_levelup_1"),
     [SND_PACK_UNCOMMON] = CACHE_RESOURCE("gui_levelup_2"),
@@ -659,6 +673,8 @@ bool GuiSoundAllowsDuplicate(SoundId id) {
         case SND_MAP_TRANSITION:
         case SND_STORE_OPEN:
         case SND_STORE_INFO:
+        case SND_RUNE_PLACE:
+        case SND_RUNE_ACTIVATE:
         case SND_STORE_ERROR:
         case SND_PACK_COMMON:
         case SND_PACK_UNCOMMON:

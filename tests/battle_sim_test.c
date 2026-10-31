@@ -3537,8 +3537,266 @@ static void TestEveryReferencedResourceResolves(void) {
         }
 }
 
+static void TestRuneCatalogCraftChains(void) {
+    assert(RuneCatalogCount() == 122);
+    const char *const chain[] = {
+        "rune-health-1",
+        "rune-health-2",
+        "rune-health-3",
+        "rune-health-4",
+        "rune-health-5",
+        "rune-health-6",
+        "rune-health-6-2",
+        "rune-health-6-4",
+        "rune-health-6-8",
+    };
+    int count = (int)(sizeof(chain) / sizeof(chain[0]));
+    for (int i = 0; i + 1 < count; i++)
+        assert(RuneDefAt(RuneDefIndex(chain[i]))->craft_to == RuneDefIndex(chain[i + 1]));
+    assert(!RuneCanCraft(RuneDefAt(RuneDefIndex(chain[count - 1]))));
+    assert(!RuneCanCraft(RuneDefAt(RuneDefIndex("rune-guard-7"))));
+    assert(!RuneCanCraft(RuneDefAt(RuneDefIndex("rune-knowledge-Special"))));
+    assert(RuneDefAt(RuneDefIndex("rune-health-6-8"))->duration_minutes == 480);
+    for (int i = 0; i < RuneCatalogCount(); i++) {
+        const RuneDef *def = RuneDefAt(i);
+        assert(def->name_ru[0] && def->desc_ru[0] && def->buff_ru[0] && def->value_ru[0]);
+        assert(ResourceExists(TextFormat(
+            strncmp(def->icon, RUNE_RESOURCE_CACHE_PREFIX, strlen(RUNE_RESOURCE_CACHE_PREFIX)) ? EXTRA_ASSET_DIR "%s"
+                                                                                               : "%s",
+            def->icon
+        )));
+    }
+}
+
+static void TestRuneSlotRulesAndReplacement(void) {
+    static PlayerRunes runes;
+    runes = (PlayerRunes){0};
+    long long now = 1000;
+    uint64_t power = RuneGrantById(&runes, "rune-power-5", now);
+    uint64_t health = RuneGrantById(&runes, "rune-health-5", now);
+    uint64_t guard = RuneGrantById(&runes, "rune-guard-7", now);
+
+    assert(RuneActivate(&runes, 0, RUNE_PRESTIGE_SLOT, power, now) == RUNE_ASSIGN_SLOT_LOCKED);
+    assert(RuneActivate(&runes, 0, 0, guard, now) == RUNE_ASSIGN_NEEDS_NORMAL_SLOT);
+    runes.prestige_unlocked[0] = true;
+    assert(RuneActivate(&runes, 0, RUNE_PRESTIGE_SLOT, power, now) == RUNE_ASSIGN_NEEDS_PRESTIGE_RUNE);
+    assert(RuneActivate(&runes, 0, RUNE_PRESTIGE_SLOT, guard, now) == RUNE_ASSIGN_OK);
+    assert(RuneByUuid(&runes, guard)->expire_at == now + 30 * RUNE_SECONDS_PER_MINUTE);
+
+    assert(RuneActivate(&runes, 0, 0, power, now) == RUNE_ASSIGN_OK);
+    assert(RuneAvailableCount(&runes, now) == 1);
+    assert(RuneActivate(&runes, 1, 0, power, now) == RUNE_ASSIGN_NOT_AVAILABLE);
+    assert(RuneActivate(&runes, 0, 0, health, now) == RUNE_ASSIGN_OK);
+    assert(!RuneByUuid(&runes, power));
+    assert(RuneInSlot(&runes, 0, 0)->uuid == health);
+}
+
+static void TestRuneExpiry(void) {
+    static PlayerRunes runes;
+    runes = (PlayerRunes){0};
+    long long now = 1000;
+    uint64_t active = RuneGrantById(&runes, "rune-power-1", now);
+    uint64_t idle = RuneGrantById(&runes, "rune-health-1", now);
+    RuneActivate(&runes, 2, 1, active, now);
+
+    assert(RuneExpire(&runes, now + 5 * RUNE_SECONDS_PER_MINUTE) == 0);
+    assert(RuneExpire(&runes, now + 5 * RUNE_SECONDS_PER_MINUTE + 1) == 1);
+    assert(!RuneInSlot(&runes, 2, 1));
+    assert(RuneByUuid(&runes, idle));
+    assert(RuneExpire(&runes, now + RUNE_INVENTORY_LIFETIME_SECONDS + 1) == 1);
+    assert(runes.count == 0);
+}
+
+static void TestRuneCrafting(void) {
+    static PlayerRunes runes;
+    runes = (PlayerRunes){0};
+    long long now = 1000;
+    uint64_t a = RuneGrantById(&runes, "rune-power-1", now);
+    uint64_t b = RuneGrantById(&runes, "rune-power-1", now);
+    uint64_t other = RuneGrantById(&runes, "rune-health-1", now);
+    uint64_t top = RuneGrantById(&runes, "rune-power-6-8", now);
+    uint64_t top_twin = RuneGrantById(&runes, "rune-power-6-8", now);
+
+    assert(RuneCraft(&runes, a, other, now, NULL) == RUNE_CRAFT_MISMATCH);
+    assert(RuneCraft(&runes, a, a, now, NULL) == RUNE_CRAFT_RUNES_NOT_FOUND);
+    assert(RuneCraft(&runes, top, top_twin, now, NULL) == RUNE_CRAFT_NO_UPGRADE);
+    int crafted = -1;
+    assert(RuneCraft(&runes, a, b, now, &crafted) == RUNE_CRAFT_SUCCESS);
+    assert(crafted == RuneDefIndex("rune-power-2"));
+    assert(runes.count == 4);
+
+    uint64_t active = RuneGrantById(&runes, "rune-stun-1", now);
+    uint64_t idle = RuneGrantById(&runes, "rune-stun-1", now);
+    RuneActivate(&runes, 0, 0, active, now);
+    assert(RuneCraft(&runes, active, idle, now, NULL) == RUNE_CRAFT_ALREADY_ASSIGNED);
+
+    runes = (PlayerRunes){0};
+    for (int i = 0; i < 5; i++) RuneGrantById(&runes, "rune-power-1", now);
+    for (int i = 0; i < 2; i++) RuneGrantById(&runes, "rune-health-1", now);
+    assert(RuneCraftAll(&runes, RUNE_CRAFT_MODE_TYPE, RuneDefIndex("rune-power-1"), now) == 2);
+    assert(runes.count == 5);
+    assert(RuneCraftAll(&runes, RUNE_CRAFT_MODE_RARITY, RuneDefIndex("rune-health-1"), now) == 1);
+    assert(runes.count == 4);
+}
+
+static void TestRuneBonusStacksAndScalesRewards(void) {
+    static PlayerRunes runes;
+    runes = (PlayerRunes){0};
+    long long now = 1000;
+    RuneActivate(&runes, 0, 0, RuneGrantById(&runes, "rune-power-3", now), now);
+    RuneActivate(&runes, 0, 1, RuneGrantById(&runes, "rune-power-5", now), now);
+    RuneBonus bonus = RuneSquadBonus(&runes, 0, now);
+    assert(bonus.power_pct == 70);
+    assert(RuneSquadBonus(&runes, 1, now).power_pct == 0);
+    assert(RuneApplyPct(100, 70) == 170);
+    assert(RuneApplyPct(100, 0) == 100);
+    assert(RuneSquadBonus(&runes, 0, now + 11 * RUNE_SECONDS_PER_MINUTE).power_pct == 50);
+
+    runes = (PlayerRunes){0};
+    runes.prestige_unlocked[0] = true;
+    RuneActivate(&runes, 0, RUNE_PRESTIGE_SLOT, RuneGrantById(&runes, "rune-dispel-7", now), now);
+    assert(RuneSquadBonus(&runes, 0, now).curse_power_immune);
+}
+
+static void TestRuneMitigationAndRetaliation(void) {
+    RuneBonus shield = {.damage_shield = 600};
+    assert(SimRuneMitigatedDamage(&shield, 1000) == 400);
+    assert(SimRuneMitigatedDamage(&shield, 100) == SIM_RUNE_SHIELDED_HIT_MIN_DAMAGE);
+    RuneBonus guard = {.damage_resist_pct = 75};
+    assert(SimRuneMitigatedDamage(&guard, 1000) == 250);
+    assert(SimRuneMitigatedDamage(&(RuneBonus){0}, 1000) == 1000);
+
+    BattleSim s = {0};
+    Character attacker, target;
+    Ability attacker_ability, target_ability;
+    TestCharacter(&attacker, &attacker_ability, "rune_attacker", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&target, &target_ability, "rune_target", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &attacker);
+    SimUnitInit(&s, 1, 0, &target);
+    s.rng = 7;
+    s.rune_bonus[1].retaliation_pct = 10;
+    int health = s.units[0].health;
+    SimAttack(&s, 0, &SIM_RECIPE_DEFAULT, &(AttackRecipe){.target = RECIPE_TARGET_ABILITY}, true, false);
+    int dealt = s.units[SQUAD_SLOT_COUNT].max_health - s.units[SQUAD_SLOT_COUNT].health;
+    assert(dealt > 0);
+    assert(s.units[0].health == health - (int)lroundf(dealt * 0.1f));
+
+    int after = s.units[0].health;
+    s.rune_bonus[0].stealth = true;
+    SimAttack(&s, 0, &SIM_RECIPE_DEFAULT, &(AttackRecipe){.target = RECIPE_TARGET_ABILITY}, true, false);
+    assert(s.units[0].health == after);
+    s.rune_bonus[1].perceptive = true;
+    SimAttack(&s, 0, &SIM_RECIPE_DEFAULT, &(AttackRecipe){.target = RECIPE_TARGET_ABILITY}, true, false);
+    assert(s.units[0].health < after);
+}
+
+static void TestRuneResistsBlockAilments(void) {
+    BattleSim s = {0};
+    Character attacker, target;
+    Ability attacker_ability, target_ability;
+    TestCharacter(&attacker, &attacker_ability, "rune_attacker", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&target, &target_ability, "rune_target", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &attacker);
+    SimUnitInit(&s, 1, 0, &target);
+    s.rng = 11;
+    s.rune_bonus[1] = (RuneBonus){
+        .stun_resist_pct = 100, .slow_resist_pct = 100, .drain_resist_pct = 100, .curse_power_immune = true
+    };
+    AttackRecipe hit = {
+        .target = RECIPE_TARGET_ABILITY,
+        .stun_pct = 100,
+        .slow_pct = 100,
+        .slow_amt = -50,
+        .drain_pct = 50,
+        .curse_power_pct = 100
+    };
+    SimAttack(&s, 0, &SIM_RECIPE_DEFAULT, &hit, true, false);
+    const SimUnit *t = &s.units[SQUAD_SLOT_COUNT];
+    assert(!t->stunned && !t->curse_power);
+    assert(t->cur_initiative == 0 && t->power == t->start_power);
+
+    s.rune_bonus[1] = (RuneBonus){0};
+    SimAttack(&s, 0, &SIM_RECIPE_DEFAULT, &hit, true, false);
+    assert(t->stunned && t->curse_power);
+    assert(t->cur_initiative == -50 && t->power < t->start_power);
+}
+
+static void TestRuneStatsAndTargeting(void) {
+    BattleSim s = {0};
+    Character attacker, weak, strong;
+    Ability a0, a1, a2;
+    TestCharacter(&attacker, &a0, "rune_attacker", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 1000);
+    TestCharacter(&weak, &a1, "rune_weak", "ABILITY_DAMAGE_ONE", TARGET_ONE, 50, 1000);
+    TestCharacter(&strong, &a2, "rune_strong", "ABILITY_DAMAGE_ONE", TARGET_ONE, 500, 1000);
+    SimUnitInit(&s, 0, 0, &attacker);
+    SimUnitInit(&s, 1, 0, &weak);
+    SimUnitInit(&s, 1, 2, &strong);
+    int power = s.units[0].power, health = s.units[0].max_health;
+    RuneBonus stats = {.power_pct = 50, .health_pct = 20};
+    SimUnitsRuneBonus(s.units, 0, &stats);
+    assert(s.units[0].power == RuneApplyPct(power, 50) && s.units[0].start_power == s.units[0].power);
+    assert(s.units[0].max_health == RuneApplyPct(health, 20) && s.units[0].health == s.units[0].max_health);
+
+    const SimUnit *weak_unit = &s.units[SQUAD_SLOT_COUNT], *strong_unit = &s.units[SQUAD_SLOT_COUNT + 2];
+    float base_weak = SimTargetWeight(&s, &s.units[0], weak_unit);
+    float base_strong = SimTargetWeight(&s, &s.units[0], strong_unit);
+    s.rune_bonus[0].target_level[RUNE_TARGET_HIGHEST_POWER] = 6;
+    assert(SimTargetWeight(&s, &s.units[0], weak_unit) == base_weak);
+    assert(SimTargetWeight(&s, &s.units[0], strong_unit) == base_strong * 4.0f);
+
+    s.rng = 3;
+    s.rune_bonus[0] = (RuneBonus){.initiative_steps = 1};
+    int roll = SimRollInitiative(&s, &s.units[0]);
+    assert(roll >= (s.units[0].init_class + 1) * SIM_INIT_CLASS_SPAN);
+}
+
+static void TestRuneSaveRoundTrip(void) {
+    static Player source, loaded;
+    source = (Player){0};
+    ProgressionInitializePlayerDefaults(&source);
+    long long now = RuneNow();
+    uint64_t power = RuneGrantById(&source.runes, "rune-power-6-2", now);
+    uint64_t idle = RuneGrantById(&source.runes, "rune-greed-3", now);
+    source.runes.prestige_unlocked[1] = true;
+    assert(RuneActivate(&source.runes, 3, 1, power, now) == RUNE_ASSIGN_OK);
+    source.runes.seen = 1;
+
+    const char *path = "tests/rune_save_test.dat";
+    assert(ProgressionSaveToPath(&source, path));
+    loaded = (Player){0};
+    ProgressionInitializePlayerDefaults(&loaded);
+    assert(ProgressionLoadFromPath(&loaded, path));
+    assert(loaded.runes.count == 2 && loaded.runes.seen == 1);
+    assert(loaded.runes.next_uuid == source.runes.next_uuid);
+    assert(loaded.runes.prestige_unlocked[1] && !loaded.runes.prestige_unlocked[0]);
+    assert(RuneInSlot(&loaded.runes, 3, 1)->uuid == power);
+    assert(RuneInSlot(&loaded.runes, 3, 1)->expire_at == source.runes.items[0].expire_at);
+    assert(RuneDefFor(RuneByUuid(&loaded.runes, idle)) == RuneDefAt(RuneDefIndex("rune-greed-3")));
+    remove(path);
+}
+
+static void TestPrestigeSlotCostsGems(void) {
+    static Player player;
+    player = (Player){.gems = RUNE_PRESTIGE_UNLOCK_GEMS - 1};
+    assert(!PlayerUnlockPrestigeRuneSlot(&player, 0));
+    player.gems = RUNE_PRESTIGE_UNLOCK_GEMS;
+    assert(PlayerUnlockPrestigeRuneSlot(&player, 0));
+    assert(player.gems == 0 && player.runes.prestige_unlocked[0]);
+    assert(!PlayerUnlockPrestigeRuneSlot(&player, 0));
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_WARNING);
+    TestRuneCatalogCraftChains();
+    TestRuneSlotRulesAndReplacement();
+    TestRuneExpiry();
+    TestRuneCrafting();
+    TestRuneBonusStacksAndScalesRewards();
+    TestRuneMitigationAndRetaliation();
+    TestRuneResistsBlockAilments();
+    TestRuneStatsAndTargeting();
+    TestRuneSaveRoundTrip();
+    TestPrestigeSlotCostsGems();
     TestOriginalResourcesDecodeLikeUnityPy();
     TestEveryReferencedResourceResolves();
     TestSquadSlotReferenceLayout();

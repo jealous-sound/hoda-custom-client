@@ -5,6 +5,7 @@ typedef struct {
     int capture_frame;
     bool flow_started;
     bool resource_opened;
+    bool runes_seeded;
 } DebugShot;
 
 #define DEBUG_SHOT_DEFAULT_FRAMES 90
@@ -63,7 +64,9 @@ static void DebugRunModelLoadTest(const char *list_path) {
         else if (frames == 0)
             why = "no usable idle clip";
         if (!quiet || !ok)
-            printf("LOADTEST %-4s meshes=%d frames=%d %-20s | %s\n", ok ? "OK" : "FAIL", model.meshCount, frames, why, line);
+            printf(
+                "LOADTEST %-4s meshes=%d frames=%d %-20s | %s\n", ok ? "OK" : "FAIL", model.meshCount, frames, why, line
+            );
         if (model.meshCount > 0) UnloadModel(model);
         ok ? pass++ : fail++;
     }
@@ -313,10 +316,87 @@ static void DebugPlayHeroMelee(Game *game, const DebugShot *shot) {
     for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HomeSquadUnitPlayMelee(&game->heroes_scene.units[s]);
 }
 
+static void DebugSeedRunes(Player *player) {
+    static const char *const ids[] = {
+        "rune-power-5",
+        "rune-power-5",
+        "rune-health-6",
+        "rune-knowledge-3",
+        "rune-greed-2",
+        "rune-guard-7",
+        "rune-stealth-7",
+        "rune-stun-6",
+        "rune-slow-4",
+        "rune-brave-targeting-6",
+        "rune-initiative-5",
+    };
+    long long now = RuneNow();
+    player->runes = (PlayerRunes){0};
+    for (int i = 0; i < (int)(sizeof(ids) / sizeof(ids[0])); i++) RuneGrantById(&player->runes, ids[i], now);
+}
+
+static void DebugActivateBattleRunes(Game *game, DebugShot *shot) {
+    if (!EnvFlag("HOD_RUNES") || shot->runes_seeded) return;
+    shot->runes_seeded = true;
+    Player *player = &game->player;
+    DebugSeedRunes(player);
+    uint64_t power = RuneGrantById(&player->runes, "rune-power-5", RuneNow());
+    uint64_t health = RuneGrantById(&player->runes, "rune-health-6", RuneNow());
+    RuneActivate(&player->runes, player->current_squad, 0, power, RuneNow());
+    RuneActivate(&player->runes, player->current_squad, 1, health, RuneNow());
+}
+
+static void DebugPrepareRunes(Game *game, DebugShot *shot) {
+    if (!shot->screen || strncmp(shot->screen, "runes", 5) != 0) return;
+    if (shot->flow_started) {
+        game->screen = DebugShotIs(shot, "runes_store") ? SCREEN_STORE : SCREEN_RUNES;
+        return;
+    }
+    shot->flow_started = true;
+    Player *player = &game->player;
+    int squad = player->current_squad;
+    DebugSeedRunes(player);
+    RunesOpen(&game->runes, player);
+    game->runes_return_screen = SCREEN_HEROES;
+    game->screen = SCREEN_RUNES;
+    uint64_t sorted[RUNE_INVENTORY_CAPACITY];
+    int count = RuneAvailableSorted(&player->runes, RuneNow(), true, sorted, RUNE_INVENTORY_CAPACITY);
+    if (count == 0) return;
+    if (DebugShotIs(shot, "runes_active")) {
+        player->runes.prestige_unlocked[squad] = true;
+        RuneActivate(&player->runes, squad, RUNE_PRESTIGE_SLOT, sorted[0], RuneNow());
+        RuneActivate(&player->runes, squad, 0, sorted[2], RuneNow());
+        game->runes.pending[1] = sorted[3];
+    } else if (DebugShotIs(shot, "runes_details")) {
+        game->runes.details_uuid = sorted[0];
+    } else if (DebugShotIs(shot, "runes_craft")) {
+        game->runes.mode = RUNES_MODE_CRAFT;
+        const PlayerRune *twin = NULL;
+        for (int i = 0; i < player->runes.count && !twin; i++)
+            if (!strcmp(RuneDefFor(&player->runes.items[i])->id, "rune-power-5")) twin = &player->runes.items[i];
+        RunesDropCraft(&game->runes, &player->runes, 0, twin->uuid, RuneNow());
+    } else if (DebugShotIs(shot, "runes_dialog")) {
+        game->runes.mode = RUNES_MODE_CRAFT;
+        const PlayerRune *twin = NULL;
+        for (int i = 0; i < player->runes.count && !twin; i++)
+            if (!strcmp(RuneDefFor(&player->runes.items[i])->id, "rune-power-5")) twin = &player->runes.items[i];
+        RunesDropCraft(&game->runes, &player->runes, 0, twin->uuid, RuneNow());
+        game->runes.dialog = RUNES_DIALOG_CRAFT_SINGLE;
+    } else if (DebugShotIs(shot, "runes_store")) {
+        StoreOpen(&game->store);
+        StoreShowRunes(&game->store);
+        player->gems = DEBUG_PACK_FUNDS;
+        game->store_return_screen = SCREEN_HEROES;
+        game->screen = SCREEN_STORE;
+    }
+}
+
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
     game->screen = SCREEN_HEROES;
     if (DebugShotIs(shot, "home")) game->screen = SCREEN_HOME;
     if (DebugShotIs(shot, "quests")) game->screen = SCREEN_QUESTS;
+    DebugActivateBattleRunes(game, shot);
+    DebugPrepareRunes(game, shot);
     DebugPrepareStore(game, shot);
     DebugPrepareNexus(game, shot);
     DebugPrepareCampaignMap(game, shot);

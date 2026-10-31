@@ -1,6 +1,6 @@
 #include <limits.h>
 
-#define PROGRESSION_SAVE_VERSION 4
+#define PROGRESSION_SAVE_VERSION 5
 #define PROGRESSION_LOCAL_MAX_LEVEL 100
 #define PROGRESSION_START_ENERGY_MAX 12
 #define PROGRESSION_START_STAMINA_MAX 8
@@ -70,6 +70,8 @@ typedef struct {
 
     int default_gold_reward;
     int crit_gold_reward;
+    int rune_gold_reward;
+    int rune_xp_reward;
     int gold_reward;
     int xp_reward;
     int first_win_gold_reward;
@@ -164,6 +166,16 @@ static void ProgressionAwardBattleXp(Player *player, int xp) {
     player->stamina_regen_timer = 0.0f;
 }
 
+static void ProgressionApplyRuneRewards(const Player *player, BattleRewardResult *result) {
+    RuneBonus bonus = RuneSquadBonus(&player->runes, player->current_squad, RuneNow());
+    int gold = RuneApplyPct(result->gold_reward, bonus.gold_pct);
+    int xp = RuneApplyPct(result->xp_reward, bonus.xp_pct);
+    result->rune_gold_reward = gold - result->gold_reward;
+    result->rune_xp_reward = xp - result->xp_reward;
+    result->gold_reward = gold;
+    result->xp_reward = xp;
+}
+
 BattleRewardResult CampaignResolveBattle(
     Player *player, const Campaign *campaign, int map_index, int node_index, bool won, int crit_gold
 ) {
@@ -227,6 +239,7 @@ BattleRewardResult CampaignResolveBattle(
     result.xp_reward = ProgressionSaturatingAdd(result.xp_reward, result.mastery_xp_reward);
     result.xp_reward = ProgressionSaturatingAdd(result.xp_reward, result.challenge_xp_reward);
     result.xp_reward = ProgressionSaturatingAdd(result.xp_reward, result.grind_xp_reward);
+    ProgressionApplyRuneRewards(player, &result);
     result.default_gems_reward = node->default_gems > 0 ? node->default_gems : 0;
     result.first_win_gems_reward =
         result.first_win && !node->grind && node->first_win_gems > 0 ? node->first_win_gems : 0;
@@ -349,6 +362,7 @@ BattleRewardResult NexusResolveBattle(Player *player, const Nexus *nexus, int st
     result.crit_gold_reward = crit_gold > 0 ? crit_gold : 0;
     result.gold_reward = ProgressionSaturatingAdd(result.default_gold_reward, result.crit_gold_reward);
     result.xp_reward = node->xp > 0 ? node->xp : 0;
+    ProgressionApplyRuneRewards(player, &result);
     run->escrow_gold = ProgressionSaturatingAdd(run->escrow_gold, result.gold_reward);
     run->escrow_xp = ProgressionSaturatingAdd(run->escrow_xp, result.xp_reward);
     run->escrow_potions = ProgressionSaturatingAdd(run->escrow_potions, node->potion_reward);
@@ -506,6 +520,34 @@ static bool ProgressionJsonAddArrayNumber(cJSON *array, double value) {
 
 static bool ProgressionJsonAddArrayNull(cJSON *array) {
     return ProgressionJsonAddArrayItem(array, cJSON_CreateNull());
+}
+
+static cJSON *ProgressionSaveRunes(const PlayerRunes *runes) {
+    cJSON *root = cJSON_CreateObject();
+    cJSON *items = cJSON_AddArrayToObject(root, "items");
+    cJSON *squads = cJSON_AddArrayToObject(root, "squads");
+    bool ok = root && items && squads && cJSON_AddNumberToObject(root, "next_uuid", (double)runes->next_uuid) &&
+              cJSON_AddNumberToObject(root, "seen", runes->seen);
+    for (int i = 0; ok && i < runes->count; i++) {
+        const PlayerRune *rune = &runes->items[i];
+        cJSON *entry = cJSON_CreateObject();
+        ok = entry && cJSON_AddItemToArray(items, entry) &&
+             cJSON_AddNumberToObject(entry, "uuid", (double)rune->uuid) &&
+             cJSON_AddStringToObject(entry, "def", RuneDefFor(rune)->id) &&
+             cJSON_AddNumberToObject(entry, "expire_at", (double)rune->expire_at) &&
+             cJSON_AddNumberToObject(entry, "inventory_expire_at", (double)rune->inventory_expire_at);
+    }
+    for (int squad = 0; ok && squad < PLAYER_MAX_SQUADS; squad++) {
+        cJSON *entry = cJSON_CreateObject();
+        cJSON *slots = cJSON_AddArrayToObject(entry, "slots");
+        ok = entry && slots && cJSON_AddItemToArray(squads, entry) &&
+             cJSON_AddBoolToObject(entry, "prestige_unlocked", runes->prestige_unlocked[squad]);
+        for (int slot = 0; ok && slot < RUNE_SLOT_COUNT; slot++)
+            ok = ProgressionJsonAddArrayNumber(slots, (double)runes->squad_slots[squad][slot]);
+    }
+    if (ok) return root;
+    cJSON_Delete(root);
+    return NULL;
 }
 
 bool ProgressionSaveToPath(const Player *player, const char *path) {
@@ -735,6 +777,12 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
             goto save_json_failed;
     }
 
+    cJSON *runes = ProgressionSaveRunes(&player->runes);
+    if (!runes || !cJSON_AddItemToObject(root, "runes", runes)) {
+        cJSON_Delete(runes);
+        goto save_json_failed;
+    }
+
     serialized = cJSON_Print(root);
     cJSON_Delete(root);
     root = NULL;
@@ -810,6 +858,50 @@ static int ProgressionFutureRosterIndex(
     for (int i = 0; i < addition_count; i++)
         if (additions[i].character.instance_id == instance_id) return starter_count + i;
     return -1;
+}
+
+static bool ProgressionLoadRunes(const cJSON *json, PlayerRunes *runes) {
+    RuneCatalogEnsure();
+    memset(runes, 0, sizeof(*runes));
+    const cJSON *items = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "items");
+    const cJSON *squads = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "squads");
+    if (!cJSON_IsArray(items) || !cJSON_IsArray(squads) || cJSON_GetArraySize(squads) != PLAYER_MAX_SQUADS ||
+        !ProgressionJsonU64(json, "next_uuid", 0, PROGRESSION_JSON_MAX_SAFE_INTEGER, &runes->next_uuid) ||
+        !ProgressionJsonInt(json, "seen", 0, RUNE_INVENTORY_CAPACITY, &runes->seen))
+        return false;
+    const cJSON *item = NULL;
+    cJSON_ArrayForEach(item, (cJSON *)items) {
+        if (runes->count >= RUNE_INVENTORY_CAPACITY) return false;
+        PlayerRune rune = {.def = RuneDefIndex(JsonStr(item, "def"))};
+        uint64_t expire = 0, inventory_expire = 0;
+        if (!ProgressionJsonU64(item, "uuid", 1, PROGRESSION_JSON_MAX_SAFE_INTEGER, &rune.uuid) ||
+            !ProgressionJsonU64(item, "expire_at", 0, PROGRESSION_JSON_MAX_SAFE_INTEGER, &expire) ||
+            !ProgressionJsonU64(item, "inventory_expire_at", 0, PROGRESSION_JSON_MAX_SAFE_INTEGER, &inventory_expire) ||
+            rune.uuid >= runes->next_uuid || RuneByUuid(runes, rune.uuid))
+            return false;
+        if (rune.def < 0) {
+            TraceLog(LOG_WARNING, "Progression: dropped unknown rune %s", JsonStr(item, "def"));
+            continue;
+        }
+        rune.expire_at = (long long)expire;
+        rune.inventory_expire_at = (long long)inventory_expire;
+        runes->items[runes->count++] = rune;
+    }
+    for (int squad = 0; squad < PLAYER_MAX_SQUADS; squad++) {
+        const cJSON *entry = cJSON_GetArrayItem(squads, squad);
+        const cJSON *slots = cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "slots");
+        const cJSON *unlocked = cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "prestige_unlocked");
+        if (!cJSON_IsArray(slots) || cJSON_GetArraySize(slots) != RUNE_SLOT_COUNT || !cJSON_IsBool(unlocked))
+            return false;
+        runes->prestige_unlocked[squad] = cJSON_IsTrue(unlocked);
+        for (int slot = 0; slot < RUNE_SLOT_COUNT; slot++) {
+            uint64_t uuid = 0;
+            if (!ProgressionJsonItemU64(cJSON_GetArrayItem(slots, slot), 0, PROGRESSION_JSON_MAX_SAFE_INTEGER, &uuid))
+                return false;
+            runes->squad_slots[squad][slot] = RuneByUuid(runes, uuid) ? uuid : 0;
+        }
+    }
+    return true;
 }
 
 bool ProgressionLoadFromPath(Player *player, const char *path) {
@@ -1099,8 +1191,15 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
         }
     }
 
+    PlayerRunes *loaded_runes = NULL;
+    if (valid && version >= 5) {
+        loaded_runes = (PlayerRunes *)malloc(sizeof(PlayerRunes));
+        valid = loaded_runes && ProgressionLoadRunes(cJSON_GetObjectItemCaseSensitive(root, "runes"), loaded_runes);
+    }
+
     cJSON_Delete(root);
     if (!valid) {
+        free(loaded_runes);
         free(loaded_additions);
         TraceLog(LOG_WARNING, "Progression: rejected incompatible or corrupt save %s", path);
         return false;
@@ -1147,6 +1246,8 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
             player->current_squad = loaded_current_squad;
         }
     }
+    if (loaded_runes) player->runes = *loaded_runes;
+    free(loaded_runes);
     free(loaded_additions);
     return true;
 }

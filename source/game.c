@@ -2,6 +2,7 @@ typedef enum {
     SCREEN_HOME,
     SCREEN_STORE,
     SCREEN_HEROES,
+    SCREEN_RUNES,
     SCREEN_QUESTS,
     SCREEN_MAP,
     SCREEN_NEXUS,
@@ -20,6 +21,8 @@ typedef struct {
     BattlePlay battle_play;
     MusicPlayer music;
     Heroes heroes;
+    RunesScreen runes;
+    Screen runes_return_screen;
     Store store;
     Screen store_return_screen;
     Quests quests;
@@ -240,6 +243,8 @@ void GameInitialize(Game *g) {
     memset(&g->battle_play, 0, sizeof(g->battle_play));
     MusicPlayerInitialize(&g->music);
     HeroesInitialize(&g->heroes, &g->player);
+    RunesInitialize(&g->runes);
+    RuneGrantStarterSet(&g->player.runes, RuneNow());
     StoreInitialize(&g->store, "data/store_packs.json", HOD_CACHE "characters.json");
     QuestsInitialize(&g->quests);
     CampaignInitialize(&g->map, "data/campaign_maps.json");
@@ -277,6 +282,7 @@ bool GameHandlePopupBack(Game *g) {
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return true;
     }
+    if (g->screen == SCREEN_RUNES) return RunesHandleBack(&g->runes);
     if (g->screen == SCREEN_QUESTS && QuestsHandleBack(&g->quests)) return true;
     if (g->screen == SCREEN_MAP && CampaignHandleBack(&g->map)) return true;
     if (g->screen == SCREEN_STORE) {
@@ -284,6 +290,58 @@ bool GameHandlePopupBack(Game *g) {
         return true;
     }
     return false;
+}
+
+static void GameOpenRunes(Game *g, Screen return_screen) {
+    g->runes_return_screen = return_screen;
+    RunesOpen(&g->runes, &g->player);
+    g->screen = SCREEN_RUNES;
+}
+
+static void GameReturnFromRunes(Game *g) {
+    HomeBackgroundReloadSquad(&g->scene, &g->player);
+    if (g->runes_return_screen != SCREEN_BATTLE) {
+        g->screen = g->runes_return_screen;
+        return;
+    }
+    g->screen = SCREEN_BATTLE;
+    if (g->battle_is_nexus)
+        GameEnterSelectedNexusBattle(g);
+    else
+        GameEnterSelectedBattle(g);
+}
+
+static void GameLeaveRunesTo(Game *g, Screen destination) {
+    if (g->runes_return_screen == SCREEN_BATTLE) GameExitBattleTo(g, destination);
+    g->screen = destination;
+}
+
+static void GameHandleRunesLeave(Game *g, RunesLeave leave) {
+    switch (leave) {
+        case RUNES_LEAVE_SQUAD:
+            GameLeaveRunesTo(g, SCREEN_HEROES);
+            break;
+        case RUNES_LEAVE_RETURN:
+            GameReturnFromRunes(g);
+            break;
+        case RUNES_LEAVE_HOME:
+            GameLeaveRunesTo(g, SCREEN_HOME);
+            break;
+        case RUNES_LEAVE_STORE:
+            GameLeaveRunesTo(g, SCREEN_HEROES);
+            g->store_return_screen = SCREEN_HEROES;
+            StoreOpen(&g->store);
+            StoreShowRunes(&g->store);
+            g->screen = SCREEN_STORE;
+            break;
+        case RUNES_LEAVE_SELECT_SQUAD:
+            PlayerSquadSelect(&g->player, g->runes.leave_squad);
+            HeroesBackgroundReloadSquad(&g->heroes_scene, &g->player);
+            HomeBackgroundReloadSquad(&g->scene, &g->player);
+            break;
+        default:
+            break;
+    }
 }
 
 static void GameToggleResourceDialog(Game *g, bool stamina) {
@@ -428,6 +486,8 @@ void GameDraw(Game *g) {
 
             if (heroes_action == HEROES_QUEST) {
                 g->screen = SCREEN_QUESTS;
+            } else if (heroes_action == HEROES_RUNES) {
+                GameOpenRunes(g, SCREEN_HEROES);
             } else if (heroes_action != HEROES_NONE && heroes_action != HEROES_SQUAD) {
                 TraceLog(LOG_INFO, "Heroes action %d has no local target screen yet", heroes_action);
             }
@@ -460,6 +520,22 @@ void GameDraw(Game *g) {
                 squad_changed = true;
             }
             if (squad_changed) HomeBackgroundReloadSquad(&g->scene, &g->player);
+            break;
+        }
+        case SCREEN_RUNES: {
+            HeroesBackgroundUpdate(&g->heroes_scene, dt);
+            HeroesBackgroundDraw(&g->heroes_scene);
+
+            UiFrameBegin();
+            HudAction hud_action = resource_modal ? HUD_NONE : HudDraw(&g->hud, &g->player, true, false);
+            if (hud_action == HUD_HOME) {
+                RunesRequestLeave(&g->runes, RUNES_LEAVE_HOME, 0);
+                hud_action = HUD_NONE;
+            }
+            RunesLeave leave = RunesDraw(&g->runes, &g->heroes, &g->player, dt);
+            UiFrameEnd();
+            GameHandleRunesLeave(g, leave);
+            GameHandleHudAction(g, hud_action);
             break;
         }
         case SCREEN_QUESTS: {
@@ -613,6 +689,9 @@ void GameDraw(Game *g) {
             }
             if (leave) {
                 GameExitBattleTo(g, g->battle_is_nexus ? SCREEN_NEXUS : SCREEN_MAP);
+            } else if (ba == BATTLE_UI_RUNES && !combat) {
+                BattleStopAmbience(&g->battle);
+                GameOpenRunes(g, SCREEN_BATTLE);
             }
             if (a == HUD_HOME) {
                 GameExitBattleTo(g, SCREEN_HOME);
@@ -646,7 +725,7 @@ void GameDraw(Game *g) {
             g->screen = SCREEN_QUESTS;
     }
     GameHandleHudAction(g, popup_hud_action);
-    if (screen_at_frame_start == SCREEN_HEROES && g->screen != SCREEN_HEROES)
+    if (screen_at_frame_start == SCREEN_HEROES && g->screen != SCREEN_HEROES && g->screen != SCREEN_RUNES)
         HeroesBackgroundClearRowBonus(&g->heroes_scene);
     if (screen_at_frame_start == SCREEN_QUESTS && g->screen != SCREEN_QUESTS) QuestsClose(&g->quests);
     if (screen_at_frame_start == SCREEN_NEXUS && g->screen != SCREEN_NEXUS && g->screen != SCREEN_BATTLE &&
@@ -658,6 +737,7 @@ void GameDraw(Game *g) {
 
 void GameDestroy(Game *g) {
     StoreDestroy(&g->store);
+    RuneIconsUnload();
     HeroesDestroy(&g->heroes);
     LocUnload();
     ProgressionSave(&g->player);

@@ -9,6 +9,8 @@
 #define NEXUS_KEY_MAX 99
 #define NEXUS_SECONDS_PER_DAY 86400LL
 
+#define PLAYER_MAX_SQUADS 4
+
 typedef struct {
     const int game_width;
     const int game_height;

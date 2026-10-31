@@ -1,6 +1,5 @@
 #define SQUAD_SLOT_COUNT 5
 #define SQUAD_SLOT_LARGE 4
-#define PLAYER_MAX_SQUADS 4
 #define PLAYER_REGEN_PERIOD 300.0f
 #define ENERGY_REFILL_GEM_COST 3
 #define STAMINA_REFILL_GEM_COST 3
@@ -109,6 +108,8 @@ typedef struct {
     int keys[NEXUS_KEY_COUNT];
     PlayerNexusRun nexus_run;
     PlayerNexusEvents nexus_events;
+
+    PlayerRunes runes;
 } Player;
 
 static cJSON *CatalogFindCharacter(const cJSON *characters, const char *id) {
@@ -417,6 +418,7 @@ static void PlayerRegenPool(int *value, int max, float *timer, float dt) {
 void PlayerUpdate(Player *p, float dt) {
     PlayerRegenPool(&p->energy, p->energy_max, &p->energy_regen_timer, dt);
     PlayerRegenPool(&p->stamina, p->stamina_max, &p->stamina_regen_timer, dt);
+    RuneExpire(&p->runes, RuneNow());
 }
 
 static float PlayerRegenRemaining(int value, int max, float timer) {
@@ -447,6 +449,13 @@ bool PlayerSpendGold(Player *p, int cost) {
 bool PlayerSpendGems(Player *p, int cost) {
     if (!p || cost < 0 || p->gems < cost) return false;
     p->gems -= cost;
+    return true;
+}
+
+bool PlayerUnlockPrestigeRuneSlot(Player *p, int squad) {
+    if (!p || squad < 0 || squad >= PLAYER_MAX_SQUADS || p->runes.prestige_unlocked[squad]) return false;
+    if (!PlayerSpendGems(p, RUNE_PRESTIGE_UNLOCK_GEMS)) return false;
+    p->runes.prestige_unlocked[squad] = true;
     return true;
 }
 
