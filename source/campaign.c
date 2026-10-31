@@ -28,6 +28,34 @@ static const CampaignIguiAnchor CAMPAIGN_CTA_BODY = {0.775f, 0.725f, 0.725f, 0.3
 static const CampaignIguiAnchor CAMPAIGN_CTA_INFO = {0.925f, 0.175f, 1.0f, 0.275f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_CTA_ICON = {-0.025f, 0.775f, 1.0f, 0.55f, 1.0f};
 
+#define CAMPAIGN_ABOUT_CANVAS_WIDTH 1280.0f
+#define CAMPAIGN_ABOUT_TITLE_SIZE 34.0f
+#define CAMPAIGN_ABOUT_TAB_SIZE 24.0f
+#define CAMPAIGN_ABOUT_QUOTE_SIZE 16.0f
+#define CAMPAIGN_ABOUT_TEXT_SIZE 18.0f
+#define CAMPAIGN_ABOUT_CTA_SIZE 18.0f
+#define CAMPAIGN_ABOUT_MIN_TEXT_SIZE 11.0f
+#define CAMPAIGN_DETAILS_TITLE_SIZE 22.0f
+#define CAMPAIGN_DETAILS_TITLE_GAP 8.0f
+
+static const Rectangle CAMPAIGN_ABOUT_FRAME = {208.0f, 137.0f, 865.0f, 583.0f};
+static const Rectangle CAMPAIGN_ABOUT_TITLE = {208.0f, 137.0f, 865.0f, 59.0f};
+static const Rectangle CAMPAIGN_ABOUT_TAB_LEFT = {269.0f, 216.0f, 368.0f, 59.0f};
+static const Rectangle CAMPAIGN_ABOUT_TAB_MIDDLE = {636.0f, 216.0f, 9.0f, 59.0f};
+static const Rectangle CAMPAIGN_ABOUT_TAB_RIGHT = {642.0f, 216.0f, 372.0f, 59.0f};
+static const Rectangle CAMPAIGN_ABOUT_TAB_ABOUT_LABEL = {269.0f, 216.0f, 365.0f, 54.0f};
+static const Rectangle CAMPAIGN_ABOUT_TAB_HELP_LABEL = {647.0f, 216.0f, 365.0f, 54.0f};
+static const Rectangle CAMPAIGN_ABOUT_CLOSE = {995.0f, 171.0f, 66.0f, 66.0f};
+static const Rectangle CAMPAIGN_ABOUT_QUOTE_BG = {258.0f, 274.0f, 242.0f, 421.0f};
+static const Rectangle CAMPAIGN_ABOUT_QUOTE_ART = {325.0f, 305.0f, 109.5f, 116.0f};
+static const Rectangle CAMPAIGN_ABOUT_QUOTE_TEXT = {295.0f, 434.0f, 170.0f, 222.0f};
+static const Rectangle CAMPAIGN_ABOUT_MAP_ART = {497.0f, 283.0f, 503.0f, 125.3f};
+static const Rectangle CAMPAIGN_ABOUT_TEXT = {497.0f, 420.0f, 503.0f, 172.0f};
+static const Rectangle CAMPAIGN_ABOUT_CTA_BG = {467.0f, 575.0f, 561.0f, 119.6f};
+static const Rectangle CAMPAIGN_ABOUT_CTA_TEXT = {509.0f, 612.0f, 360.0f, 43.0f};
+static const Rectangle CAMPAIGN_ABOUT_GEMS_TEXT = {853.0f, 614.0f, 72.0f, 43.0f};
+static const Rectangle CAMPAIGN_ABOUT_COLLECTED = {876.0f, 607.0f, 58.0f, 58.0f};
+
 static Rectangle CampaignIguiRect(Rectangle parent, CampaignIguiAnchor anchor) {
     return HudFitRect(parent, anchor.x, anchor.y, anchor.width, anchor.height, anchor.aspect);
 }
@@ -68,6 +96,8 @@ typedef struct {
     char title[64];
     Texture2D background;
     Texture2D tray_icon;
+    Texture2D about_quote;
+    Texture2D about_thumbnail;
     CampaignNodeLayout layout;
     int node_count;
     CampaignNode nodes[CAMPAIGN_MAX_NODES];
@@ -103,6 +133,16 @@ typedef struct {
     Texture2D tray_arrow;
     Texture2D tray_arrow_on;
     Texture2D cta_bg;
+    Texture2D about_frame;
+    Texture2D about_quote_bg;
+    Texture2D about_cta_bg;
+    Texture2D about_tab_left;
+    Texture2D about_tab_middle;
+    Texture2D about_tab_right;
+    Texture2D about_collected;
+    Button about_close;
+    bool about_open;
+    bool about_opening_release;
     Button change_map;
     Button enter_map;
     bool tray_open;
@@ -212,6 +252,25 @@ static CampaignNodeLayout CampaignReadNodeLayout(const cJSON *layout, const char
     };
 }
 
+static int CampaignMapNumber(const char *map_id) {
+    size_t prefix = strlen(CAMPAIGN_ID_PREFIX);
+    if (strncmp(map_id, CAMPAIGN_ID_PREFIX, prefix) != 0)
+        TraceLog(LOG_FATAL, "Campaign: map id %s does not start with %s", map_id, CAMPAIGN_ID_PREFIX);
+    return atoi(map_id + prefix);
+}
+
+static const char *CampaignMapPrefab(int map_number) {
+    return map_number == 1 ? "map_placeholder_pre" : TextFormat("map_placeholder%d_pre", map_number);
+}
+
+static Texture2D CampaignLoadMapPrefabTexture(int map_number, const char *name_format) {
+    char prefab[48];
+    StrCopy(prefab, sizeof(prefab), CampaignMapPrefab(map_number));
+    char name[48];
+    snprintf(name, sizeof(name), name_format, map_number);
+    return LoadSprite(TextFormat("%s%s/%s", CACHE_RESOURCE_PREFIX, prefab, name));
+}
+
 static Texture2D CampaignLoadTrayIcon(const char *map_id) {
     size_t prefix = strlen(CAMPAIGN_ID_PREFIX);
     if (strncmp(map_id, CAMPAIGN_ID_PREFIX, prefix) != 0)
@@ -258,6 +317,8 @@ void CampaignMapsInitialize(Campaign *c, const char *path) {
 
         m->layout = CampaignReadNodeLayout(cJSON_GetObjectItemCaseSensitive(chapter, "node_layout"), id);
         m->tray_icon = CampaignLoadTrayIcon(id);
+        m->about_quote = CampaignLoadMapPrefabTexture(CampaignMapNumber(id), "map%d_character");
+        m->about_thumbnail = CampaignLoadMapPrefabTexture(CampaignMapNumber(id), "map%d");
         m->node_count = 0;
         cJSON *n = NULL;
         cJSON_ArrayForEach(n, cJSON_GetObjectItemCaseSensitive(chapter, "nodes")) {
@@ -368,6 +429,16 @@ void CampaignInitialize(Campaign *c, const char *maps_path) {
     c->tray_arrow = GuiTex(GUI_MAP_TRAY_ARROW);
     c->tray_arrow_on = GuiTex(GUI_MAP_TRAY_ARROW_ON);
     c->cta_bg = GuiTex(GUI_MAP_TRAY_CTA_BG);
+    c->about_frame = GuiTex(GUI_QUESTS_BG);
+    c->about_quote_bg = GuiTex(GUI_MAP_ABOUT_QUOTE_BG);
+    c->about_cta_bg = GuiTex(GUI_MAP_ABOUT_CTA_BG);
+    c->about_tab_left = GuiTex(GUI_MAP_ABOUT_TAB_LEFT);
+    c->about_tab_middle = GuiTex(GUI_MAP_ABOUT_TAB_MIDDLE);
+    c->about_tab_right = GuiTex(GUI_MAP_ABOUT_TAB_RIGHT);
+    c->about_collected = GuiTex(GUI_MAP_ABOUT_COLLECTED);
+    c->about_close = ButtonLoad(GUI_BTN_CLOSE, GUI_BTN_CLOSE);
+    ButtonSetClickSound(&c->about_close, SND_UI_POPUP_CLOSE);
+    c->about_open = false;
     c->tray_open = false;
     c->tray_scroll = 0.0f;
     c->tray_scroll_target = 0.0f;
@@ -639,12 +710,31 @@ static int CampaignDrawTray(
     return clicked;
 }
 
+static bool CampaignDrawHelpButton(const Campaign *c, Rectangle rect, bool interactive) {
+    bool hover = interactive && CheckCollisionPointRec(UiMouse(), rect);
+    UiDrawTexture(c->help, rect, hover ? (Color){255, 236, 180, 255} : WHITE);
+    return hover && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+}
+
+static void CampaignOpenAbout(Campaign *c) {
+    c->about_open = true;
+    c->about_opening_release = true;
+    GuiSoundPlay(SND_UI_TAB);
+}
+
+bool CampaignHandleBack(Campaign *c) {
+    if (!c->about_open) return false;
+    c->about_open = false;
+    GuiSoundPlay(SND_UI_POPUP_CLOSE);
+    return true;
+}
+
 static float CampaignFitWrappedSize(Font font, const char *text, Rectangle box, float size, float min_size) {
     while (size > min_size && HeroesRichLayout(font, text, box, size, WHITE, false) > box.height) size -= 0.5f;
     return size;
 }
 
-static void CampaignDrawTrayCallToAction(const Campaign *c, const CampaignMap *m, float screen_w, float screen_h) {
+static Rectangle CampaignDrawTrayCallToAction(const Campaign *c, const CampaignMap *m, float screen_w, float screen_h) {
     Rectangle panel = CampaignIguiRect(CampaignScreenRoot(screen_w, screen_h), CAMPAIGN_CTA_PANEL);
     Rectangle title_box = CampaignIguiRect(panel, CAMPAIGN_CTA_TITLE);
     Rectangle body_box = CampaignIguiRect(panel, CAMPAIGN_CTA_BODY);
@@ -663,9 +753,105 @@ static void CampaignDrawTrayCallToAction(const Campaign *c, const CampaignMap *m
         CampaignFitWrappedSize(body_font, body, body_box, CAMPAIGN_CTA_BODY_SIZE, CAMPAIGN_CTA_BODY_MIN_SIZE);
     HeroesDrawRich(body_font, body, body_box, body_size, (Color){214, 210, 198, 255});
 
-    UiDrawTexture(c->help, CampaignIguiRect(panel, CAMPAIGN_CTA_INFO), WHITE);
     UiDrawTexture(c->tray_node, icon_box, WHITE);
     UiDrawTexture(m->tray_icon, icon_box, WHITE);
+    return CampaignIguiRect(panel, CAMPAIGN_CTA_INFO);
+}
+
+static Rectangle CampaignAboutRect(Rectangle rect, float offset_x) {
+    rect.x += offset_x;
+    return rect;
+}
+
+static void CampaignDrawFittedText(Font font, const char *text, Rectangle box, float size, Color color) {
+    HeroesDrawRich(font, text, box, CampaignFitWrappedSize(font, text, box, size, CAMPAIGN_ABOUT_MIN_TEXT_SIZE), color);
+}
+
+static void CampaignDrawAbout(Campaign *c, const PlayerCampaignProgress *pcp, int map_index, float screen_w) {
+    const CampaignMap *m = &c->maps[map_index];
+    float dx = (screen_w - CAMPAIGN_ABOUT_CANVAS_WIDTH) * 0.5f;
+    Rectangle root = UiRoot();
+    DrawRectangle(0, (int)HUD_TOP_HEIGHT, (int)root.width, (int)(root.height - HUD_TOP_HEIGHT), (Color){0, 0, 0, 150});
+
+    Rectangle frame = CampaignAboutRect(CAMPAIGN_ABOUT_FRAME, dx);
+    UiDrawTexture(c->about_frame, frame, WHITE);
+    UiDrawTexture(c->about_tab_left, CampaignAboutRect(CAMPAIGN_ABOUT_TAB_LEFT, dx), WHITE);
+    UiDrawTexture(c->about_tab_middle, CampaignAboutRect(CAMPAIGN_ABOUT_TAB_MIDDLE, dx), WHITE);
+    UiDrawTexture(c->about_tab_right, CampaignAboutRect(CAMPAIGN_ABOUT_TAB_RIGHT, dx), WHITE);
+
+    Color text = {235, 232, 220, 255};
+    Color muted = {196, 192, 182, 255};
+    const char *title = LocGetOr(TextFormat("%s_header", m->id), m->title);
+    Rectangle title_box = CampaignAboutRect(CAMPAIGN_ABOUT_TITLE, dx);
+    float title_size = CAMPAIGN_ABOUT_TITLE_SIZE;
+    float title_w = MeasureTextEx(c->font, title, title_size, 1.0f).x;
+    if (title_w > title_box.width) title_size *= title_box.width / title_w;
+    UiDrawTextCentered(c->font, title, title_box, title_size, text);
+    UiDrawTextCentered(
+        c->font,
+        LocGetOr("HELPOVERLAY_TAB_ABOUT", "Об игре"),
+        CampaignAboutRect(CAMPAIGN_ABOUT_TAB_ABOUT_LABEL, dx),
+        CAMPAIGN_ABOUT_TAB_SIZE,
+        text
+    );
+    UiDrawTextCentered(
+        c->font,
+        LocGetOr("HELPOVERLAY_TAB_HELP", "Помощь"),
+        CampaignAboutRect(CAMPAIGN_ABOUT_TAB_HELP_LABEL, dx),
+        CAMPAIGN_ABOUT_TAB_SIZE,
+        muted
+    );
+
+    UiDrawTexture(c->about_quote_bg, CampaignAboutRect(CAMPAIGN_ABOUT_QUOTE_BG, dx), WHITE);
+    UiDrawTexture(m->about_quote, CampaignAboutRect(CAMPAIGN_ABOUT_QUOTE_ART, dx), WHITE);
+    Font body = GuiFont(FNT_MENU);
+    CampaignDrawFittedText(
+        body,
+        LocGet(TextFormat("%s_quote", m->id)),
+        CampaignAboutRect(CAMPAIGN_ABOUT_QUOTE_TEXT, dx),
+        CAMPAIGN_ABOUT_QUOTE_SIZE,
+        muted
+    );
+    UiDrawTexture(m->about_thumbnail, CampaignAboutRect(CAMPAIGN_ABOUT_MAP_ART, dx), WHITE);
+    CampaignDrawFittedText(
+        body,
+        LocGet(TextFormat("%s_desc", m->id)),
+        CampaignAboutRect(CAMPAIGN_ABOUT_TEXT, dx),
+        CAMPAIGN_ABOUT_TEXT_SIZE,
+        text
+    );
+
+    UiDrawTexture(c->about_cta_bg, CampaignAboutRect(CAMPAIGN_ABOUT_CTA_BG, dx), WHITE);
+    CampaignDrawFittedText(
+        c->font,
+        LocGet(TextFormat("%s_details_CTA", m->id)),
+        CampaignAboutRect(CAMPAIGN_ABOUT_CTA_TEXT, dx),
+        CAMPAIGN_ABOUT_CTA_SIZE,
+        text
+    );
+    int boss = CampaignBossNodeIndex(c, map_index);
+    if (boss >= 0) {
+        UiDrawTextCentered(
+            c->font,
+            TextFormat("+%d", m->nodes[boss].first_win_gems),
+            CampaignAboutRect(CAMPAIGN_ABOUT_GEMS_TEXT, dx),
+            CAMPAIGN_ABOUT_CTA_SIZE,
+            text
+        );
+        if (pcp->node_completions[map_index][boss] > 0)
+            UiDrawTexture(c->about_collected, CampaignAboutRect(CAMPAIGN_ABOUT_COLLECTED, dx), WHITE);
+    }
+
+    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT)) c->about_opening_release = false;
+    bool interactive = !c->about_opening_release && !UiInputBlocked();
+    Rectangle close = CampaignAboutRect(CAMPAIGN_ABOUT_CLOSE, dx);
+    if (ButtonDrawEx(&c->about_close, close, interactive)) {
+        c->about_open = false;
+    } else if (interactive && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && UiMouse().y > HUD_TOP_HEIGHT &&
+               !CheckCollisionPointRec(UiMouse(), frame)) {
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+        c->about_open = false;
+    }
 }
 
 int CampaignSelectedEnergyCost(const Campaign *c, const PlayerCampaignProgress *pcp) {
@@ -736,7 +922,9 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
         if (fabsf(target - c->scroll_x) < 1.0f) c->scroll_node = c->selected_node;
     }
 
-    bool progression_input_locked = (c->progression_active && !c->progression_camera_finished) || UiInputBlocked();
+    bool about_was_open = c->about_open;
+    bool progression_input_locked =
+        (c->progression_active && !c->progression_camera_finished) || UiInputBlocked() || about_was_open;
     CampaignTrayLayout tray = CampaignTrayLayoutFor(screen_w, screen_h);
     Rectangle toggle_rect = CampaignTrayToggleRect(screen_w, screen_h);
     bool over_tray = c->tray_open && UiMouse().y >= tray.list.y;
@@ -847,7 +1035,8 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
             GuiSoundPlay(SND_MAP_TRANSITION);
             CampaignSelectMap(c, pcp, picked);
         }
-        CampaignDrawTrayCallToAction(c, &c->maps[pcp->campaign_index], screen_w, screen_h);
+        Rectangle info = CampaignDrawTrayCallToAction(c, &c->maps[pcp->campaign_index], screen_w, screen_h);
+        if (CampaignDrawHelpButton(c, info, !progression_input_locked)) CampaignOpenAbout(c);
     }
 
     if (ButtonDrawEx(&c->change_map, toggle_rect, !progression_input_locked)) {
@@ -874,15 +1063,14 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
 
         CampaignNode *n = &m->nodes[c->selected_node];
         {
-            float size = 22.0f, spacing = 1.0f;
-            Vector2 tw = MeasureTextEx(c->font, n->name, size, spacing);
-            Vector2 pos = {lore.x + lore.width - tw.x - 8.0f, lore.y + 44.0f};
-            DrawTextEx(c->font, n->name, pos, size, spacing, (Color){235, 232, 220, 255});
-        }
-
-        {
-            Rectangle dst = {screen_w - 356.0f, 106, 48, 48};
-            UiDrawTexture(c->help, dst, WHITE);
+            Rectangle help = {screen_w - 356.0f, 106, 48, 48};
+            if (CampaignDrawHelpButton(c, help, !progression_input_locked)) CampaignOpenAbout(c);
+            float left = help.x + help.width + CAMPAIGN_DETAILS_TITLE_GAP;
+            Rectangle title = {left, help.y, lore.x + lore.width - CAMPAIGN_DETAILS_TITLE_GAP - left, help.height};
+            float size = CAMPAIGN_DETAILS_TITLE_SIZE;
+            float width = MeasureTextEx(c->font, n->name, size, 1.0f).x;
+            if (width > title.width) size *= title.width / width;
+            UiDrawTextLeftMiddle(c->font, n->name, title, size, (Color){235, 232, 220, 255});
         }
 
         {
@@ -953,5 +1141,6 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
             c->progression_from_map == c->progression_to_map ? (c->progression_unlock_next ? 3.0f : 2.0f) : 3.5f;
         if (c->progression_time >= duration) c->progression_active = false;
     }
+    if (c->about_open) CampaignDrawAbout(c, pcp, pcp->campaign_index, screen_w);
     return action;
 }

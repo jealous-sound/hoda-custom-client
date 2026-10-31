@@ -278,6 +278,7 @@ bool GameHandlePopupBack(Game *g) {
         return true;
     }
     if (g->screen == SCREEN_QUESTS && QuestsHandleBack(&g->quests)) return true;
+    if (g->screen == SCREEN_MAP && CampaignHandleBack(&g->map)) return true;
     if (g->screen == SCREEN_STORE) {
         if (StoreHandleBack(&g->store, &g->heroes) == STORE_ACTION_CLOSE) g->screen = SCREEN_HOME;
         return true;
