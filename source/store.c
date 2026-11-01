@@ -67,7 +67,8 @@ static const Rectangle STORE_LANDING_TILES[STORE_TILE_COUNT] = {
 #define STORE_TILE_ART_INSET_X 0.05f
 #define STORE_TILE_ART_HEIGHT 0.76f
 #define STORE_TILE_LABEL_HEIGHT 28.0f
-#define STORE_TILE_LABEL_BOTTOM_OF_TILE 0.065f
+#define STORE_TILE_LABEL_BOTTOM_OF_FEATURED_TILE 0.065f
+#define STORE_TILE_LABEL_BOTTOM_OF_SQUARE_TILE 0.045f
 #define STORE_TILE_LABEL_SIZE 26.0f
 #define STORE_FEATURED_FRAME_TINT ((Color){255, 196, 92, 255})
 
@@ -84,6 +85,7 @@ static const Rectangle STORE_LANDING_TILES[STORE_TILE_COUNT] = {
 #define STORE_REVEAL_DONE_RECT ((Rectangle){789.0f, 606.0f, 259.0f, 58.0f})
 #define STORE_HEADER_TEXT_OF_CELL 0.052f
 #define STORE_BULLET_TEXT_OF_CELL 0.04f
+#define STORE_BULLET_ICON_GAP_OF_ICON 0.3f
 #define STORE_PRICE_TEXT_OF_BAR 0.66f
 #define STORE_PRICE_RIGHT_OF_BAR 0.5f
 #define STORE_CURRENCY_CENTER_OF_BAR 0.609f
@@ -1221,7 +1223,7 @@ static void StoreDrawToast(Store *store) {
     StoreDrawCenteredFit(store->body_font, store->status, toast, 19.0f, WHITE);
 }
 
-static bool StoreDrawCategoryTile(Store *store, Rectangle rect, Texture2D art, const char *label, Color frame) {
+static bool StoreDrawCategoryTile(Store *store, Rectangle rect, Texture2D art, const char *label, Color frame, float label_bottom) {
     bool hover = !StoreInputBlocked(store) && CheckCollisionPointRec(UiMouse(), rect);
     Rectangle inner = {
         rect.x + rect.width * STORE_TILE_ART_INSET_X,
@@ -1236,7 +1238,7 @@ static bool StoreDrawCategoryTile(Store *store, Rectangle rect, Texture2D art, c
         label,
         (Rectangle){
             rect.x + 0.105f * rect.width,
-            rect.y + rect.height * (1.0f - STORE_TILE_LABEL_BOTTOM_OF_TILE) - STORE_TILE_LABEL_HEIGHT,
+            rect.y + rect.height * (1.0f - label_bottom) - STORE_TILE_LABEL_HEIGHT,
             0.79f * rect.width,
             STORE_TILE_LABEL_HEIGHT
         },
@@ -1269,7 +1271,9 @@ static StoreAction StoreDrawLanding(Store *store) {
     };
     for (int tile = 0; tile < STORE_TILE_COUNT; tile++) {
         Color frame = tile == STORE_TILE_FEATURED ? STORE_FEATURED_FRAME_TINT : WHITE;
-        if (StoreDrawCategoryTile(store, StoreLandingTileRect(tile), store->category_art[tile], labels[tile], frame)) {
+        float label_bottom =
+            tile == STORE_TILE_FEATURED ? STORE_TILE_LABEL_BOTTOM_OF_FEATURED_TILE : STORE_TILE_LABEL_BOTTOM_OF_SQUARE_TILE;
+        if (StoreDrawCategoryTile(store, StoreLandingTileRect(tile), store->category_art[tile], labels[tile], frame, label_bottom)) {
             StoreEnterPage(store, targets[tile]);
             GuiSoundPlay(SND_UI_TAB);
             break;
@@ -1311,10 +1315,24 @@ static void StoreDrawBuyPrice(Store *store, StoreOffer offer, const Player *play
     );
 }
 
-static void StoreDrawRarityCard(Store *store, Rectangle rect, int rarity, float text_size) {
-    DrawRectangleRec(rect, BLACK);
+static Texture2D StoreRarityBackdrop(StorePackKind kind, int rarity) {
+    int tier = rarity < RARITY_COMMON ? 0 : (rarity > RARITY_LEGENDARY ? RARITY_LEGENDARY : rarity) - RARITY_COMMON;
+    if (kind == STORE_KIND_HERO) return GuiTex(GUI_STORE_UNIT_RARITY_COMMON + tier);
+    return GuiTex(GUI_STORE_RUNE_RARITY_COMMON + tier);
+}
+
+static void StoreDrawRarityIcon(StorePackKind kind, Rectangle rect, int rarity, Color tint) {
+    if (kind == STORE_KIND_GEAR) {
+        DrawRectangleRec(rect, ColorAlpha(BLACK, tint.a / 255.0f));
+        UiDrawTexture(GearRarityFrame(rarity), rect, tint);
+        return;
+    }
+    UiDrawTexture(StoreRarityBackdrop(kind, rarity), rect, tint);
+}
+
+static void StoreDrawRarityCard(Store *store, StorePackKind kind, Rectangle rect, int rarity, float text_size) {
+    StoreDrawRarityIcon(kind, rect, rarity, WHITE);
     StoreDrawCenteredFit(store->title_font, "?", rect, text_size, (Color){236, 232, 220, 255});
-    UiDrawTexture(GearRarityFrame(rarity), rect, WHITE);
 }
 
 static int StoreBulletCount(const StorePackDef *pack, const Player *player) {
@@ -1352,9 +1370,14 @@ StoreDrawPackBullets(Store *store, const StorePackDef *pack, const Player *playe
         return;
     }
     float icon = rect.height;
-    StoreDrawRarityCard(store, (Rectangle){rect.x, rect.y, icon, icon}, bullet.rarity, icon * 0.8f);
-    Rectangle text = {rect.x + icon * 1.3f, rect.y, rect.width - icon * 1.3f, rect.height};
+    float text_width = MeasureTextEx(store->title_font, bullet.text, size, 1.0f).x;
+    float gap = icon * STORE_BULLET_ICON_GAP_OF_ICON;
+    float group = fminf(text_width + gap + icon, rect.width);
+    float left = rect.x + (rect.width - group) * 0.5f;
+    Rectangle text = {left, rect.y, group - gap - icon, rect.height};
     StoreDrawCenteredFit(store->title_font, bullet.text, text, size, color);
+    Rectangle card = {left + group - icon, rect.y, icon, icon};
+    StoreDrawRarityIcon(pack->kind, card, bullet.rarity, Fade(WHITE, alpha));
 }
 
 static const char *StoreShortTime(long long seconds) {
@@ -1497,7 +1520,7 @@ static StoreAction StoreDrawItemReveal(Store *store, Player *player, Heroes *her
                 continue;
             }
             if (age < 0.0f) {
-                StoreDrawRarityCard(store, card, StoreItemRarity(store, i), card.height * 0.6f);
+                StoreDrawRarityCard(store, store->item_kind, card, StoreItemRarity(store, i), card.height * 0.6f);
                 continue;
             }
             StoreDrawRevealItem(store, i, card);
