@@ -760,16 +760,16 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
     }
 
     {
-        float plate_w = 200.0f, plate_h = 56.0f;
-        Rectangle plate = {screen_w / 2.0f - plate_w / 2.0f, screen_h - 68.0f, plate_w, plate_h};
+        float plate_w = 230.0f, plate_h = 52.0f, icon_size = 64.0f;
+        Rectangle plate = {screen_w / 2.0f - plate_w / 2.0f, screen_h - 66.0f, plate_w, plate_h};
         UiDrawTexture(n->timer_plate, plate, WHITE);
-        UiDrawTexture(n->potion_icon, (Rectangle){plate.x + 22.0f, plate.y + 9.0f, 38.0f, 38.0f}, WHITE);
+        UiDrawTexture(n->potion_icon, (Rectangle){plate.x - 6.0f, plate.y + (plate_h - icon_size) / 2.0f, icon_size, icon_size}, WHITE);
         const char *label = TextFormat("%d / %d", player->potions, player->potion_max);
         UiDrawTextCentered(
             n->font,
             label,
-            (Rectangle){plate.x + 46.0f, plate.y + 15.0f, plate.width - 60.0f, 0.0f},
-            26.0f,
+            (Rectangle){plate.x + 58.0f, plate.y + 11.0f, plate.width - 68.0f, 0.0f},
+            30.0f,
             (Color){245, 244, 238, 255}
         );
     }
