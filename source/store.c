@@ -1,6 +1,7 @@
 
 bool ProgressionSave(const Player *player);
 Color GearRarityColor(int rarity);
+Texture2D GearRarityFrame(int rarity);
 void GearDrawTile(const GearDef *def, Rectangle r, bool selected);
 static void CampaignDrawWrapped(
     Font font, const char *text, Vector2 pos, float size, float spacing, float line_gap, float max_width, Color tint
@@ -40,7 +41,7 @@ static const Rectangle STORE_CELL_HEADER = {0.0244f, 0.0229f, 0.9385f, 0.1013f};
 static const Rectangle STORE_CELL_CARD = {0.0393f, 0.1468f, 0.9193f, 0.661f};
 static const Rectangle STORE_CELL_ICON = {0.0993f, 0.1918f, 0.7989f, 0.464f};
 static const Rectangle STORE_CELL_INFO = {0.795f, 0.1667f, 0.1333f, 0.0779f};
-static const Rectangle STORE_CELL_BULLET = {0.06f, 0.724f, 0.88f, 0.06f};
+static const Rectangle STORE_CELL_BULLET = {0.06f, 0.705f, 0.88f, 0.06f};
 static const Rectangle STORE_CELL_BUY = {0.0244f, 0.8219f, 0.953f, 0.1013f};
 static const Rectangle STORE_CELL_TAP_AREA = {0.0f, 0.0f, 1.0f, 0.81f};
 static const Rectangle STORE_CELL_TIMER = {0.2f, 0.135f, 0.6f, 0.065f};
@@ -66,6 +67,7 @@ static const Rectangle STORE_LANDING_TILES[STORE_TILE_COUNT] = {
 #define STORE_TILE_ART_INSET_X 0.05f
 #define STORE_TILE_ART_HEIGHT 0.76f
 #define STORE_TILE_LABEL_HEIGHT 28.0f
+#define STORE_TILE_LABEL_BOTTOM_OF_TILE 0.065f
 #define STORE_TILE_LABEL_SIZE 26.0f
 #define STORE_FEATURED_FRAME_TINT ((Color){255, 196, 92, 255})
 
@@ -1234,7 +1236,7 @@ static bool StoreDrawCategoryTile(Store *store, Rectangle rect, Texture2D art, c
         label,
         (Rectangle){
             rect.x + 0.105f * rect.width,
-            rect.y + rect.height - STORE_TILE_LABEL_HEIGHT - 8.0f,
+            rect.y + rect.height * (1.0f - STORE_TILE_LABEL_BOTTOM_OF_TILE) - STORE_TILE_LABEL_HEIGHT,
             0.79f * rect.width,
             STORE_TILE_LABEL_HEIGHT
         },
@@ -1310,10 +1312,9 @@ static void StoreDrawBuyPrice(Store *store, StoreOffer offer, const Player *play
 }
 
 static void StoreDrawRarityCard(Store *store, Rectangle rect, int rarity, float text_size) {
-    Color color = GearRarityColor(rarity);
-    DrawRectangleRec(rect, ColorBrightness(color, -0.25f));
-    DrawRectangleLinesEx(rect, fmaxf(1.0f, rect.width * 0.03f), color);
-    StoreDrawCenteredFit(store->title_font, "?", rect, text_size, (Color){20, 16, 10, 255});
+    DrawRectangleRec(rect, BLACK);
+    StoreDrawCenteredFit(store->title_font, "?", rect, text_size, (Color){236, 232, 220, 255});
+    UiDrawTexture(GearRarityFrame(rarity), rect, WHITE);
 }
 
 static int StoreBulletCount(const StorePackDef *pack, const Player *player) {
