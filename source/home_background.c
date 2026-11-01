@@ -776,6 +776,11 @@ void HomeBackgroundUpdate(HomeBackground *scene, float dt)
     HomeSquadUnitUpdate(&scene->gallery_unit, dt);
 }
 
+bool HomeBackgroundSquadClick(HomeBackground *scene, Vector2 screen_position)
+{
+    return HomeSquadPlayAttackAt(&scene->squad, GetScreenToWorldRay(screen_position, scene->cam));
+}
+
 void HomeBackgroundDraw(HomeBackground *scene)
 {
     float tnow = (float)GetTime();

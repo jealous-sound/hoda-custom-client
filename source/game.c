@@ -596,6 +596,8 @@ void GameDraw(Game *g) {
             int missions_badge = MissionUnseenClaimableCount(&g->player.missions);
             HomeButton pressed = HomeUIDraw(&g->home_ui, true, g->player.gallery.badge, missions_badge);
             UiFrameEnd();
+            if (pressed == HOME_NONE && !resource_modal && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+                HomeBackgroundSquadClick(&g->scene, GetMousePosition());
             if (pressed == HOME_HEROES) {
                 g->screen = SCREEN_HEROES;
             } else if (pressed == HOME_STORE) {

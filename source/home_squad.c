@@ -5,6 +5,8 @@
 #define HOME_CLIP_FPS (1000.0f / 17.0f)
 #define HOME_UNIT_PATH_MAX 512
 #define UNIT_POOL_CAPACITY 12
+#define HOME_UI_SOUND_REF_MAX 128
+#define HOME_UNIT_AUDIO_MANIFEST "data/unit_audio.json"
 
 #define SQUAD_SHADOW_SX 1.8892f
 #define SQUAD_SHADOW_SZ 1.8434f
@@ -103,6 +105,9 @@ typedef struct {
     Texture2D shadow_tex;
     Material shadow_mat;
     Matrix shadow_xform[SQUAD_SLOT_COUNT];
+    char ui_sound_ref[SQUAD_SLOT_COUNT][HOME_UI_SOUND_REF_MAX];
+    float ui_sound_volume[SQUAD_SLOT_COUNT];
+    Sound ui_sound[SQUAD_SLOT_COUNT];
 } HomeSquad;
 
 static SquadPadAssets SquadPadAssetsLoad(const char *mesh_dir, Shader pad_shader) {
@@ -541,6 +546,30 @@ static void HomeSquadUnitDestroy(HomeSquadUnit *unit) {
     unit->active = false;
 }
 
+static void HomeSquadUiSoundBind(HomeSquad *squad, int slot, const Character *ch, const cJSON *manifest) {
+    squad->ui_sound_ref[slot][0] = '\0';
+    cJSON *unit = cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(manifest, "characters"), ch->id);
+    cJSON *tier = cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(unit, "tiers"), TIER_NAMES[ch->tier]);
+    cJSON *profile_name = cJSON_GetObjectItemCaseSensitive(tier, "profile");
+    if (!cJSON_IsString(profile_name)) return;
+    cJSON *profile = cJSON_GetObjectItemCaseSensitive(
+        cJSON_GetObjectItemCaseSensitive(manifest, "profiles"), profile_name->valuestring
+    );
+    cJSON *ui = cJSON_GetObjectItemCaseSensitive(profile, "ui");
+    cJSON *clip = cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(ui, "clips"), 0);
+    if (!cJSON_IsString(clip) || !clip->valuestring[0]) return;
+    cJSON *volume = cJSON_GetObjectItemCaseSensitive(ui, "volume");
+    squad->ui_sound_volume[slot] = cJSON_IsNumber(volume) ? (float)volume->valuedouble : 1.0f;
+    cJSON *source = cJSON_GetObjectItemCaseSensitive(
+        cJSON_GetObjectItemCaseSensitive(manifest, "audio_sources"), clip->valuestring
+    );
+    StrCopy(
+        squad->ui_sound_ref[slot],
+        HOME_UI_SOUND_REF_MAX,
+        cJSON_IsString(source) ? source->valuestring : TextFormat(CACHE_RESOURCE("%s"), clip->valuestring)
+    );
+}
+
 static void HomeSquadUnitsLoad(
     HomeSquad *squad,
     const Player *player,
@@ -557,6 +586,7 @@ static void HomeSquadUnitsLoad(
     }
     pad_char[SQUAD_SLOT_LARGE] = PlayerSquadCharacter(player, SQUAD_SLOT_LARGE);
 
+    cJSON *audio_manifest = JsonLoadFile(HOME_UNIT_AUDIO_MANIFEST);
     for (int s = 0; s < SQUAD_SLOT_COUNT; s++) {
         const Character *ch = pad_char[s];
         if (!ch) continue;
@@ -590,7 +620,9 @@ static void HomeSquadUnitsLoad(
 
         SquadPadRarityLoad(ch, &squad->pad_tex[s], &squad->stars[s]);
         squad->fac_tex[s] = SquadFacTexLoad(ch->faction);
+        HomeSquadUiSoundBind(squad, s, ch, audio_manifest);
     }
+    cJSON_Delete(audio_manifest);
 }
 
 static void HomeSquadLoad(
@@ -612,6 +644,94 @@ static void HomeSquadLoad(
     squad->shadow_mat.shader = mult_shader;
     squad->shadow_mat.maps[MATERIAL_MAP_DIFFUSE].texture = squad->shadow_tex;
     HomeSquadUnitsLoad(squad, player, char_dir, terrain, terrain_count, unit_shader);
+}
+
+static Vector3 MeshVertexAt(const float *vertices, int index) {
+    return (Vector3){vertices[index * 3], vertices[index * 3 + 1], vertices[index * 3 + 2]};
+}
+
+static bool HomeSquadMeshHit(Mesh mesh, Ray local, Vector3 *nearest) {
+    const float *vertices = mesh.animVertices ? mesh.animVertices : mesh.vertices;
+    if (!vertices) return false;
+    bool found = false;
+    float nearest_distance = 0.0f;
+    for (int t = 0; t < mesh.triangleCount; t++) {
+        int a = mesh.indices ? mesh.indices[t * 3] : t * 3;
+        int b = mesh.indices ? mesh.indices[t * 3 + 1] : t * 3 + 1;
+        int c = mesh.indices ? mesh.indices[t * 3 + 2] : t * 3 + 2;
+        RayCollision hit = GetRayCollisionTriangle(
+            local, MeshVertexAt(vertices, a), MeshVertexAt(vertices, b), MeshVertexAt(vertices, c)
+        );
+        if (!hit.hit || (found && hit.distance >= nearest_distance)) continue;
+        found = true;
+        nearest_distance = hit.distance;
+        *nearest = hit.point;
+    }
+    return found;
+}
+
+static bool HomeSquadUnitHit(const HomeSquadUnit *unit, Ray ray, float *distance) {
+    if (!unit->active || unit->wisp_fx) return false;
+    Matrix inverse = MatrixInvert(unit->xform);
+    Vector3 origin = Vector3Transform(ray.position, inverse);
+    Vector3 target = Vector3Transform(Vector3Add(ray.position, ray.direction), inverse);
+    Ray local = {origin, Vector3Normalize(Vector3Subtract(target, origin))};
+    bool found = false;
+    for (int m = 0; m < unit->model.meshCount; m++) {
+        Vector3 point;
+        if (!HomeSquadMeshHit(unit->model.meshes[m], local, &point)) continue;
+        float world_distance = Vector3Distance(ray.position, Vector3Transform(point, unit->xform));
+        if (found && world_distance >= *distance) continue;
+        found = true;
+        *distance = world_distance;
+    }
+    return found;
+}
+
+static int HomeSquadSlotAt(const HomeSquad *squad, Ray ray) {
+    int nearest = -1;
+    float nearest_distance = 0.0f;
+    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) {
+        float distance;
+        if (!HomeSquadUnitHit(&squad->units[s], ray, &distance)) continue;
+        if (nearest < 0 || distance < nearest_distance) {
+            nearest = s;
+            nearest_distance = distance;
+        }
+    }
+    return nearest;
+}
+
+static void HomeSquadPlayUiSound(HomeSquad *squad, int slot) {
+    if (!squad->ui_sound_ref[slot][0]) return;
+    if (!IsSoundValid(squad->ui_sound[slot])) {
+        if (!ResourceExists(squad->ui_sound_ref[slot])) {
+            TraceLog(LOG_WARNING, "Squad: no UI sound %s", squad->ui_sound_ref[slot]);
+            squad->ui_sound_ref[slot][0] = '\0';
+            return;
+        }
+        squad->ui_sound[slot] = ResourceLoadSound(squad->ui_sound_ref[slot]);
+    }
+    if (!IsSoundValid(squad->ui_sound[slot])) return;
+    SetSoundVolume(squad->ui_sound[slot], squad->ui_sound_volume[slot]);
+    PlaySound(squad->ui_sound[slot]);
+}
+
+static void HomeSquadUnitPlayRandomAttack(HomeSquadUnit *unit) {
+    if (unit->projectile.frameCount > 0 && GetRandomValue(0, 1)) {
+        HomeSquadUnitPlayProjectile(unit);
+        return;
+    }
+    HomeSquadUnitPlayMelee(unit);
+}
+
+static bool HomeSquadPlayAttackAt(HomeSquad *squad, Ray ray) {
+    int slot = HomeSquadSlotAt(squad, ray);
+    if (slot < 0) return false;
+    if (squad->units[slot].melee_playing) return true;
+    HomeSquadPlayUiSound(squad, slot);
+    HomeSquadUnitPlayRandomAttack(&squad->units[slot]);
+    return true;
 }
 
 static void HomeSquadUpdate(HomeSquad *squad, float dt) {
@@ -654,6 +774,9 @@ static void HomeSquadUnitsClear(HomeSquad *squad) {
         SceneTexUnload(squad->fac_tex[s]);
         squad->fac_tex[s] = (Texture2D){0};
         SquadPadRarityUnload(&squad->pad_tex[s], &squad->stars[s]);
+        if (IsSoundValid(squad->ui_sound[s])) UnloadSound(squad->ui_sound[s]);
+        squad->ui_sound[s] = (Sound){0};
+        squad->ui_sound_ref[s][0] = '\0';
     }
 }
 
