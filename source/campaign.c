@@ -854,8 +854,13 @@ static void CampaignDrawAbout(Campaign *c, const PlayerCampaignProgress *pcp, in
     }
 }
 
+static int CampaignCurrentEnergyCost(const CampaignNode *node, int losses) {
+    return losses > 0 ? 0 : node->energy_cost;
+}
+
 int CampaignSelectedEnergyCost(const Campaign *c, const PlayerCampaignProgress *pcp) {
-    return c->maps[pcp->campaign_index].nodes[c->selected_node].energy_cost;
+    int map = pcp->campaign_index, node = c->selected_node;
+    return CampaignCurrentEnergyCost(&c->maps[map].nodes[node], pcp->node_losses[map][node]);
 }
 
 const CampaignNode *CampaignFindNode(const Campaign *c, const char *map_id, int step) {
@@ -1011,11 +1016,13 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
         }
         UiDrawTexture(icon, dst, WHITE);
 
-        {
+        int energy_cost = CampaignCurrentEnergyCost(&m->nodes[j], pcp->node_losses[pcp->campaign_index][j]);
+        bool node_locked = j > frontier && completions <= 0;
+        if (!node_locked && energy_cost > 0) {
             Rectangle banner = CampaignLayoutRect(m->layout.banner, centre, world_w, screen_h);
             UiDrawTexture(c->icons.energy, banner, WHITE);
             UiDrawTexture(c->energy_flask, CampaignLayoutRect(m->layout.flask, centre, world_w, screen_h), WHITE);
-            const char *txt = TextFormat("%d", m->nodes[j].energy_cost);
+            const char *txt = TextFormat("%d", energy_cost);
             float fs = banner.height * CAMPAIGN_ENERGY_TEXT_OF_BANNER;
             Vector2 tsz = MeasureTextEx(c->font, txt, fs, 1.0f);
             Vector2 anchor = {centre.x + m->layout.text.x * world_w, centre.y + m->layout.text.y * screen_h};

@@ -6,7 +6,24 @@
 #define NEXUS_DRIFT_MAX_TIME 0.5f
 #define NEXUS_FOCUS_TIME 4.0f
 #define NEXUS_BOSS_SCALE 1.3f
-#define NEXUS_NODE_HEIGHT_FRACTION 0.135f
+#define NEXUS_ICON_HALF_WIDTH 3.5f
+#define NEXUS_ICON_HALF_HEIGHT 4.0f
+#define NEXUS_ICON_OFFSET_Z -0.128f
+#define NEXUS_RING_HALF_SIZE 2.75f
+#define NEXUS_RING_OFFSET_Z 0.56f
+#define NEXUS_RING_BOSS_OFFSET_Z 0.71f
+#define NEXUS_RING_DEGREES_PER_SECOND 45.0f
+#define NEXUS_BANNER_HALF_WIDTH 1.84f
+#define NEXUS_BANNER_HALF_HEIGHT 0.7425f
+#define NEXUS_BANNER_OFFSET_Z 2.405f
+#define NEXUS_FLASK_OFFSET_X 0.716f
+#define NEXUS_FLASK_OFFSET_Z 2.385f
+#define NEXUS_FLASK_HALF_WIDTH 0.4f
+#define NEXUS_FLASK_HALF_HEIGHT 0.45f
+#define NEXUS_ENERGY_TEXT_OFFSET_X -0.328f
+#define NEXUS_ENERGY_TEXT_OF_BANNER 0.5f
+#define NEXUS_ROTATION_VISIBLE_EVENTS 3
+#define NEXUS_QUIT_BUTTON_GAP 16.0f
 #define NEXUS_COMPLETE_BANNER_DELAY 1.3f
 #define NEXUS_COMPLETE_BANNER_TIME 2.0f
 
@@ -65,10 +82,12 @@ typedef struct {
     char bg_prefab[64];
     int active_event, active_difficulty;
 
-    Button enter, retreat;
+    Button enter, retreat, quit_stay, quit_confirm;
+    bool quit_open, quit_opening_release;
+    float ring_angle;
     Texture2D lore, progress_bar, energy_plate, energy_flask;
     Texture2D gold_icon, xp_icon, potion_icon, reward_tag, divider, timer_plate;
-    Texture2D glow;
+    Texture2D glow, ring;
     CampaignIcons icons;
 
     float scroll_x;
@@ -115,6 +134,7 @@ void NexusInitialize(Nexus *n, const char *maps_path) {
     n->divider = GuiTex(GUI_NEXUS_DIVIDER);
     n->timer_plate = GuiTex(GUI_NEXUS_TIMER_PLATE);
     n->glow = GuiTex(GUI_NODE_UNLOCK_GLOW);
+    n->ring = GuiTex(GUI_NODE_SELECT_RING);
     n->icons.energy = GuiTex(GUI_MAP_ENERGY);
     n->icons.locked = GuiTex(GUI_NODE_LOCKED);
     n->icons.locked_selected = GuiTex(GUI_NODE_LOCKED_ON);
@@ -124,6 +144,8 @@ void NexusInitialize(Nexus *n, const char *maps_path) {
     n->icons.mastered_selected = GuiTex(GUI_NODE_MASTERED_ON);
     n->icons.boss = GuiTex(GUI_NODE_BOSS);
     n->icons.boss_selected = GuiTex(GUI_NODE_BOSS_ON);
+    n->icons.boss_locked = GuiTex(GUI_NODE_BOSS_LOCKED);
+    n->icons.boss_locked_selected = GuiTex(GUI_NODE_BOSS_LOCKED_ON);
 
     n->retreat = ButtonLoadText(
         GUI_BTN_GREY,
@@ -137,6 +159,22 @@ void NexusInitialize(Nexus *n, const char *maps_path) {
         GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGetOr("NEXUS_ENTER_NODE", "Войти"), n->font, (Vector2){0.5f, 0.5f}, 0.32f
     );
     ButtonSetClickSound(&n->retreat, SND_UI_HOME);
+    n->quit_stay = ButtonLoadText(
+        GUI_BTN_GOLD,
+        GUI_BTN_GOLD_ON,
+        LocGetOr("NEXUS_QUIT_SCREEN_STAY_BUTTON", "Отмена"),
+        n->font,
+        (Vector2){0.5f, 0.5f},
+        0.32f
+    );
+    n->quit_confirm = ButtonLoadText(
+        GUI_BTN_GREY,
+        GUI_BTN_GREY_ON,
+        LocGetOr("NEXUS_QUIT_SCREEN_RETREAT_BUTTON", "Выйти с карты"),
+        n->font,
+        (Vector2){0.5f, 0.5f},
+        0.3f
+    );
 
     cJSON *root = JsonLoadFile(maps_path);
     if (!cJSON_IsArray(root)) TraceLog(LOG_FATAL, "Nexus: %s is not an array of events", maps_path);
@@ -372,6 +410,27 @@ bool NexusEventUnlocked(const Nexus *n, const Player *player, int event) {
     return !NexusEventLocked(n, player, event, (long long)time(NULL));
 }
 
+bool NexusEventScheduled(const Nexus *n, const Player *player, int event, long long now) {
+    const NexusEvent *e = NexusEventAt(n, event);
+    if (!e || !NexusEventLive(e, NexusWeekdayToday())) return false;
+    if (e->weekday != 0 || e->unlock_key != 0 || NexusEventCommitted(player, event) || e->duration <= 0) return true;
+    int pool = 0, position = 0;
+    for (int i = 0; i < n->event_count; i++) {
+        if (n->events[i].weekday != 0 || n->events[i].unlock_key != 0) continue;
+        if (i == event) position = pool;
+        pool++;
+    }
+    int offset = (int)((now / e->duration * NEXUS_ROTATION_VISIBLE_EVENTS) % pool);
+    return (position - offset + pool) % pool < NEXUS_ROTATION_VISIBLE_EVENTS;
+}
+
+bool NexusRunExpired(const Nexus *n, const Player *player, long long now) {
+    const PlayerNexusRun *run = &player->nexus_run;
+    const NexusEvent *e = NexusEventAt(n, run->event_index);
+    if (!run->committed || !e || NexusRunComplete(n, run)) return false;
+    return !NexusEventLive(e, NexusWeekdayToday()) || NexusEventLocked(n, player, run->event_index, now);
+}
+
 bool NexusRunBlocking(const Nexus *n, const Player *player) {
     const PlayerNexusRun *run = &player->nexus_run;
     if (!run->committed) return false;
@@ -494,7 +553,10 @@ void NexusBeginCompletion(Nexus *n) {
 
 static Texture2D NexusNodeIcon(const Nexus *n, const NexusNode *node, int current_step, bool selected) {
     if (node->step < current_step) return selected ? n->icons.mastered_selected : n->icons.mastered;
-    if (node->step > current_step) return selected ? n->icons.locked_selected : n->icons.locked;
+    if (node->step > current_step) {
+        if (node->boss) return selected ? n->icons.boss_locked_selected : n->icons.boss_locked;
+        return selected ? n->icons.locked_selected : n->icons.locked;
+    }
     if (node->boss) return selected ? n->icons.boss_selected : n->icons.boss;
     return selected ? n->icons.open_selected : n->icons.open;
 }
@@ -515,6 +577,73 @@ static void NexusDrawNodeQuad(Texture2D tex, Vector3 centre, float half_x, float
     rlSetTexture(0);
 }
 
+static void NexusDrawSelectionRing(Texture2D tex, Vector3 centre, float half_x, float half_z, float degrees, Color tint) {
+    float c = cosf(degrees * DEG2RAD), s = sinf(degrees * DEG2RAD);
+    static const float corners[4][4] = {{1, 1, 0, 0}, {1, -1, 0, 1}, {-1, -1, 1, 1}, {-1, 1, 1, 0}};
+    rlSetTexture(tex.id);
+    rlBegin(RL_QUADS);
+    rlColor4ub(tint.r, tint.g, tint.b, tint.a);
+    for (int i = 0; i < 4; i++) {
+        float x = corners[i][0] * c - corners[i][1] * s, z = corners[i][0] * s + corners[i][1] * c;
+        rlTexCoord2f(corners[i][2], corners[i][3]);
+        rlVertex3f(centre.x + x * half_x, centre.y, centre.z + z * half_z);
+    }
+    rlEnd();
+    rlSetTexture(0);
+}
+
+static Vector3 NexusNodeOffset(Vector3 world, Vector2 unit, float x, float z) {
+    return (Vector3){world.x + x * unit.x, world.y, world.z - z * unit.y};
+}
+
+static Rectangle NexusNodeScreenRect(const Nexus *n, Vector3 world, Vector2 unit, Vector2 centre, Vector2 half) {
+    Vector2 a = NexusBackgroundNodeScreen(
+        &n->bg, NexusNodeOffset(world, unit, centre.x + half.x, centre.y - half.y)
+    );
+    Vector2 b = NexusBackgroundNodeScreen(
+        &n->bg, NexusNodeOffset(world, unit, centre.x - half.x, centre.y + half.y)
+    );
+    return (Rectangle){fminf(a.x, b.x), fminf(a.y, b.y), fabsf(b.x - a.x), fabsf(b.y - a.y)};
+}
+
+static bool NexusDrawQuitDialog(Nexus *n, const PlayerNexusRun *run) {
+    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT)) n->quit_opening_release = false;
+    Rectangle popup = MessagePopupDrawFrame();
+    Rectangle content = MessagePopupContent(popup);
+    Font body = GuiFont(FNT_MENU);
+    UiDrawTextCentered(
+        n->font,
+        LocGetOr("NEXUS_QUIT_SCREEN_TITLE", "Вы уверены?"),
+        (Rectangle){content.x, content.y, content.width, 48.0f},
+        34.0f,
+        (Color){235, 232, 220, 255}
+    );
+    bool loot = run->escrow_gold > 0 || run->escrow_xp > 0 || run->escrow_potions > 0;
+    HeroesDrawRich(
+        body,
+        LocGet(loot ? "NEXUS_QUIT_SCREEN_BODY" : "NEXUS_QUIT_LOSE_ENERGY_BODY"),
+        (Rectangle){content.x, content.y + 64.0f, content.width, content.height - 140.0f},
+        24.0f,
+        (Color){235, 232, 220, 255}
+    );
+    Rectangle row = MessagePopupChoiceRow(popup);
+    float width = (row.width - NEXUS_QUIT_BUTTON_GAP) * 0.5f;
+    Rectangle left = {row.x, row.y, width, row.height};
+    Rectangle right = {row.x + width + NEXUS_QUIT_BUTTON_GAP, row.y, width, row.height};
+    bool interactive = !n->quit_opening_release && !UiInputBlocked();
+    bool quit = ButtonDrawEx(&n->quit_confirm, left, interactive);
+    if (ButtonDrawEx(&n->quit_stay, right, interactive)) n->quit_open = false;
+    if (quit) n->quit_open = false;
+    return quit;
+}
+
+bool NexusHandleBack(Nexus *n) {
+    if (!n->quit_open) return false;
+    n->quit_open = false;
+    GuiSoundPlay(SND_UI_POPUP_CLOSE);
+    return true;
+}
+
 static void NexusUpdateInput(Nexus *n, const NexusDifficulty *d, float dt) {
     float lo = 0.0f, hi = 0.0f;
     NexusScrollLimits(n, d, &lo, &hi);
@@ -529,7 +658,7 @@ static void NexusUpdateInput(Nexus *n, const NexusDifficulty *d, float dt) {
         }
     }
 
-    bool blocked = UiInputBlocked() || n->anim_active || n->final_complete;
+    bool blocked = UiInputBlocked() || n->anim_active || n->final_complete || n->quit_open;
     if (!blocked && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         n->press_pos = UiMouse();
         n->dragged = false;
@@ -585,8 +714,8 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
     NexusBackgroundSetScroll(&n->bg, n->scroll_x);
 
     float plane_y = NexusBackgroundNodePlaneY(&n->bg);
-    float frustum_h = 2.0f * (n->bg.cam.position.y - plane_y) * tanf(n->bg.cam.fovy * 0.5f * DEG2RAD);
-    float node_half_z = frustum_h * NEXUS_NODE_HEIGHT_FRACTION * 0.5f;
+    Vector2 unit = NexusBackgroundNodeUnit(&n->bg);
+    n->ring_angle = fmodf(n->ring_angle + dt * NEXUS_RING_DEGREES_PER_SECOND, 360.0f);
 
     ClearBackground(n->bg.clear);
     BeginMode3D(n->bg.cam);
@@ -594,6 +723,7 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
     NexusBackgroundDrawRange(&n->bg, -1.0e9f, plane_y);
 
     Vector2 node_screen[NEXUS_MAX_NODES] = {0};
+    Vector3 node_world[NEXUS_MAX_NODES] = {0};
     for (int i = 0; i < d->node_count; i++) {
         const NexusNode *node = &d->nodes[i];
         int step_for_state = current_step;
@@ -611,20 +741,38 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
 
         Texture2D icon = NexusNodeIcon(n, node, step_for_state, i == n->selected_node);
         float scale = node->boss ? NEXUS_BOSS_SCALE : 1.0f;
-        float half_z = node_half_z * scale;
-        float half_x = half_z * ((float)icon.width / (float)icon.height);
+        float half_x = NEXUS_ICON_HALF_WIDTH * unit.x * scale;
+        float half_z = NEXUS_ICON_HALF_HEIGHT * unit.y * scale;
         Vector3 world = NexusBackgroundNodeWorld(&n->bg, node->x, node->z);
+        node_world[i] = world;
         node_screen[i] = NexusBackgroundNodeScreen(&n->bg, world);
 
         if (pulse >= 0.0f && pulse <= 1.0f) {
             float glow = sinf(pulse * PI);
-            float size = half_z * (2.6f + 2.0f * glow);
+            float size = half_z * (1.0f + 0.8f * glow);
             BeginBlendMode(BLEND_ADDITIVE);
             NexusDrawNodeQuad(n->glow, world, size, size, (Color){246, 216, 111, (unsigned char)(175.0f * glow)});
             rlDrawRenderBatchActive();
             EndBlendMode();
         }
-        NexusDrawNodeQuad(icon, world, half_x, half_z * flip, WHITE);
+        if (i == n->selected_node && !n->final_complete) {
+            float ring_scale = NEXUS_RING_HALF_SIZE * scale;
+            float ring_z = node->boss ? NEXUS_RING_BOSS_OFFSET_Z : NEXUS_RING_OFFSET_Z;
+            BeginBlendMode(BLEND_ADDITIVE);
+            NexusDrawSelectionRing(
+                n->ring,
+                NexusNodeOffset(world, unit, 0.0f, ring_z),
+                ring_scale * unit.x,
+                ring_scale * unit.y,
+                n->ring_angle,
+                e->highlight
+            );
+            rlDrawRenderBatchActive();
+            EndBlendMode();
+        }
+        NexusDrawNodeQuad(
+            icon, NexusNodeOffset(world, unit, 0.0f, NEXUS_ICON_OFFSET_Z), half_x * flip, half_z, e->highlight
+        );
     }
     rlDrawRenderBatchActive();
 
@@ -634,12 +782,18 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
 
     UiFrameBegin();
 
-    bool interactive = !UiInputBlocked() && !n->anim_active && !n->final_complete;
+    bool interactive = !UiInputBlocked() && !n->anim_active && !n->final_complete && !n->quit_open;
     if (interactive && !n->dragged && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
         Vector2 mouse = UiMouse();
         for (int i = 0; i < d->node_count; i++) {
-            float half = node_half_z / frustum_h * screen_h * (d->nodes[i].boss ? NEXUS_BOSS_SCALE : 1.0f) * 1.6f;
-            Rectangle hit = {node_screen[i].x - half, node_screen[i].y - half, half * 2.0f, half * 2.0f};
+            float scale = d->nodes[i].boss ? NEXUS_BOSS_SCALE : 1.0f;
+            Rectangle hit = NexusNodeScreenRect(
+                n,
+                node_world[i],
+                unit,
+                (Vector2){0.0f, NEXUS_ICON_OFFSET_Z},
+                (Vector2){NEXUS_ICON_HALF_WIDTH * scale, NEXUS_ICON_HALF_HEIGHT * scale}
+            );
             if (!CheckCollisionPointRec(mouse, hit)) continue;
             GuiSoundPlay(SND_PVE_NODE_SELECTED);
             bool refight = i == n->selected_node && i == current_step - 1;
@@ -650,15 +804,29 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
     }
 
     if (d->energy_cost > 0 && !run->committed) {
-        float bw = 112.0f, bh = 56.0f;
-        Rectangle banner = {node_screen[0].x - bw / 2.0f, node_screen[0].y + 34.0f, bw, bh};
+        Rectangle banner = NexusNodeScreenRect(
+            n,
+            node_world[0],
+            unit,
+            (Vector2){0.0f, NEXUS_BANNER_OFFSET_Z},
+            (Vector2){NEXUS_BANNER_HALF_WIDTH, NEXUS_BANNER_HALF_HEIGHT}
+        );
         UiDrawTexture(n->energy_plate, banner, WHITE);
+        Rectangle flask = NexusNodeScreenRect(
+            n,
+            node_world[0],
+            unit,
+            (Vector2){NEXUS_FLASK_OFFSET_X, NEXUS_FLASK_OFFSET_Z},
+            (Vector2){NEXUS_FLASK_HALF_WIDTH, NEXUS_FLASK_HALF_HEIGHT}
+        );
+        UiDrawTexture(n->energy_flask, flask, WHITE);
         const char *text = TextFormat("%d", d->energy_cost);
-        float fs = 24.0f, flask = 30.0f, gap = 8.0f;
+        float fs = banner.height * NEXUS_ENERGY_TEXT_OF_BANNER;
         Vector2 measured = MeasureTextEx(n->font, text, fs, 1.0f);
-        float x = node_screen[0].x - (flask + gap + measured.x) / 2.0f, cy = banner.y + bh / 2.0f;
-        UiDrawTexture(n->energy_flask, (Rectangle){x, cy - flask / 2.0f, flask, flask}, WHITE);
-        DrawTextEx(n->font, text, (Vector2){x + flask + gap, cy - measured.y / 2.0f}, fs, 1.0f, WHITE);
+        Vector2 anchor = NexusBackgroundNodeScreen(
+            &n->bg, NexusNodeOffset(node_world[0], unit, NEXUS_ENERGY_TEXT_OFFSET_X, NEXUS_BANNER_OFFSET_Z)
+        );
+        DrawTextEx(n->font, text, (Vector2){anchor.x - measured.x / 2.0f, anchor.y - measured.y / 2.0f}, fs, 1.0f, WHITE);
     }
 
     Rectangle lore = {0.0f, 72.0f, n->lore.width / 1.3f, n->lore.height / 1.3f};
@@ -743,7 +911,14 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
 
     if (!n->final_complete) {
         Rectangle retreat = {7.0f, screen_h - 76.0f, 270.0f, 67.0f};
-        if (ButtonDrawEx(&n->retreat, retreat, interactive)) action = run->committed ? NEXUS_QUIT : NEXUS_LEAVE;
+        if (ButtonDrawEx(&n->retreat, retreat, interactive)) {
+            if (run->committed) {
+                n->quit_open = true;
+                n->quit_opening_release = true;
+            } else {
+                action = NEXUS_LEAVE;
+            }
+        }
     }
     {
         bool playable = n->selected_node == current_step - 1;
@@ -768,7 +943,7 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
         UiDrawTextCentered(
             n->font,
             label,
-            (Rectangle){plate.x + 58.0f, plate.y + 11.0f, plate.width - 68.0f, 0.0f},
+            (Rectangle){plate.x + 58.0f, plate.y, plate.width - 68.0f, plate_h},
             30.0f,
             (Color){245, 244, 238, 255}
         );
@@ -809,6 +984,8 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
             (Color){240, 240, 240, (unsigned char)(255 * fade)}
         );
     }
+
+    if (n->quit_open && NexusDrawQuitDialog(n, run)) action = NEXUS_QUIT;
 
     UiFrameEnd();
     return action;

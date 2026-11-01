@@ -210,6 +210,7 @@ typedef enum {
     GUI_NODE_GRIND,
     GUI_NODE_GRIND_ON,
     GUI_NODE_UNLOCK_GLOW,
+    GUI_NODE_SELECT_RING,
 
     GUI_NEXUS_POTION,
     GUI_NEXUS_DIVIDER,
@@ -599,6 +600,7 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_NODE_GRIND] = CACHE_RESOURCE("ico_nodegrind"),
     [GUI_NODE_GRIND_ON] = CACHE_RESOURCE("ico_nodegrind_selected"),
     [GUI_NODE_UNLOCK_GLOW] = CACHE_RESOURCE("GlowDot"),
+    [GUI_NODE_SELECT_RING] = CACHE_RESOURCE("Ring_01"),
 
     [GUI_NEXUS_POTION] = CACHE_RESOURCE("tex.Ico_Revive"),
     [GUI_NEXUS_DIVIDER] = CACHE_RESOURCE("IconNexusDividerTone"),

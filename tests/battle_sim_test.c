@@ -3251,6 +3251,7 @@ static void TestProgressionPersistence(void) {
     source.campaign_progress.node_completions[0][0] = 3;
     source.campaign_progress.node_completions[0][2] = 1;
     source.campaign_progress.node_completions[1][0] = 2;
+    source.campaign_progress.node_losses[1][2] = 4;
     source.campaign_progress.pending_animation = (PlayerCampaignAnimation){
         .active = true,
         .unlock_next = false,
@@ -3282,6 +3283,7 @@ static void TestProgressionPersistence(void) {
     assert(loaded.champion_since_legendary == 2);
     assert(loaded.campaign_progress.node_completions[0][0] == 3);
     assert(loaded.campaign_progress.node_completions[1][0] == 2);
+    assert(loaded.campaign_progress.node_losses[1][2] == 4);
     assert(loaded.campaign_progress.pending_animation.active);
     assert(!loaded.campaign_progress.pending_animation.unlock_next);
     assert(loaded.campaign_progress.pending_animation.from_map == 0);

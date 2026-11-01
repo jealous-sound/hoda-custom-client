@@ -44,6 +44,7 @@ typedef struct {
     int campaign_index;
     int node_index;
     int node_completions[CAMPAIGN_MAX_MAPS][CAMPAIGN_MAX_NODES];
+    int node_losses[CAMPAIGN_MAX_MAPS][CAMPAIGN_MAX_NODES];
     PlayerCampaignAnimation pending_animation;
 } PlayerCampaignProgress;
 

@@ -159,6 +159,7 @@ static void DebugPrepareNexus(Game *game, DebugShot *shot) {
         game->player.nexus_run.escrow_xp += d->nodes[i].xp;
     }
     NexusEnterMap(&game->nexus, &game->player, event, difficulty);
+    game->nexus.quit_open = EnvFlag("HOD_NEXUS_QUIT");
     shot->flow_started = true;
 }
 

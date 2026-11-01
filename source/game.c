@@ -333,6 +333,7 @@ bool GameHandlePopupBack(Game *g) {
         return true;
     }
     if (g->screen == SCREEN_MAP && CampaignHandleBack(&g->map)) return true;
+    if (g->screen == SCREEN_NEXUS && NexusHandleBack(&g->nexus)) return true;
     if (g->screen == SCREEN_STORE) {
         if (StoreHandleBack(&g->store, &g->heroes) == STORE_ACTION_CLOSE) g->screen = SCREEN_HOME;
         return true;
@@ -866,6 +867,7 @@ void GameDraw(Game *g) {
                 }
             } else if (act == NEXUS_COMPLETE || act == NEXUS_QUIT || act == NEXUS_LEAVE) {
                 if (act == NEXUS_QUIT && !NexusRunComplete(&g->nexus, &g->player.nexus_run)) NexusResetRun(&g->player);
+                if (act == NEXUS_LEAVE) QuestsOpenLadder(&g->quests, g->nexus.active_event);
                 g->screen = SCREEN_QUESTS;
             }
             break;

@@ -4,7 +4,8 @@ typedef enum {
     QUESTS_DIALOG_NONE = 0,
     QUESTS_DIALOG_MESSAGE,
     QUESTS_DIALOG_UNLOCK,
-    QUESTS_DIALOG_COMMITTED
+    QUESTS_DIALOG_COMMITTED,
+    QUESTS_DIALOG_EXPIRED
 } QuestsDialogKind;
 
 #define QUESTS_LANE_INSET 92.0f
@@ -20,6 +21,10 @@ typedef enum {
 #define QUESTS_CURRENT_MAP_TEXTURE_PREFIX "tex.Btn_MapPVE_map_"
 #define QUESTS_CAMPAIGN_ID_PREFIX "PVE_MAP_"
 #define QUESTS_TIMER_ICON "IconTimer"
+#define QUESTS_TITLE_SIZE 17.0f
+#define QUESTS_TITLE_MIN_SIZE 12.0f
+#define QUESTS_TITLE_TOP 60.0f
+#define QUESTS_DIVIDER_FROM_FOOT 92.0f
 
 static const Color QUESTS_KEY_TINTS[NEXUS_KEY_COUNT] = {
     {31, 128, 244, 255},
@@ -147,6 +152,7 @@ void QuestsClose(Quests *q) {
 }
 
 bool QuestsHandleBack(Quests *q) {
+    if (q->dialog.kind == QUESTS_DIALOG_EXPIRED) return true;
     if (q->dialog.kind != QUESTS_DIALOG_NONE) {
         QuestsDialogClose(q);
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
@@ -197,11 +203,10 @@ static bool QuestsEventPrecedes(const Nexus *nexus, const Player *player, int a,
 }
 
 static void QuestsCollectLiveEvents(Quests *q, const Nexus *nexus, const Player *player) {
-    int weekday = NexusWeekdayToday();
     long long now = QuestsNow();
     q->live_count = 0;
     for (int i = 0; i < NexusEventCount(nexus); i++) {
-        if (!NexusEventLive(NexusEventAt(nexus, i), weekday)) continue;
+        if (!NexusEventScheduled(nexus, player, i, now)) continue;
         int at = q->live_count++;
         while (at > 0 && QuestsEventPrecedes(nexus, player, i, q->live[at - 1], now)) {
             q->live[at] = q->live[at - 1];
@@ -568,23 +573,25 @@ static bool QuestsDrawEventCell(Quests *q, const Nexus *nexus, const Player *pla
     );
     QuestsDrawFit(q->font, LocGet(e->subtitle), category, 23.0f, (Color){246, 244, 236, 255});
 
-    Rectangle image = {cell.x + 12.0f, cell.y + 60.0f, QUESTS_HUB_IMAGE_SIZE, QUESTS_HUB_IMAGE_SIZE};
+    Rectangle image = {cell.x + 12.0f, cell.y + QUESTS_TITLE_TOP, QUESTS_HUB_IMAGE_SIZE, QUESTS_HUB_IMAGE_SIZE};
     int hub = q->event_hub_image[event];
     if (hub >= 0) QuestsDrawImageFit(q->hub_images[hub], image, WHITE);
 
     char title[256];
     QuestsEventTitle(title, sizeof(title), nexus, player, event);
     float text_x = image.x + image.width + 10.0f;
+    float foot = cell.y + cell.height;
+    float divider_y = foot - QUESTS_DIVIDER_FROM_FOOT;
+    Rectangle title_box = {text_x, image.y, cell.x + cell.width - 12.0f - text_x, divider_y - image.y};
     HeroesDrawRich(
         q->body,
         title,
-        (Rectangle){text_x, image.y, cell.x + cell.width - 12.0f - text_x, 100.0f},
-        17.0f,
+        title_box,
+        CampaignFitWrappedSize(q->body, title, title_box, QUESTS_TITLE_SIZE, QUESTS_TITLE_MIN_SIZE),
         selectable || locked ? QUESTS_TEXT : QUESTS_TEXT_DIM
     );
 
-    float foot = cell.y + cell.height;
-    UiDrawTexture(q->divider, (Rectangle){cell.x + 14.0f, foot - 92.0f, cell.width - 28.0f, 10.0f}, e->highlight);
+    UiDrawTexture(q->divider, (Rectangle){cell.x + 14.0f, divider_y, cell.width - 28.0f, 10.0f}, e->highlight);
 
     Rectangle plate = {cell.x + 16.0f, foot - 48.0f, cell.width - 32.0f, 40.0f};
     if (locked) {
@@ -734,7 +741,9 @@ static bool QuestsDrawLadder(Quests *q, const Nexus *nexus, const Player *player
         const char *label = committed ? LocGetOr("PVE_HUB_NEXUS_EVENT_CONTINUE_BUTTON", "Продолжить")
                                       : LocGetOr("PVE_HUB_EVENT_ENTER_BUTTON", "Войти");
         QuestsDrawActionPlate(q, plate, label, committed, selectable ? WHITE : QUESTS_COMMITTED_ELSEWHERE);
-        if (!entered && selectable && QuestsReleasedOn(q, row)) {
+        if (!entered && selectable && QuestsReleasedOn(q, row) && player->roster_count >= player->roster_capacity) {
+            QuestsDialogOpen(q, QUESTS_DIALOG_MESSAGE, -1, LocGet("MESSAGE_TOO_MANY_BODY_NO_CONSUME"));
+        } else if (!entered && selectable && QuestsReleasedOn(q, row)) {
             q->selected_event = q->ladder_event;
             q->selected_difficulty = i;
             GuiSoundPlay(SND_PVE_NODE_SELECTED);
@@ -827,6 +836,13 @@ static QuestButton QuestsDrawDialog(Quests *q, const Player *player) {
     if (d->kind == QUESTS_DIALOG_MESSAGE) {
         q->dialog_ok.label = LocGetOr("MAIN_MESSAGE_DIALOG_OK", "ОК");
         if (ButtonDrawEx(&q->dialog_ok, single, interactive)) QuestsDialogClose(q);
+    } else if (d->kind == QUESTS_DIALOG_EXPIRED) {
+        q->dialog_ok.label = LocGetOr("NEXUS_MAP_EXPIRED_OK", "ОК");
+        if (ButtonDrawEx(&q->dialog_ok, single, interactive)) {
+            QuestsDialogClose(q);
+            q->pending_event = -1;
+            result = QUESTS_FORFEIT;
+        }
     } else if (d->kind == QUESTS_DIALOG_UNLOCK) {
         q->dialog_yes.label = LocGetOr("CONFIRM_DIALOG_YES", "Да");
         q->dialog_no.label = LocGetOr("CONFIRM_DIALOG_NO", "Нет");
@@ -851,7 +867,7 @@ static QuestButton QuestsDrawDialog(Quests *q, const Player *player) {
     }
 
     Rectangle close = {panel.x + panel.width - 72.0f, panel.y - 10.0f, 61.0f, 61.0f};
-    if (ButtonDrawEx(&q->dialog_close, close, interactive)) QuestsDialogClose(q);
+    if (d->kind != QUESTS_DIALOG_EXPIRED && ButtonDrawEx(&q->dialog_close, close, interactive)) QuestsDialogClose(q);
     return result;
 }
 
@@ -863,6 +879,11 @@ QuestButton QuestsDraw(Quests *q, const Nexus *nexus, const Player *player, cons
     QuestButton clicked = QUESTS_NONE;
     QuestsEnsureHubImages(q, nexus);
     QuestsEnsureCurrentMaps(q, campaign);
+    if (q->dialog.kind == QUESTS_DIALOG_NONE && NexusRunExpired(nexus, player, QuestsNow())) {
+        char text[QUESTS_DIALOG_TEXT_SIZE];
+        LocFormat2(text, sizeof(text), "NEXUS_MAP_EXPIRED_BODY", NexusEventAt(nexus, player->nexus_run.event_index)->name, "");
+        QuestsDialogOpen(q, QUESTS_DIALOG_EXPIRED, -1, text);
+    }
     bool dialog_open = q->dialog.kind != QUESTS_DIALOG_NONE;
 
     Rectangle root = UiRoot();

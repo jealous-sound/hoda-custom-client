@@ -206,10 +206,12 @@ BattleRewardResult CampaignResolveBattle(
     result.next_node_index = frontier_pre;
 
     if (!won) {
+        if (progress->node_losses[map_index][node_index] < INT_MAX) progress->node_losses[map_index][node_index]++;
         BattleRewardSnapshotPost(&result, player);
         return result;
     }
 
+    progress->node_losses[map_index][node_index] = 0;
     result.first_win = result.completions_pre == 0;
     result.mastered = CampaignNodeRewardBucket(node, result.completions_pre) == CAMPAIGN_REWARD_MASTERY;
     if (progress->node_completions[map_index][node_index] < INT_MAX)
@@ -763,6 +765,15 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
         }
     }
 
+    cJSON *node_losses = cJSON_AddArrayToObject(campaign, "node_losses");
+    if (!node_losses) goto save_json_failed;
+    for (int map = 0; map < CAMPAIGN_MAX_MAPS; map++) {
+        for (int node = 0; node < CAMPAIGN_MAX_NODES; node++) {
+            if (!ProgressionJsonAddArrayNumber(node_losses, player->campaign_progress.node_losses[map][node]))
+                goto save_json_failed;
+        }
+    }
+
     const PlayerNexusRun *nexus_run = &player->nexus_run;
     PROGRESSION_SAVE_NUMBER(nexus, "potions", player->potions);
     PROGRESSION_SAVE_NUMBER(nexus, "potion_max", player->potion_max);
@@ -1064,6 +1075,16 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
             valid = cJSON_IsArray(nodes) && cJSON_GetArraySize(nodes) == CAMPAIGN_MAX_NODES;
             for (int node = 0; node < CAMPAIGN_MAX_NODES && valid; node++)
                 valid = ProgressionJsonArrayInt(nodes, node, 0, INT_MAX, &loaded_progress.node_completions[map][node]);
+        }
+        cJSON *node_losses = cJSON_GetObjectItemCaseSensitive(campaign, "node_losses");
+        if (cJSON_IsArray(node_losses)) {
+            valid = cJSON_GetArraySize(node_losses) == CAMPAIGN_MAX_MAPS * CAMPAIGN_MAX_NODES;
+            for (int map = 0; map < CAMPAIGN_MAX_MAPS && valid; map++) {
+                for (int node = 0; node < CAMPAIGN_MAX_NODES && valid; node++)
+                    valid = ProgressionJsonArrayInt(
+                        node_losses, map * CAMPAIGN_MAX_NODES + node, 0, INT_MAX, &loaded_progress.node_losses[map][node]
+                    );
+            }
         }
     }
     valid = valid && experience_min == ProgressionXpForCurrentLevel(level) &&

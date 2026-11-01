@@ -5,6 +5,8 @@
 
 #define NEXUS_NODE_PLANE_Y 15.09556f
 
+#define NEXUS_BG_FIRST_MARKER "step1"
+
 static const char *const NEXUS_FS_PLATE = "#version 330\n"
                                           "in vec2 fragTexCoord;\n"
                                           "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"
@@ -30,6 +32,7 @@ typedef struct {
 
     Vector3 node_origin;
     float node_scale;
+    Vector2 marker_scale;
     Color clear;
     char prefab[64];
 } NexusBackground;
@@ -171,6 +174,9 @@ void NexusBackgroundLoad(NexusBackground *bg, const char *mesh_dir, const char *
         } else if (strcmp(name, "NodeMarkers") == 0) {
             bg->node_origin = NexusJsonVec3(n, "local_position");
             bg->node_scale = NexusJsonVec3(n, "local_scale").x;
+        } else if (strcmp(name, NEXUS_BG_FIRST_MARKER) == 0) {
+            Vector3 marker = NexusJsonVec3(n, "local_scale");
+            bg->marker_scale = (Vector2){marker.x, marker.z};
         }
         if (!cJSON_IsString(cJSON_GetObjectItemCaseSensitive(n, "mesh"))) continue;
         if (NexusRootOf(nodes, n) != live_root) continue;
@@ -277,6 +283,10 @@ Vector3 NexusBackgroundNodeWorld(const NexusBackground *bg, float table_x, float
         bg->node_origin.y + bg->node_scale * NEXUS_NODE_PLANE_Y,
         -(bg->node_origin.z + bg->node_scale * table_z),
     };
+}
+
+Vector2 NexusBackgroundNodeUnit(const NexusBackground *bg) {
+    return (Vector2){bg->node_scale * bg->marker_scale.x, bg->node_scale * bg->marker_scale.y};
 }
 
 float NexusBackgroundScrollForNode(const NexusBackground *bg, float table_x) {
