@@ -25,7 +25,9 @@
 #define NEXUS_ROTATION_VISIBLE_EVENTS 3
 #define NEXUS_QUIT_BUTTON_GAP 16.0f
 #define NEXUS_COMPLETE_BANNER_DELAY 1.3f
+#define NEXUS_COMPLETE_LOOT_DELAY_PER_ITEM 0.1f
 #define NEXUS_COMPLETE_BANNER_TIME 2.0f
+#define NEXUS_COMPLETE_BANNER_FADE_TIME 0.3f
 
 typedef enum {
     NEXUS_NONE = 0,
@@ -33,7 +35,7 @@ typedef enum {
     NEXUS_LEAVE,
     NEXUS_QUIT,
     NEXUS_REVIVE,
-    NEXUS_COMPLETE,
+    NEXUS_SHOW_RECAP,
 } NexusAction;
 
 typedef struct {
@@ -105,6 +107,9 @@ typedef struct {
 
     bool final_complete;
     float complete_time;
+    bool complete_sound_played;
+    bool recap_requested;
+    PlayerNexusRun completed_run;
 } Nexus;
 
 static float NexusEaseInOutQuad(float t) {
@@ -513,7 +518,9 @@ bool NexusEnterMap(Nexus *n, Player *player, int event, int difficulty) {
     n->active_event = event;
     n->active_difficulty = difficulty;
     n->final_complete = NexusRunComplete(n, run);
-    n->complete_time = n->final_complete ? NEXUS_COMPLETE_BANNER_DELAY + NEXUS_COMPLETE_BANNER_TIME : 0.0f;
+    n->complete_time = 0.0f;
+    n->complete_sound_played = false;
+    n->recap_requested = false;
     n->anim_active = false;
     n->dragged = false;
     NexusFocusNode(n, d, run->current_node_step - 1, true);
@@ -548,7 +555,51 @@ void NexusBeginProgressionAnimation(Nexus *n, int from_step, int to_step) {
 void NexusBeginCompletion(Nexus *n) {
     n->final_complete = true;
     n->complete_time = 0.0f;
+    n->complete_sound_played = false;
+    n->recap_requested = false;
     n->anim_active = false;
+}
+
+bool NexusCompletionActive(const Nexus *n) {
+    return n->final_complete;
+}
+
+static float NexusCompleteBannerDelay(const PlayerNexusRun *run) {
+    int units = 0;
+    for (int rarity = RARITY_COMMON; rarity <= RARITY_MYTHIC; rarity++) units += run->escrow_units[rarity];
+    int items = units > run->escrow_potions ? units : run->escrow_potions;
+    return NEXUS_COMPLETE_BANNER_DELAY + (float)items * NEXUS_COMPLETE_LOOT_DELAY_PER_ITEM;
+}
+
+static void NexusPlayCompleteSound(Nexus *n) {
+    if (n->complete_sound_played) return;
+    n->complete_sound_played = true;
+    GuiSoundPlay(SND_LEVEL_UP);
+}
+
+static NexusAction NexusRequestRecap(Nexus *n, const PlayerNexusRun *run) {
+    n->completed_run = *run;
+    n->recap_requested = true;
+    return NEXUS_SHOW_RECAP;
+}
+
+static void NexusDrawCompleteBanner(const Nexus *n, float elapsed, float screen_w, float screen_h) {
+    float fade = Clamp(elapsed / NEXUS_COMPLETE_BANNER_FADE_TIME, 0.0f, 1.0f);
+    float width = screen_w * 0.92f, height = width * 0.25f, y = screen_h * 0.435f;
+    Rectangle banner = {(screen_w - width) * 0.5f, y - height * 0.5f, width, height};
+    UiDrawTexture(GuiTex(GUI_SPLASH_INKSMEAR), banner, (Color){0, 0, 0, (unsigned char)(255.0f * fade)});
+    UiDrawTexture(
+        GuiTex(GUI_SPLASH_INKSPLAT),
+        (Rectangle){banner.x - width * 0.02f, y - height * 0.6f, width * 1.04f, height * 1.2f},
+        (Color){0, 0, 0, (unsigned char)(205.0f * fade)}
+    );
+    UiDrawTextCentered(
+        n->font,
+        LocGetOr("NEXUS_MAP_COMPLETE", "Завершено"),
+        banner,
+        60.0f,
+        (Color){240, 240, 240, (unsigned char)(255.0f * fade)}
+    );
 }
 
 static Texture2D NexusNodeIcon(const Nexus *n, const NexusNode *node, int current_step, bool selected) {
@@ -577,7 +628,8 @@ static void NexusDrawNodeQuad(Texture2D tex, Vector3 centre, float half_x, float
     rlSetTexture(0);
 }
 
-static void NexusDrawSelectionRing(Texture2D tex, Vector3 centre, float half_x, float half_z, float degrees, Color tint) {
+static void
+NexusDrawSelectionRing(Texture2D tex, Vector3 centre, float half_x, float half_z, float degrees, Color tint) {
     float c = cosf(degrees * DEG2RAD), s = sinf(degrees * DEG2RAD);
     static const float corners[4][4] = {{1, 1, 0, 0}, {1, -1, 0, 1}, {-1, -1, 1, 1}, {-1, 1, 1, 0}};
     rlSetTexture(tex.id);
@@ -597,12 +649,8 @@ static Vector3 NexusNodeOffset(Vector3 world, Vector2 unit, float x, float z) {
 }
 
 static Rectangle NexusNodeScreenRect(const Nexus *n, Vector3 world, Vector2 unit, Vector2 centre, Vector2 half) {
-    Vector2 a = NexusBackgroundNodeScreen(
-        &n->bg, NexusNodeOffset(world, unit, centre.x + half.x, centre.y - half.y)
-    );
-    Vector2 b = NexusBackgroundNodeScreen(
-        &n->bg, NexusNodeOffset(world, unit, centre.x - half.x, centre.y + half.y)
-    );
+    Vector2 a = NexusBackgroundNodeScreen(&n->bg, NexusNodeOffset(world, unit, centre.x + half.x, centre.y - half.y));
+    Vector2 b = NexusBackgroundNodeScreen(&n->bg, NexusNodeOffset(world, unit, centre.x - half.x, centre.y + half.y));
     return (Rectangle){fminf(a.x, b.x), fminf(a.y, b.y), fabsf(b.x - a.x), fabsf(b.y - a.y)};
 }
 
@@ -692,8 +740,9 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
     float screen_w = UiWidth(), screen_h = UiHeight();
 
     if (n->selected_node >= d->node_count) n->selected_node = d->node_count - 1;
-    int current_step = Clamp(run->current_node_step, 1, d->node_count);
+    if (n->recap_requested) run = &n->completed_run;
     if (NexusRunComplete(n, run)) n->final_complete = true;
+    int current_step = Clamp(run->current_node_step, 1, d->node_count);
 
     if (n->anim_active) {
         n->anim_time += dt;
@@ -826,7 +875,20 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
         Vector2 anchor = NexusBackgroundNodeScreen(
             &n->bg, NexusNodeOffset(node_world[0], unit, NEXUS_ENERGY_TEXT_OFFSET_X, NEXUS_BANNER_OFFSET_Z)
         );
-        DrawTextEx(n->font, text, (Vector2){anchor.x - measured.x / 2.0f, anchor.y - measured.y / 2.0f}, fs, 1.0f, WHITE);
+        DrawTextEx(
+            n->font, text, (Vector2){anchor.x - measured.x / 2.0f, anchor.y - measured.y / 2.0f}, fs, 1.0f, WHITE
+        );
+    }
+
+    float banner_delay = NexusCompleteBannerDelay(run);
+    if (n->final_complete && n->complete_time >= banner_delay) {
+        NexusPlayCompleteSound(n);
+        if (!n->recap_requested) {
+            NexusDrawCompleteBanner(n, n->complete_time - banner_delay, screen_w, screen_h);
+            if (n->complete_time >= banner_delay + NEXUS_COMPLETE_BANNER_TIME) action = NexusRequestRecap(n, run);
+        }
+        UiFrameEnd();
+        return action;
     }
 
     Rectangle lore = {0.0f, 72.0f, n->lore.width / 1.3f, n->lore.height / 1.3f};
@@ -925,7 +987,10 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
         Rectangle enter = {screen_w - 277.0f, screen_h - 76.0f, 270.0f, 67.0f};
         if (n->final_complete) {
             n->enter.label = LocGetOr("NEXUS_EXIT_MAP", "Выход с карты");
-            if (ButtonDrawEx(&n->enter, enter, n->complete_time > NEXUS_COMPLETE_BANNER_DELAY)) action = NEXUS_COMPLETE;
+            if (ButtonDrawEx(&n->enter, enter, !UiInputBlocked())) {
+                NexusPlayCompleteSound(n);
+                action = NexusRequestRecap(n, run);
+            }
         } else {
             n->enter.label =
                 run->reset ? LocGetOr("NEXUS_REVIVE_TITLE", "Возродить") : LocGetOr("NEXUS_ENTER_NODE", "Войти");
@@ -938,7 +1003,11 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
         float plate_w = 230.0f, plate_h = 52.0f, icon_size = 64.0f;
         Rectangle plate = {screen_w / 2.0f - plate_w / 2.0f, screen_h - 66.0f, plate_w, plate_h};
         UiDrawTexture(n->timer_plate, plate, WHITE);
-        UiDrawTexture(n->potion_icon, (Rectangle){plate.x - 6.0f, plate.y + (plate_h - icon_size) / 2.0f, icon_size, icon_size}, WHITE);
+        UiDrawTexture(
+            n->potion_icon,
+            (Rectangle){plate.x - 6.0f, plate.y + (plate_h - icon_size) / 2.0f, icon_size, icon_size},
+            WHITE
+        );
         const char *label = TextFormat("%d / %d", player->potions, player->potion_max);
         UiDrawTextCentered(
             n->font,
@@ -971,18 +1040,6 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
             );
             UiDrawTexture(icons[i], (Rectangle){icon_x, cy - icon_box / 2.0f, icon_box, icon_box}, WHITE);
         }
-    }
-
-    if (n->final_complete && n->complete_time >= NEXUS_COMPLETE_BANNER_DELAY) {
-        float fade = Clamp((n->complete_time - NEXUS_COMPLETE_BANNER_DELAY) / 0.35f, 0.0f, 1.0f);
-        DrawRectangle(0, (int)(screen_h * 0.36f), (int)screen_w, 128, (Color){0, 0, 0, (unsigned char)(200 * fade)});
-        UiDrawTextCentered(
-            n->font,
-            LocGetOr("NEXUS_MAP_COMPLETE", "Завершено"),
-            (Rectangle){0.0f, screen_h * 0.36f + 34.0f, screen_w, 0.0f},
-            60.0f,
-            (Color){240, 240, 240, (unsigned char)(255 * fade)}
-        );
     }
 
     if (n->quit_open && NexusDrawQuitDialog(n, run)) action = NEXUS_QUIT;

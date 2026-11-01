@@ -221,6 +221,7 @@ typedef enum {
     GUI_NEXUS_KEY_2,
     GUI_NEXUS_KEY_3,
     GUI_NEXUS_KEY_4,
+    GUI_NEXUS_RECAP_BRUSH,
 
     GUI_BTN_GOLD_COST,
     GUI_BTN_GOLD_COST_ON,
@@ -611,6 +612,7 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_NEXUS_KEY_2] = CACHE_RESOURCE("tex.IconKey02"),
     [GUI_NEXUS_KEY_3] = CACHE_RESOURCE("tex.IconKey03"),
     [GUI_NEXUS_KEY_4] = CACHE_RESOURCE("tex.IconKey03"),
+    [GUI_NEXUS_RECAP_BRUSH] = CACHE_RESOURCE("FortifyFlyText"),
 
     [GUI_BTN_GOLD_COST] = APK_RESOURCE("Btn_CTA_gold_cost"),
     [GUI_BTN_GOLD_COST_ON] = APK_RESOURCE("Btn_CTA_gold_cost_active"),

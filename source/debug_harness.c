@@ -158,6 +158,14 @@ static void DebugPrepareNexus(Game *game, DebugShot *shot) {
         game->player.nexus_run.escrow_gold += d->nodes[i].gold;
         game->player.nexus_run.escrow_xp += d->nodes[i].xp;
     }
+    if (EnvFlag("HOD_NEXUS_COMPLETE")) {
+        game->player.nexus_run.committed = true;
+        game->player.nexus_run.nodes[step - 1].wins = 1;
+        game->player.nexus_run.escrow_gold += d->nodes[step - 1].gold;
+        game->player.nexus_run.escrow_xp += d->nodes[step - 1].xp;
+        game->player.nexus_run.escrow_potions = EnvInt("HOD_NEXUS_POTIONS", 2);
+        game->player.nexus_run.escrow_units[EnvInt("HOD_NEXUS_RARITY", RARITY_RARE)] = EnvInt("HOD_NEXUS_UNITS", 3);
+    }
     NexusEnterMap(&game->nexus, &game->player, event, difficulty);
     game->nexus.quit_open = EnvFlag("HOD_NEXUS_QUIT");
     shot->flow_started = true;

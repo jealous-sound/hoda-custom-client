@@ -387,7 +387,7 @@ BattleRewardResult NexusResolveBattle(Player *player, const Nexus *nexus, int st
     return result;
 }
 
-static void NexusGrantEscrowUnits(Player *player, const int *escrow_units) {
+static void NexusGrantEscrowUnits(Player *player, const int *escrow_units, NexusAward *award) {
     int wanted = 0;
     for (int rarity = RARITY_COMMON; rarity <= RARITY_MYTHIC; rarity++) wanted += escrow_units[rarity];
     if (wanted <= 0) return;
@@ -411,23 +411,37 @@ static void NexusGrantEscrowUnits(Player *player, const int *escrow_units) {
             if (entry) definitions[count++] = entry;
         }
     }
-    if (count > 0 && !PlayerRosterAppendDefinitions(player, definitions, count, NULL))
+    int first = -1;
+    if (count > 0 && !PlayerRosterAppendDefinitions(player, definitions, count, &first))
         TraceLog(LOG_WARNING, "Nexus: could not grant %d escrowed unit(s)", count);
+    for (int n = 0; first >= 0 && n < count; n++) {
+        int index = first + n;
+        bool owned = false;
+        for (int other = 0; other < index && !owned; other++)
+            owned = strcmp(player->roster[other].id, player->roster[index].id) == 0;
+        award->unit_roster[n] = index;
+        award->unit_newly_owned[n] = !owned;
+        award->unit_count = n + 1;
+    }
     cJSON_Delete(catalog_root);
 }
 
-void NexusAwardEscrow(Player *player) {
-    if (!player || !player->nexus_run.committed) return;
+NexusAward NexusAwardEscrow(Player *player) {
+    NexusAward award = {0};
+    if (!player || !player->nexus_run.committed) return award;
     PlayerNexusRun *run = &player->nexus_run;
+    award.gold = run->escrow_gold;
+    award.potions = run->escrow_potions;
     player->gold = ProgressionSaturatingAdd(player->gold, run->escrow_gold);
     PlayerAddPotions(player, run->escrow_potions);
-    NexusGrantEscrowUnits(player, run->escrow_units);
+    NexusGrantEscrowUnits(player, run->escrow_units, &award);
 
     int event = run->event_index, difficulty = run->difficulty_index;
     if (event >= 0 && event < NEXUS_MAX_EVENTS && difficulty >= 0 && difficulty < NEXUS_MAX_DIFFICULTIES &&
         player->nexus_events.completions[event][difficulty] < INT_MAX)
         player->nexus_events.completions[event][difficulty]++;
     NexusResetRun(player);
+    return award;
 }
 
 bool NexusReviveRun(Player *player) {

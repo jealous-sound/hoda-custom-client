@@ -47,6 +47,7 @@ typedef struct {
     Quests quests;
     Campaign map;
     Nexus nexus;
+    NexusRecap nexus_recap;
     EnergyDialog energy_dialog;
     EnergyDialog stamina_dialog;
     bool stamina_dialog_top;
@@ -197,6 +198,22 @@ static void GameStartPendingNexusAnimation(Game *g) {
         NexusBeginProgressionAnimation(&g->nexus, from, to);
 }
 
+static void GameOpenNexusRecap(Game *g) {
+    HudCurrencyHold(&g->hud, false);
+    NexusAward award = NexusAwardEscrow(&g->player);
+    if (!HeroesSyncRoster(&g->heroes, &g->player)) TraceLog(LOG_FATAL, "Nexus: granted units cannot sync to Heroes");
+    ProgressionSave(&g->player);
+    NexusRecapOpen(&g->nexus_recap, &award);
+}
+
+static void GameReplayNexusMap(Game *g) {
+    int event = g->nexus.active_event, difficulty = g->nexus.active_difficulty;
+    if (NexusEventUnlocked(&g->nexus, &g->player, event) && NexusEnterMap(&g->nexus, &g->player, event, difficulty))
+        ProgressionSave(&g->player);
+    else
+        g->screen = SCREEN_QUESTS;
+}
+
 static void GameStartPendingCampaignAnimation(Game *g) {
     PlayerCampaignAnimation animation = g->player.campaign_progress.pending_animation;
     if (!animation.active) return;
@@ -285,6 +302,7 @@ void GameInitialize(Game *g) {
     MissionsSync(&g->player, &g->map);
     CampaignProgressSync(&g->map, &g->player.campaign_progress);
     NexusInitialize(&g->nexus, "data/nexus_maps.json");
+    NexusRecapInitialize(&g->nexus_recap);
     EnergyDialogInitialize(&g->energy_dialog);
     StaminaDialogInitialize(&g->stamina_dialog);
     g->stamina_dialog_top = false;
@@ -333,6 +351,10 @@ bool GameHandlePopupBack(Game *g) {
         return true;
     }
     if (g->screen == SCREEN_MAP && CampaignHandleBack(&g->map)) return true;
+    if (g->screen == SCREEN_NEXUS && NexusRecapHandleBack(&g->nexus_recap, &g->hud, &g->player)) {
+        if (!NexusRecapOpened(&g->nexus_recap)) g->screen = SCREEN_QUESTS;
+        return true;
+    }
     if (g->screen == SCREEN_NEXUS && NexusHandleBack(&g->nexus)) return true;
     if (g->screen == SCREEN_STORE) {
         if (StoreHandleBack(&g->store, &g->heroes) == STORE_ACTION_CLOSE) g->screen = SCREEN_HOME;
@@ -849,9 +871,14 @@ void GameDraw(Game *g) {
                 break;
             }
             NexusAction act = NexusDraw(&g->nexus, &g->player, &g->player.nexus_run);
+            if (act == NEXUS_SHOW_RECAP) GameOpenNexusRecap(g);
             UiFrameBegin();
-            if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
+            NexusRecapAction recap_action = NexusRecapDraw(&g->nexus_recap, &g->heroes, &g->hud, &g->player);
+            bool hud_interactive = !NexusCompletionActive(&g->nexus);
+            if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, hud_interactive, false));
             UiFrameEnd();
+            if (recap_action == NEXUS_RECAP_REPLAY) GameReplayNexusMap(g);
+            if (recap_action == NEXUS_RECAP_RETURN) g->screen = SCREEN_QUESTS;
             if (act == NEXUS_ENTER || act == NEXUS_REVIVE) {
                 int cost = NexusSelectedEnergyCost(&g->nexus, &g->player);
                 bool paid = act != NEXUS_REVIVE || NexusReviveRun(&g->player);
@@ -867,7 +894,7 @@ void GameDraw(Game *g) {
                 } else if (paid) {
                     GameOpenResourceDialogSilently(g, false);
                 }
-            } else if (act == NEXUS_COMPLETE || act == NEXUS_QUIT || act == NEXUS_LEAVE) {
+            } else if (act == NEXUS_QUIT || act == NEXUS_LEAVE) {
                 if (act == NEXUS_QUIT && !NexusRunComplete(&g->nexus, &g->player.nexus_run)) NexusResetRun(&g->player);
                 if (act == NEXUS_LEAVE) QuestsOpenLadder(&g->quests, g->nexus.active_event);
                 g->screen = SCREEN_QUESTS;

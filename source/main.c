@@ -54,6 +54,7 @@
 #include "campaign.c"
 #include "nexus_background.c"
 #include "nexus.c"
+#include "nexus_recap.c"
 #include "quests.c"
 #include "progression.c"
 #include "mission_progress.c"
