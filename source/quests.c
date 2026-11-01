@@ -693,7 +693,7 @@ static bool QuestsDrawLadder(Quests *q, const Nexus *nexus, const Player *player
     UiDrawTextCentered(
         q->body,
         LocGet(e->subtitle),
-        (Rectangle){panel.x, panel.y + 122.0f, panel.width, 0.0f},
+        (Rectangle){panel.x, panel.y + 130.0f, panel.width, 0.0f},
         20.0f,
         (Color){196, 192, 182, 255}
     );
@@ -938,7 +938,7 @@ QuestButton QuestsDraw(Quests *q, const Nexus *nexus, const Player *player, cons
         }
         QuestsDrawKeyStrip(q, player, (Rectangle){panel.x + 72.0f, dst.y - 4.0f, dst.x - panel.x - 112.0f, 92.0f});
     } else {
-        back_rect = (Rectangle){panel.x + 62.0f, panel.y + panel.height * 0.07f, 54.0f, 54.0f};
+        back_rect = (Rectangle){panel.x + 36.0f, panel.y + panel.height * 0.07f, 54.0f, 54.0f};
         if (ButtonDrawEx(&q->back, back_rect, interactive)) q->ladder_event = -1;
     }
 
