@@ -29,6 +29,7 @@ typedef struct {
     Vector3 home;
     float hop_total;
     const ModelAnimation *clip;
+    const ModelAnimation *shown_clip;
     float clip_time;
     float clip_speed;
     bool clip_hold;
@@ -280,6 +281,7 @@ static void BpRingSet(BpUnit *u, float pct) {
 static void BpStartClip(BpUnit *u, const ModelAnimation *clip, float speed, bool hold) {
     if (!clip) return;
     u->clip = clip;
+    u->shown_clip = NULL;
     u->clip_time = 0.0f;
     u->clip_speed = speed;
     u->clip_hold = hold;
@@ -1110,13 +1112,14 @@ void BattlePlayUpdate(BattlePlay *bp, Battle *b, float raw_dt) {
             );
             BpSetAnimationOverride(hu, u->clip != NULL || u->dead);
             if (u->dead) continue;
+            if (u->clip != u->shown_clip) {
+                HomeSquadUnitBeginBlend(hu, u->clip ? CLIP_ENTER_BLEND_TIME : CLIP_EXIT_BLEND_TIME);
+                u->shown_clip = u->clip;
+            }
             if (u->clip) {
                 int frame = (int)u->clip_time;
                 if (frame >= u->clip->frameCount) frame = u->clip->frameCount - 1;
-                if (frame != hu->last_frame || hu->last_frame < 0) {
-                    hu->last_frame = frame;
-                    UpdateModelAnimation(hu->model, *u->clip, frame);
-                }
+                HomeSquadUnitShowFrame(hu, *u->clip, frame);
             }
         }
     }

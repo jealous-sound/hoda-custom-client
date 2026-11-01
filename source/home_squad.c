@@ -3,6 +3,10 @@
 #define HOME_FAC_HEIGHT 0.115f
 #define HOME_FAC_DIAMETER 0.85f
 #define HOME_CLIP_FPS (1000.0f / 17.0f)
+#define CLIP_ENTER_BLEND_TIME 0.1f
+#define CLIP_EXIT_BLEND_TIME 0.25f
+#define ATTACK_EXIT_TIME 0.6f
+#define ATTACK_EXIT_BLEND 0.23f
 #define HOME_UNIT_PATH_MAX 512
 #define UNIT_POOL_CAPACITY 12
 #define HOME_UI_SOUND_REF_MAX 128
@@ -32,6 +36,7 @@ typedef struct {
     bool anim_override;
     bool melee_playing;
     bool projectile_playing;
+    bool melee_exiting;
     Model model;
     ModelAnimation idle;
     ModelAnimation melee;
@@ -40,6 +45,15 @@ typedef struct {
     float melee_frame;
     int phase;
     int last_frame;
+    int pose_bone_count;
+    int *bone_order;
+    Transform *pose;
+    Transform *pose_from;
+    bool pose_ready;
+    float pose_blend_time;
+    float pose_blend_left;
+    ModelAnimation pose_source;
+    float pose_source_frame;
     Matrix xform;
     float fade;
     const char *wisp_fx;
@@ -383,6 +397,9 @@ static void HomeSquadUnitFree(HomeSquadUnit *unit) {
         if (tex.id > 0 && tex.id != rlGetTextureIdDefault()) UnloadTexture(tex);
     }
     UnloadModel(unit->model);
+    MemFree(unit->bone_order);
+    MemFree(unit->pose);
+    MemFree(unit->pose_from);
 }
 
 static void UnitPoolRemoveAt(int index) {
@@ -415,6 +432,32 @@ static void UnitPoolClear(void) {
 
 static void HomeSquadUnitBindShader(HomeSquadUnit *unit, Shader unit_shader) {
     for (int m = 0; m < unit->model.materialCount; m++) unit->model.materials[m].shader = unit_shader;
+}
+
+static void HomeSquadUnitBuildBoneOrder(HomeSquadUnit *unit) {
+    int count = unit->idle.boneCount;
+    const BoneInfo *bones = unit->idle.bones;
+    bool *placed = MemAlloc(count * sizeof(bool));
+    int ordered = 0;
+    while (ordered < count) {
+        int before = ordered;
+        for (int b = 0; b < count; b++) {
+            int parent = bones[b].parent;
+            if (placed[b] || (parent >= 0 && !placed[parent])) continue;
+            placed[b] = true;
+            unit->bone_order[ordered++] = b;
+        }
+        if (ordered == before) TraceLog(LOG_FATAL, "Squad: cyclic skeleton in %s", unit->path);
+    }
+    MemFree(placed);
+}
+
+static void HomeSquadUnitAllocPose(HomeSquadUnit *unit) {
+    unit->pose_bone_count = unit->idle.boneCount;
+    unit->bone_order = MemAlloc(unit->pose_bone_count * sizeof(int));
+    unit->pose = MemAlloc(unit->pose_bone_count * sizeof(Transform));
+    unit->pose_from = MemAlloc(unit->pose_bone_count * sizeof(Transform));
+    HomeSquadUnitBuildBoneOrder(unit);
 }
 
 static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase_seed) {
@@ -460,6 +503,7 @@ static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase
         MemFree(clips);
     }
     if (unit->idle.frameCount == 0) TraceLog(LOG_FATAL, "Squad: no usable idle clip in %s", path);
+    HomeSquadUnitAllocPose(unit);
     unit->phase = (phase_seed * 47) % unit->idle.frameCount;
     unit->wisp_bone = -1;
     unit->wisp_loop = -1;
@@ -475,17 +519,100 @@ static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit
     unit->anim_override = false;
     unit->melee_playing = false;
     unit->projectile_playing = false;
+    unit->melee_exiting = false;
     unit->last_frame = -1;
+    unit->pose_ready = false;
+    unit->pose_blend_left = 0.0f;
+    unit->pose_source = (ModelAnimation){0};
     unit->xform = xform;
     unit->fade = 1.0f;
 }
 
+static void HomeSquadUnitBeginBlend(HomeSquadUnit *unit, float seconds) {
+    unit->last_frame = -1;
+    unit->pose_source = (ModelAnimation){0};
+    if (!unit->pose_ready) return;
+    memcpy(unit->pose_from, unit->pose, unit->pose_bone_count * sizeof(Transform));
+    unit->pose_blend_time = seconds;
+    unit->pose_blend_left = seconds;
+}
+
+static void HomeSquadUnitBlendTick(HomeSquadUnit *unit, float dt) {
+    if (unit->pose_blend_left <= 0.0f) return;
+    unit->pose_blend_left -= dt;
+    unit->pose_source_frame += dt * HOME_CLIP_FPS;
+    if (unit->pose_blend_left <= 0.0f) unit->last_frame = -1;
+}
+
+static Transform BoneLocalTransform(const Transform *pose, const BoneInfo *bones, int bone) {
+    int parent = bones[bone].parent;
+    if (parent < 0) return pose[bone];
+    Quaternion to_parent = QuaternionInvert(pose[parent].rotation);
+    return (Transform){
+        Vector3RotateByQuaternion(Vector3Subtract(pose[bone].translation, pose[parent].translation), to_parent),
+        QuaternionMultiply(to_parent, pose[bone].rotation),
+        pose[bone].scale,
+    };
+}
+
+static void HomeSquadUnitBlendPose(HomeSquadUnit *unit, const BoneInfo *bones, const Transform *target, float weight) {
+    for (int i = 0; i < unit->pose_bone_count; i++) {
+        int bone = unit->bone_order[i];
+        int parent = bones[bone].parent;
+        Transform from = BoneLocalTransform(unit->pose_from, bones, bone);
+        Transform to = BoneLocalTransform(target, bones, bone);
+        Vector3 translation = Vector3Lerp(from.translation, to.translation, weight);
+        Quaternion rotation = QuaternionSlerp(from.rotation, to.rotation, weight);
+        Transform *out = &unit->pose[bone];
+        out->scale = Vector3Lerp(from.scale, to.scale, weight);
+        if (parent < 0) {
+            out->translation = translation;
+            out->rotation = rotation;
+            continue;
+        }
+        const Transform *up = &unit->pose[parent];
+        out->translation = Vector3Add(up->translation, Vector3RotateByQuaternion(translation, up->rotation));
+        out->rotation = QuaternionMultiply(up->rotation, rotation);
+    }
+}
+
+static void HomeSquadUnitShowFrame(HomeSquadUnit *unit, ModelAnimation clip, int frame) {
+    bool blending = unit->pose_blend_left > 0.0f;
+    if (frame == unit->last_frame && !blending) return;
+    unit->last_frame = frame;
+    if (clip.boneCount != unit->pose_bone_count) {
+        UpdateModelAnimation(unit->model, clip, frame);
+        return;
+    }
+    size_t pose_size = unit->pose_bone_count * sizeof(Transform);
+    if (blending) {
+        ModelAnimation source = unit->pose_source;
+        if (source.frameCount > 0) {
+            int source_frame = (int)unit->pose_source_frame;
+            if (source_frame >= source.frameCount) source_frame = source.frameCount - 1;
+            memcpy(unit->pose_from, source.framePoses[source_frame], pose_size);
+        }
+        float weight = 1.0f - unit->pose_blend_left / unit->pose_blend_time;
+        HomeSquadUnitBlendPose(unit, clip.bones, clip.framePoses[frame], weight);
+    } else {
+        memcpy(unit->pose, clip.framePoses[frame], pose_size);
+    }
+    unit->pose_ready = true;
+    Transform *shown_frames[1] = {unit->pose};
+    ModelAnimation shown = clip;
+    shown.frameCount = 1;
+    shown.framePoses = shown_frames;
+    UpdateModelAnimation(unit->model, shown, 0);
+}
+
 static bool HomeSquadUnitPlayMelee(HomeSquadUnit *unit) {
     if (!unit->active || unit->melee.frameCount <= 0) return false;
+    HomeSquadUnitBeginBlend(unit, CLIP_ENTER_BLEND_TIME);
     unit->melee_playing = true;
+    unit->melee_exiting = false;
     unit->projectile_playing = false;
     unit->melee_frame = 0.0f;
-    UpdateModelAnimation(unit->model, unit->melee, 0);
+    HomeSquadUnitShowFrame(unit, unit->melee, 0);
     return true;
 }
 
@@ -493,29 +620,39 @@ static bool HomeSquadUnitPlayProjectile(HomeSquadUnit *unit) {
     if (!HomeSquadUnitPlayMelee(unit)) return false;
     if (unit->projectile.frameCount <= 0) return true;
     unit->projectile_playing = true;
-    UpdateModelAnimation(unit->model, unit->projectile, 0);
+    unit->last_frame = -1;
+    HomeSquadUnitShowFrame(unit, unit->projectile, 0);
     return true;
 }
 
+static void HomeSquadUnitBeginAttackExit(HomeSquadUnit *unit, ModelAnimation clip) {
+    HomeSquadUnitBeginBlend(unit, ATTACK_EXIT_BLEND * (float)clip.frameCount / HOME_CLIP_FPS);
+    unit->pose_source = clip;
+    unit->pose_source_frame = unit->melee_frame;
+    unit->melee_exiting = true;
+}
+
 static void HomeSquadUnitUpdate(HomeSquadUnit *unit, float dt) {
-    if (!unit->active || unit->anim_override) return;
+    if (!unit->active) return;
+    HomeSquadUnitBlendTick(unit, dt);
+    if (unit->anim_override) return;
     if (unit->melee_playing) {
-        unit->melee_frame += dt * HOME_CLIP_FPS;
-        int frame = (int)unit->melee_frame;
         ModelAnimation clip = unit->projectile_playing ? unit->projectile : unit->melee;
-        if (frame < clip.frameCount) {
-            UpdateModelAnimation(unit->model, clip, frame);
-            return;
+        if (!unit->melee_exiting) {
+            unit->melee_frame += dt * HOME_CLIP_FPS;
+            if (unit->melee_frame < ATTACK_EXIT_TIME * (float)clip.frameCount) {
+                HomeSquadUnitShowFrame(unit, clip, (int)unit->melee_frame);
+                return;
+            }
+            HomeSquadUnitBeginAttackExit(unit, clip);
+        } else if (unit->pose_blend_left <= 0.0f) {
+            unit->melee_playing = false;
+            unit->melee_exiting = false;
         }
-        unit->melee_playing = false;
-        unit->last_frame = -1;
     }
     if (unit->idle.frameCount <= 0) return;
     unit->frame_time = fmodf(unit->frame_time + dt * HOME_CLIP_FPS, (float)unit->idle.frameCount);
-    int frame = ((int)unit->frame_time + unit->phase) % unit->idle.frameCount;
-    if (frame == unit->last_frame) return;
-    unit->last_frame = frame;
-    UpdateModelAnimation(unit->model, unit->idle, frame);
+    HomeSquadUnitShowFrame(unit, unit->idle, ((int)unit->frame_time + unit->phase) % unit->idle.frameCount);
 }
 
 static Vector3 HomeSquadWispPosition(const HomeSquadUnit *unit) {
