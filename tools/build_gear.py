@@ -55,23 +55,6 @@ LOCAL_FILTER_NAMES = {
     'ROSTER_FILTER_COMMON': 'Обычные', 'ROSTER_FILTER_UNCOMMON': 'Необычные', 'ROSTER_FILTER_RARE': 'Редкие',
     'ROSTER_FILTER_EPIC': 'Эпические', 'ROSTER_FILTER_LEGENDARY': 'Легендарные', 'ROSTER_FILTER_MYTHIC': 'Мифические',
 }
-GEAR_PACKS = [
-    {'id': 'peasant', 'loc': 'PEASANT_GEAR_PACK_NAME', 'currency': 'gold', 'price': 2000, 'count': 1, 'min_rarity': 1,
-     'max_rarity': 2},
-    {'id': 'novice', 'loc': 'NOVICE_GEAR_PACK_NAME', 'currency': 'gold', 'price': 6000, 'count': 1, 'min_rarity': 1,
-     'max_rarity': 3},
-    {'id': 'journeyman', 'loc': 'JOURNEYMAN_GEAR_PACK_NAME', 'currency': 'gold', 'price': 20000, 'count': 2,
-     'min_rarity': 2, 'max_rarity': 3},
-    {'id': 'merchant', 'loc': 'MERCHANT_GEAR_PACK_NAME', 'currency': 'gems', 'price': 50, 'count': 3, 'min_rarity': 2,
-     'max_rarity': 4},
-    {'id': 'masterwork', 'loc': 'MASTERWORK_GEAR_PACK_NAME', 'currency': 'gems', 'price': 150, 'count': 3,
-     'min_rarity': 3, 'max_rarity': 5},
-    {'id': 'armory', 'loc': 'ARMORY_GEAR_PACK_NAME', 'currency': 'gems', 'price': 400, 'count': 5, 'min_rarity': 4,
-     'max_rarity': 6},
-    {'id': 'tome', 'loc': 'TOME_OF_ASCENSION_LOCAL_NAME', 'currency': 'gems', 'price': 500, 'count': 1, 'min_rarity': 6,
-     'max_rarity': 6, 'grants_tome': True},
-]
-
 GROUP_NAMES = {
     'apostate': 'Apostate', 'apostates': 'Apostate', 'avvar': 'Avvar', 'beast': 'Beast', 'beasts': 'Beast',
     'creature': 'Beast', 'creatures': 'Beast', 'blight': 'Blight', 'blighted': 'Blight', 'blood mage': 'Blood_Mage',
@@ -529,13 +512,11 @@ def build() -> tuple[dict, list[str], int]:
         items.append(item)
         unparsed.extend(f'{gear_id}: {miss}' for miss in misses)
     russian = json.loads(RUSSIAN_LOCALIZATION.read_text(encoding='utf-8'))
-    packs = [dict(pack, name_ru=russian.get(pack['loc'], TOME_LOCAL_NAME)) for pack in GEAR_PACKS]
     return {
         'version': 1,
         'balance_note': 'Sell values, the prestige slot cost and pack contents were served remotely; they are local balance.',
         'rarity_gold_values': RARITY_GOLD_VALUES,
         'prestige_slot_gem_cost': PRESTIGE_SLOT_GEM_COST,
-        'packs': packs,
         'strings': [{'key': key, 'text': russian[key]} for key in TEXT_KEYS]
         + [{'key': key, 'text': text} for key, text in LOCAL_FILTER_NAMES.items()],
         'unparsed': unparsed,

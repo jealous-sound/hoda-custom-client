@@ -509,7 +509,7 @@ static void GameHandleRunesLeave(Game *g, RunesLeave leave) {
             GameLeaveRunesTo(g, SCREEN_HEROES);
             g->store_return_screen = SCREEN_HEROES;
             StoreOpen(&g->store);
-            StoreShowRunes(&g->store);
+            StoreShowItems(&g->store);
             g->screen = SCREEN_STORE;
             break;
         case RUNES_LEAVE_GALLERY:
@@ -700,7 +700,7 @@ void GameDraw(Game *g) {
             } else if (GearViewTakeStoreRequest()) {
                 GearViewClose();
                 StoreOpen(&g->store);
-                StoreShowGear(&g->store);
+                StoreShowItems(&g->store);
                 g->screen = SCREEN_STORE;
             } else if (heroes_action == HEROES_RUNES) {
                 GameOpenRunes(g, SCREEN_HEROES);

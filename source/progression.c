@@ -44,6 +44,7 @@ void ProgressionInitializePlayerDefaults(Player *p) {
     p->store_rng_state = 0x9e3779b9u;
     p->store_opened_total = 0;
     memset(p->store_opened_by_pack, 0, sizeof(p->store_opened_by_pack));
+    memset(p->pack_vouchers, 0, sizeof(p->pack_vouchers));
     p->champion_since_legendary = 0;
     p->campaign_progress = (PlayerCampaignProgress){0};
     p->potions = 3;
@@ -243,6 +244,7 @@ BattleRewardResult CampaignResolveBattle(
     result.xp_reward = ProgressionSaturatingAdd(result.xp_reward, result.challenge_xp_reward);
     result.xp_reward = ProgressionSaturatingAdd(result.xp_reward, result.grind_xp_reward);
     ProgressionApplyRuneRewards(player, &result);
+    StoreAwardVoucherForWin(player);
     result.default_gems_reward = node->default_gems > 0 ? node->default_gems : 0;
     result.first_win_gems_reward =
         result.first_win && !node->grind && node->first_win_gems > 0 ? node->first_win_gems : 0;
@@ -366,6 +368,7 @@ BattleRewardResult NexusResolveBattle(Player *player, const Nexus *nexus, int st
     result.gold_reward = ProgressionSaturatingAdd(result.default_gold_reward, result.crit_gold_reward);
     result.xp_reward = node->xp > 0 ? node->xp : 0;
     ProgressionApplyRuneRewards(player, &result);
+    StoreAwardVoucherForWin(player);
     run->escrow_gold = ProgressionSaturatingAdd(run->escrow_gold, result.gold_reward);
     run->escrow_xp = ProgressionSaturatingAdd(run->escrow_xp, result.xp_reward);
     run->escrow_potions = ProgressionSaturatingAdd(run->escrow_potions, node->potion_reward);
@@ -773,6 +776,10 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
     for (int pack = 0; pack < PLAYER_STORE_PACK_COUNT; pack++)
         if (!ProgressionJsonAddArrayNumber(opened, player->store_opened_by_pack[pack])) goto save_json_failed;
     PROGRESSION_SAVE_NUMBER(store, "champion_since_legendary", player->champion_since_legendary);
+    cJSON *vouchers = cJSON_AddArrayToObject(store, "vouchers");
+    if (!vouchers) goto save_json_failed;
+    for (int voucher = 0; voucher < PLAYER_VOUCHER_CAPACITY; voucher++)
+        if (!ProgressionJsonAddArrayNumber(vouchers, player->pack_vouchers[voucher])) goto save_json_failed;
 
     int roster_count = managed_roster ? player->roster_count : 0;
     uint64_t next_instance_id = managed_roster ? player->next_instance_id : 1;
@@ -1183,6 +1190,8 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
     int loaded_opened[PLAYER_STORE_PACK_COUNT];
     memcpy(loaded_opened, player->store_opened_by_pack, sizeof(loaded_opened));
     int loaded_champion_since = player->champion_since_legendary;
+    int loaded_vouchers[PLAYER_VOUCHER_CAPACITY];
+    memcpy(loaded_vouchers, player->pack_vouchers, sizeof(loaded_vouchers));
     int saved_starter_count = 0;
     int addition_count = 0;
     uint64_t loaded_next_instance_id = player->next_instance_id;
@@ -1213,6 +1222,13 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
             if (valid) opened_sum += loaded_opened[pack];
         }
         valid = valid && opened_sum == loaded_opened_total && loaded_champion_since <= opened_sum;
+        int voucher = 0;
+        const cJSON *wallet = NULL;
+        cJSON_ArrayForEach(wallet, cJSON_GetObjectItemCaseSensitive(store, "vouchers")) {
+            if (voucher < PLAYER_VOUCHER_CAPACITY && cJSON_IsNumber(wallet) && wallet->valueint >= 0)
+                loaded_vouchers[voucher] = wallet->valueint;
+            voucher++;
+        }
 
         cJSON *roster = cJSON_GetObjectItemCaseSensitive(root, "roster");
         cJSON *starters = cJSON_GetObjectItemCaseSensitive(roster, "starters");
@@ -1447,6 +1463,7 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
         player->store_opened_total = loaded_opened_total;
         memcpy(player->store_opened_by_pack, loaded_opened, sizeof(loaded_opened));
         player->champion_since_legendary = loaded_champion_since;
+        memcpy(player->pack_vouchers, loaded_vouchers, sizeof(loaded_vouchers));
         if (commit_roster) {
             int old_count = player->roster_count;
             int new_count = saved_starter_count + addition_count;

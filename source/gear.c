@@ -2,11 +2,14 @@
 #define GEAR_CATALOG_CAPACITY 288
 #define GEAR_RARITY_COUNT 6
 #define GEAR_RARITY_LEGENDARY 5
-#define GEAR_PACK_CAPACITY 7
+#define GEAR_PACK_CAPACITY 6
 #define GEAR_ROLL_TOME (-1)
+#define GEAR_ROLL_NONE (-2)
+#define GEAR_STORE_CATALOG_PATH "data/store_packs.json"
 #define GEAR_ASCENSION_BONUS_LEVELS 5
 #define GEAR_ASCENSION_BONUS_SLOTS 1
 #define GEAR_PACK_MAX_ITEMS 5
+#define GEAR_PACK_MAX_ROLLS (GEAR_PACK_MAX_ITEMS + 1)
 #define GEAR_CATEGORY_CAPACITY 8
 #define GEAR_NORMAL_SLOT_MAX 3
 #define GEAR_PRESTIGE_MIN_SLOTS 4
@@ -103,7 +106,7 @@ typedef struct {
     int price;
     int count;
     int min_rarity, max_rarity;
-    bool grants_tome;
+    int tome_chance_pct;
 } GearPackDef;
 
 typedef struct {
@@ -264,9 +267,12 @@ static void GearDefParse(GearDef *def, const cJSON *row) {
     cJSON_ArrayForEach(effect, effects) GearEffectParse(&def->effects[index++], effect, def->id);
 }
 
+static void GearLoadPacks(void);
+
 void GearCatalogEnsure(void) {
     if (gear_catalog.loaded) return;
     gear_catalog.loaded = true;
+    GearLoadPacks();
     cJSON *root = JsonLoadFile(GEAR_CATALOG_PATH);
     cJSON *rows = cJSON_GetObjectItemCaseSensitive(root, "items");
     int count = cJSON_IsArray(rows) ? cJSON_GetArraySize(rows) : 0;
@@ -278,20 +284,6 @@ void GearCatalogEnsure(void) {
         if (rarity < GEAR_RARITY_COUNT) gear_catalog.rarity_gold_values[rarity++] = row->valueint;
     }
     gear_catalog.prestige_slot_gem_cost = JsonInt(root, "prestige_slot_gem_cost");
-    cJSON_ArrayForEach(row, cJSON_GetObjectItemCaseSensitive(root, "packs")) {
-        if (gear_catalog.pack_count >= GEAR_PACK_CAPACITY) TraceLog(LOG_FATAL, "Gear: too many packs");
-        GearPackDef *pack = &gear_catalog.packs[gear_catalog.pack_count++];
-        StrCopy(pack->id, sizeof(pack->id), JsonStr(row, "id"));
-        StrCopy(pack->name_ru, sizeof(pack->name_ru), JsonStr(row, "name_ru"));
-        pack->gems = !strcmp(JsonStr(row, "currency"), "gems");
-        pack->price = JsonInt(row, "price");
-        pack->count = JsonInt(row, "count");
-        pack->min_rarity = JsonInt(row, "min_rarity");
-        pack->max_rarity = JsonInt(row, "max_rarity");
-        pack->grants_tome = cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive((cJSON *)row, "grants_tome"));
-        if (pack->count <= 0 || pack->count > GEAR_PACK_MAX_ITEMS)
-            TraceLog(LOG_FATAL, "Gear: invalid pack %s", pack->id);
-    }
     cJSON_ArrayForEach(row, cJSON_GetObjectItemCaseSensitive(root, "strings")) {
         if (gear_catalog.string_count >= GEAR_STRING_CAPACITY) TraceLog(LOG_FATAL, "Gear: too many strings");
         GearString *string = &gear_catalog.strings[gear_catalog.string_count++];
@@ -337,6 +329,28 @@ int GearDefIndex(const char *id) {
     for (int i = 0; i < gear_catalog.count; i++)
         if (!strcmp(gear_catalog.defs[i].id, id)) return i;
     return -1;
+}
+
+static void GearLoadPacks(void) {
+    cJSON *root = JsonLoadFile(GEAR_STORE_CATALOG_PATH);
+    const cJSON *row = NULL;
+    cJSON_ArrayForEach(row, cJSON_GetObjectItemCaseSensitive(root, "packs")) {
+        if (strcmp(JsonStr(row, "kind"), "gear")) continue;
+        if (gear_catalog.pack_count >= GEAR_PACK_CAPACITY) TraceLog(LOG_FATAL, "Gear: too many packs");
+        GearPackDef *pack = &gear_catalog.packs[gear_catalog.pack_count++];
+        const cJSON *offer = cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive((cJSON *)row, "offers"), 0);
+        StrCopy(pack->id, sizeof(pack->id), JsonStr(row, "id"));
+        StrCopy(pack->name_ru, sizeof(pack->name_ru), JsonStr(row, "name_ru"));
+        pack->gems = !strcmp(JsonStr(offer, "currency"), "gems");
+        pack->price = JsonInt(offer, "price");
+        pack->count = JsonInt(row, "count");
+        pack->min_rarity = JsonInt(row, "min_rarity");
+        pack->max_rarity = JsonInt(row, "max_rarity");
+        pack->tome_chance_pct = JsonInt(row, "tome_chance_pct");
+        if (pack->count <= 0 || pack->count > GEAR_PACK_MAX_ITEMS)
+            TraceLog(LOG_FATAL, "Gear: invalid pack %s", pack->id);
+    }
+    cJSON_Delete(root);
 }
 
 int GearPackCount(void) {
@@ -495,6 +509,10 @@ static int GearRollRarity(const GearPackDef *pack, uint32_t *rng) {
     return pack->max_rarity;
 }
 
+bool GearRollTome(const GearPackDef *pack, uint32_t *rng) {
+    return pack->tome_chance_pct > 0 && (int)(GearNextRandom(rng) % 100u) < pack->tome_chance_pct;
+}
+
 int GearRollFromPack(const GearPackDef *pack, uint32_t *rng) {
     int rarity = GearRollRarity(pack, rng);
     int count = 0;
@@ -505,12 +523,6 @@ int GearRollFromPack(const GearPackDef *pack, uint32_t *rng) {
     for (int i = 0; i < GearCatalogCount(); i++)
         if (GearDefAt(i)->rarity == rarity && pick-- == 0) return i;
     return -1;
-}
-
-const GearDef *GearPackArt(const GearPackDef *pack) {
-    for (int i = 0; i < GearCatalogCount(); i++)
-        if (GearDefAt(i)->rarity == pack->max_rarity) return GearDefAt(i);
-    return GearDefAt(0);
 }
 
 static struct {

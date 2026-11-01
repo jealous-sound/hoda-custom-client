@@ -527,7 +527,8 @@ void RuneFormatExpiration(long long seconds, char *dst, int cap) {
         RuneFormatClock(seconds, dst, cap);
 }
 
-#define RUNE_ICON_CACHE_CAPACITY RUNE_CATALOG_CAPACITY
+#define RUNE_ICON_STORE_ART_CAPACITY 96
+#define RUNE_ICON_CACHE_CAPACITY (RUNE_CATALOG_CAPACITY + RUNE_ICON_STORE_ART_CAPACITY)
 
 typedef struct {
     char ref[96];

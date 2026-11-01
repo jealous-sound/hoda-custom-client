@@ -5,6 +5,7 @@
 #define STAMINA_REFILL_GEM_COST 3
 #define PLAYER_ROSTER_CAPACITY 1024
 #define PLAYER_STORE_PACK_COUNT 4
+#define PLAYER_VOUCHER_CAPACITY 16
 #define PLAYER_INSTANCE_ID_MAX 9007199254740991ULL
 
 int SquadSlotReferencePosition(int slot) {
@@ -101,6 +102,7 @@ typedef struct {
     int store_opened_total;
     int store_opened_by_pack[PLAYER_STORE_PACK_COUNT];
     int champion_since_legendary;
+    int pack_vouchers[PLAYER_VOUCHER_CAPACITY];
 
     PlayerCampaignProgress campaign_progress;
 
@@ -564,15 +566,17 @@ bool PlayerSellGear(Player *p, int def_index) {
     return true;
 }
 
-bool PlayerBuyGearPack(Player *p, const GearPackDef *pack, int rolled[GEAR_PACK_MAX_ITEMS]) {
+bool PlayerBuyGearPack(Player *p, const GearPackDef *pack, int rolled[GEAR_PACK_MAX_ROLLS]) {
     if (!p || !pack) return false;
     if (!(pack->gems ? PlayerSpendGems(p, pack->price) : PlayerSpendGold(p, pack->price))) return false;
     for (int i = 0; i < pack->count; i++) {
-        rolled[i] = pack->grants_tome ? GEAR_ROLL_TOME : GearRollFromPack(pack, &p->store_rng_state);
-        if (pack->grants_tome)
-            p->gear.tomes++;
-        else
-            GearGrant(&p->gear, rolled[i]);
+        rolled[i] = GearRollFromPack(pack, &p->store_rng_state);
+        GearGrant(&p->gear, rolled[i]);
+    }
+    rolled[pack->count] = GEAR_ROLL_NONE;
+    if (GearRollTome(pack, &p->store_rng_state)) {
+        rolled[pack->count] = GEAR_ROLL_TOME;
+        p->gear.tomes++;
     }
     return true;
 }

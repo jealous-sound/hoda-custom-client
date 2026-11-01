@@ -107,17 +107,42 @@ static void DebugRenderNexusScene(const char *scene_name) {
 }
 
 static void DebugPrepareStore(Game *game, DebugShot *shot) {
-    static const char *const names[] = {"store", "store_heroes", "store_gems", "pack", "pack_reveal", "pack_summary"};
-    if (!DebugShotIsAny(shot, names, 6)) return;
+    static const char *const names[] = {
+        "store",
+        "store_heroes",
+        "store_gems",
+        "store_items",
+        "store_featured",
+        "store_vault",
+        "store_voucher",
+        "pack",
+        "pack_reveal",
+        "pack_summary",
+    };
+    if (!DebugShotIsAny(shot, names, sizeof(names) / sizeof(names[0]))) return;
     game->screen = SCREEN_STORE;
     if (!shot->flow_started) {
         StoreOpen(&game->store);
+        game->store.clock_override = EnvInt("HOD_STORE_NOW", 0);
+        game->store.scroll = EnvFloat("HOD_STORE_SCROLL", 0.0f);
+        for (int voucher = 0; voucher < game->store.voucher_count; voucher++)
+            game->player.pack_vouchers[voucher] = EnvInt("HOD_VOUCHERS", 0);
         if (DebugShotIs(shot, "store_heroes")) {
             game->store.view = STORE_VIEW_HEROES;
         } else if (DebugShotIs(shot, "store_gems")) {
             game->store.view = STORE_VIEW_GEMS;
+        } else if (DebugShotIs(shot, "store_items")) {
+            game->store.view = STORE_VIEW_ITEMS;
+        } else if (DebugShotIs(shot, "store_featured")) {
+            game->store.view = STORE_VIEW_FEATURED;
+        } else if (DebugShotIs(shot, "store_vault")) {
+            game->store.view = STORE_VIEW_VAULT;
+        } else if (DebugShotIs(shot, "store_voucher")) {
+            game->store.view = STORE_VIEW_HEROES;
+            game->store.pending_pack = Clamp(EnvInt("HOD_PACK", 0), 0, game->store.pack_count - 1);
+            game->store.dialog = STORE_DIALOG_VOUCHER;
         } else if (!DebugShotIs(shot, "store")) {
-            int pack = Clamp(EnvInt("HOD_PACK", STORE_PACK_CHAMPION), 0, STORE_PACK_COUNT - 1);
+            int pack = Clamp(EnvInt("HOD_PACK", STORE_PACK_CHAMPION), 0, game->store.pack_count - 1);
             game->player.gold = DEBUG_PACK_FUNDS;
             game->player.gems = DEBUG_PACK_FUNDS;
             bool purchased = StoreTryPurchase(&game->store, &game->player, &game->heroes, pack);
@@ -416,7 +441,7 @@ static void DebugPrepareRunes(Game *game, DebugShot *shot) {
         game->runes.dialog = RUNES_DIALOG_CRAFT_SINGLE;
     } else if (DebugShotIs(shot, "runes_store")) {
         StoreOpen(&game->store);
-        StoreShowRunes(&game->store);
+        StoreShowItems(&game->store);
         player->gems = DEBUG_PACK_FUNDS;
         game->store_return_screen = SCREEN_HEROES;
         game->screen = SCREEN_STORE;
@@ -520,9 +545,15 @@ static void DebugPrepareGear(Game *game, DebugShot *shot) {
     if (DebugShotIs(shot, "gear_store") || DebugShotIs(shot, "gear_reveal")) {
         game->screen = SCREEN_STORE;
         StoreOpen(&game->store);
-        StoreShowGear(&game->store);
+        StoreShowItems(&game->store);
         shot->gear_store = true;
-        if (DebugShotIs(shot, "gear_reveal")) StoreTryBuyGearPack(&game->store, player, GearPackCount() - 1);
+        if (DebugShotIs(shot, "gear_reveal")) {
+            player->gems = INT_MAX / 2;
+            game->store.item_reveal_time = 0.0f;
+            player->gold = INT_MAX / 2;
+            StoreTryPurchase(&game->store, player, &game->heroes, EnvInt("HOD_PACK", game->store.pack_count - 1));
+            game->store.item_reveal_time = EnvFloat("HOD_REVEAL_TIME", 2.0f);
+        }
         return;
     }
     if (DebugShotIs(shot, "gear_inventory")) {

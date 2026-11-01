@@ -4451,7 +4451,7 @@ static void TestGearPacksRollInsideTheirRarityRange(void) {
         }
     }
     Player broke = {.gold = 0};
-    int rolled[GEAR_PACK_MAX_ITEMS];
+    int rolled[GEAR_PACK_MAX_ROLLS];
     assert(!PlayerBuyGearPack(&broke, GearPackAt(0), rolled));
     Player rich = {.gold = GearPackAt(0)->price, .store_rng_state = 9};
     assert(PlayerBuyGearPack(&rich, GearPackAt(0), rolled));
@@ -4899,15 +4899,69 @@ static void TestAscensionSurvivesSave(void) {
     assert(roster[0].stats[TIER_I].max_level == 85);
 }
 
-static void TestTomePackGrantsATome(void) {
+static void TestGearPackBundlesATome(void) {
     GearTestReset();
-    const GearPackDef *pack = GearPackAt(GearPackCount() - 1);
-    assert(pack->grants_tome);
-    Player p = {.gems = pack->price};
-    int rolled[GEAR_PACK_MAX_ITEMS];
-    assert(PlayerBuyGearPack(&p, pack, rolled));
-    assert(p.gear.tomes == 1 && p.gems == 0 && rolled[0] == GEAR_ROLL_TOME);
-    assert(GearInventoryTotal(&p.gear) == 0);
+    GearPackDef pack = *GearPackAt(GearPackCount() - 1);
+    assert(pack.tome_chance_pct > 0);
+    pack.tome_chance_pct = 100;
+    Player p = {.gems = pack.price, .store_rng_state = 9};
+    int rolled[GEAR_PACK_MAX_ROLLS];
+    assert(PlayerBuyGearPack(&p, &pack, rolled));
+    assert(p.gear.tomes == 1 && p.gems == 0 && rolled[pack.count] == GEAR_ROLL_TOME);
+    assert(GearInventoryTotal(&p.gear) == pack.count);
+    pack.tome_chance_pct = 0;
+    p.gems = pack.price;
+    assert(PlayerBuyGearPack(&p, &pack, rolled));
+    assert(p.gear.tomes == 1 && rolled[pack.count] == GEAR_ROLL_NONE);
+}
+
+static void TestSeasonalPackFollowsTheCalendar(void) {
+    StorePackDef winter = {.flash_index = -1, .schedule_start = 1210, .schedule_end = 115};
+    struct tm inside = {.tm_year = 126, .tm_mon = 11, .tm_mday = 20, .tm_hour = 12, .tm_isdst = -1};
+    struct tm january = {.tm_year = 127, .tm_mon = 0, .tm_mday = 10, .tm_hour = 12, .tm_isdst = -1};
+    struct tm outside = {.tm_year = 126, .tm_mon = 5, .tm_mday = 1, .tm_hour = 12, .tm_isdst = -1};
+    long long december_left = StorePackSecondsLeft(&winter, 7, 12, (long long)mktime(&inside));
+    assert(december_left > 26 * STORE_SECONDS_PER_DAY && december_left < 28 * STORE_SECONDS_PER_DAY);
+    assert(StorePackSecondsLeft(&winter, 7, 12, (long long)mktime(&january)) > 0);
+    assert(StorePackSecondsLeft(&winter, 7, 12, (long long)mktime(&outside)) == STORE_PACK_UNAVAILABLE);
+    StorePackDef always = {.flash_index = -1};
+    assert(StorePackSecondsLeft(&always, 7, 12, (long long)mktime(&outside)) == STORE_PACK_ALWAYS);
+}
+
+static void TestFlashPacksRotateOnePerPeriod(void) {
+    long long span = 7 * STORE_SECONDS_PER_DAY;
+    long long now = span * 25 + 100;
+    int active = 0;
+    for (int index = 0; index < 12; index++) {
+        StorePackDef flash = {.flash_index = index};
+        long long left = StorePackSecondsLeft(&flash, 7, 12, now);
+        if (left != STORE_PACK_UNAVAILABLE) {
+            active++;
+            assert(left == span - 100);
+        }
+    }
+    assert(active == 1);
+}
+
+static void TestStoreDialogTextFitsRussianPackNames(void) {
+    char header[STORE_DIALOG_TEXT_CAPACITY];
+    StoreFormatPackName(header, sizeof(header), "{0}: недоступно", "Усилитель \"черных\" и \"белых\" героев");
+    assert(!strcmp(header, "Усилитель \"черных\" и \"белых\" героев: недоступно"));
+    StoreFormatPackName(header, sizeof(header), "без подстановки", "Набор");
+    assert(!strcmp(header, "без подстановки"));
+}
+
+static void TestVoucherOfferWinsOnlyWhenOwned(void) {
+    StorePackDef pack = {.has_paid_offer = true, .paid = {.voucher = -1, .gems = true, .price = 30}, .voucher = 3};
+    Player player = {0};
+    assert(StoreActiveOffer(&pack, &player).voucher == -1);
+    player.pack_vouchers[3] = 1;
+    assert(StoreActiveOffer(&pack, &player).voucher == 3);
+    StoreOfferPay(StoreActiveOffer(&pack, &player), &player);
+    assert(player.pack_vouchers[3] == 0);
+    pack.has_paid_offer = false;
+    StoreOffer find = StoreActiveOffer(&pack, &player);
+    assert(find.voucher == 3 && !StoreOfferAffordable(find, &player));
 }
 
 static void TestAscendedHeroLoadsAboveTheOldLevelCap(void) {
@@ -5034,7 +5088,11 @@ int main(void) {
     TestAscensionRequiresFilledSlotsAndTome();
     TestAscensionPromotesHeroAndMovesPrestigeGear();
     TestAscensionSurvivesSave();
-    TestTomePackGrantsATome();
+    TestGearPackBundlesATome();
+    TestSeasonalPackFollowsTheCalendar();
+    TestFlashPacksRotateOnePerPeriod();
+    TestVoucherOfferWinsOnlyWhenOwned();
+    TestStoreDialogTextFitsRussianPackNames();
     TestAscendedHeroLoadsAboveTheOldLevelCap();
     TestHeroLevelTableCoversAscendedCap();
     TestMissionSeriesPicksTheClaimableTier();
