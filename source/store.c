@@ -1,7 +1,6 @@
 
 bool ProgressionSave(const Player *player);
 Color GearRarityColor(int rarity);
-Texture2D GearRarityFrame(int rarity);
 void GearDrawTile(const GearDef *def, Rectangle r, bool selected);
 static void CampaignDrawWrapped(
     Font font, const char *text, Vector2 pos, float size, float spacing, float line_gap, float max_width, Color tint
@@ -29,7 +28,10 @@ static void CampaignDrawWrapped(
 #define STORE_VAULT_TITLE "Хранилище"
 #define STORE_FEATURED_TITLE "Популярное"
 #define STORE_COMING_SOON_TEXT "Скоро!"
-#define STORE_CONFIRM_GEMS_FORMAT "Потратить самоцветы: %d?"
+#define STORE_CONFIRM_GEMS_FORMAT "Потратить %d"
+#define STORE_CONFIRM_GEMS_SUFFIX "?"
+#define STORE_CONFIRM_TEXT_SIZE 26.0f
+#define STORE_CONFIRM_ICON_OF_TEXT 1.3f
 #define STORE_PLATE_TOP 76.0f
 #define STORE_PLATE_HEIGHT 633.0f
 #define STORE_PLATE_ASPECT 1.482f
@@ -214,7 +216,6 @@ typedef struct {
     PackHero opening_hero;
 
     Texture2D card;
-    Texture2D popup;
     Texture2D plate;
     Texture2D category_frame;
     Texture2D category_art[STORE_TILE_COUNT];
@@ -643,7 +644,6 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
     PackHeroInitialize(&store->opening_hero, HOD_CACHE "char_pack");
 
     store->card = GuiTex(GUI_STORE_CARD);
-    store->popup = GuiTex(GUI_STORE_POPUP);
     store->plate = GuiTex(GUI_STORE_PLATE);
     store->category_frame = GuiTex(GUI_STORE_CATEGORY_FRAME);
     store->category_art[STORE_TILE_FEATURED] = GuiTex(GUI_STORE_CATEGORY_FEATURED);
@@ -1317,22 +1317,12 @@ static void StoreDrawBuyPrice(Store *store, StoreOffer offer, const Player *play
 
 static Texture2D StoreRarityBackdrop(StorePackKind kind, int rarity) {
     int tier = rarity < RARITY_COMMON ? 0 : (rarity > RARITY_LEGENDARY ? RARITY_LEGENDARY : rarity) - RARITY_COMMON;
-    if (kind == STORE_KIND_HERO) return GuiTex(GUI_STORE_UNIT_RARITY_COMMON + tier);
+    if (kind != STORE_KIND_RUNE) return GuiTex(GUI_STORE_UNIT_RARITY_COMMON + tier);
     return GuiTex(GUI_STORE_RUNE_RARITY_COMMON + tier);
 }
 
 static void StoreDrawRarityIcon(StorePackKind kind, Rectangle rect, int rarity, Color tint) {
-    if (kind == STORE_KIND_GEAR) {
-        DrawRectangleRec(rect, ColorAlpha(BLACK, tint.a / 255.0f));
-        UiDrawTexture(GearRarityFrame(rarity), rect, tint);
-        return;
-    }
     UiDrawTexture(StoreRarityBackdrop(kind, rarity), rect, tint);
-}
-
-static void StoreDrawRarityCard(Store *store, StorePackKind kind, Rectangle rect, int rarity, float text_size) {
-    StoreDrawRarityIcon(kind, rect, rarity, WHITE);
-    StoreDrawCenteredFit(store->title_font, "?", rect, text_size, (Color){236, 232, 220, 255});
 }
 
 static int StoreBulletCount(const StorePackDef *pack, const Player *player) {
@@ -1520,7 +1510,7 @@ static StoreAction StoreDrawItemReveal(Store *store, Player *player, Heroes *her
                 continue;
             }
             if (age < 0.0f) {
-                StoreDrawRarityCard(store, store->item_kind, card, StoreItemRarity(store, i), card.height * 0.6f);
+                StoreDrawRarityIcon(store->item_kind, card, StoreItemRarity(store, i), WHITE);
                 continue;
             }
             StoreDrawRevealItem(store, i, card);
@@ -1981,30 +1971,33 @@ static bool StoreDrawDialog(Store *store, Player *player, Heroes *heroes) {
     StoreDialogText(store, player, header, body, sizeof(header));
 
     DrawRectangle(0, 0, (int)UiWidth(), (int)UiHeight(), (Color){0, 0, 0, 150});
-    Rectangle plate = {400.0f, 190.0f, 480.0f, 340.0f};
-    StoreDrawNineSlice(store->popup, plate, 34.0f, WHITE);
+    Rectangle plate = MessagePopupRect();
+    UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), plate, WHITE);
+    Rectangle content = UiRect(plate, 0.5f, 0.5f, 0.8f, 0.8f);
     StoreDrawCenteredFit(
-        store->title_font,
-        header,
-        (Rectangle){plate.x + 28.0f, plate.y + 22.0f, plate.width - 56.0f, 44.0f},
-        30.0f,
-        (Color){242, 236, 218, 255}
-    );
-    CampaignDrawWrapped(
-        store->body_font,
-        body,
-        (Vector2){plate.x + 40.0f, plate.y + 84.0f},
-        19.0f,
-        1.0f,
-        6.0f,
-        plate.width - 80.0f,
-        (Color){228, 224, 212, 255}
+        store->title_font, header, UiRect(content, 0.5f, 0.0f, 1.0f, 0.2f), 30.0f, (Color){242, 236, 218, 255}
     );
     bool confirm = store->dialog == STORE_DIALOG_CONFIRM_GEMS;
-    float button_y = plate.y + plate.height - 82.0f;
-    Rectangle ok_rect = confirm ? (Rectangle){plate.x + 238.0f, button_y, 214.0f, 59.0f}
-                                : (Rectangle){plate.x + (plate.width - 236.0f) * 0.5f, button_y, 236.0f, 59.0f};
-    if (confirm && ButtonDraw(&store->dialog_cancel, (Rectangle){plate.x + 28.0f, button_y, 214.0f, 59.0f})) {
+    Rectangle body_rect = UiRect(content, 0.5f, 0.5f, 1.0f, 0.4f);
+    if (confirm) {
+        float icon = STORE_CONFIRM_TEXT_SIZE * STORE_CONFIRM_ICON_OF_TEXT;
+        float gap = STORE_CONFIRM_TEXT_SIZE * 0.3f;
+        Vector2 amount = MeasureTextEx(store->body_font, body, STORE_CONFIRM_TEXT_SIZE, 1.0f);
+        Vector2 suffix = MeasureTextEx(store->body_font, STORE_CONFIRM_GEMS_SUFFIX, STORE_CONFIRM_TEXT_SIZE, 1.0f);
+        float x = body_rect.x + (body_rect.width - (amount.x + gap + icon + suffix.x)) * 0.5f;
+        float y = body_rect.y + (body_rect.height - amount.y) * 0.5f;
+        DrawTextEx(store->body_font, body, (Vector2){x, y}, STORE_CONFIRM_TEXT_SIZE, 1.0f, WHITE);
+        x += amount.x + gap;
+        UiDrawTexture(store->currency_gems, (Rectangle){x, y + (amount.y - icon) * 0.5f, icon, icon}, WHITE);
+        DrawTextEx(
+            store->body_font, STORE_CONFIRM_GEMS_SUFFIX, (Vector2){x + icon, y}, STORE_CONFIRM_TEXT_SIZE, 1.0f, WHITE
+        );
+    } else {
+        MessagePopupDrawText(store->body_font, body, body_rect, STORE_CONFIRM_TEXT_SIZE, WHITE);
+    }
+    Rectangle row = MessagePopupChoiceRow(plate);
+    Rectangle ok_rect = confirm ? UiRect(row, 1.0f, 0.0f, 0.5f, 1.0f) : MessagePopupOkButton(plate);
+    if (confirm && ButtonDraw(&store->dialog_cancel, UiRect(row, 0.0f, 0.0f, 0.5f, 1.0f))) {
         store->dialog = STORE_DIALOG_NONE;
         return false;
     }
