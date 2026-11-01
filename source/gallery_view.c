@@ -13,7 +13,6 @@
 #define GALLERY_TITLE_FONT_SIZE 34.0f
 #define GALLERY_HEADER_FONT_SIZE 21.0f
 #define GALLERY_NAME_FONT_SIZE 14.0f
-#define GALLERY_POPUP_BORDER 34.0f
 #define GALLERY_TIER_BUTTON_SIZE 75.0f
 #define GALLERY_TIER_BUTTON_STRIDE 90.0f
 #define GALLERY_TIER_BUTTONS_X 17.0f
@@ -608,7 +607,7 @@ GalleryAction GalleryPopupDraw(Gallery *g, const Player *p) {
     Rectangle popup = GalleryRect(126.0f, 56.0f, 753.0f, 508.0f);
     Rectangle scrim = {0.0f, GALLERY_TOP_HUD_HEIGHT, UiWidth(), UiHeight() - GALLERY_TOP_HUD_HEIGHT};
     DrawRectangleRec(scrim, Fade(BLACK, 0.6f));
-    StoreDrawNineSlice(GuiTex(GUI_STORE_POPUP), popup, GALLERY_POPUP_BORDER, WHITE);
+    UiDrawTexture(GuiTex(GUI_STORE_PLATE), popup, WHITE);
     UiDrawTexture(GuiTex(GUI_GALLERY_DETAILS), GalleryRect(179.0f, 125.0f, 260.0f, 402.0f), WHITE);
     UiDrawTextCentered(
         GuiFont(FNT_COOL),

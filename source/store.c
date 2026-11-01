@@ -198,6 +198,17 @@ typedef struct {
 #define STORE_OPEN_CAMERA_END 4.06f
 #define STORE_OPEN_SEQUENCE_START 4.80f
 #define STORE_OPEN_COMPLETE 8.0503f
+#define STORE_PACK_RUNE_RECT ((Rectangle){1074.0f, 88.0f, 206.0f, 206.0f})
+#define STORE_PACK_RUNE_ICON_SCALE 0.78f
+#define STORE_PACK_RUNE_BURST_SCALE 1.2f
+#define STORE_PACK_RUNE_FADE_IN 0.8f
+#define STORE_PACK_RUNE_BURST_DELAY 1.8f
+#define STORE_PACK_RUNE_BURST_DURATION 2.0f
+#define STORE_PACK_RUNE_BURST_SWELL_DURATION 1.0f
+#define STORE_PACK_RUNE_BURST_SWELL_RETURN_DELAY 2.8f
+#define STORE_PACK_RUNE_BURST_SPIN_DEGREES 90.0f
+#define STORE_PACK_RUNE_BURST_PEAK_BASE 1.6f
+#define STORE_PACK_RUNE_BURST_PEAK_PER_RARITY 0.1f
 
 static const char *const STORE_EXPECTED_PACK_IDS[STORE_PACK_COUNT] = {
     "recruit", "soldier", "champion", "grand_champion"
@@ -1434,10 +1445,60 @@ static bool StoreDrawResultNavigation(Store *store, bool last) {
     return ButtonDrawEx(&store->nav_squad, (Rectangle){236.0f, 662.0f, 106.0f, 49.5f}, !StoreInputBlocked(store));
 }
 
+static Rectangle StoreScaledAround(Rectangle rect, float scale) {
+    float width = rect.width * scale, height = rect.height * scale;
+    return (Rectangle){rect.x + (rect.width - width) * 0.5f, rect.y + (rect.height - height) * 0.5f, width, height};
+}
+
+static float StoreClamp01(float value) {
+    return Clamp(value, 0.0f, 1.0f);
+}
+
+static void StoreDrawPackRune(const Store *store) {
+    const RuneDef *rune = RuneDefAt(store->pack_rune_def);
+    float time = store->result_time;
+    Rectangle slot = STORE_PACK_RUNE_RECT;
+
+    float burst_time = time - STORE_PACK_RUNE_BURST_DELAY;
+    if (burst_time >= 0.0f && burst_time < STORE_PACK_RUNE_BURST_DURATION) {
+        float fade = StoreClamp01(burst_time / STORE_PACK_RUNE_BURST_DURATION);
+        float peak =
+            STORE_PACK_RUNE_BURST_PEAK_BASE * (1.0f + STORE_PACK_RUNE_BURST_PEAK_PER_RARITY * (float)rune->rarity);
+        float swell =
+            burst_time < STORE_PACK_RUNE_BURST_SWELL_DURATION
+                ? Lerp(1.0f, peak, StoreClamp01(burst_time / STORE_PACK_RUNE_BURST_SWELL_DURATION))
+                : Lerp(
+                      peak,
+                      1.0f,
+                      StoreClamp01(
+                          (burst_time - (STORE_PACK_RUNE_BURST_SWELL_RETURN_DELAY - STORE_PACK_RUNE_BURST_DELAY)) /
+                          STORE_PACK_RUNE_BURST_SWELL_DURATION
+                      )
+                  );
+        Rectangle burst = StoreScaledAround(slot, STORE_PACK_RUNE_BURST_SCALE * swell);
+        Texture2D texture = GuiTex(GUI_RESULTS_STARBURST);
+        DrawTexturePro(
+            texture,
+            (Rectangle){0.0f, 0.0f, (float)texture.width, (float)texture.height},
+            (Rectangle){burst.x + burst.width * 0.5f, burst.y + burst.height * 0.5f, burst.width, burst.height},
+            (Vector2){burst.width * 0.5f, burst.height * 0.5f},
+            STORE_PACK_RUNE_BURST_SPIN_DEGREES * (burst_time / STORE_PACK_RUNE_BURST_DURATION),
+            Fade(WHITE, 1.0f - fade * fade * fade)
+        );
+    }
+
+    UiDrawTexture(
+        RuneIconLoad(rune->icon),
+        StoreScaledAround(slot, STORE_PACK_RUNE_ICON_SCALE),
+        Fade(WHITE, StoreClamp01(time / STORE_PACK_RUNE_FADE_IN))
+    );
+}
+
 static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes) {
     HeroCard *card = StoreCurrentCard(store, heroes);
     bool last = store->reveal_index + 1 >= store->result_count;
     if (card && store->result_time >= 0.08f) HeroesDrawDetailsAt(card, (Rectangle){17.0f, 91.0f, 433.0f, 555.0f});
+    if (store->pack_rune_def >= 0 && store->reveal_index == 0) StoreDrawPackRune(store);
     bool squad = StoreDrawResultNavigation(store, last);
 
     bool interactive = !StoreInputBlocked(store);
@@ -1450,12 +1511,6 @@ static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes)
         return STORE_ACTION_NONE;
     }
 
-    if (store->pack_rune_def >= 0) {
-        char message[128];
-        snprintf(message, sizeof(message), "Вы получили руну: %s!", RuneDefAt(store->pack_rune_def)->name_ru);
-        StoreSetStatus(store, message);
-        store->pack_rune_def = -1;
-    }
     bool again = ButtonDrawEx(&store->buy_again, (Rectangle){808.0f, 654.0f, 236.0f, 59.0f}, interactive);
     if (ButtonDrawEx(&store->done, (Rectangle){1044.0f, 654.0f, 236.0f, 59.0f}, interactive)) {
         store->view = STORE_VIEW_HEROES;

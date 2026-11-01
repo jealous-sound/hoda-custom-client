@@ -611,7 +611,7 @@ static void QuestsDrawCarousel(Quests *q, const Nexus *nexus, const Player *play
     UiDrawTextCentered(
         q->font,
         LocGetOr("PVE_HUB_SELECT_MAP", "Выберите карту"),
-        (Rectangle){panel.x, panel.y + 86.0f, panel.width, 0.0f},
+        (Rectangle){panel.x, panel.y + 94.0f, panel.width, 0.0f},
         24.0f,
         (Color){206, 198, 176, 255}
     );
@@ -794,7 +794,7 @@ QuestsDrawCurrentMap(Quests *q, const Campaign *campaign, const PlayerCampaignPr
     QuestsDrawImageFit(q->current_maps[map], image, hover ? (Color){255, 236, 180, 255} : WHITE);
     UiDrawTextCentered(
         q->body,
-        LocGetOr("NEXUS_HUB_FEATURED_CURRENT", "текущая карта"),
+        CapitalizeFirst(LocGetOr("NEXUS_HUB_FEATURED_CURRENT", "текущая карта")),
         (Rectangle){area.x, image.y + image.height + 12.0f, area.width, 0.0f},
         17.0f,
         QUESTS_TEXT
