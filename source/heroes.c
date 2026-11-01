@@ -939,6 +939,8 @@ int HeroesDrawSquadTabs(Heroes *h, const Player *p, Rectangle view) {
 }
 
 void GearViewOpenInventory(void);
+void GearViewClose(void);
+bool GearViewAcceptsInput(void);
 void GearViewDrawSlots(Player *p, int hero, Rectangle details);
 void GearViewDrawPanel(Player *p);
 void GearViewDrawDialogs(Player *p);
@@ -1006,7 +1008,13 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
         float y = UiHeight() - h->gray.idle.height - 12.0f;
 
         Rectangle inventory = {HEROES_GEAR_BUTTON_X, y, x - HEROES_GEAR_BUTTON_X - gap, (float)h->gray.idle.height};
-        if (ButtonDrawEx(&h->gear, inventory, buttons_active)) GearViewOpenInventory();
+        h->gear.label = gear_open ? LocGet("BUTTON_STORE_HERO_TAB") : GearText("GEAR_REVEAL_WINDOW_TITLE");
+        if (ButtonDrawEx(&h->gear, inventory, gear_open ? GearViewAcceptsInput() : buttons_active)) {
+            if (gear_open)
+                GearViewClose();
+            else
+                GearViewOpenInventory();
+        }
         if (ButtonDrawEx(&h->gray, (Rectangle){x, y, -1, -1}, buttons_active)) clicked = HEROES_QUEST;
         x += h->gray.idle.width + gap;
         ButtonDrawEx(&h->gold, (Rectangle){x, y, -1, -1}, false);

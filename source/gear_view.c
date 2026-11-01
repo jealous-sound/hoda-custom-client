@@ -39,7 +39,7 @@ typedef enum {
 
 typedef struct {
     bool loaded;
-    Button category, sort, equip, sell, heroes, store, prev, next, yes, no, close, unlock;
+    Button category, sort, equip, sell, store, prev, next, yes, no, close, unlock;
     bool open;
     int hero;
     int slot;
@@ -68,8 +68,6 @@ static void GearViewEnsureButtons(void) {
         ButtonLoadText(GUI_STORE_BUY, GUI_STORE_BUY_ON, GearText("GEAR_EQUIP_BUTTON_TEXT"), font, anchor, 0.34f);
     gear_view.sell =
         ButtonLoadText(GUI_STORE_BUY, GUI_STORE_BUY_ON, GearText("GEAR_SELL_BUTTON_TEXT"), font, anchor, 0.34f);
-    gear_view.heroes =
-        ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("BUTTON_STORE_HERO_TAB"), font, anchor, 0.26f);
     gear_view.store = ButtonLoadText(GUI_STORE_BUY, GUI_STORE_BUY_ON, LocGet("STORE_TITLE"), font, anchor, 0.3f);
     gear_view.prev = ButtonLoadText(GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", font, anchor, 0.32f);
     gear_view.next = ButtonLoadText(GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", font, anchor, 0.32f);
@@ -82,6 +80,10 @@ static void GearViewEnsureButtons(void) {
 
 bool GearViewIsOpen(void) {
     return gear_view.open || gear_view.dialog != GEAR_VIEW_DIALOG_NONE;
+}
+
+bool GearViewAcceptsInput(void) {
+    return gear_view.dialog == GEAR_VIEW_DIALOG_NONE && !UiInputBlocked();
 }
 
 void GearViewClose(void) {
@@ -201,7 +203,7 @@ static void GearViewDrawTomeSlot(const Player *p, int hero, Rectangle r, bool in
 
 void GearViewDrawSlots(Player *p, int hero, Rectangle details) {
     const Character *ch = &p->roster[hero];
-    bool input = gear_view.dialog == GEAR_VIEW_DIALOG_NONE && !UiInputBlocked();
+    bool input = GearViewAcceptsInput();
     bool tome = GearHasTomeSlot(ch);
     for (int slot = 0; slot < GearSlotCount(ch); slot++) {
         bool prestige = GearSlotIsPrestige(ch, slot);
@@ -525,19 +527,15 @@ static void GearViewDrawPageButton(Button *button, const char *key, Rectangle r,
 
 void GearViewDrawPanel(Player *p) {
     GearViewEnsureButtons();
-    bool input = gear_view.dialog == GEAR_VIEW_DIALOG_NONE && !UiInputBlocked();
+    bool input = GearViewAcceptsInput();
     UiDrawTexture(GuiTex(GUI_CONSUME_TRAY), RosterPx(-7.0f, 0.0f, 455.0f, 938.0f), WHITE);
 
     int items[GEAR_CATALOG_CAPACITY];
     int count = GearViewFilteredItems(p, gear_view.filter, gear_view.reversed, items);
     gear_view.category.label = TextFormat("%s(%d)", GearViewFilterName(gear_view.filter), count);
-    if (ButtonDrawEx(&gear_view.category, RosterPx(16.0f, 56.0f, 276.0f, 68.0f), input)) {
+    if (ButtonDrawEx(&gear_view.category, RosterPx(16.0f, 56.0f, 372.0f, 68.0f), input)) {
         gear_view.filter_open = !gear_view.filter_open;
         GuiSoundPlay(SND_UI_TAB);
-    }
-    if (ButtonDrawEx(&gear_view.heroes, RosterPx(296.0f, 56.0f, 100.0f, 68.0f), input)) {
-        GearViewClose();
-        return;
     }
     if (gear_view.filter_open) {
         GearViewDrawFilterList(p, input);
