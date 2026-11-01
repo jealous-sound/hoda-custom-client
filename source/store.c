@@ -787,6 +787,7 @@ static bool StoreTryPurchase(Store *store, Player *player, Heroes *heroes, int p
 
     player->store_rng_state = rng;
     player->store_opened_total++;
+    player->missions.counters[MISSION_STAT_SUMMONED] += pack->hero_count;
     player->store_opened_by_pack[pack_index]++;
     if (pack_index == STORE_PACK_CHAMPION) player->champion_since_legendary = next_pity;
 

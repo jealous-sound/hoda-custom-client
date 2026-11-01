@@ -551,6 +551,28 @@ static cJSON *ProgressionSaveRunes(const PlayerRunes *runes) {
     return NULL;
 }
 
+static cJSON *ProgressionSaveMissions(const PlayerMissions *missions) {
+    cJSON *root = cJSON_CreateObject();
+    cJSON *counters = cJSON_AddObjectToObject(root, "counters");
+    cJSON *progress = cJSON_AddObjectToObject(root, "progress");
+    cJSON *claimed = cJSON_AddArrayToObject(root, "claimed");
+    bool ok =
+        counters && progress && claimed && cJSON_AddNumberToObject(root, "last_battle_day", missions->last_battle_day);
+    for (int stat = 0; ok && stat < MISSION_STAT_COUNT; stat++) {
+        ok = cJSON_AddNumberToObject(counters, MISSION_STAT_NAMES[stat], (double)missions->counters[stat]);
+    }
+    for (int i = 0; ok && i < MissionCount(); i++) {
+        const char *id = MissionAt(i)->id;
+        ok = cJSON_AddNumberToObject(progress, id, (double)missions->progress[i]);
+        if (ok && missions->claimed[i]) ok = cJSON_AddItemToArray(claimed, cJSON_CreateString(id));
+    }
+    if (!ok) {
+        cJSON_Delete(root);
+        return NULL;
+    }
+    return root;
+}
+
 static cJSON *ProgressionSaveGallery(const PlayerGallery *gallery) {
     cJSON *root = cJSON_CreateObject();
     cJSON *units = cJSON_AddArrayToObject(root, "units");
@@ -795,6 +817,13 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
         goto save_json_failed;
     }
 
+    cJSON *missions = ProgressionSaveMissions(&player->missions);
+    if (!missions || !cJSON_AddItemToObject(root, "missions", missions)) {
+        cJSON_Delete(missions);
+        cJSON_Delete(root);
+        return false;
+    }
+
     cJSON *gallery = ProgressionSaveGallery(&player->gallery);
     if (!gallery || !cJSON_AddItemToObject(root, "gallery", gallery)) {
         cJSON_Delete(gallery);
@@ -920,6 +949,30 @@ static bool ProgressionLoadRunes(const cJSON *json, PlayerRunes *runes) {
         }
     }
     return true;
+}
+
+static void ProgressionLoadMissions(const cJSON *json, PlayerMissions *missions) {
+    memset(missions, 0, sizeof(*missions));
+    if (!cJSON_IsObject(json)) return;
+    const cJSON *counters = cJSON_GetObjectItemCaseSensitive(json, "counters");
+    const cJSON *progress = cJSON_GetObjectItemCaseSensitive(json, "progress");
+    const cJSON *claimed = cJSON_GetObjectItemCaseSensitive(json, "claimed");
+    ProgressionJsonInt(json, "last_battle_day", 0, INT_MAX, &missions->last_battle_day);
+    for (int stat = 0; stat < MISSION_STAT_COUNT; stat++) {
+        const cJSON *value = cJSON_GetObjectItemCaseSensitive(counters, MISSION_STAT_NAMES[stat]);
+        if (cJSON_IsNumber(value) && value->valuedouble > 0.0) missions->counters[stat] = (long long)value->valuedouble;
+    }
+    const cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, progress) {
+        int index = MissionIndexById(entry->string);
+        if (index != MISSION_NONE && cJSON_IsNumber(entry) && entry->valuedouble > 0.0)
+            missions->progress[index] = (long long)entry->valuedouble;
+    }
+    cJSON_ArrayForEach(entry, claimed) {
+        const char *id = cJSON_GetStringValue(entry);
+        int index = id ? MissionIndexById(id) : MISSION_NONE;
+        if (index != MISSION_NONE && MissionCompleted(missions, index)) missions->claimed[index] = true;
+    }
 }
 
 static bool ProgressionLoadGallery(const cJSON *json, PlayerGallery *gallery) {
@@ -1244,6 +1297,9 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
         valid = loaded_runes && ProgressionLoadRunes(cJSON_GetObjectItemCaseSensitive(root, "runes"), loaded_runes);
     }
 
+    static PlayerMissions loaded_missions;
+    ProgressionLoadMissions(cJSON_GetObjectItemCaseSensitive(root, "missions"), &loaded_missions);
+
     PlayerGallery loaded_gallery = {0};
     if (valid && version >= 6)
         valid = ProgressionLoadGallery(cJSON_GetObjectItemCaseSensitive(root, "gallery"), &loaded_gallery);
@@ -1303,6 +1359,7 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
     if (loaded_runes) player->runes = *loaded_runes;
     GalleryFree(&player->gallery);
     player->gallery = loaded_gallery;
+    player->missions = loaded_missions;
     free(loaded_runes);
     free(loaded_additions);
     return true;

@@ -111,6 +111,7 @@ typedef struct {
 
     PlayerRunes runes;
     PlayerGallery gallery;
+    PlayerMissions missions;
 } Player;
 
 static cJSON *CatalogFindCharacter(const cJSON *characters, const char *id) {
@@ -463,6 +464,10 @@ int PlayerConsumeUnits(Player *p, int target, const int *seeds, int count) {
         ch->tier = outcome.tier;
         ch->crit_chance = outcome.crit_chance;
         GalleryRecordOwned(&p->gallery, ch->id, ch->tier, false);
+        p->missions.counters[MISSION_STAT_CONSUMED] += count;
+        for (int i = 0; i < count; i++) {
+            if (!strcmp(seed_units[i]->id, ch->id)) p->missions.counters[MISSION_STAT_COMBINED]++;
+        }
         result = PlayerRosterCompact(p, remove, target);
     }
     MemFree(seed_units);

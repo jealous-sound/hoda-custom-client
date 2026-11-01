@@ -6,6 +6,7 @@ typedef enum {
     SCREEN_CONSUME,
     SCREEN_GALLERY,
     SCREEN_QUESTS,
+    SCREEN_MISSIONS,
     SCREEN_MAP,
     SCREEN_NEXUS,
     SCREEN_BATTLE
@@ -32,6 +33,7 @@ typedef struct {
     MusicPlayer music;
     Heroes heroes;
     RunesScreen runes;
+    MissionsScreen missions;
     Screen runes_return_screen;
     ConsumeScreen consume;
     Character consume_shown_target;
@@ -136,6 +138,9 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
 
     g->battle_outcome_committed = true;
     GalleryRecordBattle(&g->player.gallery, &g->battle.enemy_roster, &g->battle_play.sim);
+    int crits = BattlePlayCriticalGold(&g->battle_play) / BP_CRIT_GOLD_REWARD;
+    bool challenge = !g->battle_is_nexus && g->map.maps[g->battle_map_index].nodes[g->battle_node_index].grind;
+    MissionsRecordBattle(&g->player, &g->battle_play.sim, crits, challenge, (long long)time(NULL));
     if (g->battle_is_nexus) {
         PlayerNexusRun *run = &g->player.nexus_run;
         int from_step = g->battle_node_index + 1;
@@ -144,6 +149,7 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
         run->pending_animation = won;
         run->pending_from_step = from_step;
         run->pending_to_step = run->current_node_step;
+        MissionsSync(&g->player, &g->map);
         ProgressionSave(&g->player);
         return;
     }
@@ -151,6 +157,7 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
         &g->player, &g->map, g->battle_map_index, g->battle_node_index, won, BattlePlayCriticalGold(&g->battle_play)
     );
     g->player.campaign_progress.pending_animation = GamePendingCampaignAnimation(&g->map, &g->battle_reward);
+    MissionsSync(&g->player, &g->map);
     ProgressionSave(&g->player);
 }
 
@@ -252,6 +259,7 @@ void GameInitialize(Game *g) {
     ResourceRecordImagesBegin();
     AssetsLoad();
     LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
+    MissionCatalogLoad("data/missions.json");
 
     PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
     ProgressionLoad(&g->player);
@@ -273,6 +281,8 @@ void GameInitialize(Game *g) {
     StoreInitialize(&g->store, "data/store_packs.json", HOD_CACHE "characters.json");
     QuestsInitialize(&g->quests);
     CampaignInitialize(&g->map, "data/campaign_maps.json");
+    MissionsInitialize(&g->missions);
+    MissionsSync(&g->player, &g->map);
     CampaignProgressSync(&g->map, &g->player.campaign_progress);
     NexusInitialize(&g->nexus, "data/nexus_maps.json");
     EnergyDialogInitialize(&g->energy_dialog);
@@ -317,6 +327,11 @@ bool GameHandlePopupBack(Game *g) {
     if (g->screen == SCREEN_RUNES) return RunesHandleBack(&g->runes);
     if (g->screen == SCREEN_CONSUME) return ConsumeHandleBack(&g->consume);
     if (g->screen == SCREEN_QUESTS && QuestsHandleBack(&g->quests)) return true;
+    if (g->screen == SCREEN_MISSIONS) {
+        g->screen = SCREEN_HOME;
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+        return true;
+    }
     if (g->screen == SCREEN_MAP && CampaignHandleBack(&g->map)) return true;
     if (g->screen == SCREEN_STORE) {
         if (StoreHandleBack(&g->store, &g->heroes) == STORE_ACTION_CLOSE) g->screen = SCREEN_HOME;
@@ -577,7 +592,8 @@ void GameDraw(Game *g) {
             UiFrameBegin();
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, true));
 
-            HomeButton pressed = HomeUIDraw(&g->home_ui, true, g->player.gallery.badge);
+            int missions_badge = MissionUnseenClaimableCount(&g->player.missions);
+            HomeButton pressed = HomeUIDraw(&g->home_ui, true, g->player.gallery.badge, missions_badge);
             UiFrameEnd();
             if (pressed == HOME_HEROES) {
                 g->screen = SCREEN_HEROES;
@@ -587,6 +603,10 @@ void GameDraw(Game *g) {
                 g->screen = SCREEN_STORE;
             } else if (pressed == HOME_QUESTS) {
                 g->screen = SCREEN_QUESTS;
+            } else if (pressed == HOME_HISTORY) {
+                MissionsSync(&g->player, &g->map);
+                MissionsOpen(&g->missions, &g->player.missions);
+                g->screen = SCREEN_MISSIONS;
             } else if (pressed != HOME_NONE) {
                 TraceLog(LOG_INFO, "Main screen button pressed: %d", pressed);
             }
@@ -758,7 +778,7 @@ void GameDraw(Game *g) {
 
             UiFrameBegin();
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
-            HomeUIDraw(&g->home_ui, false, g->player.gallery.badge);
+            HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
 
             QuestButton pressed = QuestsDraw(&g->quests, &g->nexus, &g->player, &g->map);
             UiFrameEnd();
@@ -783,6 +803,19 @@ void GameDraw(Game *g) {
             } else if (pressed == QUESTS_CLOSE) {
                 g->screen = SCREEN_HOME;
             }
+            break;
+        }
+        case SCREEN_MISSIONS: {
+            HomeBackgroundUpdate(&g->scene, dt);
+            HomeBackgroundDraw(&g->scene);
+            GameDrawSceneFx(g, g->scene.cam, dt);
+
+            UiFrameBegin();
+            if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
+            HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
+            MissionsAction pressed = MissionsDraw(&g->missions, &g->hud, &g->player, dt);
+            UiFrameEnd();
+            if (pressed == MISSIONS_CLOSE) g->screen = SCREEN_HOME;
             break;
         }
         case SCREEN_MAP: {
@@ -946,7 +979,10 @@ void GameDraw(Game *g) {
         HeroesBackgroundReloadSquad(&g->heroes_scene, &g->player);
         HomeBackgroundMarkSquadStale(&g->scene);
     }
+    if (screen_at_frame_start != g->screen) MissionsSync(&g->player, &g->map);
     if (screen_at_frame_start == SCREEN_QUESTS && g->screen != SCREEN_QUESTS) QuestsClose(&g->quests);
+    if (screen_at_frame_start == SCREEN_MISSIONS && g->screen != SCREEN_MISSIONS)
+        MissionsClose(&g->missions, &g->hud, &g->player);
     if (g->screen != SCREEN_HEROES && g->screen != SCREEN_GALLERY && GalleryPopupOpen(&g->gallery))
         GalleryClosePopup(&g->gallery);
     if (screen_at_frame_start == SCREEN_GALLERY && g->screen != SCREEN_GALLERY && g->screen != SCREEN_STORE)

@@ -16,6 +16,15 @@ typedef struct {
 #define DEBUG_WINS_TO_MASTER 3
 #define DEBUG_RESULTS_XP 20
 #define DEBUG_RESULTS_GOLD 140
+#define DEBUG_MISSION_SUMMONS 600
+#define DEBUG_MISSION_CONSUMES 60
+#define DEBUG_MISSION_GOLD 45000
+#define DEBUG_MISSION_SUMMON_SERIES 4
+#define DEBUG_MISSION_CLAIM_FRAME 30
+#define DEBUG_MISSION_CLAIMED_TIERS 3
+#define DEBUG_MISSION_ROW_X 234.0f
+#define DEBUG_MISSION_ROW_Y 141.0f
+#define DEBUG_MISSION_ROW_WIDTH 816.0f
 
 static const Vector3 DEBUG_BFX_ORIGIN = {-0.526f, 1.87f, 15.886f};
 
@@ -404,6 +413,25 @@ static void DebugPrepareRunes(Game *game, DebugShot *shot) {
     }
 }
 
+static void DebugSeedMissions(Game *game, DebugShot *shot) {
+    if (!DebugShotIsAny(shot, (const char *const[]){"missions", "missions_claim"}, 2)) return;
+    if (shot->frames_drawn == 0) {
+        PlayerMissions *m = &game->player.missions;
+        m->counters[MISSION_STAT_SUMMONED] = DEBUG_MISSION_SUMMONS;
+        m->counters[MISSION_STAT_CONSUMED] = DEBUG_MISSION_CONSUMES;
+        m->counters[MISSION_STAT_GOLD_EARNED] = DEBUG_MISSION_GOLD;
+        MissionsSync(&game->player, &game->map);
+        for (int tier = 0; tier < DEBUG_MISSION_CLAIMED_TIERS; tier++)
+            m->claimed[MissionSeriesTierAt(DEBUG_MISSION_SUMMON_SERIES, tier)] = true;
+        MissionsOpen(&game->missions, m);
+        game->screen = SCREEN_MISSIONS;
+    }
+    if (DebugShotIs(shot, "missions_claim") && shot->frames_drawn == DEBUG_MISSION_CLAIM_FRAME) {
+        Rectangle row = {DEBUG_MISSION_ROW_X, DEBUG_MISSION_ROW_Y, DEBUG_MISSION_ROW_WIDTH, MISSIONS_ROW_HEIGHT};
+        MissionsBeginClaim(&game->missions, &game->hud, &game->player, game->missions.order[0], row);
+    }
+}
+
 static void DebugPrepareGallery(Game *game, DebugShot *shot) {
     bool show_unit = DebugShotIs(shot, "gallery_unit");
     if (!show_unit && !DebugShotIs(shot, "gallery")) return;
@@ -484,10 +512,12 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     game->screen = shot->consume_opened ? SCREEN_CONSUME : SCREEN_HEROES;
     if (DebugShotIs(shot, "home")) game->screen = SCREEN_HOME;
     if (DebugShotIs(shot, "quests")) game->screen = SCREEN_QUESTS;
+    if (DebugShotIsAny(shot, (const char *const[]){"missions", "missions_claim"}, 2)) game->screen = SCREEN_MISSIONS;
     DebugActivateBattleRunes(game, shot);
     DebugPrepareRunes(game, shot);
     DebugPrepareConsume(game, shot);
     DebugPrepareGallery(game, shot);
+    DebugSeedMissions(game, shot);
     if (DebugShotIs(shot, "gallery_unit")) game->screen = SCREEN_GALLERY;
     DebugPrepareStore(game, shot);
     DebugPrepareNexus(game, shot);

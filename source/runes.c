@@ -228,10 +228,12 @@ static void RunesBeginActivation(RunesScreen *r, Player *p) {
     for (int slot = 0; slot < RUNE_SLOT_COUNT; slot++) {
         if (!r->pending[slot]) continue;
         int def = RuneByUuid(&p->runes, r->pending[slot])->def;
-        if (RuneActivate(&p->runes, p->current_squad, slot, r->pending[slot], now) == RUNE_ASSIGN_OK)
+        if (RuneActivate(&p->runes, p->current_squad, slot, r->pending[slot], now) == RUNE_ASSIGN_OK) {
             r->activation_defs[r->activation_count++] = def;
-        else
+            p->missions.counters[MISSION_STAT_RUNES_USED]++;
+        } else {
             expired = true;
+        }
     }
     RunesClearPending(r);
     RuneMarkSeen(&p->runes, now);

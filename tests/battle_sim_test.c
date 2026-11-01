@@ -4146,7 +4146,169 @@ static void TestGalleryPersistence(void) {
     GalleryFree(&loaded.gallery);
 }
 
+static const char *const MISSION_TEST_TABLE =
+    "{\"missions\":["
+    "{\"series\":0,\"tier\":0,\"id\":\"a51\",\"stat\":\"faction_hits\",\"target\":1,\"gold\":0,\"gems\":2},"
+    "{\"series\":0,\"tier\":1,\"id\":\"a52\",\"stat\":\"squad_faction\",\"target\":1,\"gold\":500,\"gems\":0},"
+    "{\"series\":0,\"tier\":2,\"id\":\"a53\",\"stat\":\"squad_faction\",\"target\":1,\"gold\":0,\"gems\":3,"
+    "\"faction\":1},"
+    "{\"series\":1,\"tier\":0,\"id\":\"a19\",\"stat\":\"gold_earned\",\"target\":100,\"gold\":500,\"gems\":0}"
+    "]}";
+
+static void MissionTestLoadTable(void) {
+    const char *path = "/tmp/hoda_mission_test.json";
+    assert(SaveFileText(path, (char *)MISSION_TEST_TABLE));
+    assert(MissionCatalogLoad(path));
+    assert(MissionCount() == 4 && MissionSeriesCount() == 2);
+    assert(MissionSeriesTierCount(0) == 3 && MissionSeriesTierCount(1) == 1);
+    remove(path);
+}
+
+static void TestMissionSeriesPicksTheClaimableTier(void) {
+    MissionTestLoadTable();
+    PlayerMissions m = {0};
+    assert(MissionSeriesCurrent(&m, 0) == 0);
+    assert(!MissionSeriesNeedsCollection(&m, 0));
+
+    MissionRaiseProgress(&m, 1, 1);
+    assert(MissionSeriesNeedsCollection(&m, 0));
+    assert(MissionSeriesCurrent(&m, 0) == 1);
+    assert(MissionUnseenClaimableCount(&m) == 1);
+    MissionMarkAllSeen(&m);
+    assert(MissionUnseenClaimableCount(&m) == 0);
+
+    m.claimed[0] = m.claimed[1] = m.claimed[2] = true;
+    assert(MissionSeriesCurrent(&m, 0) == 2);
+}
+
+static void TestMissionProgressNeverDrops(void) {
+    MissionTestLoadTable();
+    PlayerMissions m = {0};
+    MissionRaiseProgress(&m, 3, 40);
+    MissionRaiseProgress(&m, 3, 10);
+    assert(m.progress[3] == 40);
+}
+
+static void TestMissionClaimPaysOnce(void) {
+    MissionTestLoadTable();
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    assert(!MissionsClaim(&player, 3));
+    MissionRaiseProgress(&player.missions, 3, 100);
+    player.gold = 7;
+    assert(MissionsClaim(&player, 3));
+    assert(player.gold == 507 && player.missions.claimed[3]);
+    assert(!MissionsClaim(&player, 3));
+    assert(player.gold == 507);
+    assert(!MissionsClaim(&player, MISSION_CAPACITY));
+
+    MissionTotals totals = MissionComputeTotals(&player.missions);
+    assert(totals.claimed == 1 && totals.total == 4);
+    assert(totals.gold_claimed == 500 && totals.gold_total == 1000);
+    assert(totals.gems_claimed == 0 && totals.gems_total == 5);
+}
+
+static void TestMissionGoldTrackerIgnoresSpendingAndClaims(void) {
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    player.gold = 100;
+    MissionTrackEarnedGold(&player);
+    assert(player.missions.counters[MISSION_STAT_GOLD_EARNED] == 0);
+    player.gold = 160;
+    MissionTrackEarnedGold(&player);
+    assert(player.missions.counters[MISSION_STAT_GOLD_EARNED] == 60);
+    player.gold = 10;
+    MissionTrackEarnedGold(&player);
+    assert(player.missions.counters[MISSION_STAT_GOLD_EARNED] == 60);
+}
+
+static void TestMissionBattleRecording(void) {
+    MissionTestLoadTable();
+    static Player player;
+    static BattleSim sim;
+    memset(&player, 0, sizeof(player));
+    memset(&sim, 0, sizeof(sim));
+    sim.action_count = 2;
+    sim.actions[0].actor = 0;
+    sim.actions[0].target_count = 2;
+    sim.actions[0].targets[0] = (BattleSimTarget){.unit = SQUAD_SLOT_COUNT, .health_delta = -100, .health_faction_delta = -20};
+    sim.actions[0].targets[1] = (BattleSimTarget){.unit = 1, .health_delta = 50};
+    sim.actions[1].actor = SQUAD_SLOT_COUNT;
+    sim.actions[1].target_count = 1;
+    sim.actions[1].targets[0] = (BattleSimTarget){.unit = 0, .health_delta = -999};
+
+    long long first_day = 1700000000LL;
+    MissionsRecordBattle(&player, &sim, 3, true, first_day);
+    MissionsRecordBattle(&player, &sim, 2, false, first_day);
+    PlayerMissions *m = &player.missions;
+    assert(m->counters[MISSION_STAT_CRITS] == 5);
+    assert(m->counters[MISSION_STAT_BATTLE_DAMAGE] == 120);
+    assert(m->counters[MISSION_STAT_CHALLENGE_ATTEMPTS] == 1);
+    assert(m->counters[MISSION_STAT_FACTION_HITS] == 2);
+    assert(m->counters[MISSION_STAT_BATTLE_DAYS] == 1);
+    MissionsRecordBattle(&player, &sim, 0, false, first_day + 2 * NEXUS_SECONDS_PER_DAY);
+    assert(m->counters[MISSION_STAT_BATTLE_DAYS] == 2);
+}
+
+static void TestHudCurrencyTallyHoldsThenTicksUp(void) {
+    HudCurrencyTally tally = {0};
+    HudCurrencyTallyUpdate(&tally, 100, 0.016f);
+    assert(tally.shown == 100.0);
+
+    HudCurrencyTallyHold(&tally);
+    HudCurrencyTallyUpdate(&tally, 325, 1.0f);
+    assert(tally.shown == 100.0);
+
+    assert(HudCurrencyTallyRelease(&tally, 325));
+    assert(!tally.held && tally.ticking);
+    HudCurrencyTallyUpdate(&tally, 325, HUD_TALLY_TIME * 0.5f);
+    assert(tally.ticking && fabs(tally.shown - 212.5) < 0.01);
+    HudCurrencyTallyUpdate(&tally, 325, HUD_TALLY_TIME);
+    assert(!tally.ticking && tally.shown == 325.0);
+
+    HudCurrencyTallyUpdate(&tally, 50, 0.016f);
+    assert(tally.shown == 50.0);
+}
+
+static void TestHudCurrencyTallyReleaseWithoutGainSnaps(void) {
+    HudCurrencyTally tally = {.initialized = true, .shown = 40.0};
+    assert(!HudCurrencyTallyRelease(&tally, 40));
+    HudCurrencyTallyHold(&tally);
+    assert(!HudCurrencyTallyRelease(&tally, 40));
+    assert(!tally.held && !tally.ticking);
+}
+
+static void TestMissionSaveRoundTrip(void) {
+    MissionTestLoadTable();
+    PlayerMissions saved = {0};
+    saved.counters[MISSION_STAT_GOLD_EARNED] = 2500000000LL;
+    saved.last_battle_day = 125300;
+    MissionRaiseProgress(&saved, 3, 100);
+    saved.claimed[3] = true;
+    MissionRaiseProgress(&saved, 0, 1);
+
+    cJSON *json = ProgressionSaveMissions(&saved);
+    assert(json);
+    PlayerMissions loaded;
+    ProgressionLoadMissions(json, &loaded);
+    assert(loaded.counters[MISSION_STAT_GOLD_EARNED] == 2500000000LL);
+    assert(loaded.last_battle_day == 125300);
+    assert(loaded.claimed[3] && !loaded.claimed[0] && MissionClaimable(&loaded, 0));
+    cJSON_Delete(json);
+
+    ProgressionLoadMissions(NULL, &loaded);
+    assert(loaded.progress[3] == 0 && !loaded.claimed[3]);
+}
+
 int main(void) {
+    TestMissionSeriesPicksTheClaimableTier();
+    TestMissionProgressNeverDrops();
+    TestMissionClaimPaysOnce();
+    TestMissionGoldTrackerIgnoresSpendingAndClaims();
+    TestMissionBattleRecording();
+    TestMissionSaveRoundTrip();
+    TestHudCurrencyTallyHoldsThenTicksUp();
+    TestHudCurrencyTallyReleaseWithoutGainSnaps();
     SetTraceLogLevel(LOG_WARNING);
     TestGalleryRecordsTrackDiscoveryAndBadge();
     TestGalleryCatalogMatchesReferenceRules();
