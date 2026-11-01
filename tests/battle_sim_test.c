@@ -4,6 +4,42 @@
 
 #include <assert.h>
 
+static HomeSquadUnit PooledTestUnit(const char *path) {
+    HomeSquadUnit unit = {.active = true, .phase = 7, .frame_time = 3.0f};
+    StrCopy(unit.path, sizeof(unit.path), path);
+    return unit;
+}
+
+static void TestUnitPoolReusesReleasedUnits(void) {
+    HomeSquadUnit unit = PooledTestUnit("a.glb");
+    HomeSquadUnitDestroy(&unit);
+    assert(!unit.active);
+    assert(unit_pool_count == 1);
+
+    HomeSquadUnit taken = {0};
+    assert(!UnitPoolTake(&taken, "b.glb"));
+    assert(UnitPoolTake(&taken, "a.glb"));
+    assert(taken.active && taken.phase == 7 && taken.frame_time == 3.0f);
+    assert(unit_pool_count == 0);
+    assert(!UnitPoolTake(&taken, "a.glb"));
+
+    HomeSquadUnit first = PooledTestUnit("first.glb");
+    UnitPoolPut(&first);
+    for (int i = 1; i < UNIT_POOL_CAPACITY; i++) {
+        HomeSquadUnit filler = PooledTestUnit(TextFormat("filler%d.glb", i));
+        UnitPoolPut(&filler);
+    }
+    assert(unit_pool_count == UNIT_POOL_CAPACITY);
+    HomeSquadUnit newest = PooledTestUnit("newest.glb");
+    UnitPoolPut(&newest);
+    assert(unit_pool_count == UNIT_POOL_CAPACITY);
+    assert(!UnitPoolTake(&taken, "first.glb"));
+    assert(UnitPoolTake(&taken, "filler1.glb"));
+    assert(UnitPoolTake(&taken, "newest.glb"));
+    UnitPoolClear();
+    assert(unit_pool_count == 0);
+}
+
 static void TestCharacter(
     Character *ch, Ability *ability, const char *id, const char *key, TargetPattern target, int power, int health
 ) {
@@ -3358,7 +3394,7 @@ static void TestRosterInstancesAndPersistence(void) {
     PlayerLoadRoster(&loaded, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
     assert(ProgressionLoadFromPath(&loaded, path));
     assert(loaded.roster_count == source.roster_count);
-    assert(loaded.starter_roster_count == source.starter_roster_count);
+    assert(loaded.starter_roster_count == 0);
     assert(loaded.next_instance_id == source.next_instance_id);
     assert(loaded.roster[first].instance_id == source.roster[first].instance_id);
     assert(loaded.roster[first + 1].instance_id == source.roster[first + 1].instance_id);
@@ -3391,6 +3427,192 @@ static void TestRosterInstancesAndPersistence(void) {
     PlayerUnloadRoster(&source);
     remove(path);
     remove(temporary);
+}
+
+static Character *ConsumeTestAdd(Player *player, const cJSON *catalog, const char *id, int *index) {
+    const cJSON *definition = CatalogFindCharacter(catalog, id);
+    assert(definition && PlayerRosterAppendDefinitions(player, &definition, 1, index));
+    return &player->roster[*index];
+}
+
+static const char *ConsumeTestFirstId(const cJSON *catalog, const char *rarity, bool giant, bool full_tiers) {
+    const cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, (cJSON *)catalog) {
+        const cJSON *tiers = cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "tiers");
+        if (strcmp(JsonStr(entry, "rarity"), rarity) == 0 && JsonBool(entry, "giant") == giant &&
+            (cJSON_GetArraySize((cJSON *)tiers) == TIER_COUNT) == full_tiers)
+            return JsonStr(entry, "id");
+    }
+    assert(false);
+    return NULL;
+}
+
+static void TestConsumeTablesAndCurves(void) {
+    ConsumeXpTable table = {.xp = {0, 10, 30, 60}, .count = 4};
+    assert(ConsumeXpForLevel(&table, 1) == 0 && ConsumeXpForLevel(&table, 4) == 60);
+    assert(ConsumeLevelForXp(&table, 0) == 1 && ConsumeLevelForXp(&table, 9) == 1);
+    assert(ConsumeLevelForXp(&table, 10) == 2 && ConsumeLevelForXp(&table, 60) == 4);
+    assert(ConsumeLevelForXp(&table, 999) == 4);
+    assert(fabsf(ConsumeBandFraction(&table, 2, 20) - 0.5f) < 0.001f);
+    assert(ConsumeBandFraction(&table, 4, 60) == 1.0f);
+
+    ConsumeCatalogEnsure();
+    const ConsumeProgression *standard = ConsumeFindProgression("standard");
+    ConsumeProfile profile = {.progression = standard};
+    assert(ConsumeUnlockKindAt(&profile, 1) == CONSUME_UNLOCK_CRIT);
+    assert(ConsumeUnlockKindAt(&profile, 3) == CONSUME_UNLOCK_FORTIFY);
+    assert(ConsumeUnlockKindAt(&profile, 13) == CONSUME_UNLOCK_PROMOTION);
+    assert(ConsumeProgressionLevelOfTier(&profile, 1) == 13);
+    assert(ConsumeProgressionLevelOfTier(&profile, 3) == 32);
+    assert(ConsumeUnlockedTotal(&profile, 1, CONSUME_UNLOCK_CRIT) == 1);
+    assert(ConsumeUnlockedTotal(&profile, 2, CONSUME_UNLOCK_CRIT) == 2);
+    assert(ConsumeUnlockKindAt(&profile, standard->count) == CONSUME_UNLOCK_NONE);
+}
+
+static void TestConsumeSeedWorthAndBonuses(void) {
+    cJSON *root = ProgressionLoadCharacterCatalog();
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    const char *common = ConsumeTestFirstId(catalog, "Common", false, true);
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    int target_index, seed_index;
+    Character *target = ConsumeTestAdd(&player, catalog, common, &target_index);
+    Character *seed = ConsumeTestAdd(&player, catalog, common, &seed_index);
+    assert(target->consume_level == 1 && target->crit_chance == CONSUME_BASE_CRIT_CHANCE && target->xp == 0);
+
+    const Character *seeds[] = {seed};
+    ConsumeOutcome outcome = ConsumeCompute(target, seeds, 1);
+    const ConsumeProfile *profile = ConsumeProfileFor(target);
+    int combine = ConsumeXpForLevel(profile->consume_table, 14);
+    int expected_worth = (int)rint(100.0f * profile->worth[TIER_I] * (1.0f + CONSUME_SAME_FACTION_BONUS));
+    assert(outcome.consume_xp == combine + expected_worth);
+    assert(outcome.tier == TIER_II);
+    ConsumeSeedPreview preview = ConsumePreviewSeed(target, seed);
+    assert(preview.same_group && preview.shares_faction);
+    assert(preview.tier_bonus_pct == 0 && preview.faction_bonus_pct == 20 && preview.combine_bonus_pct == 0);
+    assert(preview.xp_gain == (int)rint(rint(100.0f * profile->worth[TIER_I]) * CONSUME_HERO_XP_SHARE_OF_WORTH));
+
+    PlayerUnloadRoster(&player);
+    cJSON_Delete(root);
+}
+
+static void TestConsumeCommitCompactsRoster(void) {
+    cJSON *root = ProgressionLoadCharacterCatalog();
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    const char *rare = ConsumeTestFirstId(catalog, "Rare", false, true);
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    int squad_unit = player.squads[0][0];
+    uint64_t squad_instance = player.roster[squad_unit].instance_id;
+    int count = player.roster_count;
+    int seed_a, target, seed_b;
+    ConsumeTestAdd(&player, catalog, rare, &seed_a);
+    ConsumeTestAdd(&player, catalog, rare, &target);
+    ConsumeTestAdd(&player, catalog, rare, &seed_b);
+    assert(PlayerSquadPlace(&player, 2, 0, target));
+    uint64_t target_instance = player.roster[target].instance_id;
+
+    int blocked[] = {squad_unit};
+    assert(!PlayerConsumeSeedAllowed(&player, target, squad_unit));
+    assert(PlayerConsumeUnits(&player, target, blocked, 1) == -1);
+    int self[] = {target};
+    assert(PlayerConsumeUnits(&player, target, self, 1) == -1);
+    int repeated[] = {seed_a, seed_a};
+    assert(PlayerConsumeUnits(&player, target, repeated, 2) == -1);
+    assert(player.roster_count == count + 3);
+
+    int seeds[] = {seed_a, seed_b};
+    int moved = PlayerConsumeUnits(&player, target, seeds, 2);
+    assert(moved == count);
+    assert(player.roster_count == count + 1);
+    assert(player.roster[moved].instance_id == target_instance);
+    assert(player.roster[moved].ability == &player.roster_abilities[moved]);
+    assert(player.roster[moved].tier == TIER_III);
+    assert(player.squads[2][0] == moved);
+    assert(player.roster[player.squads[0][0]].instance_id == squad_instance);
+    assert(player.roster[count + 1].instance_id == 0);
+
+    const char *path = "tests/consume_save_test.dat";
+    player.next_instance_id = PlayerRosterNextAvailableInstanceId(&player);
+    assert(ProgressionSaveToPath(&player, path));
+    Player loaded = {0};
+    ProgressionInitializePlayerDefaults(&loaded);
+    PlayerLoadRoster(&loaded, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    assert(ProgressionLoadFromPath(&loaded, path));
+    assert(loaded.roster_count == player.roster_count);
+    const Character *a = &player.roster[moved], *b = &loaded.roster[moved];
+    assert(b->tier == a->tier && b->level == a->level && b->xp == a->xp && b->consume_xp == a->consume_xp);
+    assert(b->consume_level == a->consume_level && b->crit_chance == a->crit_chance);
+    assert(loaded.squads[2][0] == moved);
+    remove(path);
+    PlayerUnloadRoster(&loaded);
+    PlayerUnloadRoster(&player);
+    cJSON_Delete(root);
+}
+
+static void TestWispWorthFollowsReferenceMultipliers(void) {
+    Character wisp = {.rarity = RARITY_RARE, .tier = TIER_I};
+    StrCopy(wisp.id, sizeof(wisp.id), "UNIT_RAREWHITEWISP");
+    Character hero = {.rarity = RARITY_RARE, .tier = TIER_I};
+    StrCopy(hero.id, sizeof(hero.id), "UNIT_ELVENMAGE");
+    float wisp_worth = ConsumeSeedBaseWorth(&wisp);
+    assert(wisp_worth == rint(600.0f * 2.5f * 1.15f));
+    wisp.tier = TIER_IV;
+    assert(fabsf(ConsumeSeedBaseWorth(&wisp) - wisp_worth * 4.0f) < 4.0f);
+    assert(ConsumeSeedBaseWorth(&hero) < wisp_worth);
+}
+
+static void TestConsumeRespectsCaps(void) {
+    cJSON *root = ProgressionLoadCharacterCatalog();
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+
+    int unique_index, seed_index;
+    const char *unique = ConsumeTestFirstId(catalog, "Legendary", false, false);
+    Character *target = ConsumeTestAdd(&player, catalog, unique, &unique_index);
+    Character *seed = ConsumeTestAdd(&player, catalog, unique, &seed_index);
+    const Character *seeds[] = {seed};
+    Tier before = target->tier;
+    assert(ConsumeCompute(target, seeds, 1).tier == before);
+
+    const ConsumeProfile *profile = ConsumeProfileFor(target);
+    target->consume_xp = ConsumeXpForLevel(profile->consume_table, profile->consume_table->count);
+    target->level = target->stats[target->tier].max_level;
+    target->xp = ConsumeXpForLevel(profile->level_table, target->level);
+    ConsumeNormalizeCharacter(target);
+    assert(ConsumeCharacterMaxed(target));
+    ConsumeOutcome outcome = ConsumeCompute(target, seeds, 1);
+    assert(outcome.consume_xp == target->consume_xp && outcome.xp == target->xp && outcome.level == target->level);
+    assert(outcome.crit_chance == 30);
+
+    int tiered_index;
+    Character *tiered = ConsumeTestAdd(&player, catalog, ConsumeTestFirstId(catalog, "Rare", false, true), &tiered_index);
+    tiered->tier = TIER_II;
+    tiered->consume_xp = 0;
+    ConsumeNormalizeCharacter(tiered);
+    assert(tiered->consume_level == 14 && tiered->crit_chance == 10);
+
+    for (int i = 0; i < player.roster_count; i++) assert(ConsumeProfileFor(&player.roster[i]));
+    PlayerUnloadRoster(&player);
+    cJSON_Delete(root);
+}
+
+static void TestSimUsesConsumedCritChance(void) {
+    Character ch = {.crit_chance = 12};
+    Ability ability = {0};
+    ch.ability = &ability;
+    SimUnit units[SQUAD_SLOT_COUNT * 2];
+    int front_slot = 1;
+    assert(SquadSlotIsFront(front_slot));
+    SimUnitsInit(units, 0, front_slot, &ch);
+    assert(units[front_slot].crit_pct == 12.0f);
+    ch.crit_chance = 0;
+    SimUnitsInit(units, 0, front_slot, &ch);
+    assert(units[front_slot].crit_pct == 1.0f);
 }
 
 static void TestAllCampaignMapsAdvance(void) {
@@ -3537,8 +3759,572 @@ static void TestEveryReferencedResourceResolves(void) {
         }
 }
 
+static void TestRuneCatalogCraftChains(void) {
+    assert(RuneCatalogCount() == 122);
+    const char *const chain[] = {
+        "rune-health-1",
+        "rune-health-2",
+        "rune-health-3",
+        "rune-health-4",
+        "rune-health-5",
+        "rune-health-6",
+        "rune-health-6-2",
+        "rune-health-6-4",
+        "rune-health-6-8",
+    };
+    int count = (int)(sizeof(chain) / sizeof(chain[0]));
+    for (int i = 0; i + 1 < count; i++)
+        assert(RuneDefAt(RuneDefIndex(chain[i]))->craft_to == RuneDefIndex(chain[i + 1]));
+    assert(!RuneCanCraft(RuneDefAt(RuneDefIndex(chain[count - 1]))));
+    assert(!RuneCanCraft(RuneDefAt(RuneDefIndex("rune-guard-7"))));
+    assert(!RuneCanCraft(RuneDefAt(RuneDefIndex("rune-knowledge-Special"))));
+    assert(RuneDefAt(RuneDefIndex("rune-health-6-8"))->duration_minutes == 480);
+    for (int i = 0; i < RuneCatalogCount(); i++) {
+        const RuneDef *def = RuneDefAt(i);
+        assert(def->name_ru[0] && def->desc_ru[0] && def->buff_ru[0] && def->value_ru[0]);
+        assert(ResourceExists(TextFormat(
+            strncmp(def->icon, RUNE_RESOURCE_CACHE_PREFIX, strlen(RUNE_RESOURCE_CACHE_PREFIX)) ? EXTRA_ASSET_DIR "%s"
+                                                                                               : "%s",
+            def->icon
+        )));
+    }
+}
+
+static void TestRuneSlotRulesAndReplacement(void) {
+    static PlayerRunes runes;
+    runes = (PlayerRunes){0};
+    long long now = 1000;
+    uint64_t power = RuneGrantById(&runes, "rune-power-5", now);
+    uint64_t health = RuneGrantById(&runes, "rune-health-5", now);
+    uint64_t guard = RuneGrantById(&runes, "rune-guard-7", now);
+
+    assert(RuneActivate(&runes, 0, RUNE_PRESTIGE_SLOT, power, now) == RUNE_ASSIGN_SLOT_LOCKED);
+    assert(RuneActivate(&runes, 0, 0, guard, now) == RUNE_ASSIGN_NEEDS_NORMAL_SLOT);
+    runes.prestige_unlocked[0] = true;
+    assert(RuneActivate(&runes, 0, RUNE_PRESTIGE_SLOT, power, now) == RUNE_ASSIGN_NEEDS_PRESTIGE_RUNE);
+    assert(RuneActivate(&runes, 0, RUNE_PRESTIGE_SLOT, guard, now) == RUNE_ASSIGN_OK);
+    assert(RuneByUuid(&runes, guard)->expire_at == now + 30 * RUNE_SECONDS_PER_MINUTE);
+
+    assert(RuneActivate(&runes, 0, 0, power, now) == RUNE_ASSIGN_OK);
+    assert(RuneAvailableCount(&runes, now) == 1);
+    assert(RuneActivate(&runes, 1, 0, power, now) == RUNE_ASSIGN_NOT_AVAILABLE);
+    assert(RuneActivate(&runes, 0, 0, health, now) == RUNE_ASSIGN_OK);
+    assert(!RuneByUuid(&runes, power));
+    assert(RuneInSlot(&runes, 0, 0)->uuid == health);
+}
+
+static void TestRuneExpiry(void) {
+    static PlayerRunes runes;
+    runes = (PlayerRunes){0};
+    long long now = 1000;
+    uint64_t active = RuneGrantById(&runes, "rune-power-1", now);
+    uint64_t idle = RuneGrantById(&runes, "rune-health-1", now);
+    RuneActivate(&runes, 2, 1, active, now);
+
+    assert(RuneExpire(&runes, now + 5 * RUNE_SECONDS_PER_MINUTE) == 0);
+    assert(RuneExpire(&runes, now + 5 * RUNE_SECONDS_PER_MINUTE + 1) == 1);
+    assert(!RuneInSlot(&runes, 2, 1));
+    assert(RuneByUuid(&runes, idle));
+    assert(RuneExpire(&runes, now + RUNE_INVENTORY_LIFETIME_SECONDS + 1) == 1);
+    assert(runes.count == 0);
+}
+
+static void TestRuneCrafting(void) {
+    static PlayerRunes runes;
+    runes = (PlayerRunes){0};
+    long long now = 1000;
+    uint64_t a = RuneGrantById(&runes, "rune-power-1", now);
+    uint64_t b = RuneGrantById(&runes, "rune-power-1", now);
+    uint64_t other = RuneGrantById(&runes, "rune-health-1", now);
+    uint64_t top = RuneGrantById(&runes, "rune-power-6-8", now);
+    uint64_t top_twin = RuneGrantById(&runes, "rune-power-6-8", now);
+
+    assert(RuneCraft(&runes, a, other, now, NULL) == RUNE_CRAFT_MISMATCH);
+    assert(RuneCraft(&runes, a, a, now, NULL) == RUNE_CRAFT_RUNES_NOT_FOUND);
+    assert(RuneCraft(&runes, top, top_twin, now, NULL) == RUNE_CRAFT_NO_UPGRADE);
+    int crafted = -1;
+    assert(RuneCraft(&runes, a, b, now, &crafted) == RUNE_CRAFT_SUCCESS);
+    assert(crafted == RuneDefIndex("rune-power-2"));
+    assert(runes.count == 4);
+
+    uint64_t active = RuneGrantById(&runes, "rune-stun-1", now);
+    uint64_t idle = RuneGrantById(&runes, "rune-stun-1", now);
+    RuneActivate(&runes, 0, 0, active, now);
+    assert(RuneCraft(&runes, active, idle, now, NULL) == RUNE_CRAFT_ALREADY_ASSIGNED);
+
+    runes = (PlayerRunes){0};
+    for (int i = 0; i < 5; i++) RuneGrantById(&runes, "rune-power-1", now);
+    for (int i = 0; i < 2; i++) RuneGrantById(&runes, "rune-health-1", now);
+    assert(RuneCraftAll(&runes, RUNE_CRAFT_MODE_TYPE, RuneDefIndex("rune-power-1"), now) == 2);
+    assert(runes.count == 5);
+    assert(RuneCraftAll(&runes, RUNE_CRAFT_MODE_RARITY, RuneDefIndex("rune-health-1"), now) == 1);
+    assert(runes.count == 4);
+}
+
+static void TestRuneBonusStacksAndScalesRewards(void) {
+    static PlayerRunes runes;
+    runes = (PlayerRunes){0};
+    long long now = 1000;
+    RuneActivate(&runes, 0, 0, RuneGrantById(&runes, "rune-power-3", now), now);
+    RuneActivate(&runes, 0, 1, RuneGrantById(&runes, "rune-power-5", now), now);
+    RuneBonus bonus = RuneSquadBonus(&runes, 0, now);
+    assert(bonus.power_pct == 70);
+    assert(RuneSquadBonus(&runes, 1, now).power_pct == 0);
+    assert(RuneApplyPct(100, 70) == 170);
+    assert(RuneApplyPct(100, 0) == 100);
+    assert(RuneSquadBonus(&runes, 0, now + 11 * RUNE_SECONDS_PER_MINUTE).power_pct == 50);
+
+    runes = (PlayerRunes){0};
+    runes.prestige_unlocked[0] = true;
+    RuneActivate(&runes, 0, RUNE_PRESTIGE_SLOT, RuneGrantById(&runes, "rune-dispel-7", now), now);
+    assert(RuneSquadBonus(&runes, 0, now).curse_power_immune);
+}
+
+static void TestRuneMitigationAndRetaliation(void) {
+    RuneBonus shield = {.damage_shield = 600};
+    assert(SimRuneMitigatedDamage(&shield, 1000) == 400);
+    assert(SimRuneMitigatedDamage(&shield, 100) == SIM_RUNE_SHIELDED_HIT_MIN_DAMAGE);
+    RuneBonus guard = {.damage_resist_pct = 75};
+    assert(SimRuneMitigatedDamage(&guard, 1000) == 250);
+    assert(SimRuneMitigatedDamage(&(RuneBonus){0}, 1000) == 1000);
+
+    BattleSim s = {0};
+    Character attacker, target;
+    Ability attacker_ability, target_ability;
+    TestCharacter(&attacker, &attacker_ability, "rune_attacker", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&target, &target_ability, "rune_target", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &attacker);
+    SimUnitInit(&s, 1, 0, &target);
+    s.rng = 7;
+    s.rune_bonus[1].retaliation_pct = 10;
+    int health = s.units[0].health;
+    SimAttack(&s, 0, &SIM_RECIPE_DEFAULT, &(AttackRecipe){.target = RECIPE_TARGET_ABILITY}, true, false);
+    int dealt = s.units[SQUAD_SLOT_COUNT].max_health - s.units[SQUAD_SLOT_COUNT].health;
+    assert(dealt > 0);
+    assert(s.units[0].health == health - (int)lroundf(dealt * 0.1f));
+
+    int after = s.units[0].health;
+    s.rune_bonus[0].stealth = true;
+    SimAttack(&s, 0, &SIM_RECIPE_DEFAULT, &(AttackRecipe){.target = RECIPE_TARGET_ABILITY}, true, false);
+    assert(s.units[0].health == after);
+    s.rune_bonus[1].perceptive = true;
+    SimAttack(&s, 0, &SIM_RECIPE_DEFAULT, &(AttackRecipe){.target = RECIPE_TARGET_ABILITY}, true, false);
+    assert(s.units[0].health < after);
+}
+
+static void TestRuneResistsBlockAilments(void) {
+    BattleSim s = {0};
+    Character attacker, target;
+    Ability attacker_ability, target_ability;
+    TestCharacter(&attacker, &attacker_ability, "rune_attacker", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    TestCharacter(&target, &target_ability, "rune_target", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 10000);
+    SimUnitInit(&s, 0, 0, &attacker);
+    SimUnitInit(&s, 1, 0, &target);
+    s.rng = 11;
+    s.rune_bonus[1] = (RuneBonus){
+        .stun_resist_pct = 100, .slow_resist_pct = 100, .drain_resist_pct = 100, .curse_power_immune = true
+    };
+    AttackRecipe hit = {
+        .target = RECIPE_TARGET_ABILITY,
+        .stun_pct = 100,
+        .slow_pct = 100,
+        .slow_amt = -50,
+        .drain_pct = 50,
+        .curse_power_pct = 100
+    };
+    SimAttack(&s, 0, &SIM_RECIPE_DEFAULT, &hit, true, false);
+    const SimUnit *t = &s.units[SQUAD_SLOT_COUNT];
+    assert(!t->stunned && !t->curse_power);
+    assert(t->cur_initiative == 0 && t->power == t->start_power);
+
+    s.rune_bonus[1] = (RuneBonus){0};
+    SimAttack(&s, 0, &SIM_RECIPE_DEFAULT, &hit, true, false);
+    assert(t->stunned && t->curse_power);
+    assert(t->cur_initiative == -50 && t->power < t->start_power);
+}
+
+static void TestRuneStatsAndTargeting(void) {
+    BattleSim s = {0};
+    Character attacker, weak, strong;
+    Ability a0, a1, a2;
+    TestCharacter(&attacker, &a0, "rune_attacker", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 1000);
+    TestCharacter(&weak, &a1, "rune_weak", "ABILITY_DAMAGE_ONE", TARGET_ONE, 50, 1000);
+    TestCharacter(&strong, &a2, "rune_strong", "ABILITY_DAMAGE_ONE", TARGET_ONE, 500, 1000);
+    SimUnitInit(&s, 0, 0, &attacker);
+    SimUnitInit(&s, 1, 0, &weak);
+    SimUnitInit(&s, 1, 2, &strong);
+    int power = s.units[0].power, health = s.units[0].max_health;
+    RuneBonus stats = {.power_pct = 50, .health_pct = 20};
+    SimUnitsRuneBonus(s.units, 0, &stats);
+    assert(s.units[0].power == RuneApplyPct(power, 50) && s.units[0].start_power == s.units[0].power);
+    assert(s.units[0].max_health == RuneApplyPct(health, 20) && s.units[0].health == s.units[0].max_health);
+
+    const SimUnit *weak_unit = &s.units[SQUAD_SLOT_COUNT], *strong_unit = &s.units[SQUAD_SLOT_COUNT + 2];
+    float base_weak = SimTargetWeight(&s, &s.units[0], weak_unit);
+    float base_strong = SimTargetWeight(&s, &s.units[0], strong_unit);
+    s.rune_bonus[0].target_level[RUNE_TARGET_HIGHEST_POWER] = 6;
+    assert(SimTargetWeight(&s, &s.units[0], weak_unit) == base_weak);
+    assert(SimTargetWeight(&s, &s.units[0], strong_unit) == base_strong * 4.0f);
+
+    s.rng = 3;
+    s.rune_bonus[0] = (RuneBonus){.initiative_steps = 1};
+    int roll = SimRollInitiative(&s, &s.units[0]);
+    assert(roll >= (s.units[0].init_class + 1) * SIM_INIT_CLASS_SPAN);
+}
+
+static void TestRuneSaveRoundTrip(void) {
+    static Player source, loaded;
+    source = (Player){0};
+    ProgressionInitializePlayerDefaults(&source);
+    long long now = RuneNow();
+    uint64_t power = RuneGrantById(&source.runes, "rune-power-6-2", now);
+    uint64_t idle = RuneGrantById(&source.runes, "rune-greed-3", now);
+    source.runes.prestige_unlocked[1] = true;
+    assert(RuneActivate(&source.runes, 3, 1, power, now) == RUNE_ASSIGN_OK);
+    source.runes.seen = 1;
+
+    const char *path = "tests/rune_save_test.dat";
+    assert(ProgressionSaveToPath(&source, path));
+    loaded = (Player){0};
+    ProgressionInitializePlayerDefaults(&loaded);
+    assert(ProgressionLoadFromPath(&loaded, path));
+    assert(loaded.runes.count == 2 && loaded.runes.seen == 1);
+    assert(loaded.runes.next_uuid == source.runes.next_uuid);
+    assert(loaded.runes.prestige_unlocked[1] && !loaded.runes.prestige_unlocked[0]);
+    assert(RuneInSlot(&loaded.runes, 3, 1)->uuid == power);
+    assert(RuneInSlot(&loaded.runes, 3, 1)->expire_at == source.runes.items[0].expire_at);
+    assert(RuneDefFor(RuneByUuid(&loaded.runes, idle)) == RuneDefAt(RuneDefIndex("rune-greed-3")));
+    remove(path);
+}
+
+static void TestRuneActivationFx(void) {
+    RunesScreen runes = {0};
+    assert(!RunesTakeActivationFx(&runes));
+    RunesPlayActivationStep(&runes);
+    assert(RunesTakeActivationFx(&runes));
+    assert(!RunesTakeActivationFx(&runes));
+
+    cJSON *root = JsonLoadFile("data/fx_presets.json");
+    bool activation = false, aura = false;
+    const cJSON *preset = NULL;
+    cJSON_ArrayForEach(preset, cJSON_GetObjectItemCaseSensitive(root, "presets")) {
+        activation = activation || !strcmp(JsonStr(preset, "name"), RUNE_ACTIVATION_FX);
+        aura = aura || !strcmp(JsonStr(preset, "name"), BP_RUNE_AURA_FX);
+    }
+    cJSON_Delete(root);
+    assert(activation && aura);
+}
+
+static void TestPrestigeSlotCostsGems(void) {
+    static Player player;
+    player = (Player){.gems = RUNE_PRESTIGE_UNLOCK_GEMS - 1};
+    assert(!PlayerUnlockPrestigeRuneSlot(&player, 0));
+    player.gems = RUNE_PRESTIGE_UNLOCK_GEMS;
+    assert(PlayerUnlockPrestigeRuneSlot(&player, 0));
+    assert(player.gems == 0 && player.runes.prestige_unlocked[0]);
+    assert(!PlayerUnlockPrestigeRuneSlot(&player, 0));
+}
+
+static void TestGalleryRecordsTrackDiscoveryAndBadge(void) {
+    PlayerGallery gallery = {0};
+    GalleryRecordOwned(&gallery, "UNIT_A", TIER_I, true);
+    assert(gallery.badge == 0);
+    const GalleryRecord *record = GalleryRecordFind(&gallery, "UNIT_A");
+    assert(record && record->owned_tiers == 1 && !record->new_owned);
+
+    GalleryRecordOwned(&gallery, "UNIT_A", TIER_I, false);
+    assert(gallery.badge == 0);
+    GalleryRecordOwned(&gallery, "UNIT_A", TIER_III, false);
+    record = GalleryRecordFind(&gallery, "UNIT_A");
+    assert(gallery.badge == 1 && record->owned_tiers == 5 && record->new_owned);
+
+    GalleryRecordBattleUnit(&gallery, "UNIT_B", false);
+    assert(gallery.badge == 2);
+    GalleryRecordBattleUnit(&gallery, "UNIT_B", false);
+    assert(gallery.badge == 2);
+    GalleryRecordBattleUnit(&gallery, "UNIT_B", true);
+    record = GalleryRecordFind(&gallery, "UNIT_B");
+    assert(gallery.badge == 3 && record->fought && record->defeated && record->new_defeated);
+
+    assert(GalleryRecordClearNew(&gallery, "UNIT_B"));
+    assert(!GalleryRecordClearNew(&gallery, "UNIT_B"));
+    assert(gallery.badge == 3);
+    GalleryFree(&gallery);
+}
+
+static void TestGalleryCatalogMatchesReferenceRules(void) {
+    GalleryCatalog catalog;
+    GalleryCatalogLoad(&catalog, HOD_CACHE "characters.json");
+    assert(catalog.count > 0 && catalog.group_count > 0 && catalog.specialty_count > 0);
+    for (int i = 0; i < catalog.count; i++) {
+        const Character *unit = &catalog.units[i];
+        assert(unit->rarity != RARITY_MYTHIC);
+        assert(unit->ability->key[0] == '\0' || unit->ability == &catalog.abilities[i]);
+        if (i == 0) continue;
+        const Character *previous = &catalog.units[i - 1];
+        assert(previous->rarity >= unit->rarity);
+        if (previous->rarity == unit->rarity)
+            assert(
+                previous->stats[GalleryLowestTier(previous)].base_power >= unit->stats[GalleryLowestTier(unit)].base_power
+            );
+    }
+    for (int g = 1; g < catalog.group_count; g++) assert(strcasecmp(catalog.groups[g - 1], catalog.groups[g]) < 0);
+
+    PlayerGallery gallery = {0};
+    int *matches = (int *)MemAlloc((unsigned int)catalog.count * sizeof(int));
+    GalleryProgress progress;
+    GallerySelection selection = {.category = GALLERY_CATEGORY_RARITY, .rarity = RARITY_COMMON};
+    int commons = GalleryQuery(&catalog, &gallery, &selection, GALLERY_FILTER_NONE, matches, &progress);
+    assert(commons > 0 && progress.total == commons && progress.owned == 0);
+    const char *first_id = catalog.units[matches[0]].id;
+
+    GalleryRecordOwned(&gallery, first_id, GalleryLowestTier(&catalog.units[matches[0]]), false);
+    GalleryRecordBattleUnit(&gallery, first_id, true);
+    assert(GalleryQuery(&catalog, &gallery, &selection, GALLERY_FILTER_OWNED, matches, &progress) == 1);
+    assert(progress.total == commons && progress.owned == 1 && progress.defeated == 1 && progress.new_owned);
+    assert(GalleryQuery(&catalog, &gallery, &selection, GALLERY_FILTER_DEFEATED, matches, &progress) == 1);
+
+    GalleryTotals totals = GalleryTotalsCompute(&catalog, &gallery);
+    assert(totals.total == catalog.count && totals.owned == 1);
+    assert(totals.rarity_owned[RARITY_COMMON - RARITY_COMMON] == 1);
+
+    selection = (GallerySelection){.category = GALLERY_CATEGORY_FACTION, .faction = GALLERY_FACTION_DUAL};
+    assert(GalleryQuery(&catalog, &gallery, &selection, GALLERY_FILTER_NONE, matches, &progress) > 0);
+    for (int i = 0; i < progress.total; i++) assert(catalog.units[matches[i]].faction >= FACTION_WHITE_RED);
+
+    char key[GALLERY_KEY_CAP];
+    GallerySubcategoryTitleKey(key, sizeof(key), &catalog, &selection);
+    assert(!strcmp(key, "GALLERY_DUAL_TITLE"));
+
+    assert(GalleryRarityStep(RARITY_LEGENDARY, 1) == RARITY_COMMON);
+    assert(GalleryRarityStep(RARITY_COMMON, -1) == RARITY_LEGENDARY);
+    assert(GalleryFactionStep(GALLERY_FACTION_BLACK, -1) == GALLERY_FACTION_DUAL);
+    assert(GalleryCategoryStep(GALLERY_CATEGORY_SPECIALTY, 1) == GALLERY_CATEGORY_ALL);
+    assert(GalleryCategoryStep(GALLERY_CATEGORY_ALL, -1) == GALLERY_CATEGORY_SPECIALTY);
+
+    MemFree(matches);
+    GalleryFree(&gallery);
+    GalleryCatalogUnload(&catalog);
+}
+
+static void TestGalleryRecordsBattleCasualties(void) {
+    static BattleRoster enemies;
+    static BattleSim sim;
+    memset(&enemies, 0, sizeof(enemies));
+    memset(&sim, 0, sizeof(sim));
+    StrCopy(enemies.chars[0].id, sizeof(enemies.chars[0].id), "UNIT_FALLEN");
+    StrCopy(enemies.chars[1].id, sizeof(enemies.chars[1].id), "UNIT_STANDING");
+    enemies.present[0] = enemies.present[1] = true;
+    sim.units[SQUAD_SLOT_COUNT + 1].health = 10;
+
+    PlayerGallery gallery = {0};
+    GalleryRecordBattle(&gallery, &enemies, &sim);
+    assert(gallery.count == 2);
+    assert(GalleryRecordFind(&gallery, "UNIT_FALLEN")->defeated);
+    assert(GalleryRecordFind(&gallery, "UNIT_STANDING")->fought);
+    assert(!GalleryRecordFind(&gallery, "UNIT_STANDING")->defeated);
+    GalleryFree(&gallery);
+}
+
+static void TestGalleryPersistence(void) {
+    Player source = {0}, loaded = {0};
+    ProgressionInitializePlayerDefaults(&source);
+    ProgressionInitializePlayerDefaults(&loaded);
+    GalleryRecordOwned(&source.gallery, "UNIT_A", TIER_II, false);
+    GalleryRecordBattleUnit(&source.gallery, "UNIT_B", true);
+    const char *path = "/tmp/hod_gallery_save_test.dat";
+    assert(ProgressionSaveToPath(&source, path));
+    assert(ProgressionLoadFromPath(&loaded, path));
+    remove(path);
+
+    assert(loaded.gallery.seeded && loaded.gallery.badge == 2 && loaded.gallery.count == 2);
+    const GalleryRecord *owned = GalleryRecordFind(&loaded.gallery, "UNIT_A");
+    const GalleryRecord *fought = GalleryRecordFind(&loaded.gallery, "UNIT_B");
+    assert(owned && owned->owned_tiers == 2 && owned->new_owned);
+    assert(fought && fought->fought && fought->defeated && fought->new_fought && fought->new_defeated);
+    GalleryFree(&source.gallery);
+    GalleryFree(&loaded.gallery);
+}
+
+static const char *const MISSION_TEST_TABLE =
+    "{\"missions\":["
+    "{\"series\":0,\"tier\":0,\"id\":\"a51\",\"stat\":\"faction_hits\",\"target\":1,\"gold\":0,\"gems\":2},"
+    "{\"series\":0,\"tier\":1,\"id\":\"a52\",\"stat\":\"squad_faction\",\"target\":1,\"gold\":500,\"gems\":0},"
+    "{\"series\":0,\"tier\":2,\"id\":\"a53\",\"stat\":\"squad_faction\",\"target\":1,\"gold\":0,\"gems\":3,"
+    "\"faction\":1},"
+    "{\"series\":1,\"tier\":0,\"id\":\"a19\",\"stat\":\"gold_earned\",\"target\":100,\"gold\":500,\"gems\":0}"
+    "]}";
+
+static void MissionTestLoadTable(void) {
+    const char *path = "/tmp/hoda_mission_test.json";
+    assert(SaveFileText(path, (char *)MISSION_TEST_TABLE));
+    assert(MissionCatalogLoad(path));
+    assert(MissionCount() == 4 && MissionSeriesCount() == 2);
+    assert(MissionSeriesTierCount(0) == 3 && MissionSeriesTierCount(1) == 1);
+    remove(path);
+}
+
+static void TestMissionSeriesPicksTheClaimableTier(void) {
+    MissionTestLoadTable();
+    PlayerMissions m = {0};
+    assert(MissionSeriesCurrent(&m, 0) == 0);
+    assert(!MissionSeriesNeedsCollection(&m, 0));
+
+    MissionRaiseProgress(&m, 1, 1);
+    assert(MissionSeriesNeedsCollection(&m, 0));
+    assert(MissionSeriesCurrent(&m, 0) == 1);
+    assert(MissionUnseenClaimableCount(&m) == 1);
+    MissionMarkAllSeen(&m);
+    assert(MissionUnseenClaimableCount(&m) == 0);
+
+    m.claimed[0] = m.claimed[1] = m.claimed[2] = true;
+    assert(MissionSeriesCurrent(&m, 0) == 2);
+}
+
+static void TestMissionProgressNeverDrops(void) {
+    MissionTestLoadTable();
+    PlayerMissions m = {0};
+    MissionRaiseProgress(&m, 3, 40);
+    MissionRaiseProgress(&m, 3, 10);
+    assert(m.progress[3] == 40);
+}
+
+static void TestMissionClaimPaysOnce(void) {
+    MissionTestLoadTable();
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    assert(!MissionsClaim(&player, 3));
+    MissionRaiseProgress(&player.missions, 3, 100);
+    player.gold = 7;
+    assert(MissionsClaim(&player, 3));
+    assert(player.gold == 507 && player.missions.claimed[3]);
+    assert(!MissionsClaim(&player, 3));
+    assert(player.gold == 507);
+    assert(!MissionsClaim(&player, MISSION_CAPACITY));
+
+    MissionTotals totals = MissionComputeTotals(&player.missions);
+    assert(totals.claimed == 1 && totals.total == 4);
+    assert(totals.gold_claimed == 500 && totals.gold_total == 1000);
+    assert(totals.gems_claimed == 0 && totals.gems_total == 5);
+}
+
+static void TestMissionGoldTrackerIgnoresSpendingAndClaims(void) {
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    player.gold = 100;
+    MissionTrackEarnedGold(&player);
+    assert(player.missions.counters[MISSION_STAT_GOLD_EARNED] == 0);
+    player.gold = 160;
+    MissionTrackEarnedGold(&player);
+    assert(player.missions.counters[MISSION_STAT_GOLD_EARNED] == 60);
+    player.gold = 10;
+    MissionTrackEarnedGold(&player);
+    assert(player.missions.counters[MISSION_STAT_GOLD_EARNED] == 60);
+}
+
+static void TestMissionBattleRecording(void) {
+    MissionTestLoadTable();
+    static Player player;
+    static BattleSim sim;
+    memset(&player, 0, sizeof(player));
+    memset(&sim, 0, sizeof(sim));
+    sim.action_count = 2;
+    sim.actions[0].actor = 0;
+    sim.actions[0].target_count = 2;
+    sim.actions[0].targets[0] = (BattleSimTarget){.unit = SQUAD_SLOT_COUNT, .health_delta = -100, .health_faction_delta = -20};
+    sim.actions[0].targets[1] = (BattleSimTarget){.unit = 1, .health_delta = 50};
+    sim.actions[1].actor = SQUAD_SLOT_COUNT;
+    sim.actions[1].target_count = 1;
+    sim.actions[1].targets[0] = (BattleSimTarget){.unit = 0, .health_delta = -999};
+
+    long long first_day = 1700000000LL;
+    MissionsRecordBattle(&player, &sim, 3, true, first_day);
+    MissionsRecordBattle(&player, &sim, 2, false, first_day);
+    PlayerMissions *m = &player.missions;
+    assert(m->counters[MISSION_STAT_CRITS] == 5);
+    assert(m->counters[MISSION_STAT_BATTLE_DAMAGE] == 120);
+    assert(m->counters[MISSION_STAT_CHALLENGE_ATTEMPTS] == 1);
+    assert(m->counters[MISSION_STAT_FACTION_HITS] == 2);
+    assert(m->counters[MISSION_STAT_BATTLE_DAYS] == 1);
+    MissionsRecordBattle(&player, &sim, 0, false, first_day + 2 * NEXUS_SECONDS_PER_DAY);
+    assert(m->counters[MISSION_STAT_BATTLE_DAYS] == 2);
+}
+
+static void TestHudCurrencyTallyHoldsThenTicksUp(void) {
+    HudCurrencyTally tally = {0};
+    HudCurrencyTallyUpdate(&tally, 100, 0.016f);
+    assert(tally.shown == 100.0);
+
+    HudCurrencyTallyHold(&tally);
+    HudCurrencyTallyUpdate(&tally, 325, 1.0f);
+    assert(tally.shown == 100.0);
+
+    assert(HudCurrencyTallyRelease(&tally, 325));
+    assert(!tally.held && tally.ticking);
+    HudCurrencyTallyUpdate(&tally, 325, HUD_TALLY_TIME * 0.5f);
+    assert(tally.ticking && fabs(tally.shown - 212.5) < 0.01);
+    HudCurrencyTallyUpdate(&tally, 325, HUD_TALLY_TIME);
+    assert(!tally.ticking && tally.shown == 325.0);
+
+    HudCurrencyTallyUpdate(&tally, 50, 0.016f);
+    assert(tally.shown == 50.0);
+}
+
+static void TestHudCurrencyTallyReleaseWithoutGainSnaps(void) {
+    HudCurrencyTally tally = {.initialized = true, .shown = 40.0};
+    assert(!HudCurrencyTallyRelease(&tally, 40));
+    HudCurrencyTallyHold(&tally);
+    assert(!HudCurrencyTallyRelease(&tally, 40));
+    assert(!tally.held && !tally.ticking);
+}
+
+static void TestMissionSaveRoundTrip(void) {
+    MissionTestLoadTable();
+    PlayerMissions saved = {0};
+    saved.counters[MISSION_STAT_GOLD_EARNED] = 2500000000LL;
+    saved.last_battle_day = 125300;
+    MissionRaiseProgress(&saved, 3, 100);
+    saved.claimed[3] = true;
+    MissionRaiseProgress(&saved, 0, 1);
+
+    cJSON *json = ProgressionSaveMissions(&saved);
+    assert(json);
+    PlayerMissions loaded;
+    ProgressionLoadMissions(json, &loaded);
+    assert(loaded.counters[MISSION_STAT_GOLD_EARNED] == 2500000000LL);
+    assert(loaded.last_battle_day == 125300);
+    assert(loaded.claimed[3] && !loaded.claimed[0] && MissionClaimable(&loaded, 0));
+    cJSON_Delete(json);
+
+    ProgressionLoadMissions(NULL, &loaded);
+    assert(loaded.progress[3] == 0 && !loaded.claimed[3]);
+}
+
 int main(void) {
+    TestMissionSeriesPicksTheClaimableTier();
+    TestMissionProgressNeverDrops();
+    TestMissionClaimPaysOnce();
+    TestMissionGoldTrackerIgnoresSpendingAndClaims();
+    TestMissionBattleRecording();
+    TestMissionSaveRoundTrip();
+    TestHudCurrencyTallyHoldsThenTicksUp();
+    TestHudCurrencyTallyReleaseWithoutGainSnaps();
     SetTraceLogLevel(LOG_WARNING);
+    TestGalleryRecordsTrackDiscoveryAndBadge();
+    TestGalleryCatalogMatchesReferenceRules();
+    TestGalleryRecordsBattleCasualties();
+    TestGalleryPersistence();
+    TestRuneCatalogCraftChains();
+    TestRuneSlotRulesAndReplacement();
+    TestRuneExpiry();
+    TestRuneCrafting();
+    TestRuneBonusStacksAndScalesRewards();
+    TestRuneMitigationAndRetaliation();
+    TestRuneResistsBlockAilments();
+    TestRuneStatsAndTargeting();
+    TestRuneSaveRoundTrip();
+    TestPrestigeSlotCostsGems();
+    TestRuneActivationFx();
     TestOriginalResourcesDecodeLikeUnityPy();
     TestEveryReferencedResourceResolves();
     TestSquadSlotReferenceLayout();
@@ -3625,8 +4411,15 @@ int main(void) {
     TestCampaignProgressionRewards();
     TestProgressionPersistence();
     TestRosterInstancesAndPersistence();
+    TestConsumeTablesAndCurves();
+    TestConsumeSeedWorthAndBonuses();
+    TestConsumeCommitCompactsRoster();
+    TestConsumeRespectsCaps();
+    TestWispWorthFollowsReferenceMultipliers();
+    TestSimUsesConsumedCritChance();
     TestAllCampaignMapsAdvance();
     TestEnergyAndStaminaPools();
+    TestUnitPoolReusesReleasedUnits();
     TestFxKeyoutPreservesSourceTransparency();
     puts("battle_sim_test: ok");
     return 0;

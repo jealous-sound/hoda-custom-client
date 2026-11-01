@@ -2,10 +2,12 @@
 #include "raymath.h"
 #include "rlgl.h"
 #include <math.h>
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #ifndef HOD_CACHE
 #define HOD_CACHE "client-additional-data/"
@@ -22,7 +24,11 @@
 #include "assets.c"
 #include "loc.c"
 #include "character.c"
+#include "consume.c"
 #include "passive.c"
+#include "rune.c"
+#include "gallery.c"
+#include "mission.c"
 #include "player.c"
 #include "button.c"
 #include "energy_dialog.c"
@@ -30,12 +36,17 @@
 #include "home_ui.c"
 #include "home_squad.c"
 #include "home_background.c"
+#include "consume_background.c"
 #include "heroes_background.c"
 #include "battle_squad.c"
 #include "battle_sim.c"
 #include "battle.c"
 #include "music_player.c"
 #include "heroes.c"
+#include "message_popup.c"
+#include "runes.c"
+#include "consume_view.c"
+#include "gallery_view.c"
 #include "pack_scene.c"
 #include "pack_fx.c"
 #include "pack_hero.c"
@@ -45,9 +56,11 @@
 #include "nexus.c"
 #include "quests.c"
 #include "progression.c"
+#include "mission_progress.c"
 #include "battle_play.c"
 #include "battle_ui.c"
 #include "battle_results.c"
+#include "mission_view.c"
 #include "game.c"
 #include "debug_harness.c"
 
@@ -85,7 +98,7 @@ int main(void) {
     unsigned int flags = FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI;
     if (screenshot_mode) flags |= FLAG_WINDOW_HIDDEN | FLAG_WINDOW_UNFOCUSED;
     SetConfigFlags(flags);
-    InitWindow(win_w, win_h, "Heroes of Dragons");
+    InitWindow(win_w, win_h, "Heroes of Dragon Age");
     SetExitKey(KEY_NULL);
     InitAudioDevice();
     if (screenshot_mode || EnvFlag("HOD_MUTE")) SetMasterVolume(0.0f);

@@ -228,6 +228,7 @@ typedef struct {
     FxAuraSlot aura_slot;
     unsigned serial;
     unsigned seed;
+    Color start_color;
 } FxParticle;
 
 typedef struct {
@@ -237,6 +238,7 @@ typedef struct {
     int anchor;
     FxAuraSlot aura_slot;
     unsigned serial;
+    Color start_color;
     Vector3 pos, offset;
     Quaternion rotation;
     float age;
@@ -2250,6 +2252,21 @@ static Texture2D BattleFxTex(Battle *b, const char *name, int keyout) {
     return tex;
 }
 
+static void BattleFxUpdate(Battle *b, float dt);
+static void BattleFxDraw(Battle *b);
+
+void BattleFxPlayOnCamera(Battle *b, Camera3D camera, float dt) {
+    BattleFxUpdate(b, dt);
+    Camera3D battle_camera = b->cam;
+    b->cam = camera;
+    BeginMode3D(camera);
+    rlDisableBackfaceCulling();
+    BattleFxDraw(b);
+    rlEnableBackfaceCulling();
+    EndMode3D();
+    b->cam = battle_camera;
+}
+
 static Vector3 FxConeDir(Vector3 dir, float deg) {
     float len = Vector3Length(dir);
     if (len < 0.01f) {
@@ -2338,6 +2355,7 @@ FxEmitOneAt(Battle *b, const FxInstance *ins, const FxEmitter *em, const Vector3
         .aura_slot = ins->aura_slot,
         .serial = ins->serial,
         .seed = (unsigned)GetRandomValue(0, 0x7FFF),
+        .start_color = ins->start_color,
     };
     if (birth_depth < FX_MAX_EMITTERS && ins->pre) {
         for (int child = 0; child < 2; child++) {
@@ -2381,6 +2399,30 @@ static void BattleFxBurstRotated(Battle *b, const char *name, Vector3 pos, Quate
     FxInstanceStart(b, ins);
 }
 
+int BattleFxLoopStart(Battle *b, const char *name, Vector3 pos, unsigned *serial) {
+    const FxPreset *pre = BattleFxFindPreset(b, name);
+    FxInstance *ins = pre ? FxInstanceClaim(b) : NULL;
+    if (!ins) return -1;
+    *ins = (FxInstance){.pre = pre, .alive = true, .loop = true, .anchor = -1, .pos = pos};
+    FxInstanceStart(b, ins);
+    *serial = ins->serial;
+    return (int)(ins - b->fxi);
+}
+
+bool BattleFxLoopMove(Battle *b, int index, unsigned serial, Vector3 pos) {
+    if (index < 0 || index >= FX_MAX_INSTANCES) return false;
+    FxInstance *ins = &b->fxi[index];
+    if (!ins->alive || ins->serial != serial) return false;
+    ins->pos = pos;
+    return true;
+}
+
+void BattleFxLoopStop(Battle *b, int index, unsigned serial) {
+    if (index < 0 || index >= FX_MAX_INSTANCES) return;
+    FxInstance *ins = &b->fxi[index];
+    if (ins->alive && ins->serial == serial) ins->alive = false;
+}
+
 void BattleFxBurst(Battle *b, const char *name, Vector3 pos) {
     BattleFxBurstRotated(b, name, pos, QuaternionIdentity(), false);
 }
@@ -2406,6 +2448,21 @@ void BattleFxUnitBurst(Battle *b, const char *name, int side, int slot, Vector3 
         .anchor = side * SQUAD_SLOT_COUNT + slot,
         .pos = b->rings[side][slot].pos,
         .offset = offset,
+    };
+    FxInstanceStart(b, ins);
+}
+
+void BattleFxUnitColorAura(Battle *b, const char *name, int side, int slot, Color color) {
+    const FxPreset *pre = BattleFxFindPreset(b, name);
+    if (!pre || side < 0 || side > 1 || slot < 0 || slot >= SQUAD_SLOT_COUNT) return;
+    FxInstance *ins = FxInstanceClaim(b);
+    if (!ins) return;
+    *ins = (FxInstance){
+        .pre = pre,
+        .alive = true,
+        .anchor = side * SQUAD_SLOT_COUNT + slot,
+        .pos = b->rings[side][slot].pos,
+        .start_color = color,
     };
     FxInstanceStart(b, ins);
 }
@@ -2729,6 +2786,11 @@ static void BattleFxDraw(Battle *b) {
                 a = (1.0f - t) / (1.0f - em->alpha_hold);
             Color fallback = em->tint.a ? em->tint : (Color){255, 255, 255, 255};
             Color col = FxColorSample(&em->color_curve, t, fallback);
+            if (p->start_color.a) {
+                col.r = p->start_color.r;
+                col.g = p->start_color.g;
+                col.b = p->start_color.b;
+            }
             col.a = (unsigned char)(fminf(fmaxf(a, 0.0f), 1.0f) * col.a);
 
             float sm = em->size_curve.count > 0 ? FxCurveSample(&em->size_curve, t, 1.0f)

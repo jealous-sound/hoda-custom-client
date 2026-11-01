@@ -1,6 +1,5 @@
 #define SQUAD_SLOT_COUNT 5
 #define SQUAD_SLOT_LARGE 4
-#define PLAYER_MAX_SQUADS 4
 #define PLAYER_REGEN_PERIOD 300.0f
 #define ENERGY_REFILL_GEM_COST 3
 #define STAMINA_REFILL_GEM_COST 3
@@ -109,6 +108,10 @@ typedef struct {
     int keys[NEXUS_KEY_COUNT];
     PlayerNexusRun nexus_run;
     PlayerNexusEvents nexus_events;
+
+    PlayerRunes runes;
+    PlayerGallery gallery;
+    PlayerMissions missions;
 } Player;
 
 static cJSON *CatalogFindCharacter(const cJSON *characters, const char *id) {
@@ -209,6 +212,7 @@ bool PlayerRosterAppendDefinitions(Player *p, const cJSON *const *defs, int coun
         p->roster[i].ability = &p->roster_abilities[i];
     }
 
+    for (int n = 0; n < count; n++) ConsumeNormalizeCharacter(&p->roster[first + n]);
     p->roster_count += count;
     p->next_instance_id = first_id + (uint64_t)count;
     if (out_first_index) *out_first_index = first;
@@ -294,6 +298,7 @@ void PlayerLoadRoster(Player *p, const char *catalog_path, const char *player_pa
         TraceLog(LOG_INFO, "  owned: %s (%s)", p->roster[i].name, p->roster[i].id);
     }
     p->starter_roster_count = p->roster_count;
+    for (int i = 0; i < p->roster_count; i++) ConsumeNormalizeCharacter(&p->roster[i]);
 
     cJSON *squads = cJSON_GetObjectItemCaseSensitive(player_root, "squads");
     int squad_index = 0;
@@ -395,7 +400,91 @@ bool PlayerSquadWithdraw(Player *p, int squad, int slot) {
     return true;
 }
 
+bool PlayerSquadsContain(const Player *p, int roster_index) {
+    for (int squad = 0; squad < PLAYER_MAX_SQUADS; squad++)
+        if (PlayerSquadFindUnit(p, squad, roster_index) >= 0) return true;
+    return false;
+}
+
+static int PlayerRosterCompact(Player *p, const bool *remove, int keep_index) {
+    int *remap = (int *)MemAlloc((unsigned int)((size_t)p->roster_count * sizeof(int)));
+    int kept = 0, kept_starters = 0;
+    for (int i = 0; i < p->roster_count; i++) {
+        if (remove[i]) {
+            remap[i] = -1;
+            continue;
+        }
+        remap[i] = kept;
+        if (i < p->starter_roster_count) kept_starters++;
+        if (kept != i) {
+            p->roster[kept] = p->roster[i];
+            p->roster_abilities[kept] = p->roster_abilities[i];
+            p->roster[kept].ability = &p->roster_abilities[kept];
+        }
+        kept++;
+    }
+    PlayerRosterClearRange(p, kept, p->roster_count);
+    for (int squad = 0; squad < PLAYER_MAX_SQUADS; squad++) {
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+            int index = p->squads[squad][slot];
+            if (index >= 0) p->squads[squad][slot] = remap[index];
+        }
+    }
+    int new_keep_index = remap[keep_index];
+    MemFree(remap);
+    p->roster_count = kept;
+    p->starter_roster_count = kept_starters;
+    if (p->gallery.synced_roster_count > kept) p->gallery.synced_roster_count = kept;
+    return new_keep_index;
+}
+
+bool PlayerConsumeSeedAllowed(const Player *p, int target, int seed) {
+    return seed >= 0 && seed < p->roster_count && seed != target && !PlayerSquadsContain(p, seed);
+}
+
+int PlayerConsumeUnits(Player *p, int target, const int *seeds, int count) {
+    if (!p || target < 0 || target >= p->roster_count || !seeds || count <= 0) return -1;
+    bool *remove = (bool *)MemAlloc((unsigned int)p->roster_count);
+    const Character **seed_units = (const Character **)MemAlloc((unsigned int)((size_t)count * sizeof(*seed_units)));
+    bool valid = true;
+    for (int i = 0; i < count && valid; i++) {
+        valid = PlayerConsumeSeedAllowed(p, target, seeds[i]) && !remove[seeds[i]];
+        if (!valid) break;
+        remove[seeds[i]] = true;
+        seed_units[i] = &p->roster[seeds[i]];
+    }
+    int result = -1;
+    if (valid) {
+        Character *ch = &p->roster[target];
+        ConsumeOutcome outcome = ConsumeCompute(ch, seed_units, count);
+        ch->xp = outcome.xp;
+        ch->level = outcome.level;
+        ch->consume_xp = outcome.consume_xp;
+        ch->consume_level = outcome.consume_level;
+        ch->tier = outcome.tier;
+        ch->crit_chance = outcome.crit_chance;
+        GalleryRecordOwned(&p->gallery, ch->id, ch->tier, false);
+        p->missions.counters[MISSION_STAT_CONSUMED] += count;
+        for (int i = 0; i < count; i++) {
+            if (!strcmp(seed_units[i]->id, ch->id)) p->missions.counters[MISSION_STAT_COMBINED]++;
+        }
+        result = PlayerRosterCompact(p, remove, target);
+    }
+    MemFree(seed_units);
+    MemFree(remove);
+    return result;
+}
+
+void PlayerGallerySync(Player *p) {
+    bool initial = !p->gallery.seeded;
+    for (int i = p->gallery.synced_roster_count; i < p->roster_count; i++)
+        GalleryRecordOwned(&p->gallery, p->roster[i].id, p->roster[i].tier, initial);
+    p->gallery.seeded = true;
+    p->gallery.synced_roster_count = p->roster_count;
+}
+
 void PlayerUnloadRoster(Player *p) {
+    GalleryFree(&p->gallery);
     MemFree(p->roster);
     MemFree(p->roster_abilities);
     PlayerRosterReset(p);
@@ -417,6 +506,7 @@ static void PlayerRegenPool(int *value, int max, float *timer, float dt) {
 void PlayerUpdate(Player *p, float dt) {
     PlayerRegenPool(&p->energy, p->energy_max, &p->energy_regen_timer, dt);
     PlayerRegenPool(&p->stamina, p->stamina_max, &p->stamina_regen_timer, dt);
+    RuneExpire(&p->runes, RuneNow());
 }
 
 static float PlayerRegenRemaining(int value, int max, float timer) {
@@ -447,6 +537,13 @@ bool PlayerSpendGold(Player *p, int cost) {
 bool PlayerSpendGems(Player *p, int cost) {
     if (!p || cost < 0 || p->gems < cost) return false;
     p->gems -= cost;
+    return true;
+}
+
+bool PlayerUnlockPrestigeRuneSlot(Player *p, int squad) {
+    if (!p || squad < 0 || squad >= PLAYER_MAX_SQUADS || p->runes.prestige_unlocked[squad]) return false;
+    if (!PlayerSpendGems(p, RUNE_PRESTIGE_UNLOCK_GEMS)) return false;
+    p->runes.prestige_unlocked[squad] = true;
     return true;
 }
 

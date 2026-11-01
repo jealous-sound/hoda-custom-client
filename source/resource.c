@@ -15,6 +15,9 @@
 #define RESOURCE_BUCKET_COUNT 16384
 #define RESOURCE_METADATA_MAX (16 * 1024 * 1024)
 #define RESOURCE_MUSIC_MAX 32
+#define RESOURCE_WORKERS_MAX 16
+#define RESOURCE_REF_MAX 256
+#define RESOURCE_WORKER_STACK (8 * 1024 * 1024)
 
 typedef enum {
     RESOURCE_FILE,
@@ -49,11 +52,39 @@ typedef struct {
     unsigned char *data;
 } ResourceMusicData;
 
+typedef struct {
+    char ref[RESOURCE_REF_MAX];
+    Image image;
+} ResourcePrefetchedImage;
+
+typedef struct {
+    ResourcePrefetchedImage *entries;
+    int count;
+} ResourcePrefetch;
+
+typedef struct {
+    char (*refs)[RESOURCE_REF_MAX];
+    int count;
+    int capacity;
+} ResourceRecording;
+
+static ResourcePrefetch resource_prefetched;
+static ResourceRecording resource_recorded;
+static bool resource_recording;
 static ResourceCatalog resource_cache;
 static ResourceCatalog resource_apk;
 static FilePathList resource_bundle_files;
 static ApkArchive resource_apk_archive;
 static ResourceMusicData resource_music[RESOURCE_MUSIC_MAX];
+
+static int ResourceThreadStart(pthread_t *thread, void *(*routine)(void *), void *argument) {
+    pthread_attr_t attributes;
+    pthread_attr_init(&attributes);
+    pthread_attr_setstacksize(&attributes, RESOURCE_WORKER_STACK);
+    int result = pthread_create(thread, &attributes, routine, argument);
+    pthread_attr_destroy(&attributes);
+    return result;
+}
 
 static unsigned int ResourceHash(const char *name) {
     unsigned int hash = 2166136261u;
@@ -87,7 +118,7 @@ static bool ResourceReadFileRange(FILE *file, unsigned int offset, unsigned char
     return fseek(file, (long)offset, SEEK_SET) == 0 && fread(out, 1, size, file) == size;
 }
 
-static void ResourceIndexBundle(int container) {
+static void ResourceIndexBundle(ResourceCatalog *catalog, int container) {
     FILE *file = fopen(resource_bundle_files.paths[container], "rb");
     if (!file) return;
     unsigned char header[UNITY_HEADER_SIZE];
@@ -109,12 +140,51 @@ static void ResourceIndexBundle(int container) {
         if (!ResourceReadFileRange(file, objects[i].offset, name_field, length)) continue;
         char name[UNITY_NAME_MAX];
         UnityObjectName(name_field, length, name);
-        ResourceCatalogAdd(&resource_cache, name, container, objects[i]);
+        ResourceCatalogAdd(catalog, name, container, objects[i]);
     }
     if (count < 0) TraceLog(LOG_WARNING, "Resource: unreadable bundle %s", resource_bundle_files.paths[container]);
     MemFree(objects);
     MemFree(metadata);
     fclose(file);
+}
+
+typedef struct {
+    ResourceCatalog catalog;
+    int *next;
+} ResourceBundleJob;
+
+static int ResourceWorkerCount(int tasks) {
+    long cores = sysconf(_SC_NPROCESSORS_ONLN);
+    int count = cores < RESOURCE_WORKERS_MAX ? (int)cores : RESOURCE_WORKERS_MAX;
+    return count < tasks ? count : tasks;
+}
+
+static void *ResourceBundleWorker(void *argument) {
+    ResourceBundleJob *job = argument;
+    ResourceCatalogReset(&job->catalog);
+    for (int i = __atomic_fetch_add(job->next, 1, __ATOMIC_RELAXED); i < (int)resource_bundle_files.count;
+         i = __atomic_fetch_add(job->next, 1, __ATOMIC_RELAXED))
+        ResourceIndexBundle(&job->catalog, i);
+    return NULL;
+}
+
+static void ResourceIndexBundles(void) {
+    int worker_count = ResourceWorkerCount((int)resource_bundle_files.count);
+    int next = 0;
+    ResourceBundleJob jobs[RESOURCE_WORKERS_MAX] = {0};
+    pthread_t threads[RESOURCE_WORKERS_MAX];
+    bool threaded[RESOURCE_WORKERS_MAX] = {0};
+    for (int i = 0; i < worker_count; i++) jobs[i].next = &next;
+    for (int i = 1; i < worker_count; i++) threaded[i] = ResourceThreadStart(&threads[i], ResourceBundleWorker, &jobs[i]) == 0;
+    ResourceBundleWorker(&jobs[0]);
+    for (int i = 0; i < worker_count; i++) {
+        if (i > 0 && threaded[i]) pthread_join(threads[i], NULL);
+        for (int e = 0; e < jobs[i].catalog.count; e++) {
+            const ResourceEntry *entry = &jobs[i].catalog.entries[e];
+            ResourceCatalogAdd(&resource_cache, entry->name, entry->container, entry->object);
+        }
+        MemFree(jobs[i].catalog.entries);
+    }
 }
 
 static void ResourceIndexCache(void) {
@@ -140,7 +210,7 @@ static void ResourceIndexCache(void) {
     }
     UnloadDirectoryFiles(bundle_dirs);
     if (resource_bundle_files.count == 0) TraceLog(LOG_FATAL, "Resource: no bundles in %s", ORIGINAL_BUNDLE_DIR);
-    for (unsigned int i = 0; i < resource_bundle_files.count; i++) ResourceIndexBundle((int)i);
+    ResourceIndexBundles();
     TraceLog(
         LOG_INFO, "Resource: indexed %d objects in %u cache bundles", resource_cache.count, resource_bundle_files.count
     );
@@ -249,7 +319,27 @@ bool ResourceExists(const char *ref) {
            ResourceFind(&parsed, UNITY_CLASS_FONT);
 }
 
-Image ResourceLoadImage(const char *ref) {
+static void *ResourceApkIndexWorker(void *argument) {
+    (void)argument;
+    ResourceIndexApk();
+    return NULL;
+}
+
+static void ResourceIndexSources(const char *const *refs, int count) {
+    bool needs_cache = false, needs_apk = false;
+    for (int i = 0; i < count; i++) {
+        ResourceOrigin origin = ResourceParse(refs[i]).origin;
+        needs_cache |= origin == RESOURCE_CACHE;
+        needs_apk |= origin == RESOURCE_APK;
+    }
+    pthread_t apk_thread;
+    bool apk_threaded = needs_apk && ResourceThreadStart(&apk_thread, ResourceApkIndexWorker, NULL) == 0;
+    if (needs_apk && !apk_threaded) ResourceIndexApk();
+    if (needs_cache) ResourceIndexCache();
+    if (apk_threaded) pthread_join(apk_thread, NULL);
+}
+
+static Image ResourceDecodeImage(const char *ref) {
     unsigned int object_size = 0;
     if (ResourceParse(ref).origin == RESOURCE_FILE) return LoadImage(ref);
     unsigned char *object = ResourceLoadObject(ref, UNITY_CLASS_TEXTURE_2D, &object_size);
@@ -257,6 +347,126 @@ Image ResourceLoadImage(const char *ref) {
     Image image = UnityDecodeTexture(object, object_size);
     MemFree(object);
     return image;
+}
+
+typedef struct {
+    const char *const *refs;
+    Image *images;
+    int count;
+    int next;
+} ResourceImageJob;
+
+static void *ResourceImageWorker(void *argument) {
+    ResourceImageJob *job = argument;
+    for (int i = __atomic_fetch_add(&job->next, 1, __ATOMIC_RELAXED); i < job->count;
+         i = __atomic_fetch_add(&job->next, 1, __ATOMIC_RELAXED))
+        job->images[i] = ResourceDecodeImage(job->refs[i]);
+    return NULL;
+}
+
+static void ResourceDecodeImages(const char *const *refs, int count, Image *images) {
+    ResourceImageJob job = {.refs = refs, .images = images, .count = count};
+    ResourceIndexSources(refs, count);
+    int worker_count = ResourceWorkerCount(count);
+    pthread_t workers[RESOURCE_WORKERS_MAX];
+    int started = 0;
+    for (int i = 1; i < worker_count; i++)
+        if (ResourceThreadStart(&workers[started], ResourceImageWorker, &job) == 0) started++;
+    ResourceImageWorker(&job);
+    for (int i = 0; i < started; i++) pthread_join(workers[i], NULL);
+}
+
+static bool ResourceIsRecordable(const char *ref) {
+    return ResourceParse(ref).origin != RESOURCE_FILE && strlen(ref) < RESOURCE_REF_MAX;
+}
+
+static void ResourceRecordImage(const char *ref) {
+    if (!resource_recording || !ResourceIsRecordable(ref)) return;
+    if (resource_recorded.count == resource_recorded.capacity) {
+        resource_recorded.capacity = resource_recorded.capacity ? resource_recorded.capacity * 2 : 256;
+        resource_recorded.refs =
+            MemRealloc(resource_recorded.refs, sizeof(*resource_recorded.refs) * resource_recorded.capacity);
+    }
+    snprintf(resource_recorded.refs[resource_recorded.count++], RESOURCE_REF_MAX, "%s", ref);
+}
+
+static Image ResourceTakePrefetched(const char *ref) {
+    for (int i = 0; i < resource_prefetched.count; i++) {
+        ResourcePrefetchedImage *entry = &resource_prefetched.entries[i];
+        if (!entry->image.data || strcmp(entry->ref, ref) != 0) continue;
+        Image image = entry->image;
+        entry->image = (Image){0};
+        return image;
+    }
+    return (Image){0};
+}
+
+void ResourcePrefetchImages(const char *manifest_path) {
+    char *text = LoadFileText(manifest_path);
+    if (!text) return;
+    int line_count = 1;
+    for (const char *c = text; *c; c++) line_count += *c == '\n';
+    const char **refs = MemAlloc(sizeof(*refs) * line_count);
+    int count = 0;
+    for (char *line = text; line && *line;) {
+        char *end = strchr(line, '\n');
+        if (end) *end = '\0';
+        if (ResourceIsRecordable(line)) refs[count++] = line;
+        line = end ? end + 1 : NULL;
+    }
+    Image *images = MemAlloc(sizeof(*images) * (count > 0 ? count : 1));
+    ResourceDecodeImages(refs, count, images);
+    resource_prefetched.entries = MemAlloc(sizeof(*resource_prefetched.entries) * (count > 0 ? count : 1));
+    for (int i = 0; i < count; i++) {
+        snprintf(resource_prefetched.entries[i].ref, RESOURCE_REF_MAX, "%s", refs[i]);
+        resource_prefetched.entries[i].image = images[i];
+    }
+    resource_prefetched.count = count;
+    MemFree(images);
+    MemFree(refs);
+    UnloadFileText(text);
+}
+
+void ResourceRecordImagesBegin(void) {
+    resource_recording = true;
+}
+
+void ResourceRecordImagesEnd(const char *manifest_path) {
+    resource_recording = false;
+    for (int i = 0; i < resource_prefetched.count; i++) UnloadImage(resource_prefetched.entries[i].image);
+    MemFree(resource_prefetched.entries);
+    resource_prefetched = (ResourcePrefetch){0};
+    FILE *file = fopen(manifest_path, "w");
+    if (!file) return;
+    for (int i = 0; i < resource_recorded.count; i++) fprintf(file, "%s\n", resource_recorded.refs[i]);
+    fclose(file);
+    MemFree(resource_recorded.refs);
+    resource_recorded = (ResourceRecording){0};
+}
+
+Image ResourceLoadImage(const char *ref) {
+    ResourceRecordImage(ref);
+    Image image = ResourceTakePrefetched(ref);
+    return image.data ? image : ResourceDecodeImage(ref);
+}
+
+void ResourceLoadImages(const char *const *refs, int count, Image *images) {
+    const char **missing_refs = MemAlloc(sizeof(*missing_refs) * (count > 0 ? count : 1));
+    int *missing_slots = MemAlloc(sizeof(*missing_slots) * (count > 0 ? count : 1));
+    int missing = 0;
+    for (int i = 0; i < count; i++) {
+        ResourceRecordImage(refs[i]);
+        images[i] = ResourceTakePrefetched(refs[i]);
+        if (images[i].data) continue;
+        missing_refs[missing] = refs[i];
+        missing_slots[missing++] = i;
+    }
+    Image *decoded = MemAlloc(sizeof(*decoded) * (missing > 0 ? missing : 1));
+    ResourceDecodeImages(missing_refs, missing, decoded);
+    for (int i = 0; i < missing; i++) images[missing_slots[i]] = decoded[i];
+    MemFree(decoded);
+    MemFree(missing_slots);
+    MemFree(missing_refs);
 }
 
 Texture2D ResourceLoadTexture(const char *ref) {

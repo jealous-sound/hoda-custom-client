@@ -1,6 +1,12 @@
 
-#define HEROES_CARD_COLS 2
 #define HEROES_DRAG_THRESHOLD 51.0f
+#define ROSTER_PREFAB_WIDTH 2030.0f
+#define ROSTER_PREFAB_HEIGHT 938.0f
+#define ROSTER_PREFAB_TOP 72.0f
+#define ROSTER_PANEL_WIDTH 278.0f
+#define ROSTER_GRID_COLS 2
+#define ROSTER_FILTER_ROW 65.0f
+#define ROSTER_SCROLL_STEP 50.0f
 
 typedef enum {
     HEROES_NONE,
@@ -30,6 +36,55 @@ typedef struct {
     float desc_fs;
 } HeroCard;
 
+typedef enum {
+    ROSTER_FILTER_ALL,
+    ROSTER_FILTER_NEWEST,
+    ROSTER_FILTER_RED,
+    ROSTER_FILTER_BLUE,
+    ROSTER_FILTER_WHITE,
+    ROSTER_FILTER_BLACK,
+    ROSTER_FILTER_LARGE,
+    ROSTER_FILTER_COMMON,
+    ROSTER_FILTER_UNCOMMON,
+    ROSTER_FILTER_RARE,
+    ROSTER_FILTER_COUNT
+} RosterFilter;
+
+static const char *const ROSTER_FILTER_KEYS[ROSTER_FILTER_COUNT] = {
+    "ROSTER_FILTER_ALL_HEROES",
+    "ROSTER_FILTER_NEWEST",
+    "ROSTER_FILTER_RED_FACTION",
+    "ROSTER_FILTER_BLUE_FACTION",
+    "ROSTER_FILTER_WHITE_FACTION",
+    "ROSTER_FILTER_BLACK_FACTION",
+    "ROSTER_FILTER_LARGE_CREATURES",
+    "ROSTER_FILTER_COMMON",
+    "ROSTER_FILTER_UNCOMMON",
+    "ROSTER_FILTER_RARE",
+};
+
+typedef struct {
+    int order[PLAYER_ROSTER_CAPACITY];
+    int order_count;
+    bool sort_reversed;
+    RosterFilter filter;
+    bool filter_open;
+    float scroll;
+    Button category, sort;
+} Roster;
+
+typedef struct {
+    float progress;
+    bool maxed;
+    bool grey_bar;
+    Texture2D unlock_icon;
+    bool in_squad;
+    bool in_use;
+    bool selected;
+} RosterCardState;
+
+typedef void (*RosterCardDrawFn)(const HeroCard *card, Rectangle cell, int roster_index, const void *context);
+
 typedef struct {
     Button gray;
     Button gold;
@@ -43,7 +98,7 @@ typedef struct {
     int card_count;
     int card_capacity;
     int selected;
-    float card_scroll;
+    Roster roster;
 
     float tab_scroll;
     float tab_drag_start, tab_scroll_start;
@@ -171,9 +226,145 @@ static void HeroCardBuild(HeroCard *card, const Character *ch) {
     card->max_level = stats->max_level;
     card->power = CharacterStatPower(ch);
     card->health = CharacterStatHealth(ch);
-    card->crit = 1;
-    card->xp_frac = ch->level >= stats->max_level ? 1.0f : 0.0f;
+    card->crit = ch->crit_chance > CONSUME_BASE_CRIT_CHANCE ? ch->crit_chance : CONSUME_BASE_CRIT_CHANCE;
+    card->xp_frac = ch->level >= stats->max_level
+                        ? 1.0f
+                        : ConsumeBandFraction(ConsumeProfileFor(ch)->level_table, ch->level, ch->xp);
     card->desc_fs = 0.0f;
+}
+
+static Rectangle RosterPx(float x, float y, float w, float h) {
+    float sx = UiWidth() / ROSTER_PREFAB_WIDTH;
+    float sy = (UiHeight() - ROSTER_PREFAB_TOP) / ROSTER_PREFAB_HEIGHT;
+    return (Rectangle){x * sx, ROSTER_PREFAB_TOP + y * sy, w * sx, h * sy};
+}
+
+static Rectangle RosterGridView(void) {
+    return RosterPx(8.0f, 120.0f, 375.0f, 704.0f);
+}
+
+static Rectangle RosterTileRect(const Roster *r, int index) {
+    Rectangle view = RosterGridView();
+    float cell = view.width / ROSTER_GRID_COLS;
+    return (Rectangle){
+        view.x + (index % ROSTER_GRID_COLS) * cell, view.y + (index / ROSTER_GRID_COLS) * cell - r->scroll, cell, cell
+    };
+}
+
+static bool RosterFilterAccepts(RosterFilter filter, const Character *ch) {
+    switch (filter) {
+        case ROSTER_FILTER_RED:
+            return !ch->giant && FactionIsRed(ch->faction);
+        case ROSTER_FILTER_BLUE:
+            return !ch->giant && FactionIsBlue(ch->faction);
+        case ROSTER_FILTER_WHITE:
+            return !ch->giant && FactionIsWhite(ch->faction);
+        case ROSTER_FILTER_BLACK:
+            return !ch->giant && FactionIsBlack(ch->faction);
+        case ROSTER_FILTER_LARGE:
+            return ch->giant;
+        case ROSTER_FILTER_COMMON:
+            return ch->rarity == RARITY_COMMON;
+        case ROSTER_FILTER_UNCOMMON:
+            return ch->rarity == RARITY_UNCOMMON;
+        case ROSTER_FILTER_RARE:
+            return ch->rarity == RARITY_RARE;
+        default:
+            return true;
+    }
+}
+
+static int RosterCompareOrder(const Character *a, const Character *b) {
+    if (a->rarity != b->rarity) return (int)b->rarity - (int)a->rarity;
+    if (a->tier != b->tier) return (int)b->tier - (int)a->tier;
+    if (a->level != b->level) return b->level - a->level;
+    return strcmp(a->id, b->id);
+}
+
+static void RosterRefreshOrder(Roster *r, const Player *p) {
+    r->order_count = 0;
+    bool newest = r->filter == ROSTER_FILTER_NEWEST;
+    for (int i = 0; i < p->roster_count; i++) {
+        if (!RosterFilterAccepts(r->filter, &p->roster[i])) continue;
+        int slot = r->order_count++;
+        while (slot > 0) {
+            const Character *prior = &p->roster[r->order[slot - 1]];
+            int order = newest ? (prior->instance_id < p->roster[i].instance_id ? 1 : -1)
+                               : RosterCompareOrder(prior, &p->roster[i]);
+            if ((r->sort_reversed ? -order : order) <= 0) break;
+            r->order[slot] = r->order[slot - 1];
+            slot--;
+        }
+        r->order[slot] = i;
+    }
+}
+
+static void RosterInitialize(Roster *r, const Player *p) {
+    memset(r, 0, sizeof(*r));
+    Font font = GuiFont(FNT_COOL);
+    Vector2 anchor = {0.5f, 0.5f};
+    r->category = ButtonLoadText(GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", font, anchor, 0.42f);
+    r->sort = ButtonLoadText(GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "Сорт.", font, anchor, 0.34f);
+    RosterRefreshOrder(r, p);
+}
+
+static void RosterDrawFilterList(Roster *r, const Player *p, bool input) {
+    Font font = GuiFont(FNT_COOL);
+    for (int i = 0; i < ROSTER_FILTER_COUNT; i++) {
+        Rectangle row = RosterPx(8.0f, 124.0f + i * ROSTER_FILTER_ROW, 378.0f, 70.0f);
+        bool selected = r->filter == (RosterFilter)i;
+        UiDrawTexture(GuiTex(selected ? GUI_CONSUME_CATEGORY_ON : GUI_CONSUME_CATEGORY), row, WHITE);
+        UiDrawTextCentered(font, LocGet(ROSTER_FILTER_KEYS[i]), row, row.height * 0.42f, WHITE);
+        if (input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(UiMouse(), row)) {
+            r->filter = (RosterFilter)i;
+            r->filter_open = false;
+            r->scroll = 0.0f;
+            RosterRefreshOrder(r, p);
+            GuiSoundPlay(SND_UI_TAB);
+        }
+    }
+}
+
+static int
+RosterDraw(Roster *r, const HeroCard *cards, const Player *p, bool input, RosterCardDrawFn draw, const void *context) {
+    UiDrawTexture(GuiTex(GUI_CONSUME_TRAY), RosterPx(-7.0f, 0.0f, 455.0f, 938.0f), WHITE);
+
+    r->category.label = LocGet(ROSTER_FILTER_KEYS[r->filter]);
+    if (ButtonDrawEx(&r->category, RosterPx(16.0f, 56.0f, 276.0f, 68.0f), input)) {
+        r->filter_open = !r->filter_open;
+        GuiSoundPlay(SND_UI_TAB);
+    }
+    if (ButtonDrawEx(&r->sort, RosterPx(296.0f, 56.0f, 100.0f, 68.0f), input && !r->filter_open)) {
+        r->sort_reversed = !r->sort_reversed;
+        r->scroll = 0.0f;
+        RosterRefreshOrder(r, p);
+    }
+
+    if (r->filter_open) {
+        RosterDrawFilterList(r, p, input);
+        return -1;
+    }
+
+    Rectangle view = RosterGridView();
+    int rows = (r->order_count + ROSTER_GRID_COLS - 1) / ROSTER_GRID_COLS;
+    float cell = view.width / ROSTER_GRID_COLS;
+    float max_scroll = fmaxf(rows * cell - view.height, 0.0f);
+    bool over = input && CheckCollisionPointRec(UiMouse(), view);
+    if (over) r->scroll -= GetMouseWheelMove() * ROSTER_SCROLL_STEP;
+    r->scroll = Clamp(r->scroll, 0.0f, max_scroll);
+
+    int hovered = -1;
+    float ui = UiScale();
+    BeginScissorMode(0, (int)(view.y * ui), (int)(ROSTER_PANEL_WIDTH * ui), (int)(view.height * ui));
+    for (int i = 0; i < r->order_count; i++) {
+        Rectangle tile = RosterTileRect(r, i);
+        if (tile.y + tile.height < view.y || tile.y > view.y + view.height) continue;
+        int index = r->order[i];
+        draw(&cards[index], tile, index, context);
+        if (over && CheckCollisionPointRec(UiMouse(), tile)) hovered = index;
+    }
+    EndScissorMode();
+    return hovered;
 }
 
 void HeroesInitialize(Heroes *h, const Player *p) {
@@ -199,7 +390,6 @@ void HeroesInitialize(Heroes *h, const Player *p) {
     h->cards = (HeroCard *)MemAlloc((size_t)h->card_capacity * sizeof(HeroCard));
     h->card_count = p->roster_count;
     h->selected = -1;
-    h->card_scroll = 0.0f;
     h->tab_scroll = 0.0f;
     h->tab_dragging = false;
     h->tab_dragged = false;
@@ -214,6 +404,7 @@ void HeroesInitialize(Heroes *h, const Player *p) {
         HeroCardBuild(card, ch);
         card->portrait = GuiPortraitLoad(ch->icon_prefab[ch->tier]);
     }
+    RosterInitialize(&h->roster, p);
 }
 
 bool HeroesSyncRoster(Heroes *h, const Player *p) {
@@ -234,7 +425,35 @@ bool HeroesSyncRoster(Heroes *h, const Player *p) {
         card->portrait = GuiPortraitLoad(ch->icon_prefab[ch->tier]);
     }
     h->card_count = p->roster_count;
+    RosterRefreshOrder(&h->roster, p);
     return true;
+}
+
+void HeroesApplyConsume(Heroes *h, const Player *p, const int *seeds, int seed_count, int target) {
+    bool *removed = (bool *)MemAlloc((unsigned int)h->card_count);
+    for (int i = 0; i < seed_count; i++) {
+        removed[seeds[i]] = true;
+        UnloadTexture(h->cards[seeds[i]].portrait);
+    }
+    int kept = 0;
+    for (int i = 0; i < h->card_count; i++) {
+        if (removed[i]) continue;
+        if (kept != i) h->cards[kept] = h->cards[i];
+        h->cards[kept].ch = &p->roster[kept];
+        kept++;
+    }
+    MemFree(removed);
+    h->card_count = kept;
+    h->selected = -1;
+    h->press_card = -1;
+    h->drag_icon = -1;
+
+    HeroCard *card = &h->cards[target];
+    const Character *ch = &p->roster[target];
+    UnloadTexture(card->portrait);
+    HeroCardBuild(card, ch);
+    card->portrait = GuiPortraitLoad(ch->icon_prefab[ch->tier]);
+    RosterRefreshOrder(&h->roster, p);
 }
 
 void HeroesDestroy(Heroes *h) {
@@ -531,167 +750,179 @@ static void HeroesDrawDetails(HeroCard *card, float span_x, float span_w) {
     HeroesDrawDetailsAt(card, HeroesDetailsBounds(span_x, span_w));
 }
 
-static void HeroesDrawCard(const HeroCard *card, Rectangle cell) {
+static void RosterDrawCard(const HeroCard *card, Rectangle cell, const RosterCardState *state) {
     Font font = GuiFont(FNT_MENU);
+    Color tint = state->in_use ? (Color){110, 110, 110, 255} : WHITE;
+    if (state->selected) UiDrawTexture(GuiTex(GUI_CARD_SELECT), UiRect(cell, 0.5f, 0.5f, 1.1f, 1.1f), WHITE);
+    UiDrawTexture(card->portrait, UiRect(cell, 0.5f, 0.5f, 0.85f, 0.85f), tint);
 
-    float pw = cell.width * 0.85f;
-    Rectangle portrait = {cell.x + (cell.width - pw) * 0.5f, cell.y + (cell.height - pw) * 0.5f, pw, pw};
-    UiDrawTexture(card->portrait, portrait, WHITE);
-
-    {
-        float bh = cell.height * 0.06f, bw = bh * 10.0f;
-        Rectangle bar = {cell.x + (cell.width - bw) * 0.68f, cell.y + (cell.height - bh) * 0.855f, bw, bh};
-        Rectangle bg = {bar.x - bw * 0.025f, bar.y - bh * 0.25f, bw * 1.05f, bh * 1.5f};
-        Texture2D bar_bg = GuiTex(GUI_CARD_BAR_BG);
-        UiDrawTexture(bar_bg, bg, WHITE);
-        if (card->xp_frac >= 1.0f) {
-            const char *maxed = LocGet("UNIT_PROGRESS_BAR_MAXED");
-            float fs = bh * 1.6f;
-            Vector2 tsz = MeasureTextEx(font, maxed, fs, 1.0f);
-            DrawTextEx(
-                font,
-                maxed,
-                (Vector2){bar.x + (bar.width - tsz.x) * 0.5f, bar.y + (bar.height - tsz.y) * 0.5f},
-                fs,
-                1.0f,
-                WHITE
-            );
-        } else if (card->xp_frac > 0.0f) {
-            Texture2D bar_fill = GuiTex(GUI_CARD_BAR_FILL);
-            Rectangle fill = {bar.x, bar.y, bar.width * card->xp_frac, bar.height};
-            Rectangle fill_src = {0, 0, bar_fill.width * card->xp_frac, bar_fill.height};
-            DrawTexturePro(bar_fill, fill_src, fill, (Vector2){0, 0}, 0.0f, WHITE);
-        }
-
-        float lw = cell.height * 0.25f;
-        Rectangle badge = {cell.x + (cell.width - lw) * 0.08f, cell.y + (cell.height - lw) * 0.93f, lw, lw};
-        Texture2D level_badge = GuiTex(GUI_CARD_LEVEL);
-        Rectangle lsrc = {0, 0, level_badge.width, level_badge.height};
-        DrawTexturePro(level_badge, lsrc, badge, (Vector2){0, 0}, 0.0f, WHITE);
-
-        char level[16];
-        snprintf(level, sizeof(level), "%d", card->level);
-        float fs = lw * 0.62f;
-        Vector2 tsz = MeasureTextEx(font, level, fs, 1.0f);
-        DrawTextEx(
-            font,
-            level,
-            (Vector2){badge.x + (badge.width - tsz.x) * 0.5f, badge.y + (badge.height - tsz.y) * 0.5f},
-            fs,
-            1.0f,
-            WHITE
+    float bh = cell.height * 0.06f, bw = bh * 10.0f;
+    Rectangle bar = {cell.x + (cell.width - bw) * 0.68f, cell.y + (cell.height - bh) * 0.855f, bw, bh};
+    UiDrawTexture(GuiTex(GUI_CARD_BAR_BG), UiRect(bar, 0.5f, 0.5f, 1.05f, 1.5f), WHITE);
+    if (state->maxed) {
+        UiDrawTextCentered(font, LocGet("UNIT_PROGRESS_BAR_MAXED"), bar, bh * 1.6f, WHITE);
+    } else if (state->progress > 0.0f) {
+        Texture2D fill = GuiTex(GUI_CARD_BAR_FILL);
+        DrawTexturePro(
+            fill,
+            (Rectangle){0, 0, fill.width * state->progress, fill.height},
+            (Rectangle){bar.x, bar.y, bar.width * state->progress, bar.height},
+            (Vector2){0, 0},
+            0.0f,
+            state->grey_bar ? (Color){170, 170, 170, 255} : WHITE
         );
     }
+
+    float badge_size = cell.height * 0.25f;
+    if (state->grey_bar) {
+        if (state->unlock_icon.id)
+            UiDrawTexture(state->unlock_icon, UiRect(cell, 0.1f, 0.9f, badge_size, badge_size), tint);
+    } else {
+        Rectangle badge = UiRect(cell, 0.08f, 0.93f, badge_size, badge_size);
+        UiDrawTexture(GuiTex(GUI_CARD_LEVEL), badge, WHITE);
+        char level[16];
+        snprintf(level, sizeof(level), "%d", card->level);
+        UiDrawTextCentered(font, level, badge, badge_size * 0.62f, WHITE);
+    }
+
+    if (state->in_use) {
+        float size = cell.height * 0.6f;
+        UiDrawTexture(GuiTex(GUI_CONSUME_IN_USE), UiRect(cell, 0.5f, 0.28f, size, size), WHITE);
+    }
+    if (state->in_squad) {
+        float size = cell.height * 0.2f;
+        UiDrawTexture(GuiTex(GUI_GALLERY_IN_SQUAD), UiRect(cell, 0.14f, 0.06f, size, size), WHITE);
+    }
 }
+
+typedef struct {
+    const Heroes *heroes;
+    const Player *player;
+} HeroesCardContext;
+
+static void HeroesDrawRosterCard(const HeroCard *card, Rectangle cell, int roster_index, const void *context) {
+    const HeroesCardContext *c = (const HeroesCardContext *)context;
+    bool in_squad = PlayerSquadFindUnit(c->player, c->player->current_squad, roster_index) >= 0;
+    RosterCardState state = {
+        .progress = card->xp_frac,
+        .maxed = card->xp_frac >= 1.0f,
+        .in_squad = in_squad,
+        .in_use = in_squad,
+        .selected = roster_index == c->heroes->selected,
+    };
+    RosterDrawCard(card, cell, &state);
+}
+
+HeroesButton HeroesDrawNav(Heroes *h, HeroesButton active, bool interactive, int runes_badge, int gallery_badge) {
+    HeroesButton clicked = HEROES_NONE;
+    float w = 112.0f;
+    float x = UiWidth() - w;
+    float y = 84.0f;
+    float gap = 4.0f;
+
+    Rectangle train = {x, y, w, w};
+    if (active == HEROES_CONSUME)
+        ButtonDrawSelected(&h->train, train);
+    else if (ButtonDrawEx(&h->train, train, interactive))
+        clicked = HEROES_CONSUME;
+    y += w + gap;
+    ButtonDrawEx(&h->fortify, (Rectangle){x, y, w, w}, false);
+    y += w + gap;
+    Rectangle runes = {x, y, w, w};
+    if (active == HEROES_RUNES)
+        ButtonDrawSelected(&h->runes, runes);
+    else if (ButtonDrawEx(&h->runes, runes, interactive))
+        clicked = HEROES_RUNES;
+    ButtonDrawBadge(runes, runes_badge);
+    y += w + gap;
+    Rectangle gallery = {x, y, w, w};
+    if (ButtonDrawEx(&h->gallery, gallery, interactive)) clicked = HEROES_GALLERY;
+    if (active == HEROES_GALLERY) ButtonDrawVisual(&h->gallery, gallery, true);
+    ButtonDrawBadge(gallery, gallery_badge);
+    y += w + gap;
+    Rectangle squad = {x, y, w, w};
+    if (active == HEROES_SQUAD)
+        ButtonDrawSelected(&h->squad, squad);
+    else if (ButtonDrawEx(&h->squad, squad, interactive))
+        clicked = HEROES_SQUAD;
+    return clicked;
+}
+
+int HeroesDrawSquadTabs(Heroes *h, const Player *p, Rectangle view) {
+    int requested = -1;
+    Font font = GuiFont(FNT_MENU);
+    float size = view.height, stride = size - 3.0f;
+    float content = size + (PLAYER_MAX_SQUADS - 1) * stride;
+    float max_scroll = content > view.width ? content - view.width : 0.0f;
+
+    Vector2 mouse = UiMouse();
+    bool over = CheckCollisionPointRec(mouse, view);
+    bool ui_input = !UiInputBlocked();
+    if (ui_input && over && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        h->tab_dragging = true;
+        h->tab_dragged = false;
+        h->tab_drag_start = mouse.x;
+        h->tab_scroll_start = h->tab_scroll;
+    }
+    if (h->tab_dragging) {
+        float dx = mouse.x - h->tab_drag_start;
+        if (fabsf(dx) > 10.0f) h->tab_dragged = true;
+        if (h->tab_dragged) h->tab_scroll = h->tab_scroll_start - dx;
+    }
+    if (ui_input && over) h->tab_scroll -= GetMouseWheelMove() * stride;
+    if (h->tab_snap) {
+        float ax = p->current_squad * stride;
+        if (ax < h->tab_scroll) h->tab_scroll = ax;
+        if (ax + size > h->tab_scroll + view.width) h->tab_scroll = ax + size - view.width;
+        h->tab_snap = false;
+    }
+    if (h->tab_scroll > max_scroll) h->tab_scroll = max_scroll;
+    if (h->tab_scroll < 0.0f) h->tab_scroll = 0.0f;
+
+    bool released = ui_input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+    float ui = UiScale();
+    BeginScissorMode((int)(view.x * ui), (int)(view.y * ui), (int)(view.width * ui), (int)(view.height * ui));
+    for (int q = 0; q < PLAYER_MAX_SQUADS; q++) {
+        Rectangle r = {view.x + q * stride - h->tab_scroll, view.y, size, size};
+        bool active = p->current_squad == q;
+
+        Texture2D slab = GuiTex(
+            q == 0 ? (active ? GUI_TAB_DEFENSE_ON : GUI_TAB_DEFENSE) : (active ? GUI_TAB_SQUAD_ON : GUI_TAB_SQUAD)
+        );
+        UiDrawTexture(slab, r, WHITE);
+        if (q == 1) {
+            Texture2D cup = GuiTex(active ? GUI_TAB_TROPHY_ON : GUI_TAB_TROPHY);
+            float cw = size * 0.72f;
+            Rectangle cr = {r.x + (size - cw) * 0.5f, r.y + (size - cw) * 0.5f, cw, cw};
+            UiDrawTexture(cup, cr, WHITE);
+        }
+
+        char num[4];
+        snprintf(num, sizeof(num), "%d", q + 1);
+        float fs = size * 0.55f;
+        UiDrawTextCentered(font, num, (Rectangle){r.x, r.y, size, size}, fs, WHITE);
+
+        if (released && h->tab_dragging && !h->tab_dragged && !active && CheckCollisionPointRec(mouse, r)) {
+            GuiClickSoundPlay();
+            requested = q;
+        }
+    }
+    EndScissorMode();
+    if (released) h->tab_dragging = false;
+    return requested;
+}
+
+static const Rectangle HEROES_SQUAD_TABS = {8.0f, 644.0f, 246.0f, 64.0f};
 
 HeroesButton HeroesDraw(Heroes *h, Player *p) {
     HeroesButton clicked = HEROES_NONE;
 
+    HeroesCardContext card_context = {h, p};
+    int hovered =
+        RosterDraw(&h->roster, h->cards, p, !UiInputBlocked() && h->selected < 0, HeroesDrawRosterCard, &card_context);
     {
-        Texture2D panel = GuiTex(GUI_HEROES_PANEL);
-        Rectangle dst = {0, 72, panel.width / 2.0f, panel.height + 128.0f};
-        UiDrawTexture(panel, dst, (Color){255, 255, 255, 236});
-    }
-
-    {
-        Font font = GuiFont(FNT_COOL);
-        const char *title = LocGet("ROSTER_FILTER_ALL_HEROES");
-        float fs = 20.0f;
-        Vector2 tsz = MeasureTextEx(font, title, fs, 1.0f);
-        DrawTextEx(font, title, (Vector2){(150.0f - tsz.x) * 0.5f, 112.0f}, fs, 1.0f, (Color){235, 232, 220, 255});
-    }
-
-    int hovered = -1;
-    {
-        float cell = 112.0f;
-        float x0 = 4.0f, y0 = 156.0f;
-        Rectangle view = {0.0f, y0, 232.0f, 452.0f};
-        int rows = (h->card_count + HEROES_CARD_COLS - 1) / HEROES_CARD_COLS;
-        float content = rows * cell;
-        float max_scroll = content > view.height ? content - view.height : 0.0f;
-        bool over_view = CheckCollisionPointRec(UiMouse(), view);
-        if (over_view) h->card_scroll -= GetMouseWheelMove() * 50.0f;
-        if (h->card_scroll > max_scroll) h->card_scroll = max_scroll;
-        if (h->card_scroll < 0.0f) h->card_scroll = 0.0f;
-
-        float ui = UiScale();
-        BeginScissorMode((int)(view.x * ui), (int)(view.y * ui), (int)(view.width * ui), (int)(view.height * ui));
-        for (int i = 0; i < h->card_count; i++) {
-            Rectangle r = {
-                x0 + (i % HEROES_CARD_COLS) * cell, y0 + (i / HEROES_CARD_COLS) * cell - h->card_scroll, cell, cell
-            };
-            if (r.y + cell < view.y || r.y > view.y + view.height) continue;
-            if (i == h->selected) {
-                Texture2D glow = GuiTex(GUI_CARD_SELECT);
-                Rectangle gr = {r.x - cell * 0.05f, r.y - cell * 0.05f, cell * 1.1f, cell * 1.1f};
-                UiDrawTexture(glow, gr, WHITE);
-            }
-            HeroesDrawCard(&h->cards[i], r);
-            if (over_view && CheckCollisionPointRec(UiMouse(), r)) hovered = i;
-        }
-        EndScissorMode();
-    }
-    {
-        Font font = GuiFont(FNT_MENU);
-        float size = 64.0f, stride = size - 3.0f;
-        Rectangle view = {8.0f, 612.0f, 216.0f, size};
-        float content = size + (PLAYER_MAX_SQUADS - 1) * stride;
-        float max_scroll = content > view.width ? content - view.width : 0.0f;
-
-        Vector2 mouse = UiMouse();
-        bool over = CheckCollisionPointRec(mouse, view);
-        bool ui_input = !UiInputBlocked();
-        if (ui_input && over && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-            h->tab_dragging = true;
-            h->tab_dragged = false;
-            h->tab_drag_start = mouse.x;
-            h->tab_scroll_start = h->tab_scroll;
-        }
-        if (h->tab_dragging) {
-            float dx = mouse.x - h->tab_drag_start;
-            if (fabsf(dx) > 10.0f) h->tab_dragged = true;
-            if (h->tab_dragged) h->tab_scroll = h->tab_scroll_start - dx;
-        }
-        if (ui_input && over) h->tab_scroll -= GetMouseWheelMove() * stride;
-        if (h->tab_snap) {
-            float ax = p->current_squad * stride;
-            if (ax < h->tab_scroll) h->tab_scroll = ax;
-            if (ax + size > h->tab_scroll + view.width) h->tab_scroll = ax + size - view.width;
-            h->tab_snap = false;
-        }
-        if (h->tab_scroll > max_scroll) h->tab_scroll = max_scroll;
-        if (h->tab_scroll < 0.0f) h->tab_scroll = 0.0f;
-
-        bool released = ui_input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
-        float ui = UiScale();
-        BeginScissorMode((int)(view.x * ui), (int)(view.y * ui), (int)(view.width * ui), (int)(view.height * ui));
-        for (int q = 0; q < PLAYER_MAX_SQUADS; q++) {
-            Rectangle r = {view.x + q * stride - h->tab_scroll, view.y, size, size};
-            bool active = p->current_squad == q;
-
-            Texture2D slab = GuiTex(
-                q == 0 ? (active ? GUI_TAB_DEFENSE_ON : GUI_TAB_DEFENSE) : (active ? GUI_TAB_SQUAD_ON : GUI_TAB_SQUAD)
-            );
-            UiDrawTexture(slab, r, WHITE);
-            if (q == 1) {
-                Texture2D cup = GuiTex(active ? GUI_TAB_TROPHY_ON : GUI_TAB_TROPHY);
-                float cw = size * 0.72f;
-                Rectangle cr = {r.x + (size - cw) * 0.5f, r.y + (size - cw) * 0.5f, cw, cw};
-                UiDrawTexture(cup, cr, WHITE);
-            }
-
-            char num[4];
-            snprintf(num, sizeof(num), "%d", q + 1);
-            float fs = size * 0.55f;
-            UiDrawTextCentered(font, num, (Rectangle){r.x, r.y, size, size}, fs, WHITE);
-
-            if (released && h->tab_dragging && !h->tab_dragged && !active && CheckCollisionPointRec(mouse, r)) {
-                GuiClickSoundPlay();
-                PlayerSquadSelect(p, q);
-            }
-        }
-        EndScissorMode();
-        if (released) h->tab_dragging = false;
+        int requested_squad = HeroesDrawSquadTabs(h, p, HEROES_SQUAD_TABS);
+        if (requested_squad >= 0) PlayerSquadSelect(p, requested_squad);
     }
 
     {
@@ -741,27 +972,16 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
     }
 
     {
-        float w = 112.0f;
-        float x = UiWidth() - w;
-        float y = 84.0f;
-        float gap = 4.0f;
-
-        ButtonDrawEx(&h->train, (Rectangle){x, y, w, w}, false);
-        y += w + gap;
-        ButtonDrawEx(&h->fortify, (Rectangle){x, y, w, w}, false);
-        y += w + gap;
-        ButtonDrawEx(&h->runes, (Rectangle){x, y, w, w}, false);
-        y += w + gap;
-        ButtonDrawEx(&h->gallery, (Rectangle){x, y, w, w}, false);
-        y += w + gap;
-        ButtonDrawSelected(&h->squad, (Rectangle){x, y, w, w});
+        HeroesButton nav =
+            HeroesDrawNav(h, HEROES_SQUAD, buttons_active, RuneUnseenCount(&p->runes, RuneNow()), p->gallery.badge);
+        if (nav != HEROES_NONE) clicked = nav;
     }
 
     if (h->selected >= 0) HeroesDrawDetails(&h->cards[h->selected], 156.0f, UiWidth() - 256.0f);
 
     if (h->drag_icon >= 0) {
         Vector2 m = UiMouse();
-        if (m.x < 256.0f) {
+        if (m.x < ROSTER_PANEL_WIDTH) {
             Texture2D pt = h->cards[h->drag_icon].portrait;
             float sz = 82.0f * 0.85f * 1.9f;
             Rectangle dst = {m.x - sz * 0.5f, m.y - sz * 0.5f, sz, sz};

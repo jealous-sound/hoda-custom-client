@@ -23,6 +23,8 @@ typedef struct {
 #define SIM_MAX_TARGETS SIM_UNIT_COUNT
 #define SIM_MAX_ACTIONS 4096
 #define SIM_INIT_CLASS_SPAN 40
+#define SIM_RUNE_TARGET_WEIGHT_PER_LEVEL 0.5f
+#define SIM_RUNE_SHIELDED_HIT_MIN_DAMAGE 1
 
 typedef enum { SIM_INIT_CLASS_SLOW, SIM_INIT_CLASS_MEDIUM, SIM_INIT_CLASS_FAST } SimInitiativeClass;
 
@@ -63,6 +65,9 @@ typedef struct {
     bool player_won;
     unsigned formation_faction[2];
     float formation_bonus_pct[2];
+    RuneBonus rune_bonus[2];
+    int rune_defs[RUNE_SLOT_COUNT];
+    int rune_def_count;
     unsigned rng;
 } BattleSim;
 
@@ -748,7 +753,7 @@ static void SimUnitsInit(SimUnit *units, int side, int slot, const Character *ch
     u->slot = slot;
     u->power = u->start_power = CharacterStatPower(ch);
     u->max_health = CharacterStatHealth(ch);
-    u->crit_pct = 1.0f;
+    u->crit_pct = (float)(ch->crit_chance > CONSUME_BASE_CRIT_CHANCE ? ch->crit_chance : CONSUME_BASE_CRIT_CHANCE);
     u->init_class = ch->speed == SPEED_QUICK  ? SIM_INIT_CLASS_FAST
                     : ch->speed == SPEED_SLOW ? SIM_INIT_CLASS_SLOW
                                               : SIM_INIT_CLASS_MEDIUM;
@@ -956,6 +961,40 @@ static float SimPassiveBonusDamagePct(const BattleSim *s, const SimUnit *attacke
     return bonus;
 }
 
+static bool SimRuneTargetBeats(RuneTargetPreference preference, const SimUnit *a, const SimUnit *b) {
+    switch (preference) {
+        case RUNE_TARGET_HIGHEST_POWER:
+            return a->power > b->power;
+        case RUNE_TARGET_HIGHEST_SPEED:
+            return a->init_class > b->init_class;
+        case RUNE_TARGET_LOWEST_SPEED:
+            return a->init_class < b->init_class;
+        case RUNE_TARGET_LOWEST_HEALTH:
+            return (long long)a->health * b->max_health < (long long)b->health * a->max_health;
+        default:
+            return false;
+    }
+}
+
+static bool SimRuneTargetPreferred(const BattleSim *s, RuneTargetPreference preference, const SimUnit *t) {
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        const SimUnit *other = &s->units[t->side * SQUAD_SLOT_COUNT + slot];
+        if (other->alive && SimRuneTargetBeats(preference, other, t)) return false;
+    }
+    return true;
+}
+
+static float SimRuneTargetMultiplier(const BattleSim *s, const SimUnit *attacker, const SimUnit *t) {
+    const RuneBonus *bonus = &s->rune_bonus[attacker->side];
+    float multiplier = 1.0f;
+    for (int preference = 0; preference < RUNE_TARGET_COUNT; preference++) {
+        int level = bonus->target_level[preference];
+        if (level > 0 && SimRuneTargetPreferred(s, (RuneTargetPreference)preference, t))
+            multiplier *= 1.0f + level * SIM_RUNE_TARGET_WEIGHT_PER_LEVEL;
+    }
+    return multiplier;
+}
+
 static float SimTargetWeight(const BattleSim *s, const SimUnit *attacker, const SimUnit *t) {
     float w = 1.0f;
     bool explicit_incoming = false;
@@ -969,6 +1008,7 @@ static float SimTargetWeight(const BattleSim *s, const SimUnit *attacker, const 
     if (SimHasSpec(attacker->ch, SPEC_FLANK) && !t->ch->giant && SquadSlotIsBack(t->slot)) w *= 3.0f;
     if (t->marked > 0) w *= 4.0f;
     w *= SimPassiveOutgoingTargetMultiplier(s, attacker, t);
+    w *= SimRuneTargetMultiplier(s, attacker, t);
     return w;
 }
 
@@ -1156,6 +1196,34 @@ static void SimApplyPerHitSelfEffects(BattleSim *s, int actor_idx, const AttackR
     SimApplyTarget(s, a, &st);
 }
 
+static bool SimRuneResists(BattleSim *s, int resist_pct) {
+    return resist_pct > 0 && SimChance(s, resist_pct);
+}
+
+static int SimRuneMitigatedDamage(const RuneBonus *bonus, int damage) {
+    if (damage <= 0 || (!bonus->damage_shield && !bonus->damage_resist_pct)) return damage;
+    int mitigated = damage - bonus->damage_shield;
+    if (bonus->damage_resist_pct > 0) {
+        int resist = bonus->damage_resist_pct < RUNE_RESIST_MAX_PCT ? bonus->damage_resist_pct : RUNE_RESIST_MAX_PCT;
+        mitigated = (int)lroundf(mitigated * ((100 - resist) / 100.0f));
+    }
+    return mitigated > SIM_RUNE_SHIELDED_HIT_MIN_DAMAGE ? mitigated : SIM_RUNE_SHIELDED_HIT_MIN_DAMAGE;
+}
+
+static bool SimRuneRetaliates(const BattleSim *s, const SimUnit *actor, const SimUnit *t) {
+    if (t->side == actor->side) return false;
+    bool hidden = s->rune_bonus[actor->side].stealth && !s->rune_bonus[t->side].perceptive;
+    return s->rune_bonus[t->side].retaliation_pct > 0 && !hidden;
+}
+
+static void SimApplyRuneRetaliation(BattleSim *s, int actor_idx, int reflected) {
+    if (reflected <= 0 || !s->units[actor_idx].alive) return;
+    BattleSimAction *a = SimEmit(s, actor_idx);
+    if (!a) return;
+    a->replay_attack = false;
+    SimApplyTarget(s, a, &(BattleSimTarget){.unit = actor_idx, .health_delta = -reflected});
+}
+
 static void SimAttack(
     BattleSim *s, int actor_idx, const AbilityRecipe *r, const AttackRecipe *hit, bool attack, bool apply_secondary
 ) {
@@ -1209,12 +1277,17 @@ static void SimAttack(
             base[defender] += moved;
         }
     }
+    for (int i = 0; i < n; i++) {
+        const SimUnit *t = &s->units[picked[i]];
+        if (t->side != actor->side) base[i] = SimRuneMitigatedDamage(&s->rune_bonus[t->side], base[i]);
+    }
 
     struct {
         BattleSimTarget t;
         BattleAilment ailments;
     } hits[SIM_MAX_TARGETS];
     int hit_count = 0;
+    int reflected = 0;
     int assassinate_target = -1;
     if (hit->assassinate_pct > 0 && SimChance(s, hit->assassinate_pct)) {
         int choices[SIM_MAX_TARGETS], choice_count = 0;
@@ -1230,15 +1303,22 @@ static void SimAttack(
 
         BattleSimTarget bt = {.unit = picked[i], .health_delta = -base[i], .health_faction_delta = -extra};
         BattleAilment ailments = AIL_NONE;
-        if (SimChance(s, hit->stun_pct)) ailments |= AIL_STUNNED;
-        if (SimChance(s, hit->slow_pct)) bt.initiative_delta += hit->slow_amt;
-        if (hit->drain_pct > 0 && (hit->drain_chance == 0 || SimChance(s, hit->drain_chance)))
+        const RuneBonus *defense = &s->rune_bonus[t->side];
+        if (SimChance(s, hit->stun_pct) && !SimRuneResists(s, defense->stun_resist_pct)) ailments |= AIL_STUNNED;
+        if (SimChance(s, hit->slow_pct) && !SimRuneResists(s, defense->slow_resist_pct))
+            bt.initiative_delta += hit->slow_amt;
+        if (hit->drain_pct > 0 && (hit->drain_chance == 0 || SimChance(s, hit->drain_chance)) &&
+            !SimRuneResists(s, defense->drain_resist_pct))
             bt.power_delta -= (int)lroundf(actor->power * (hit->drain_pct / 100.0f));
-        if (SimChance(s, hit->curse_power_pct)) ailments |= AIL_CURSE_POWER;
+        if (SimChance(s, hit->curse_power_pct) && !defense->curse_power_immune) ailments |= AIL_CURSE_POWER;
         if (SimChance(s, hit->curse_health_pct)) ailments |= AIL_CURSE_HEALTH;
         if (picked[i] == assassinate_target) {
             bt.health_delta = extra < t->health ? extra - t->health : 0;
             bt.health_faction_delta = extra < t->health ? -extra : -t->health;
+        }
+        if (SimRuneRetaliates(s, actor, t)) {
+            float dealt = -(float)(bt.health_delta + bt.health_faction_delta);
+            reflected += (int)lroundf(dealt * (defense->retaliation_pct / 100.0f));
         }
 
         hits[hit_count].t = bt;
@@ -1282,7 +1362,10 @@ static void SimAttack(
 
     SimApplyPerHitSelfEffects(s, actor_idx, hit);
 
-    if (!apply_secondary) return;
+    if (!apply_secondary) {
+        SimApplyRuneRetaliation(s, actor_idx, reflected);
+        return;
+    }
 
     const SecondaryEffects *fx = &r->fx;
     bool self_power = fx->self_power_pct != 0 && (fx->self_power_chance == 0 || SimChance(s, fx->self_power_chance));
@@ -1325,6 +1408,7 @@ static void SimAttack(
         }
         if (sec->target_count == 0) s->action_count--;
     }
+    SimApplyRuneRetaliation(s, actor_idx, reflected);
 }
 
 static AttackRecipe SimFollowupAttack(const AbilityRecipe *recipe, int index) {
@@ -1422,7 +1506,7 @@ static void SimTakeTurn(BattleSim *s, int actor_idx) {
         if (no_attack) primary.status_only = true;
         SimAttack(s, actor_idx, r, &primary, !no_attack || SimHasHostileEffect(&primary), true);
 
-        if (r->effect_pct > 0 && !SimTeamDead(s, 1 - u->side) && SimChance(s, r->effect_pct)) {
+        if (r->effect_pct > 0 && u->alive && !SimTeamDead(s, 1 - u->side) && SimChance(s, r->effect_pct)) {
             AttackRecipe effect = r->effect;
             if (no_attack) effect.status_only = true;
             SimAttack(s, actor_idx, r, &effect, !no_attack || SimHasHostileEffect(&effect), false);
@@ -1441,7 +1525,8 @@ static void SimTakeTurn(BattleSim *s, int actor_idx) {
 
 static int SimRollInitiative(BattleSim *s, const SimUnit *u) {
     int lo = u->init_class * SIM_INIT_CLASS_SPAN, hi = lo + SIM_INIT_CLASS_SPAN - 1;
-    return SimRange(s, lo, hi) + u->cur_initiative;
+    int rune_steps = s->rune_bonus[u->side].initiative_steps;
+    return SimRange(s, lo, hi) + u->cur_initiative + rune_steps * SIM_INIT_CLASS_SPAN;
 }
 
 static int SimRollRoundOrder(BattleSim *s, int order[SIM_UNIT_COUNT]) {
@@ -1468,6 +1553,19 @@ static int SimRollRoundOrder(BattleSim *s, int order[SIM_UNIT_COUNT]) {
 
 #define SIM_ROUND_CAP 10
 
+static void SimUnitsRuneBonus(SimUnit *units, int side, const RuneBonus *bonus) {
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        SimUnit *u = &units[side * SQUAD_SLOT_COUNT + slot];
+        if (!u->present) continue;
+        u->power = u->start_power = RuneApplyPct(u->power, bonus->power_pct);
+        u->max_health = u->health = RuneApplyPct(u->max_health, bonus->health_pct);
+    }
+}
+
+static RuneBonus SimPlayerRuneBonus(const Player *player) {
+    return RuneSquadBonus(&player->runes, player->current_squad, RuneNow());
+}
+
 static void SimUnitsSetup(
     SimUnit *units, unsigned faction[2], float bonus_pct[2], const Player *player, const BattleRoster *enemy
 ) {
@@ -1479,11 +1577,15 @@ static void SimUnitsSetup(
     SimUnitsBattleStartPassives(units);
     SimUnitsFormationBonus(units, 0, &faction[0], &bonus_pct[0]);
     SimUnitsFormationBonus(units, 1, &faction[1], &bonus_pct[1]);
+    RuneBonus rune_bonus = SimPlayerRuneBonus(player);
+    SimUnitsRuneBonus(units, 0, &rune_bonus);
 }
 
 void BattleSimSetup(BattleSim *s, const Player *player, const BattleRoster *enemy) {
     memset(s, 0, sizeof(*s));
     SimUnitsSetup(s->units, s->formation_faction, s->formation_bonus_pct, player, enemy);
+    s->rune_bonus[0] = SimPlayerRuneBonus(player);
+    s->rune_def_count = RuneActiveDefs(&player->runes, player->current_squad, RuneNow(), s->rune_defs);
 }
 
 void BattleSimPreview(SimUnit units[SIM_UNIT_COUNT], const Player *player, const BattleRoster *enemy) {

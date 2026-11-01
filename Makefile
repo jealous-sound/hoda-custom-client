@@ -1,5 +1,5 @@
 CC      = cc
-CFLAGS  = -Wall -std=c99 -I/opt/homebrew/opt/raylib/include
+CFLAGS  = -Wall -O2 -std=c99 -I/opt/homebrew/opt/raylib/include
 LDFLAGS = -L/opt/homebrew/opt/raylib/lib
 LIBS    = -lraylib -framework Cocoa -framework IOKit -framework OpenGL
 
@@ -24,6 +24,10 @@ test: $(TEST_TARGET)
 	python3 tools/validate_unit_vfx.py
 	python3 tools/validate_cache_refs.py
 	python3 tools/build_campaign_node_layout.py --check
+	python3 tools/build_runes.py --check
+	python3 tools/build_missions.py --check
+	python3 tools/build_consume_tables.py --check
+	python3 tools/build_consume_scene.py --check
 	./$(TEST_TARGET)
 
 run: $(TARGET)

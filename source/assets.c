@@ -39,6 +39,23 @@ typedef enum {
     GUI_BTN_RUNES_ON,
     GUI_BTN_GALLERY,
     GUI_BTN_GALLERY_ON,
+    GUI_GALLERY_HOME_BG,
+    GUI_GALLERY_HOME_ART,
+    GUI_GALLERY_DETAILS,
+    GUI_GALLERY_CATEGORY,
+    GUI_GALLERY_FILTER,
+    GUI_GALLERY_FILTER_ON,
+    GUI_GALLERY_ARROW,
+    GUI_GALLERY_ARROW_ON,
+    GUI_GALLERY_PAGE_ARROW,
+    GUI_GALLERY_ROW_FILL,
+    GUI_GALLERY_FILTER_FILL,
+    GUI_GALLERY_IN_SQUAD,
+    GUI_GALLERY_SHADOW_COMMON,
+    GUI_GALLERY_SHADOW_UNCOMMON,
+    GUI_GALLERY_SHADOW_RARE,
+    GUI_GALLERY_SHADOW_EPIC,
+    GUI_GALLERY_SHADOW_LEGENDARY,
     GUI_BTN_SQUAD,
     GUI_BTN_SQUAD_ON,
     GUI_BTN_MAINQUEST,
@@ -101,6 +118,14 @@ typedef enum {
     GUI_TAB_DEFENSE_ON,
     GUI_TAB_TROPHY,
     GUI_TAB_TROPHY_ON,
+    GUI_MISSION_ROW,
+    GUI_MISSION_STAR,
+    GUI_MISSION_CLAIM,
+    GUI_MISSION_CLAIM_ON,
+    GUI_MISSION_PROGRESS,
+    GUI_MISSION_PROGRESS_FILL,
+    GUI_MISSION_GOLD,
+    GUI_MISSION_GEM,
     GUI_CARD_BAR_BG,
     GUI_CARD_BAR_FILL,
 
@@ -201,6 +226,10 @@ typedef enum {
     GUI_MM_PANEL,
     GUI_MM_TROUGH,
     GUI_MM_RUNE_SLOT,
+    GUI_RUNE_EMPTY_SLOT,
+    GUI_RUNE_TILE,
+    GUI_RUNE_DETAILS,
+    GUI_RUNE_HIGHLIGHT,
     GUI_MM_TAG,
     GUI_MM_XP,
     GUI_MM_SQUAD_FRAME,
@@ -259,6 +288,35 @@ typedef enum {
     GUI_SPLASH_GLOW,
     GUI_SPLASH_SMOKE,
 
+    GUI_CONSUME_TIER_UP,
+    GUI_CONSUME_POWER_SLOT,
+    GUI_CONSUME_IN_USE,
+    GUI_CONSUME_TRAY,
+    GUI_CONSUME_METER,
+    GUI_CONSUME_HEADER,
+    GUI_CONSUME_FLY,
+    GUI_CONSUME_ICON_TIER,
+    GUI_CONSUME_ICON_COMBINE,
+    GUI_CONSUME_ICON_XP,
+    GUI_CONSUME_RESULT_PANEL,
+    GUI_CONSUME_CATEGORY,
+    GUI_CONSUME_CATEGORY_ON,
+    GUI_CONSUME_SHOP,
+    GUI_CONSUME_SHOP_ON,
+    GUI_CONSUME_INFO,
+    GUI_CONSUME_INFO_ON,
+    GUI_CONSUME_RESULT_HEROES,
+    GUI_CONSUME_RESULT_HEROES_ON,
+    GUI_CONSUME_RESULT_PVE,
+    GUI_CONSUME_RESULT_PVE_ON,
+    GUI_CONSUME_RESULT_PVP,
+    GUI_CONSUME_RESULT_PVP_ON,
+    GUI_CONSUME_BAR_NEW,
+    GUI_CONSUME_CHECK_OFF,
+    GUI_CONSUME_CHECK_ON,
+    GUI_CONSUME_LINE,
+    GUI_CONSUME_BAR_OLD,
+    GUI_CONSUME_BAR_XP_NEW,
     GUI_COUNT
 } GuiId;
 
@@ -269,6 +327,7 @@ typedef enum {
     SND_UI_HOME,
     SND_UI_POPUP_CLOSE,
     SND_UI_TAB,
+    SND_MISSION_COLLECT,
     SND_STAMINA_REFRESH,
     SND_PVE_NODE_SELECTED,
     SND_COMBAT_SPEED,
@@ -277,6 +336,7 @@ typedef enum {
     SND_LEVEL_UP,
     SND_PVE_NODE_TRANSITION,
     SND_MAP_TRANSITION,
+    SND_TALLY_GEM,
     SND_TALLY_START,
     SND_TALLY_HIT,
     SND_TALLY_END,
@@ -286,12 +346,20 @@ typedef enum {
     SND_PACK_SHUFFLE,
     SND_PACK_REVEAL,
     SND_STORE_INFO,
+    SND_RUNE_PICKUP,
+    SND_RUNE_PLACE,
+    SND_RUNE_ACTIVATE,
     SND_STORE_ERROR,
     SND_PACK_COMMON,
     SND_PACK_UNCOMMON,
     SND_PACK_RARE,
     SND_PACK_EPIC,
     SND_PACK_LEGENDARY,
+    SND_CONSUME_COMBINE,
+    SND_CONSUME_LEVEL_1,
+    SND_CONSUME_LEVEL_2,
+    SND_CONSUME_LEVEL_3,
+    SND_CONSUME_LEVEL_4,
     SND_COUNT
 } SoundId;
 
@@ -355,6 +423,28 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_BTN_RUNES_ON] = CACHE_RESOURCE("Btn_Heroes_RunesActive"),
     [GUI_BTN_GALLERY] = CACHE_RESOURCE("Btn_Heroes_GalleryDefault"),
     [GUI_BTN_GALLERY_ON] = CACHE_RESOURCE("Btn_Heroes_GalleryActive"),
+    [GUI_GALLERY_HOME_BG] = CACHE_RESOURCE("gallery_home_bg"),
+    [GUI_GALLERY_HOME_ART] = CACHE_RESOURCE("gallery_home_art"),
+    [GUI_GALLERY_DETAILS] = CACHE_RESOURCE("codex_details_container"),
+    [GUI_GALLERY_CATEGORY] = CACHE_RESOURCE("codex_category"),
+    [GUI_GALLERY_FILTER] = CACHE_RESOURCE("codex_filter"),
+    [GUI_GALLERY_FILTER_ON] = CACHE_RESOURCE("codex_filter_select"),
+    [GUI_GALLERY_ARROW] = CACHE_BUNDLE_RESOURCE("GalleryPopupV", "shared_arrow"),
+    [GUI_GALLERY_ARROW_ON] = CACHE_BUNDLE_RESOURCE("GalleryPopupV", "shared_arrow_selected"),
+    [GUI_GALLERY_PAGE_ARROW] = CACHE_BUNDLE_RESOURCE("GalleryPopupV", "ftue_arrow_small"),
+    [GUI_GALLERY_ROW_FILL] = CACHE_BUNDLE_RESOURCE("GalleryPopupV", "Bar_FillTeamHealth"),
+    [GUI_GALLERY_FILTER_FILL] = CACHE_BUNDLE_RESOURCE("GalleryPopupV", "Bar_ProgressFill_DarkGrey_Vert"),
+    [GUI_GALLERY_IN_SQUAD] = CACHE_BUNDLE_RESOURCE("GalleryPortraitSmart", "Ico_UnitDeployed"),
+    [GUI_GALLERY_SHADOW_COMMON] =
+        CACHE_BUNDLE_RESOURCE("shadow_portrait_common_borderless", "tex.shadow_portrait_common_borderless"),
+    [GUI_GALLERY_SHADOW_UNCOMMON] =
+        CACHE_BUNDLE_RESOURCE("shadow_portrait_uncommon_borderless", "tex.shadow_portrait_uncommon_borderless"),
+    [GUI_GALLERY_SHADOW_RARE] =
+        CACHE_BUNDLE_RESOURCE("shadow_portrait_rare_borderless", "tex.shadow_portrait_rare_borderless"),
+    [GUI_GALLERY_SHADOW_EPIC] =
+        CACHE_BUNDLE_RESOURCE("shadow_portrait_epic_borderless", "tex.shadow_portrait_epic_borderless"),
+    [GUI_GALLERY_SHADOW_LEGENDARY] =
+        CACHE_BUNDLE_RESOURCE("shadow_portrait_legendary_borderless", "tex.shadow_portrait_legendary_borderless"),
     [GUI_BTN_SQUAD] = CACHE_RESOURCE("Btn_Heroes_Squad"),
     [GUI_BTN_SQUAD_ON] = CACHE_RESOURCE("Btn_Heroes_SquadActive"),
     [GUI_BTN_MAINQUEST] = CACHE_RESOURCE("ButtonMainQuest"),
@@ -417,6 +507,14 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_TAB_DEFENSE_ON] = CACHE_RESOURCE("multisquad_defensive_select"),
     [GUI_TAB_TROPHY] = CACHE_RESOURCE("tex.trophy"),
     [GUI_TAB_TROPHY_ON] = CACHE_RESOURCE("tex.trophy_active"),
+    [GUI_MISSION_ROW] = CACHE_BUNDLE_RESOURCE("MissionLineSmart", "bg_achievement"),
+    [GUI_MISSION_STAR] = CACHE_BUNDLE_RESOURCE("MissionLineSmart", "star"),
+    [GUI_MISSION_CLAIM] = CACHE_BUNDLE_RESOURCE("MissionLineSmart", "Btn_Buy"),
+    [GUI_MISSION_CLAIM_ON] = CACHE_BUNDLE_RESOURCE("MissionLineSmart", "Btn_Buy_active"),
+    [GUI_MISSION_PROGRESS] = CACHE_BUNDLE_RESOURCE("MissionLineSmart", "pve_node_progress_bar"),
+    [GUI_MISSION_PROGRESS_FILL] = CACHE_BUNDLE_RESOURCE("MissionLineSmart", "Bar_ProgressFill_DarkGrey_Vert"),
+    [GUI_MISSION_GOLD] = CACHE_BUNDLE_RESOURCE("LeaderboardPopupV", "Store_IconCoin"),
+    [GUI_MISSION_GEM] = CACHE_BUNDLE_RESOURCE("LeaderboardPopupV", "Icon_GemHUD"),
     [GUI_CARD_BAR_BG] = CACHE_RESOURCE("Bg_Exp_Background"),
     [GUI_CARD_BAR_FILL] = CACHE_RESOURCE("MeterFillBlue"),
 
@@ -517,6 +615,39 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_MM_PANEL] = CACHE_RESOURCE("FrameStaticHeaderLg"),
     [GUI_MM_TROUGH] = CACHE_RESOURCE("Bg_TipsSliced"),
     [GUI_MM_RUNE_SLOT] = CACHE_RESOURCE("tex.add_rune_slot"),
+    [GUI_RUNE_EMPTY_SLOT] = CACHE_RESOURCE("tex.empty_rune_slot"),
+    [GUI_RUNE_TILE] = CACHE_RESOURCE("Bg_RuneTile"),
+    [GUI_CONSUME_TIER_UP] = CACHE_RESOURCE("tex.Ico_TierUp"),
+    [GUI_CONSUME_POWER_SLOT] = CACHE_RESOURCE("tex.Ico_Power"),
+    [GUI_CONSUME_IN_USE] = CACHE_RESOURCE("Ico_InUseCheck"),
+    [GUI_CONSUME_TRAY] = CACHE_RESOURCE("bg_unittraybake"),
+    [GUI_CONSUME_METER] = CACHE_RESOURCE("MeterBaseConsume"),
+    [GUI_CONSUME_HEADER] = CACHE_RESOURCE("FrameStaticHeaderLgWidth"),
+    [GUI_CONSUME_FLY] = CACHE_RESOURCE("FrameFlyText"),
+    [GUI_CONSUME_ICON_TIER] = CACHE_RESOURCE("IconTierAdd"),
+    [GUI_CONSUME_ICON_COMBINE] = CACHE_RESOURCE("IconCombine"),
+    [GUI_CONSUME_ICON_XP] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "tex.xp_nonumber"),
+    [GUI_CONSUME_RESULT_PANEL] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "tex.bg_trainingcritstats"),
+    [GUI_CONSUME_CATEGORY] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Btn_Category_Default"),
+    [GUI_CONSUME_CATEGORY_ON] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Btn_Category_Select"),
+    [GUI_CONSUME_SHOP] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "ButtonShopQuarterSizeDefault"),
+    [GUI_CONSUME_SHOP_ON] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "ButtonShopQuarterSizeSelected"),
+    [GUI_CONSUME_INFO] = CACHE_RESOURCE("ico_help_info"),
+    [GUI_CONSUME_INFO_ON] = CACHE_RESOURCE("ico_help_info_select"),
+    [GUI_CONSUME_RESULT_HEROES] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Btn_ResultsHeroesDefault2"),
+    [GUI_CONSUME_RESULT_HEROES_ON] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Btn_ResultsHeroesDefault2_active"),
+    [GUI_CONSUME_RESULT_PVE] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Btn_PVEHUB"),
+    [GUI_CONSUME_RESULT_PVE_ON] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Btn_PVEHUB_active"),
+    [GUI_CONSUME_RESULT_PVP] = CACHE_RESOURCE("Btn_PVPDefault2"),
+    [GUI_CONSUME_RESULT_PVP_ON] = CACHE_RESOURCE("Btn_PVPDefault2_active"),
+    [GUI_CONSUME_BAR_NEW] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Bar_Fill_Green"),
+    [GUI_CONSUME_CHECK_OFF] = APK_RESOURCE("Btn_Checkbox_Empty"),
+    [GUI_CONSUME_CHECK_ON] = EXTRA_ASSET_DIR "gui/Btn_Checkbox_Filled.png",
+    [GUI_CONSUME_LINE] = CACHE_RESOURCE("tex.SingleLineSeparator"),
+    [GUI_CONSUME_BAR_OLD] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "Bar_ProgressFill_Grey"),
+    [GUI_CONSUME_BAR_XP_NEW] = CACHE_BUNDLE_RESOURCE("ConsumeScreenV", "stamina_bar_new"),
+    [GUI_RUNE_DETAILS] = CACHE_RESOURCE("Bg_Rune_Details_Slim"),
+    [GUI_RUNE_HIGHLIGHT] = CACHE_RESOURCE("IconRuneHighlight"),
     [GUI_MM_TAG] = CACHE_RESOURCE("BG_RewardsTagShort"),
     [GUI_MM_XP] = CACHE_RESOURCE("tex.xp_nonumber"),
     [GUI_MM_SQUAD_FRAME] = CACHE_RESOURCE("squad_slot_container"),
@@ -607,6 +738,7 @@ static const char *const sound_paths[SND_COUNT] = {
     [SND_UI_HOME] = CACHE_RESOURCE("gui_home"),
     [SND_UI_POPUP_CLOSE] = CACHE_RESOURCE("gui_close"),
     [SND_UI_TAB] = CACHE_RESOURCE("gui_tab"),
+    [SND_MISSION_COLLECT] = CACHE_RESOURCE("gui_mission_collect"),
     [SND_STAMINA_REFRESH] = CACHE_RESOURCE("gui_stamina_refresh"),
     [SND_PVE_NODE_SELECTED] = CACHE_RESOURCE("gui_pve_node"),
     [SND_COMBAT_SPEED] = CACHE_RESOURCE("gui_bonus_speed"),
@@ -615,6 +747,7 @@ static const char *const sound_paths[SND_COUNT] = {
     [SND_LEVEL_UP] = CACHE_RESOURCE("mus_complete"),
     [SND_PVE_NODE_TRANSITION] = CACHE_RESOURCE("gui_pve_node_trans"),
     [SND_MAP_TRANSITION] = CACHE_RESOURCE("gui_map_transition"),
+    [SND_TALLY_GEM] = CACHE_RESOURCE("gui_tally_gem"),
     [SND_TALLY_START] = CACHE_RESOURCE("gui_tally_win_start"),
     [SND_TALLY_HIT] = CACHE_RESOURCE("gui_tally_hit"),
     [SND_TALLY_END] = CACHE_RESOURCE("gui_tally_win_end"),
@@ -624,12 +757,20 @@ static const char *const sound_paths[SND_COUNT] = {
     [SND_PACK_SHUFFLE] = CACHE_RESOURCE("gui_pack_open_shuffle"),
     [SND_PACK_REVEAL] = CACHE_RESOURCE("gui_pack_open_seq"),
     [SND_STORE_INFO] = CACHE_RESOURCE("gui_info"),
+    [SND_RUNE_PICKUP] = CACHE_RESOURCE("gui_rune_pickup"),
+    [SND_RUNE_PLACE] = CACHE_RESOURCE("gui_rune_place"),
+    [SND_RUNE_ACTIVATE] = CACHE_RESOURCE("gui_rune_activate"),
     [SND_STORE_ERROR] = CACHE_RESOURCE("gui_error"),
     [SND_PACK_COMMON] = CACHE_RESOURCE("gui_levelup_1"),
     [SND_PACK_UNCOMMON] = CACHE_RESOURCE("gui_levelup_2"),
     [SND_PACK_RARE] = CACHE_RESOURCE("gui_purchase_rare"),
     [SND_PACK_EPIC] = CACHE_RESOURCE("gui_purchase_epic"),
     [SND_PACK_LEGENDARY] = CACHE_RESOURCE("gui_purchase_legendary"),
+    [SND_CONSUME_COMBINE] = CACHE_RESOURCE("gui_combine"),
+    [SND_CONSUME_LEVEL_1] = CACHE_RESOURCE("gui_levelup_1"),
+    [SND_CONSUME_LEVEL_2] = CACHE_RESOURCE("gui_levelup_2"),
+    [SND_CONSUME_LEVEL_3] = CACHE_RESOURCE("gui_levelup_3"),
+    [SND_CONSUME_LEVEL_4] = CACHE_RESOURCE("gui_levelup_4"),
 };
 
 static Texture2D gui_tex[GUI_COUNT];
@@ -659,12 +800,18 @@ bool GuiSoundAllowsDuplicate(SoundId id) {
         case SND_MAP_TRANSITION:
         case SND_STORE_OPEN:
         case SND_STORE_INFO:
+        case SND_RUNE_PLACE:
+        case SND_RUNE_ACTIVATE:
         case SND_STORE_ERROR:
         case SND_PACK_COMMON:
         case SND_PACK_UNCOMMON:
         case SND_PACK_RARE:
         case SND_PACK_EPIC:
         case SND_PACK_LEGENDARY:
+        case SND_CONSUME_LEVEL_1:
+        case SND_CONSUME_LEVEL_2:
+        case SND_CONSUME_LEVEL_3:
+        case SND_CONSUME_LEVEL_4:
             return true;
         default:
             return false;
@@ -757,8 +904,11 @@ static Font LoadCyrillicFont(const char *path, int size) {
 }
 
 void AssetsLoad(void) {
+    Image gui_images[GUI_COUNT] = {0};
+    ResourceLoadImages(gui_paths, GUI_COUNT, gui_images);
     for (int i = 0; i < GUI_COUNT; i++) {
-        gui_tex[i] = ResourceLoadTexture(gui_paths[i]);
+        if (gui_images[i].data) gui_tex[i] = LoadTextureFromImage(gui_images[i]);
+        UnloadImage(gui_images[i]);
         if (gui_tex[i].id == 0) TraceLog(LOG_FATAL, "Assets: failed to load %s", gui_paths[i]);
     }
     for (int i = 0; i < FNT_COUNT; i++) {

@@ -13,6 +13,14 @@ static const HeroFormationSlot HERO_FORMATION_SLOTS[] = {
 };
 #define HERO_FORMATION_SLOT_COUNT ((int)(sizeof(HERO_FORMATION_SLOTS) / sizeof(HERO_FORMATION_SLOTS[0])))
 
+#define HERO_SCENE_UNIT_COUNT (CONSUME_MAX_SEEDS + 1)
+#define HERO_BOARD_PICK_RADIUS 1.05f
+
+#define HERO_CONSUME_UNIT_YAW (DEG2RAD * 180.0f)
+#define HERO_CONSUME_DRAG_PLANE_Y 0.662f
+#define HERO_CONSUME_DRAG_LIFT_RADIUS 4.0f
+#define HERO_CONSUME_DRAG_LIFT_RATE 0.09f
+
 #define HERO_DECAL_LIFT (0.02f)
 
 #define HERO_UNIT_YAW (DEG2RAD * -91.04f)
@@ -41,35 +49,33 @@ static HeroRole HeroRoleForMat(int m) {
 
 #define HERO_MAX_MESH 256
 
-static const char *const FS_HERO_MIX =
-    "#version 330\n"
-    "in vec2 fragTexCoord; in vec4 fragColor;\n"
-    "uniform sampler2D texture0;\n"
-    "uniform sampler2D texture1;\n"
-    "uniform sampler2D texture2;\n"
-    "uniform float uBright;\n"
-    "out vec4 finalColor;\n"
-    "void main(){\n"
-    "  vec3 g = texture(texture0, fragTexCoord*5.0).rgb;\n"
-    "  vec3 st = texture(texture1, fragTexCoord*7.0).rgb;\n"
-    "  float m = texture(texture2, fragTexCoord).r;\n"
-    "  vec3 col = mix(g, st, m) * (10.0*(fragColor.rgb + 0.1)) * uBright;\n"
-    "  finalColor = vec4(col, 1.0);\n"
-    "}\n";
-static const char *const FS_HERO_ROCK =
-    "#version 330\n"
-    "in vec2 fragTexCoord; in vec4 fragColor; in vec3 fragNormal;\n"
-    "uniform sampler2D texture0;\n"
-    "uniform sampler2D texture1;\n"
-    "uniform float uBright;\n"
-    "out vec4 finalColor;\n"
-    "void main(){\n"
-    "  float f = clamp((normalize(fragNormal).y - 0.4148) * 1.9724, 0.0, 1.0);\n"
-    "  vec3 base = texture(texture0, fragTexCoord*1.5).rgb;\n"
-    "  vec3 gray = texture(texture1, fragTexCoord*1.5).rgb;\n"
-    "  vec3 col = mix(gray, base, f) * (16.0*(fragColor.rgb - 0.02)) * uBright;\n"
-    "  finalColor = vec4(col, 1.0);\n"
-    "}\n";
+static const char *const FS_HERO_MIX = "#version 330\n"
+                                       "in vec2 fragTexCoord; in vec4 fragColor;\n"
+                                       "uniform sampler2D texture0;\n"
+                                       "uniform sampler2D texture1;\n"
+                                       "uniform sampler2D texture2;\n"
+                                       "uniform float uBright;\n"
+                                       "out vec4 finalColor;\n"
+                                       "void main(){\n"
+                                       "  vec3 g = texture(texture0, fragTexCoord*5.0).rgb;\n"
+                                       "  vec3 st = texture(texture1, fragTexCoord*7.0).rgb;\n"
+                                       "  float m = texture(texture2, fragTexCoord).r;\n"
+                                       "  vec3 col = mix(g, st, m) * (10.0*(fragColor.rgb + 0.1)) * uBright;\n"
+                                       "  finalColor = vec4(col, 1.0);\n"
+                                       "}\n";
+static const char *const FS_HERO_ROCK = "#version 330\n"
+                                        "in vec2 fragTexCoord; in vec4 fragColor; in vec3 fragNormal;\n"
+                                        "uniform sampler2D texture0;\n"
+                                        "uniform sampler2D texture1;\n"
+                                        "uniform float uBright;\n"
+                                        "out vec4 finalColor;\n"
+                                        "void main(){\n"
+                                        "  float f = clamp((normalize(fragNormal).y - 0.4148) * 1.9724, 0.0, 1.0);\n"
+                                        "  vec3 base = texture(texture0, fragTexCoord*1.5).rgb;\n"
+                                        "  vec3 gray = texture(texture1, fragTexCoord*1.5).rgb;\n"
+                                        "  vec3 col = mix(gray, base, f) * (16.0*(fragColor.rgb - 0.02)) * uBright;\n"
+                                        "  finalColor = vec4(col, 1.0);\n"
+                                        "}\n";
 static const char *const FS_HERO_DIFF =
     "#version 330\n"
     "in vec2 fragTexCoord; in vec4 fragColor;\n"
@@ -87,29 +93,17 @@ static const char *const FS_HERO_WIND =
     "void main(){ vec4 c = texture(texture0, fragTexCoord); if (c.a < uCutoff) discard;\n"
     "  finalColor = vec4(c.rgb * uTint * (fragColor.rgb*uVcScale + uVcShift), c.a);\n"
     "}\n";
-static const char *const FS_HERO_DECAL =
-    "#version 330\n"
-    "in vec2 fragTexCoord; in vec4 fragColor;\n"
-    "uniform sampler2D texture0;\n"
-    "out vec4 finalColor;\n"
-    "void main(){ finalColor = texture(texture0, fragTexCoord); }\n";
-
-static const SceneWind SCENE_WIND_FLAG = {
-    {-0.126f, 0.0f, -0.126f, 0.30f},
-    {2.4f, 0, -2.4f, 0},
-    {2.4f, 2.4f, -2.4f, 0},
-    1.0f,
-    12.0f,
-    1.5f,
-    0.328f,
-    1.0f,
-    0.0f,
-    {1, 1, 1},
-};
+static const char *const FS_HERO_DECAL = "#version 330\n"
+                                         "in vec2 fragTexCoord; in vec4 fragColor;\n"
+                                         "uniform sampler2D texture0;\n"
+                                         "out vec4 finalColor;\n"
+                                         "void main(){ finalColor = texture(texture0, fragTexCoord); }\n";
 
 #define HERO_DRAG_PLANE_Y 1.561f
 
 #define HERO_FX_MAX 256
+
+static const Vector3 HERO_SUN_GLOW_POSITION = {44.6251f, 13.6060f, 58.3862f};
 
 #define HERO_ROW_BONUS_MOVE_TIME 0.5f
 #define HERO_ROW_BONUS_DISPLAY_TIME 2.0f
@@ -179,13 +173,16 @@ typedef struct {
 
     float glow_time;
 
-    HomeSquadUnit units[SQUAD_SLOT_COUNT];
+    HomeSquadUnit units[HERO_SCENE_UNIT_COUNT];
     SquadPadAssets pads;
-    Matrix pad_xform[SQUAD_SLOT_COUNT];
-    Texture2D pad_tex[SQUAD_SLOT_COUNT];
-    unsigned char stars[SQUAD_SLOT_COUNT];
-    Texture2D fac_tex[SQUAD_SLOT_COUNT];
-    Matrix fac_xform[SQUAD_SLOT_COUNT];
+    Matrix pad_xform[HERO_SCENE_UNIT_COUNT];
+    Texture2D pad_tex[HERO_SCENE_UNIT_COUNT];
+    unsigned char stars[HERO_SCENE_UNIT_COUNT];
+    Texture2D fac_tex[HERO_SCENE_UNIT_COUNT];
+    Matrix fac_xform[HERO_SCENE_UNIT_COUNT];
+    bool consume_board;
+    int consume_hidden_spot;
+    ConsumeEnv consume_env;
     const char *mesh_dir, *char_dir;
 
     struct {
@@ -198,6 +195,7 @@ typedef struct {
         float pk;
         float ds;
         HomeSquadUnit unit;
+        char unit_path[HOME_UNIT_PATH_MAX];
         Texture2D fac_tex;
         Texture2D pad_tex;
         unsigned char stars;
@@ -277,9 +275,81 @@ static void HeroesSlotClear(HeroesBackground *scene, int slot) {
     SquadPadRarityUnload(&scene->pad_tex[slot], &scene->stars[slot]);
 }
 
+void HeroesBackgroundConsumeDragEnd(HeroesBackground *scene);
+static void HeroesDragUnitLoad(HeroesBackground *scene);
+
 void HeroesBackgroundReloadSquad(HeroesBackground *scene, const Player *player) {
-    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HeroesSlotClear(scene, s);
+    for (int s = 0; s < HERO_SCENE_UNIT_COUNT; s++) HeroesSlotClear(scene, s);
+    if (scene->consume_board) HeroesBackgroundConsumeDragEnd(scene);
+    scene->consume_board = false;
     HeroesSquadLoad(scene, player);
+}
+
+void HeroesBackgroundShowConsumeBoard(HeroesBackground *scene, const Character *const *units) {
+    for (int s = 0; s < HERO_SCENE_UNIT_COUNT; s++) HeroesSlotClear(scene, s);
+    scene->consume_board = true;
+    scene->consume_hidden_spot = -1;
+    ConsumeEnvEnsure(&scene->consume_env, scene->mesh_dir);
+    for (int s = 0; s < CONSUME_MAX_SEEDS; s++) scene->consume_env.seed_bound[s] = units[s + 1] != NULL;
+    for (int s = 0; s < HERO_SCENE_UNIT_COUNT; s++) {
+        const Character *ch = units[s];
+        if (!ch) continue;
+        char path[512];
+        const char *prefab = HomeSquadResolvePrefab(scene->char_dir, ch, path, sizeof(path));
+        if (!prefab) {
+            TraceLog(LOG_WARNING, "Consume: %s has no baked model; spot hidden", ch->id);
+            continue;
+        }
+        float pk = ch->giant ? HERO_GIANT_SCALE : 1.0f;
+        Matrix xform;
+        SquadPadPlaceOnGround(
+            scene->consume_env.spots[s],
+            pk,
+            HERO_CONSUME_UNIT_YAW,
+            UnitDisplayScale(prefab) * pk,
+            &scene->pad_xform[s],
+            &scene->fac_xform[s],
+            &xform
+        );
+        SquadPadRarityLoad(ch, &scene->pad_tex[s], &scene->stars[s]);
+        scene->fac_tex[s] = SquadFacTexLoad(ch->faction);
+        HomeSquadUnitLoad(&scene->units[s], path, scene->plain_sh, xform, s);
+    }
+}
+
+Vector3 HeroesBackgroundConsumeSpotPosition(const HeroesBackground *scene, int spot) {
+    return scene->consume_env.spots[spot];
+}
+
+Vector3 HeroesBackgroundConsumeTargetRoot(const HeroesBackground *scene) {
+    Vector3 root = scene->consume_env.spots[0];
+    root.y = scene->consume_env.target_root_y;
+    return root;
+}
+
+Camera3D HeroesBackgroundConsumeCamera(const HeroesBackground *scene) {
+    return scene->consume_env.camera;
+}
+
+void HeroesBackgroundPlayMelee(HeroesBackground *scene, int spot) {
+    HomeSquadUnitPlayMelee(&scene->units[spot]);
+}
+
+bool HeroesBackgroundAttackPlaying(const HeroesBackground *scene, int spot) {
+    return scene->units[spot].melee_playing;
+}
+
+void HeroesBackgroundPlayProjectile(HeroesBackground *scene, int spot) {
+    HomeSquadUnitPlayProjectile(&scene->units[spot]);
+}
+
+void HeroesBackgroundShake(HeroesBackground *scene) {
+    PlaySound(scene->snd_fail);
+    scene->shake_time = 0.5f;
+}
+
+void HeroesBackgroundPlayPlace(const HeroesBackground *scene) {
+    PlaySound(scene->snd_place);
 }
 
 static void HeroFxSpawn(
@@ -323,6 +393,10 @@ static void HeroFxStart(HeroesBackground *scene, HeroFxEffect effect, Vector3 or
     scene->fx_time = 0.0f;
     scene->fx_ring_accum = scene->fx_dot_accum = scene->fx_arc_accum = scene->fx_glow_accum = 1.0f;
     scene->fx_origin = origin;
+}
+
+Vector3 HeroesBackgroundSlotPosition(int slot) {
+    return HERO_FORMATION_SLOTS[slot].pos;
 }
 
 void HeroesBackgroundClearRowBonus(HeroesBackground *scene) {
@@ -803,13 +877,88 @@ int HeroesBackgroundSlotAtMouse(const HeroesBackground *scene, const Player *pla
     return best;
 }
 
+void HeroesBackgroundConsumeDragStart(HeroesBackground *scene, const Character *ch, int roster_index, int spot) {
+    if (scene->drag.active) return;
+    char path[512];
+    const char *prefab = HomeSquadResolvePrefab(scene->char_dir, ch, path, sizeof(path));
+    if (!prefab) return;
+    StrCopy(scene->drag.unit_path, sizeof(scene->drag.unit_path), path);
+    scene->drag.fac_tex = SquadFacTexLoad(ch->faction);
+    SquadPadRarityLoad(ch, &scene->drag.pad_tex, &scene->drag.stars);
+    scene->drag.pk = ch->giant ? HERO_GIANT_SCALE : 1.0f;
+    scene->drag.ds = UnitDisplayScale(prefab);
+    scene->drag.roster_index = roster_index;
+    scene->drag.active = true;
+    scene->consume_hidden_spot = spot;
+}
+
+void HeroesBackgroundConsumeDragMove(HeroesBackground *scene, bool over_tray) {
+    if (!scene->drag.active) return;
+    scene->drag.shown = false;
+    if (over_tray) return;
+    Ray ray = GetScreenToWorldRay(GetMousePosition(), scene->consume_env.camera);
+    if (fabsf(ray.direction.y) < 1e-4f) return;
+    float t = (HERO_CONSUME_DRAG_PLANE_Y - ray.position.y) / ray.direction.y;
+    if (t <= 0.0f) return;
+    Vector3 p = Vector3Add(ray.position, Vector3Scale(ray.direction, t));
+    Vector3 pedestal = scene->consume_env.spots[0];
+    float distance = sqrtf((p.x - pedestal.x) * (p.x - pedestal.x) + (p.z - pedestal.z) * (p.z - pedestal.z));
+    if (distance < HERO_CONSUME_DRAG_LIFT_RADIUS)
+        p.y += (HERO_CONSUME_DRAG_LIFT_RADIUS - distance) * HERO_CONSUME_DRAG_LIFT_RATE;
+    if (!scene->drag.in_world) {
+        scene->drag.in_world = true;
+        PlaySound(scene->snd_pickup[GetRandomValue(0, 2)]);
+        HeroesDragUnitLoad(scene);
+    }
+    scene->drag.shown = true;
+    scene->drag.pos = p;
+    float k = scene->drag.ds * scene->drag.pk;
+    scene->drag.unit.xform = MatrixMultiply(
+        MatrixMultiply(MatrixScale(k, k, k), MatrixRotateY(HERO_CONSUME_UNIT_YAW)), MatrixTranslate(p.x, p.y, p.z)
+    );
+}
+
+void HeroesBackgroundConsumeDragEnd(HeroesBackground *scene) {
+    scene->consume_hidden_spot = -1;
+    if (!scene->drag.active) return;
+    if (scene->drag.in_world) HomeSquadUnitDestroy(&scene->drag.unit);
+    SceneTexUnload(scene->drag.fac_tex);
+    SquadPadRarityUnload(&scene->drag.pad_tex, &scene->drag.stars);
+    memset(&scene->drag, 0, sizeof(scene->drag));
+}
+
+int HeroesBackgroundConsumeSpotAtMouse(const HeroesBackground *scene) {
+    Ray ray = GetScreenToWorldRay(GetMousePosition(), scene->consume_env.camera);
+    if (fabsf(ray.direction.y) < 1e-4f) return -1;
+    for (int s = 0; s < HERO_SCENE_UNIT_COUNT; s++) {
+        if (!scene->units[s].active) continue;
+        Vector3 spot = scene->consume_env.spots[s];
+        float t = (spot.y - ray.position.y) / ray.direction.y;
+        if (t <= 0.0f) continue;
+        Vector3 p = Vector3Add(ray.position, Vector3Scale(ray.direction, t));
+        float dx = p.x - spot.x, dz = p.z - spot.z;
+        if (sqrtf(dx * dx + dz * dz) < HERO_BOARD_PICK_RADIUS) return s;
+    }
+    return -1;
+}
+
+static void HeroesDragUnitLoad(HeroesBackground *scene) {
+    HomeSquadUnitLoad(
+        &scene->drag.unit,
+        scene->drag.unit_path,
+        scene->plain_sh,
+        MatrixTranslate(0, -1000.0f, 0),
+        scene->drag.roster_index
+    );
+}
+
 bool HeroesBackgroundDragStart(HeroesBackground *scene, const Player *player, int roster_index, int from_slot) {
     if (scene->drag.active) return false;
     const Character *ch = &player->roster[roster_index];
     char path[512];
     const char *prefab = HomeSquadResolvePrefab(scene->char_dir, ch, path, sizeof(path));
     if (!prefab) return false;
-    HomeSquadUnitLoad(&scene->drag.unit, path, scene->plain_sh, MatrixTranslate(0, -1000.0f, 0), roster_index);
+    StrCopy(scene->drag.unit_path, sizeof(scene->drag.unit_path), path);
     scene->drag.fac_tex = SquadFacTexLoad(ch->faction);
     SquadPadRarityLoad(ch, &scene->drag.pad_tex, &scene->drag.stars);
     scene->drag.pk = ch->giant ? HERO_GIANT_SCALE : 1.0f;
@@ -823,6 +972,7 @@ bool HeroesBackgroundDragStart(HeroesBackground *scene, const Player *player, in
     scene->drag.in_world = scene->drag.from_board;
     if (scene->drag.from_board) {
         HeroesSlotClear(scene, from_slot);
+        HeroesDragUnitLoad(scene);
         PlaySound(scene->snd_pickup[GetRandomValue(0, 2)]);
     }
     return true;
@@ -842,6 +992,7 @@ void HeroesBackgroundDragMove(HeroesBackground *scene, bool over_tray) {
         PlaySound(scene->snd_pickup[GetRandomValue(0, 2)]);
         if (scene->drag.from_slot >= 0 && scene->units[scene->drag.from_slot].active)
             HeroesSlotClear(scene, scene->drag.from_slot);
+        HeroesDragUnitLoad(scene);
     }
     scene->drag.shown = true;
     scene->drag.pos = p;
@@ -1185,9 +1336,10 @@ void HeroesBackgroundInitialize(
 }
 
 void HeroesBackgroundUpdate(HeroesBackground *scene, float dt) {
-    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HomeSquadUnitUpdate(&scene->units[s], dt);
+    for (int s = 0; s < HERO_SCENE_UNIT_COUNT; s++) HomeSquadUnitUpdate(&scene->units[s], dt);
     if (scene->drag.active) HomeSquadUnitUpdate(&scene->drag.unit, dt);
     HeroFxUpdate(scene, dt);
+    if (scene->consume_board) ConsumeEnvUpdate(&scene->consume_env, dt);
     if (scene->row_bonus_effect != HFX_NONE) {
         scene->row_bonus_time += dt;
         if (scene->row_bonus_time >= HERO_ROW_BONUS_TOTAL_TIME) {
@@ -1225,10 +1377,9 @@ static const SceneWind *HeroWind(HeroRole role) {
     return (role == HR_GRASS) ? &SCENE_WIND_GRASS : (role == HR_FERN) ? &SCENE_WIND_FERN : &SCENE_WIND_FLAG;
 }
 
-static void HeroGlowDraw(HeroesBackground *scene) {
-    Vector3 pos = {44.6251f, 13.6060f, 58.3862f};
-    Vector3 fwd = Vector3Normalize(Vector3Subtract(scene->cam.target, scene->cam.position));
-    Vector3 right = Vector3Normalize(Vector3CrossProduct(fwd, scene->cam.up));
+static void HeroGlowDraw(HeroesBackground *scene, Camera3D camera, Vector3 pos) {
+    Vector3 fwd = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+    Vector3 right = Vector3Normalize(Vector3CrossProduct(fwd, camera.up));
     Vector3 up = Vector3CrossProduct(right, fwd);
 
     rlDrawRenderBatchActive();
@@ -1310,7 +1461,45 @@ void HeroesBackgroundDrawRowBonus(const HeroesBackground *scene) {
     UiDrawTextCentered(font, TextFormat("+%d%%", bonus.percent), amount, 35.0f, (Color){0, 255, 20, a});
 }
 
+static void HeroesBackgroundDrawConsume(HeroesBackground *scene) {
+    ClearBackground(BLACK);
+    BeginMode3D(scene->consume_env.camera);
+    ConsumeEnvDrawBackground(&scene->consume_env);
+    rlDisableBackfaceCulling();
+    for (int s = 0; s < HERO_SCENE_UNIT_COUNT; s++) {
+        if (!scene->units[s].active || s == scene->consume_hidden_spot) continue;
+        SquadPadDraw(
+            &scene->pads,
+            scene->pad_tex[s],
+            scene->pad_xform[s],
+            scene->stars[s],
+            scene->fac_tex[s],
+            scene->fac_xform[s]
+        );
+    }
+    if (scene->drag.active && scene->drag.shown) {
+        Matrix pad, fac;
+        SquadPadPlaceAtFeet(scene->drag.pos, scene->drag.pk, &pad, &fac, NULL);
+        SquadPadDraw(&scene->pads, scene->drag.pad_tex, pad, scene->drag.stars, scene->drag.fac_tex, fac);
+    }
+    rlEnableBackfaceCulling();
+    rlSetCullFace(RL_CULL_FACE_BACK);
+    for (int s = 0; s < HERO_SCENE_UNIT_COUNT; s++)
+        if (s != scene->consume_hidden_spot) HomeSquadUnitDraw(&scene->units[s]);
+    if (scene->drag.active && scene->drag.shown) HomeSquadUnitDraw(&scene->drag.unit);
+    ConsumeEnvDrawFoliage(&scene->consume_env);
+    HeroGlowDraw(scene, scene->consume_env.camera, scene->consume_env.sun_glow);
+    ConsumeEnvDrawEffects(&scene->consume_env);
+    EndMode3D();
+    rlSetCullFace(RL_CULL_FACE_BACK);
+    rlEnableBackfaceCulling();
+}
+
 void HeroesBackgroundDraw(HeroesBackground *scene) {
+    if (scene->consume_board) {
+        HeroesBackgroundDrawConsume(scene);
+        return;
+    }
     float t = (float)GetTime();
     Matrix I = MatrixIdentity();
 
@@ -1349,7 +1538,7 @@ void HeroesBackgroundDraw(HeroesBackground *scene) {
     rlEnableDepthMask();
 
     rlDisableBackfaceCulling();
-    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) {
+    for (int s = 0; s < HERO_SCENE_UNIT_COUNT; s++) {
         if (!scene->units[s].active) continue;
         SquadPadDraw(
             &scene->pads,
@@ -1367,7 +1556,7 @@ void HeroesBackgroundDraw(HeroesBackground *scene) {
     }
     rlEnableBackfaceCulling();
     rlSetCullFace(RL_CULL_FACE_BACK);
-    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HomeSquadUnitDraw(&scene->units[s]);
+    for (int s = 0; s < HERO_SCENE_UNIT_COUNT; s++) HomeSquadUnitDraw(&scene->units[s]);
     if (scene->drag.active && scene->drag.shown) HomeSquadUnitDraw(&scene->drag.unit);
     rlSetCullFace(RL_CULL_FACE_FRONT);
 
@@ -1387,7 +1576,7 @@ void HeroesBackgroundDraw(HeroesBackground *scene) {
     }
     EndBlendMode();
 
-    HeroGlowDraw(scene);
+    HeroGlowDraw(scene, scene->cam, HERO_SUN_GLOW_POSITION);
     HeroFxDraw(scene);
 
     EndMode3D();
@@ -1416,9 +1605,10 @@ void HeroesBackgroundDraw(HeroesBackground *scene) {
 }
 
 void HeroesBackgroundDestroy(HeroesBackground *scene) {
-    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HeroesSlotClear(scene, s);
+    ConsumeEnvDestroy(&scene->consume_env);
+    for (int s = 0; s < HERO_SCENE_UNIT_COUNT; s++) HeroesSlotClear(scene, s);
     if (scene->drag.active) {
-        HomeSquadUnitDestroy(&scene->drag.unit);
+        if (scene->drag.in_world) HomeSquadUnitDestroy(&scene->drag.unit);
         SceneTexUnload(scene->drag.fac_tex);
         SquadPadRarityUnload(&scene->drag.pad_tex, &scene->drag.stars);
     }

@@ -120,6 +120,19 @@ static const SceneWind SCENE_WIND_CLOTH2 = {
     1.0f, 65.0f, 2.0f, 0.328f, 1.0f, 0.0f, {1,1,1},
 };
 
+static const SceneWind SCENE_WIND_FLAG = {
+    {-0.126f, 0.0f, -0.126f, 0.30f},
+    {2.4f, 0, -2.4f, 0},
+    {2.4f, 2.4f, -2.4f, 0},
+    1.0f,
+    12.0f,
+    1.5f,
+    0.328f,
+    1.0f,
+    0.0f,
+    {1, 1, 1},
+};
+
 typedef struct {
     const char *ply, *tex;
     bool mixer;
@@ -501,7 +514,40 @@ typedef struct {
     const char *mesh_dir, *char_dir;
 
     Camera3D cam;
+
+    Shader gallery_shadow_sh;
+    const Player *squad_player;
+    bool squad_stale;
+    HomeSquadUnit gallery_unit;
+    Texture2D gallery_pad_tex, gallery_fac_tex;
+    unsigned char gallery_stars;
+    Matrix gallery_pad_xform, gallery_fac_xform;
+    Vector3 gallery_stand;
+    float gallery_unit_scale, gallery_pad_scale;
+    Camera3D gallery_cam;
+    bool gallery_view;
 } HomeBackground;
+
+#define GALLERY_UNIT_YAW (PI + 0.175f)
+#define GALLERY_TALL_UNIT_TOP 3.0f
+#define GALLERY_GIANT_PAD_SCALE 1.55f
+#define GALLERY_SILHOUETTE_BRIGHTNESS 0.04f
+#define GALLERY_CAMERA_LOOK_DISTANCE 8.0f
+
+typedef struct {
+    Vector3 position, forward, up;
+} GalleryCameraMarker;
+
+static const Vector3 GALLERY_UNIT_MARKER = {-199.83f, 0.593f, 15.65f};
+static const GalleryCameraMarker GALLERY_CAM_DEFAULT = {
+    {-197.80f, 2.400f, 12.29f}, {-0.273f, -0.233f, 0.933f}, {-0.066f, 0.972f, 0.224f}
+};
+static const GalleryCameraMarker GALLERY_CAM_TALL = {
+    {-197.68f, 2.770f, 11.89f}, {-0.269f, -0.216f, 0.939f}, {-0.043f, 0.976f, 0.212f}
+};
+static const GalleryCameraMarker GALLERY_CAM_GIANT = {
+    {-197.509f, 4.178f, 9.50f}, {-0.186f, -0.233f, 0.955f}, {-0.079f, 0.972f, 0.222f}
+};
 
 #define SCENE_GROUND_COUNT 2
 #define SCENE_TERRAIN_COUNT 3
@@ -629,30 +675,113 @@ void HomeBackgroundInitialize(HomeBackground *scene, const char *mesh_dir, const
 
     scene->mesh_dir = mesh_dir;
     scene->char_dir = char_dir;
+    scene->squad_player = player;
     HomeSquadLoad(&scene->squad, player, mesh_dir, char_dir, terrain_meshes, SCENE_TERRAIN_COUNT,
                   scene->plain_sh, scene->plain_sh, scene->mult_sh);
+
+    float silhouette = GALLERY_SILHOUETTE_BRIGHTNESS;
+    scene->gallery_shadow_sh = LoadShaderFromMemory(VS_UNLIT, FS_PLAIN);
+    SetShaderValue(scene->gallery_shadow_sh, GetShaderLocation(scene->gallery_shadow_sh, "brightness"), &silhouette,
+                   SHADER_UNIFORM_FLOAT);
+    scene->gallery_stand = (Vector3){
+        GALLERY_UNIT_MARKER.x,
+        TerrainHeightAt(GALLERY_UNIT_MARKER.x, GALLERY_UNIT_MARKER.z, terrain_meshes, SCENE_TERRAIN_COUNT,
+                        GALLERY_UNIT_MARKER.y),
+        GALLERY_UNIT_MARKER.z
+    };
+    scene->gallery_cam = scene->cam;
 }
 
-void HomeBackgroundReloadSquad(HomeBackground *scene, const Player *player)
+static void HomeBackgroundGalleryFrame(HomeBackground *scene, const GalleryCameraMarker *marker)
 {
-    HomeSquadDestroy(&scene->squad);
+    scene->gallery_cam.position = marker->position;
+    scene->gallery_cam.target = Vector3Add(marker->position, Vector3Scale(marker->forward, GALLERY_CAMERA_LOOK_DISTANCE));
+    scene->gallery_cam.up = marker->up;
+}
+
+void HomeBackgroundGallerySetYaw(HomeBackground *scene, float yaw)
+{
+    if (!scene->gallery_unit.active) return;
+    SquadPadPlaceOnGround(scene->gallery_stand, scene->gallery_pad_scale, GALLERY_UNIT_YAW + yaw, scene->gallery_unit_scale,
+                          NULL, NULL, &scene->gallery_unit.xform);
+}
+
+void HomeBackgroundGalleryClear(HomeBackground *scene)
+{
+    HomeSquadUnitDestroy(&scene->gallery_unit);
+    SceneTexUnload(scene->gallery_fac_tex);
+    scene->gallery_fac_tex = (Texture2D){0};
+    SquadPadRarityUnload(&scene->gallery_pad_tex, &scene->gallery_stars);
+}
+
+bool HomeBackgroundGalleryShow(HomeBackground *scene, const Character *ch, bool silhouette, float yaw)
+{
+    HomeBackgroundGalleryClear(scene);
+    char path[512];
+    const char *prefab = HomeSquadResolvePrefab(scene->char_dir, ch, path, sizeof(path));
+    if (!prefab) {
+        TraceLog(LOG_WARNING, "Gallery: %s has no baked model", ch->id);
+        HomeBackgroundGalleryFrame(scene, &GALLERY_CAM_DEFAULT);
+        return false;
+    }
+    scene->gallery_unit_scale = UnitDisplayScale(prefab) * (ch->giant ? 2.0f : 1.0f);
+    scene->gallery_pad_scale = ch->giant ? GALLERY_GIANT_PAD_SCALE : 1.0f;
+    Matrix unit_xform;
+    SquadPadPlaceOnGround(scene->gallery_stand, scene->gallery_pad_scale, GALLERY_UNIT_YAW + yaw, scene->gallery_unit_scale,
+                          &scene->gallery_pad_xform, &scene->gallery_fac_xform, &unit_xform);
+    HomeSquadUnitLoad(&scene->gallery_unit, path, silhouette ? scene->gallery_shadow_sh : scene->plain_sh, unit_xform, 0);
+    SquadPadRarityLoad(ch, &scene->gallery_pad_tex, &scene->gallery_stars);
+    scene->gallery_fac_tex = SquadFacTexLoad(ch->faction);
+
+    BoundingBox bounds = GetModelBoundingBox(scene->gallery_unit.model);
+    float top = scene->gallery_stand.y + bounds.max.y * scene->gallery_unit_scale;
+    const GalleryCameraMarker *marker = ch->giant ? &GALLERY_CAM_GIANT
+                                        : top > GALLERY_TALL_UNIT_TOP ? &GALLERY_CAM_TALL
+                                                                      : &GALLERY_CAM_DEFAULT;
+    HomeBackgroundGalleryFrame(scene, marker);
+    return true;
+}
+
+bool HomeBackgroundGalleryPlayMelee(HomeBackground *scene)
+{
+    return HomeSquadUnitPlayMelee(&scene->gallery_unit);
+}
+
+void HomeBackgroundSetGalleryView(HomeBackground *scene, bool active)
+{
+    scene->gallery_view = active;
+}
+
+void HomeBackgroundMarkSquadStale(HomeBackground *scene)
+{
+    scene->squad_stale = true;
+}
+
+static void HomeBackgroundReloadSquad(HomeBackground *scene)
+{
+    scene->squad_stale = false;
+    HomeSquadUnitsClear(&scene->squad);
     Mesh terrain_meshes[SCENE_TERRAIN_COUNT];
     HomeBackgroundTerrain(scene, terrain_meshes);
-    HomeSquadLoad(&scene->squad, player, scene->mesh_dir, scene->char_dir, terrain_meshes, SCENE_TERRAIN_COUNT,
-                  scene->plain_sh, scene->plain_sh, scene->mult_sh);
+    HomeSquadUnitsLoad(&scene->squad, scene->squad_player, scene->char_dir, terrain_meshes, SCENE_TERRAIN_COUNT,
+                       scene->plain_sh);
 }
 
 void HomeBackgroundUpdate(HomeBackground *scene, float dt)
 {
+    if (scene->squad_stale) HomeBackgroundReloadSquad(scene);
     DustUpdate(scene->dust, dt);
     SmokeUpdate(scene->smoke, dt);
     HomeSquadUpdate(&scene->squad, dt);
+    HomeSquadUnitUpdate(&scene->gallery_unit, dt);
 }
 
 void HomeBackgroundDraw(HomeBackground *scene)
 {
     float tnow = (float)GetTime();
     int   n    = SCENE_PIECE_COUNT;
+    Camera3D home_cam = scene->cam;
+    if (scene->gallery_view) scene->cam = scene->gallery_cam;
 
     ClearBackground(BLACK);
     BeginMode3D(scene->cam);
@@ -684,11 +813,20 @@ void HomeBackgroundDraw(HomeBackground *scene)
         }
         DrawMesh(scene->pole_mesh, scene->pole_mat, MatrixIdentity());
         rlDisableBackfaceCulling();
-        HomeSquadDrawShadows(&scene->squad);
-        HomeSquadDrawPads(&scene->squad);
+        if (scene->gallery_view) {
+            if (scene->gallery_unit.active)
+                SquadPadDraw(&scene->squad.pads, scene->gallery_pad_tex, scene->gallery_pad_xform, scene->gallery_stars,
+                             scene->gallery_fac_tex, scene->gallery_fac_xform);
+        } else {
+            HomeSquadDrawShadows(&scene->squad);
+            HomeSquadDrawPads(&scene->squad);
+        }
         rlEnableBackfaceCulling();
         rlSetCullFace(RL_CULL_FACE_BACK);
-        HomeSquadDrawUnits(&scene->squad);
+        if (scene->gallery_view)
+            HomeSquadUnitDraw(&scene->gallery_unit);
+        else
+            HomeSquadDrawUnits(&scene->squad);
         rlDisableBackfaceCulling();
         BeginBlendMode(BLEND_ALPHA);
         for (int i = 0; i < n; i++) {
@@ -781,10 +919,13 @@ void HomeBackgroundDraw(HomeBackground *scene)
     rlEnableDepthMask();
     rlSetCullFace(RL_CULL_FACE_BACK);
     rlEnableBackfaceCulling();
+    scene->cam = home_cam;
 }
 
 void HomeBackgroundDestroy(HomeBackground *scene)
 {
+    HomeBackgroundGalleryClear(scene);
+    UnloadShader(scene->gallery_shadow_sh);
     HomeSquadDestroy(&scene->squad);
     SceneTexUnload(scene->stone); SceneTexUnload(scene->grass); SceneTexUnload(scene->mask);
     for (int i = 0; i < SCENE_PIECE_COUNT; i++) {

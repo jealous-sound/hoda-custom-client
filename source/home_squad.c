@@ -3,6 +3,8 @@
 #define HOME_FAC_HEIGHT 0.115f
 #define HOME_FAC_DIAMETER 0.85f
 #define HOME_CLIP_FPS (1000.0f / 17.0f)
+#define HOME_UNIT_PATH_MAX 512
+#define UNIT_POOL_CAPACITY 12
 
 #define SQUAD_SHADOW_SX 1.8892f
 #define SQUAD_SHADOW_SZ 1.8434f
@@ -23,19 +25,60 @@ static const HomePadSpot HOME_PAD_SPOTS[SQUAD_SLOT_COUNT] = {
 };
 
 typedef struct {
+    char path[HOME_UNIT_PATH_MAX];
     bool active;
     bool anim_override;
     bool melee_playing;
+    bool projectile_playing;
     Model model;
     ModelAnimation idle;
     ModelAnimation melee;
+    ModelAnimation projectile;
     float frame_time;
     float melee_frame;
     int phase;
     int last_frame;
     Matrix xform;
     float fade;
+    const char *wisp_fx;
+    int wisp_bone;
+    int wisp_loop;
+    unsigned wisp_loop_serial;
 } HomeSquadUnit;
+
+#define HOME_WISP_QUEUE_CAPACITY 16
+#define HOME_WISP_FX_LIFT 0.93f
+#define HOME_WISP_ANCHOR_BONE "default_Chest"
+
+typedef struct {
+    HomeSquadUnit *unit;
+    Vector3 pos;
+} HomeWispRequest;
+
+static HomeWispRequest home_wisp_queue[HOME_WISP_QUEUE_CAPACITY];
+static int home_wisp_queue_count;
+
+static const char *UnitWispFxFor(const char *path) {
+    static const struct {
+        const char *rarity, *fx;
+    } tiers[] = {
+        {"_common_", "fx_wispchar_t1_pre"},
+        {"_uncommon_", "fx_wispchar_t2_pre"},
+        {"_rare_", "fx_wispchar_t3_pre"},
+        {"_epic_", "fx_wispchar_t4_pre"},
+        {"_legendary_", "fx_wispchar_t5_pre"},
+        {"_mythic_", "fx_wispchar_t5_pre"},
+    };
+    const char *base = strrchr(path, '/');
+    base = base ? base + 1 : path;
+    if (strncmp(base, "c_wisp", 6) != 0) return NULL;
+    for (int i = 0; i < (int)(sizeof(tiers) / sizeof(tiers[0])); i++)
+        if (strstr(base, tiers[i].rarity)) return tiers[i].fx;
+    return NULL;
+}
+
+static HomeSquadUnit unit_pool[UNIT_POOL_CAPACITY];
+static int unit_pool_count;
 
 typedef struct {
     Model pad_model;
@@ -320,12 +363,62 @@ static int SquadMeleeClipRank(const char *name) {
     return -1;
 }
 
-static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit_shader, Matrix xform, int phase_seed) {
+static bool SquadProjectileClip(const char *name) {
+    char key[64];
+    SquadClipKey(key, name);
+    return strstr(key, "attack2") || strstr(key, "projectile") || strstr(key, "attackv2");
+}
+
+static void HomeSquadUnitFree(HomeSquadUnit *unit) {
+    if (unit->idle.frameCount > 0) UnloadModelAnimation(unit->idle);
+    if (unit->melee.frameCount > 0) UnloadModelAnimation(unit->melee);
+    if (unit->projectile.frameCount > 0) UnloadModelAnimation(unit->projectile);
+    for (int m = 0; m < unit->model.materialCount; m++) {
+        Texture2D tex = unit->model.materials[m].maps[MATERIAL_MAP_DIFFUSE].texture;
+        if (tex.id > 0 && tex.id != rlGetTextureIdDefault()) UnloadTexture(tex);
+    }
+    UnloadModel(unit->model);
+}
+
+static void UnitPoolRemoveAt(int index) {
+    unit_pool_count--;
+    memmove(&unit_pool[index], &unit_pool[index + 1], sizeof(unit_pool[0]) * (unit_pool_count - index));
+}
+
+static void UnitPoolPut(const HomeSquadUnit *unit) {
+    if (unit_pool_count == UNIT_POOL_CAPACITY) {
+        HomeSquadUnitFree(&unit_pool[0]);
+        UnitPoolRemoveAt(0);
+    }
+    unit_pool[unit_pool_count++] = *unit;
+}
+
+static bool UnitPoolTake(HomeSquadUnit *unit, const char *path) {
+    for (int i = unit_pool_count - 1; i >= 0; i--) {
+        if (strcmp(unit_pool[i].path, path) != 0) continue;
+        *unit = unit_pool[i];
+        UnitPoolRemoveAt(i);
+        return true;
+    }
+    return false;
+}
+
+static void UnitPoolClear(void) {
+    for (int i = 0; i < unit_pool_count; i++) HomeSquadUnitFree(&unit_pool[i]);
+    unit_pool_count = 0;
+}
+
+static void HomeSquadUnitBindShader(HomeSquadUnit *unit, Shader unit_shader) {
+    for (int m = 0; m < unit->model.materialCount; m++) unit->model.materials[m].shader = unit_shader;
+}
+
+static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase_seed) {
     *unit = (HomeSquadUnit){0};
+    StrCopy(unit->path, sizeof(unit->path), path);
+    unit->wisp_fx = UnitWispFxFor(path);
     unit->model = LoadModel(path);
     if (unit->model.meshCount <= 0) TraceLog(LOG_FATAL, "Squad: failed to load %s", path);
     for (int m = 0; m < unit->model.materialCount; m++) {
-        unit->model.materials[m].shader = unit_shader;
         Texture2D tex = unit->model.materials[m].maps[MATERIAL_MAP_DIFFUSE].texture;
         if (tex.id > 0) SetTextureFilter(tex, TEXTURE_FILTER_BILINEAR);
     }
@@ -351,6 +444,11 @@ static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit
                 unit->idle = clips[a];
             else if (a == melee_clip)
                 unit->melee = clips[a];
+            else if (
+                !unit->projectile.frameCount && SquadProjectileClip(clips[a].name) &&
+                IsModelAnimationValid(unit->model, clips[a])
+            )
+                unit->projectile = clips[a];
             else
                 UnloadModelAnimation(clips[a]);
         }
@@ -358,18 +456,39 @@ static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit
     }
     if (unit->idle.frameCount == 0) TraceLog(LOG_FATAL, "Squad: no usable idle clip in %s", path);
     unit->phase = (phase_seed * 47) % unit->idle.frameCount;
+    unit->wisp_bone = -1;
+    unit->wisp_loop = -1;
+    if (unit->wisp_fx)
+        for (int bone = 0; bone < unit->model.boneCount; bone++)
+            if (!strcmp(unit->model.bones[bone].name, HOME_WISP_ANCHOR_BONE)) unit->wisp_bone = bone;
+    unit->active = true;
+}
+
+static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit_shader, Matrix xform, int phase_seed) {
+    if (!UnitPoolTake(unit, path)) HomeSquadUnitDecode(unit, path, phase_seed);
+    HomeSquadUnitBindShader(unit, unit_shader);
+    unit->anim_override = false;
+    unit->melee_playing = false;
+    unit->projectile_playing = false;
     unit->last_frame = -1;
-    unit->frame_time = 0.0f;
     unit->xform = xform;
     unit->fade = 1.0f;
-    unit->active = true;
 }
 
 static bool HomeSquadUnitPlayMelee(HomeSquadUnit *unit) {
     if (!unit->active || unit->melee.frameCount <= 0) return false;
     unit->melee_playing = true;
+    unit->projectile_playing = false;
     unit->melee_frame = 0.0f;
     UpdateModelAnimation(unit->model, unit->melee, 0);
+    return true;
+}
+
+static bool HomeSquadUnitPlayProjectile(HomeSquadUnit *unit) {
+    if (!HomeSquadUnitPlayMelee(unit)) return false;
+    if (unit->projectile.frameCount <= 0) return true;
+    unit->projectile_playing = true;
+    UpdateModelAnimation(unit->model, unit->projectile, 0);
     return true;
 }
 
@@ -378,8 +497,9 @@ static void HomeSquadUnitUpdate(HomeSquadUnit *unit, float dt) {
     if (unit->melee_playing) {
         unit->melee_frame += dt * HOME_CLIP_FPS;
         int frame = (int)unit->melee_frame;
-        if (frame < unit->melee.frameCount) {
-            UpdateModelAnimation(unit->model, unit->melee, frame);
+        ModelAnimation clip = unit->projectile_playing ? unit->projectile : unit->melee;
+        if (frame < clip.frameCount) {
+            UpdateModelAnimation(unit->model, clip, frame);
             return;
         }
         unit->melee_playing = false;
@@ -393,7 +513,20 @@ static void HomeSquadUnitUpdate(HomeSquadUnit *unit, float dt) {
     UpdateModelAnimation(unit->model, unit->idle, frame);
 }
 
+static Vector3 HomeSquadWispPosition(const HomeSquadUnit *unit) {
+    Matrix m = unit->xform;
+    if (unit->wisp_bone < 0 || unit->idle.frameCount <= 0) return (Vector3){m.m12, m.m13 + HOME_WISP_FX_LIFT, m.m14};
+    int frame = unit->last_frame >= 0 ? unit->last_frame % unit->idle.frameCount : 0;
+    return Vector3Transform(unit->idle.framePoses[frame][unit->wisp_bone].translation, m);
+}
+
 static void HomeSquadUnitDraw(HomeSquadUnit *unit) {
+    if (unit->active && unit->wisp_fx) {
+        if (home_wisp_queue_count < HOME_WISP_QUEUE_CAPACITY) {
+            home_wisp_queue[home_wisp_queue_count++] = (HomeWispRequest){unit, HomeSquadWispPosition(unit)};
+        }
+        return;
+    }
     if (!unit->active) return;
     unsigned char a = (unsigned char)(255.0f * fminf(fmaxf(unit->fade, 0.0f), 1.0f));
     for (int m = 0; m < unit->model.materialCount; m++)
@@ -404,35 +537,18 @@ static void HomeSquadUnitDraw(HomeSquadUnit *unit) {
 
 static void HomeSquadUnitDestroy(HomeSquadUnit *unit) {
     if (!unit->active) return;
-    if (unit->idle.frameCount > 0) UnloadModelAnimation(unit->idle);
-    if (unit->melee.frameCount > 0) UnloadModelAnimation(unit->melee);
-    for (int m = 0; m < unit->model.materialCount; m++) {
-        Texture2D tex = unit->model.materials[m].maps[MATERIAL_MAP_DIFFUSE].texture;
-        if (tex.id > 0 && tex.id != rlGetTextureIdDefault()) UnloadTexture(tex);
-    }
-    UnloadModel(unit->model);
+    UnitPoolPut(unit);
     unit->active = false;
 }
 
-static void HomeSquadLoad(
+static void HomeSquadUnitsLoad(
     HomeSquad *squad,
     const Player *player,
-    const char *mesh_dir,
     const char *char_dir,
     const Mesh *terrain,
     int terrain_count,
-    Shader pad_shader,
-    Shader unit_shader,
-    Shader mult_shader
+    Shader unit_shader
 ) {
-    memset(squad, 0, sizeof(*squad));
-    squad->pads = SquadPadAssetsLoad(mesh_dir, pad_shader);
-    squad->shadow_mesh = GenMeshPlane(1.0f, 1.0f, 1, 1);
-    squad->shadow_tex = LoadSprite(CACHE_RESOURCE("base shadow2"));
-    squad->shadow_mat = LoadMaterialDefault();
-    squad->shadow_mat.shader = mult_shader;
-    squad->shadow_mat.maps[MATERIAL_MAP_DIFFUSE].texture = squad->shadow_tex;
-
     const Character *pad_char[SQUAD_SLOT_COUNT] = {0};
     int filled = 0;
     for (int slot = 0; slot < SQUAD_SLOT_LARGE; slot++) {
@@ -477,6 +593,27 @@ static void HomeSquadLoad(
     }
 }
 
+static void HomeSquadLoad(
+    HomeSquad *squad,
+    const Player *player,
+    const char *mesh_dir,
+    const char *char_dir,
+    const Mesh *terrain,
+    int terrain_count,
+    Shader pad_shader,
+    Shader unit_shader,
+    Shader mult_shader
+) {
+    memset(squad, 0, sizeof(*squad));
+    squad->pads = SquadPadAssetsLoad(mesh_dir, pad_shader);
+    squad->shadow_mesh = GenMeshPlane(1.0f, 1.0f, 1, 1);
+    squad->shadow_tex = LoadSprite(CACHE_RESOURCE("base shadow2"));
+    squad->shadow_mat = LoadMaterialDefault();
+    squad->shadow_mat.shader = mult_shader;
+    squad->shadow_mat.maps[MATERIAL_MAP_DIFFUSE].texture = squad->shadow_tex;
+    HomeSquadUnitsLoad(squad, player, char_dir, terrain, terrain_count, unit_shader);
+}
+
 static void HomeSquadUpdate(HomeSquad *squad, float dt) {
     for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HomeSquadUnitUpdate(&squad->units[s], dt);
 }
@@ -511,10 +648,17 @@ static void HomeSquadDrawShadows(HomeSquad *squad) {
     rlEnableDepthMask();
 }
 
+static void HomeSquadUnitsClear(HomeSquad *squad) {
+    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) {
+        HomeSquadUnitDestroy(&squad->units[s]);
+        SceneTexUnload(squad->fac_tex[s]);
+        squad->fac_tex[s] = (Texture2D){0};
+        SquadPadRarityUnload(&squad->pad_tex[s], &squad->stars[s]);
+    }
+}
+
 static void HomeSquadDestroy(HomeSquad *squad) {
-    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HomeSquadUnitDestroy(&squad->units[s]);
-    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) SceneTexUnload(squad->fac_tex[s]);
-    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) SquadPadRarityUnload(&squad->pad_tex[s], &squad->stars[s]);
+    HomeSquadUnitsClear(squad);
     SceneTexUnload(squad->shadow_tex);
     SceneMaterialUnload(squad->shadow_mat);
     UnloadMesh(squad->shadow_mesh);

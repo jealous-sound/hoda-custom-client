@@ -16,6 +16,21 @@ typedef struct {
     float change_time;
 } HudChangingValue;
 
+#define HUD_TALLY_TIME 2.25f
+#define HUD_TALLY_PULSE_COUNT 3
+#define HUD_TALLY_PULSE_PERIOD 0.75f
+#define HUD_TALLY_PULSE_TIME 0.5f
+#define HUD_TALLY_PULSE_GROWTH 0.5f
+
+typedef struct {
+    bool initialized;
+    bool held;
+    bool ticking;
+    double shown;
+    double rate;
+    float elapsed;
+} HudCurrencyTally;
+
 typedef struct {
     Texture2D background;
     Button home_button;
@@ -36,6 +51,8 @@ typedef struct {
     HudAction store_selection;
     HudChangingValue energy_value;
     HudChangingValue stamina_value;
+    HudCurrencyTally gold_tally;
+    HudCurrencyTally gems_tally;
 } Hud;
 
 void HudSetStoreSelection(Hud *hud, HudAction selection) {
@@ -178,6 +195,8 @@ void HudInitialize(Hud *hud) {
     hud->armed_action = HUD_NONE;
     hud->energy_value = (HudChangingValue){0};
     hud->stamina_value = (HudChangingValue){0};
+    hud->gold_tally = (HudCurrencyTally){0};
+    hud->gems_tally = (HudCurrencyTally){0};
 }
 
 static Rectangle HudActionRect(HudAction action, const HudLayout *layout) {
@@ -287,9 +306,74 @@ static void HudDrawResource(
     UiDrawTextLeftMiddle(hud->font, TextFormat("/%d", maximum), denominator_rect, 21.0f, WHITE);
 }
 
-static void HudDrawCurrency(const Hud *hud, Texture2D icon, Rectangle icon_rect, Rectangle label_rect, int amount) {
+static void HudCurrencyTallyUpdate(HudCurrencyTally *tally, int value, float dt) {
+    if (!tally->initialized) {
+        tally->initialized = true;
+        tally->shown = value;
+        return;
+    }
+    if (tally->held) return;
+    if (!tally->ticking) {
+        tally->shown = value;
+        return;
+    }
+    tally->elapsed += dt;
+    double step = tally->rate * dt;
+    if (fabs(value - tally->shown) <= step) {
+        tally->shown = value;
+        tally->ticking = false;
+        return;
+    }
+    tally->shown += value > tally->shown ? step : -step;
+}
+
+static void HudCurrencyTallyHold(HudCurrencyTally *tally) {
+    tally->held = true;
+    tally->ticking = false;
+}
+
+static bool HudCurrencyTallyRelease(HudCurrencyTally *tally, int value) {
+    if (!tally->held) return false;
+    tally->held = false;
+    if (value <= tally->shown) return false;
+    tally->rate = (value - tally->shown) / HUD_TALLY_TIME;
+    tally->elapsed = 0.0f;
+    tally->ticking = true;
+    return true;
+}
+
+void HudCurrencyHold(Hud *hud, bool gems) {
+    HudCurrencyTallyHold(gems ? &hud->gems_tally : &hud->gold_tally);
+}
+
+void HudCurrencyRelease(Hud *hud, const Player *player, bool gems) {
+    HudCurrencyTally *tally = gems ? &hud->gems_tally : &hud->gold_tally;
+    bool rising = HudCurrencyTallyRelease(tally, gems ? player->gems : player->gold);
+    if (rising && gems) GuiSoundPlay(SND_TALLY_GEM);
+}
+
+static void HudDrawCurrencyPulses(Texture2D icon, Rectangle rect, float elapsed) {
+    for (int pulse = 0; pulse < HUD_TALLY_PULSE_COUNT; pulse++) {
+        float local = (elapsed - pulse * HUD_TALLY_PULSE_PERIOD) / HUD_TALLY_PULSE_TIME;
+        if (local < 0.0f || local > 1.0f) continue;
+        float scale = 1.0f + HUD_TALLY_PULSE_GROWTH * local;
+        Rectangle grown = {
+            rect.x + rect.width * (1.0f - scale) * 0.5f,
+            rect.y + rect.height * (1.0f - scale) * 0.5f,
+            rect.width * scale,
+            rect.height * scale,
+        };
+        UiDrawTexture(icon, grown, Fade(WHITE, 1.0f - local));
+    }
+}
+
+static void HudDrawCurrency(
+    const Hud *hud, Texture2D icon, Rectangle icon_rect, Rectangle label_rect, const HudCurrencyTally *tally
+) {
     UiDrawTexture(icon, icon_rect, WHITE);
-    UiDrawTextLeftMiddle(hud->font, TextFormat("%d", amount), label_rect, 22.0f, WHITE);
+    if (tally->ticking) HudDrawCurrencyPulses(icon, icon_rect, tally->elapsed);
+    Color color = tally->ticking ? YELLOW : WHITE;
+    UiDrawTextLeftMiddle(hud->font, TextFormat("%d", (int)round(tally->shown)), label_rect, 22.0f, color);
 }
 
 Rectangle HudXpSparkleRect(const Player *player) {
@@ -315,6 +399,8 @@ HudAction HudDraw(Hud *hud, Player *player, bool interactive, bool on_home) {
     float dt = GetFrameTime();
     HudChangingValueUpdate(&hud->energy_value, player->energy, dt);
     HudChangingValueUpdate(&hud->stamina_value, player->stamina, dt);
+    HudCurrencyTallyUpdate(&hud->gold_tally, player->gold, dt);
+    HudCurrencyTallyUpdate(&hud->gems_tally, player->gems, dt);
 
     HudAction action = HudUpdateInput(hud, &layout, interactive);
     bool energy_pressed = HudActionPressed(hud, HUD_ENERGY, &layout, interactive);
@@ -357,14 +443,14 @@ HudAction HudDraw(Hud *hud, Player *player, bool interactive, bool on_home) {
         hud->store_selection == HUD_GOLD ? hud->gold_selected : hud->gold,
         layout.gold_icon,
         layout.gold_label,
-        player->gold
+        &hud->gold_tally
     );
     HudDrawCurrency(
         hud,
         hud->store_selection == HUD_GEMS ? hud->gems_selected : hud->gems,
         layout.gems_icon,
         layout.gems_label,
-        player->gems
+        &hud->gems_tally
     );
     UiDrawTexture(hud->options, layout.options, WHITE);
 

@@ -23,7 +23,7 @@ typedef struct {
 } ApkArchive;
 
 static bool ApkReadAt(FILE *file, long offset, void *out, size_t size) {
-    return fseek(file, offset, SEEK_SET) == 0 && fread(out, 1, size, file) == size;
+    return pread(fileno(file), out, size, offset) == (ssize_t)size;
 }
 
 static long ApkFindEndOfDirectory(FILE *file, unsigned char *tail, long *tail_start) {

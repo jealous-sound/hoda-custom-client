@@ -18,6 +18,25 @@ static bool FlycamEnabled(void) {
     return cached == 1;
 }
 
+#define CAPITALIZED_TEXT_CAP 128
+#define CYRILLIC_LOWER_FIRST 0x430
+#define CYRILLIC_LOWER_LAST 0x44F
+#define CYRILLIC_CASE_OFFSET 0x20
+
+static const char *CapitalizeFirst(const char *text) {
+    static char capitalized[CAPITALIZED_TEXT_CAP];
+    int first_size = 0;
+    int first = GetCodepoint(text, &first_size);
+    if (first >= CYRILLIC_LOWER_FIRST && first <= CYRILLIC_LOWER_LAST)
+        first -= CYRILLIC_CASE_OFFSET;
+    else if (first >= 'a' && first <= 'z')
+        first -= 'a' - 'A';
+    int written = 0;
+    const char *head = CodepointToUTF8(first, &written);
+    snprintf(capitalized, sizeof(capitalized), "%.*s%s", written, head, text + first_size);
+    return capitalized;
+}
+
 static void StrCopy(char *dst, int cap, const char *src) {
     if (!src) src = "";
     int n = (int)strlen(src);
