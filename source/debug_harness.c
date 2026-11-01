@@ -7,6 +7,7 @@ typedef struct {
     bool resource_opened;
     bool runes_seeded;
     bool consume_opened;
+    bool gear_store;
 } DebugShot;
 
 #define DEBUG_SHOT_DEFAULT_FRAMES 90
@@ -478,6 +479,65 @@ static const Character *DebugConsumeDefinition(Game *game, const char *id, int *
     return &game->player.roster[*index];
 }
 
+static int DebugGearHero(const Game *game) {
+    for (int i = 0; i < game->player.roster_count; i++)
+        if (game->player.roster[i].gear_slots >= GEAR_PRESTIGE_MIN_SLOTS) return i;
+    return 0;
+}
+
+static void DebugPrepareGear(Game *game, DebugShot *shot) {
+    if (!shot->screen || strncmp(shot->screen, "gear", 4) != 0) return;
+    game->screen = shot->gear_store ? SCREEN_STORE : SCREEN_HEROES;
+    if (shot->flow_started) return;
+    shot->flow_started = true;
+    Player *player = &game->player;
+    int hero = DebugGearHero(game);
+    for (int i = 0; i < GearCatalogCount(); i += 3) GearGrant(&player->gear, i);
+    player->gold = player->gems = DEBUG_PACK_FUNDS;
+    GearGrant(&player->gear, GearDefIndex("red_iron_maul"));
+    GearEquip(&player->gear, &player->roster[hero], 0, GearDefIndex("red_iron_maul"));
+    game->heroes.selected = hero;
+    if (DebugShotIs(shot, "gear_ascend") || DebugShotIs(shot, "gear_ascended")) {
+        Character *ch = &player->roster[hero];
+        ch->gear.defs[1] = (short)(GearDefIndex("lotherings_lament") + 1);
+        ch->gear.defs[2] = (short)(GearDefIndex("defender_coat") + 1);
+        player->gear.tomes = 1;
+        gear_view.hero = hero;
+        if (DebugShotIs(shot, "gear_ascend")) gear_view.dialog = GEAR_VIEW_DIALOG_ASCEND;
+        if (DebugShotIs(shot, "gear_ascended")) {
+            GearAscend(&player->gear, ch);
+            HeroesRebuildCard(&game->heroes, player, hero);
+        }
+        return;
+    }
+    if (DebugShotIs(shot, "gear_slots")) return;
+    if (DebugShotIs(shot, "gear_prestige")) {
+        gear_view.hero = hero;
+        gear_view.slot = GearSlotCount(&player->roster[hero]) - 1;
+        gear_view.dialog = GEAR_VIEW_DIALOG_PRESTIGE;
+        return;
+    }
+    if (DebugShotIs(shot, "gear_store") || DebugShotIs(shot, "gear_reveal")) {
+        game->screen = SCREEN_STORE;
+        StoreOpen(&game->store);
+        StoreShowGear(&game->store);
+        shot->gear_store = true;
+        if (DebugShotIs(shot, "gear_reveal")) StoreTryBuyGearPack(&game->store, player, GearPackCount() - 1);
+        return;
+    }
+    if (DebugShotIs(shot, "gear_inventory")) {
+        game->heroes.selected = -1;
+        GearViewOpenInventory();
+        return;
+    }
+    GearViewShow(hero, 1);
+    int items[GEAR_CATALOG_CAPACITY];
+    if (DebugShotIs(shot, "gear_list")) return;
+    if (GearViewFilteredItems(player, gear_view.filter, false, items) > 0) gear_view.selected = items[0];
+    if (DebugShotIs(shot, "gear_filter")) gear_view.filter_open = true;
+    if (DebugShotIs(shot, "gear_confirm")) GearViewRequestEquip(player);
+}
+
 static void DebugPrepareConsume(Game *game, DebugShot *shot) {
     if (!shot->screen || strncmp(shot->screen, "consume", 7) != 0) return;
     if (shot->consume_opened) {
@@ -525,6 +585,7 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     DebugActivateBattleRunes(game, shot);
     DebugPrepareRunes(game, shot);
     DebugPrepareConsume(game, shot);
+    DebugPrepareGear(game, shot);
     DebugPrepareGallery(game, shot);
     DebugSeedMissions(game, shot);
     if (DebugShotIs(shot, "gallery_unit")) game->screen = SCREEN_GALLERY;

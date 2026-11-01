@@ -1,5 +1,7 @@
 
 bool ProgressionSave(const Player *player);
+Color GearRarityColor(int rarity);
+void GearDrawTile(const GearDef *def, Rectangle r, bool selected);
 static void CampaignDrawWrapped(
     Font font, const char *text, Vector2 pos, float size, float spacing, float line_gap, float max_width, Color tint
 );
@@ -9,6 +11,8 @@ static void CampaignDrawWrapped(
 #define STORE_GEM_SKU_COUNT 7
 #define STORE_PACK_BULLET_MAX 4
 #define STORE_RUNE_PACK_COUNT 5
+#define STORE_GEAR_TILE_ITEM "fadesbane"
+#define STORE_GEAR_ROWS 2
 #define STORE_RUNE_PACK_SLOTS 3
 #define STORE_RUNE_SLOT_FAMILIES 4
 #define STORE_MAX_PACK_RUNES (STORE_MAX_RESULTS + STORE_RUNE_PACK_SLOTS)
@@ -52,6 +56,8 @@ typedef enum {
     STORE_VIEW_RESULT,
     STORE_VIEW_RUNES,
     STORE_VIEW_RUNE_REVEAL,
+    STORE_VIEW_GEAR,
+    STORE_VIEW_GEAR_REVEAL,
 } StoreView;
 
 typedef enum {
@@ -153,6 +159,10 @@ typedef struct {
     Button back;
     Button buy[STORE_PACK_COUNT];
     Button rune_buy[STORE_RUNE_PACK_COUNT];
+    Button gear_buy[GEAR_PACK_CAPACITY];
+    int gear_results[GEAR_PACK_MAX_ITEMS];
+    int gear_result_count;
+    int gear_selected_pack;
     Button next;
     Button skip;
     Button done;
@@ -472,6 +482,10 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
         store->rune_buy[i] = ButtonLoad(GUI_STORE_BUY, GUI_STORE_BUY_ON);
         ButtonDisableClickSound(&store->rune_buy[i]);
     }
+    for (int i = 0; i < GEAR_PACK_CAPACITY; i++) {
+        store->gear_buy[i] = ButtonLoad(GUI_STORE_BUY, GUI_STORE_BUY_ON);
+        ButtonDisableClickSound(&store->gear_buy[i]);
+    }
     store->rune_info_pack = -1;
     store->rune_details = -1;
     store->pack_rune_def = -1;
@@ -541,6 +555,11 @@ void StoreShowRunes(Store *store) {
     store->rune_details = -1;
 }
 
+void StoreShowGear(Store *store) {
+    store->view = STORE_VIEW_GEAR;
+    store->rune_details = -1;
+}
+
 bool StoreDialogOpen(const Store *store) {
     return store->dialog != STORE_DIALOG_NONE;
 }
@@ -561,7 +580,8 @@ bool StoreTopHudHomeActive(const Store *store) {
 
 bool StoreUsesHomeBackground(const Store *store) {
     return store->view == STORE_VIEW_LANDING || store->view == STORE_VIEW_HEROES || store->view == STORE_VIEW_GEMS ||
-           store->view == STORE_VIEW_RUNES || store->view == STORE_VIEW_RUNE_REVEAL;
+           store->view == STORE_VIEW_RUNES || store->view == STORE_VIEW_RUNE_REVEAL || store->view == STORE_VIEW_GEAR ||
+           store->view == STORE_VIEW_GEAR_REVEAL;
 }
 
 static float StoreCameraMix(const Store *store) {
@@ -600,9 +620,13 @@ StoreAction StoreHandleBack(Store *store, Heroes *heroes) {
         case STORE_VIEW_HEROES:
         case STORE_VIEW_GEMS:
         case STORE_VIEW_RUNES:
+        case STORE_VIEW_GEAR:
             store->view = STORE_VIEW_LANDING;
             store->info_pack = -1;
             GuiSoundPlay(SND_UI_POPUP_CLOSE);
+            return STORE_ACTION_NONE;
+        case STORE_VIEW_GEAR_REVEAL:
+            store->view = STORE_VIEW_GEAR;
             return STORE_ACTION_NONE;
         case STORE_VIEW_RUNE_REVEAL:
             if (store->rune_details >= 0)
@@ -952,7 +976,13 @@ static StoreAction StoreDrawLanding(Store *store) {
 
     static const char *const label_keys[3] = {"BUTTON_STORE_HERO_TAB", "BUTTON_STORE_GEMS_TAB", "RUNES_BUTTON_LABEL"};
     Rectangle list = StoreListRect();
-    float tile_w = list.width / 3.0f;
+    float tile_w = list.width / 4.0f;
+    Rectangle gear_tile = {list.x + 3.0f * tile_w, list.y, tile_w, list.height};
+    Texture2D gear_art = GearIconLoad(GearDefAt(GearDefIndex(STORE_GEAR_TILE_ITEM)));
+    if (StoreDrawCategoryTile(store, gear_tile, gear_art, GearText("GEAR_REVEAL_WINDOW_TITLE"))) {
+        StoreShowGear(store);
+        GuiSoundPlay(SND_UI_TAB);
+    }
     for (int i = 0; i < 3; i++) {
         Rectangle tile = {list.x + i * tile_w, list.y, tile_w, list.height};
         if (!StoreDrawCategoryTile(store, tile, store->category_art[i], LocGet(label_keys[i]))) continue;
@@ -1173,6 +1203,120 @@ static StoreAction StoreDrawRuneReveal(Store *store, Player *player, float dt) {
     }
     if (done) store->view = STORE_VIEW_RUNES;
     if (again) StoreTryBuyRunePack(store, player, store->rune_selected_pack);
+    StoreDrawToast(store);
+    return STORE_ACTION_NONE;
+}
+
+static bool StoreTryBuyGearPack(Store *store, Player *player, int pack_index) {
+    const GearPackDef *pack = GearPackAt(pack_index);
+    int old_gold = player->gold, old_gems = player->gems;
+    if (!PlayerBuyGearPack(player, pack, store->gear_results)) {
+        StoreOpenDialog(store, STORE_DIALOG_CANT_AFFORD);
+        return false;
+    }
+    if (!ProgressionSave(player)) {
+        for (int i = 0; i < pack->count; i++) {
+            if (pack->grants_tome)
+                player->gear.tomes--;
+            else
+                player->gear.counts[store->gear_results[i]]--;
+        }
+        player->gold = old_gold;
+        player->gems = old_gems;
+        StoreSetStatus(store, "Не удалось сохранить покупку");
+        GuiSoundPlay(SND_STORE_ERROR);
+        return false;
+    }
+    store->gear_selected_pack = pack_index;
+    store->gear_result_count = pack->count;
+    store->rune_reveal_time = 0.0f;
+    store->view = STORE_VIEW_GEAR_REVEAL;
+    GuiSoundPlay(SND_PACK_RARE);
+    return true;
+}
+
+static void StoreDrawGearPackCard(Store *store, Player *player, int pack_index, Rectangle cell) {
+    const GearPackDef *pack = GearPackAt(pack_index);
+    Rectangle art = StoreCellPart(cell, STORE_CELL_ICON);
+    DrawRectangleRec(art, BLACK);
+    Texture2D icon = pack->grants_tome ? GearTomeIconLoad() : GearIconLoad(GearPackArt(pack));
+    if (icon.id != 0) StoreDrawTextureCover(icon, art, WHITE);
+    UiDrawTexture(store->card, StoreCellPart(cell, STORE_CELL_CARD), WHITE);
+    Rectangle top = StoreCellPart(cell, STORE_CELL_HEADER);
+    UiDrawTexture(store->headers[STORE_PACK_CHAMPION], top, WHITE);
+    StoreDrawCenteredFit(
+        store->title_font,
+        pack->name_ru,
+        (Rectangle){top.x + top.width * 0.06f, top.y, top.width * 0.88f, top.height},
+        cell.height * STORE_HEADER_TEXT_OF_CELL,
+        WHITE
+    );
+    StoreDrawCenteredFit(
+        store->body_font,
+        TextFormat("x%d", pack->count),
+        StoreCellPart(cell, STORE_CELL_BULLET),
+        cell.height * STORE_BULLET_TEXT_OF_CELL,
+        GearRarityColor(pack->max_rarity)
+    );
+    Rectangle buy = StoreCellPart(cell, STORE_CELL_BUY);
+    bool clicked = ButtonDrawEx(&store->gear_buy[pack_index], buy, !StoreInputBlocked(store));
+    StoreDrawBuyPrice(store, pack->price, pack->gems, buy);
+    if (clicked) StoreTryBuyGearPack(store, player, pack_index);
+}
+
+static StoreAction StoreDrawGearPage(Store *store, Player *player) {
+    int chrome = StoreDrawPopupChrome(store, GearText("GEAR_REVEAL_WINDOW_TITLE"), true);
+    if (chrome == 1) return STORE_ACTION_CLOSE;
+    if (chrome == 2) {
+        store->view = STORE_VIEW_LANDING;
+        return STORE_ACTION_NONE;
+    }
+    Rectangle list = StoreListRect();
+    int columns = (GearPackCount() + 1) / STORE_GEAR_ROWS;
+    float cell_h = list.height / STORE_GEAR_ROWS;
+    float cell_w = cell_h * STORE_CELL_ASPECT;
+    float left = list.x + (list.width - columns * cell_w) * 0.5f;
+    for (int i = 0; i < GearPackCount(); i++) {
+        Rectangle cell = {left + (i % columns) * cell_w, list.y + (i / columns) * cell_h, cell_w, cell_h};
+        StoreDrawGearPackCard(store, player, i, cell);
+        if (store->view != STORE_VIEW_GEAR) return STORE_ACTION_NONE;
+    }
+    StoreDrawToast(store);
+    return STORE_ACTION_NONE;
+}
+
+static StoreAction StoreDrawGearReveal(Store *store, Player *player, float dt) {
+    int chrome = StoreDrawPopupChrome(store, GearText("GEAR_REVEAL_WINDOW_TITLE"), false);
+    if (chrome == 1) return STORE_ACTION_CLOSE;
+    store->rune_reveal_time += dt;
+    Rectangle list = StoreListRect();
+    float cell = 150.0f, gap = 20.0f;
+    float total = store->gear_result_count * cell + (store->gear_result_count - 1) * gap;
+    for (int i = 0; i < store->gear_result_count; i++) {
+        if (store->rune_reveal_time < i * STORE_RUNE_REVEAL_STEP) continue;
+        Rectangle rect = {
+            list.x + (list.width - total) * 0.5f + i * (cell + gap), list.y + (list.height - cell) * 0.4f, cell, cell
+        };
+        const GearDef *def = GearDefAt(store->gear_results[i]);
+        if (def)
+            GearDrawTile(def, rect, false);
+        else
+            UiDrawTexture(GearTomeIconLoad(), rect, WHITE);
+        StoreDrawCenteredFit(
+            store->body_font,
+            def ? def->title_ru : GearPackAt(store->gear_selected_pack)->name_ru,
+            (Rectangle){rect.x - 10.0f, rect.y + cell + 4.0f, cell + 20.0f, 24.0f},
+            17.0f,
+            GearRarityColor(def ? def->rarity : GEAR_RARITY_COUNT)
+        );
+    }
+    bool interactive = !StoreInputBlocked(store);
+    Rectangle popup = StorePlateRect();
+    float y = popup.y + popup.height - 90.0f, cx = popup.x + popup.width * 0.5f;
+    bool again = ButtonDrawEx(&store->buy_again, (Rectangle){cx - 242.0f, y, 236.0f, 59.0f}, interactive);
+    bool done = ButtonDrawEx(&store->done, (Rectangle){cx + 6.0f, y, 236.0f, 59.0f}, interactive);
+    if (done) store->view = STORE_VIEW_GEAR;
+    if (again) StoreTryBuyGearPack(store, player, store->gear_selected_pack);
     StoreDrawToast(store);
     return STORE_ACTION_NONE;
 }
@@ -1632,6 +1776,12 @@ StoreAction StoreDraw(Store *store, Player *player, Heroes *heroes, float dt) {
             break;
         case STORE_VIEW_RUNE_REVEAL:
             action = StoreDrawRuneReveal(store, player, dt);
+            break;
+        case STORE_VIEW_GEAR:
+            action = StoreDrawGearPage(store, player);
+            break;
+        case STORE_VIEW_GEAR_REVEAL:
+            action = StoreDrawGearReveal(store, player, dt);
             break;
     }
     StoreDrawDialog(store);

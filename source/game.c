@@ -342,6 +342,11 @@ bool GameHandlePopupBack(Game *g) {
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return true;
     }
+    if (g->screen == SCREEN_HEROES && GearViewIsOpen()) {
+        GearViewClose();
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+        return true;
+    }
     if (g->screen == SCREEN_RUNES) return RunesHandleBack(&g->runes);
     if (g->screen == SCREEN_CONSUME) return ConsumeHandleBack(&g->consume);
     if (g->screen == SCREEN_QUESTS && QuestsHandleBack(&g->quests)) return true;
@@ -692,6 +697,11 @@ void GameDraw(Game *g) {
 
             if (heroes_action == HEROES_QUEST) {
                 g->screen = SCREEN_QUESTS;
+            } else if (GearViewTakeStoreRequest()) {
+                GearViewClose();
+                StoreOpen(&g->store);
+                StoreShowGear(&g->store);
+                g->screen = SCREEN_STORE;
             } else if (heroes_action == HEROES_RUNES) {
                 GameOpenRunes(g, SCREEN_HEROES);
             } else if (heroes_action == HEROES_GALLERY) {
@@ -705,8 +715,9 @@ void GameDraw(Game *g) {
             bool squad_changed = false;
             int req = HeroesTakeDragRequest(&g->heroes);
             if (req >= 0 && HeroesBackgroundDragStart(&g->heroes_scene, &g->player, req, -1)) g->heroes.drag_icon = req;
-            if (!heroes_modal && !HeroesBackgroundDragActive(&g->heroes_scene) &&
-                IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && UiMouse().x > ROSTER_PANEL_WIDTH) {
+            if (!heroes_modal && !HeroesBoardInputBlocked(&g->heroes) &&
+                !HeroesBackgroundDragActive(&g->heroes_scene) && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) &&
+                UiMouse().x > ROSTER_PANEL_WIDTH) {
                 int slot = HeroesBackgroundSlotAtMouse(&g->heroes_scene, &g->player);
                 if (slot >= 0) {
                     int unit = PlayerSquadUnitAt(&g->player, g->player.current_squad, slot);

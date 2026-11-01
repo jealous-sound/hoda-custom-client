@@ -1,4 +1,6 @@
 
+#define HEROES_GEAR_COLUMN_WIDTH 64.0f
+#define HEROES_GEAR_BUTTON_X 284.0f
 #define HEROES_DRAG_THRESHOLD 51.0f
 #define ROSTER_PREFAB_WIDTH 2030.0f
 #define ROSTER_PREFAB_HEIGHT 938.0f
@@ -88,6 +90,7 @@ typedef void (*RosterCardDrawFn)(const HeroCard *card, Rectangle cell, int roste
 typedef struct {
     Button gray;
     Button gold;
+    Button gear;
     Button train;
     Button fortify;
     Button runes;
@@ -112,6 +115,8 @@ typedef struct {
     int drag_request;
     int drag_icon;
 } Heroes;
+
+bool GearViewIsOpen(void);
 
 int HeroesTakeDragRequest(Heroes *h) {
     int req = h->drag_request;
@@ -165,7 +170,7 @@ static void HeroCardBuild(HeroCard *card, const Character *ch) {
         {182, 252, 240, 255},
         {255, 0, 255, 255},
     };
-    card->rarity_ru = LocGet(rarity_keys[ch->rarity]);
+    card->rarity_ru = ch->rarity == RARITY_MYTHIC ? GearText("RARITY_MYTHIC") : LocGet(rarity_keys[ch->rarity]);
     card->rarity_color = rarity_colors[ch->rarity];
 
     card->speed_ru = LocGet(
@@ -375,6 +380,7 @@ void HeroesInitialize(Heroes *h, const Player *p) {
     float icon_scale = 0.15f;
     h->gray = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "Задание", font, anchor, scale);
     h->gold = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "PvP", font, anchor, scale);
+    h->gear = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, GearText("GEAR_REVEAL_WINDOW_TITLE"), font, anchor, 0.25f);
     h->train = ButtonLoadText(GUI_BTN_TRAIN, GUI_BTN_TRAIN_ON, "Поглотить", font, icon_anchor, icon_scale);
     h->fortify = ButtonLoadText(GUI_BTN_FORTIFY, GUI_BTN_FORTIFY_ON, "Поддержка", font, icon_anchor, icon_scale);
     h->runes = ButtonLoadText(GUI_BTN_RUNES, GUI_BTN_RUNES_ON, "Руны", font, icon_anchor, icon_scale);
@@ -429,6 +435,17 @@ bool HeroesSyncRoster(Heroes *h, const Player *p) {
     return true;
 }
 
+bool HeroesBoardInputBlocked(const Heroes *h) {
+    return h->selected >= 0 || GearViewIsOpen();
+}
+
+void HeroesRebuildCard(Heroes *h, const Player *p, int index) {
+    Texture2D portrait = h->cards[index].portrait;
+    HeroCardBuild(&h->cards[index], &p->roster[index]);
+    h->cards[index].portrait = portrait;
+    RosterRefreshOrder(&h->roster, p);
+}
+
 void HeroesApplyConsume(Heroes *h, const Player *p, const int *seeds, int seed_count, int target) {
     bool *removed = (bool *)MemAlloc((unsigned int)h->card_count);
     for (int i = 0; i < seed_count; i++) {
@@ -465,6 +482,15 @@ void HeroesDestroy(Heroes *h) {
 }
 
 static Color HeroesRichColor(const char *name, Color base) {
+    if (name[0] == '#') {
+        unsigned value = 0;
+        int digits = (int)strlen(name + 1);
+        if ((digits == 6 || digits == 8) && sscanf(name + 1, "%x", &value) == 1) {
+            if (digits == 8) value >>= 8;
+            return (Color){(value >> 16) & 255, (value >> 8) & 255, value & 255, 255};
+        }
+        return base;
+    }
     if (!strcasecmp(name, "green")) return (Color){0, 128, 0, 255};
     if (!strcasecmp(name, "red")) return (Color){255, 0, 0, 255};
     if (!strcasecmp(name, "orange")) return (Color){255, 165, 0, 255};
@@ -912,14 +938,26 @@ int HeroesDrawSquadTabs(Heroes *h, const Player *p, Rectangle view) {
     return requested;
 }
 
+void GearViewOpenInventory(void);
+void GearViewDrawSlots(Player *p, int hero, Rectangle details);
+void GearViewDrawPanel(Player *p);
+void GearViewDrawDialogs(Player *p);
+int GearViewTakeChangedHero(void);
+
 static const Rectangle HEROES_SQUAD_TABS = {8.0f, 644.0f, 246.0f, 64.0f};
 
 HeroesButton HeroesDraw(Heroes *h, Player *p) {
     HeroesButton clicked = HEROES_NONE;
 
     HeroesCardContext card_context = {h, p};
-    int hovered =
-        RosterDraw(&h->roster, h->cards, p, !UiInputBlocked() && h->selected < 0, HeroesDrawRosterCard, &card_context);
+    bool gear_open = GearViewIsOpen();
+    int hovered = -1;
+    if (gear_open)
+        GearViewDrawPanel(p);
+    else
+        hovered = RosterDraw(
+            &h->roster, h->cards, p, !UiInputBlocked() && h->selected < 0, HeroesDrawRosterCard, &card_context
+        );
     {
         int requested_squad = HeroesDrawSquadTabs(h, p, HEROES_SQUAD_TABS);
         if (requested_squad >= 0) PlayerSquadSelect(p, requested_squad);
@@ -927,9 +965,10 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
 
     {
         Vector2 mouse = UiMouse();
-        bool ui_input = !UiInputBlocked();
+        bool ui_input = !UiInputBlocked() && !gear_open;
         if (h->selected >= 0) {
             Rectangle details = HeroesDetailsBounds(156.0f, UiWidth() - 256.0f);
+            details.width += HEROES_GEAR_COLUMN_WIDTH;
             if (ui_input && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
                 h->details_close_armed = !CheckCollisionPointRec(mouse, details);
             if (ui_input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
@@ -959,13 +998,15 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
             }
         }
     }
-    bool buttons_active = h->selected < 0;
+    bool buttons_active = h->selected < 0 && !gear_open;
 
     {
         float gap = 8.0f;
         float x = UiWidth() / 4.0f + 96.0f;
         float y = UiHeight() - h->gray.idle.height - 12.0f;
 
+        Rectangle inventory = {HEROES_GEAR_BUTTON_X, y, x - HEROES_GEAR_BUTTON_X - gap, (float)h->gray.idle.height};
+        if (ButtonDrawEx(&h->gear, inventory, buttons_active)) GearViewOpenInventory();
         if (ButtonDrawEx(&h->gray, (Rectangle){x, y, -1, -1}, buttons_active)) clicked = HEROES_QUEST;
         x += h->gray.idle.width + gap;
         ButtonDrawEx(&h->gold, (Rectangle){x, y, -1, -1}, false);
@@ -977,7 +1018,15 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
         if (nav != HEROES_NONE) clicked = nav;
     }
 
-    if (h->selected >= 0) HeroesDrawDetails(&h->cards[h->selected], 156.0f, UiWidth() - 256.0f);
+    if (h->selected >= 0) {
+        HeroesDrawDetails(&h->cards[h->selected], 156.0f, UiWidth() - 256.0f);
+        GearViewDrawSlots(
+            p, (int)(h->cards[h->selected].ch - p->roster), HeroesDetailsBounds(156.0f, UiWidth() - 256.0f)
+        );
+    }
+    GearViewDrawDialogs(p);
+    int changed_hero = GearViewTakeChangedHero();
+    if (changed_hero >= 0) HeroesRebuildCard(h, p, changed_hero);
 
     if (h->drag_icon >= 0) {
         Vector2 m = UiMouse();

@@ -3883,12 +3883,10 @@ static void TestRuneBonusStacksAndScalesRewards(void) {
 }
 
 static void TestRuneMitigationAndRetaliation(void) {
-    RuneBonus shield = {.damage_shield = 600};
-    assert(SimRuneMitigatedDamage(&shield, 1000) == 400);
-    assert(SimRuneMitigatedDamage(&shield, 100) == SIM_RUNE_SHIELDED_HIT_MIN_DAMAGE);
-    RuneBonus guard = {.damage_resist_pct = 75};
-    assert(SimRuneMitigatedDamage(&guard, 1000) == 250);
-    assert(SimRuneMitigatedDamage(&(RuneBonus){0}, 1000) == 1000);
+    assert(SimDamageAfterResist(1000, 600, 0) == 400);
+    assert(SimDamageAfterResist(100, 600, 0) == SIM_RUNE_SHIELDED_HIT_MIN_DAMAGE);
+    assert(SimDamageAfterResist(1000, 0, 75) == 250);
+    assert(SimDamageAfterResist(1000, 0, 0) == 1000);
 
     BattleSim s = {0};
     Character attacker, target;
@@ -4302,7 +4300,743 @@ static void TestMissionSaveRoundTrip(void) {
     assert(loaded.progress[3] == 0 && !loaded.claimed[3]);
 }
 
+#define GEAR_TEST_MAX_EFFECTS 16
+
+static GearEffect gear_test_effects[GEAR_TEST_MAX_EFFECTS];
+static PassiveMatchTerm gear_test_terms[GEAR_TEST_MAX_EFFECTS];
+static int gear_test_effect_count;
+
+static void GearTestReset(void) {
+    GearCatalogEnsure();
+    static int shipped_count;
+    if (!shipped_count) shipped_count = gear_catalog.count;
+    gear_catalog.count = shipped_count;
+    gear_test_effect_count = 0;
+}
+
+static int GearTestDef(GearStat stat, int value, GearTrigger on, PassiveScope scope, GearBasis basis) {
+    assert(gear_test_effect_count < GEAR_TEST_MAX_EFFECTS && gear_catalog.count < GEAR_CATALOG_CAPACITY);
+    GearEffect *effect = &gear_test_effects[gear_test_effect_count++];
+    *effect = (GearEffect){.stat = stat, .value = value, .on = on, .basis = basis};
+    effect->recipient.scope = scope;
+    effect->recipient.include_source = true;
+    effect->wearer.scope = PASSIVE_SCOPE_SELF;
+    GearDef *def = &gear_catalog.defs[gear_catalog.count];
+    memset(def, 0, sizeof(*def));
+    snprintf(def->id, sizeof(def->id), "test_gear_%d", gear_catalog.count);
+    def->rarity = 1;
+    def->effects = effect;
+    def->effect_count = 1;
+    return gear_catalog.count++;
+}
+
+static PassiveFilter GearTestGroupFilter(const char *group) {
+    PassiveMatchTerm *term = &gear_test_terms[gear_test_effect_count];
+    term->kind = PASSIVE_TERM_GROUP;
+    StrCopy(term->value, sizeof(term->value), group);
+    return (PassiveFilter){.has_match = true, .terms = term, .term_count = 1, .include_source = true};
+}
+
+static void GearTestUnit(BattleSim *s, Character *ch, Ability *ability, int side, int slot, int health) {
+    char id[32];
+    snprintf(id, sizeof(id), "gear_unit_%d_%d", side, slot);
+    GearLoadout loadout = ch->gear;
+    TestCharacter(ch, ability, id, "ABILITY_DAMAGE_ONE", TARGET_ONE, 1000, health);
+    ch->gear = loadout;
+    SimUnitInit(s, side, slot, ch);
+}
+
+static void GearTestSwing(BattleSim *s, int actor) {
+    SimAttack(s, actor, &SIM_RECIPE_DEFAULT, &(AttackRecipe){.target = RECIPE_TARGET_ABILITY}, true, false);
+}
+
+static void TestGearSlotsFollowRarity(void) {
+    Character ch = {.gear_slots = 4, .has_prestige_slot = true};
+    assert(GearSlotCount(&ch) == 4 && GearHasPrestigeSlot(&ch));
+    assert(!GearSlotIsPrestige(&ch, 2) && GearSlotIsPrestige(&ch, 3));
+    ch.gear_slots = 5;
+    assert(GearSlotIsPrestige(&ch, 4) && !GearSlotIsPrestige(&ch, 3));
+    ch.gear_slots = 3;
+    assert(!GearHasPrestigeSlot(&ch) && !GearSlotIsPrestige(&ch, 2));
+    ch.gear_slots = 0;
+    assert(GearSlotCount(&ch) == 0);
+}
+
+static void TestGearEquipRules(void) {
+    GearTestReset();
+    PlayerGear gear = {0};
+    Character warrior = {.gear_slots = 4, .has_prestige_slot = true, .group_count = 1};
+    StrCopy(warrior.groups[0], sizeof(warrior.groups[0]), "Warrior");
+
+    int shield = GearDefIndex("templar_shield");
+    int plate = GearDefIndex("winterweight");
+    int warden_plate = GearDefIndex("griffon_plate");
+    int common = GearDefIndex("red_iron_maul");
+    assert(shield >= 0 && plate >= 0 && warden_plate >= 0 && common >= 0);
+
+    assert(GearCheckEquip(&gear, &warrior, 0, common) == GEAR_EQUIP_NOT_OWNED);
+    gear.counts[common] = 2;
+    gear.counts[shield] = gear.counts[plate] = gear.counts[warden_plate] = 1;
+    assert(GearCheckEquip(&gear, &warrior, 9, common) == GEAR_EQUIP_INVALID_SLOT);
+    assert(GearCheckEquip(&gear, &warrior, 0, warden_plate) == GEAR_EQUIP_CATEGORY);
+
+    assert(GearEquip(&gear, &warrior, 0, common) == GEAR_EQUIP_OK);
+    assert(gear.counts[common] == 1);
+    assert(GearCheckEquip(&gear, &warrior, 1, common) == GEAR_EQUIP_DUPLICATE);
+    assert(GearCheckEquip(&gear, &warrior, 0, common) == GEAR_EQUIP_OK);
+
+    assert(GearEquip(&gear, &warrior, 1, shield) == GEAR_EQUIP_OK);
+    assert(GearCheckEquip(&gear, &warrior, 2, plate) == GEAR_EQUIP_AURAS_CANNOT_STACK);
+    assert(GearEquip(&gear, &warrior, 1, plate) == GEAR_EQUIP_OK);
+    assert(GearInSlot(&warrior, 1) == GearDefAt(plate));
+    assert(gear.counts[shield] == 0);
+
+    warrior.specialties[warrior.specialty_count++] = SPEC_DEFENDER;
+    Character defender = warrior;
+    memset(&defender.gear, 0, sizeof(defender.gear));
+    gear.counts[plate] = 1;
+    assert(GearCheckEquip(&gear, &defender, 0, plate) == GEAR_EQUIP_AURAS_CANNOT_STACK);
+
+    int legendary = GearDefIndex("fadesbane");
+    int low = GearDefIndex("lotherings_lament");
+    gear.counts[legendary] = gear.counts[low] = 1;
+    assert(GearCheckEquip(&gear, &warrior, 3, low) == GEAR_EQUIP_PRESTIGE_LOCKED);
+    warrior.gear.prestige_unlocked = true;
+    assert(GearCheckEquip(&gear, &warrior, 3, low) == GEAR_EQUIP_INVALID_PRESTIGE);
+    assert(GearCheckEquip(&gear, &warrior, 3, legendary) == GEAR_EQUIP_OK);
+}
+
+static void TestGearCategoriesUseOrAndAllSemantics(void) {
+    GearTestReset();
+    const GearDef *bianca = GearDefAt(GearDefIndex("bianca"));
+    assert(bianca && bianca->categories_all && bianca->category_count == 2);
+    Character dwarf = {.faction = FACTION_RED, .group_count = 1};
+    StrCopy(dwarf.groups[0], sizeof(dwarf.groups[0]), "Dwarf");
+    assert(GearUnitCanWear(&dwarf, bianca));
+    dwarf.faction = FACTION_BLUE;
+    assert(!GearUnitCanWear(&dwarf, bianca));
+
+    const GearDef *maul = GearDefAt(GearDefIndex("maul_of_tacitus"));
+    assert(maul && !maul->categories_all && maul->category_count == 2);
+    Character tevinter = {.group_count = 1};
+    StrCopy(tevinter.groups[0], sizeof(tevinter.groups[0]), "Tevinter");
+    assert(GearUnitCanWear(&tevinter, maul));
+}
+
+static void TestGearSellValueAndPrestigeUnlock(void) {
+    GearTestReset();
+    Player p = {.gems = GearPrestigeSlotGemCost() - 1};
+    Character legend = {.gear_slots = 4, .has_prestige_slot = true};
+    assert(!PlayerUnlockPrestigeGearSlot(&p, &legend) && !legend.gear.prestige_unlocked);
+    p.gems = GearPrestigeSlotGemCost();
+    assert(PlayerUnlockPrestigeGearSlot(&p, &legend) && legend.gear.prestige_unlocked && p.gems == 0);
+    assert(!PlayerUnlockPrestigeGearSlot(&p, &legend));
+
+    int item = GearDefIndex("red_iron_maul");
+    assert(!PlayerSellGear(&p, item));
+    p.gear.counts[item] = 1;
+    assert(PlayerSellGear(&p, item) && p.gear.counts[item] == 0);
+    assert(p.gold == GearSellValue(GearDefAt(item)) && p.gold > 0);
+}
+
+static void TestGearPacksRollInsideTheirRarityRange(void) {
+    GearTestReset();
+    assert(GearPackCount() == GEAR_PACK_CAPACITY);
+    uint32_t rng = 12345;
+    for (int p = 0; p < GearPackCount(); p++) {
+        const GearPackDef *pack = GearPackAt(p);
+        for (int roll = 0; roll < 200; roll++) {
+            const GearDef *def = GearDefAt(GearRollFromPack(pack, &rng));
+            assert(def && def->rarity >= pack->min_rarity && def->rarity <= pack->max_rarity);
+        }
+    }
+    Player broke = {.gold = 0};
+    int rolled[GEAR_PACK_MAX_ITEMS];
+    assert(!PlayerBuyGearPack(&broke, GearPackAt(0), rolled));
+    Player rich = {.gold = GearPackAt(0)->price, .store_rng_state = 9};
+    assert(PlayerBuyGearPack(&rich, GearPackAt(0), rolled));
+    assert(rich.gold == 0 && GearInventoryTotal(&rich.gear) == GearPackAt(0)->count);
+}
+
+static void TestGearStatAurasAddThenMultiply(void) {
+    GearTestReset();
+    int a = GearTestDef(GEAR_STAT_POWER, 10, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int b = GearTestDef(GEAR_STAT_POWER, 10, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int weaken = GearTestDef(GEAR_STAT_HEALTH, -50, GEAR_ON_BATTLE, PASSIVE_SCOPE_ENEMIES, GEAR_BASIS_BASE);
+    int crit = GearTestDef(GEAR_STAT_CRIT, 7, GEAR_ON_BATTLE, PASSIVE_SCOPE_ALLIES, GEAR_BASIS_BASE);
+
+    BattleSim s = {0};
+    Character wearer = {0}, ally = {0}, enemy = {0};
+    Ability abilities[3];
+    wearer.gear.defs[0] = (short)(a + 1);
+    wearer.gear.defs[1] = (short)(b + 1);
+    wearer.gear.defs[2] = (short)(weaken + 1);
+    wearer.gear.defs[3] = (short)(crit + 1);
+    GearTestUnit(&s, &wearer, &abilities[0], 0, 2, 10000);
+    GearTestUnit(&s, &ally, &abilities[1], 0, 3, 10000);
+    GearTestUnit(&s, &enemy, &abilities[2], 1, 2, 10000);
+    float ally_crit = s.units[3].crit_pct;
+    SimUnitsBattleStartPassives(s.units);
+
+    assert(s.units[2].power == 1200 && s.units[2].start_power == 1200);
+    assert(s.units[3].power == 1000);
+    assert(s.units[SQUAD_SLOT_COUNT + 2].health == s.units[SQUAD_SLOT_COUNT + 2].max_health);
+    assert(s.units[SQUAD_SLOT_COUNT + 2].max_health == CharacterStatHealth(&enemy) / 2);
+    assert(s.units[3].crit_pct == ally_crit + 7.0f);
+    GearTestReset();
+}
+
+static void TestGearAuraRespectsGroupAndWearerFilters(void) {
+    GearTestReset();
+    int aura = GearTestDef(GEAR_STAT_POWER, 50, GEAR_ON_BATTLE, PASSIVE_SCOPE_ALLIES, GEAR_BASIS_BASE);
+    gear_test_effects[gear_test_effect_count - 1].recipient =
+        (PassiveFilter){.scope = PASSIVE_SCOPE_ALLIES, .include_source = true};
+    PassiveFilter dwarves = GearTestGroupFilter("Dwarf");
+    dwarves.scope = PASSIVE_SCOPE_ALLIES;
+    gear_test_effects[gear_test_effect_count - 1].recipient = dwarves;
+
+    BattleSim s = {0};
+    Character wearer = {0}, dwarf = {0};
+    Ability abilities[2];
+    wearer.gear.defs[0] = (short)(aura + 1);
+    GearTestUnit(&s, &wearer, &abilities[0], 0, 2, 10000);
+    GearTestUnit(&s, &dwarf, &abilities[1], 0, 3, 10000);
+    dwarf.group_count = 1;
+    StrCopy(dwarf.groups[0], sizeof(dwarf.groups[0]), "Dwarf");
+    SimUnitsBattleStartPassives(s.units);
+    assert(s.units[2].power == 1000 && s.units[3].power == 1500);
+
+    int personal = GearTestDef(GEAR_STAT_POWER, 50, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    PassiveFilter dwarf_only = GearTestGroupFilter("Dwarf");
+    gear_test_effects[gear_test_effect_count - 1].wearer = dwarf_only;
+    BattleSim second = {0};
+    Character human = {0};
+    Ability human_ability;
+    human.gear.defs[0] = (short)(personal + 1);
+    GearTestUnit(&second, &human, &human_ability, 0, 2, 10000);
+    SimUnitsBattleStartPassives(second.units);
+    assert(second.units[2].power == 1000);
+    GearTestReset();
+}
+
+static void TestGearDamageMitigationAndVersus(void) {
+    GearTestReset();
+    int resist = GearTestDef(GEAR_STAT_DAMAGE_RESIST, 50, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int raw = GearTestDef(GEAR_STAT_RAW_DAMAGE_RESIST, 100, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int versus = GearTestDef(GEAR_STAT_BONUS_DAMAGE, 40, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    gear_test_effects[gear_test_effect_count - 1].versus = GearTestGroupFilter("Mage");
+
+    BattleSim s = {0};
+    Character attacker = {0}, target = {0};
+    Ability abilities[2];
+    attacker.gear.defs[0] = (short)(versus + 1);
+    target.gear.defs[0] = (short)(resist + 1);
+    target.gear.defs[1] = (short)(raw + 1);
+    GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 10000);
+    GearTestUnit(&s, &target, &abilities[1], 1, 2, 10000);
+    SimUnitsBattleStartPassives(s.units);
+    s.units[2].crit_pct = 0.0f;
+    s.rng = 11;
+
+    int idx = SQUAD_SLOT_COUNT + 2;
+    assert(SimMitigatedDamage(&s, &s.units[2], &s.units[idx], 1000) == 450);
+    int before = s.units[idx].health;
+    GearTestSwing(&s, 2);
+    assert(before - s.units[idx].health == 450);
+
+    target.group_count = 1;
+    StrCopy(target.groups[0], sizeof(target.groups[0]), "Mage");
+    before = s.units[idx].health;
+    GearTestSwing(&s, 2);
+    assert(before - s.units[idx].health == 650);
+    GearTestReset();
+}
+
+static void TestGearResistsScaleAilments(void) {
+    GearTestReset();
+    int immune = GearTestDef(GEAR_STAT_STUN_RESIST, 100, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int fragile = GearTestDef(GEAR_STAT_STUN_RESIST, -50, GEAR_ON_BATTLE, PASSIVE_SCOPE_ENEMIES, GEAR_BASIS_BASE);
+    BattleSim s = {.rng = 3};
+    for (int i = 0; i < 200; i++) assert(SimEffectLands(&s, 50, 100) == false);
+    for (int i = 0; i < 200; i++) assert(SimEffectLands(&s, 50, -50) == true);
+    assert(!SimEffectLands(&s, 0, -50));
+
+    Character attacker = {0}, target = {0};
+    Ability abilities[2];
+    attacker.gear.defs[0] = (short)(fragile + 1);
+    target.gear.defs[0] = (short)(immune + 1);
+    GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 10000);
+    GearTestUnit(&s, &target, &abilities[1], 1, 2, 10000);
+    SimUnitsBattleStartPassives(s.units);
+    assert(s.units[SQUAD_SLOT_COUNT + 2].gear.stun_resist_pct == 50);
+    GearTestReset();
+}
+
+static void TestGearOnHitReactionsAndStealth(void) {
+    GearTestReset();
+    int power = GearTestDef(GEAR_STAT_POWER, 10, GEAR_ON_SELF_HIT, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int convert = GearTestDef(GEAR_STAT_HEALTH, 50, GEAR_ON_SELF_HIT, PASSIVE_SCOPE_SELF, GEAR_BASIS_DAMAGE);
+    int stealth = GearTestDef(GEAR_STAT_STEALTH, 1, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int perceptive = GearTestDef(GEAR_STAT_PERCEPTIVE, 1, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+
+    BattleSim s = {.rng = 5};
+    Character attacker = {0}, target = {0};
+    Ability abilities[2];
+    target.gear.defs[0] = (short)(power + 1);
+    target.gear.defs[1] = (short)(convert + 1);
+    GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 100000);
+    GearTestUnit(&s, &target, &abilities[1], 1, 2, 100000);
+    SimUnitsBattleStartPassives(s.units);
+    s.units[2].crit_pct = 0.0f;
+    int idx = SQUAD_SLOT_COUNT + 2;
+
+    GearTestSwing(&s, 2);
+    assert(s.units[idx].power == 1100);
+    assert(s.units[idx].max_health - s.units[idx].health == 500);
+
+    attacker.gear.defs[0] = (short)(stealth + 1);
+    SimUnitsGearAuras(s.units, (float[SIM_UNIT_COUNT]){0}, (float[SIM_UNIT_COUNT]){0});
+    GearTestSwing(&s, 2);
+    assert(s.units[idx].power == 1100);
+
+    target.gear.defs[2] = (short)(perceptive + 1);
+    attacker.gear.defs[0] = 0;
+    s.units[idx].gear.perceptive = true;
+    s.units[2].gear.stealth = true;
+    GearTestSwing(&s, 2);
+    assert(s.units[idx].power == 1200);
+    GearTestReset();
+}
+
+static void TestGearReactionsRespectCurses(void) {
+    GearTestReset();
+    int power = GearTestDef(GEAR_STAT_POWER, 10, GEAR_ON_SELF_HIT, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    BattleSim s = {.rng = 5};
+    Character attacker = {0}, target = {0};
+    Ability abilities[2];
+    target.gear.defs[0] = (short)(power + 1);
+    GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 100000);
+    GearTestUnit(&s, &target, &abilities[1], 1, 2, 100000);
+    s.units[2].crit_pct = 0.0f;
+    s.units[SQUAD_SLOT_COUNT + 2].curse_power = true;
+    GearTestSwing(&s, 2);
+    assert(s.units[SQUAD_SLOT_COUNT + 2].power == 1000);
+    GearTestReset();
+}
+
+static void TestGearDeathTriggersFireForDeadWearer(void) {
+    GearTestReset();
+    int heal = GearTestDef(GEAR_STAT_HEALTH, 60, GEAR_ON_SELF_DEATH, PASSIVE_SCOPE_ALLIES, GEAR_BASIS_BASE);
+    int vengeful = GearTestDef(GEAR_STAT_POWER, 25, GEAR_ON_ALLY_DEATH, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+
+    BattleSim s = {.rng = 5};
+    Character attacker = {0}, doomed = {0}, ally = {0};
+    Ability abilities[3];
+    doomed.gear.defs[0] = (short)(heal + 1);
+    ally.gear.defs[0] = (short)(vengeful + 1);
+    GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 100000);
+    GearTestUnit(&s, &doomed, &abilities[1], 1, 2, 10);
+    GearTestUnit(&s, &ally, &abilities[2], 1, 3, 10000);
+    s.units[2].crit_pct = 0.0f;
+    int ally_idx = SQUAD_SLOT_COUNT + 3;
+    s.units[ally_idx].health = 1000;
+    GearTestSwing(&s, 2);
+
+    assert(!s.units[SQUAD_SLOT_COUNT + 2].alive);
+    assert(s.units[ally_idx].health == 1000 + s.units[ally_idx].max_health * 60 / 100);
+    assert(s.units[ally_idx].power == 1250);
+    assert(s.gear_pending_deaths == 0);
+    GearTestReset();
+}
+
+static void TestGearReactionDamageCanEndAChain(void) {
+    GearTestReset();
+    int explode = GearTestDef(GEAR_STAT_DAMAGE, 100, GEAR_ON_ENEMY_HIT, PASSIVE_SCOPE_ENEMIES, GEAR_BASIS_DAMAGE);
+    int chain = GearTestDef(GEAR_STAT_DAMAGE, 100, GEAR_ON_ENEMY_DEATH, PASSIVE_SCOPE_ENEMIES, GEAR_BASIS_DAMAGE);
+    BattleSim s = {.rng = 5};
+    Character attacker = {0}, first = {0}, second = {0};
+    Ability abilities[3];
+    attacker.gear.defs[0] = (short)(explode + 1);
+    attacker.gear.defs[1] = (short)(chain + 1);
+    GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 100000);
+    GearTestUnit(&s, &first, &abilities[1], 1, 2, 10);
+    GearTestUnit(&s, &second, &abilities[2], 1, 3, 10);
+    s.units[2].crit_pct = 0.0f;
+    GearTestSwing(&s, 2);
+    assert(SimTeamDead(&s, 1));
+    GearTestReset();
+}
+
+static void TestGearDefenderAbsorbsAoeShare(void) {
+    GearTestReset();
+    int absorb = GearTestDef(GEAR_STAT_DEFENDER, 10, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    BattleSim s = {.rng = 5};
+    Character attacker = {0}, tank = {0}, squishy = {0};
+    Ability abilities[3];
+    tank.gear.defs[0] = (short)(absorb + 1);
+    GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 100000);
+    GearTestUnit(&s, &tank, &abilities[1], 1, 2, 100000);
+    GearTestUnit(&s, &squishy, &abilities[2], 1, 3, 100000);
+    SimUnitsBattleStartPassives(s.units);
+    s.units[2].crit_pct = 0.0f;
+    abilities[0].target = TARGET_ALL;
+    GearTestSwing(&s, 2);
+    assert(s.units[SQUAD_SLOT_COUNT + 2].max_health - s.units[SQUAD_SLOT_COUNT + 2].health == 1100);
+    assert(s.units[SQUAD_SLOT_COUNT + 3].max_health - s.units[SQUAD_SLOT_COUNT + 3].health == 900);
+    GearTestReset();
+}
+
+static void TestGearTargetPreferences(void) {
+    GearTestReset();
+    int flank = GearTestDef(GEAR_STAT_TARGET_BACK_ROW, 1, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int reduce = GearTestDef(GEAR_STAT_FLANK_REDUCTION, 1, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int haste = GearTestDef(GEAR_STAT_HASTE, 1, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    BattleSim s = {.rng = 21};
+    Character attacker = {0}, back = {0};
+    Ability abilities[2];
+    attacker.gear.defs[0] = (short)(flank + 1);
+    attacker.gear.defs[1] = (short)(haste + 1);
+    GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 10000);
+    GearTestUnit(&s, &back, &abilities[1], 1, 2, 10000);
+    assert(SquadSlotIsBack(2));
+    SimUnitsBattleStartPassives(s.units);
+    assert(SimFlankWeight(&s.units[2], &s.units[SQUAD_SLOT_COUNT + 2]) == SIM_GEAR_FLANK_WEIGHT);
+    back.gear.defs[0] = (short)(reduce + 1);
+    s.units[SQUAD_SLOT_COUNT + 2].gear.flank_reduction = true;
+    assert(SimFlankWeight(&s.units[2], &s.units[SQUAD_SLOT_COUNT + 2]) < SIM_GEAR_FLANK_WEIGHT);
+
+    long hasted = 0, plain = 0;
+    SimUnit normal = s.units[2];
+    normal.gear.haste = false;
+    for (int i = 0; i < 2000; i++) {
+        hasted += SimRollInitiative(&s, &s.units[2]);
+        plain += SimRollInitiative(&s, &normal);
+    }
+    assert(hasted > plain);
+    GearTestReset();
+}
+
+static void TestGearlessFightsAreUntouched(void) {
+    BattleSim s = {.rng = 5};
+    Character attacker = {0}, target = {0};
+    Ability abilities[2];
+    GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 100000);
+    GearTestUnit(&s, &target, &abilities[1], 1, 2, 100000);
+    s.units[2].crit_pct = 0.0f;
+    GearTestSwing(&s, 2);
+    assert(s.action_count == 1);
+}
+
+static void TestEveryCatalogItemFightsCleanly(void) {
+    GearTestReset();
+    for (int def = 0; def < GearCatalogCount(); def++) {
+        BattleSim s = {.rng = (unsigned)def + 1};
+        Character attacker = {0}, target = {0}, ally = {0};
+        Ability abilities[3];
+        attacker.gear.defs[0] = (short)(def + 1);
+        target.gear.defs[0] = (short)(def + 1);
+        GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 100000);
+        GearTestUnit(&s, &target, &abilities[1], 1, 2, 100000);
+        GearTestUnit(&s, &ally, &abilities[2], 1, 3, 100000);
+        SimUnitsBattleStartPassives(s.units);
+        for (int swing = 0; swing < 4; swing++) {
+            GearTestSwing(&s, 2);
+            GearTestSwing(&s, SQUAD_SLOT_COUNT + 2);
+        }
+        for (int i = 0; i < SIM_UNIT_COUNT; i++) {
+            const SimUnit *u = &s.units[i];
+            assert(u->health >= 0 && u->health <= u->max_health && u->power >= 0);
+            assert(u->crit_pct == u->crit_pct && u->damage_bonus_pct == u->damage_bonus_pct);
+        }
+    }
+}
+
+static void TestRichTextReadsHexColors(void) {
+    Color color = HeroesRichColor("#ff751a", WHITE);
+    assert(color.r == 255 && color.g == 117 && color.b == 26);
+    color = HeroesRichColor("#ffa500ff", WHITE);
+    assert(color.r == 255 && color.g == 165 && color.b == 0);
+    color = HeroesRichColor("#bad", WHITE);
+    assert(color.r == 255 && color.g == 255 && color.b == 255);
+}
+
+static void TestGearStringsAreNotTruncated(void) {
+    GearCatalogEnsure();
+    const char *message = GearText("GEAR_PRESTIGE_MESSAGE");
+    assert(message[strlen(message) - 1] == '?');
+    assert(strlen(message) < GEAR_VIEW_MESSAGE_CAPACITY);
+    for (int i = 0; i < gear_catalog.string_count; i++)
+        assert(strlen(gear_catalog.strings[i].text) < GEAR_STRING_TEXT_CAPACITY - 1);
+}
+
+static void TestGearCatalogIsComplete(void) {
+    GearTestReset();
+    assert(GearCatalogCount() == 266);
+    for (int i = 0; i < GearCatalogCount(); i++) {
+        const GearDef *def = GearDefAt(i);
+        assert(def->title_ru[0] && def->aura_ru[0] && def->icon[0]);
+        assert(def->rarity >= 1 && def->rarity <= GEAR_RARITY_COUNT);
+        assert(GearSellValue(def) > 0);
+    }
+    assert(GearDefIndex("no_such_gear") == -1);
+    assert(strcmp(GearText("GEAR_SELL_BUTTON_TEXT"), "GEAR_SELL_BUTTON_TEXT") != 0);
+}
+
+static void TestConsumeWarnsAboutEquippedGear(void) {
+    ConsumeScreen c = {0};
+    Character plain = {.rarity = RARITY_COMMON}, geared = {.rarity = RARITY_COMMON};
+    assert(!ConsumeSeedNeedsWarning(&c, &plain));
+    geared.gear.defs[0] = 1;
+    assert(ConsumeSeedNeedsWarning(&c, &geared));
+    assert(!strcmp(ConsumeSeedWarning(&geared), CONSUME_GEAR_WARNING));
+}
+
+static void TestGearViewEquipFlow(void) {
+    GearTestReset();
+    setenv("HOD_NO_SAVE", "1", 1);
+    Character roster[1];
+    memset(roster, 0, sizeof(roster));
+    roster[0].gear_slots = 2;
+    Player p = {.roster = roster, .roster_count = 1};
+    int cheap = GearDefIndex("red_iron_maul");
+    int other = GearDefIndex("lotherings_lament");
+    p.gear.counts[cheap] = p.gear.counts[other] = 1;
+    int items[GEAR_CATALOG_CAPACITY];
+
+    GearViewShow(0, 0);
+    assert(gear_view.filter == GEAR_FILTER_EQUIPPABLE);
+    assert(GearViewFilteredItems(&p, GEAR_FILTER_EQUIPPABLE, false, items) == 2);
+    assert(GearViewFilteredItems(&p, GEAR_FILTER_MYTHIC, false, items) == 0);
+    gear_view.selected = cheap;
+    GearViewRequestEquip(&p);
+    assert(gear_view.dialog == GEAR_VIEW_DIALOG_EQUIP);
+    GearViewConfirm(&p);
+    assert(GearInSlot(&roster[0], 0) == GearDefAt(cheap) && !gear_view.open);
+
+    GearViewShow(0, 0);
+    gear_view.selected = other;
+    GearViewRequestEquip(&p);
+    assert(gear_view.dialog == GEAR_VIEW_DIALOG_EQUIP && strstr(gear_view.message, GearDefAt(cheap)->title_ru));
+    GearViewConfirm(&p);
+    assert(GearInSlot(&roster[0], 0) == GearDefAt(other) && p.gear.counts[cheap] == 0);
+
+    GearViewOpenInventory();
+    assert(gear_view.filter == GEAR_FILTER_ALL);
+    assert(GearViewFilteredItems(&p, GEAR_FILTER_EQUIPPABLE, false, items) == 0);
+    GearViewClose();
+    assert(!GearViewIsOpen());
+    unsetenv("HOD_NO_SAVE");
+}
+
+static void GearTestLegend(Character *ch) {
+    memset(ch, 0, sizeof(*ch));
+    ch->rarity = RARITY_LEGENDARY;
+    ch->gear_slots = 4;
+    ch->has_prestige_slot = true;
+    ch->stats[TIER_I].max_level = 80;
+    ch->stats[TIER_IV].max_level = 90;
+    ch->has_tier[TIER_I] = true;
+}
+
+static void TestAscensionRequiresFilledSlotsAndTome(void) {
+    GearTestReset();
+    Character legend;
+    GearTestLegend(&legend);
+    PlayerGear gear = {.tomes = 1};
+    assert(GearHasTomeSlot(&legend) && !GearCanAscend(&legend));
+    assert(!GearAscend(&gear, &legend) && gear.tomes == 1 && legend.rarity == RARITY_LEGENDARY);
+
+    legend.gear.defs[0] = 1;
+    legend.gear.defs[1] = 2;
+    assert(!GearCanAscend(&legend));
+    legend.gear.defs[2] = 3;
+    assert(GearCanAscend(&legend));
+    gear.tomes = 0;
+    assert(!GearAscend(&gear, &legend) && legend.rarity == RARITY_LEGENDARY);
+
+    Character epic = legend;
+    epic.rarity = RARITY_EPIC;
+    assert(!GearHasTomeSlot(&epic));
+}
+
+static void TestAscensionPromotesHeroAndMovesPrestigeGear(void) {
+    GearTestReset();
+    Character legend;
+    GearTestLegend(&legend);
+    PlayerGear gear = {.tomes = 2};
+    legend.gear.prestige_unlocked = true;
+    for (int slot = 0; slot < 4; slot++) legend.gear.defs[slot] = (short)(slot + 1);
+
+    assert(GearAscend(&gear, &legend));
+    assert(gear.tomes == 1 && legend.ascended && legend.rarity == RARITY_MYTHIC);
+    assert(GearSlotCount(&legend) == 5 && !GearHasTomeSlot(&legend));
+    assert(legend.stats[TIER_I].max_level == 85 && legend.stats[TIER_IV].max_level == 95);
+    assert(GearSlotIsPrestige(&legend, 4) && !GearSlotIsPrestige(&legend, 3));
+    assert(legend.gear.defs[4] == 4 && legend.gear.defs[3] == GEAR_EMPTY_SLOT);
+    assert(!GearAscend(&gear, &legend) && gear.tomes == 1);
+
+    GearApplyAscension(&legend);
+    assert(legend.stats[TIER_I].max_level == 85 && GearSlotCount(&legend) == 5);
+}
+
+static void TestAscensionSurvivesSave(void) {
+    GearTestReset();
+    Character roster[1];
+    GearTestLegend(&roster[0]);
+    roster[0].instance_id = 7;
+    roster[0].gear.defs[0] = roster[0].gear.defs[1] = roster[0].gear.defs[2] = 1;
+    Player saved = {.roster = roster, .roster_count = 1, .gear = {.tomes = 3}};
+    assert(GearAscend(&saved.gear, &roster[0]));
+
+    cJSON *json = ProgressionSaveGear(&saved);
+    assert(json);
+    GearTestLegend(&roster[0]);
+    roster[0].instance_id = 7;
+    saved.gear.tomes = 0;
+    ProgressionLoadGear(json, &saved);
+    cJSON_Delete(json);
+    assert(saved.gear.tomes == 2 && roster[0].ascended && roster[0].rarity == RARITY_MYTHIC);
+    assert(roster[0].stats[TIER_I].max_level == 85);
+}
+
+static void TestTomePackGrantsATome(void) {
+    GearTestReset();
+    const GearPackDef *pack = GearPackAt(GearPackCount() - 1);
+    assert(pack->grants_tome);
+    Player p = {.gems = pack->price};
+    int rolled[GEAR_PACK_MAX_ITEMS];
+    assert(PlayerBuyGearPack(&p, pack, rolled));
+    assert(p.gear.tomes == 1 && p.gems == 0 && rolled[0] == GEAR_ROLL_TOME);
+    assert(GearInventoryTotal(&p.gear) == 0);
+}
+
+static void TestAscendedHeroLoadsAboveTheOldLevelCap(void) {
+    GearTestReset();
+    const char *path = "tests/ascension_save_test.dat";
+    remove(path);
+    Player source = {0};
+    ProgressionInitializePlayerDefaults(&source);
+    PlayerLoadRoster(&source, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    cJSON *catalog_root = JsonLoadFile(HOD_CACHE "characters.json");
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
+    const cJSON *entry = NULL, *legend = NULL;
+    cJSON_ArrayForEach(entry, catalog) {
+        if (!legend && !strcmp(JsonStr(entry, "rarity"), "Legendary") && JsonInt(entry, "gear_slots") == 4) legend = entry;
+    }
+    assert(legend);
+    const cJSON *defs[1] = {legend};
+    int index = -1;
+    assert(PlayerRosterAppendDefinitions(&source, defs, 1, &index));
+    Character *hero = &source.roster[index];
+    int old_cap = hero->stats[hero->tier].max_level;
+    GearApplyAscension(hero);
+    hero->gear.defs[0] = 1;
+    const ConsumeProfile *profile = ConsumeProfileFor(hero);
+    assert(profile);
+    hero->level = old_cap + 3;
+    hero->consume_xp = ConsumeXpForLevel(profile->level_table, hero->level);
+    hero->xp = hero->consume_xp;
+    ConsumeNormalizeCharacter(hero);
+    int saved_level = hero->level;
+    assert(saved_level > old_cap);
+    assert(ProgressionSaveToPath(&source, path));
+
+    Player loaded = {0};
+    ProgressionInitializePlayerDefaults(&loaded);
+    PlayerLoadRoster(&loaded, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    assert(ProgressionLoadFromPath(&loaded, path));
+    const Character *restored = &loaded.roster[index];
+    assert(restored->ascended && restored->rarity == RARITY_MYTHIC && GearSlotCount(restored) == 5);
+    assert(restored->level == saved_level && restored->stats[restored->tier].max_level == old_cap + 5);
+    assert(restored->gear.defs[0] == 1);
+    cJSON_Delete(catalog_root);
+    remove(path);
+}
+
+static void TestHeroLevelTableCoversAscendedCap(void) {
+    Character hero = {0};
+    StrCopy(hero.id, sizeof(hero.id), "UNIT_MERRILL");
+    const ConsumeProfile *profile = ConsumeProfileFor(&hero);
+    assert(profile && profile->level_table->count >= CONSUME_ASCENDED_LEVEL_CAP);
+    for (int i = 1; i < profile->level_table->count; i++) assert(profile->level_table->xp[i] >= profile->level_table->xp[i - 1]);
+}
+
+static void TestBoardIgnoresClicksBehindGearAndDetails(void) {
+    Heroes heroes = {.selected = -1};
+    GearViewClose();
+    assert(!HeroesBoardInputBlocked(&heroes));
+    heroes.selected = 0;
+    assert(HeroesBoardInputBlocked(&heroes));
+    heroes.selected = -1;
+    GearViewOpenInventory();
+    assert(HeroesBoardInputBlocked(&heroes));
+    GearViewClose();
+    gear_view.dialog = GEAR_VIEW_DIALOG_PRESTIGE;
+    assert(HeroesBoardInputBlocked(&heroes));
+    GearViewClose();
+    assert(!HeroesBoardInputBlocked(&heroes));
+}
+
+static void TestGearSaveRoundTrip(void) {
+    GearTestReset();
+    Character roster[2];
+    memset(roster, 0, sizeof(roster));
+    roster[0].instance_id = 41;
+    roster[1].instance_id = 42;
+    Player saved = {.roster = roster, .roster_count = 2};
+    int item = GearDefIndex("red_iron_maul");
+    int worn = GearDefIndex("fadesbane");
+    saved.gear.counts[item] = 3;
+    roster[1].gear.defs[2] = (short)(worn + 1);
+    roster[1].gear.prestige_unlocked = true;
+
+    cJSON *json = ProgressionSaveGear(&saved);
+    assert(json);
+    memset(roster, 0, sizeof(roster));
+    roster[0].instance_id = 41;
+    roster[1].instance_id = 42;
+    saved.gear.counts[item] = 0;
+    ProgressionLoadGear(json, &saved);
+    assert(saved.gear.counts[item] == 3);
+    assert(GearInSlot(&roster[1], 2) == GearDefAt(worn) && roster[1].gear.prestige_unlocked);
+    assert(!GearHasEquipped(&roster[0]));
+    cJSON_Delete(json);
+
+    ProgressionLoadGear(NULL, &saved);
+    assert(saved.gear.counts[item] == 0 && !GearHasEquipped(&roster[1]));
+}
+
 int main(void) {
+    TestGearCatalogIsComplete();
+    TestGearSlotsFollowRarity();
+    TestGearEquipRules();
+    TestGearCategoriesUseOrAndAllSemantics();
+    TestGearSellValueAndPrestigeUnlock();
+    TestGearPacksRollInsideTheirRarityRange();
+    TestGearStatAurasAddThenMultiply();
+    TestGearAuraRespectsGroupAndWearerFilters();
+    TestGearDamageMitigationAndVersus();
+    TestGearResistsScaleAilments();
+    TestGearOnHitReactionsAndStealth();
+    TestGearReactionsRespectCurses();
+    TestGearDeathTriggersFireForDeadWearer();
+    TestGearReactionDamageCanEndAChain();
+    TestGearDefenderAbsorbsAoeShare();
+    TestGearTargetPreferences();
+    TestGearlessFightsAreUntouched();
+    TestEveryCatalogItemFightsCleanly();
+    TestGearSaveRoundTrip();
+    TestConsumeWarnsAboutEquippedGear();
+    TestGearStringsAreNotTruncated();
+    TestRichTextReadsHexColors();
+    TestGearViewEquipFlow();
+    TestBoardIgnoresClicksBehindGearAndDetails();
+    TestAscensionRequiresFilledSlotsAndTome();
+    TestAscensionPromotesHeroAndMovesPrestigeGear();
+    TestAscensionSurvivesSave();
+    TestTomePackGrantsATome();
+    TestAscendedHeroLoadsAboveTheOldLevelCap();
+    TestHeroLevelTableCoversAscendedCap();
     TestMissionSeriesPicksTheClaimableTier();
     TestMissionProgressNeverDrops();
     TestMissionClaimPaysOnce();

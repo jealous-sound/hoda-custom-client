@@ -539,6 +539,67 @@ static bool ProgressionJsonAddArrayNull(cJSON *array) {
     return ProgressionJsonAddArrayItem(array, cJSON_CreateNull());
 }
 
+static cJSON *ProgressionSaveGear(const Player *player) {
+    cJSON *root = cJSON_CreateObject();
+    cJSON *inventory = cJSON_AddObjectToObject(root, "inventory");
+    cJSON *heroes = cJSON_AddArrayToObject(root, "heroes");
+    bool ok = root && inventory && heroes && cJSON_AddNumberToObject(root, "tomes", player->gear.tomes);
+    for (int i = 0; ok && i < GearCatalogCount(); i++)
+        if (player->gear.counts[i] > 0)
+            ok = cJSON_AddNumberToObject(inventory, GearDefAt(i)->id, player->gear.counts[i]) != NULL;
+    for (int r = 0; ok && r < player->roster_count; r++) {
+        const Character *ch = &player->roster[r];
+        if (!GearHasEquipped(ch) && !ch->gear.prestige_unlocked && !ch->ascended) continue;
+        cJSON *entry = cJSON_CreateObject();
+        cJSON *slots = cJSON_AddArrayToObject(entry, "slots");
+        ok = entry && slots && cJSON_AddNumberToObject(entry, "instance_id", (double)ch->instance_id) &&
+             cJSON_AddBoolToObject(entry, "ascended", ch->ascended) &&
+             cJSON_AddBoolToObject(entry, "prestige_unlocked", ch->gear.prestige_unlocked);
+        for (int slot = 0; ok && slot < GEAR_SLOT_CAPACITY; slot++) {
+            const GearDef *def = GearInSlot(ch, slot);
+            ok = cJSON_AddItemToArray(slots, cJSON_CreateString(def ? def->id : ""));
+        }
+        ok = cJSON_AddItemToArray(heroes, entry) && ok;
+    }
+    if (!ok) {
+        cJSON_Delete(root);
+        return NULL;
+    }
+    return root;
+}
+
+static void ProgressionLoadGear(const cJSON *json, Player *player) {
+    memset(&player->gear, 0, sizeof(player->gear));
+    for (int r = 0; r < player->roster_count; r++) memset(&player->roster[r].gear, 0, sizeof(GearLoadout));
+    if (!cJSON_IsObject(json)) return;
+    player->gear.tomes = JsonInt(json, "tomes");
+    const cJSON *item = NULL;
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "inventory")) {
+        int def = GearDefIndex(item->string);
+        if (def < 0 || !cJSON_IsNumber(item) || item->valueint <= 0) {
+            TraceLog(LOG_WARNING, "Progression: dropped unknown gear %s", item->string);
+            continue;
+        }
+        player->gear.counts[def] = item->valueint;
+    }
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "heroes")) {
+        uint64_t instance_id = (uint64_t)JsonFloat(item, "instance_id");
+        Character *ch = NULL;
+        for (int r = 0; r < player->roster_count && !ch; r++)
+            if (player->roster[r].instance_id == instance_id) ch = &player->roster[r];
+        if (!ch) continue;
+        if (cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive((cJSON *)item, "ascended"))) GearApplyAscension(ch);
+        ch->gear.prestige_unlocked = cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive((cJSON *)item, "prestige_unlocked"));
+        int slot = 0;
+        const cJSON *id = NULL;
+        cJSON_ArrayForEach(id, cJSON_GetObjectItemCaseSensitive((cJSON *)item, "slots")) {
+            if (slot >= GEAR_SLOT_CAPACITY) break;
+            int def = cJSON_IsString(id) && id->valuestring[0] ? GearDefIndex(id->valuestring) : -1;
+            ch->gear.defs[slot++] = (short)(def + 1);
+        }
+    }
+}
+
 static cJSON *ProgressionSaveRunes(const PlayerRunes *runes) {
     cJSON *root = cJSON_CreateObject();
     cJSON *items = cJSON_AddArrayToObject(root, "items");
@@ -724,6 +785,7 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
             !cJSON_AddNumberToObject(entry, "instance_id", (double)ch->instance_id) ||
             !cJSON_AddStringToObject(entry, "tier", TIER_NAMES[ch->tier]) ||
             !cJSON_AddNumberToObject(entry, "level", ch->level) || !cJSON_AddNumberToObject(entry, "xp", ch->xp) ||
+            !cJSON_AddBoolToObject(entry, "ascended", ch->ascended) ||
             !cJSON_AddNumberToObject(entry, "consume_xp", ch->consume_xp)) {
             cJSON_Delete(entry);
             goto save_json_failed;
@@ -836,6 +898,11 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
             goto save_json_failed;
     }
 
+    cJSON *gear = ProgressionSaveGear(player);
+    if (!gear || !cJSON_AddItemToObject(root, "gear", gear)) {
+        cJSON_Delete(gear);
+        goto save_json_failed;
+    }
     cJSON *runes = ProgressionSaveRunes(&player->runes);
     if (!runes || !cJSON_AddItemToObject(root, "runes", runes)) {
         cJSON_Delete(runes);
@@ -1096,7 +1163,11 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
             for (int map = 0; map < CAMPAIGN_MAX_MAPS && valid; map++) {
                 for (int node = 0; node < CAMPAIGN_MAX_NODES && valid; node++)
                     valid = ProgressionJsonArrayInt(
-                        node_losses, map * CAMPAIGN_MAX_NODES + node, 0, INT_MAX, &loaded_progress.node_losses[map][node]
+                        node_losses,
+                        map * CAMPAIGN_MAX_NODES + node,
+                        0,
+                        INT_MAX,
+                        &loaded_progress.node_losses[map][node]
                     );
             }
         }
@@ -1204,6 +1275,7 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
             Tier tier = TierFromString(tier_name);
             int level_value = 0, xp_value = 0, consume_xp_value = 0;
             uint64_t instance_id = 0;
+            if (valid && cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(entry, "ascended"))) GearApplyAscension(ch);
             valid = valid && tier_name[0] && strcmp(tier_name, TIER_NAMES[tier]) == 0 && ch->has_tier[tier] &&
                     ProgressionJsonInt(entry, "level", 1, ch->stats[tier].max_level, &level_value) &&
                     ProgressionJsonU64(entry, "instance_id", 1, PROGRESSION_JSON_MAX_SAFE_INTEGER, &instance_id);
@@ -1339,8 +1411,10 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
     if (valid && version >= 6)
         valid = ProgressionLoadGallery(cJSON_GetObjectItemCaseSensitive(root, "gallery"), &loaded_gallery);
 
+    cJSON *loaded_gear = cJSON_DetachItemFromObjectCaseSensitive(root, "gear");
     cJSON_Delete(root);
     if (!valid) {
+        cJSON_Delete(loaded_gear);
         GalleryFree(&loaded_gallery);
         free(loaded_runes);
         free(loaded_additions);
@@ -1391,6 +1465,8 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
             player->current_squad = loaded_current_squad;
         }
     }
+    if (player->roster) ProgressionLoadGear(loaded_gear, player);
+    cJSON_Delete(loaded_gear);
     if (loaded_runes) player->runes = *loaded_runes;
     GalleryFree(&player->gallery);
     player->gallery = loaded_gallery;

@@ -1,6 +1,8 @@
 #define CONSUME_TABLES_PATH "data/consume_tables.json"
 #define CONSUME_MAX_XP_TABLES 16
 #define CONSUME_MAX_XP_ROWS 104
+#define CONSUME_ASCENDED_LEVEL_CAP 100
+#define CONSUME_HERO_LEVEL_TABLE "unit-level-Default"
 #define CONSUME_MAX_PROGRESSIONS 4
 #define CONSUME_MAX_PROGRESSION_ROWS 48
 #define CONSUME_MAX_ARCHETYPES 8
@@ -102,6 +104,14 @@ static const ConsumeArchetype *ConsumeFindArchetype(const char *name) {
     return NULL;
 }
 
+static void ConsumeExtendXpTable(ConsumeXpTable *table, int rows) {
+    int step = table->xp[table->count - 1] - table->xp[table->count - 2];
+    while (table->count < rows) {
+        table->xp[table->count] = table->xp[table->count - 1] + step;
+        table->count++;
+    }
+}
+
 static void ConsumeCatalogLoadXpTables(const cJSON *json) {
     const cJSON *entry = NULL;
     cJSON_ArrayForEach(entry, json) {
@@ -113,6 +123,7 @@ static void ConsumeCatalogLoadXpTables(const cJSON *json) {
             if (table->count >= CONSUME_MAX_XP_ROWS) TraceLog(LOG_FATAL, "Consume: XP table %s too long", table->name);
             table->xp[table->count++] = row->valueint;
         }
+        if (!strcmp(table->name, CONSUME_HERO_LEVEL_TABLE)) ConsumeExtendXpTable(table, CONSUME_ASCENDED_LEVEL_CAP);
     }
 }
 

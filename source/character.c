@@ -118,6 +118,13 @@ typedef struct {
     int health_per_level;
 } TierStats;
 
+#define GEAR_SLOT_CAPACITY 5
+
+typedef struct {
+    short defs[GEAR_SLOT_CAPACITY];
+    bool prestige_unlocked;
+} GearLoadout;
+
 typedef struct {
     uint64_t instance_id;
     char id[64];
@@ -142,6 +149,11 @@ typedef struct {
     char equipped_rune_text_ru[768];
     char target_weight[32];
     char target_weight_text_ru[96];
+
+    int gear_slots;
+    bool has_prestige_slot;
+    bool ascended;
+    GearLoadout gear;
 
     char icon_prefab[TIER_COUNT][64];
     char model_prefab[TIER_COUNT][64];
@@ -282,6 +294,8 @@ static void CharacterParse(const cJSON *c, Character *ch, Ability *ab) {
     StrCopy(ch->equipped_rune_text_ru, sizeof(ch->equipped_rune_text_ru), JsonStr(c, "equipped_rune_text_ru"));
     StrCopy(ch->target_weight, sizeof(ch->target_weight), JsonStr(c, "target_weight"));
     StrCopy(ch->target_weight_text_ru, sizeof(ch->target_weight_text_ru), JsonStr(c, "target_weight_text_ru"));
+    ch->gear_slots = JsonInt(c, "gear_slots");
+    ch->has_prestige_slot = cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(c, "has_prestige_slot"));
 
     cJSON *item = NULL;
 

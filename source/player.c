@@ -111,6 +111,7 @@ typedef struct {
     PlayerNexusEvents nexus_events;
 
     PlayerRunes runes;
+    PlayerGear gear;
     PlayerGallery gallery;
     PlayerMissions missions;
 } Player;
@@ -545,6 +546,34 @@ bool PlayerUnlockPrestigeRuneSlot(Player *p, int squad) {
     if (!p || squad < 0 || squad >= PLAYER_MAX_SQUADS || p->runes.prestige_unlocked[squad]) return false;
     if (!PlayerSpendGems(p, RUNE_PRESTIGE_UNLOCK_GEMS)) return false;
     p->runes.prestige_unlocked[squad] = true;
+    return true;
+}
+
+bool PlayerUnlockPrestigeGearSlot(Player *p, Character *ch) {
+    if (!p || !ch || !GearHasPrestigeSlot(ch) || ch->gear.prestige_unlocked) return false;
+    if (!PlayerSpendGems(p, GearPrestigeSlotGemCost())) return false;
+    ch->gear.prestige_unlocked = true;
+    return true;
+}
+
+bool PlayerSellGear(Player *p, int def_index) {
+    const GearDef *def = GearDefAt(def_index);
+    if (!p || !def || p->gear.counts[def_index] <= 0) return false;
+    p->gear.counts[def_index]--;
+    p->gold += GearSellValue(def);
+    return true;
+}
+
+bool PlayerBuyGearPack(Player *p, const GearPackDef *pack, int rolled[GEAR_PACK_MAX_ITEMS]) {
+    if (!p || !pack) return false;
+    if (!(pack->gems ? PlayerSpendGems(p, pack->price) : PlayerSpendGold(p, pack->price))) return false;
+    for (int i = 0; i < pack->count; i++) {
+        rolled[i] = pack->grants_tome ? GEAR_ROLL_TOME : GearRollFromPack(pack, &p->store_rng_state);
+        if (pack->grants_tome)
+            p->gear.tomes++;
+        else
+            GearGrant(&p->gear, rolled[i]);
+    }
     return true;
 }
 
