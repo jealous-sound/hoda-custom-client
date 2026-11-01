@@ -842,7 +842,7 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
         DrawTextEx(n->font, e->name, (Vector2){x, lore.y + 44.0f}, size, spacing, (Color){235, 232, 220, 255});
     }
     {
-        Rectangle bar = {lore.x + 24.0f, lore.y + 84.0f, 364, 64};
+        Rectangle bar = {lore.x + 2.0f, lore.y + 84.0f, 364, 64};
         UiDrawTexture(n->progress_bar, bar, WHITE);
         int completed = run->current_node_step - 1;
         if (run->current_node_step == d->node_count && run->nodes[d->node_count - 1].wins > 0)
