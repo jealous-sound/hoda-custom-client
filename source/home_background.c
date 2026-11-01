@@ -480,7 +480,7 @@ static void DrawBirdFlight(Camera cam, Texture2D tex, float t, int seed)
     float cell_size = tex.width / 4.0f;
     int   cell = 8 + ((int)(t*8.0f + seed*3) & 7);
     Rectangle src = { (cell%4)*cell_size + 0.5f, (cell/4)*cell_size + 0.5f, cell_size - 1.0f, cell_size - 1.0f };
-    if (dir) src.width = -src.width;
+    if (dir) { src.x += src.width; src.width = -src.width; }
     float fade = fminf(1.0f, sinf(progress*PI)*2.5f);
     unsigned char alpha = (unsigned char)(fade*230.0f);
     DrawBillboardRec(cam, tex, src, (Vector3){x,y,z}, (Vector2){1.4f, 1.4f}, (Color){48,48,56,alpha});
