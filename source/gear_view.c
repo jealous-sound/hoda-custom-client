@@ -2,6 +2,17 @@
 #define GEAR_VIEW_GRID_COLUMNS 2
 #define GEAR_VIEW_TILE_FILL 0.71f
 #define GEAR_VIEW_ICON_FILL 0.86f
+#define GEAR_CARD_TITLE_BAND_TOP 0.081f
+#define GEAR_CARD_IMAGE_BAND_TOP 0.21f
+#define GEAR_CARD_TEXT_BAND_TOP 0.625f
+#define GEAR_CARD_TEXT_BAND_BOTTOM 0.915f
+#define GEAR_CARD_TEXT_LEFT 0.097f
+#define GEAR_CARD_TEXT_WIDTH 0.798f
+#define GEAR_CARD_ICON_SIZE 0.322f
+#define GEAR_CARD_TITLE_TEXT 0.055f
+#define GEAR_CARD_RARITY_TEXT 0.0413f
+#define GEAR_CARD_LIMITS_TEXT 0.0274f
+#define GEAR_CARD_DESCRIPTION_TEXT 0.0274f
 #define GEAR_VIEW_SLOT_WIDTH 60.0f
 #define GEAR_VIEW_SLOT_HEIGHT 58.0f
 #define GEAR_VIEW_SLOT_ITEM_FILL 0.7f
@@ -14,6 +25,13 @@
 #define GEAR_VIEW_SCROLL_SPEED 40.0f
 #define GEAR_VIEW_MESSAGE_CAPACITY 640
 #define GEAR_VIEW_DETAILS_CAPACITY 960
+
+typedef struct {
+    const char *title;
+    int rarity;
+    const char *limits;
+    const char *description;
+} GearInfoText;
 #define GEAR_VIEW_DETAILS_FONT_MAX 15.0f
 #define GEAR_VIEW_DETAILS_FONT_MIN 9.0f
 
@@ -473,6 +491,79 @@ static const char *GearViewRarityText(int rarity) {
     return GearText(keys[rarity - 1]);
 }
 
+static float GearViewDrawRarityAndLimits(
+    const GearInfoText *info, Font rarity_font, float rarity_size, float limits_size, Rectangle area
+) {
+    Font body = GuiFont(FNT_MENU);
+    float y = area.y;
+    Rectangle rarity = {area.x, y, area.width, rarity_size * 1.4f};
+    y += HeroesDrawRich(rarity_font, GearViewRarityText(info->rarity), rarity, rarity_size, WHITE) + 2.0f;
+    if (info->limits[0]) {
+        Rectangle limits = {area.x, y, area.width, 36.0f};
+        y += HeroesDrawRich(body, info->limits, limits, limits_size, LIGHTGRAY) + 4.0f;
+    }
+    return y;
+}
+
+static void GearViewDrawFittedDescription(const char *text, Rectangle area, float max_size) {
+    Font body = GuiFont(FNT_MENU);
+    float size = max_size;
+    while (size > GEAR_VIEW_DETAILS_FONT_MIN && HeroesRichLayout(body, text, area, size, WHITE, false) > area.height)
+        size -= 0.5f;
+    HeroesDrawRich(body, text, area, size, WHITE);
+}
+
+static GearInfoText GearViewInfoTextFor(const GearDef *def, char *limits, int limits_size, char *text, int text_size) {
+    GearFormatLimits(def, limits, limits_size);
+    snprintf(text, (size_t)text_size, "%s\n%s", def->description_ru, def->aura_ru);
+    return (GearInfoText){def->title_ru, def->rarity, limits, text};
+}
+
+void GearDrawRevealCard(const GearDef *def, Rectangle panel) {
+    UiDrawTexture(GearUiTexture("Gear_Details_Box"), panel, WHITE);
+    float side = panel.width;
+    Font title_font = GuiFont(FNT_COOL);
+
+    char limits[192] = "";
+    char text[GEAR_VIEW_DETAILS_CAPACITY];
+    GearInfoText info =
+        def ? GearViewInfoTextFor(def, limits, sizeof(limits), text, sizeof(text))
+            : (GearInfoText){GearText("TOME_POPUP_TITLE"), GEAR_RARITY_COUNT, "", GearText("EVO_TOME_EXPLAIN_DESC")};
+
+    Rectangle title = {
+        panel.x + side * GEAR_CARD_TEXT_LEFT,
+        panel.y + side * GEAR_CARD_TITLE_BAND_TOP,
+        side * GEAR_CARD_TEXT_WIDTH,
+        side * (GEAR_CARD_IMAGE_BAND_TOP - GEAR_CARD_TITLE_BAND_TOP)
+    };
+    float title_size = side * GEAR_CARD_TITLE_TEXT;
+    float title_width = MeasureTextEx(title_font, info.title, title_size, 1.0f).x;
+    if (title_width > title.width) title_size *= title.width / title_width;
+    UiDrawTextCentered(title_font, info.title, title, title_size, WHITE);
+
+    float icon_size = side * GEAR_CARD_ICON_SIZE;
+    float image_center = (GEAR_CARD_IMAGE_BAND_TOP + GEAR_CARD_TEXT_BAND_TOP) * 0.5f;
+    Rectangle icon = {
+        panel.x + (side - icon_size) * 0.5f, panel.y + side * image_center - icon_size * 0.5f, icon_size, icon_size
+    };
+    if (def)
+        GearDrawTile(def, icon, false);
+    else
+        UiDrawTexture(GearTomeIconLoad(), icon, WHITE);
+
+    Rectangle band = {
+        panel.x + side * GEAR_CARD_TEXT_LEFT,
+        panel.y + side * GEAR_CARD_TEXT_BAND_TOP,
+        side * GEAR_CARD_TEXT_WIDTH,
+        side * (GEAR_CARD_TEXT_BAND_BOTTOM - GEAR_CARD_TEXT_BAND_TOP)
+    };
+    float y = GearViewDrawRarityAndLimits(
+        &info, title_font, side * GEAR_CARD_RARITY_TEXT, side * GEAR_CARD_LIMITS_TEXT, band
+    );
+    Rectangle description = {band.x, y, band.width, band.y + band.height - y};
+    GearViewDrawFittedDescription(info.description, description, side * GEAR_CARD_DESCRIPTION_TEXT);
+}
+
 static void GearViewDrawDetails(Player *p, bool input) {
     const GearDef *def = GearDefAt(gear_view.selected);
     Font body = GuiFont(FNT_MENU);
@@ -481,22 +572,15 @@ static void GearViewDrawDetails(Player *p, bool input) {
     UiDrawTexture(GearUiTexture("Gear_Details_Box"), panel, WHITE);
     Rectangle inner = UiRect(panel, 0.5f, 0.5f, 0.87f, 0.9f);
 
-    Rectangle title = {inner.x, inner.y, inner.width - 22.0f, 40.0f};
-    float y = title.y + HeroesDrawRich(GuiFont(FNT_COOL), def->title_ru, title, 16.0f, WHITE) + 2.0f;
-    Rectangle rarity = {inner.x, y, inner.width, 18.0f};
-    y += HeroesDrawRich(body, GearViewRarityText(def->rarity), rarity, 13.0f, WHITE) + 2.0f;
-    char limits[192] = "";
-    GearFormatLimits(def, limits, sizeof(limits));
-    y += HeroesDrawRich(body, limits, (Rectangle){inner.x, y, inner.width, 36.0f}, 13.0f, LIGHTGRAY) + 4.0f;
-
     float footer = 42.0f;
+    char limits[192] = "";
     char text[GEAR_VIEW_DETAILS_CAPACITY];
-    snprintf(text, sizeof(text), "%s\n%s", def->description_ru, def->aura_ru);
+    GearInfoText info = GearViewInfoTextFor(def, limits, sizeof(limits), text, sizeof(text));
+    Rectangle title = {inner.x, inner.y, inner.width - 22.0f, 40.0f};
+    float y = title.y + HeroesDrawRich(GuiFont(FNT_COOL), info.title, title, 16.0f, WHITE) + 2.0f;
+    y = GearViewDrawRarityAndLimits(&info, body, 13.0f, 13.0f, (Rectangle){inner.x, y, inner.width, 0.0f});
     Rectangle area = {inner.x, y, inner.width, inner.y + inner.height - footer - 4.0f - y};
-    float size = GEAR_VIEW_DETAILS_FONT_MAX;
-    while (size > GEAR_VIEW_DETAILS_FONT_MIN && HeroesRichLayout(body, text, area, size, WHITE, false) > area.height)
-        size -= 0.5f;
-    HeroesDrawRich(body, text, area, size, WHITE);
+    GearViewDrawFittedDescription(info.description, area, GEAR_VIEW_DETAILS_FONT_MAX);
 
     Rectangle row = {inner.x, inner.y + inner.height - footer, inner.width, footer};
     if (gear_view.slot >= 0) {

@@ -144,6 +144,10 @@
    "text": "Томов: {0}"
   },
   {
+   "key": "TOME_POPUP_TITLE",
+   "text": "Том вознесения"
+  },
+  {
    "key": "RARITY_MYTHIC",
    "text": "Мифический"
   },

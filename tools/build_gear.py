@@ -51,6 +51,7 @@ LOCAL_FILTER_NAMES = {
     'EVO_TOME_EXPLAIN_DESC': 'Мифические герои получают <color=#ffa500ff>+5 к макс. уровню</color> и '
                              '<color=#ffa500ff>доп. ячейку снаряжения</color>!',
     'EVO_TOME_COUNT': 'Томов: {0}',
+    'TOME_POPUP_TITLE': TOME_LOCAL_NAME,
     'RARITY_MYTHIC': 'Мифический',
     'ROSTER_FILTER_COMMON': 'Обычные', 'ROSTER_FILTER_UNCOMMON': 'Необычные', 'ROSTER_FILTER_RARE': 'Редкие',
     'ROSTER_FILTER_EPIC': 'Эпические', 'ROSTER_FILTER_LEGENDARY': 'Легендарные', 'ROSTER_FILTER_MYTHIC': 'Мифические',

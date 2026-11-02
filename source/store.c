@@ -74,9 +74,11 @@ static const Rectangle STORE_LANDING_TILES[STORE_TILE_COUNT] = {
 #define STORE_TILE_LABEL_SIZE 26.0f
 #define STORE_FEATURED_FRAME_TINT ((Color){255, 196, 92, 255})
 
-#define STORE_REVEAL_STEP 0.6f
-#define STORE_REVEAL_BURST_SECONDS 0.9f
+#define STORE_REVEAL_SECONDS_BETWEEN_ITEMS 0.5f
 #define STORE_REVEAL_BURST_SCALE 2.4f
+#define STORE_REVEAL_NOT_STARTED (-1.0f)
+#define STORE_TOME_ICON_NAME "tex.Ico_Gear_TomeOfAscension"
+#define STORE_REVEAL_MIN_VISIBLE_SCALE 0.02f
 #define STORE_REVEAL_CARD_WIDTH 140.0f
 #define STORE_REVEAL_CARD_GAP 12.0f
 #define STORE_REVEAL_CARD_ASPECT 0.985f
@@ -94,6 +96,10 @@ static const Rectangle STORE_LANDING_TILES[STORE_TILE_COUNT] = {
 #define STORE_CURRENCY_SIZE_OF_BAR 0.8f
 #define STORE_TITLE_TEXT_OF_PLATE 0.088f
 #define STORE_GEM_SUBTEXT_HEIGHT 21.0f
+#define STORE_REVEAL_RUNE_CARD_HEIGHT 480.0f
+#define STORE_REVEAL_RUNE_CARD_TOP 150.0f
+#define STORE_REVEAL_GEAR_CARD_SIZE 440.0f
+#define STORE_REVEAL_GEAR_CARD_TOP 150.0f
 
 typedef enum {
     STORE_PACK_RECRUIT,
@@ -101,6 +107,26 @@ typedef enum {
     STORE_PACK_CHAMPION,
     STORE_PACK_GRAND_CHAMPION,
 } StorePackId;
+
+typedef struct {
+    float image_down;
+    float image_up;
+    float burst_wait;
+    float burst_up;
+    float burst_hold;
+    float burst_down;
+    float burst_spin_degrees;
+} StoreRevealFanfare;
+
+static const StoreRevealFanfare STORE_FANFARE_NORMAL = {0.3f, 0.3f, 0.0f, 0.2f, 0.0f, 0.4f, 80.0f};
+static const StoreRevealFanfare STORE_FANFARE_NEWLY_OWNED = {0.5f, 0.4f, 0.5f, 0.4f, 0.5f, 0.4f, 100.0f};
+
+typedef struct {
+    int def;
+    bool newly_owned;
+    bool details_shown;
+    float age;
+} StoreItemResult;
 
 typedef enum {
     STORE_VIEW_LANDING,
@@ -266,11 +292,14 @@ typedef struct {
     float bullet_time;
     StoreDialog dialog;
     bool dialog_press_armed;
-    int item_results[STORE_MAX_ITEM_RESULTS];
+    StoreItemResult item_results[STORE_MAX_ITEM_RESULTS];
     int item_result_count;
     StorePackKind item_kind;
-    int rune_details;
-    float item_reveal_time;
+    int item_details;
+    int item_details_pending;
+    bool item_details_armed;
+    int item_reveal_next;
+    float item_reveal_wait;
     int pack_rune_def;
     int pack_gear_def;
     int result_roster_indices[STORE_MAX_RESULTS];
@@ -675,7 +704,7 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
         store->buy[i] = ButtonLoad(GUI_STORE_BUY, GUI_STORE_BUY_ON);
         ButtonDisableClickSound(&store->buy[i]);
     }
-    store->rune_details = -1;
+    store->item_details = -1;
     store->pack_rune_def = -1;
     store->pack_gear_def = -1;
     store->next =
@@ -741,7 +770,7 @@ static void StoreEnterPage(Store *store, StoreView target) {
     store->info_pack = -1;
     store->dialog = STORE_DIALOG_NONE;
     store->status_time = 0.0f;
-    store->rune_details = -1;
+    store->item_details = -1;
 }
 
 void StoreShowPage(Store *store, bool gems_page) {
@@ -818,8 +847,8 @@ StoreAction StoreHandleBack(Store *store, Heroes *heroes) {
             GuiSoundPlay(SND_UI_POPUP_CLOSE);
             return STORE_ACTION_NONE;
         case STORE_VIEW_ITEM_REVEAL:
-            if (store->rune_details >= 0)
-                store->rune_details = -1;
+            if (store->item_details >= 0)
+                store->item_details = -1;
             else
                 store->view = store->packs[store->selected_pack].page;
             GuiSoundPlay(SND_UI_POPUP_CLOSE);
@@ -898,12 +927,49 @@ static void StoreOpenDialog(Store *store, StoreDialog dialog) {
     GuiSoundPlay(SND_STORE_ERROR);
 }
 
+static int StoreItemRarity(const Store *store, int def) {
+    if (store->item_kind == STORE_KIND_RUNE) return RuneDefAt(def)->rarity;
+    return def == GEAR_ROLL_TOME ? GEAR_RARITY_COUNT : GearDefAt(def)->rarity;
+}
+
+static const char *StoreItemIconName(const Store *store, int def) {
+    if (store->item_kind == STORE_KIND_RUNE) return RuneDefAt(def)->icon;
+    return def == GEAR_ROLL_TOME ? STORE_TOME_ICON_NAME : GearDefAt(def)->icon;
+}
+
+static int StoreCompareItemResults(const Store *store, const StoreItemResult *a, const StoreItemResult *b) {
+    int rarity = StoreItemRarity(store, a->def) - StoreItemRarity(store, b->def);
+    if (rarity != 0) return rarity;
+    if (a->newly_owned != b->newly_owned) return a->newly_owned ? 1 : -1;
+    return strcmp(StoreItemIconName(store, a->def), StoreItemIconName(store, b->def));
+}
+
+static void StoreSortItemResults(Store *store) {
+    for (int i = 1; i < store->item_result_count; i++) {
+        StoreItemResult result = store->item_results[i];
+        int j = i - 1;
+        while (j >= 0 && StoreCompareItemResults(store, &store->item_results[j], &result) > 0) {
+            store->item_results[j + 1] = store->item_results[j];
+            j--;
+        }
+        store->item_results[j + 1] = result;
+    }
+}
+
 static void StoreBeginItemReveal(Store *store, int pack_index, StorePackKind kind, int count) {
     store->selected_pack = pack_index;
     store->item_kind = kind;
     store->item_result_count = count;
-    store->item_reveal_time = 0.0f;
-    store->rune_details = -1;
+    StoreSortItemResults(store);
+    for (int i = 0; i < count; i++) {
+        store->item_results[i].details_shown = false;
+        store->item_results[i].age = STORE_REVEAL_NOT_STARTED;
+    }
+    store->item_details = -1;
+    store->item_details_pending = -1;
+    store->item_details_armed = false;
+    store->item_reveal_next = 0;
+    store->item_reveal_wait = 0.0f;
     store->view = STORE_VIEW_ITEM_REVEAL;
     GuiSoundPlay(SND_PACK_RARE);
 }
@@ -911,6 +977,12 @@ static void StoreBeginItemReveal(Store *store, int pack_index, StorePackKind kin
 static void StorePurchaseSaveFailed(Store *store) {
     StoreSetStatus(store, "Не удалось сохранить покупку");
     GuiSoundPlay(SND_STORE_ERROR);
+}
+
+static bool StoreRuneDefOwned(const PlayerRunes *runes, int def) {
+    for (int i = 0; i < runes->count; i++)
+        if (runes->items[i].def == def) return true;
+    return false;
 }
 
 static bool StoreTryBuyRunePack(Store *store, Player *player, int pack_index) {
@@ -947,7 +1019,8 @@ static bool StoreTryBuyRunePack(Store *store, Player *player, int pack_index) {
         StorePurchaseSaveFailed(store);
         return false;
     }
-    memcpy(store->item_results, defs, (size_t)pack->slot_count * sizeof(int));
+    for (int i = 0; i < pack->slot_count; i++)
+        store->item_results[i] = (StoreItemResult){defs[i], !StoreRuneDefOwned(&old_runes, defs[i]), false, 0.0f};
     StoreBeginItemReveal(store, pack_index, STORE_KIND_RUNE, pack->slot_count);
     return true;
 }
@@ -955,7 +1028,7 @@ static bool StoreTryBuyRunePack(Store *store, Player *player, int pack_index) {
 static int StoreCopyGearResults(Store *store, const GearPackDef *pack, const int *rolled) {
     int count = 0;
     for (int i = 0; i < GEAR_PACK_MAX_ROLLS && i <= pack->count; i++)
-        if (rolled[i] != GEAR_ROLL_NONE) store->item_results[count++] = rolled[i];
+        if (rolled[i] != GEAR_ROLL_NONE) store->item_results[count++] = (StoreItemResult){rolled[i], true, false, 0.0f};
     return count;
 }
 
@@ -1125,7 +1198,8 @@ static bool StoreRequestPurchase(Store *store, Player *player, Heroes *heroes, i
 }
 
 static bool StoreInputBlocked(const Store *store) {
-    return store->dialog != STORE_DIALOG_NONE || store->drag_scrolled;
+    bool details_open = store->view == STORE_VIEW_ITEM_REVEAL && store->item_details >= 0;
+    return store->dialog != STORE_DIALOG_NONE || store->drag_scrolled || details_open;
 }
 
 static bool StoreReleasedOn(const Store *store, Rectangle rect) {
@@ -1223,7 +1297,8 @@ static void StoreDrawToast(Store *store) {
     StoreDrawCenteredFit(store->body_font, store->status, toast, 19.0f, WHITE);
 }
 
-static bool StoreDrawCategoryTile(Store *store, Rectangle rect, Texture2D art, const char *label, Color frame, float label_bottom) {
+static bool
+StoreDrawCategoryTile(Store *store, Rectangle rect, Texture2D art, const char *label, Color frame, float label_bottom) {
     bool hover = !StoreInputBlocked(store) && CheckCollisionPointRec(UiMouse(), rect);
     Rectangle inner = {
         rect.x + rect.width * STORE_TILE_ART_INSET_X,
@@ -1271,9 +1346,11 @@ static StoreAction StoreDrawLanding(Store *store) {
     };
     for (int tile = 0; tile < STORE_TILE_COUNT; tile++) {
         Color frame = tile == STORE_TILE_FEATURED ? STORE_FEATURED_FRAME_TINT : WHITE;
-        float label_bottom =
-            tile == STORE_TILE_FEATURED ? STORE_TILE_LABEL_BOTTOM_OF_FEATURED_TILE : STORE_TILE_LABEL_BOTTOM_OF_SQUARE_TILE;
-        if (StoreDrawCategoryTile(store, StoreLandingTileRect(tile), store->category_art[tile], labels[tile], frame, label_bottom)) {
+        float label_bottom = tile == STORE_TILE_FEATURED ? STORE_TILE_LABEL_BOTTOM_OF_FEATURED_TILE
+                                                         : STORE_TILE_LABEL_BOTTOM_OF_SQUARE_TILE;
+        if (StoreDrawCategoryTile(
+                store, StoreLandingTileRect(tile), store->category_art[tile], labels[tile], frame, label_bottom
+            )) {
             StoreEnterPage(store, targets[tile]);
             GuiSoundPlay(SND_UI_TAB);
             break;
@@ -1463,29 +1540,87 @@ static Rectangle StoreRevealCardRect(const Store *store, int index) {
     };
 }
 
-static int StoreItemRarity(const Store *store, int result) {
-    int def = store->item_results[result];
-    if (store->item_kind == STORE_KIND_RUNE) return RuneDefAt(def)->rarity;
-    return def == GEAR_ROLL_TOME ? GEAR_RARITY_COUNT : GearDefAt(def)->rarity;
+static const StoreRevealFanfare *StoreItemFanfare(const StoreItemResult *result) {
+    return result->newly_owned ? &STORE_FANFARE_NEWLY_OWNED : &STORE_FANFARE_NORMAL;
 }
 
-static void StoreDrawRevealBurst(Rectangle card, float age) {
-    if (age >= STORE_REVEAL_BURST_SECONDS) return;
-    float fade = age / STORE_REVEAL_BURST_SECONDS;
-    Rectangle burst = StoreScaledAround(card, STORE_REVEAL_BURST_SCALE);
+static float StoreFanfareBurstSeconds(const StoreRevealFanfare *fanfare) {
+    return fanfare->burst_wait + fanfare->burst_up + fanfare->burst_hold + fanfare->burst_down;
+}
+
+static float StoreFanfareSeconds(const StoreRevealFanfare *fanfare) {
+    return fmaxf(fanfare->image_down + fanfare->image_up, StoreFanfareBurstSeconds(fanfare));
+}
+
+static bool StoreItemDetailsAlreadyShown(const Store *store, int def) {
+    for (int i = 0; i < store->item_result_count; i++)
+        if (store->item_results[i].def == def && store->item_results[i].details_shown) return true;
+    return false;
+}
+
+static void StoreShowItemDetails(Store *store, int result) {
+    store->item_details = result;
+    store->item_details_armed = false;
+    store->item_results[result].details_shown = true;
+    GuiSoundPlay(SND_STORE_INFO);
+}
+
+static void StoreDismissItemDetails(Store *store) {
+    store->item_details = -1;
+    store->item_details_armed = false;
+}
+
+static void StoreStartNextItemReveal(Store *store) {
+    StoreItemResult *result = &store->item_results[store->item_reveal_next];
+    result->age = 0.0f;
+    if (result->newly_owned && !StoreItemDetailsAlreadyShown(store, result->def))
+        store->item_details_pending = store->item_reveal_next;
+    store->item_reveal_next++;
+    store->item_reveal_wait = STORE_REVEAL_SECONDS_BETWEEN_ITEMS;
+}
+
+static void StoreAdvanceItemReveal(Store *store, float dt) {
+    for (int i = 0; i < store->item_reveal_next; i++) store->item_results[i].age += dt;
+    int pending = store->item_details_pending;
+    if (pending >= 0 && store->dialog == STORE_DIALOG_NONE &&
+        store->item_results[pending].age >= StoreFanfareSeconds(StoreItemFanfare(&store->item_results[pending]))) {
+        store->item_details_pending = -1;
+        StoreShowItemDetails(store, pending);
+    }
+    if (store->item_details >= 0 || store->item_details_pending >= 0) return;
+    if (store->item_reveal_next >= store->item_result_count) return;
+    store->item_reveal_wait -= dt;
+    if (store->item_reveal_wait <= 0.0f) StoreStartNextItemReveal(store);
+}
+
+static float StoreFanfareBurstScale(const StoreRevealFanfare *fanfare, float age) {
+    float time = age - fanfare->burst_wait;
+    if (time < 0.0f) return 0.0f;
+    if (time < fanfare->burst_up) return time / fanfare->burst_up;
+    time -= fanfare->burst_up;
+    if (time < fanfare->burst_hold) return 1.0f;
+    time -= fanfare->burst_hold;
+    return time < fanfare->burst_down ? 1.0f - time / fanfare->burst_down : 0.0f;
+}
+
+static void StoreDrawRevealBurst(const StoreItemResult *result, Rectangle card) {
+    const StoreRevealFanfare *fanfare = StoreItemFanfare(result);
+    float scale = StoreFanfareBurstScale(fanfare, result->age);
+    if (scale <= 0.0f) return;
+    float remaining = 1.0f - result->age / StoreFanfareBurstSeconds(fanfare);
+    Rectangle burst = StoreScaledAround(card, STORE_REVEAL_BURST_SCALE * scale);
     Texture2D texture = GuiTex(GUI_RESULTS_STARBURST);
     DrawTexturePro(
         texture,
         (Rectangle){0.0f, 0.0f, (float)texture.width, (float)texture.height},
         (Rectangle){burst.x + burst.width * 0.5f, burst.y + burst.height * 0.5f, burst.width, burst.height},
         (Vector2){burst.width * 0.5f, burst.height * 0.5f},
-        STORE_PACK_RUNE_BURST_SPIN_DEGREES * fade,
-        Fade(WHITE, 1.0f - fade * fade)
+        fanfare->burst_spin_degrees * remaining,
+        WHITE
     );
 }
 
-static void StoreDrawRevealItem(const Store *store, int result, Rectangle card) {
-    int def = store->item_results[result];
+static void StoreDrawRevealedItem(const Store *store, int def, Rectangle card) {
     if (store->item_kind == STORE_KIND_RUNE)
         RunesDrawTile(RuneDefAt(def), card, false);
     else if (def == GEAR_ROLL_TOME)
@@ -1494,43 +1629,59 @@ static void StoreDrawRevealItem(const Store *store, int result, Rectangle card) 
         GearDrawTile(GearDefAt(def), card, false);
 }
 
+static void StoreDrawRevealCard(const Store *store, const StoreItemResult *result, Rectangle card) {
+    const StoreRevealFanfare *fanfare = StoreItemFanfare(result);
+    if (result->age < fanfare->image_down) {
+        float scale = result->age < 0.0f ? 1.0f : 1.0f - result->age / fanfare->image_down;
+        Rectangle hidden = StoreScaledAround(card, scale);
+        StoreDrawRarityIcon(store->item_kind, hidden, StoreItemRarity(store, result->def), WHITE);
+        return;
+    }
+    float scale = fminf((result->age - fanfare->image_down) / fanfare->image_up, 1.0f);
+    if (scale >= STORE_REVEAL_MIN_VISIBLE_SCALE)
+        StoreDrawRevealedItem(store, result->def, StoreScaledAround(card, scale));
+}
+
+static void StoreDrawItemDetails(Store *store) {
+    int def = store->item_results[store->item_details].def;
+    float cx = StorePlateRect().x + StorePlateRect().width * 0.5f;
+    if (store->item_kind == STORE_KIND_RUNE) {
+        float width = STORE_REVEAL_RUNE_CARD_HEIGHT * 0.78f;
+        Rectangle card = {cx - width * 0.5f, STORE_REVEAL_RUNE_CARD_TOP, width, STORE_REVEAL_RUNE_CARD_HEIGHT};
+        RunesDrawCard(RuneDefAt(def), NULL, card, 0);
+    } else {
+        Rectangle card = {
+            cx - STORE_REVEAL_GEAR_CARD_SIZE * 0.5f,
+            STORE_REVEAL_GEAR_CARD_TOP,
+            STORE_REVEAL_GEAR_CARD_SIZE,
+            STORE_REVEAL_GEAR_CARD_SIZE
+        };
+        GearDrawRevealCard(def == GEAR_ROLL_TOME ? NULL : GearDefAt(def), card);
+    }
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) store->item_details_armed = true;
+    if (store->item_details_armed && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) StoreDismissItemDetails(store);
+}
+
 static StoreAction StoreDrawItemReveal(Store *store, Player *player, Heroes *heroes, float dt) {
-    bool runes = store->item_kind == STORE_KIND_RUNE;
     int chrome = StoreDrawPopupChrome(
-        store, runes ? LocGet("RUNE_REVEAL_WINDOW_TITLE") : GearText("GEAR_REVEAL_WINDOW_TITLE"), false
+        store,
+        store->item_kind == STORE_KIND_RUNE ? LocGet("RUNE_REVEAL_WINDOW_TITLE") : GearText("GEAR_REVEAL_WINDOW_TITLE"),
+        false
     );
     if (chrome == 1) return STORE_ACTION_CLOSE;
-    if (store->rune_details < 0) store->item_reveal_time += dt;
-    for (int pass = 0; pass < 2; pass++) {
-        for (int i = 0; i < store->item_result_count; i++) {
-            Rectangle card = StoreRevealCardRect(store, i);
-            float age = store->item_reveal_time - (i + 1) * STORE_REVEAL_STEP;
-            if (pass == 0) {
-                if (age >= 0.0f) StoreDrawRevealBurst(card, age);
-                continue;
-            }
-            if (age < 0.0f) {
-                StoreDrawRarityIcon(store->item_kind, card, StoreItemRarity(store, i), WHITE);
-                continue;
-            }
-            StoreDrawRevealItem(store, i, card);
-            if (runes && store->rune_details < 0 && StoreReleasedOn(store, card)) {
-                store->rune_details = i;
-                GuiSoundPlay(SND_STORE_INFO);
-                return STORE_ACTION_NONE;
-            }
-        }
+    StoreAdvanceItemReveal(store, dt);
+    for (int i = 0; i < store->item_result_count; i++)
+        if (store->item_results[i].age >= 0.0f)
+            StoreDrawRevealBurst(&store->item_results[i], StoreRevealCardRect(store, i));
+    for (int i = 0; i < store->item_result_count; i++) {
+        Rectangle card = StoreRevealCardRect(store, i);
+        StoreDrawRevealCard(store, &store->item_results[i], card);
+        if (store->item_results[i].age >= 0.0f && StoreReleasedOn(store, card)) StoreShowItemDetails(store, i);
     }
-    bool interactive = !StoreInputBlocked(store) && store->rune_details < 0;
+    bool interactive = !StoreInputBlocked(store);
     bool again = ButtonDrawEx(&store->item_again, STORE_REVEAL_AGAIN_RECT, interactive);
     bool done = ButtonDrawEx(&store->item_done, STORE_REVEAL_DONE_RECT, interactive);
-    if (store->rune_details >= 0) {
-        float height = 480.0f;
-        float cx = StorePlateRect().x + StorePlateRect().width * 0.5f;
-        const RuneDef *def = RuneDefAt(store->item_results[store->rune_details]);
-        RunesDrawCard(def, NULL, (Rectangle){cx - height * 0.39f, 150.0f, height * 0.78f, height}, 0);
-        if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) store->rune_details = -1;
-    }
+    if (store->item_details >= 0) StoreDrawItemDetails(store);
     if (done) store->view = store->packs[store->selected_pack].page;
     if (again && StoreRequestPurchase(store, player, heroes, store->selected_pack)) return STORE_ACTION_PURCHASED;
     StoreDrawToast(store);

@@ -20,6 +20,7 @@ typedef struct {
 #define DEBUG_PVP_DEFENSE_DELAY 90000
 #define DEBUG_BFX_DEFAULT_AGE 30
 #define DEBUG_PACK_FUNDS 999999
+#define DEBUG_REVEAL_STEPS_PER_SECOND 60.0f
 #define DEBUG_RUNE_FX_START_FRAME 30
 #define DEBUG_WINS_TO_MASTER 3
 #define DEBUG_RESULTS_XP 20
@@ -111,6 +112,23 @@ static void DebugRenderNexusScene(const char *scene_name) {
     const char *output = getenv("HOD_SHOT");
     if (output) TakeScreenshot(GetFileName(output));
     NexusBackgroundUnload(&bg);
+}
+
+static void DebugAdvanceItemReveal(Store *store) {
+    int dismissals = EnvInt("HOD_REVEAL_DISMISSALS", 0);
+    int steps = (int)(EnvFloat("HOD_REVEAL_TIME", 2.0f) * DEBUG_REVEAL_STEPS_PER_SECOND);
+    for (int step = 0; step < steps; step++) {
+        StoreAdvanceItemReveal(store, 1.0f / DEBUG_REVEAL_STEPS_PER_SECOND);
+        if (store->item_details >= 0 && dismissals-- > 0) StoreDismissItemDetails(store);
+    }
+    TraceLog(
+        LOG_WARNING,
+        "Reveal: started %d of %d, details %d, pending %d",
+        store->item_reveal_next,
+        store->item_result_count,
+        store->item_details,
+        store->item_details_pending
+    );
 }
 
 static void DebugPrepareStore(Game *game, DebugShot *shot) {
@@ -649,10 +667,9 @@ static void DebugPrepareGear(Game *game, DebugShot *shot) {
         shot->gear_store = true;
         if (DebugShotIs(shot, "gear_reveal")) {
             player->gems = INT_MAX / 2;
-            game->store.item_reveal_time = 0.0f;
             player->gold = INT_MAX / 2;
             StoreTryPurchase(&game->store, player, &game->heroes, EnvInt("HOD_PACK", game->store.pack_count - 1));
-            game->store.item_reveal_time = EnvFloat("HOD_REVEAL_TIME", 2.0f);
+            DebugAdvanceItemReveal(&game->store);
         }
         return;
     }
