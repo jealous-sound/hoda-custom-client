@@ -342,10 +342,13 @@ static void GoalsDrawEventRow(const GoalsTabs *t, const PlayerPvpEventResult *re
         GOALS_TEXT_DIM
     );
     bool gems = result->gems > 0;
+    int value = gems ? result->gems : result->gold;
+    const PvpEventRankReward *reward = PvpEventRewardForRank(PvpEventForCycle(result->cycle), result->rank);
     Rectangle amount = {row.x + row.width - GOALS_BUTTON_WIDTH - 180.0f, row.y, 120.0f, row.height};
-    UiDrawTextRight(t->font, TextFormat("+%d", gems ? result->gems : result->gold), amount, 28.0f, GOALS_TEXT);
+    bool lead_prize = reward && reward->reward.prize_count > 0;
+    if (value > 0 && !lead_prize) UiDrawTextRight(t->font, TextFormat("+%d", value), amount, 28.0f, GOALS_TEXT);
     UiDrawTexture(
-        GuiTex(gems ? GUI_MISSION_GEM : GUI_MISSION_GOLD),
+        reward ? PvpRewardTexture(&reward->reward) : GuiTex(gems ? GUI_MISSION_GEM : GUI_MISSION_GOLD),
         (Rectangle){amount.x + amount.width + 6.0f, row.y + (row.height - 40.0f) * 0.5f, 40.0f, 40.0f},
         WHITE
     );

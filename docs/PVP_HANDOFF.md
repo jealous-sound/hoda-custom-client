@@ -101,6 +101,13 @@ The 5.4.4 cache is identical to 4.4.0 (same 4,716 bundles, same localization, sa
 
 ## Event catalog
 
+`data/pvp_rewards_research.json` is the unmodified research snapshot of 380 events (SHA-256 checked by
+`tools/build_pvp_rules.py`). The builder gives each catalog event the Individual rank tiers and banner milestones of
+one selected record: the milestones scale to `ladder_banners`, and the 12 source tiers map in order onto `RANK_BRACKETS`.
+Unmapped prize names fail the build. Keys for raids and quests, which the client lacks, are in `UNSUPPORTED_PRIZES` and
+show up per event in `omitted_prizes`. The early milestones are client tuning, not recovered data. Event buffs are not
+in the snapshot.
+
 `client-additional-data/pvp_research/archived_pvp_events.json` (local): 179 named entries extracted from archived
 weekly Event Schedule threads, 2016 to 2021, with rules, banner prizes, rank prizes and run windows. 144 have prize
 lists. Caveats: the extraction also caught a few Quest events (Elven Mages, Nature Nexus, Drop-a-Hawke) and some

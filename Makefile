@@ -16,7 +16,7 @@ $(TEST_TARGET): tests/battle_sim_test.c $(DEPS) Makefile
 
 test: $(TEST_TARGET)
 	python3 client-additional-data/validate_characters.py
-	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py
+	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py
 	python3 tools/audit_character_models.py --deep
 	python3 tools/validate_ability_recipes.py
 	python3 tools/validate_intrinsic_passives.py

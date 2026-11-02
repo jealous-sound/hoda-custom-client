@@ -1,4 +1,6 @@
-#define BATTLE_RESULTS_MAX_REWARDS 4
+#define BATTLE_RESULTS_MAX_PRIZES 2
+#define BATTLE_RESULTS_FULL_SIZE_REWARDS 3
+#define BATTLE_RESULTS_MAX_REWARDS (5 + BATTLE_RESULTS_MAX_PRIZES)
 
 typedef struct {
     bool victory;
@@ -20,6 +22,7 @@ typedef struct {
     bool pvp;
     int trophy_delta;
     int banner_delta;
+    PvpPayout event_payout;
 } BattleResultsPresentation;
 
 typedef enum {
@@ -50,6 +53,7 @@ typedef struct {
     int amount;
     bool animate_quantity;
     bool cool;
+    Texture2D prize;
 } BattleResultsReward;
 
 static float BattleResultsClamp01(float x) {
@@ -101,7 +105,9 @@ static bool BattleResultsHasCompletion(const BattleResultsPresentation *p) {
 }
 
 static int BattleResultsRewardCount(const BattleResultsPresentation *p) {
-    return (p->gems > 0) + (p->xp > 0) + (p->gold > 0) + (p->trophy_delta != 0) + (p->banner_delta != 0);
+    return (p->gems > 0) + (p->xp > 0) + (p->gold > 0) + (p->trophy_delta != 0) + (p->banner_delta != 0) +
+           (p->event_payout.prize_count < BATTLE_RESULTS_MAX_PRIZES ? p->event_payout.prize_count
+                                                                    : BATTLE_RESULTS_MAX_PRIZES);
 }
 
 static float BattleResultsPopupScale(void) {
@@ -488,6 +494,8 @@ BattleResultsBuildRewards(const BattleResultsPresentation *p, BattleResultsRewar
     if (p->banner_delta != 0) rewards[count++] = (BattleResultsReward){GUI_PVP_BANNER, p->banner_delta, false, true};
     if (p->trophy_delta != 0)
         rewards[count++] = (BattleResultsReward){GUI_TAB_TROPHY, p->trophy_delta, false, p->trophy_delta > 0};
+    for (int i = 0; i < p->event_payout.prize_count && i < BATTLE_RESULTS_MAX_PRIZES; i++)
+        rewards[count++] = (BattleResultsReward){.cool = true, .prize = PvpPrizeTexture(p->event_payout.prizes[i])};
     if (p->gems > 0) rewards[count++] = (BattleResultsReward){GUI_STORE_CURRENCY_GEMS, p->gems, false, true};
     if (p->xp > 0) rewards[count++] = (BattleResultsReward){GUI_MM_XP, p->xp, true, false};
     if (p->gold > 0) rewards[count++] = (BattleResultsReward){GUI_HUD_GOLD, p->gold, true, false};
@@ -497,13 +505,14 @@ BattleResultsBuildRewards(const BattleResultsPresentation *p, BattleResultsRewar
 static float BattleResultsRewardAnchor(int index, int count) {
     if (count <= 1) return 0.5f;
     if (count == 2) return index == 0 ? 0.75f : 0.25f;
-    return 1.0f - (float)index * 0.5f;
+    return 1.0f - (float)index / (float)(count - 1);
 }
 
 static Rectangle BattleResultsRewardItemRect(Rectangle rewards_rect, int index, int count) {
     float scale = BattleResultsPopupScale();
-    float item_width = 220.0f * scale;
-    float item_height = 129.0f * scale;
+    float fit = count > BATTLE_RESULTS_FULL_SIZE_REWARDS ? (float)BATTLE_RESULTS_FULL_SIZE_REWARDS / count : 1.0f;
+    float item_width = 220.0f * scale * fit;
+    float item_height = 129.0f * scale * fit;
     float anchor = BattleResultsRewardAnchor(index, count);
     return (Rectangle){
         rewards_rect.x + anchor * (rewards_rect.width - item_width),
@@ -553,9 +562,10 @@ static void BattleResultsDrawRewardItem(
                                         : Lerp(0.75f, 1.0f, BattleResultsClamp01((effect_time - 2.0f) / 2.0f));
     }
     unsigned char channel = (unsigned char)(255.0f * brightness);
-    UiDrawTexture(GuiTex(reward.icon), icon, BattleResultsAlpha((Color){channel, channel, channel, 255}, alpha));
+    Texture2D texture = reward.prize.id ? reward.prize : GuiTex(reward.icon);
+    UiDrawTexture(texture, icon, BattleResultsAlpha((Color){channel, channel, channel, 255}, alpha));
 
-    bool show_quantity = !reward.animate_quantity || local >= 1.0f;
+    bool show_quantity = !reward.prize.id && (!reward.animate_quantity || local >= 1.0f);
     if (show_quantity) {
         int shown = reward.amount;
         if (reward.animate_quantity)

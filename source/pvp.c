@@ -14,27 +14,62 @@
 #define PVP_DEFENSE_SALT 0x3D6F02u
 
 #define PVP_EVENT_CAPACITY 16
-#define PVP_EVENT_REWARD_CAPACITY 8
+#define PVP_EVENT_REWARD_CAPACITY 16
 #define PVP_EVENT_KEY_CAP 96
 #define PVP_EVENT_SKILL_JITTER_PCT 25
 #define PVP_EVENT_SALT 0x4E11A9u
+#define PVP_REWARD_PRIZE_CAPACITY 6
+#define PVP_PAYOUT_PRIZE_CAPACITY 16
+#define PVP_PRIZE_TEXTURE_CAPACITY 256
+
+typedef enum {
+    PVP_PRIZE_UNIT,
+    PVP_PRIZE_GEAR,
+    PVP_PRIZE_VOUCHER,
+    PVP_PRIZE_TOME,
+} PvpPrizeKind;
+
+typedef struct {
+    PvpPrizeKind kind;
+    char id[48];
+    char name[96];
+    char icon[72];
+    int count;
+    int index;
+} PvpPrize;
+
+typedef struct {
+    int gold;
+    int gems;
+    int prize_count;
+    PvpPrize prizes[PVP_REWARD_PRIZE_CAPACITY];
+} PvpReward;
+
+typedef struct {
+    int gold;
+    int gems;
+    int prize_count;
+    const PvpPrize *prizes[PVP_PAYOUT_PRIZE_CAPACITY];
+} PvpPayout;
 
 typedef struct {
     int banners;
-    int gold;
-    int gems;
+    PvpReward reward;
 } PvpEventMilestone;
 
 typedef struct {
     int first;
     int last;
-    int gold;
-    int gems;
+    PvpReward reward;
 } PvpEventRankReward;
 
 typedef struct {
     char title_key[PVP_EVENT_KEY_CAP];
     BattleGameChanger changer;
+    PvpEventMilestone milestones[PVP_EVENT_REWARD_CAPACITY];
+    int milestone_count;
+    PvpEventRankReward rank_rewards[PVP_EVENT_REWARD_CAPACITY];
+    int rank_reward_count;
 } PvpEvent;
 
 typedef struct {
@@ -43,10 +78,7 @@ typedef struct {
     int win_banners_decline_slowdown, win_banners_floor_pct;
     int matchmaking_banner_window;
     int loss_banners, top_bot_banners;
-    PvpEventMilestone milestones[PVP_EVENT_REWARD_CAPACITY];
-    int milestone_count;
-    PvpEventRankReward rank_rewards[PVP_EVENT_REWARD_CAPACITY];
-    int rank_reward_count;
+    int ladder_banners;
     PvpEvent catalog[PVP_EVENT_CAPACITY];
     int catalog_count;
 } PvpEventRules;
@@ -171,6 +203,49 @@ static void BattleChangerEffectLoad(BattleChangerEffect *effect, const cJSON *js
     effect->power_pct = JsonInt(json, "power_pct");
 }
 
+static PvpPrizeKind PvpPrizeKindParse(const char *kind) {
+    if (!strcmp(kind, "unit")) return PVP_PRIZE_UNIT;
+    if (!strcmp(kind, "gear")) return PVP_PRIZE_GEAR;
+    if (!strcmp(kind, "voucher")) return PVP_PRIZE_VOUCHER;
+    if (!strcmp(kind, "tome")) return PVP_PRIZE_TOME;
+    TraceLog(LOG_FATAL, "Pvp: unknown prize kind %s", kind);
+    return PVP_PRIZE_UNIT;
+}
+
+static PvpPrize PvpPrizeParse(const cJSON *json) {
+    PvpPrize prize = {.kind = PvpPrizeKindParse(JsonStr(json, "kind")), .count = JsonInt(json, "count")};
+    StrCopy(prize.id, sizeof(prize.id), JsonStr(json, "id"));
+    StrCopy(prize.name, sizeof(prize.name), JsonStr(json, "name"));
+    StrCopy(prize.icon, sizeof(prize.icon), JsonStr(json, "icon"));
+    prize.index = prize.kind == PVP_PRIZE_GEAR ? GearDefIndex(prize.id) : JsonInt(json, "index");
+    if (prize.index < 0) TraceLog(LOG_FATAL, "Pvp: unknown prize %s", prize.id);
+    return prize;
+}
+
+static PvpReward PvpRewardParse(const cJSON *json) {
+    PvpReward reward = {.gold = JsonInt(json, "gold"), .gems = JsonInt(json, "gems")};
+    const cJSON *item = NULL;
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "prizes")) {
+        if (reward.prize_count == PVP_REWARD_PRIZE_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many prizes");
+        reward.prizes[reward.prize_count++] = PvpPrizeParse(item);
+    }
+    return reward;
+}
+
+static void PvpEventLadderParse(PvpEvent *event, const cJSON *json) {
+    const cJSON *item = NULL;
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "milestones")) {
+        if (event->milestone_count == PVP_EVENT_REWARD_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many milestones");
+        event->milestones[event->milestone_count++] =
+            (PvpEventMilestone){JsonInt(item, "banners"), PvpRewardParse(item)};
+    }
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "rank_rewards")) {
+        if (event->rank_reward_count == PVP_EVENT_REWARD_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many rank rewards");
+        event->rank_rewards[event->rank_reward_count++] =
+            (PvpEventRankReward){JsonInt(item, "first"), JsonInt(item, "last"), PvpRewardParse(item)};
+    }
+}
+
 static void PvpEventsParse(PvpEventRules *e, const cJSON *root) {
     const cJSON *json = cJSON_GetObjectItemCaseSensitive((cJSON *)root, "events");
     e->duration_seconds = JsonInt(json, "duration_seconds");
@@ -182,22 +257,13 @@ static void PvpEventsParse(PvpEventRules *e, const cJSON *root) {
     e->matchmaking_banner_window = JsonInt(json, "matchmaking_banner_window");
     e->loss_banners = JsonInt(json, "loss_banners");
     e->top_bot_banners = JsonInt(json, "top_bot_banners");
+    e->ladder_banners = JsonInt(json, "ladder_banners");
     const cJSON *item = NULL;
-    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "milestones")) {
-        if (e->milestone_count == PVP_EVENT_REWARD_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many milestones");
-        e->milestones[e->milestone_count++] =
-            (PvpEventMilestone){JsonInt(item, "banners"), JsonInt(item, "gold"), JsonInt(item, "gems")};
-    }
-    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "rank_rewards")) {
-        if (e->rank_reward_count == PVP_EVENT_REWARD_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many rank rewards");
-        e->rank_rewards[e->rank_reward_count++] = (PvpEventRankReward){
-            JsonInt(item, "first"), JsonInt(item, "last"), JsonInt(item, "gold"), JsonInt(item, "gems")
-        };
-    }
     cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "catalog")) {
         if (e->catalog_count == PVP_EVENT_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many events");
         PvpEvent *event = &e->catalog[e->catalog_count++];
         StrCopy(event->title_key, sizeof(event->title_key), JsonStr(item, "title_key"));
+        PvpEventLadderParse(event, item);
         StrCopy(event->changer.text_key, sizeof(event->changer.text_key), JsonStr(item, "text_key"));
         const cJSON *effect = NULL;
         cJSON_ArrayForEach(effect, cJSON_GetObjectItemCaseSensitive((cJSON *)item, "effects")) {
@@ -558,7 +624,7 @@ static int PvpBotBanners(int bot, long long cycle, long long elapsed) {
 
 int PvpEventMaxBannersPerWin(int banners) {
     const PvpEventRules *e = &PvpTableEnsure()->events;
-    int ladder = e->milestones[e->milestone_count - 1].banners;
+    int ladder = e->ladder_banners;
     int step = ladder / e->win_banners_steps_to_peak;
     int midpoint = ladder / 2;
     int peak = e->win_banners_start + e->win_banners_peak_bonus;
@@ -608,11 +674,64 @@ int PvpEventRankAt(int banners, long long cycle, long long elapsed) {
     return rank;
 }
 
-const PvpEventRankReward *PvpEventRewardForRank(int rank) {
-    const PvpEventRules *e = &PvpTableEnsure()->events;
-    for (int i = 0; i < e->rank_reward_count; i++)
-        if (rank >= e->rank_rewards[i].first && rank <= e->rank_rewards[i].last) return &e->rank_rewards[i];
+const PvpEventRankReward *PvpEventRewardForRank(const PvpEvent *event, int rank) {
+    for (int i = 0; i < event->rank_reward_count; i++)
+        if (rank >= event->rank_rewards[i].first && rank <= event->rank_rewards[i].last) return &event->rank_rewards[i];
     return NULL;
+}
+
+int PvpEventRankTier(const PvpEvent *event, int rank) {
+    const PvpEventRankReward *reward = PvpEventRewardForRank(event, rank);
+    return reward ? (int)(reward - event->rank_rewards) : event->rank_reward_count - 1;
+}
+
+void PvpPayoutAdd(PvpPayout *payout, const PvpReward *reward) {
+    payout->gold += reward->gold;
+    payout->gems += reward->gems;
+    for (int i = 0; i < reward->prize_count && payout->prize_count < PVP_PAYOUT_PRIZE_CAPACITY; i++)
+        payout->prizes[payout->prize_count++] = &reward->prizes[i];
+}
+
+int PvpRewardUnitCount(const PvpReward *reward) {
+    int count = 0;
+    for (int i = 0; i < reward->prize_count; i++)
+        if (reward->prizes[i].kind == PVP_PRIZE_UNIT) count += reward->prizes[i].count;
+    return count;
+}
+
+int PvpPayoutUnitCount(const PvpPayout *payout) {
+    int count = 0;
+    for (int i = 0; i < payout->prize_count; i++)
+        if (payout->prizes[i]->kind == PVP_PRIZE_UNIT) count += payout->prizes[i]->count;
+    return count;
+}
+
+static Texture2D PvpPrizeTextureLoad(const PvpPrize *prize) {
+    if (prize->kind == PVP_PRIZE_UNIT) return GuiPortraitLoad(prize->icon);
+    Texture2D texture = ResourceLoadTexture(prize->icon);
+    if (texture.id == 0) TraceLog(LOG_WARNING, "Pvp: missing prize icon %s", prize->icon);
+    return texture;
+}
+
+Texture2D PvpPrizeTexture(const PvpPrize *prize) {
+    if (prize->kind == PVP_PRIZE_GEAR) return GearIconLoad(GearDefAt(prize->index));
+    if (prize->kind == PVP_PRIZE_TOME) return GearTomeIconLoad();
+    static struct {
+        const char *icon;
+        Texture2D texture;
+    } cache[PVP_PRIZE_TEXTURE_CAPACITY];
+    static int count = 0;
+    for (int i = 0; i < count; i++)
+        if (!strcmp(cache[i].icon, prize->icon)) return cache[i].texture;
+    if (count == PVP_PRIZE_TEXTURE_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many prize textures");
+    cache[count].icon = prize->icon;
+    cache[count].texture = PvpPrizeTextureLoad(prize);
+    return cache[count++].texture;
+}
+
+Texture2D PvpRewardTexture(const PvpReward *reward) {
+    if (reward->prize_count > 0) return PvpPrizeTexture(&reward->prizes[0]);
+    return GuiTex(reward->gems > 0 ? GUI_MISSION_GEM : GUI_MISSION_GOLD);
 }
 
 static int PvpEventResultCompare(const void *a, const void *b) {
@@ -639,10 +758,10 @@ static void PvpEventFinish(PlayerPvp *pvp) {
     int duration = PvpTableEnsure()->events.duration_seconds;
     PlayerPvpEventResult result = {.cycle = event->cycle, .banners = event->banners};
     result.rank = PvpEventRankAt(event->banners, event->cycle, duration);
-    const PvpEventRankReward *reward = PvpEventRewardForRank(result.rank);
+    const PvpEventRankReward *reward = PvpEventRewardForRank(PvpEventForCycle(event->cycle), result.rank);
     if (reward) {
-        result.gold = reward->gold;
-        result.gems = reward->gems;
+        result.gold = reward->reward.gold;
+        result.gems = reward->reward.gems;
     }
     if (pvp->event_result_count == PVP_EVENT_RESULT_CAPACITY) PvpEventDropOldestResult(pvp);
     pvp->event_results[pvp->event_result_count++] = result;
@@ -691,14 +810,16 @@ PlayerPvpBattle PvpRecordEventAttack(PlayerPvp *pvp, const PvpOpponent *o, bool 
     return battle;
 }
 
-PvpEventMilestone PvpEventTakeMilestones(PlayerPvp *pvp) {
-    const PvpEventRules *e = &PvpTableEnsure()->events;
-    PvpEventMilestone total = {0};
-    while (pvp->event.milestones_paid < e->milestone_count) {
-        const PvpEventMilestone *next = &e->milestones[pvp->event.milestones_paid];
+PvpPayout PvpEventTakeMilestones(PlayerPvp *pvp, int roster_room) {
+    const PvpEvent *event = PvpEventForCycle(pvp->event.cycle);
+    PvpPayout total = {0};
+    int units = 0;
+    while (pvp->event.milestones_paid < event->milestone_count) {
+        const PvpEventMilestone *next = &event->milestones[pvp->event.milestones_paid];
         if (pvp->event.banners < next->banners) break;
-        total.gold += next->gold;
-        total.gems += next->gems;
+        units += PvpRewardUnitCount(&next->reward);
+        if (units > roster_room) break;
+        PvpPayoutAdd(&total, &next->reward);
         pvp->event.milestones_paid++;
     }
     return total;

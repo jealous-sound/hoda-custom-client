@@ -92,6 +92,7 @@ typedef struct {
     int first_win_gems_reward;
     int mastery_gems_reward;
     int gems_reward;
+    PvpPayout event_payout;
     int wins_to_master;
 
     int player_level_pre;
@@ -328,10 +329,53 @@ void NexusResetRun(Player *player) {
     }
 }
 
+static bool PvpGrantUnits(Player *player, const PvpPayout *payout) {
+    int wanted = PvpPayoutUnitCount(payout);
+    if (wanted == 0) return true;
+    cJSON *root = ProgressionLoadCharacterCatalog();
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    const cJSON **definitions = (const cJSON **)MemAlloc((unsigned int)wanted * sizeof(*definitions));
+    int count = 0;
+    for (int i = 0; i < payout->prize_count; i++) {
+        const PvpPrize *prize = payout->prizes[i];
+        if (prize->kind != PVP_PRIZE_UNIT) continue;
+        const cJSON *entry = NULL;
+        cJSON_ArrayForEach(entry, (cJSON *)catalog) {
+            if (!strcmp(JsonStr(entry, "id"), prize->id)) break;
+        }
+        for (int n = 0; entry && n < prize->count; n++) definitions[count++] = entry;
+    }
+    bool granted = count == wanted && PlayerRosterAppendDefinitions(player, definitions, count, NULL);
+    MemFree((void *)definitions);
+    cJSON_Delete(root);
+    return granted;
+}
+
+static void PvpGrantItems(Player *player, const PvpPayout *payout) {
+    for (int i = 0; i < payout->prize_count; i++) {
+        const PvpPrize *prize = payout->prizes[i];
+        if (prize->kind == PVP_PRIZE_GEAR)
+            for (int n = 0; n < prize->count; n++) GearGrant(&player->gear, prize->index);
+        if (prize->kind == PVP_PRIZE_TOME) player->gear.tomes += prize->count;
+        if (prize->kind == PVP_PRIZE_VOUCHER)
+            player->pack_vouchers[prize->index] =
+                ProgressionSaturatingAdd(player->pack_vouchers[prize->index], prize->count);
+    }
+}
+
+static int PvpRosterRoom(const Player *player) {
+    return PlayerRosterHasCapacity(player, 0) ? player->roster_capacity - player->roster_count : 0;
+}
+
 bool PvpEventClaim(Player *player, int index) {
     PlayerPvp *pvp = &player->pvp;
     if (index < 0 || index >= pvp->event_result_count || pvp->event_results[index].claimed) return false;
     PlayerPvpEventResult *result = &pvp->event_results[index];
+    const PvpEventRankReward *reward = PvpEventRewardForRank(PvpEventForCycle(result->cycle), result->rank);
+    PvpPayout payout = {0};
+    if (reward) PvpPayoutAdd(&payout, &reward->reward);
+    if (!PvpGrantUnits(player, &payout)) return false;
+    PvpGrantItems(player, &payout);
     result->claimed = true;
     player->gold = ProgressionSaturatingAdd(player->gold, result->gold);
     player->gems = ProgressionSaturatingAdd(player->gems, result->gems);
@@ -350,7 +394,10 @@ BattleRewardResult PvpResolveBattle(
         event ? PvpRecordEventAttack(pvp, opponent, won, now) : PvpRecordAttack(pvp, opponent, won, now);
     result.trophy_delta = battle.trophy_delta;
     result.banner_delta = battle.banners;
-    PvpEventMilestone milestones = event ? PvpEventTakeMilestones(pvp) : (PvpEventMilestone){0};
+    PvpPayout milestones = event ? PvpEventTakeMilestones(pvp, PvpRosterRoom(player)) : (PvpPayout){0};
+    if (!PvpGrantUnits(player, &milestones)) TraceLog(LOG_WARNING, "Pvp: could not grant milestone units");
+    PvpGrantItems(player, &milestones);
+    result.event_payout = milestones;
     result.gems_reward = milestones.gems;
     player->gems = ProgressionSaturatingAdd(player->gems, milestones.gems);
     result.crit_gold_reward = crit_gold > 0 ? crit_gold : 0;

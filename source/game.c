@@ -270,6 +270,7 @@ static BattleResultsPresentation GameBattleResultsSnapshot(const Game *g) {
         .pvp = g->battle_is_pvp,
         .trophy_delta = g->battle_reward.trophy_delta,
         .banner_delta = g->battle_reward.banner_delta,
+        .event_payout = g->battle_reward.event_payout,
     };
 }
 

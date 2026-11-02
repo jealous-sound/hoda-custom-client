@@ -5539,6 +5539,7 @@ static void TestPvpEventBannersMilestonesAndClaim(void) {
     static Player player;
     memset(&player, 0, sizeof(player));
     ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
     const PvpEventRules *rules = &PvpTableEnsure()->events;
     long long duration = rules->duration_seconds;
     long long start = 1700000000 / duration * duration;
@@ -5547,15 +5548,16 @@ static void TestPvpEventBannersMilestonesAndClaim(void) {
 
     PvpEventSync(pvp, start);
     assert(pvp->event.cycle == PvpEventCycle(start) && pvp->event_result_count == 0);
-    pvp->event.banners = rules->milestones[0].banners - 1;
+    const PvpEvent *event = PvpEventForCycle(pvp->event.cycle);
+    pvp->event.banners = event->milestones[0].banners - 1;
     int gold = player.gold;
     int expected_banners = PvpEventBannerReward(&o, pvp->event.banners, true);
     BattleRewardResult win = PvpResolveBattle(&player, &o, true, -1, 0, start + 10, true);
     assert(win.trophy_delta == 0 && pvp->trophies == 0);
     assert(win.banner_delta == expected_banners);
-    assert(pvp->event.banners == rules->milestones[0].banners - 1 + win.banner_delta);
+    assert(pvp->event.banners == event->milestones[0].banners - 1 + win.banner_delta);
     assert(pvp->event.milestones_paid == 1);
-    assert(player.gold >= gold + rules->milestones[0].gold);
+    assert(player.gold >= gold + event->milestones[0].reward.gold);
     assert(pvp->history[0].banners == win.banner_delta);
     BattleRewardResult loss = PvpResolveBattle(&player, &o, false, -1, 0, start + 20, true);
     assert(loss.banner_delta == rules->loss_banners);
@@ -5566,8 +5568,8 @@ static void TestPvpEventBannersMilestonesAndClaim(void) {
     assert(pvp->event_result_count == 1 && PvpEventUnclaimedCount(pvp) == 1);
     PlayerPvpEventResult *result = &pvp->event_results[0];
     assert(result->banners == banners && result->rank >= 1);
-    const PvpEventRankReward *reward = PvpEventRewardForRank(result->rank);
-    assert(reward && result->gold == reward->gold && result->gems == reward->gems);
+    const PvpEventRankReward *reward = PvpEventRewardForRank(event, result->rank);
+    assert(reward && result->gold == reward->reward.gold && result->gems == reward->reward.gems);
     gold = player.gold;
     assert(PvpEventClaim(&player, 0));
     assert(player.gold == gold + result->gold);
@@ -5575,6 +5577,144 @@ static void TestPvpEventBannersMilestonesAndClaim(void) {
 
     PvpEventSync(pvp, start + 3 * duration);
     assert(pvp->event_result_count == 1);
+    PlayerUnloadRoster(&player);
+}
+
+static int TestRosterCount(const Player *player, const char *id) {
+    int count = 0;
+    for (int i = 0; i < player->roster_count; i++) count += strcmp(player->roster[i].id, id) == 0;
+    return count;
+}
+
+static void TestPvpEventPrizesAreOwnableAndHaveArt(void) {
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    for (int i = 0; i < rules->catalog_count; i++) {
+        const PvpEvent *event = &rules->catalog[i];
+        assert(event->milestones[event->milestone_count - 1].banners == rules->ladder_banners);
+        for (int tier = 0; tier < event->rank_reward_count; tier++) {
+            const PvpReward *reward = &event->rank_rewards[tier].reward;
+            assert(reward->prize_count > 0 || reward->gold > 0);
+            for (int prize = 0; prize < reward->prize_count; prize++) {
+                const PvpPrize *item = &reward->prizes[prize];
+                assert(item->count > 0 && item->name[0]);
+                if (item->kind == PVP_PRIZE_UNIT) assert(ResourceExists(GuiPortraitRef(item->icon)));
+                if (item->kind == PVP_PRIZE_GEAR) assert(GearDefAt(item->index));
+                if (item->kind == PVP_PRIZE_VOUCHER) {
+                    assert(item->index >= 0 && item->index < PLAYER_VOUCHER_CAPACITY);
+                    assert(ResourceExists(item->icon));
+                }
+            }
+        }
+    }
+}
+
+static const PvpEvent *TestPvpEventNamed(const char *key) {
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    for (int i = 0; i < rules->catalog_count; i++)
+        if (!strcmp(rules->catalog[i].title_key, key)) return &rules->catalog[i];
+    assert(false);
+    return NULL;
+}
+
+static long long TestPvpCycleOf(const PvpEvent *event) {
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    return 700 - 700 % rules->catalog_count + (long long)(event - rules->catalog);
+}
+
+static const PvpEventMilestone *TestMilestoneWith(const PvpEvent *event, PvpPrizeKind kind, int *index) {
+    for (int i = 0; i < event->milestone_count; i++) {
+        const PvpReward *reward = &event->milestones[i].reward;
+        if (reward->prize_count > 0 && reward->prizes[0].kind == kind) {
+            *index = i;
+            return &event->milestones[i];
+        }
+    }
+    assert(false);
+    return NULL;
+}
+
+static void TestPvpEventMilestonesPayWispGearAndTome(void) {
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    const PvpEvent *event = TestPvpEventNamed("PVP_AVVAR_AND_DRAGONS_JUN_27_TITLE_KEY");
+    long long duration = PvpTableEnsure()->events.duration_seconds;
+    long long start = TestPvpCycleOf(event) * duration;
+    PlayerPvp *pvp = &player.pvp;
+    PvpOpponent o = PvpOpponentGenerate(10, 0, PvpDay(start), 8);
+    PvpEventSync(pvp, start);
+    assert(PvpEventForCycle(pvp->event.cycle) == event);
+
+    int index = 0;
+    const PvpEventMilestone *wisp = TestMilestoneWith(event, PVP_PRIZE_UNIT, &index);
+    pvp->event.banners = wisp->banners;
+    pvp->event.milestones_paid = index;
+    const char *wisp_id = wisp->reward.prizes[0].id;
+    int wisps = TestRosterCount(&player, wisp_id);
+    int roster = player.roster_count;
+    player.roster_count = player.roster_capacity;
+    BattleRewardResult full = PvpResolveBattle(&player, &o, true, -1, 0, start + 10, true);
+    assert(full.event_payout.prize_count == 0 && pvp->event.milestones_paid == index);
+    player.roster_count = roster;
+    BattleRewardResult paid = PvpResolveBattle(&player, &o, true, -1, 0, start + 20, true);
+    assert(paid.event_payout.prize_count == 1 && paid.event_payout.prizes[0] == &wisp->reward.prizes[0]);
+    assert(TestRosterCount(&player, wisp_id) == wisps + 1);
+
+    const PvpEventMilestone *tome = TestMilestoneWith(event, PVP_PRIZE_TOME, &index);
+    pvp->event.banners = tome->banners;
+    pvp->event.milestones_paid = index;
+    int tomes = player.gear.tomes;
+    PvpResolveBattle(&player, &o, true, -1, 0, start + 30, true);
+    assert(player.gear.tomes == tomes + 1 && pvp->event.milestones_paid == event->milestone_count);
+    PlayerUnloadRoster(&player);
+}
+
+static void TestPvpEventClaimPaysWholeBundleOnce(void) {
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    const PvpEvent *event = TestPvpEventNamed("PVP_AVVAR_AND_DRAGONS_JUN_27_TITLE_KEY");
+    const PvpReward *top = &event->rank_rewards[0].reward;
+    assert(top->prize_count == 4 && PvpRewardUnitCount(top) == 4 && top->gems == 175 && top->gold == 100000);
+    const char *id = top->prizes[0].id;
+    int owned = TestRosterCount(&player, id);
+    player.gold = 0;
+    player.gems = 0;
+    player.pvp.event_result_count = 1;
+    player.pvp.event_results[0] = (PlayerPvpEventResult){
+        .cycle = TestPvpCycleOf(event), .banners = 3000, .rank = 1, .gold = top->gold, .gems = top->gems
+    };
+    int roster = player.roster_count;
+    player.roster_count = player.roster_capacity;
+    assert(!PvpEventClaim(&player, 0) && !player.pvp.event_results[0].claimed && player.gold == 0);
+    player.roster_count = roster;
+    assert(PvpEventClaim(&player, 0));
+    assert(player.roster_count == roster + 4);
+    assert(TestRosterCount(&player, id) == owned + 1);
+    assert(player.gold == top->gold && player.gems == top->gems);
+    assert(!PvpEventClaim(&player, 0) && player.roster_count == roster + 4);
+    PlayerUnloadRoster(&player);
+}
+
+static void TestPvpEventClaimPaysPackVouchers(void) {
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    const PvpEvent *event = TestPvpEventNamed("PVP_AVVAR_AND_DRAGONS_JUN_27_TITLE_KEY");
+    int tier = 8;
+    const PvpReward *reward = &event->rank_rewards[tier].reward;
+    assert(reward->prizes[0].kind == PVP_PRIZE_VOUCHER && !strcmp(reward->prizes[0].id, "iron"));
+    int voucher = reward->prizes[0].index;
+    int before = player.pack_vouchers[voucher];
+    player.pvp.event_result_count = 1;
+    player.pvp.event_results[0] =
+        (PlayerPvpEventResult){.cycle = TestPvpCycleOf(event), .rank = event->rank_rewards[tier].first};
+    assert(PvpEventClaim(&player, 0));
+    assert(player.pack_vouchers[voucher] == before + reward->prizes[0].count);
+    PlayerUnloadRoster(&player);
 }
 
 static void TestPvpEventRankRisesWithBannersAndCoversEveryone(void) {
@@ -5584,7 +5724,9 @@ static void TestPvpEventRankRisesWithBannersAndCoversEveryone(void) {
     assert(PvpEventRankAt(1000000, cycle, duration) == 1);
     assert(PvpEventRankAt(0, cycle, 0) == 1);
     int last = PvpTableEnsure()->bot_count + 1;
-    for (int rank = 1; rank <= last; rank++) assert(PvpEventRewardForRank(rank));
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    for (int i = 0; i < rules->catalog_count; i++)
+        for (int rank = 1; rank <= last; rank++) assert(PvpEventRewardForRank(&rules->catalog[i], rank));
 }
 
 static void TestPvpEventSquadBuffCountsOncePerEvent(void) {
@@ -5605,7 +5747,7 @@ static void TestPvpEventSquadBuffCountsOncePerEvent(void) {
 
 static void TestPvpBannerCurvePeaksAtTheLadderMidpoint(void) {
     const PvpEventRules *rules = &PvpTableEnsure()->events;
-    int ladder = rules->milestones[rules->milestone_count - 1].banners;
+    int ladder = rules->ladder_banners;
     int start = rules->win_banners_start, peak = start + rules->win_banners_peak_bonus;
     assert(PvpEventMaxBannersPerWin(0) == start);
     assert(PvpEventMaxBannersPerWin(ladder / rules->win_banners_steps_to_peak) == start + 1);
@@ -5681,6 +5823,10 @@ int main(void) {
     TestPvpEventMatchmakingFollowsBanners();
     TestPvpEventRotatesThroughTheCatalog();
     TestPvpEventBannersMilestonesAndClaim();
+    TestPvpEventPrizesAreOwnableAndHaveArt();
+    TestPvpEventMilestonesPayWispGearAndTome();
+    TestPvpEventClaimPaysWholeBundleOnce();
+    TestPvpEventClaimPaysPackVouchers();
     TestPvpEventRankRisesWithBannersAndCoversEveryone();
     TestPvpEventSquadBuffCountsOncePerEvent();
     TestPvpResolveBattlePaysAndMarksRevenge();

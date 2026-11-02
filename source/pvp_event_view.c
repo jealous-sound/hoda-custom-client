@@ -6,6 +6,7 @@
 #define PVP_EVENT_VIEW_METER_SPEED 3.0f
 #define PVP_EVENT_VIEW_SUNBURST_DEGREES_PER_SECOND 5.0f
 #define PVP_EVENT_VIEW_ALL_REWARDS_ROW_HEIGHT 120.0f
+#define PVP_EVENT_VIEW_TIER_COLUMNS 5
 #define PVP_EVENT_VIEW_BATTLE_ROW_HEIGHT 82.0f
 #define PVP_EVENT_VIEW_ROW_GAP 6.0f
 #define PVP_EVENT_VIEW_TAP_TOLERANCE 13.0f
@@ -106,9 +107,13 @@ void PvpEventViewInitialize(PvpEventView *v) {
     for (int tab = 0; tab < PVP_EVENT_TAB_COUNT; tab++) ButtonSetClickSound(&v->tabs[tab], SND_UI_TAB);
 }
 
+static const PvpEvent *PvpEventViewEvent(void) {
+    return PvpEventForCycle(PvpEventCycle((long long)time(NULL)));
+}
+
 void PvpEventViewOpen(PvpEventView *v) {
     v->tab = PVP_EVENT_TAB_EVENT;
-    v->meter_position = (float)(PvpTableEnsure()->events.milestone_count - 1);
+    v->meter_position = (float)(PvpEventViewEvent()->milestone_count - 1);
     v->meter_delay = PVP_EVENT_VIEW_METER_DELAY;
     v->meter_chosen = false;
     v->instructions = false;
@@ -132,8 +137,10 @@ static bool PvpEventViewTapped(const PvpEventView *v, Rectangle area, bool inter
     return still && CheckCollisionPointRec(mouse, area) && CheckCollisionPointRec(v->press, area);
 }
 
-static Texture2D PvpEventRewardIcon(int gems) {
-    return GuiTex(gems > 0 ? GUI_MISSION_GEM : GUI_MISSION_GOLD);
+static void PvpEventViewDrawAmount(const PvpEventView *v, const PvpReward *reward, Rectangle area, float size) {
+    if (reward->prize_count > 0) return;
+    int amount = reward->gems > 0 ? reward->gems : reward->gold;
+    if (amount > 0) UiDrawTextRight(v->font, TextFormat("+%d", amount), area, size, PVP_EVENT_VIEW_TEXT);
 }
 
 static void PvpEventBracketText(char *out, size_t size, const char *key, const PvpEventRankReward *reward) {
@@ -190,14 +197,14 @@ static void PvpEventViewDrawTitle(const PvpEventView *v, const PvpEvent *event, 
 }
 
 static void PvpEventViewDrawRankColumn(
-    PvpEventView *v, const PvpEventRankReward *reward, int index, int count, int rank, Rectangle row, bool interactive
+    PvpEventView *v, const PvpEventRankReward *reward, int tier, int index, bool mine, Rectangle row, bool interactive
 ) {
+    int count = PVP_EVENT_VIEW_TIER_COLUMNS;
     float width = row.width / count;
     float height = row.height * (0.5f + 0.5f * (float)(count - index) / count);
     Rectangle column = {row.x + width * (count - index - 1), row.y + row.height - height, width, height};
     DrawRectangleRec(PvpEventFit(column, 0.5f, 1.0f, 0.8f, 1.0f, 0.0f), PVP_EVENT_VIEW_COLUMN_TINT);
-    if (rank >= reward->first && rank <= reward->last)
-        UiDrawTexture(GuiTex(GUI_EVENT_TIER_COLUMN), PvpEventFit(column, 0.5f, 1.0f, 0.8f, 1.0f, 0.0f), WHITE);
+    if (mine) UiDrawTexture(GuiTex(GUI_EVENT_TIER_COLUMN), PvpEventFit(column, 0.5f, 1.0f, 0.8f, 1.0f, 0.0f), WHITE);
 
     Rectangle portrait = PvpEventFit(column, 0.5f, 0.0f, 0.8f, 1.0f, 1.0f);
     if (index == 0) {
@@ -209,10 +216,9 @@ static void PvpEventViewDrawRankColumn(
         float angle = (float)GetTime() * PVP_EVENT_VIEW_SUNBURST_DEGREES_PER_SECOND;
         DrawTexturePro(texture, source, centred, origin, angle, WHITE);
     }
-    UiDrawTexture(PvpEventRewardIcon(reward->gems), PvpEventFit(portrait, 0.5f, 0.2f, 1.0f, 0.8f, 1.0f), WHITE);
+    UiDrawTexture(PvpRewardTexture(&reward->reward), PvpEventFit(portrait, 0.5f, 0.2f, 1.0f, 0.8f, 1.0f), WHITE);
     Rectangle quantity = {portrait.x, portrait.y + portrait.height * 0.7f, portrait.width, portrait.height * 0.3f};
-    int amount = reward->gems > 0 ? reward->gems : reward->gold;
-    UiDrawTextRight(v->font, TextFormat("+%d", amount), quantity, 16.0f, PVP_EVENT_VIEW_TEXT);
+    PvpEventViewDrawAmount(v, &reward->reward, quantity, 16.0f);
 
     char bracket[32];
     PvpEventBracketText(bracket, sizeof(bracket), "PVP_EVENT_BRACKET", reward);
@@ -221,13 +227,12 @@ static void PvpEventViewDrawRankColumn(
 
     if (PvpEventViewTapped(v, column, interactive)) {
         GuiSoundPlay(SND_UI_CLICK);
-        v->reward_scroll.offset = index * (PVP_EVENT_VIEW_ALL_REWARDS_ROW_HEIGHT + PVP_EVENT_VIEW_ROW_GAP);
+        v->reward_scroll.offset = tier * (PVP_EVENT_VIEW_ALL_REWARDS_ROW_HEIGHT + PVP_EVENT_VIEW_ROW_GAP);
         PvpEventViewSelectTab(v, PVP_EVENT_TAB_REWARDS);
     }
 }
 
 static void PvpEventViewDrawTiers(PvpEventView *v, int rank, Rectangle content, bool interactive) {
-    const PvpEventRules *rules = &PvpTableEnsure()->events;
     Rectangle tiers = PvpEventFit(content, 0.1f, 0.45f, 1.0f, 0.62f, 1.7f);
     UiDrawTexture(GuiTex(GUI_EVENT_TIERS_BG), tiers, WHITE);
     if (PvpEventViewTapped(v, PvpEventFit(tiers, 1.0f, 0.0f, 1.0f, 0.2f, 1.0f), interactive)) {
@@ -263,9 +268,15 @@ static void PvpEventViewDrawTiers(PvpEventView *v, int rank, Rectangle content, 
     UiDrawTextLeftMiddle(v->font, you, label, 18.0f, PVP_EVENT_VIEW_DARK);
 
     Rectangle row = PvpEventFit(tiers, 0.5f, 0.46f, 0.9f, 0.56f, 0.0f);
-    int count = rules->rank_reward_count;
-    for (int i = 0; i < count; i++)
-        PvpEventViewDrawRankColumn(v, &rules->rank_rewards[i], i, count, rank, row, interactive);
+    const PvpEvent *event = PvpEventViewEvent();
+    int mine = PvpEventRankTier(event, rank);
+    for (int i = 0; i < PVP_EVENT_VIEW_TIER_COLUMNS; i++) {
+        int tier = i * (event->rank_reward_count - 1) / (PVP_EVENT_VIEW_TIER_COLUMNS - 1);
+        int next = (i + 1) * (event->rank_reward_count - 1) / (PVP_EVENT_VIEW_TIER_COLUMNS - 1);
+        bool highlighted = mine >= tier && (i == PVP_EVENT_VIEW_TIER_COLUMNS - 1 || mine < next);
+        int shown = highlighted ? mine : tier;
+        PvpEventViewDrawRankColumn(v, &event->rank_rewards[shown], shown, i, highlighted, row, interactive);
+    }
 
     if (ButtonDrawEx(&v->view_all, PvpEventFit(tiers, 1.0f, 1.0f, 1.0f, 0.232f, 4.0f), interactive))
         PvpEventViewSelectTab(v, PVP_EVENT_TAB_REWARDS);
@@ -303,7 +314,7 @@ static void PvpEventViewChooseMeter(PvpEventView *v, int target) {
 }
 
 static void PvpEventViewDrawMeterList(PvpEventView *v, const PlayerPvp *pvp, Rectangle meter, bool interactive) {
-    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    const PvpEvent *event = PvpEventForCycle(pvp->event.cycle);
     Rectangle list = {
         meter.x + meter.width * 0.5f - meter.width,
         meter.y + meter.height * 0.1f,
@@ -317,11 +328,10 @@ static void PvpEventViewDrawMeterList(PvpEventView *v, const PlayerPvp *pvp, Rec
     Rectangle window = {list.x, centre_y - step * 1.5f, list.width, step * 3.0f};
     bool hovering = CheckCollisionPointRec(UiMouse(), window);
     GoalsBeginClip(window);
-    for (int i = 0; i < rules->milestone_count; i++) {
+    for (int i = 0; i < event->milestone_count; i++) {
         float y = centre_y - ((float)i - v->meter_position) * step;
         Rectangle tile = {centre_x - side * 0.5f, y - side * 0.5f, side, side};
-        const PvpEventMilestone *milestone = &rules->milestones[i];
-        UiDrawTexture(PvpEventRewardIcon(milestone->gems), tile, WHITE);
+        UiDrawTexture(PvpRewardTexture(&event->milestones[i].reward), tile, WHITE);
         if (pvp->event.milestones_paid > i) UiDrawTexture(GuiTex(GUI_EVENT_CHECK), tile, WHITE);
         if (hovering && PvpEventViewTapped(v, tile, interactive)) PvpEventViewChooseMeter(v, i);
     }
@@ -329,10 +339,10 @@ static void PvpEventViewDrawMeterList(PvpEventView *v, const PlayerPvp *pvp, Rec
 }
 
 static void PvpEventViewDrawCallout(const PvpEventView *v, const PlayerPvp *pvp, int rank, Rectangle callout) {
-    const PvpEventRules *rules = &PvpTableEnsure()->events;
-    int last = rules->milestone_count - 1;
+    const PvpEvent *event = PvpEventForCycle(pvp->event.cycle);
+    int last = event->milestone_count - 1;
     int index = (int)Clamp(roundf(v->meter_position), 0.0f, (float)last);
-    const PvpEventMilestone *milestone = &rules->milestones[index];
+    const PvpEventMilestone *milestone = &event->milestones[index];
     UiDrawTexture(GuiTex(GUI_EVENT_CALLOUT), callout, WHITE);
     UiDrawTextLeftMiddle(
         v->font,
@@ -344,7 +354,7 @@ static void PvpEventViewDrawCallout(const PvpEventView *v, const PlayerPvp *pvp,
     Rectangle next = PvpEventFit(callout, 0.0f, -1.0f, 0.61f, 0.5f, 0.0f);
     UiDrawTextLeftMiddle(v->body, LocGet("PVP_EVENT_NEXT"), next, 18.0f, PVP_EVENT_VIEW_DIM);
     UiDrawTextRight(v->font, TextFormat("%d", milestone->banners), next, 20.0f, PVP_EVENT_VIEW_TEXT);
-    UiDrawTexture(PvpEventRewardIcon(milestone->gems), PvpEventFit(callout, 0.7f, -1.0f, 1.0f, 0.5f, 1.0f), WHITE);
+    UiDrawTexture(PvpRewardTexture(&milestone->reward), PvpEventFit(callout, 0.7f, -1.0f, 1.0f, 0.5f, 1.0f), WHITE);
 
     char left[48], earned[48];
     int remaining = milestone->banners - pvp->event.banners;
@@ -366,7 +376,7 @@ static void PvpEventViewDrawCallout(const PvpEventView *v, const PlayerPvp *pvp,
 
 static void
 PvpEventViewDrawMeter(PvpEventView *v, const PlayerPvp *pvp, int rank, Rectangle content, bool interactive) {
-    int count = PvpTableEnsure()->events.milestone_count;
+    int count = PvpEventForCycle(pvp->event.cycle)->milestone_count;
     PvpEventViewMeterStep(v, pvp, count);
     Rectangle rewards = PvpEventFit(content, 0.96f, 0.05f, 1.0f, 0.8f, 0.8f);
     Rectangle meter = PvpEventFit(rewards, 1.0f, 0.5f, 1.0f, 1.0f, 0.201f);
@@ -508,20 +518,20 @@ static void PvpEventViewDrawLeaderboard(PvpEventView *v, const Player *p, Rectan
 }
 
 static void PvpEventViewDrawBracketList(PvpEventView *v, int rank, Rectangle panel, bool interactive) {
-    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    const PvpEvent *event = PvpEventViewEvent();
     Rectangle list = PvpEventFit(panel, 0.5f, 0.5f, 1.0f, 0.75f, 0.0f);
     float row_height = list.height * 0.22f;
     if (v->bracket_focus) {
-        for (int i = 0; i < rules->rank_reward_count; i++) {
-            const PvpEventRankReward *reward = &rules->rank_rewards[i];
+        for (int i = 0; i < event->rank_reward_count; i++) {
+            const PvpEventRankReward *reward = &event->rank_rewards[i];
             if (rank >= reward->first && rank <= reward->last) v->bracket_scroll.offset = i * row_height;
         }
         v->bracket_focus = false;
     }
-    GoalsScrollUpdate(&v->bracket_scroll, list, rules->rank_reward_count * row_height);
+    GoalsScrollUpdate(&v->bracket_scroll, list, event->rank_reward_count * row_height);
     GoalsBeginClip(list);
-    for (int i = 0; i < rules->rank_reward_count; i++) {
-        const PvpEventRankReward *reward = &rules->rank_rewards[i];
+    for (int i = 0; i < event->rank_reward_count; i++) {
+        const PvpEventRankReward *reward = &event->rank_rewards[i];
         float y = list.y + i * row_height - v->bracket_scroll.offset;
         Rectangle row = {list.x, y, list.width, row_height};
         if (rank >= reward->first && rank <= reward->last)
@@ -530,17 +540,16 @@ static void PvpEventViewDrawBracketList(PvpEventView *v, int rank, Rectangle pan
                 PvpEventFit(row, 0.5f, 0.5f, 1.0f, 0.8f, 0.0f),
                 PVP_EVENT_VIEW_SELECTION_TINT
             );
-        if (i + 1 < rules->rank_reward_count)
+        if (i + 1 < event->rank_reward_count)
             UiDrawTexture(GuiTex(GUI_EVENT_SEPARATOR), PvpEventFit(row, 0.5f, 1.05f, 1.0f, 0.1f, 0.0f), WHITE);
         char bracket[32];
         PvpEventBracketText(bracket, sizeof(bracket), "PVP_EVENT_BRACKET", reward);
         Rectangle label = PvpEventFit(row, 0.0f, 0.5f, 0.65f, 0.6f, 0.0f);
         label.x += 10.0f;
         UiDrawTextLeftMiddle(v->font, bracket, label, 18.0f, PVP_EVENT_VIEW_TEXT);
-        UiDrawTexture(PvpEventRewardIcon(reward->gems), PvpEventFit(row, 0.97f, 0.5f, 1.0f, 0.7f, 1.0f), WHITE);
-        int amount = reward->gems > 0 ? reward->gems : reward->gold;
+        UiDrawTexture(PvpRewardTexture(&reward->reward), PvpEventFit(row, 0.97f, 0.5f, 1.0f, 0.7f, 1.0f), WHITE);
         Rectangle quantity = PvpEventFit(row, 0.97f, 0.9f, 0.4f, 0.4f, 0.0f);
-        UiDrawTextRight(v->font, TextFormat("+%d", amount), quantity, 15.0f, PVP_EVENT_VIEW_TEXT);
+        PvpEventViewDrawAmount(v, &reward->reward, quantity, 15.0f);
         if (PvpEventViewTapped(v, row, interactive)) {
             GuiSoundPlay(SND_UI_CLICK);
             v->reward_scroll.offset = i * (PVP_EVENT_VIEW_ALL_REWARDS_ROW_HEIGHT + PVP_EVENT_VIEW_ROW_GAP);
@@ -572,29 +581,51 @@ PvpEventViewDrawBannersTab(PvpEventView *v, const Player *p, Rectangle content, 
     return v->selected_bot == PVP_RANK_PLAYER ? PVP_EVENT_VIEW_NONE : PVP_EVENT_VIEW_FIGHT;
 }
 
+static void PvpEventViewDrawPrizeTile(const PvpEventView *v, const PvpPrize *prize, Rectangle tile) {
+    UiDrawTexture(PvpPrizeTexture(prize), tile, WHITE);
+    if (prize->count <= 1) return;
+    Rectangle badge = {tile.x, tile.y + tile.height * 0.68f, tile.width, tile.height * 0.32f};
+    UiDrawTextRight(v->font, TextFormat("x%d", prize->count), badge, 20.0f, PVP_EVENT_VIEW_TEXT);
+}
+
+static void PvpEventViewDrawCurrency(const PvpEventView *v, int amount, GuiId icon, Rectangle area) {
+    if (amount <= 0) return;
+    Rectangle text = PvpEventFit(area, 0.0f, 0.5f, 0.72f, 1.0f, 0.0f);
+    UiDrawTextRight(v->font, TextFormat("+%d", amount), text, 20.0f, PVP_EVENT_VIEW_TEXT);
+    UiDrawTexture(GuiTex(icon), PvpEventFit(area, 1.0f, 0.5f, 1.0f, 0.8f, 1.0f), WHITE);
+}
+
+static void PvpEventViewDrawRewardRow(const PvpEventView *v, const PvpReward *reward, Rectangle row) {
+    float side = row.height * 0.72f;
+    float gap = row.height * 0.06f;
+    float x = row.x + row.width * 0.2f;
+    float y = row.y + (row.height - side) * 0.5f;
+    for (int i = 0; i < reward->prize_count; i++) {
+        Rectangle tile = {x + i * (side + gap), y, side, side};
+        PvpEventViewDrawPrizeTile(v, &reward->prizes[i], tile);
+    }
+    PvpEventViewDrawCurrency(v, reward->gems, GUI_MISSION_GEM, PvpEventFit(row, 0.985f, 0.22f, 0.15f, 0.34f, 0.0f));
+    PvpEventViewDrawCurrency(v, reward->gold, GUI_MISSION_GOLD, PvpEventFit(row, 0.985f, 0.78f, 0.15f, 0.34f, 0.0f));
+}
+
 static void PvpEventViewDrawRewardsTab(PvpEventView *v, Rectangle content, int rank) {
-    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    const PvpEvent *event = PvpEventViewEvent();
     Rectangle list = PvpEventFit(content, 0.5f, 0.0f, 0.98f, 0.98f, 0.0f);
     float stride = PVP_EVENT_VIEW_ALL_REWARDS_ROW_HEIGHT + PVP_EVENT_VIEW_ROW_GAP;
-    GoalsScrollUpdate(&v->reward_scroll, list, rules->rank_reward_count * stride - PVP_EVENT_VIEW_ROW_GAP);
+    GoalsScrollUpdate(&v->reward_scroll, list, event->rank_reward_count * stride - PVP_EVENT_VIEW_ROW_GAP);
     GoalsBeginClip(list);
-    for (int i = 0; i < rules->rank_reward_count; i++) {
-        const PvpEventRankReward *reward = &rules->rank_rewards[i];
+    for (int i = 0; i < event->rank_reward_count; i++) {
+        const PvpEventRankReward *reward = &event->rank_rewards[i];
         float y = list.y + i * stride - v->reward_scroll.offset;
         Rectangle row = {list.x, y, list.width, PVP_EVENT_VIEW_ALL_REWARDS_ROW_HEIGHT};
         UiDrawTexture(GuiTex(GUI_MISSION_ROW), row, WHITE);
         char bracket[48];
         PvpEventBracketText(bracket, sizeof(bracket), "PVP_EVENT_RANK_BRACKET", reward);
-        Rectangle label = PvpEventFit(row, 0.08f, 0.5f, 0.5f, 0.3f, 0.0f);
+        Rectangle label = PvpEventFit(row, 0.03f, 0.5f, 0.2f, 0.3f, 0.0f);
         bool mine = rank >= reward->first && rank <= reward->last;
         UiDrawTextLeftMiddle(v->font, bracket, label, 24.0f, mine ? PVP_EVENT_VIEW_ORANGE : PVP_EVENT_VIEW_TEXT);
 
-        Rectangle pill = PvpEventFit(row, 0.95f, 0.5f, 0.2f, 0.42f, 0.0f);
-        DrawRectangleRec(pill, BLACK);
-        Rectangle amount = PvpEventFit(pill, 0.0f, 0.5f, 0.68f, 1.0f, 0.0f);
-        int value = reward->gems > 0 ? reward->gems : reward->gold;
-        UiDrawTextRight(v->font, TextFormat("+%d", value), amount, 22.0f, PVP_EVENT_VIEW_TEXT);
-        UiDrawTexture(PvpEventRewardIcon(reward->gems), PvpEventFit(pill, 1.0f, 0.5f, 1.0f, 0.9f, 1.0f), WHITE);
+        PvpEventViewDrawRewardRow(v, &reward->reward, row);
     }
     EndScissorMode();
 }
