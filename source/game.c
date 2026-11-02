@@ -166,6 +166,17 @@ static void GameEnterLadderBattle(Game *g, Screen return_screen) {
     GameEnterPvpOpponent(g);
 }
 
+static void GameEnterEventBotBattle(Game *g, int bot) {
+    long long now = (long long)time(NULL);
+    unsigned seed = (unsigned)GetRandomValue(1, 0x7FFFFFFF);
+    g->pvp_event = true;
+    g->pvp_opponent = PvpOpponentFromBot(bot, g->player.level, g->player.pvp.trophies, PvpDay(now), seed);
+    g->pvp_can_next = false;
+    g->pvp_revenge_index = -1;
+    g->pvp_return_screen = SCREEN_PVP_EVENT;
+    GameEnterPvpOpponent(g);
+}
+
 static void GameEnterFixedPvpBattle(Game *g, PvpOpponent opponent, int revenge_index, Screen return_screen) {
     g->pvp_event = false;
     g->pvp_opponent = opponent;
@@ -348,6 +359,7 @@ static void GameContinuePvp(Game *g) {
 
 static void GameOpenPvpEvent(Game *g) {
     PvpEventSync(&g->player.pvp, (long long)time(NULL));
+    PvpEventViewOpen(&g->pvp_event_view);
     g->screen = SCREEN_PVP_EVENT;
 }
 
@@ -1040,6 +1052,11 @@ void GameDraw(Game *g) {
             if (pressed == PVP_EVENT_VIEW_ENTER) {
                 g->pvp_event = true;
                 GameEnterLadderBattle(g, SCREEN_PVP_EVENT);
+            }
+            if (pressed == PVP_EVENT_VIEW_FIGHT) GameEnterEventBotBattle(g, g->pvp_event_view.selected_bot);
+            if (pressed == PVP_EVENT_VIEW_GALLERY) {
+                g->screen = SCREEN_HOME;
+                GalleryOpenPopup(&g->gallery, &g->player);
             }
             break;
         }

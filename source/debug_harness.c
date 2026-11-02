@@ -376,12 +376,32 @@ static void DebugPreparePvp(Game *game, DebugShot *shot) {
         game->screen = SCREEN_PVP_HUB;
         return;
     }
-    if (DebugShotIs(shot, "pvp_event")) {
+    static const struct {
+        const char *screen;
+        PvpEventTab tab;
+    } event_shots[] = {
+        {"pvp_event", PVP_EVENT_TAB_EVENT},
+        {"pvp_event_banners", PVP_EVENT_TAB_BANNERS},
+        {"pvp_event_rewards", PVP_EVENT_TAB_REWARDS},
+        {"pvp_event_battles", PVP_EVENT_TAB_BATTLES},
+    };
+    const PvpEventTab *event_tab = NULL;
+    for (size_t i = 0; i < sizeof(event_shots) / sizeof(event_shots[0]); i++)
+        if (DebugShotIs(shot, event_shots[i].screen)) event_tab = &event_shots[i].tab;
+    if (event_tab) {
         if (shot->frames_drawn == 0) {
             PvpEventSync(&game->player.pvp, (long long)time(NULL));
             game->player.pvp.event.banners = DEBUG_PVP_BANNERS;
             game->player.pvp.event.milestones_paid = DEBUG_PVP_MILESTONES;
             GameOpenPvpEvent(game);
+            game->pvp_event_view.tab = *event_tab;
+            if (*event_tab == PVP_EVENT_TAB_BATTLES) {
+                long long now = (long long)time(NULL);
+                PlayerPvp *pvp = &game->player.pvp;
+                PvpOpponent opponent =
+                    PvpEventOpponentGenerate(game->player.level, pvp->trophies, pvp->event.banners, now, 1);
+                PvpRecordEventAttack(pvp, &opponent, true, now);
+            }
         }
         game->screen = SCREEN_PVP_EVENT;
         return;

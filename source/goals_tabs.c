@@ -256,23 +256,23 @@ static void GoalsBattleText(char *out, size_t size, const PlayerPvpBattle *battl
     StrReplaceToken(out, size, named, "[xp]", TextFormat("%d", battle->xp));
 }
 
-static void GoalsDrawBattleRow(const GoalsTabs *t, const PlayerPvpBattle *battle, Rectangle row, long long now) {
+static void GoalsDrawBattleRow(Font font, Font body, const PlayerPvpBattle *battle, Rectangle row, long long now) {
     DrawRectangleRec(row, GOALS_ROW_TINT);
     float reserved = GOALS_BUTTON_WIDTH + GOALS_TROPHY_COLUMN_WIDTH + 24.0f;
     Rectangle text = {row.x + 18.0f, row.y + 8.0f, row.width - reserved, 44.0f};
     char description[GOALS_TEXT_SIZE], ago[64];
     GoalsBattleText(description, sizeof(description), battle);
     GoalsAgoText(ago, sizeof(ago), now - battle->at);
-    HeroesDrawRich(t->body, description, text, 19.0f, GOALS_TEXT);
+    HeroesDrawRich(body, description, text, 19.0f, GOALS_TEXT);
     UiDrawTextLeftMiddle(
-        t->body, ago, (Rectangle){text.x, row.y + row.height - 28.0f, text.width, 22.0f}, 16.0f, GOALS_TEXT_DIM
+        body, ago, (Rectangle){text.x, row.y + row.height - 28.0f, text.width, 22.0f}, 16.0f, GOALS_TEXT_DIM
     );
     Rectangle delta = {
         row.x + row.width - reserved + 12.0f, row.y, GOALS_TROPHY_COLUMN_WIDTH - GOALS_TROPHY_ICON_SIZE, row.height
     };
     bool event = battle->banners > 0;
     int amount = event ? battle->banners : battle->trophy_delta;
-    UiDrawTextRight(t->font, TextFormat("%+d", amount), delta, 26.0f, amount >= 0 ? GOALS_GAIN : GOALS_LOSS);
+    UiDrawTextRight(font, TextFormat("%+d", amount), delta, 26.0f, amount >= 0 ? GOALS_GAIN : GOALS_LOSS);
     UiDrawTexture(
         GuiTex(event ? GUI_PVP_BANNER : GUI_TAB_TROPHY),
         (Rectangle){
@@ -302,7 +302,7 @@ GoalsAction GoalsDrawBattles(
         float y = content.y + i * stride - scroll->offset;
         if (y + GOALS_BATTLE_ROW_HEIGHT < content.y || y > content.y + content.height) continue;
         Rectangle row = {content.x, y, content.width, GOALS_BATTLE_ROW_HEIGHT};
-        GoalsDrawBattleRow(t, &pvp->history[i], row, now);
+        GoalsDrawBattleRow(t->font, t->body, &pvp->history[i], row, now);
         if (!PvpCanRevenge(&pvp->history[i])) continue;
         Rectangle button = {
             row.x + row.width - GOALS_BUTTON_WIDTH - 6.0f,

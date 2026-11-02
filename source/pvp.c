@@ -718,6 +718,14 @@ int PvpLeaderboardBuild(PvpRankEntry *out, int trophies, long long day) {
     return t->bot_count + 1;
 }
 
+int PvpEventLeaderboardBuild(PvpRankEntry *out, int banners, long long cycle, long long elapsed) {
+    const PvpTable *t = PvpTableEnsure();
+    for (int bot = 0; bot < t->bot_count; bot++) out[bot] = (PvpRankEntry){bot, PvpBotBanners(bot, cycle, elapsed)};
+    out[t->bot_count] = (PvpRankEntry){PVP_RANK_PLAYER, banners};
+    qsort(out, (size_t)t->bot_count + 1, sizeof(out[0]), PvpRankCompare);
+    return t->bot_count + 1;
+}
+
 int PvpLeaderboardRank(const PvpRankEntry *entries, int count) {
     for (int i = 0; i < count; i++)
         if (entries[i].bot == PVP_RANK_PLAYER) return i + 1;

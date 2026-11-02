@@ -5204,6 +5204,18 @@ static void TestNexusGameChangerTableAffectsRealRosters(void) {
     free(nexus);
 }
 
+static void TestPvpEventLeaderboardMatchesRank(void) {
+    static PvpRankEntry entries[PVP_BOT_CAPACITY + 1];
+    const int cycle = 7, elapsed = 100000;
+    const int banners[] = {0, 320, 1500, 100000};
+    for (size_t i = 0; i < sizeof(banners) / sizeof(banners[0]); i++) {
+        int count = PvpEventLeaderboardBuild(entries, banners[i], cycle, elapsed);
+        assert(count == PvpTableEnsure()->bot_count + 1);
+        assert(PvpLeaderboardRank(entries, count) == PvpEventRankAt(banners[i], cycle, elapsed));
+        for (int row = 1; row < count; row++) assert(entries[row - 1].trophies >= entries[row].trophies);
+    }
+}
+
 static void TestPvpOpponentsAreDeterministic(void) {
     for (unsigned seed = 1; seed < 40; seed++) {
         PvpOpponent a = PvpOpponentGenerate(18, 400, 20000, seed);
@@ -5677,6 +5689,7 @@ int main(void) {
     TestPvpTrophiesHeldNeedsAWeekAboveTheLine();
     TestPvpAchievementsFollowTheLadder();
     TestPvpOpponentsAreDeterministic();
+    TestPvpEventLeaderboardMatchesRank();
     TestPvpOpponentsScaleWithLevel();
     TestPvpMatchingStaysInTheTrophyWindow();
     TestPvpTrophyBounds();
