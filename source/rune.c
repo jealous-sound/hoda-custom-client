@@ -514,7 +514,7 @@ Color RuneRarityColor(int rarity) {
         {236, 78, 68, 255},
         {182, 252, 240, 255},
         {255, 0, 255, 255},
-        {255, 200, 60, 255},
+        {182, 252, 240, 255},
     };
     return colors[rarity >= 1 && rarity <= RUNE_PRESTIGE_RARITY ? rarity : 0];
 }

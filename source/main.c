@@ -1,6 +1,7 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "rlgl.h"
+#include <ctype.h>
 #include <math.h>
 #include <pthread.h>
 #include <stdio.h>

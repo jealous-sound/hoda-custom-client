@@ -72,6 +72,9 @@ typedef struct {
     RosterFilter filter;
     bool filter_open;
     float scroll;
+    bool pin_squad;
+    int pinned_squad;
+    int pinned_units[SQUAD_SLOT_COUNT];
     Button category, sort;
 } Roster;
 
@@ -286,22 +289,41 @@ static int RosterCompareOrder(const Character *a, const Character *b) {
     return strcmp(a->id, b->id);
 }
 
+static int RosterPinRank(const Roster *r, const Player *p, int index) {
+    return r->pin_squad && PlayerSquadFindUnit(p, p->current_squad, index) < 0;
+}
+
+static int RosterCompareEntries(const Roster *r, const Player *p, int a, int b) {
+    int pin_order = RosterPinRank(r, p, a) - RosterPinRank(r, p, b);
+    if (pin_order != 0) return pin_order;
+    const Character *first = &p->roster[a], *second = &p->roster[b];
+    int order = r->filter == ROSTER_FILTER_NEWEST ? (first->instance_id < second->instance_id ? 1 : -1)
+                                                  : RosterCompareOrder(first, second);
+    return r->sort_reversed ? -order : order;
+}
+
 static void RosterRefreshOrder(Roster *r, const Player *p) {
     r->order_count = 0;
-    bool newest = r->filter == ROSTER_FILTER_NEWEST;
     for (int i = 0; i < p->roster_count; i++) {
         if (!RosterFilterAccepts(r->filter, &p->roster[i])) continue;
         int slot = r->order_count++;
-        while (slot > 0) {
-            const Character *prior = &p->roster[r->order[slot - 1]];
-            int order = newest ? (prior->instance_id < p->roster[i].instance_id ? 1 : -1)
-                               : RosterCompareOrder(prior, &p->roster[i]);
-            if ((r->sort_reversed ? -order : order) <= 0) break;
+        while (slot > 0 && RosterCompareEntries(r, p, r->order[slot - 1], i) > 0) {
             r->order[slot] = r->order[slot - 1];
             slot--;
         }
         r->order[slot] = i;
     }
+}
+
+static void RosterSyncPinnedSquad(Roster *r, const Player *p) {
+    int units[SQUAD_SLOT_COUNT];
+    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) units[s] = PlayerSquadUnitAt(p, p->current_squad, s);
+    bool squad_switched = r->pinned_squad != p->current_squad;
+    if (!squad_switched && memcmp(units, r->pinned_units, sizeof(units)) == 0) return;
+    if (squad_switched) r->scroll = 0.0f;
+    r->pinned_squad = p->current_squad;
+    memcpy(r->pinned_units, units, sizeof(units));
+    RosterRefreshOrder(r, p);
 }
 
 static void RosterInitialize(Roster *r, const Player *p) {
@@ -411,6 +433,8 @@ void HeroesInitialize(Heroes *h, const Player *p) {
         card->portrait = GuiPortraitLoad(ch->icon_prefab[ch->tier]);
     }
     RosterInitialize(&h->roster, p);
+    h->roster.pin_squad = true;
+    h->roster.pinned_squad = -1;
 }
 
 bool HeroesSyncRoster(Heroes *h, const Player *p) {
@@ -643,7 +667,6 @@ static void HeroesDrawDetailsAt(HeroCard *card, Rectangle bounds) {
         UiDrawTexture(bg, body, WHITE);
 
         int plaque_id = GUI_PLAQUE_COMMON + (card->ch->rarity - RARITY_COMMON);
-        if (plaque_id > GUI_PLAQUE_LEGENDARY) plaque_id = GUI_PLAQUE_LEGENDARY;
         Texture2D plaque = GuiTex(plaque_id);
         UiDrawTexture(plaque, head, WHITE);
     }
@@ -954,6 +977,7 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
     HeroesCardContext card_context = {h, p};
     bool gear_open = GearViewIsOpen();
     int hovered = -1;
+    RosterSyncPinnedSquad(&h->roster, p);
     if (gear_open)
         GearViewDrawPanel(p);
     else

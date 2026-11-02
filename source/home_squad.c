@@ -8,6 +8,8 @@
 #define ATTACK_EXIT_TIME 0.6f
 #define ATTACK_EXIT_BLEND 0.23f
 #define HOME_UNIT_PATH_MAX 512
+#define UNIT_SOLE_SAMPLES 8
+#define UNIT_SOLE_SINK 0.01f
 #define UNIT_POOL_CAPACITY 12
 #define HOME_UI_SOUND_REF_MAX 128
 #define HOME_UNIT_AUDIO_MANIFEST "data/unit_audio.json"
@@ -55,6 +57,7 @@ typedef struct {
     ModelAnimation pose_source;
     float pose_source_frame;
     Matrix xform;
+    float sole_lift;
     float fade;
     const char *wisp_fx;
     int wisp_bone;
@@ -288,6 +291,30 @@ typedef struct {
 static UnitScaleEntry *unit_scales;
 static int unit_scale_count = -1;
 
+#define UNIT_PREFAB_SCALE 1.28853f
+static const char *const UNIT_DOUBLED_RIG_SCALE_MODELS[] = {
+    "em_bw_sentinelarcher_t1",
+    "em_bw_sentinelarcher_t4",
+    "em_mw_apostatesolas_t1",
+    "em_mw_apostatesolas_t4",
+    "em_mw_fenharel_t4",
+    "em_mw_solas_t4",
+    "hm_bw_venatorimarksman_t1",
+    "hm_bw_venatorimarksman_t4",
+    "hm_mw_macrinus_t4",
+    "hm_mw_rion_t1",
+    "hm_mw_rion_t4",
+    "hm_tw_gurdharofsen_t1",
+    "hm_tw_gurdharofsen_t4",
+};
+
+static bool UnitRigScaleDoubled(const char *base) {
+    int count = sizeof(UNIT_DOUBLED_RIG_SCALE_MODELS) / sizeof(UNIT_DOUBLED_RIG_SCALE_MODELS[0]);
+    for (int i = 0; i < count; i++)
+        if (!strcmp(UNIT_DOUBLED_RIG_SCALE_MODELS[i], base)) return true;
+    return false;
+}
+
 static float UnitDisplayScale(const char *prefab) {
     if (unit_scale_count < 0) {
         unit_scale_count = 0;
@@ -311,6 +338,7 @@ static float UnitDisplayScale(const char *prefab) {
     }
     char base[128];
     HomeSquadBaseName(base, sizeof(base), prefab);
+    if (UnitRigScaleDoubled(base)) return UNIT_PREFAB_SCALE;
     for (int i = 0; i < unit_scale_count; i++)
         if (!strcmp(unit_scales[i].base, base)) return unit_scales[i].scale;
     return 1.2885f;
@@ -460,6 +488,91 @@ static void HomeSquadUnitAllocPose(HomeSquadUnit *unit) {
     HomeSquadUnitBuildBoneOrder(unit);
 }
 
+static Transform BoneLocalTransform(const Transform *pose, const BoneInfo *bones, int bone) {
+    int parent = bones[bone].parent;
+    if (parent < 0) return pose[bone];
+    Quaternion to_parent = QuaternionInvert(pose[parent].rotation);
+    return (Transform){
+        Vector3RotateByQuaternion(Vector3Subtract(pose[bone].translation, pose[parent].translation), to_parent),
+        QuaternionMultiply(to_parent, pose[bone].rotation),
+        pose[bone].scale,
+    };
+}
+
+static void HomeSquadUnitCloseIdleLoop(HomeSquadUnit *unit) {
+    ModelAnimation idle = unit->idle;
+    int last = idle.frameCount - 1;
+    if (last < 1) return;
+    size_t pose_size = idle.boneCount * sizeof(Transform);
+    Transform *end = MemAlloc(pose_size);
+    Transform *source = MemAlloc(pose_size);
+    memcpy(end, idle.framePoses[last], pose_size);
+    for (int frame = 1; frame <= last; frame++) {
+        float weight = (float)frame / (float)last;
+        Transform *pose = idle.framePoses[frame];
+        memcpy(source, pose, pose_size);
+        for (int i = 0; i < idle.boneCount; i++) {
+            int bone = unit->bone_order[i];
+            int parent = idle.bones[bone].parent;
+            Transform start = BoneLocalTransform(idle.framePoses[0], idle.bones, bone);
+            Transform stop = BoneLocalTransform(end, idle.bones, bone);
+            Transform local = BoneLocalTransform(source, idle.bones, bone);
+            Quaternion seam = QuaternionNormalize(QuaternionMultiply(start.rotation, QuaternionInvert(stop.rotation)));
+            Quaternion rotation = QuaternionMultiply(QuaternionSlerp(QuaternionIdentity(), seam, weight), local.rotation);
+            Vector3 drift = Vector3Scale(Vector3Subtract(start.translation, stop.translation), weight);
+            Vector3 translation = Vector3Add(local.translation, drift);
+            if (parent < 0) {
+                pose[bone].translation = translation;
+                pose[bone].rotation = rotation;
+                continue;
+            }
+            const Transform *up = &pose[parent];
+            pose[bone].translation = Vector3Add(up->translation, Vector3RotateByQuaternion(translation, up->rotation));
+            pose[bone].rotation = QuaternionMultiply(up->rotation, rotation);
+        }
+    }
+    MemFree(end);
+    MemFree(source);
+}
+
+static bool UnitBoneIsFoot(const char *name) {
+    char lower[sizeof(((BoneInfo *)0)->name)];
+    int n = 0;
+    for (; name[n] && n < (int)sizeof(lower) - 1; n++) lower[n] = (char)tolower((unsigned char)name[n]);
+    lower[n] = '\0';
+    return strstr(lower, "foot") || strstr(lower, "toe");
+}
+
+static int UnitVertexMainBone(const Mesh *mesh, int vertex) {
+    int best = 0;
+    for (int w = 1; w < 4; w++)
+        if (mesh->boneWeights[vertex * 4 + w] > mesh->boneWeights[vertex * 4 + best]) best = w;
+    return mesh->boneIds[vertex * 4 + best];
+}
+
+static float UnitLowestSkinnedY(Model model, bool feet_only) {
+    float lowest = INFINITY;
+    for (int m = 0; m < model.meshCount; m++) {
+        const Mesh *mesh = &model.meshes[m];
+        if (!mesh->animVertices || !mesh->boneIds || !mesh->boneWeights) continue;
+        for (int v = 0; v < mesh->vertexCount; v++) {
+            if (feet_only && !UnitBoneIsFoot(model.bones[UnitVertexMainBone(mesh, v)].name)) continue;
+            lowest = fminf(lowest, mesh->animVertices[v * 3 + 1]);
+        }
+    }
+    return lowest;
+}
+
+static float UnitSoleLift(Model model, ModelAnimation idle) {
+    float sole = INFINITY;
+    for (int sample = 0; sample < UNIT_SOLE_SAMPLES; sample++) {
+        UpdateModelAnimation(model, idle, sample * idle.frameCount / UNIT_SOLE_SAMPLES);
+        float feet = UnitLowestSkinnedY(model, true);
+        sole = fminf(sole, isinf(feet) ? UnitLowestSkinnedY(model, false) : feet);
+    }
+    return fmaxf(0.0f, -sole - UNIT_SOLE_SINK);
+}
+
 static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase_seed) {
     *unit = (HomeSquadUnit){0};
     StrCopy(unit->path, sizeof(unit->path), path);
@@ -504,7 +617,9 @@ static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase
     }
     if (unit->idle.frameCount == 0) TraceLog(LOG_FATAL, "Squad: no usable idle clip in %s", path);
     HomeSquadUnitAllocPose(unit);
+    HomeSquadUnitCloseIdleLoop(unit);
     unit->phase = (phase_seed * 47) % unit->idle.frameCount;
+    unit->sole_lift = unit->wisp_fx ? 0.0f : UnitSoleLift(unit->model, unit->idle);
     unit->wisp_bone = -1;
     unit->wisp_loop = -1;
     if (unit->wisp_fx)
@@ -542,17 +657,6 @@ static void HomeSquadUnitBlendTick(HomeSquadUnit *unit, float dt) {
     unit->pose_blend_left -= dt;
     unit->pose_source_frame += dt * HOME_CLIP_FPS;
     if (unit->pose_blend_left <= 0.0f) unit->last_frame = -1;
-}
-
-static Transform BoneLocalTransform(const Transform *pose, const BoneInfo *bones, int bone) {
-    int parent = bones[bone].parent;
-    if (parent < 0) return pose[bone];
-    Quaternion to_parent = QuaternionInvert(pose[parent].rotation);
-    return (Transform){
-        Vector3RotateByQuaternion(Vector3Subtract(pose[bone].translation, pose[parent].translation), to_parent),
-        QuaternionMultiply(to_parent, pose[bone].rotation),
-        pose[bone].scale,
-    };
 }
 
 static void HomeSquadUnitBlendPose(HomeSquadUnit *unit, const BoneInfo *bones, const Transform *target, float weight) {
@@ -662,6 +766,10 @@ static Vector3 HomeSquadWispPosition(const HomeSquadUnit *unit) {
     return Vector3Transform(unit->idle.framePoses[frame][unit->wisp_bone].translation, m);
 }
 
+static Matrix HomeSquadUnitDrawXform(const HomeSquadUnit *unit) {
+    return MatrixMultiply(MatrixTranslate(0.0f, unit->sole_lift, 0.0f), unit->xform);
+}
+
 static void HomeSquadUnitDraw(HomeSquadUnit *unit) {
     if (unit->active && unit->wisp_fx) {
         if (home_wisp_queue_count < HOME_WISP_QUEUE_CAPACITY) {
@@ -673,8 +781,9 @@ static void HomeSquadUnitDraw(HomeSquadUnit *unit) {
     unsigned char a = (unsigned char)(255.0f * fminf(fmaxf(unit->fade, 0.0f), 1.0f));
     for (int m = 0; m < unit->model.materialCount; m++)
         unit->model.materials[m].maps[MATERIAL_MAP_DIFFUSE].color = (Color){255, 255, 255, a};
+    Matrix xform = HomeSquadUnitDrawXform(unit);
     for (int m = 0; m < unit->model.meshCount; m++)
-        DrawMesh(unit->model.meshes[m], unit->model.materials[unit->model.meshMaterial[m]], unit->xform);
+        DrawMesh(unit->model.meshes[m], unit->model.materials[unit->model.meshMaterial[m]], xform);
 }
 
 static void HomeSquadUnitDestroy(HomeSquadUnit *unit) {
@@ -809,7 +918,8 @@ static bool HomeSquadMeshHit(Mesh mesh, Ray local, Vector3 *nearest) {
 
 static bool HomeSquadUnitHit(const HomeSquadUnit *unit, Ray ray, float *distance) {
     if (!unit->active || unit->wisp_fx) return false;
-    Matrix inverse = MatrixInvert(unit->xform);
+    Matrix xform = HomeSquadUnitDrawXform(unit);
+    Matrix inverse = MatrixInvert(xform);
     Vector3 origin = Vector3Transform(ray.position, inverse);
     Vector3 target = Vector3Transform(Vector3Add(ray.position, ray.direction), inverse);
     Ray local = {origin, Vector3Normalize(Vector3Subtract(target, origin))};
@@ -817,7 +927,7 @@ static bool HomeSquadUnitHit(const HomeSquadUnit *unit, Ray ray, float *distance
     for (int m = 0; m < unit->model.meshCount; m++) {
         Vector3 point;
         if (!HomeSquadMeshHit(unit->model.meshes[m], local, &point)) continue;
-        float world_distance = Vector3Distance(ray.position, Vector3Transform(point, unit->xform));
+        float world_distance = Vector3Distance(ray.position, Vector3Transform(point, xform));
         if (found && world_distance >= *distance) continue;
         found = true;
         *distance = world_distance;

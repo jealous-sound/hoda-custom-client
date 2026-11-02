@@ -157,6 +157,8 @@ typedef enum {
     GUI_PLAQUE_RARE,
     GUI_PLAQUE_EPIC,
     GUI_PLAQUE_LEGENDARY,
+    GUI_PLAQUE_MYTHIC,
+    GUI_PLAQUE_PRESTIGE,
     GUI_DETAILS_POWER,
     GUI_DETAILS_HEALTH,
     GUI_DETAILS_CRIT,
@@ -574,6 +576,8 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_PLAQUE_RARE] = CACHE_BUNDLE_RESOURCE("shared_resourcecontainer", "Bg_FrameRare"),
     [GUI_PLAQUE_EPIC] = CACHE_RESOURCE("Bg_FrameEpic"),
     [GUI_PLAQUE_LEGENDARY] = CACHE_RESOURCE("Bg_FrameLegendary"),
+    [GUI_PLAQUE_MYTHIC] = CACHE_RESOURCE("tex.Bg_FrameMythic"),
+    [GUI_PLAQUE_PRESTIGE] = CACHE_RESOURCE("Bg_FrameLegendary"),
     [GUI_DETAILS_POWER] = CACHE_RESOURCE("tex.Ico_Power"),
     [GUI_DETAILS_HEALTH] = CACHE_RESOURCE("Ico_Health"),
     [GUI_DETAILS_CRIT] = CACHE_RESOURCE("tex.Ico_CritChance"),
@@ -959,9 +963,20 @@ static Font LoadCyrillicFont(const char *path, int size) {
     return ResourceLoadFont(path, size, codepoints, n);
 }
 
+static void ImageSwapGreenBlue(Image *image) {
+    ImageFormat(image, PIXELFORMAT_UNCOMPRESSED_R8G8B8A8);
+    unsigned char *pixels = image->data;
+    for (int i = 0; i < image->width * image->height; i++) {
+        unsigned char green = pixels[i * 4 + 1];
+        pixels[i * 4 + 1] = pixels[i * 4 + 2];
+        pixels[i * 4 + 2] = green;
+    }
+}
+
 void AssetsLoad(void) {
     Image gui_images[GUI_COUNT] = {0};
     ResourceLoadImages(gui_paths, GUI_COUNT, gui_images);
+    if (gui_images[GUI_PLAQUE_PRESTIGE].data) ImageSwapGreenBlue(&gui_images[GUI_PLAQUE_PRESTIGE]);
     for (int i = 0; i < GUI_COUNT; i++) {
         if (gui_images[i].data) gui_tex[i] = LoadTextureFromImage(gui_images[i]);
         UnloadImage(gui_images[i]);

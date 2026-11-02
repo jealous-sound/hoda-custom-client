@@ -386,9 +386,10 @@ void RunesDrawCard(const RuneDef *def, const PlayerRune *rune, Rectangle card, l
     Font title = GuiFont(FNT_COOL), body = GuiFont(FNT_MENU);
     UiDrawTexture(GuiTex(GUI_RUNE_DETAILS), card, WHITE);
 
-    int rarity = def->rarity < 1 ? 1 : def->rarity > 5 ? 5 : def->rarity;
+    int rarity = def->rarity < 1 ? 1 : def->rarity > 6 ? 6 : def->rarity;
     Rectangle header = UiRect(card, 0.5f, 0.0f, 1.0f, 0.165f);
-    UiDrawTexture(GuiTex(GUI_PLAQUE_COMMON + rarity - 1), header, WHITE);
+    GuiId plaque = def->rarity == RUNE_PRESTIGE_RARITY ? GUI_PLAQUE_PRESTIGE : GUI_PLAQUE_COMMON + rarity - 1;
+    UiDrawTexture(GuiTex(plaque), header, WHITE);
     UiDrawTextCentered(title, def->name_ru, UiRect(header, 0.5f, 0.15f, 0.88f, 0.5f), header.height * 0.34f, WHITE);
     UiDrawTextCentered(
         body,
@@ -404,7 +405,7 @@ void RunesDrawCard(const RuneDef *def, const PlayerRune *rune, Rectangle card, l
     HeroesRichLayout(
         body,
         def->desc_ru,
-        UiRect(main, 0.5f, 0.02f, 0.84f, 0.22f),
+        UiRect(main, 0.5f, -0.035f, 0.84f, 0.22f),
         card.height * 0.036f,
         (Color){230, 226, 214, 255},
         true
