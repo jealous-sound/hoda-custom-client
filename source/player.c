@@ -111,6 +111,7 @@ typedef struct {
     int keys[NEXUS_KEY_COUNT];
     PlayerNexusRun nexus_run;
     PlayerNexusEvents nexus_events;
+    long long news_seen_at;
 
     PlayerRunes runes;
     PlayerGear gear;

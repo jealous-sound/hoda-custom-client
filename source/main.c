@@ -58,6 +58,7 @@
 #include "nexus.c"
 #include "nexus_recap.c"
 #include "quests.c"
+#include "news.c"
 #include "progression.c"
 #include "mission_progress.c"
 #include "battle_play.c"

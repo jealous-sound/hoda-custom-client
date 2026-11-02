@@ -197,6 +197,23 @@ static void DebugPrepareNexus(Game *game, DebugShot *shot) {
     shot->flow_started = true;
 }
 
+static void DebugPrepareNews(Game *game, DebugShot *shot) {
+    bool event_popup = DebugShotIs(shot, "news_event");
+    if (!event_popup && !DebugShotIs(shot, "news")) return;
+    game->screen = SCREEN_HOME;
+    if (EnvFlag("HOD_NEWS_ZOOM")) {
+        game->news.zoom = NEWS_ZOOM_OPENING;
+        game->news.zoom_progress = EnvFloat("HOD_NEWS_ZOOM", 0.0f);
+    }
+    if (shot->flow_started) return;
+    if (event_popup) {
+        NewsOpenEvent(&game->news, &game->nexus, &game->player, DebugNexusEvent(game));
+    } else {
+        NewsOpen(&game->news, &game->player);
+    }
+    shot->flow_started = true;
+}
+
 static void DebugPrepareCampaignMap(Game *game, DebugShot *shot) {
     if (!DebugShotIs(shot, "map")) return;
     game->screen = SCREEN_MAP;
@@ -622,6 +639,7 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     if (DebugShotIs(shot, "gallery_unit")) game->screen = SCREEN_GALLERY;
     DebugPrepareStore(game, shot);
     DebugPrepareNexus(game, shot);
+    DebugPrepareNews(game, shot);
     DebugPrepareCampaignMap(game, shot);
     DebugPrepareNexusBattle(game, shot);
     DebugPrepareBattle(game, shot);

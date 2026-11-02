@@ -394,6 +394,11 @@ static long long NexusEventWindowRemaining(const NexusEvent *e, long long now) {
     return e->duration - now % e->duration;
 }
 
+long long NexusEventWindowStart(const NexusEvent *e, long long now) {
+    long long length = e->weekday != 0 ? NEXUS_SECONDS_PER_DAY : e->duration;
+    return now + NexusEventWindowRemaining(e, now) - length;
+}
+
 long long NexusEventUnlockRemaining(const Nexus *n, const Player *player, int event, long long now) {
     const NexusEvent *e = NexusEventAt(n, event);
     if (!NexusEventTimeGated(e) || NexusEventLocked(n, player, event, now)) return 0;

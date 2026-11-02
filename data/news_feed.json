@@ -1,0 +1,254 @@
+[
+  {
+    "event": "Danarius",
+    "title": "interstitial_tevinter_nexus_event_announcement_title_key",
+    "subtitle": "interstitial_tevinter_nexus_event_announcement_subtitle_key",
+    "summary": "Nexus_Event_Danarius_Chase_Desc_Key",
+    "message": "interstitial_tevinter_nexus_event_announcement_message_key"
+  },
+  {
+    "event": "ElvenMages",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_ELVEN_MAGES_SHORT_DESC_KEY",
+    "message": "NEXUS_EVENT_ELVEN_MAGES_LONG_DESC_KEY"
+  },
+  {
+    "event": "ElvenRogues",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_ELVEN_ROGUES_SHORT_DESC_KEY",
+    "message": "NEXUS_EVENT_ELVEN_ROGUES_LONG_DESC_KEY"
+  },
+  {
+    "event": "EnemiesOfTevinter",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_ENEMIES_OF_TEVINTER_SHORT_DESC_KEY",
+    "message": "NEXUS_EVENT_ENEMIES_OF_TEVINTER_LONG_DESC_KEY"
+  },
+  {
+    "event": "Maric",
+    "title": "interstitial_tevinter_ferelden_event_announcement_title_key",
+    "subtitle": "interstitial_tevinter_ferelden_event_announcement_subtitle_key",
+    "summary": "Nexus_Event_King_Maric_Chase_Desc_Key",
+    "message": "interstitial_tevinter_ferelden_event_announcement_message_key"
+  },
+  {
+    "event": "MaskedMayhem",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_MASKED_MAYHEM_SHORT_DESC_KEY",
+    "message": "NEXUS_EVENT_MASKED_MAYHEM_LONG_DESC_KEY"
+  },
+  {
+    "event": "SkyHorror",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_BLACK_FRIDAY_SHORT_DESC_KEY",
+    "message": "NEXUS_EVENT_BLACK_FRIDAY_LONG_DESC_KEY"
+  },
+  {
+    "event": "Tallis",
+    "title": "INTERSTITIAL_QUNARI_QUEST_NEXUS_ANNOUNCEMENT_TITLE_KEY",
+    "subtitle": "INTERSTITIAL_QUNARI_QUEST_NEXUS_ANNOUNCEMENT_SUBTITLE_KEY",
+    "summary": "NEXUS_QUNARI_QUEST_NOVEMBER_13_SHORT_MESSAGE_KEY",
+    "message": "INTERSTITIAL_QUNARI_QUEST_NEXUS_ANNOUNCEMENT_MESSAGE_KEY"
+  },
+  {
+    "event": "WinterWardenland",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_WINTER_WARDENLAND_SHORT_DESC_KEY",
+    "message": "NEXUS_EVENT_WINTER_WARDENLAND_LONG_DESC_KEY"
+  },
+  {
+    "event": "WoodlandCritters",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_WOODLAND_CRITTERS_SHORT_DESC_KEY",
+    "message": "NEXUS_EVENT_WOODLAND_CRITTERS_LONG_DESC_KEY"
+  },
+  {
+    "event": "WoodlandSpirits",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_WOODLAND_CRITTERS_SHORT_DESC_KEY_JUSTINIA",
+    "message": "NEXUS_EVENT_WOODLAND_CRITTERS_LONG_DESC_KEY_JUSTINIA"
+  },
+  {
+    "event": "ADreamMadeReality",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_DREAM_MADE_REALITY_DESC_SHORT",
+    "message": "NEXUS_EVENT_DREAM_MADE_REALITY_DESC_LONG"
+  },
+  {
+    "event": "BreachOpens",
+    "title": "INTERSTITIAL_THE_BREACH_OPENS_NEXUS_ANNOUNCEMENT_TITLE_KEY",
+    "subtitle": "INTERSTITIAL_THE_BREACH_OPENS_NEXUS_ANNOUNCEMENT_SUBTITLE_KEY",
+    "summary": "NEXUS_THE_BREACH_OPENS_NOVEMBER_20_SHORT_MESSAGE_KEY",
+    "message": "INTERSTITIAL_THE_BREACH_OPENS_NEXUS_ANNOUNCEMENT_MESSAGE_KEY"
+  },
+  {
+    "event": "BreachOpensAgain",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_THE_BREACH_OPENS_NOVEMBER_20_SHORT_MESSAGE_KEY",
+    "message": "NEXUS_THE_BREACH_OPENS_LONG_MESSAGE_KEY_WOOLSLEY"
+  },
+  {
+    "event": "Halloween2015",
+    "title": "",
+    "subtitle": "",
+    "summary": "Nexus_Event_Halloween_2015_Boss_Desc_Key",
+    "message": "Nexus_Event_Halloween_2015_Boss_Desc_Long_Key"
+  },
+  {
+    "event": "SeekersDuty",
+    "title": "INTERSTITIAL_SEEKERS_DUTY_NEXUS_ANNOUNCEMENT_TITLE_KEY",
+    "subtitle": "INTERSTITIAL_SEEKERS_DUTY_NEXUS_ANNOUNCEMENT_SUBTITLE_KEY",
+    "summary": "NEXUS_SEEKERS_DUTY_NOVEMBER_20_SHORT_MESSAGE_KEY",
+    "message": "INTERSTITIAL_SEEKERS_DUTY_NEXUS_ANNOUNCEMENT_MESSAGE_KEY"
+  },
+  {
+    "event": "UrnOfSacredAshes",
+    "title": "interstitial_sacred_ashes_nexus_announcement_title_key",
+    "subtitle": "interstitial_sacred_ashes_nexus_announcement_subtitle_key",
+    "summary": "Nexus_Event_UrnOfSacredAshes_Boss_Desc_Key",
+    "message": "interstitial_sacred_ashes_nexus_announcement_message_key"
+  },
+  {
+    "event": "LastStraw",
+    "title": "interstitial_last_straw_nexus_title_key",
+    "subtitle": "interstitial_last_straw_nexus_subtitle_key",
+    "summary": "Nexus_Event_Last_Straw_Gauntlet_Desc_Key",
+    "message": "interstitial_last_straw_nexus_message_key"
+  },
+  {
+    "event": "WitchWilds",
+    "title": "interstitial_witch_of_the_wilds_nexus_title_key",
+    "subtitle": "interstitial_witch_of_the_wilds_nexus_subtitle_key",
+    "summary": "Nexus_Event_Witch_Of_The_Wilds_Gauntlet_Desc_Key",
+    "message": "interstitial_witch_of_the_wilds_nexus_message_key"
+  },
+  {
+    "event": "Thanksgiving2014",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_THANKSGIVING_SHORT_DESC_KEY",
+    "message": "NEXUS_EVENT_THANKSGIVING_LONG_DESC_KEY"
+  },
+  {
+    "event": "AnvilVoid",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_ANVIL_OF_THE_VOID_SHORT_DESC_KEY",
+    "message": "NEXUS_EVENT_ANVIL_OF_THE_VOID_LONG_DESC_KEY"
+  },
+  {
+    "event": "BanishedPlane",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_BANISHED_PLANE_SHORT_MESSAGE_KEY",
+    "message": "NEXUS_BANISHED_PLANE_LONG_MESSAGE_KEY"
+  },
+  {
+    "event": "DoubleXP2015",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_EXP_NUGS_SUBTITLE_KEY",
+    "message": "NEXUS_EVENT_EXP_NUGS_DESC_KEY"
+  },
+  {
+    "event": "GiantWisps2304",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_GIANT_WISP_DESC_KEY",
+    "message": "NEXUS_EVENT_GIANT_WISP_DESC_KEY"
+  },
+  {
+    "event": "Giants2302",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_GIANT_DESC_KEY",
+    "message": "NEXUS_EVENT_GIANT_DESC_KEY"
+  },
+  {
+    "event": "PotionDrop2015",
+    "title": "",
+    "subtitle": "",
+    "summary": "NEXUS_EVENT_POTION_DROP_SUBTITLE_KEY",
+    "message": "NEXUS_EVENT_POTION_DROP_DESC_KEY"
+  },
+  {
+    "event": "WesternApproachInquisition",
+    "title": "",
+    "subtitle": "",
+    "summary": "Nexus_Event_Western_Approach_Inquisition_Rising_Desc_Key",
+    "message": "Nexus_Event_Western_Approach_Inquisition_Rising_Desc_Long_Key"
+  },
+  {
+    "event": "WesternApproachRedLyrium",
+    "title": "",
+    "subtitle": "",
+    "summary": "Nexus_Event_Western_Approach_Written_In_Red_Desc_Key",
+    "message": "Nexus_Event_Western_Approach_Written_In_Red_Desc_Long_Key"
+  },
+  {
+    "event": "PHnT",
+    "title": "",
+    "subtitle": "",
+    "summary": "",
+    "message": ""
+  },
+  {
+    "event": "DailyMonday",
+    "title": "",
+    "subtitle": "",
+    "summary": "Nexus_Event_Monday_Red_Faction_Daily_Desc_Key",
+    "message": "Nexus_Event_Monday_Red_Faction_Daily_Desc_Long_Key_UPDATED"
+  },
+  {
+    "event": "DailyTuesday",
+    "title": "",
+    "subtitle": "",
+    "summary": "Nexus_Event_Tuesday_Blue_Faction_Daily_Desc_Key",
+    "message": "Nexus_Event_Tuesday_Blue_Faction_Daily_Desc_Long_Key_UPDATED"
+  },
+  {
+    "event": "DailyWednesday",
+    "title": "",
+    "subtitle": "",
+    "summary": "Nexus_Event_Wednesday_Black_Faction_Daily_Desc_Key",
+    "message": "Nexus_Event_Wednesday_Black_Faction_Daily_Desc_Long_Key_UPDATED"
+  },
+  {
+    "event": "DailyThursday",
+    "title": "",
+    "subtitle": "",
+    "summary": "Nexus_Event_Thursday_White_Faction_Daily_Desc_Key",
+    "message": "Nexus_Event_Thursday_White_Faction_Daily_Desc_Long_Key_UPDATED"
+  },
+  {
+    "event": "DailyFriday",
+    "title": "",
+    "subtitle": "",
+    "summary": "Nexus_Event_Friday_Daily_Desc_Key",
+    "message": "Nexus_Event_Friday_Daily_Desc_Long_Key"
+  },
+  {
+    "event": "DailySaturday",
+    "title": "",
+    "subtitle": "",
+    "summary": "Nexus_Event_Saturday_Wisp_Daily_Desc_Key",
+    "message": "Nexus_Event_Saturday_Wisp_Daily_Desc_Long_Key"
+  },
+  {
+    "event": "DailySunday",
+    "title": "",
+    "subtitle": "",
+    "summary": "Nexus_Event_Sunday_GoldXP_Daily_Desc_Key",
+    "message": "Nexus_Event_Sunday_GoldXP_Daily_Desc_Long_Key"
+  }
+]

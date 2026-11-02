@@ -1,4 +1,4 @@
-typedef enum { QUESTS_NONE = 0, QUESTS_MAP, QUESTS_NEXUS, QUESTS_UNLOCK, QUESTS_FORFEIT, QUESTS_CLOSE } QuestButton;
+typedef enum { QUESTS_NONE = 0, QUESTS_MAP, QUESTS_NEXUS, QUESTS_UNLOCK, QUESTS_FORFEIT, QUESTS_CLOSE, QUESTS_NEWS } QuestButton;
 
 typedef enum {
     QUESTS_DIALOG_NONE = 0,
@@ -58,6 +58,7 @@ typedef struct {
     Button map;
     Button esc;
     Button back;
+    Button news;
     Button dialog_yes;
     Button dialog_no;
     Button dialog_ok;
@@ -105,6 +106,7 @@ void QuestsInitialize(Quests *q) {
     q->map = ButtonLoad(GUI_BTN_MAINQUEST, GUI_BTN_MAINQUEST_ON);
     q->esc = ButtonLoad(GUI_BTN_CLOSE, GUI_BTN_CLOSE);
     q->back = ButtonLoad(GUI_STORE_BACK, GUI_STORE_BACK);
+    q->news = ButtonLoad(GUI_NEWS_BUTTON, GUI_NEWS_BUTTON);
     ButtonSetClickSound(&q->esc, SND_UI_POPUP_CLOSE);
     ButtonSetClickSound(&q->back, SND_UI_POPUP_CLOSE);
     q->dialog_ok = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "", q->font, (Vector2){0.5f, 0.5f}, 0.32f);
@@ -465,6 +467,12 @@ static void QuestsDrawActionPlate(const Quests *q, Rectangle rect, const char *l
     );
 }
 
+static void QuestsDrawArrowTexture(Rectangle rect, bool left) {
+    Texture2D arrow = GuiTex(GUI_STORE_SCROLL_ARROW);
+    Rectangle src = {0.0f, 0.0f, left ? -(float)arrow.width : (float)arrow.width, (float)arrow.height};
+    DrawTexturePro(arrow, src, rect, (Vector2){0}, 0.0f, WHITE);
+}
+
 static void QuestsDrawScrollArrow(const Quests *q, Rectangle rect, bool left, bool enabled) {
     Rectangle src = {0.0f, 0.0f, (float)q->arrow.width, (float)q->arrow.height};
     if (left) {
@@ -551,6 +559,15 @@ static void QuestsHandleCellClick(Quests *q, const Nexus *nexus, const Player *p
         q->ladder_event = event;
     }
     GuiSoundPlay(SND_UI_TAB);
+}
+
+void QuestsOpenEvent(Quests *q, const Nexus *nexus, const Player *player, int event) {
+    QuestsHandleCellClick(q, nexus, player, event);
+}
+
+static Texture2D QuestsHubImage(const Quests *q, int event) {
+    int hub = q->event_hub_image[event];
+    return hub >= 0 ? q->hub_images[hub] : (Texture2D){0};
 }
 
 static bool QuestsDrawEventCell(Quests *q, const Nexus *nexus, const Player *player, int event, Rectangle cell) {
@@ -937,6 +954,8 @@ QuestButton QuestsDraw(Quests *q, const Nexus *nexus, const Player *player, cons
             clicked = QUESTS_MAP;
         }
         QuestsDrawKeyStrip(q, player, (Rectangle){panel.x + 72.0f, dst.y - 4.0f, dst.x - panel.x - 112.0f, 92.0f});
+        Rectangle news_rect = {panel.x + 36.0f, panel.y + panel.height * 0.07f, 54.0f, 54.0f};
+        if (ButtonDrawEx(&q->news, news_rect, interactive)) clicked = QUESTS_NEWS;
     } else {
         back_rect = (Rectangle){panel.x + 36.0f, panel.y + panel.height * 0.07f, 54.0f, 54.0f};
         if (ButtonDrawEx(&q->back, back_rect, interactive)) q->ladder_event = -1;
@@ -973,7 +992,7 @@ QuestButton QuestsDraw(Quests *q, const Nexus *nexus, const Player *player, cons
         if (dialog_result != QUESTS_NONE) clicked = dialog_result;
     }
 
-    if (clicked == QUESTS_CLOSE || clicked == QUESTS_NEXUS) {
+    if (clicked == QUESTS_CLOSE || clicked == QUESTS_NEXUS || clicked == QUESTS_NEWS) {
         q->ladder_event = -1;
         QuestsDialogClose(q);
     }

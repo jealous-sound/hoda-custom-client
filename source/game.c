@@ -45,6 +45,7 @@ typedef struct {
     Store store;
     Screen store_return_screen;
     Quests quests;
+    News news;
     Campaign map;
     Nexus nexus;
     NexusRecap nexus_recap;
@@ -302,6 +303,7 @@ void GameInitialize(Game *g) {
     MissionsSync(&g->player, &g->map);
     CampaignProgressSync(&g->map, &g->player.campaign_progress);
     NexusInitialize(&g->nexus, "data/nexus_maps.json");
+    NewsInitialize(&g->news, &g->nexus, "data/news_feed.json");
     NexusRecapInitialize(&g->nexus_recap);
     EnergyDialogInitialize(&g->energy_dialog);
     StaminaDialogInitialize(&g->stamina_dialog);
@@ -349,6 +351,7 @@ bool GameHandlePopupBack(Game *g) {
     }
     if (g->screen == SCREEN_RUNES) return RunesHandleBack(&g->runes);
     if (g->screen == SCREEN_CONSUME) return ConsumeHandleBack(&g->consume);
+    if (g->screen == SCREEN_HOME && NewsHandleBack(&g->news)) return true;
     if (g->screen == SCREEN_QUESTS && QuestsHandleBack(&g->quests)) return true;
     if (g->screen == SCREEN_MISSIONS) {
         g->screen = SCREEN_HOME;
@@ -618,12 +621,22 @@ void GameDraw(Game *g) {
             GameDrawSceneFx(g, g->scene.cam, dt);
 
             UiFrameBegin();
-            if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, true));
+            if (NewsAutoShow(&g->news, &g->player)) ProgressionSave(&g->player);
+            bool news_open = NewsIsOpen(&g->news);
+            bool home_interactive = !news_open;
+            if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, home_interactive, true));
 
             int missions_badge = MissionUnseenClaimableCount(&g->player.missions);
-            HomeButton pressed = HomeUIDraw(&g->home_ui, true, g->player.gallery.badge, missions_badge);
+            HomeButton pressed = HomeUIDraw(&g->home_ui, home_interactive, g->player.gallery.badge, missions_badge);
+            NewsDrawHome(&g->news, &g->quests, &g->nexus, &g->player, home_interactive && !resource_modal, dt);
+            if (!news_open && NewsIsOpen(&g->news)) ProgressionSave(&g->player);
+            if (NewsDrawOverlay(&g->news, &g->quests, &g->nexus, &g->player) == NEWS_OPEN_EVENT) {
+                QuestsOpenEvent(&g->quests, &g->nexus, &g->player, NewsTargetEvent(&g->news));
+                g->screen = SCREEN_QUESTS;
+            }
             UiFrameEnd();
-            if (pressed == HOME_NONE && !resource_modal && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            if (pressed == HOME_NONE && home_interactive && !NewsIsOpen(&g->news) && !resource_modal &&
+                IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
                 HomeBackgroundSquadClick(&g->scene, GetMousePosition());
             if (pressed == HOME_HEROES) {
                 g->screen = SCREEN_HEROES;
@@ -836,6 +849,10 @@ void GameDraw(Game *g) {
                 NexusResetRun(&g->player);
                 ProgressionSave(&g->player);
                 QuestsOpenLadder(&g->quests, QuestsPendingNexusEvent(&g->quests));
+            } else if (pressed == QUESTS_NEWS) {
+                NewsOpen(&g->news, &g->player);
+                ProgressionSave(&g->player);
+                g->screen = SCREEN_HOME;
             } else if (pressed == QUESTS_CLOSE) {
                 g->screen = SCREEN_HOME;
             }

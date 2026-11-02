@@ -860,6 +860,7 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
     const PlayerNexusRun *nexus_run = &player->nexus_run;
     PROGRESSION_SAVE_NUMBER(nexus, "potions", player->potions);
     PROGRESSION_SAVE_NUMBER(nexus, "potion_max", player->potion_max);
+    PROGRESSION_SAVE_NUMBER(nexus, "news_seen_at", (double)player->news_seen_at);
     for (int key = 0; key < NEXUS_KEY_COUNT; key++)
         if (!ProgressionJsonAddArrayNumber(nexus_keys, player->keys[key])) goto save_json_failed;
     if (!cJSON_AddStringToObject(run, "map_id", nexus_run->map_id) ||
@@ -1203,6 +1204,7 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
     PlayerNexusEvents loaded_events = {0};
     int loaded_potions = player->potions;
     int loaded_potion_max = player->potion_max;
+    long long loaded_news_seen_at = 0;
     int loaded_keys[NEXUS_KEY_COUNT];
     memcpy(loaded_keys, player->keys, sizeof(loaded_keys));
 
@@ -1360,6 +1362,8 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
         cJSON *committed = cJSON_GetObjectItemCaseSensitive(run, "committed");
         cJSON *reset = cJSON_GetObjectItemCaseSensitive(run, "reset");
         cJSON *run_pending = cJSON_GetObjectItemCaseSensitive(run, "pending_animation");
+        cJSON *news_seen_at = cJSON_GetObjectItemCaseSensitive(nexus, "news_seen_at");
+        if (cJSON_IsNumber(news_seen_at)) loaded_news_seen_at = (long long)news_seen_at->valuedouble;
         valid =
             cJSON_IsObject(nexus) && cJSON_IsObject(run) && cJSON_IsObject(events) && cJSON_IsString(map_id) &&
             strlen(map_id->valuestring) < sizeof(loaded_run.map_id) && cJSON_IsBool(committed) && cJSON_IsBool(reset) &&
@@ -1454,6 +1458,7 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
     if (version >= 4) {
         player->potions = loaded_potions;
         player->potion_max = loaded_potion_max;
+        player->news_seen_at = loaded_news_seen_at;
         memcpy(player->keys, loaded_keys, sizeof(loaded_keys));
         player->nexus_run = loaded_run;
         player->nexus_events = loaded_events;
