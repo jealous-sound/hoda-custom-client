@@ -91,13 +91,15 @@ enum {
 
 #define BP_MAX_MESSAGES 24
 #define BP_MAX_PROJECTILES 8
-#define BP_MAX_INTRO_EVENTS (RUNE_SLOT_COUNT + 1)
+#define BP_MAX_INTRO_EVENTS (RUNE_SLOT_COUNT + 2)
 
 typedef struct {
     float value;
     unsigned affected_slots;
     unsigned faction;
     int rune_def;
+    bool event_bonus;
+    bool no_event_bonus;
 } BpIntroEvent;
 
 typedef enum {
@@ -582,6 +584,12 @@ static unsigned BpFormationSlots(const BattleSim *sim, int side) {
     return slots;
 }
 
+static bool BpAnyGameChangerApplied(const BattleSim *sim) {
+    for (int i = 0; i < SIM_UNIT_COUNT; i++)
+        if (sim->units[i].present && sim->units[i].game_changer_applied) return true;
+    return false;
+}
+
 static void BpBuildIntroEvents(BattlePlay *bp) {
     bp->intro_event_count = 0;
     bp->intro_event = -1;
@@ -593,6 +601,13 @@ static void BpBuildIntroEvents(BattlePlay *bp) {
         BpQueueIntroEvent(
             bp, bp->sim.formation_bonus_pct[0], BpFormationSlots(&bp->sim, 0), bp->sim.formation_faction[0]
         );
+}
+
+static void BpQueueGameChangerEvent(BattlePlay *bp, const BattleRoster *enemy) {
+    if (!enemy->game_changer) return;
+    bool applied = BpAnyGameChangerApplied(&bp->sim);
+    bp->intro_events[bp->intro_event_count++] =
+        (BpIntroEvent){.rune_def = -1, .event_bonus = applied, .no_event_bonus = !applied};
 }
 
 static void BpResetInitiative(BattlePlay *bp, Battle *b, int unit) {
@@ -613,6 +628,7 @@ void BattlePlayStart(BattlePlay *bp, Battle *b, const Player *player, unsigned s
     memset(bp, 0, sizeof(*bp));
     BattleSimRun(&bp->sim, player, &b->enemy_roster, seed);
     BpBuildIntroEvents(bp);
+    BpQueueGameChangerEvent(bp, &b->enemy_roster);
     bp->state = BP_INTRO;
     bp->action = 0;
     bp->cur_round = 1;
@@ -696,6 +712,17 @@ static const char *BpFactionFx(unsigned faction) {
 }
 
 static void BpPlayIntroEvent(BattlePlay *bp, Battle *b, const BpIntroEvent *event) {
+    if (event->no_event_bonus) return;
+    if (event->event_bonus) {
+        BattleAudioPlayGlobal(b, "gui_bonus_faction");
+        for (int i = 0; i < SIM_UNIT_COUNT; i++) {
+            if (bp->sim.units[i].present && bp->sim.units[i].game_changer_applied)
+                BattleFxUnitColorAura(
+                    b, BP_RUNE_AURA_FX, i / SQUAD_SLOT_COUNT, i % SQUAD_SLOT_COUNT, BP_RUNE_AURA_COLOR
+                );
+        }
+        return;
+    }
     if (event->rune_def >= 0) {
         BattleAudioPlayGlobal(b, "gui_bonus_rune");
         for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)

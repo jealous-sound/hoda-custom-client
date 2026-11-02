@@ -5060,7 +5060,95 @@ static void TestGearSaveRoundTrip(void) {
     assert(saved.gear.counts[item] == 0 && !GearHasEquipped(&roster[1]));
 }
 
+static void TestNexusGameChangerBoostsMatchingUnitsOnBothSides(void) {
+    Player player = {0};
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    BattleRoster enemy = {0};
+    BattleRosterLoad(&enemy, "data/campaign_rosters.json", HOD_CACHE "characters.json", "PVE_MAP_01", 1);
+    SimUnit *base = (SimUnit *)calloc(SIM_UNIT_COUNT, sizeof(*base));
+    SimUnit *boosted = (SimUnit *)calloc(SIM_UNIT_COUNT, sizeof(*boosted));
+    assert(base != NULL && boosted != NULL);
+    BattleSimPreview(base, &player, &enemy);
+
+    int matched = -1;
+    for (int i = 0; i < SIM_UNIT_COUNT && matched < 0; i++)
+        if (base[i].present && base[i].ch->group_count > 0) matched = i;
+    assert(matched >= 0);
+    BattleGameChanger changer = {.effect_count = 1};
+    changer.effects[0] = (BattleChangerEffect){.group_count = 1, .health_pct = 150, .power_pct = 100};
+    StrCopy(changer.effects[0].groups[0], sizeof(changer.effects[0].groups[0]), base[matched].ch->groups[0]);
+    enemy.game_changer = &changer;
+    BattleSimPreview(boosted, &player, &enemy);
+
+    bool matched_side[2] = {false, false};
+    for (int i = 0; i < SIM_UNIT_COUNT; i++) {
+        if (!base[i].present) continue;
+        bool matches = SimPassiveHasGroup(base[i].ch, changer.effects[0].groups[0]);
+        assert(boosted[i].game_changer_applied == matches);
+        int health = matches ? (int)lroundf(base[i].max_health * 2.5f) : base[i].max_health;
+        int power = matches ? base[i].power * 2 : base[i].power;
+        assert(boosted[i].max_health == health);
+        assert(boosted[i].health == health);
+        assert(boosted[i].power == power);
+        assert(boosted[i].start_power == power);
+        if (matches) matched_side[base[i].side] = true;
+    }
+    assert(matched_side[0] || matched_side[1]);
+    free(base);
+    free(boosted);
+}
+
+static void TestNexusGameChangerNarrowsByFactionAndUnit(void) {
+    Character character;
+    Ability ability;
+    TestCharacter(&character, &ability, "changer_target", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 1000);
+    SimUnit unit = {.ch = &character, .faction = 2};
+    BattleChangerEffect faction = {.faction_mask = 2};
+    BattleChangerEffect other_faction = {.faction_mask = 4};
+    assert(SimChangerEffectMatches(&faction, &unit));
+    assert(!SimChangerEffectMatches(&other_faction, &unit));
+    BattleChangerEffect wrong_unit = {.unit_count = 1};
+    StrCopy(wrong_unit.units[0], sizeof(wrong_unit.units[0]), "UNIT_SOMEONE_ELSE");
+    assert(!SimChangerEffectMatches(&wrong_unit, &unit));
+    BattleChangerEffect same_unit = {.unit_count = 1};
+    StrCopy(same_unit.units[0], sizeof(same_unit.units[0]), character.id);
+    assert(SimChangerEffectMatches(&same_unit, &unit));
+}
+
+static void TestNexusGameChangerTableAffectsRealRosters(void) {
+    Nexus *nexus = (Nexus *)calloc(1, sizeof(*nexus));
+    assert(nexus != NULL);
+    cJSON *table = JsonLoadFile(NEXUS_GAME_CHANGERS_PATH);
+    assert(cJSON_IsArray(table));
+    cJSON *maps = JsonLoadFile("data/nexus_maps.json");
+    assert(cJSON_IsArray(maps));
+    int event_index = 0;
+    cJSON *map = NULL;
+    cJSON_ArrayForEach(map, maps) {
+        StrCopy(nexus->events[event_index].id, sizeof(nexus->events[0].id), JsonStr(map, "id"));
+        event_index++;
+    }
+    nexus->event_count = event_index;
+    NexusGameChangersLoad(nexus, NEXUS_GAME_CHANGERS_PATH);
+    int loaded = 0;
+    for (int event = 0; event < nexus->event_count; event++) {
+        const BattleGameChanger *changer = NexusEventGameChanger(nexus, event);
+        if (!changer) continue;
+        loaded++;
+        assert(changer->text_key[0] != '\0' || changer->text_ru[0] != '\0');
+        for (int e = 0; e < changer->effect_count; e++)
+            assert(changer->effects[e].health_pct > 0 || changer->effects[e].power_pct > 0);
+    }
+    assert(loaded == cJSON_GetArraySize(table));
+    cJSON_Delete(maps);
+    cJSON_Delete(table);
+    free(nexus);
+}
+
 int main(void) {
+    TestNexusGameChangerBoostsMatchingUnitsOnBothSides();
+    TestNexusGameChangerNarrowsByFactionAndUnit();
+    TestNexusGameChangerTableAffectsRealRosters();
     TestGearCatalogIsComplete();
     TestGearSlotsFollowRarity();
     TestGearEquipRules();

@@ -72,6 +72,7 @@ typedef struct {
     unsigned char curse_power_turns, curse_health_turns;
     int marked;
     unsigned faction;
+    bool game_changer_applied;
 } SimUnit;
 
 typedef struct {
@@ -1917,6 +1918,31 @@ static void SimUnitsRuneBonus(SimUnit *units, int side, const RuneBonus *bonus) 
     }
 }
 
+static bool SimChangerEffectMatches(const BattleChangerEffect *effect, const SimUnit *u) {
+    for (int i = 0; i < effect->group_count; i++)
+        if (!SimPassiveHasGroup(u->ch, effect->groups[i])) return false;
+    if (effect->faction_mask && !(u->faction & effect->faction_mask)) return false;
+    if (effect->unit_count == 0) return true;
+    for (int i = 0; i < effect->unit_count; i++)
+        if (!strcmp(u->ch->id, effect->units[i])) return true;
+    return false;
+}
+
+static void SimUnitsGameChanger(SimUnit *units, const BattleGameChanger *changer) {
+    if (!changer) return;
+    for (int i = 0; i < SIM_UNIT_COUNT; i++) {
+        SimUnit *u = &units[i];
+        if (!u->present) continue;
+        for (int e = 0; e < changer->effect_count; e++) {
+            const BattleChangerEffect *effect = &changer->effects[e];
+            if (!SimChangerEffectMatches(effect, u)) continue;
+            u->power = u->start_power = (int)lroundf(u->power * (1.0f + effect->power_pct / 100.0f));
+            u->max_health = u->health = (int)lroundf(u->max_health * (1.0f + effect->health_pct / 100.0f));
+            u->game_changer_applied = true;
+        }
+    }
+}
+
 static RuneBonus SimPlayerRuneBonus(const Player *player) {
     return RuneSquadBonus(&player->runes, player->current_squad, RuneNow());
 }
@@ -1934,6 +1960,7 @@ static void SimUnitsSetup(
     SimUnitsFormationBonus(units, 1, &faction[1], &bonus_pct[1]);
     RuneBonus rune_bonus = SimPlayerRuneBonus(player);
     SimUnitsRuneBonus(units, 0, &rune_bonus);
+    SimUnitsGameChanger(units, enemy->game_changer);
 }
 
 void BattleSimSetup(BattleSim *s, const Player *player, const BattleRoster *enemy) {

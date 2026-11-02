@@ -214,6 +214,12 @@ static void DebugPrepareNews(Game *game, DebugShot *shot) {
     shot->flow_started = true;
 }
 
+static void DebugPrepareQuestLadder(Game *game, const DebugShot *shot) {
+    if (!DebugShotIs(shot, "quests_ladder")) return;
+    game->screen = SCREEN_QUESTS;
+    QuestsOpenLadder(&game->quests, DebugNexusEvent(game));
+}
+
 static void DebugPrepareCampaignMap(Game *game, DebugShot *shot) {
     if (!DebugShotIs(shot, "map")) return;
     game->screen = SCREEN_MAP;
@@ -252,7 +258,12 @@ static void DebugPrepareMapProgress(Game *game, DebugShot *shot) {
 static void DebugPrepareNexusBattle(Game *game, const DebugShot *shot) {
     if (!DebugShotIs(shot, "nexus_battle")) return;
     game->screen = SCREEN_BATTLE;
-    if (game->battle.squads_loaded) return;
+    if (game->battle.squads_loaded) {
+        const char *fight_seed = getenv("HOD_FIGHT");
+        if (fight_seed && !BattlePlayActive(&game->battle_play))
+            BattlePlayStart(&game->battle_play, &game->battle, &game->player, (unsigned)atoi(fight_seed));
+        return;
+    }
     int difficulty = EnvInt("HOD_NEXUS_DIFF", 0);
     NexusEnterMap(&game->nexus, &game->player, DebugNexusEvent(game), difficulty);
     const NexusDifficulty *d = NexusActiveDifficulty(&game->nexus);
@@ -640,6 +651,7 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     DebugPrepareStore(game, shot);
     DebugPrepareNexus(game, shot);
     DebugPrepareNews(game, shot);
+    DebugPrepareQuestLadder(game, shot);
     DebugPrepareCampaignMap(game, shot);
     DebugPrepareNexusBattle(game, shot);
     DebugPrepareBattle(game, shot);

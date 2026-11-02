@@ -1,8 +1,30 @@
 
+#define BATTLE_CHANGER_MAX_EFFECTS 4
+#define BATTLE_CHANGER_MAX_GROUPS 2
+#define BATTLE_CHANGER_MAX_UNITS 2
+#define BATTLE_CHANGER_TEXT_SIZE 256
+
+typedef struct {
+    char groups[BATTLE_CHANGER_MAX_GROUPS][24];
+    int group_count;
+    char units[BATTLE_CHANGER_MAX_UNITS][48];
+    int unit_count;
+    unsigned faction_mask;
+    int health_pct, power_pct;
+} BattleChangerEffect;
+
+typedef struct {
+    char text_key[128];
+    char text_ru[BATTLE_CHANGER_TEXT_SIZE];
+    BattleChangerEffect effects[BATTLE_CHANGER_MAX_EFFECTS];
+    int effect_count;
+} BattleGameChanger;
+
 typedef struct {
     Character chars[SQUAD_SLOT_COUNT];
     Ability abilities[SQUAD_SLOT_COUNT];
     bool present[SQUAD_SLOT_COUNT];
+    const BattleGameChanger *game_changer;
 } BattleRoster;
 
 static void

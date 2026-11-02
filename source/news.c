@@ -57,6 +57,7 @@
 #define NEWS_POPUP_MESSAGE_Y 286.0f
 #define NEWS_POPUP_MESSAGE_W 380.0f
 #define NEWS_POPUP_MESSAGE_H 292.0f
+#define NEWS_POPUP_CHANGER_H 60.0f
 #define NEWS_POPUP_LINK_X 711.0f
 #define NEWS_POPUP_LINK_Y 594.0f
 #define NEWS_POPUP_LINK_W 272.0f
@@ -70,6 +71,7 @@
 static const Color NEWS_TEXT = {235, 232, 220, 255};
 static const Color NEWS_TEXT_DIM = {180, 176, 166, 255};
 static const Color NEWS_TITLE_COLOR = {246, 226, 170, 255};
+static const Color NEWS_CHANGER_COLOR = {255, 165, 0, 255};
 
 typedef enum { NEWS_TIMING_ACTIVE = 0, NEWS_TIMING_NEXT, NEWS_TIMING_EXPIRED } NewsTiming;
 typedef enum { NEWS_NONE = 0, NEWS_OPEN_EVENT } NewsAction;
@@ -543,6 +545,12 @@ static NewsAction NewsDrawMessage(News *news, Quests *quests, const Nexus *nexus
     NewsDrawImageFit(QuestsHubImage(quests, message->event), image, WHITE);
     Rectangle body =
         NewsDesignRect(NEWS_POPUP_MESSAGE_X, NEWS_POPUP_MESSAGE_Y, NEWS_POPUP_MESSAGE_W, NEWS_POPUP_MESSAGE_H);
+    const BattleGameChanger *changer = NexusEventGameChanger(nexus, message->event);
+    if (changer) {
+        body.height -= NEWS_POPUP_CHANGER_H;
+        Rectangle rule = {body.x, body.y + body.height, body.width, NEWS_POPUP_CHANGER_H};
+        NewsDrawRich(GuiFont(FNT_MENU), NexusGameChangerText(changer), rule, 17.0f, NEWS_CHANGER_COLOR);
+    }
     NewsDrawRich(GuiFont(FNT_MENU), LocGet(text->message), body, 19.0f, NEWS_TEXT);
 
     NewsAction action = NEWS_NONE;

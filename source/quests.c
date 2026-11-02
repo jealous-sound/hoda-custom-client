@@ -25,6 +25,7 @@ typedef enum {
 #define QUESTS_TITLE_MIN_SIZE 12.0f
 #define QUESTS_TITLE_TOP 60.0f
 #define QUESTS_DIVIDER_FROM_FOOT 92.0f
+#define QUESTS_CHANGER_HEIGHT 42.0f
 
 static const Color QUESTS_KEY_TINTS[NEXUS_KEY_COUNT] = {
     {31, 128, 244, 255},
@@ -34,6 +35,7 @@ static const Color QUESTS_KEY_TINTS[NEXUS_KEY_COUNT] = {
 };
 static const Color QUESTS_COMMITTED_ELSEWHERE = {150, 150, 150, 255};
 static const Color QUESTS_TEXT = {235, 232, 220, 255};
+static const Color QUESTS_CHANGER_COLOR = {255, 165, 0, 255};
 static const Color QUESTS_TEXT_DIM = {162, 159, 152, 255};
 
 typedef struct {
@@ -715,7 +717,15 @@ static bool QuestsDrawLadder(Quests *q, const Nexus *nexus, const Player *player
         (Color){196, 192, 182, 255}
     );
 
-    Rectangle list = {panel.x + 96.0f, panel.y + 156.0f, panel.width - 192.0f, 376.0f};
+    float changer_height = 0.0f;
+    const BattleGameChanger *changer = NexusEventGameChanger(nexus, q->ladder_event);
+    if (changer) {
+        changer_height = QUESTS_CHANGER_HEIGHT;
+        Rectangle box = {panel.x + 110.0f, panel.y + 152.0f, panel.width - 220.0f, changer_height};
+        const char *rule = NexusGameChangerText(changer);
+        HeroesDrawRich(q->body, rule, box, CampaignFitWrappedSize(q->body, rule, box, 16.0f, 11.0f), QUESTS_CHANGER_COLOR);
+    }
+    Rectangle list = {panel.x + 96.0f, panel.y + 156.0f + changer_height, panel.width - 192.0f, 376.0f - changer_height};
     float stride = fminf(list.height / (float)e->difficulty_count, 96.0f);
     float top = list.y + (list.height - stride * e->difficulty_count) * 0.5f;
     bool entered = false;

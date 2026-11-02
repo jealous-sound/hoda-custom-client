@@ -1,5 +1,6 @@
 
 #define NEXUS_TAP_SLOP 20.0f
+#define NEXUS_GAME_CHANGERS_PATH "data/nexus_game_changers.json"
 #define NEXUS_DRAG_GAIN 10.0f
 #define NEXUS_WHEEL_STEP 0.07f
 #define NEXUS_EDGE_BUFFER 3.0f
@@ -110,6 +111,7 @@ typedef struct {
     bool complete_sound_played;
     bool recap_requested;
     PlayerNexusRun completed_run;
+    BattleGameChanger game_changers[NEXUS_MAX_EVENTS];
 } Nexus;
 
 static float NexusEaseInOutQuad(float t) {
@@ -120,6 +122,50 @@ static float NexusEaseInOutQuad(float t) {
 static float NexusFlipScale(float t) {
     if (t < 0.0f || t > 1.0f) return 1.0f;
     return t < 0.5f ? 1.0f - NexusEaseInOutQuad(t * 2.0f) : NexusEaseInOutQuad((t - 0.5f) * 2.0f);
+}
+
+int NexusFindEvent(const Nexus *n, const char *event_id) {
+    for (int i = 0; i < n->event_count; i++) {
+        if (strcmp(n->events[i].id, event_id) == 0) return i;
+    }
+    return -1;
+}
+
+static void NexusChangerEffectLoad(BattleChangerEffect *effect, const cJSON *json) {
+    cJSON *item = NULL;
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive(json, "groups")) {
+        if (effect->group_count == BATTLE_CHANGER_MAX_GROUPS) TraceLog(LOG_FATAL, "Nexus: too many changer groups");
+        StrCopy(effect->groups[effect->group_count++], sizeof(effect->groups[0]), item->valuestring);
+    }
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive(json, "units")) {
+        if (effect->unit_count == BATTLE_CHANGER_MAX_UNITS) TraceLog(LOG_FATAL, "Nexus: too many changer units");
+        StrCopy(effect->units[effect->unit_count++], sizeof(effect->units[0]), item->valuestring);
+    }
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive(json, "factions")) {
+        effect->faction_mask |= SimFactionMask(FactionFromString(item->valuestring));
+    }
+    effect->health_pct = JsonInt(json, "health_pct");
+    effect->power_pct = JsonInt(json, "power_pct");
+}
+
+static void NexusGameChangersLoad(Nexus *n, const char *path) {
+    cJSON *root = JsonLoadFile(path);
+    if (!cJSON_IsArray(root)) TraceLog(LOG_FATAL, "Nexus: %s is not an array", path);
+    cJSON *item = NULL;
+    cJSON_ArrayForEach(item, root) {
+        int event = NexusFindEvent(n, JsonStr(item, "event"));
+        if (event < 0) TraceLog(LOG_FATAL, "Nexus: changer for unknown event %s", JsonStr(item, "event"));
+        BattleGameChanger *changer = &n->game_changers[event];
+        StrCopy(changer->text_key, sizeof(changer->text_key), JsonStr(item, "text_key"));
+        StrCopy(changer->text_ru, sizeof(changer->text_ru), JsonStr(item, "text_ru"));
+        cJSON *effect = NULL;
+        cJSON_ArrayForEach(effect, cJSON_GetObjectItemCaseSensitive(item, "effects")) {
+            if (changer->effect_count == BATTLE_CHANGER_MAX_EFFECTS)
+                TraceLog(LOG_FATAL, "Nexus: too many changer effects");
+            NexusChangerEffectLoad(&changer->effects[changer->effect_count++], effect);
+        }
+    }
+    cJSON_Delete(root);
 }
 
 void NexusInitialize(Nexus *n, const char *maps_path) {
@@ -285,6 +331,7 @@ void NexusInitialize(Nexus *n, const char *maps_path) {
         n->event_count++;
     }
     cJSON_Delete(root);
+    NexusGameChangersLoad(n, NEXUS_GAME_CHANGERS_PATH);
     if (n->event_count == 0) TraceLog(LOG_FATAL, "Nexus: no events in %s", maps_path);
     TraceLog(LOG_INFO, "Nexus: loaded %d events from %s", n->event_count, maps_path);
 }
@@ -298,15 +345,17 @@ int NexusEventCount(const Nexus *n) {
     return n->event_count;
 }
 
-const NexusEvent *NexusEventAt(const Nexus *n, int index) {
-    return index >= 0 && index < n->event_count ? &n->events[index] : NULL;
+const BattleGameChanger *NexusEventGameChanger(const Nexus *n, int event) {
+    if (event < 0 || event >= n->event_count || n->game_changers[event].effect_count == 0) return NULL;
+    return &n->game_changers[event];
 }
 
-int NexusFindEvent(const Nexus *n, const char *event_id) {
-    for (int i = 0; i < n->event_count; i++) {
-        if (strcmp(n->events[i].id, event_id) == 0) return i;
-    }
-    return -1;
+const char *NexusGameChangerText(const BattleGameChanger *changer) {
+    return changer->text_key[0] ? LocGet(changer->text_key) : changer->text_ru;
+}
+
+const NexusEvent *NexusEventAt(const Nexus *n, int index) {
+    return index >= 0 && index < n->event_count ? &n->events[index] : NULL;
 }
 
 const NexusDifficulty *NexusDifficultyAt(const Nexus *n, int event, int difficulty) {

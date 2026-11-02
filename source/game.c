@@ -103,6 +103,7 @@ static void GameEnterSelectedNexusBattle(Game *g) {
     g->battle_is_nexus = true;
     int step = g->battle_node_index + 1;
     BattleEnterNodeFrom(&g->battle, &g->player, "data/nexus_rosters.json", difficulty->id, step);
+    g->battle.enemy_roster.game_changer = NexusEventGameChanger(&g->nexus, g->nexus.active_event);
     BattleUiEnterNexusNode(
         &g->battle_ui,
         &g->player,

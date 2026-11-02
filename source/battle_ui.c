@@ -483,7 +483,11 @@ static void BattleUiDrawIntroBanner(const BpIntroEvent *event, float cx, Font co
 
     char text[128];
     const RuneDef *rune = event->rune_def >= 0 ? RuneDefAt(event->rune_def) : NULL;
-    if (rune)
+    if (event->event_bonus)
+        StrCopy(text, sizeof(text), LocGetOr("NEXUS_EVENT_BONUS", "Бонус (событие)"));
+    else if (event->no_event_bonus)
+        StrCopy(text, sizeof(text), LocGetOr("PVP_EVENT_NO_BONUS", "Без бонуса за событие"));
+    else if (rune)
         snprintf(text, sizeof(text), "%s %s", rune->name_ru, rune->value_ru);
     else
         BattleUiIntroText(event, text, sizeof(text));
