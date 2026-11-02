@@ -793,6 +793,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_highdragon_t1_pre",
         "source_prefab": "c_highdragon_t1_pre",
@@ -808,6 +821,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_highdragon_t2_pre",
         "source_prefab": "c_highdragon_t2_pre",
@@ -823,6 +849,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_highdragon_t3_pre",
         "source_prefab": "c_highdragon_t3_pre",
@@ -838,6 +877,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_highdragon_t4_pre",
         "source_prefab": "c_highdragon_t4_pre",
@@ -5644,6 +5696,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "default_Jaw",
+          "offset": [
+            0.1507,
+            0.0177,
+            0.0
+          ],
+          "forward": [
+            0.9672,
+            0.2541,
+            0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_drake_t1_pre",
         "source_prefab": "c_drake_t1_pre",
@@ -5659,6 +5724,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "default_Jaw",
+          "offset": [
+            0.1507,
+            0.0177,
+            0.0
+          ],
+          "forward": [
+            0.9672,
+            0.2541,
+            0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_drake_t2_pre",
         "source_prefab": "c_drake_t2_pre",
@@ -5674,6 +5752,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "default_Jaw",
+          "offset": [
+            0.1507,
+            0.0177,
+            0.0
+          ],
+          "forward": [
+            0.9672,
+            0.2541,
+            0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_drake_t3_pre",
         "source_prefab": "c_drake_t3_pre",
@@ -5689,6 +5780,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "default_Jaw",
+          "offset": [
+            0.1507,
+            0.0177,
+            0.0
+          ],
+          "forward": [
+            0.9672,
+            0.2541,
+            0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_drake_t4_pre",
         "source_prefab": "c_drake_t4_pre",
@@ -5721,6 +5825,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "default_Jaw",
+          "offset": [
+            -0.0,
+            -0.0,
+            -0.0
+          ],
+          "forward": [
+            0.9672,
+            0.2541,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonthrall_t1_pre",
         "source_prefab": "c_dragonthrall_t1_pre",
@@ -5736,6 +5853,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "default_Jaw",
+          "offset": [
+            -0.0,
+            -0.0,
+            -0.0
+          ],
+          "forward": [
+            0.9672,
+            0.2541,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonthrall_t2_pre",
         "source_prefab": "c_dragonthrall_t2_pre",
@@ -5751,6 +5881,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "default_Jaw",
+          "offset": [
+            -0.0,
+            -0.0,
+            -0.0
+          ],
+          "forward": [
+            0.9672,
+            0.2541,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonthrall_t3_pre",
         "source_prefab": "c_dragonthrall_t3_pre",
@@ -5766,6 +5909,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "default_Jaw",
+          "offset": [
+            -0.0,
+            -0.0,
+            -0.0
+          ],
+          "forward": [
+            0.9672,
+            0.2541,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonthrall_t4_pre",
         "source_prefab": "c_dragonthrall_t4_pre",
@@ -7415,6 +7571,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_queenoftheblackmarsh_t1_pre",
         "source_prefab": "c_queenoftheblackmarsh_t1_pre",
@@ -7430,6 +7599,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_queenoftheblackmarsh_t2_pre",
         "source_prefab": "c_queenoftheblackmarsh_t2_pre",
@@ -7445,6 +7627,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_queenoftheblackmarsh_t3_pre",
         "source_prefab": "c_queenoftheblackmarsh_t3_pre",
@@ -7460,6 +7655,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_queenoftheblackmarsh_t4_pre",
         "source_prefab": "c_queenoftheblackmarsh_t4_pre",
@@ -9816,6 +10024,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.04,
+            -0.0871,
+            -0.0001
+          ],
+          "forward": [
+            0.922,
+            0.3873,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_wintersenddragon_t1_pre",
         "source_prefab": "c_wintersenddragon_t1_pre",
@@ -9831,6 +10052,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.04,
+            -0.0871,
+            -0.0001
+          ],
+          "forward": [
+            0.922,
+            0.3873,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_wintersenddragon_t2_pre",
         "source_prefab": "c_wintersenddragon_t2_pre",
@@ -9846,6 +10080,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.04,
+            -0.0871,
+            -0.0001
+          ],
+          "forward": [
+            0.922,
+            0.3873,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_wintersenddragon_t3_pre",
         "source_prefab": "c_wintersenddragon_t3_pre",
@@ -9861,6 +10108,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.04,
+            -0.0871,
+            -0.0001
+          ],
+          "forward": [
+            0.922,
+            0.3873,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_wintersenddragon_t4_pre",
         "source_prefab": "c_wintersenddragon_t4_pre",
@@ -17070,6 +17330,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonflemeth_t1_pre",
         "source_prefab": "c_dragonflemeth_t1_pre",
@@ -17085,6 +17358,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonflemeth_t2_pre",
         "source_prefab": "c_dragonflemeth_t2_pre",
@@ -17100,6 +17386,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonflemeth_t3_pre",
         "source_prefab": "c_dragonflemeth_t3_pre",
@@ -17115,6 +17414,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonflemeth_t4_pre",
         "source_prefab": "c_dragonflemeth_t4_pre",
@@ -26318,6 +26630,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.1412,
+            0.0511,
+            -0.0
+          ],
+          "forward": [
+            0.5738,
+            0.819,
+            0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_fereldenfrostback_t1_pre",
         "source_prefab": "c_fereldenfrostback_t1_pre",
@@ -26333,6 +26658,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.1412,
+            0.0511,
+            -0.0
+          ],
+          "forward": [
+            0.5738,
+            0.819,
+            0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_fereldenfrostback_t2_pre",
         "source_prefab": "c_fereldenfrostback_t2_pre",
@@ -26348,6 +26686,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.1412,
+            0.0511,
+            -0.0
+          ],
+          "forward": [
+            0.5738,
+            0.819,
+            0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_fereldenfrostback_t3_pre",
         "source_prefab": "c_fereldenfrostback_t3_pre",
@@ -26363,6 +26714,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.1412,
+            0.0511,
+            -0.0
+          ],
+          "forward": [
+            0.5738,
+            0.819,
+            0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_fereldenfrostback_t4_pre",
         "source_prefab": "c_fereldenfrostback_t4_pre",
@@ -27011,6 +27375,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.3672,
+            -0.0409,
+            -0.0024
+          ],
+          "forward": [
+            0.9405,
+            0.3399,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_vinsomer_t1_pre",
         "source_prefab": "c_vinsomer_t1_pre",
@@ -27026,6 +27403,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.4765,
+            -0.0665,
+            -0.0033
+          ],
+          "forward": [
+            0.9405,
+            0.3399,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_vinsomer_t2_pre",
         "source_prefab": "c_vinsomer_t2_pre",
@@ -27041,6 +27431,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.3672,
+            -0.0409,
+            -0.0024
+          ],
+          "forward": [
+            0.9405,
+            0.3399,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_vinsomer_t3_pre",
         "source_prefab": "c_vinsomer_t3_pre",
@@ -27056,6 +27459,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0,
+            0.0,
+            0.0
+          ],
+          "forward": [
+            0.9405,
+            0.3399,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_vinsomer_t4_pre",
         "source_prefab": "c_vinsomer_t4_pre",
@@ -27858,6 +28274,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.4061,
+            0.3114,
+            -0.0171
+          ],
+          "forward": [
+            0.761,
+            0.648,
+            -0.0317
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_sandyhowler_t1_pre",
         "source_prefab": "c_sandyhowler_t1_pre",
@@ -27873,6 +28302,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.4061,
+            0.3114,
+            -0.0171
+          ],
+          "forward": [
+            0.761,
+            0.648,
+            -0.0317
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_sandyhowler_t2_pre",
         "source_prefab": "c_sandyhowler_t2_pre",
@@ -27888,6 +28330,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.4061,
+            0.3115,
+            -0.0171
+          ],
+          "forward": [
+            0.761,
+            0.648,
+            -0.0317
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_sandyhowler_t3_pre",
         "source_prefab": "c_sandyhowler_t3_pre",
@@ -27903,6 +28358,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.4061,
+            0.3114,
+            -0.0171
+          ],
+          "forward": [
+            0.761,
+            0.648,
+            -0.0317
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_sandyhowler_t4_pre",
         "source_prefab": "c_sandyhowler_t4_pre",
@@ -28782,6 +29250,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.045,
+            -0.0843,
+            -0.0001
+          ],
+          "forward": [
+            0.9405,
+            0.3399,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_greatermistral_t1_pre",
         "source_prefab": "c_greatermistral_t1_pre",
@@ -28797,6 +29278,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0449,
+            -0.0841,
+            0.0
+          ],
+          "forward": [
+            0.5618,
+            0.8273,
+            0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_greatermistral_t2_pre",
         "source_prefab": "c_greatermistral_t2_pre",
@@ -28812,6 +29306,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0449,
+            -0.0841,
+            0.0001
+          ],
+          "forward": [
+            0.6506,
+            0.7595,
+            0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_greatermistral_t3_pre",
         "source_prefab": "c_greatermistral_t3_pre",
@@ -28827,6 +29334,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0449,
+            -0.0842,
+            0.0
+          ],
+          "forward": [
+            0.5769,
+            0.8168,
+            0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_greatermistral_t4_pre",
         "source_prefab": "c_greatermistral_t4_pre",
@@ -29475,6 +29995,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.5809,
+            0.2239,
+            0.0062
+          ],
+          "forward": [
+            0.702,
+            0.7121,
+            0.0072
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonmorrigan_t1_pre",
         "source_prefab": "c_dragonmorrigan_t1_pre",
@@ -29490,6 +30023,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.5809,
+            0.2239,
+            0.0062
+          ],
+          "forward": [
+            0.702,
+            0.7121,
+            0.0072
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonmorrigan_t2_pre",
         "source_prefab": "c_dragonmorrigan_t2_pre",
@@ -29505,6 +30051,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.5809,
+            0.2239,
+            0.0062
+          ],
+          "forward": [
+            0.702,
+            0.7121,
+            0.0072
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonmorrigan_t3_pre",
         "source_prefab": "c_dragonmorrigan_t3_pre",
@@ -29520,6 +30079,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.5809,
+            0.2239,
+            0.0062
+          ],
+          "forward": [
+            0.702,
+            0.7121,
+            0.0072
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonmorrigan_t4_pre",
         "source_prefab": "c_dragonmorrigan_t4_pre",
@@ -30322,6 +30894,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            1.4608,
+            0.2269,
+            -0.0268
+          ],
+          "forward": [
+            0.8644,
+            0.5019,
+            -0.0301
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_northernhunter_t1_pre",
         "source_prefab": "c_northernhunter_t1_pre",
@@ -30337,6 +30922,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            1.4608,
+            0.2269,
+            -0.0268
+          ],
+          "forward": [
+            0.8644,
+            0.5019,
+            -0.0301
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_northernhunter_t2_pre",
         "source_prefab": "c_northernhunter_t2_pre",
@@ -30352,6 +30950,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            1.4608,
+            0.2269,
+            -0.0268
+          ],
+          "forward": [
+            0.8644,
+            0.5019,
+            -0.0301
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_northernhunter_t3_pre",
         "source_prefab": "c_northernhunter_t3_pre",
@@ -30367,6 +30978,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            1.4608,
+            0.2269,
+            -0.0268
+          ],
+          "forward": [
+            0.8644,
+            0.5019,
+            -0.0301
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_northernhunter_t4_pre",
         "source_prefab": "c_northernhunter_t4_pre",
@@ -30630,6 +31254,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.046,
+            0.0729,
+            -0.0218
+          ],
+          "forward": [
+            0.8444,
+            0.5356,
+            0.0078
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonoftheelderone_t1_pre",
         "source_prefab": "c_dragonoftheelderone_t1_pre",
@@ -30645,6 +31282,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.046,
+            0.0729,
+            -0.0218
+          ],
+          "forward": [
+            0.8444,
+            0.5356,
+            0.0078
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonoftheelderone_t2_pre",
         "source_prefab": "c_dragonoftheelderone_t2_pre",
@@ -30660,6 +31310,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.046,
+            0.0729,
+            -0.0218
+          ],
+          "forward": [
+            0.8444,
+            0.5356,
+            0.0078
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonoftheelderone_t3_pre",
         "source_prefab": "c_dragonoftheelderone_t3_pre",
@@ -30675,6 +31338,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.046,
+            0.0729,
+            -0.0218
+          ],
+          "forward": [
+            0.8444,
+            0.5356,
+            0.0078
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonoftheelderone_t4_pre",
         "source_prefab": "c_dragonoftheelderone_t4_pre",
@@ -31015,6 +31691,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_hakkonwintersbreath_t1_pre",
         "source_prefab": "c_hakkonwintersbreath_t1_pre",
@@ -31030,6 +31719,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_hakkonwintersbreath_t2_pre",
         "source_prefab": "c_hakkonwintersbreath_t2_pre",
@@ -31045,6 +31747,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_hakkonwintersbreath_t3_pre",
         "source_prefab": "c_hakkonwintersbreath_t3_pre",
@@ -31060,6 +31775,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_hakkonwintersbreath_t4_pre",
         "source_prefab": "c_hakkonwintersbreath_t4_pre",
@@ -31554,6 +32282,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_highlandravager_t1_pre",
         "source_prefab": "c_highlandravager_t1_pre",
@@ -31569,6 +32310,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_highlandravager_t2_pre",
         "source_prefab": "c_highlandravager_t2_pre",
@@ -31584,6 +32338,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_highlandravager_t3_pre",
         "source_prefab": "c_highlandravager_t3_pre",
@@ -31599,6 +32366,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_highlandravager_t4_pre",
         "source_prefab": "c_highlandravager_t4_pre",
@@ -32401,6 +33181,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_archdemonurthemiel_t1_pre",
         "source_prefab": "c_archdemonurthemiel_t1_pre",
@@ -32416,6 +33209,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_archdemonurthemiel_t2_pre",
         "source_prefab": "c_archdemonurthemiel_t2_pre",
@@ -32431,6 +33237,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_archdemonurthemiel_t3_pre",
         "source_prefab": "c_archdemonurthemiel_t3_pre",
@@ -32446,6 +33265,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_archdemonurthemiel_t4_pre",
         "source_prefab": "c_archdemonurthemiel_t4_pre",
@@ -32632,6 +33464,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_ataashi_t1_pre",
         "source_prefab": "c_ataashi_t1_pre",
@@ -32647,6 +33492,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_ataashi_t2_pre",
         "source_prefab": "c_ataashi_t2_pre",
@@ -32662,6 +33520,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_ataashi_t3_pre",
         "source_prefab": "c_ataashi_t3_pre",
@@ -32677,6 +33548,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.392,
+            0.3966,
+            0.0042
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_ataashi_t4_pre",
         "source_prefab": "c_ataashi_t4_pre",
@@ -33094,6 +33978,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.4239,
+            0.4168,
+            0.0045
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_abyssalhighdragon_t1_pre",
         "source_prefab": "c_abyssalhighdragon_t1_pre",
@@ -33109,6 +34006,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.4239,
+            0.4168,
+            0.0045
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_abyssalhighdragon_t2_pre",
         "source_prefab": "c_abyssalhighdragon_t2_pre",
@@ -33124,6 +34034,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.4239,
+            0.4168,
+            0.0045
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_abyssalhighdragon_t3_pre",
         "source_prefab": "c_abyssalhighdragon_t3_pre",
@@ -33139,6 +34062,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.4239,
+            0.4168,
+            0.0045
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_abyssalhighdragon_t4_pre",
         "source_prefab": "c_abyssalhighdragon_t4_pre",
@@ -37406,6 +38342,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.3193,
+            0.4437,
+            0.0041
+          ],
+          "forward": [
+            0.5881,
+            0.8088,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonling_t1_pre",
         "source_prefab": "c_dragonling_t1_pre",
@@ -37421,6 +38370,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.3193,
+            0.4437,
+            0.0041
+          ],
+          "forward": [
+            0.5881,
+            0.8088,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonling_t2_pre",
         "source_prefab": "c_dragonling_t2_pre",
@@ -37436,6 +38398,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.3193,
+            0.4437,
+            0.0041
+          ],
+          "forward": [
+            0.5881,
+            0.8088,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonling_t3_pre",
         "source_prefab": "c_dragonling_t3_pre",
@@ -37451,6 +38426,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.3193,
+            0.4437,
+            0.0041
+          ],
+          "forward": [
+            0.5881,
+            0.8088,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonling_t4_pre",
         "source_prefab": "c_dragonling_t4_pre",
@@ -38253,6 +39241,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.41,
+            0.09,
+            0.01
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_gamordanstormrider_t1_pre",
         "source_prefab": "c_gamordanstormrider_t1_pre",
@@ -38268,6 +39269,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.41,
+            0.09,
+            0.01
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_gamordanstormrider_t2_pre",
         "source_prefab": "c_gamordanstormrider_t2_pre",
@@ -38287,7 +39301,20 @@
         "requested_prefab": "c_gamordanstormrider_t3_pre",
         "source_prefab": "c_gamordanstormrider_t3_pre",
         "source_tier": "III",
-        "family": "creature:generic"
+        "family": "creature:generic",
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.41,
+            0.09,
+            0.01
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        }
       },
       "IV": {
         "ability_type": 6,
@@ -38298,6 +39325,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.41,
+            0.09,
+            0.01
+          ],
+          "forward": [
+            0.7044,
+            0.7098,
+            -0.0007
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_gamordanstormrider_t4_pre",
         "source_prefab": "c_gamordanstormrider_t4_pre",
@@ -43131,6 +44171,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonmalvernis_t1_pre",
         "source_prefab": "c_dragonmalvernis_t1_pre",
@@ -43146,6 +44199,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonmalvernis_t2_pre",
         "source_prefab": "c_dragonmalvernis_t2_pre",
@@ -43161,6 +44227,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonmalvernis_t3_pre",
         "source_prefab": "c_dragonmalvernis_t3_pre",
@@ -43176,6 +44255,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0309,
+            -0.0907,
+            -0.0001
+          ],
+          "forward": [
+            0.8777,
+            0.4792,
+            -0.0
+          ]
+        },
         "provenance": "serialized_exact",
         "requested_prefab": "c_dragonmalvernis_t4_pre",
         "source_prefab": "c_dragonmalvernis_t4_pre",
@@ -46783,6 +47875,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.04,
+            -0.0871,
+            -0.0001
+          ],
+          "forward": [
+            0.922,
+            0.3873,
+            -0.0
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_greatdragon_t1_pre",
         "source_prefab": "c_wintersenddragon_t4_pre",
@@ -46800,6 +47905,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.04,
+            -0.0871,
+            -0.0001
+          ],
+          "forward": [
+            0.922,
+            0.3873,
+            -0.0
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_greatdragon_t2_pre",
         "source_prefab": "c_wintersenddragon_t4_pre",
@@ -46817,6 +47935,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.04,
+            -0.0871,
+            -0.0001
+          ],
+          "forward": [
+            0.922,
+            0.3873,
+            -0.0
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_greatdragon_t3_pre",
         "source_prefab": "c_wintersenddragon_t4_pre",
@@ -46834,6 +47965,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.04,
+            -0.0871,
+            -0.0001
+          ],
+          "forward": [
+            0.922,
+            0.3873,
+            -0.0
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_greatdragon_t4_pre",
         "source_prefab": "c_wintersenddragon_t4_pre",
@@ -47965,6 +49109,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.045,
+            -0.0843,
+            -0.0001
+          ],
+          "forward": [
+            0.9405,
+            0.3399,
+            -0.0
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_greatermistraldragonling_t1_pre",
         "source_prefab": "c_greatermistral_t1_pre",
@@ -47982,6 +49139,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0449,
+            -0.0841,
+            0.0
+          ],
+          "forward": [
+            0.5618,
+            0.8273,
+            0.0
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_greatermistraldragonling_t2_pre",
         "source_prefab": "c_greatermistral_t2_pre",
@@ -47999,6 +49169,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0449,
+            -0.0841,
+            0.0001
+          ],
+          "forward": [
+            0.6506,
+            0.7595,
+            0.0
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_greatermistraldragonling_t3_pre",
         "source_prefab": "c_greatermistral_t3_pre",
@@ -48016,6 +49199,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0449,
+            -0.0842,
+            0.0
+          ],
+          "forward": [
+            0.5769,
+            0.8168,
+            0.0
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_greatermistraldragonling_t4_pre",
         "source_prefab": "c_greatermistral_t4_pre",
@@ -48949,6 +50145,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.3672,
+            -0.0409,
+            -0.0024
+          ],
+          "forward": [
+            0.9405,
+            0.3399,
+            -0.0
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_vinsomerdragonling_t1_pre",
         "source_prefab": "c_vinsomer_t1_pre",
@@ -48966,6 +50175,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.4765,
+            -0.0665,
+            -0.0033
+          ],
+          "forward": [
+            0.9405,
+            0.3399,
+            -0.0
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_vinsomerdragonling_t2_pre",
         "source_prefab": "c_vinsomer_t2_pre",
@@ -48983,6 +50205,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.3672,
+            -0.0409,
+            -0.0024
+          ],
+          "forward": [
+            0.9405,
+            0.3399,
+            -0.0
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_vinsomerdragonling_t3_pre",
         "source_prefab": "c_vinsomer_t3_pre",
@@ -49000,6 +50235,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            -0.0,
+            0.0,
+            0.0
+          ],
+          "forward": [
+            0.9405,
+            0.3399,
+            -0.0
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_vinsomerdragonling_t4_pre",
         "source_prefab": "c_vinsomer_t4_pre",
@@ -49447,6 +50695,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.3193,
+            0.4437,
+            0.0041
+          ],
+          "forward": [
+            0.5881,
+            0.8088,
+            -0.0007
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_kaltenzahndragonling_t1_pre",
         "source_prefab": "c_dragonling_t4_pre",
@@ -49464,6 +50725,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.3193,
+            0.4437,
+            0.0041
+          ],
+          "forward": [
+            0.5881,
+            0.8088,
+            -0.0007
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_kaltenzahndragonling_t2_pre",
         "source_prefab": "c_dragonling_t4_pre",
@@ -49481,6 +50755,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.3193,
+            0.4437,
+            0.0041
+          ],
+          "forward": [
+            0.5881,
+            0.8088,
+            -0.0007
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_kaltenzahndragonling_t3_pre",
         "source_prefab": "c_dragonling_t4_pre",
@@ -49498,6 +50785,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.3193,
+            0.4437,
+            0.0041
+          ],
+          "forward": [
+            0.5881,
+            0.8088,
+            -0.0007
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_kaltenzahndragonling_t4_pre",
         "source_prefab": "c_dragonling_t4_pre",
@@ -49860,6 +51160,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.3193,
+            0.4437,
+            0.0041
+          ],
+          "forward": [
+            0.5881,
+            0.8088,
+            -0.0007
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_gamordanstormriderdragonling_t1_pre",
         "source_prefab": "c_dragonling_t4_pre",
@@ -49877,6 +51190,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.3193,
+            0.4437,
+            0.0041
+          ],
+          "forward": [
+            0.5881,
+            0.8088,
+            -0.0007
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_gamordanstormriderdragonling_t2_pre",
         "source_prefab": "c_dragonling_t4_pre",
@@ -49894,6 +51220,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.3193,
+            0.4437,
+            0.0041
+          ],
+          "forward": [
+            0.5881,
+            0.8088,
+            -0.0007
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_gamordanstormriderdragonling_t3_pre",
         "source_prefab": "c_dragonling_t4_pre",
@@ -49911,6 +51250,19 @@
         "sustained": null,
         "projectile_speed": 8.0,
         "cone_delay": 0.0,
+        "muzzle_anchor": {
+          "bone": "HighDragon_Jaw",
+          "offset": [
+            0.3193,
+            0.4437,
+            0.0041
+          ],
+          "forward": [
+            0.5881,
+            0.8088,
+            -0.0007
+          ]
+        },
         "provenance": "family_fallback",
         "requested_prefab": "c_gamordanstormriderdragonling_t4_pre",
         "source_prefab": "c_dragonling_t4_pre",

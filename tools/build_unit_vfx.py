@@ -38,6 +38,9 @@ MODEL_OVERRIDES = {
     "UNIT_WILDSYLVAN": "unit.c_wildsylvan_t4_pre",
 }
 
+BREATH_MUZZLE_PARENT_SUFFIX = "_Jaw"
+UNITY_BONE_UNITS_PER_MODEL_UNIT = 100.0
+
 UNIT_ACTIONS_SCRIPT = 799
 UNIT_VFX_SCRIPT = 914
 
@@ -169,7 +172,7 @@ def parse_vfx(raw: bytes) -> dict[str, Any]:
     impact = reader.string()
     sustained = reader.string()
     projectile_speed = reader.f32()
-    reader.pptr()
+    muzzle_transform = reader.pptr()
     cone_delay = reader.f32()
     reader.pptr()
     reader.pptr()
@@ -183,6 +186,7 @@ def parse_vfx(raw: bytes) -> dict[str, Any]:
         "sustained": normalize_resource(sustained),
         "projectile_speed": round(projectile_speed, 4),
         "cone_delay": round(cone_delay, 4),
+        "muzzle_path_id": muzzle_transform[1],
     }
 
 
@@ -245,6 +249,48 @@ def component_object(component: Any) -> Any:
     raise ValueError("unsupported UnityPy component pointer")
 
 
+def transform_of(game_object: Any) -> Any:
+    for component in game_object.m_Component:
+        obj = component_object(component)
+        if obj.type.name == "Transform":
+            return obj.read()
+    raise ValueError("gameobject_has_no_transform")
+
+
+def rotate_forward_to_gltf(rotation: Any) -> list[float]:
+    x, y, z, w = rotation.x, -rotation.y, -rotation.z, rotation.w
+    return [
+        round(2.0 * (x * z + w * y), 4),
+        round(2.0 * (y * z - w * x), 4),
+        round(1.0 - 2.0 * (x * x + y * y), 4),
+    ]
+
+
+def breath_muzzle_anchor(environment: Any, path_id: int) -> dict[str, Any] | None:
+    if path_id == 0:
+        return None
+    muzzle_object = next((obj for obj in environment.objects if obj.path_id == path_id), None)
+    if muzzle_object is None:
+        return None
+    muzzle = transform_of(muzzle_object.read())
+    if not muzzle.m_Father.path_id:
+        return None
+    bone = muzzle.m_Father.read()
+    bone_name = bone.m_GameObject.read().m_Name
+    if not bone_name.endswith(BREATH_MUZZLE_PARENT_SUFFIX):
+        return None
+    position = muzzle.m_LocalPosition
+    return {
+        "bone": bone_name,
+        "offset": [
+            round(-position.x / UNITY_BONE_UNITS_PER_MODEL_UNIT, 4),
+            round(position.y / UNITY_BONE_UNITS_PER_MODEL_UNIT, 4),
+            round(position.z / UNITY_BONE_UNITS_PER_MODEL_UNIT, 4),
+        ],
+        "forward": rotate_forward_to_gltf(muzzle.m_LocalRotation),
+    }
+
+
 def extract_prefab(prefab: str, cab_path: str, unitypy: Any) -> dict[str, Any]:
 
     expected_name = "unit." + prefab_key(prefab)
@@ -279,6 +325,9 @@ def extract_prefab(prefab: str, cab_path: str, unitypy: Any) -> dict[str, Any]:
 
     wire = {"ability_type": parse_action(action_raw)}
     wire.update(parse_vfx(vfx_raw))
+    anchor = breath_muzzle_anchor(environment, wire.pop("muzzle_path_id"))
+    if anchor and wire["vfx_type"] == 2:
+        wire["muzzle_anchor"] = anchor
     return wire
 
 
@@ -472,6 +521,8 @@ def with_metadata(
     reason: str | None = None,
 ) -> dict[str, Any]:
     result = {field: wire.get(field) for field in WIRE_FIELDS}
+    if "muzzle_anchor" in wire:
+        result["muzzle_anchor"] = wire["muzzle_anchor"]
     result.update(
         {
             "provenance": provenance,
@@ -659,6 +710,11 @@ def build_manifest(
                         )
             counts[binding["provenance"]] += 1
             tier_bindings[tier] = binding
+
+        anchors = [binding["muzzle_anchor"] for binding in tier_bindings.values() if "muzzle_anchor" in binding]
+        if anchors:
+            for binding in tier_bindings.values():
+                binding.setdefault("muzzle_anchor", anchors[-1])
 
         signatures = {wire_signature(binding) for binding in tier_bindings.values()}
         tier_stable = len(signatures) == 1

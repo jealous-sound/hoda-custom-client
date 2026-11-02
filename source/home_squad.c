@@ -770,6 +770,23 @@ static Matrix HomeSquadUnitDrawXform(const HomeSquadUnit *unit) {
     return MatrixMultiply(MatrixTranslate(0.0f, unit->sole_lift, 0.0f), unit->xform);
 }
 
+static bool HomeSquadUnitBoneAnchor(
+    const HomeSquadUnit *unit, const char *bone_name, Vector3 offset, Vector3 forward, Vector3 *position, Vector3 *aim
+) {
+    if (!unit->active || !unit->pose_ready || !unit->pose) return false;
+    for (int bone = 0; bone < unit->pose_bone_count; bone++) {
+        if (strcmp(unit->model.bones[bone].name, bone_name) != 0) continue;
+        Transform pose = unit->pose[bone];
+        Vector3 local = Vector3Add(pose.translation, Vector3RotateByQuaternion(offset, pose.rotation));
+        Vector3 ahead = Vector3Add(local, Vector3RotateByQuaternion(forward, pose.rotation));
+        Matrix xform = HomeSquadUnitDrawXform(unit);
+        *position = Vector3Transform(local, xform);
+        *aim = Vector3Transform(ahead, xform);
+        return true;
+    }
+    return false;
+}
+
 static void HomeSquadUnitDraw(HomeSquadUnit *unit) {
     if (unit->active && unit->wisp_fx) {
         if (home_wisp_queue_count < HOME_WISP_QUEUE_CAPACITY) {

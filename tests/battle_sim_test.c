@@ -274,6 +274,58 @@ static void TestIntroQueueShowsOnlyPlayerFactionBonus(void) {
     assert(bp.intro_events[0].faction == 2u);
 }
 
+static void TestProjectileTrailFollowsFlight(Battle *battle) {
+    const Vector3 flight = {24, 0, 0};
+    const FxEmitter *lance = &BattleFxFindPreset(battle, "vfx_sentinellance_pre")->em[1];
+    assert(lance->count > 0 && lance->orient == 2 && !lance->follows_emitter);
+    FxParticle lance_particle = {.em = lance};
+    FxTrailParticleLaunch(&lance_particle, flight);
+    assert(fabsf(lance_particle.vel.x - 168.0f) < 0.1f);
+
+    const FxEmitter *bolt = &BattleFxFindPreset(battle, "fx_Duke_prjctl_pre")->em[1];
+    assert(bolt->count > 0 && bolt->orient == 2 && bolt->follows_emitter);
+    FxParticle bolt_particle = {.em = bolt};
+    FxTrailParticleLaunch(&bolt_particle, flight);
+    assert(bolt_particle.carried_vel.x == flight.x && bolt_particle.vel.x == 0.0f);
+
+    battle->fxp_count = 2;
+    battle->fxp[0] = (FxParticle){.serial = 7};
+    battle->fxp[1] = (FxParticle){.serial = 8};
+    BattleFxTrailEnd(battle, 7);
+    assert(battle->fxp_count == 1 && battle->fxp[0].serial == 8);
+    battle->fxp_count = 0;
+}
+
+static void TestBreathStartsAtTheJawBone(Battle *battle) {
+    BattleWiresLoad(battle, "data/unit_vfx.json");
+    const BattleVfxWire *dragon = BattleUnitWire(battle, "UNIT_HIGHDRAGON", TIER_IV);
+    assert(dragon && strcmp(dragon->muzzle_bone, "HighDragon_Jaw") == 0);
+    assert(Vector3Length(dragon->muzzle_offset) < 0.2f);
+    const BattleVfxWire *storm = BattleUnitWire(battle, "UNIT_GAMORDANSTORMRIDER", TIER_III);
+    assert(storm && storm->muzzle_bone[0] && Vector3Length(storm->muzzle_offset) < 1.0f);
+    const BattleVfxWire *archer = BattleUnitWire(battle, "UNIT_SENTINELARCHER", TIER_IV);
+    assert(archer && !archer->muzzle_bone[0]);
+
+    BoneInfo bones[2] = {{.name = "Root"}, {.name = "HighDragon_Jaw"}};
+    Transform pose[2] = {
+        {.rotation = QuaternionIdentity()},
+        {.translation = {1, 2, 3}, .rotation = QuaternionFromAxisAngle((Vector3){0, 1, 0}, PI / 2.0f)},
+    };
+    HomeSquadUnit unit = {
+        .active = true,
+        .pose_ready = true,
+        .pose = pose,
+        .pose_bone_count = 2,
+        .model = {.bones = bones},
+        .xform = MatrixTranslate(10, 0, 0),
+    };
+    Vector3 position, aim;
+    assert(HomeSquadUnitBoneAnchor(&unit, "HighDragon_Jaw", (Vector3){0, 0, 1}, (Vector3){0, 0, 1}, &position, &aim));
+    assert(Vector3Distance(position, (Vector3){12, 2, 3}) < 0.001f);
+    assert(Vector3Distance(aim, (Vector3){13, 2, 3}) < 0.001f);
+    assert(!HomeSquadUnitBoneAnchor(&unit, "Missing", Vector3Zero(), Vector3Zero(), &position, &aim));
+}
+
 static void TestFactionIntroAssetsAndText(void) {
     assert(BATTLE_UI_FACTION_INTRO_ICON == GUI_DETAILS_POWER);
     assert(ResourceExists(CACHE_RESOURCE("tex.Ico_Power")));
@@ -301,6 +353,8 @@ static void TestFactionIntroAssetsAndText(void) {
         }
     assert(instance >= 0);
     assert(battle->fxi[instance].anchor == 2 && !battle->fxi[instance].loop);
+    TestProjectileTrailFollowsFlight(battle);
+    TestBreathStartsAtTheJawBone(battle);
 
     LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
     BpIntroEvent event = {.value = 10.0f};

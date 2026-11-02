@@ -347,7 +347,10 @@ def decode_ps(bundle, psid, dump, probe):
         "one_shot": int(not meta["looping"]),
         "prewarm": int(bool(dump.get("prewarm", False))),
         "max_particles": int(ini.get("maxNumParticles", 0)),
+        "follows_emitter": int(bool(dump.get("moveWithTransform", False))),
     }
+    if not base["follows_emitter"]:
+        base["inherit_velocity"] = round(float(ini.get("inheritVelocity", 0.0)), 3)
     if rec["max_screen_size"] > 0:
         base["max_screen_size"] = round(rec["max_screen_size"], 4)
     if base["orient"] == 2:
@@ -559,7 +562,8 @@ def convert_bundle(bundle, cab_path, shared_res, shared_shd):
 DEFAULTS = {"additive": 0, "keyout": 0, "orient": 0, "cols": 0, "rows": 0,
             "sheet_once": 0, "sheet_cycles": 0, "max_screen_size": 0,
             "render_scale": 0, "stretch_length": 0, "stretch_velocity": 0,
-            "one_shot": 0, "prewarm": 0, "count": 0, "rate": 0, "delay": 0, "duration": 0,
+            "one_shot": 0, "prewarm": 0, "follows_emitter": 0, "inherit_velocity": 0,
+            "count": 0, "rate": 0, "delay": 0, "duration": 0,
             "speed0": 0, "speed1": 0, "cone_deg": 0, "radius": 0, "drag": 0,
             "gravity": 0, "size_end": 0, "alpha_in": 0, "alpha_hold": 0,
             "rot_deg": 0, "spin_deg": 0, "rot_bias_deg": 0, "spin_bias_deg": 0}

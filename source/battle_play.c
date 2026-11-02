@@ -60,6 +60,7 @@ typedef struct {
     char trail[52], impact[52], sustained[52];
     float accum[FX_MAX_EMITTERS];
     bool trail_burst_done[FX_MAX_EMITTERS];
+    unsigned trail_serial;
 } BpProjectile;
 
 typedef struct {
@@ -128,6 +129,9 @@ typedef struct {
     int returning_actor;
     BpUnit units[2][SQUAD_SLOT_COUNT];
     BpProjectile projectiles[BP_MAX_PROJECTILES];
+    int breath_fx;
+    unsigned breath_serial;
+    int breath_actor;
     BpMessage messages[BP_MAX_MESSAGES];
     int message_count;
     float message_t;
@@ -197,12 +201,12 @@ static bool BpIsProjectile(const Character *ch, float *speed) {
     return false;
 }
 
-static int BpProjLook(const char *ability) {
+static int BpProjLook(const Battle *b, const char *ability) {
     if (!ability) return PROJ_BALL;
     if (strstr(ability, "bolter") || strstr(ability, "arrow") || strstr(ability, "pinningshot")) return PROJ_ARROW;
     if (strstr(ability, "spiritball") || strstr(ability, "spirit")) return PROJ_SPIRIT;
     if (strstr(ability, "desiccate")) return PROJ_DESICCATE;
-    return PROJ_BALL;
+    return BattleFxFindPreset(b, ability) ? PROJ_NONE : PROJ_BALL;
 }
 
 static Vector3 BpChest(const BattlePlay *bp, const BpUnit *u, int idx) {
@@ -747,6 +751,22 @@ static void BpBeginNextIntroEvent(BattlePlay *bp, Battle *b) {
     BpPlayIntroEvent(bp, b, &bp->intro_events[bp->intro_event]);
 }
 
+static bool BpBreathMuzzle(const BattlePlay *bp, Battle *b, int actor, Vector3 *position, Vector3 *aim) {
+    const Character *ch = bp->sim.units[actor].ch;
+    const BattleVfxWire *wire = ch ? BattleUnitWire(b, ch->id, ch->tier) : NULL;
+    if (!wire || !wire->muzzle_bone[0]) return false;
+    const HomeSquadUnit *unit = &b->squads.units[actor / SQUAD_SLOT_COUNT][actor % SQUAD_SLOT_COUNT];
+    return HomeSquadUnitBoneAnchor(unit, wire->muzzle_bone, wire->muzzle_offset, wire->muzzle_forward, position, aim);
+}
+
+static void BpSteerBreath(BattlePlay *bp, Battle *b) {
+    if (bp->breath_fx < 0) return;
+    Vector3 position, aim;
+    bool steered = BpBreathMuzzle(bp, b, bp->breath_actor, &position, &aim) &&
+                   BattleFxSteer(b, bp->breath_fx, bp->breath_serial, position, aim);
+    if (!steered) bp->breath_fx = -1;
+}
+
 static float BpConeImpactDelay(const BattleVfxWire *wire) {
     if (!wire || wire->ability_type != 6 || wire->vfx_type != 2) return 0.0f;
     return wire->cone_delay;
@@ -808,7 +828,7 @@ static void BpFire(BattlePlay *bp, Battle *b) {
             p->pos = (Vector3){actor->pos.x, actor->pos.y + 1.1f, actor->pos.z};
             p->target = aoe ? centroid : BpChest(bp, victim, targets[i]);
             p->speed = pspeed;
-            p->look = BpProjLook(ability);
+            p->look = BpProjLook(b, ability);
             StrCopy(p->trail, sizeof(p->trail), ability);
             if (impact) StrCopy(p->impact, sizeof(p->impact), impact);
             if (sustained) StrCopy(p->sustained, sizeof(p->sustained), sustained);
@@ -821,7 +841,14 @@ static void BpFire(BattlePlay *bp, Battle *b) {
     BattleAudioPlayUnit(b, actor_side, actor_slot, UNIT_SFX_ATTACK);
     if (projectile && !ability) {
     } else if (w && w->vfx_type == 2) {
-        BattleFxBurstDirected(b, ability ? ability : "fx_atk_lineslash_pre", attack_origin, attack_aim);
+        const char *cone = ability ? ability : "fx_atk_lineslash_pre";
+        Vector3 mouth, mouth_aim;
+        if (BpBreathMuzzle(bp, b, a->actor, &mouth, &mouth_aim)) {
+            bp->breath_fx = BattleFxBurstSteered(b, cone, mouth, mouth_aim, &bp->breath_serial);
+            bp->breath_actor = a->actor;
+        } else {
+            BattleFxBurstDirected(b, cone, attack_origin, attack_aim);
+        }
     } else if (aoe && target_count > 0) {
         BattleFxBurst(b, ability ? ability : "fx_atk_lineslash_pre", centroid);
     } else {
@@ -1030,13 +1057,17 @@ void BattlePlayUpdate(BattlePlay *bp, Battle *b, float raw_dt) {
                 float step = p->speed * dt;
                 if (step >= dist) {
                     p->active = false;
+                    BattleFxTrailEnd(b, p->trail_serial);
                     if (p->impact[0]) BattleFxBurst(b, p->impact, p->target);
                     if (p->sustained[0]) BattleFxBurst(b, p->sustained, p->target);
                 } else {
                     Vector3 vel = Vector3Scale(Vector3Normalize(d), p->speed);
                     p->pos = Vector3Add(p->pos, Vector3Scale(vel, dt));
                     p->age += dt;
-                    if (p->trail[0]) BattleFxTrail(b, p->trail, p->pos, vel, p->age, dt, p->accum, p->trail_burst_done);
+                    if (p->trail[0])
+                        BattleFxTrail(
+                            b, p->trail, p->pos, vel, p->age, dt, p->accum, p->trail_burst_done, &p->trail_serial
+                        );
                     all_done = false;
                 }
             }
@@ -1150,6 +1181,7 @@ void BattlePlayUpdate(BattlePlay *bp, Battle *b, float raw_dt) {
             }
         }
     }
+    BpSteerBreath(bp, b);
 }
 
 bool BattlePlayActive(const BattlePlay *bp) {

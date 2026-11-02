@@ -183,6 +183,8 @@ typedef struct {
     float stretch_velocity;
     unsigned char one_shot;
     unsigned char prewarm;
+    unsigned char follows_emitter;
+    float inherit_velocity;
     unsigned char birth_emitter[2];
     unsigned short max_particles;
     int count;
@@ -222,6 +224,7 @@ typedef struct {
     const FxPreset *pre;
     Texture2D tex;
     Vector3 pos, vel;
+    Vector3 carried_vel;
     Vector3 anchor_pos;
     float age, life, size, rot, spin;
     int anchor;
@@ -259,6 +262,9 @@ typedef struct {
     char impact[52];
     char muzzle[52];
     char sustained[52];
+    char muzzle_bone[48];
+    Vector3 muzzle_offset;
+    Vector3 muzzle_forward;
 } BattleVfxWire;
 
 typedef struct {
@@ -335,7 +341,7 @@ typedef struct {
     int voice_cursor;
 } BattleSfx;
 
-typedef enum { PROJ_BALL, PROJ_ARROW, PROJ_SPIRIT, PROJ_DESICCATE } BattleProjLook;
+typedef enum { PROJ_NONE, PROJ_BALL, PROJ_ARROW, PROJ_SPIRIT, PROJ_DESICCATE } BattleProjLook;
 
 typedef struct {
     BattleMesh meshes[BATTLE_MAX_MESH];
@@ -617,6 +623,17 @@ static void BattleLoadScene(Battle *b, const char *mesh_dir) {
     cJSON_Delete(root);
     UnloadFileData(bin);
     TraceLog(LOG_INFO, "Battle: loaded %d reconstructed meshes", b->mesh_count);
+}
+
+static Vector3 JsonVec3(const cJSON *obj, const char *key) {
+    Vector3 v = {0};
+    cJSON *a = cJSON_GetObjectItemCaseSensitive(obj, key);
+    if (cJSON_IsArray(a) && cJSON_GetArraySize(a) == 3) {
+        v.x = (float)cJSON_GetArrayItem(a, 0)->valuedouble;
+        v.y = (float)cJSON_GetArrayItem(a, 1)->valuedouble;
+        v.z = (float)cJSON_GetArrayItem(a, 2)->valuedouble;
+    }
+    return v;
 }
 
 static void BattleWiresLoad(Battle *b, const char *path);
@@ -2383,11 +2400,12 @@ static void FxInstanceStart(Battle *b, FxInstance *ins) {
         if (ins->pre->em[e].rate > 0) ins->accum[e] = 1.0f;
 }
 
-static void BattleFxBurstRotated(Battle *b, const char *name, Vector3 pos, Quaternion rotation, bool directed) {
+static FxInstance *
+BattleFxBurstRotated(Battle *b, const char *name, Vector3 pos, Quaternion rotation, bool directed) {
     const FxPreset *pre = BattleFxResolve(b, name);
-    if (!pre) return;
+    if (!pre) return NULL;
     FxInstance *ins = FxInstanceClaim(b);
-    if (!ins) return;
+    if (!ins) return NULL;
     *ins = (FxInstance){
         .pre = pre,
         .alive = true,
@@ -2397,6 +2415,7 @@ static void BattleFxBurstRotated(Battle *b, const char *name, Vector3 pos, Quate
         .rotation = rotation,
     };
     FxInstanceStart(b, ins);
+    return ins;
 }
 
 int BattleFxLoopStart(Battle *b, const char *name, Vector3 pos, unsigned *serial) {
@@ -2427,14 +2446,33 @@ void BattleFxBurst(Battle *b, const char *name, Vector3 pos) {
     BattleFxBurstRotated(b, name, pos, QuaternionIdentity(), false);
 }
 
+static Quaternion FxRotationToward(Vector3 pos, Vector3 target) {
+    Vector3 direction = Vector3Normalize(Vector3Subtract(target, pos));
+    return QuaternionNormalize(QuaternionFromVector3ToVector3((Vector3){0, 0, -1}, direction));
+}
+
 void BattleFxBurstDirected(Battle *b, const char *name, Vector3 pos, Vector3 target) {
-    Vector3 direction = Vector3Subtract(target, pos);
-    if (Vector3Length(direction) < 0.01f) {
+    if (Vector3Distance(target, pos) < 0.01f) {
         BattleFxBurst(b, name, pos);
         return;
     }
-    Quaternion rotation = QuaternionFromVector3ToVector3((Vector3){0, 0, -1}, Vector3Normalize(direction));
-    BattleFxBurstRotated(b, name, pos, QuaternionNormalize(rotation), true);
+    BattleFxBurstRotated(b, name, pos, FxRotationToward(pos, target), true);
+}
+
+int BattleFxBurstSteered(Battle *b, const char *name, Vector3 pos, Vector3 target, unsigned *serial) {
+    FxInstance *ins = BattleFxBurstRotated(b, name, pos, FxRotationToward(pos, target), true);
+    if (!ins) return -1;
+    *serial = ins->serial;
+    return (int)(ins - b->fxi);
+}
+
+bool BattleFxSteer(Battle *b, int index, unsigned serial, Vector3 pos, Vector3 target) {
+    if (index < 0 || index >= FX_MAX_INSTANCES) return false;
+    FxInstance *ins = &b->fxi[index];
+    if (!ins->alive || ins->serial != serial) return false;
+    ins->pos = pos;
+    ins->rotation = FxRotationToward(pos, target);
+    return true;
 }
 
 void BattleFxUnitBurst(Battle *b, const char *name, int side, int slot, Vector3 offset) {
@@ -2505,6 +2543,24 @@ void BattleFxStatusSet(Battle *b, FxAuraSlot aura_slot, const char *name, int si
     FxInstanceStart(b, ins);
 }
 
+static void FxTrailParticleLaunch(FxParticle *p, Vector3 emitter_vel) {
+    if (!p) return;
+    const FxEmitter *em = p->em;
+    if (em->follows_emitter)
+        p->carried_vel = emitter_vel;
+    else
+        p->vel = Vector3Add(p->vel, Vector3Scale(emitter_vel, em->inherit_velocity));
+}
+
+void BattleFxTrailEnd(Battle *b, unsigned serial) {
+    for (int i = 0; i < b->fxp_count;) {
+        if (b->fxp[i].serial == serial)
+            b->fxp[i] = b->fxp[--b->fxp_count];
+        else
+            i++;
+    }
+}
+
 void BattleFxTrail(
     Battle *b,
     const char *name,
@@ -2513,19 +2569,20 @@ void BattleFxTrail(
     float age,
     float dt,
     float accum[FX_MAX_EMITTERS],
-    bool burst_done[FX_MAX_EMITTERS]
+    bool burst_done[FX_MAX_EMITTERS],
+    unsigned *serial
 ) {
     const FxPreset *pre = BattleFxFindPreset(b, name);
     if (!pre) return;
-    FxInstance tmp = {.pre = pre, .alive = true, .anchor = -1, .pos = pos};
-    Vector3 axis = Vector3Length(vel) > 0.01f ? Vector3Normalize(vel) : (Vector3){1, 0, 0};
+    if (*serial == 0) *serial = ++b->fx_serial;
+    FxInstance tmp = {.pre = pre, .alive = true, .anchor = -1, .pos = pos, .serial = *serial};
     for (int e = 0; e < pre->em_count; e++) {
         const FxEmitter *em = &pre->em[e];
         float source_age = age - em->delay;
         if (source_age < 0.0f) continue;
         if (em->count > 0 && !burst_done[e]) {
             burst_done[e] = true;
-            for (int n = 0; n < em->count; n++) FxEmitOne(b, &tmp, em);
+            for (int n = 0; n < em->count; n++) FxTrailParticleLaunch(FxEmitOne(b, &tmp, em), vel);
         }
         if (em->rate <= 0) continue;
         if (em->one_shot && em->duration > 0.001f && source_age > em->duration) continue;
@@ -2535,8 +2592,7 @@ void BattleFxTrail(
         accum[e] += fminf(rate, 120.0f) * dt;
         while (accum[e] >= 1.0f) {
             accum[e] -= 1.0f;
-            FxParticle *p = FxEmitOne(b, &tmp, em);
-            if (p && em->orient == 2 && em->speed1 < 0.01f) p->vel = Vector3Scale(axis, 0.05f);
+            FxTrailParticleLaunch(FxEmitOne(b, &tmp, em), vel);
         }
     }
 }
@@ -2665,7 +2721,7 @@ static void BattleFxUpdate(Battle *b, float dt) {
             p->vel = Vector3Scale(p->vel, k);
         }
         p->vel.y -= p->em->gravity * dt;
-        p->pos = Vector3Add(p->pos, Vector3Scale(p->vel, dt));
+        p->pos = Vector3Add(p->pos, Vector3Scale(Vector3Add(p->vel, p->carried_vel), dt));
         float spin = p->spin;
         if (p->em->spin_curve.count > 0) spin = DEG2RAD * FxCurveSample(&p->em->spin_curve, p->age / p->life, 0.0f);
         p->rot += spin * dt;
@@ -2720,6 +2776,7 @@ static void BattleProjDraw(Battle *b, Vector3 right, Vector3 up) {
     for (int i = 0; i < b->proj_count; i++) {
         struct BattleProj *pr = &b->proj[i];
         Vector3 p = pr->pos;
+        if (pr->look == PROJ_NONE) continue;
         if (pr->look == PROJ_ARROW || pr->look == PROJ_SPIRIT) {
             Vector3 axis = Vector3Length(pr->vel) > 0.01f ? Vector3Normalize(pr->vel) : right;
             Vector3 side = Vector3Normalize(Vector3CrossProduct(axis, up));
@@ -2836,7 +2893,8 @@ static void BattleFxDraw(Battle *b) {
                 ax1 = (Vector3){cr * h, 0, sr * h};
                 ax2 = (Vector3){-sr * h, 0, cr * h};
             } else if (em->orient == 2) {
-                Vector3 axis = Vector3Length(p->vel) > 0.005f ? Vector3Normalize(p->vel) : up;
+                Vector3 motion = Vector3Length(p->vel) > 0.005f ? p->vel : p->carried_vel;
+                Vector3 axis = Vector3Length(motion) > 0.005f ? Vector3Normalize(motion) : up;
                 Vector3 side = Vector3CrossProduct(fwd, axis);
                 side = Vector3Length(side) > 0.001f ? Vector3Normalize(side) : right;
                 if (em->stretch_length > 0.001f || em->stretch_velocity > 0.001f) {
@@ -2899,21 +2957,16 @@ static void BattleWiresLoad(Battle *b, const char *path) {
             StrCopy(w->impact, sizeof(w->impact), JsonStr(entry, "impact"));
             StrCopy(w->muzzle, sizeof(w->muzzle), JsonStr(entry, "muzzle"));
             StrCopy(w->sustained, sizeof(w->sustained), JsonStr(entry, "sustained"));
+            cJSON *anchor = cJSON_GetObjectItemCaseSensitive(entry, "muzzle_anchor");
+            if (cJSON_IsObject(anchor)) {
+                StrCopy(w->muzzle_bone, sizeof(w->muzzle_bone), JsonStr(anchor, "bone"));
+                w->muzzle_offset = JsonVec3(anchor, "offset");
+                w->muzzle_forward = JsonVec3(anchor, "forward");
+            }
         }
     }
     cJSON_Delete(root);
     TraceLog(LOG_INFO, "Battle: %d unit VFX wirings loaded", b->wire_count);
-}
-
-static Vector3 JsonVec3(const cJSON *obj, const char *key) {
-    Vector3 v = {0};
-    cJSON *a = cJSON_GetObjectItemCaseSensitive(obj, key);
-    if (cJSON_IsArray(a) && cJSON_GetArraySize(a) == 3) {
-        v.x = (float)cJSON_GetArrayItem(a, 0)->valuedouble;
-        v.y = (float)cJSON_GetArrayItem(a, 1)->valuedouble;
-        v.z = (float)cJSON_GetArrayItem(a, 2)->valuedouble;
-    }
-    return v;
 }
 
 static FxCurve JsonFxCurve(const cJSON *obj, const char *key) {
@@ -2993,6 +3046,8 @@ static void BattleFxRegistryLoad(Battle *b, const char *path) {
             e->render_scale = JsonFloat(em, "render_scale");
             e->stretch_length = JsonFloat(em, "stretch_length");
             e->stretch_velocity = JsonFloat(em, "stretch_velocity");
+            e->follows_emitter = (unsigned char)JsonInt(em, "follows_emitter");
+            e->inherit_velocity = JsonFloat(em, "inherit_velocity");
             e->one_shot = (unsigned char)JsonInt(em, "one_shot");
             e->prewarm = (unsigned char)JsonInt(em, "prewarm");
             cJSON *birth = cJSON_GetObjectItemCaseSensitive(em, "birth_emitter");
