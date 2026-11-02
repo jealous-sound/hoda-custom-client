@@ -585,9 +585,11 @@ static HeroesRichToken HeroesRichNextToken(const char *text, Color base) {
     return token;
 }
 
+#define HEROES_RICH_LINE_HEIGHT 1.25f
+
 static float HeroesRichLayout(Font font, const char *text, Rectangle r, float fs, Color base, bool draw) {
     Color col = base;
-    float x = 0.0f, y = 0.0f, spacing = 1.0f, line_h = fs * 1.25f;
+    float x = 0.0f, y = 0.0f, spacing = 1.0f, line_h = fs * HEROES_RICH_LINE_HEIGHT;
     float space_w = MeasureTextEx(font, " ", fs, spacing).x;
     const char *c = text;
     for (;;) {
