@@ -247,7 +247,7 @@ static bool BpMoveToward(BpUnit *u, Vector3 target, float dt, float arrive) {
     float traveled = sqrtf(hx * hx + hz * hz);
     float frac = u->hop_total > 0.001f ? traveled / u->hop_total : 0.0f;
     if (frac > 1.0f) frac = 1.0f;
-    u->pos.y = BATTLE_MARKER_Y + BpHopHeight(frac);
+    u->pos.y = u->home.y + BpHopHeight(frac);
     return d < arrive;
 }
 
@@ -644,7 +644,8 @@ void BattlePlayStart(BattlePlay *bp, Battle *b, const Player *player, unsigned s
             BpUnit *u = &bp->units[side][slot];
             const SimUnit *su = &bp->sim.units[side * SQUAD_SLOT_COUNT + slot];
             const BattleSpot *spot = BpSpot(side, slot);
-            u->home = u->pos = (Vector3){spot->x, BATTLE_MARKER_Y, spot->z};
+            float feet_y = BattleFeetY(su->present && su->ch->giant ? 2.0f : 1.0f);
+            u->home = u->pos = (Vector3){spot->x, feet_y, spot->z};
             float dx = BP_STAGE_X - spot->x, dz = BP_STAGE_Z - spot->z;
             u->hop_total = sqrtf(dx * dx + dz * dz);
             u->max_health = su->present ? su->max_health : 0;
@@ -815,7 +816,7 @@ static void BpFire(BattlePlay *bp, Battle *b) {
             centroid = Vector3Add(centroid, v->pos);
         }
         centroid = Vector3Scale(centroid, 1.0f / target_count);
-        centroid.y = BATTLE_MARKER_Y;
+        centroid.y = BattleFeetY(1.0f);
     }
 
     if (projectile && ability && target_count > 0) {
@@ -1007,13 +1008,13 @@ void BattlePlayUpdate(BattlePlay *bp, Battle *b, float raw_dt) {
         case BP_ACT_LEAP: {
             const BattleSimAction *a = &bp->sim.actions[bp->action];
             BpUnit *u = BpUnitAt(bp, a->actor);
-            if (BpMoveToward(u, (Vector3){BP_STAGE_X, BATTLE_MARKER_Y, BP_STAGE_Z}, dt, BP_ARRIVE_STAGE)) {
+            if (BpMoveToward(u, (Vector3){BP_STAGE_X, u->home.y, BP_STAGE_Z}, dt, BP_ARRIVE_STAGE)) {
                 u->phase = BPU_WINDUP;
                 const ModelAnimation *atk =
                     BattleSquadClip(&b->squads, a->actor / SQUAD_SLOT_COUNT, a->actor % SQUAD_SLOT_COUNT, "attack");
                 BpStartClip(u, atk, 1.0f, false);
                 u->fired = false;
-                BattleFxBurst(b, "fx_placeunit_noLoop_pre", (Vector3){BP_STAGE_X, BATTLE_MARKER_Y, BP_STAGE_Z});
+                BattleFxBurst(b, "fx_placeunit_noLoop_pre", (Vector3){BP_STAGE_X, BattleFeetY(1.0f), BP_STAGE_Z});
                 BattleAudioPlayUnit(b, a->actor / SQUAD_SLOT_COUNT, a->actor % SQUAD_SLOT_COUNT, UNIT_SFX_LAND);
                 BattleAudioPlayUnit(b, a->actor / SQUAD_SLOT_COUNT, a->actor % SQUAD_SLOT_COUNT, UNIT_SFX_VOCAL);
                 BattleAudioPlayUnit(b, a->actor / SQUAD_SLOT_COUNT, a->actor % SQUAD_SLOT_COUNT, UNIT_SFX_ANIMATION);
@@ -1027,7 +1028,7 @@ void BattlePlayUpdate(BattlePlay *bp, Battle *b, float raw_dt) {
             const BattleSimAction *a = &bp->sim.actions[bp->action];
             BpUnit *u = BpUnitAt(bp, a->actor);
             bp->t += dt;
-            BpMoveToward(u, (Vector3){BP_STAGE_X, BATTLE_MARKER_Y, BP_STAGE_Z}, dt, BP_ARRIVE_STAGE);
+            BpMoveToward(u, (Vector3){BP_STAGE_X, u->home.y, BP_STAGE_Z}, dt, BP_ARRIVE_STAGE);
             float launch = BpLaunchPct(bp->sim.units[a->actor].ch);
             float frac = u->clip && u->clip->frameCount > 1 ? u->clip_time / (float)(u->clip->frameCount - 1) : 1.0f;
             if (!u->clip) frac = 1.0f;

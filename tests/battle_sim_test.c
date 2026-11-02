@@ -5637,7 +5637,33 @@ static void TestPvpEventMatchmakingFollowsBanners(void) {
     }
 }
 
+static void TestBattleFeetSitOnPadsWhoseBottomsShareOnePlane(void) {
+    float small_feet = BattleFeetY(1.0f);
+    float giant_feet = BattleFeetY(2.0f);
+    assert(fabsf(small_feet - (BATTLE_MARKER_Y - BATTLE_PREFAB_BASE_DROP + HOME_PAD_HALF_THICK)) < 0.0001f);
+    assert(fabsf((small_feet - 2.0f * HOME_PAD_HALF_THICK) - BATTLE_PAD_BOTTOM_Y) < 0.0001f);
+    assert(fabsf((giant_feet - 4.0f * HOME_PAD_HALF_THICK) - BATTLE_PAD_BOTTOM_Y) < 0.0001f);
+}
+
+static void TestCreatureClipFramesStayOnIdleGround(void) {
+    BoneInfo bones[2] = {{.name = "Dragon_Foot", .parent = -1}, {.name = "Dragon_Tail04", .parent = -1}};
+    Transform idle_frame[2] = {{.translation = {0.0f, 0.2f, 0.0f}}, {.translation = {0.0f, 0.0f, 0.0f}}};
+    Transform jump_frame[2] = {{.translation = {0.0f, 0.9f, 0.0f}}, {.translation = {0.0f, 0.5f, 0.0f}}};
+    Transform *idle_poses[1] = {idle_frame};
+    Transform *jump_poses[1] = {jump_frame};
+    ModelAnimation idle = {.boneCount = 2, .frameCount = 1, .bones = bones, .framePoses = idle_poses};
+    ModelAnimation jump = {.boneCount = 2, .frameCount = 1, .bones = bones, .framePoses = jump_poses};
+    ClipHoldGroundOfIdle(jump, idle);
+    assert(fabsf(jump_frame[0].translation.y - 0.2f) < 0.0001f);
+    assert(fabsf(jump_frame[1].translation.y + 0.2f) < 0.0001f);
+    assert(UnitClipsHoldGround("client-additional-data/char_pack/c_giant/c_giant_t1_rl.glb"));
+    assert(UnitClipsHoldGround("mnt_sw_greywardenknight_t1_rl.glb"));
+    assert(!UnitClipsHoldGround("client-additional-data/char_pack/x/hm_sw_advisorcullen_t1_rl.glb"));
+    assert(!UnitClipsHoldGround("c_wisp_common_t1_rl.glb"));
+}
+
 int main(void) {
+    TestBattleFeetSitOnPadsWhoseBottomsShareOnePlane();
     TestPvpBannerCurvePeaksAtTheLadderMidpoint();
     TestPvpEventResultsKeepNineteenUnclaimedFirst();
     TestPvpEventMatchmakingFollowsBanners();
@@ -5817,6 +5843,7 @@ int main(void) {
     TestEnergyAndStaminaPools();
     TestUnitPoolReusesReleasedUnits();
     TestFxKeyoutPreservesSourceTransparency();
+    TestCreatureClipFramesStayOnIdleGround();
     puts("battle_sim_test: ok");
     return 0;
 }

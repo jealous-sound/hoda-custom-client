@@ -166,7 +166,7 @@ BattlePlateBuild(BattlePlate *p, const Character *ch, const SimUnit *setup_unit,
     p->power = setup_unit->start_power;
     p->health = setup_unit->max_health;
     p->has_border = BattleUiFactionColors(ch->faction, &p->left, &p->right);
-    p->world = (Vector3){spot->x, BATTLE_MARKER_Y, spot->z};
+    p->world = (Vector3){spot->x, BattleFeetY(ch->giant ? 2.0f : 1.0f), spot->z};
 }
 
 void BattleUiEnterNode(

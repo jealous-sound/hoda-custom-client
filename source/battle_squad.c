@@ -89,6 +89,8 @@ typedef struct {
     float x, z;
 } BattleSpot;
 #define BATTLE_MARKER_Y 0.9706f
+#define BATTLE_PREFAB_BASE_DROP 0.3848f
+#define BATTLE_PAD_BOTTOM_Y (BATTLE_MARKER_Y - BATTLE_PREFAB_BASE_DROP - HOME_PAD_HALF_THICK)
 #define BATTLE_PLAYER_YAW (DEG2RAD * -93.12f)
 #define BATTLE_ENEMY_YAW (DEG2RAD * 86.87f)
 static const BattleSpot BATTLE_PLAYER_SPOTS[SQUAD_SLOT_COUNT] = {
@@ -105,6 +107,10 @@ static const BattleSpot BATTLE_ENEMY_SPOTS[SQUAD_SLOT_COUNT] = {
     {-2.9654f, 14.9985f},
     {-4.0209f, 17.5386f},
 };
+
+static float BattleFeetY(float pad_scale) {
+    return BATTLE_PAD_BOTTOM_Y + 2.0f * HOME_PAD_HALF_THICK * pad_scale;
+}
 
 typedef struct {
     HomeSquadUnit units[2][SQUAD_SLOT_COUNT];
@@ -154,6 +160,7 @@ static void BattleSquadsLoad(
             }
             const BattleSpot *spot = side == 0 ? &BATTLE_PLAYER_SPOTS[s] : &BATTLE_ENEMY_SPOTS[s];
             float k = ch->giant ? 2.0f : 1.0f;
+            float feet_y = BattleFeetY(k);
 
             char path[512];
             const char *prefab = HomeSquadResolvePrefab(char_dir, ch, path, sizeof(path));
@@ -164,10 +171,13 @@ static void BattleSquadsLoad(
                     MatrixMultiply(
                         MatrixScale(ds, ds, ds), MatrixRotateY(side == 0 ? BATTLE_PLAYER_YAW : BATTLE_ENEMY_YAW)
                     ),
-                    MatrixTranslate(spot->x, BATTLE_MARKER_Y, spot->z)
+                    MatrixTranslate(spot->x, feet_y, spot->z)
                 );
                 HomeSquadUnitLoad(&sq->units[side][s], path, sq->unit_sh, xform, side * SQUAD_SLOT_COUNT + s);
                 sq->clips[side][s] = LoadModelAnimations(path, &sq->clip_counts[side][s]);
+                if (UnitClipsHoldGround(path))
+                    for (int a = 1; a < sq->clip_counts[side][s]; a++)
+                        ClipHoldGroundOfIdle(sq->clips[side][s][a], sq->units[side][s].idle);
             } else {
                 TraceLog(LOG_WARNING, "Battle: %s missing (bake %s), pedestal only", path, ch->id);
             }
@@ -176,7 +186,7 @@ static void BattleSquadsLoad(
             SquadPadRarityLoad(ch, &sq->pad_tex[side][s], &sq->stars[side][s]);
             sq->fac_tex[side][s] = SquadFacTexLoad(ch->faction);
             SquadPadPlaceAtFeet(
-                (Vector3){spot->x, BATTLE_MARKER_Y, spot->z},
+                (Vector3){spot->x, feet_y, spot->z},
                 k,
                 &sq->pad_xform[side][s],
                 &sq->fac_xform[side][s],

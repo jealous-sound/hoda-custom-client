@@ -1,15 +1,15 @@
 typedef enum { HR_SKIP, HR_TERRAIN, HR_PROP, HR_GRASS, HR_FERN, HR_CLOTH } HeroRole;
 
 typedef struct {
-    Vector3 pos;
+    Vector3 pos, decal;
     float yaw_deg, diameter;
 } HeroFormationSlot;
 static const HeroFormationSlot HERO_FORMATION_SLOTS[] = {
-    {{29.5238f, 1.0088f, 15.9947f}, 87.87f, 1.7756f},
-    {{27.2248f, 1.0088f, 16.7325f}, -54.59f, 1.7756f},
-    {{29.2759f, 1.0088f, 13.8581f}, 32.83f, 1.7756f},
-    {{27.1047f, 1.0088f, 14.5371f}, 0.0f, 1.7756f},
-    {{28.3563f, 1.0088f, 19.7945f}, -97.77f, 2.9813f},
+    {{29.4784f, 1.0978f, 16.0599f}, {29.5238f, 1.0088f, 15.9947f}, 87.87f, 1.7756f},
+    {{27.2329f, 1.0978f, 16.7082f}, {27.2248f, 1.0088f, 16.7325f}, -54.59f, 1.7756f},
+    {{29.2644f, 1.0978f, 13.8866f}, {29.2759f, 1.0088f, 13.8581f}, 32.83f, 1.7756f},
+    {{27.1127f, 1.0978f, 14.5282f}, {27.1047f, 1.0088f, 14.5371f}, 0.0f, 1.7756f},
+    {{28.4330f, 1.0978f, 19.8443f}, {28.3563f, 1.0088f, 19.7945f}, -97.77f, 2.9813f},
 };
 #define HERO_FORMATION_SLOT_COUNT ((int)(sizeof(HERO_FORMATION_SLOTS) / sizeof(HERO_FORMATION_SLOTS[0])))
 
@@ -25,6 +25,7 @@ static const HeroFormationSlot HERO_FORMATION_SLOTS[] = {
 
 #define HERO_UNIT_YAW (DEG2RAD * -91.04f)
 #define HERO_GIANT_SCALE (1.5f)
+#define HERO_FORMATION_GIANT_SCALE 2.0f
 
 static HeroRole HeroRoleForMat(int m) {
     switch (m) {
@@ -250,7 +251,7 @@ static void HeroesSquadLoad(HeroesBackground *scene, const Player *player) {
             continue;
         }
         const HeroFormationSlot *spot = &HERO_FORMATION_SLOTS[s];
-        float pk = ch->giant ? HERO_GIANT_SCALE : 1.0f;
+        float pk = ch->giant ? HERO_FORMATION_GIANT_SCALE : 1.0f;
 
         Matrix xform;
         SquadPadPlaceOnGround(
@@ -961,7 +962,7 @@ bool HeroesBackgroundDragStart(HeroesBackground *scene, const Player *player, in
     StrCopy(scene->drag.unit_path, sizeof(scene->drag.unit_path), path);
     scene->drag.fac_tex = SquadFacTexLoad(ch->faction);
     SquadPadRarityLoad(ch, &scene->drag.pad_tex, &scene->drag.stars);
-    scene->drag.pk = ch->giant ? HERO_GIANT_SCALE : 1.0f;
+    scene->drag.pk = ch->giant ? HERO_FORMATION_GIANT_SCALE : 1.0f;
     scene->drag.ds = UnitDisplayScale(prefab);
     scene->drag.roster_index = roster_index;
     scene->drag.from_board = from_slot >= 0;
@@ -1186,7 +1187,7 @@ void HeroesBackgroundInitialize(
         const HeroFormationSlot *slot = &HERO_FORMATION_SLOTS[i];
         scene->circle_xform[i] = MatrixMultiply(
             MatrixMultiply(MatrixScale(slot->diameter, 1.0f, slot->diameter), MatrixRotateY(DEG2RAD * slot->yaw_deg)),
-            MatrixTranslate(slot->pos.x, slot->pos.y + HERO_DECAL_LIFT, slot->pos.z)
+            MatrixTranslate(slot->decal.x, slot->decal.y + HERO_DECAL_LIFT, slot->decal.z)
         );
     }
 

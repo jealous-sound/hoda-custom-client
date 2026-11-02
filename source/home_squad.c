@@ -29,7 +29,7 @@ static const HomePadSpot HOME_PAD_SPOTS[SQUAD_SLOT_COUNT] = {
     {-197.0611f, 13.3045f, 1.00f, -2.4989f},
     {-199.7968f, 15.4758f, 1.00f, -2.8741f},
     {-198.1274f, 14.8212f, 1.00f, -2.6686f},
-    {-204.5314f, 18.1156f, 1.55f, +2.1512f},
+    {-204.5314f, 18.1156f, 2.00f, +2.1512f},
 };
 
 typedef struct {
@@ -535,12 +535,22 @@ static void HomeSquadUnitCloseIdleLoop(HomeSquadUnit *unit) {
     MemFree(source);
 }
 
+static void UnitBoneLowerName(char *lower, const char *name) {
+    int n = 0;
+    for (; name[n] && n < (int)sizeof(((BoneInfo *)0)->name) - 1; n++) lower[n] = (char)tolower((unsigned char)name[n]);
+    lower[n] = '\0';
+}
+
 static bool UnitBoneIsFoot(const char *name) {
     char lower[sizeof(((BoneInfo *)0)->name)];
-    int n = 0;
-    for (; name[n] && n < (int)sizeof(lower) - 1; n++) lower[n] = (char)tolower((unsigned char)name[n]);
-    lower[n] = '\0';
+    UnitBoneLowerName(lower, name);
     return strstr(lower, "foot") || strstr(lower, "toe");
+}
+
+static bool UnitBoneIsBody(const char *name) {
+    char lower[sizeof(((BoneInfo *)0)->name)];
+    UnitBoneLowerName(lower, name);
+    return !strstr(lower, "tail");
 }
 
 static int UnitVertexMainBone(const Mesh *mesh, int vertex) {
@@ -550,27 +560,59 @@ static int UnitVertexMainBone(const Mesh *mesh, int vertex) {
     return mesh->boneIds[vertex * 4 + best];
 }
 
-static float UnitLowestSkinnedY(Model model, bool feet_only) {
+static float UnitLowestSkinnedY(Model model, bool (*bone_counts)(const char *)) {
     float lowest = INFINITY;
     for (int m = 0; m < model.meshCount; m++) {
         const Mesh *mesh = &model.meshes[m];
         if (!mesh->animVertices || !mesh->boneIds || !mesh->boneWeights) continue;
         for (int v = 0; v < mesh->vertexCount; v++) {
-            if (feet_only && !UnitBoneIsFoot(model.bones[UnitVertexMainBone(mesh, v)].name)) continue;
+            if (!bone_counts(model.bones[UnitVertexMainBone(mesh, v)].name)) continue;
             lowest = fminf(lowest, mesh->animVertices[v * 3 + 1]);
         }
     }
     return lowest;
 }
 
+static float UnitGroundContactY(Model model) {
+    float feet = UnitLowestSkinnedY(model, UnitBoneIsFoot);
+    if (feet <= 0.0f) return feet;
+    return fmaxf(0.0f, fminf(feet, UnitLowestSkinnedY(model, UnitBoneIsBody)));
+}
+
 static float UnitSoleLift(Model model, ModelAnimation idle) {
     float sole = INFINITY;
     for (int sample = 0; sample < UNIT_SOLE_SAMPLES; sample++) {
         UpdateModelAnimation(model, idle, sample * idle.frameCount / UNIT_SOLE_SAMPLES);
-        float feet = UnitLowestSkinnedY(model, true);
-        sole = fminf(sole, isinf(feet) ? UnitLowestSkinnedY(model, false) : feet);
+        sole = fminf(sole, UnitGroundContactY(model));
     }
-    return fmaxf(0.0f, -sole - UNIT_SOLE_SINK);
+    return isinf(sole) ? 0.0f : -sole - UNIT_SOLE_SINK;
+}
+
+static bool UnitClipsHoldGround(const char *path) {
+    static const char *const prefixes[] = {"c_", "mnt_", "qm_"};
+    const char *base = strrchr(path, '/');
+    base = base ? base + 1 : path;
+    if (strncmp(base, "c_wisp", 6) == 0) return false;
+    for (int i = 0; i < (int)(sizeof(prefixes) / sizeof(prefixes[0])); i++)
+        if (strncmp(base, prefixes[i], strlen(prefixes[i])) == 0) return true;
+    return false;
+}
+
+static float ClipLowestBodyBoneY(ModelAnimation clip, int frame) {
+    float lowest = INFINITY;
+    for (int bone = 0; bone < clip.boneCount; bone++)
+        if (UnitBoneIsBody(clip.bones[bone].name)) lowest = fminf(lowest, clip.framePoses[frame][bone].translation.y);
+    return lowest;
+}
+
+static void ClipHoldGroundOfIdle(ModelAnimation clip, ModelAnimation idle) {
+    float idle_ground = 0.0f;
+    for (int frame = 0; frame < idle.frameCount; frame++) idle_ground += ClipLowestBodyBoneY(idle, frame);
+    idle_ground /= (float)idle.frameCount;
+    for (int frame = 0; frame < clip.frameCount; frame++) {
+        float correction = idle_ground - ClipLowestBodyBoneY(clip, frame);
+        for (int bone = 0; bone < clip.boneCount; bone++) clip.framePoses[frame][bone].translation.y += correction;
+    }
 }
 
 static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase_seed) {
@@ -618,6 +660,10 @@ static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase
     if (unit->idle.frameCount == 0) TraceLog(LOG_FATAL, "Squad: no usable idle clip in %s", path);
     HomeSquadUnitAllocPose(unit);
     HomeSquadUnitCloseIdleLoop(unit);
+    if (UnitClipsHoldGround(path)) {
+        if (unit->melee.frameCount) ClipHoldGroundOfIdle(unit->melee, unit->idle);
+        if (unit->projectile.frameCount) ClipHoldGroundOfIdle(unit->projectile, unit->idle);
+    }
     unit->phase = (phase_seed * 47) % unit->idle.frameCount;
     unit->sole_lift = unit->wisp_fx ? 0.0f : UnitSoleLift(unit->model, unit->idle);
     unit->wisp_bone = -1;
