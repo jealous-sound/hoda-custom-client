@@ -7,6 +7,8 @@ typedef enum {
     HUD_GOLD,
     HUD_GEMS,
     HUD_OPTIONS,
+    HUD_TROPHIES,
+    HUD_BANNERS,
 } HudAction;
 
 typedef struct {
@@ -53,6 +55,9 @@ typedef struct {
     HudChangingValue stamina_value;
     HudCurrencyTally gold_tally;
     HudCurrencyTally gems_tally;
+    HudCurrencyTally trophies_tally;
+    bool show_trophies;
+    bool show_banners;
 } Hud;
 
 void HudSetStoreSelection(Hud *hud, HudAction selection) {
@@ -197,6 +202,7 @@ void HudInitialize(Hud *hud) {
     hud->stamina_value = (HudChangingValue){0};
     hud->gold_tally = (HudCurrencyTally){0};
     hud->gems_tally = (HudCurrencyTally){0};
+    hud->trophies_tally = (HudCurrencyTally){0};
 }
 
 static Rectangle HudActionRect(HudAction action, const HudLayout *layout) {
@@ -401,8 +407,12 @@ HudAction HudDraw(Hud *hud, Player *player, bool interactive, bool on_home) {
     HudChangingValueUpdate(&hud->stamina_value, player->stamina, dt);
     HudCurrencyTallyUpdate(&hud->gold_tally, player->gold, dt);
     HudCurrencyTallyUpdate(&hud->gems_tally, player->gems, dt);
+    int pvp_value = hud->show_banners ? player->pvp.event.banners : player->pvp.trophies;
+    HudCurrencyTallyUpdate(&hud->trophies_tally, pvp_value, dt);
 
     HudAction action = HudUpdateInput(hud, &layout, interactive);
+    if ((hud->show_trophies || hud->show_banners) && action == HUD_GEMS)
+        action = hud->show_banners ? HUD_BANNERS : HUD_TROPHIES;
     bool energy_pressed = HudActionPressed(hud, HUD_ENERGY, &layout, interactive);
     bool stamina_pressed = HudActionPressed(hud, HUD_STAMINA, &layout, interactive);
 
@@ -445,13 +455,16 @@ HudAction HudDraw(Hud *hud, Player *player, bool interactive, bool on_home) {
         layout.gold_label,
         &hud->gold_tally
     );
-    HudDrawCurrency(
-        hud,
-        hud->store_selection == HUD_GEMS ? hud->gems_selected : hud->gems,
-        layout.gems_icon,
-        layout.gems_label,
-        &hud->gems_tally
-    );
+    if (hud->show_trophies || hud->show_banners)
+        HudDrawCurrency(hud, GuiTex(hud->show_banners ? GUI_PVP_BANNER : GUI_TAB_TROPHY), layout.gems_icon, layout.gems_label, &hud->trophies_tally);
+    else
+        HudDrawCurrency(
+            hud,
+            hud->store_selection == HUD_GEMS ? hud->gems_selected : hud->gems,
+            layout.gems_icon,
+            layout.gems_label,
+            &hud->gems_tally
+        );
     UiDrawTexture(hud->options, layout.options, WHITE);
 
     if (home_clicked) return HUD_HOME;

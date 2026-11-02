@@ -6,7 +6,7 @@
 
 static const GuiId BATTLE_UI_FACTION_INTRO_ICON = GUI_DETAILS_POWER;
 
-typedef enum { BATTLE_UI_NONE, BATTLE_UI_FIGHT, BATTLE_UI_RETREAT, BATTLE_UI_RUNES } BattleUiAction;
+typedef enum { BATTLE_UI_NONE, BATTLE_UI_FIGHT, BATTLE_UI_RETREAT, BATTLE_UI_RUNES, BATTLE_UI_NEXT } BattleUiAction;
 
 typedef struct {
     const Character *ch;
@@ -23,6 +23,14 @@ typedef struct {
     Button retreat;
     Button fight;
     Button fight_zero;
+    Button next;
+    char next_label[48];
+
+    bool pvp;
+    bool pvp_can_next;
+    int pvp_nexts;
+    int pvp_gain;
+    GuiId pvp_stake_icon;
 
     char title[128];
     char mastery[64];
@@ -68,6 +76,7 @@ void BattleUiInitialize(BattleUi *ui) {
     const char *fight = LocGet("BUTTON_MATCHMAKING_FIGHT");
     ui->fight = ButtonLoadText(GUI_BTN_GOLD_COST, GUI_BTN_GOLD_COST_ON, fight, font, (Vector2){0.35f, 0.5f}, 0.3f);
     ui->fight_zero = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, fight, font, (Vector2){0.5f, 0.5f}, 0.3f);
+    ui->next = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, ui->next_label, font, (Vector2){0.5f, 0.5f}, 0.3f);
 }
 
 static float BattleUiDifficultyRatio(const SimUnit *units) {
@@ -184,6 +193,7 @@ void BattleUiEnterNode(
     BattleUiParseColored(LocGet(diff_key), ui->diff_value, sizeof(ui->diff_value), &ui->diff_color);
 
     ui->node = node;
+    ui->pvp = false;
     ui->energy_cost = node ? node->energy_cost : 1;
     ui->gold = node ? node->gold : 0;
     ui->xp = node ? node->xp : 0;
@@ -231,6 +241,48 @@ void BattleUiEnterNexusNode(
         TextFormat("%d", step - 1),
         TextFormat("%d", difficulty->node_count)
     );
+}
+
+void BattleUiEnterPvp(
+    BattleUi *ui,
+    const Player *player,
+    const BattleRoster *enemy,
+    const PvpOpponent *opponent,
+    int stamina_cost,
+    int nexts,
+    bool event
+) {
+    BattleUiEnterNode(ui, player, enemy, NULL, "", 0);
+    ui->pvp = true;
+    ui->pvp_can_next = nexts >= 0;
+    ui->pvp_nexts = nexts;
+    ui->pvp_gain = event ? PvpEventBannerReward(opponent, player->pvp.event.banners, true) : opponent->gain;
+    ui->pvp_stake_icon = event ? GUI_PVP_BANNER : GUI_TAB_TROPHY;
+    ui->energy_cost = stamina_cost;
+    ui->gold = PvpGoldReward(opponent, true);
+    ui->xp = PvpXpReward(opponent, true);
+    StrCopy(ui->title, sizeof(ui->title), PvpOpponentName(opponent));
+    snprintf(
+        ui->mastery,
+        sizeof(ui->mastery),
+        "%s %d   %d   +%d / -%d",
+        LocGetOr("LEADERBOARD_LEVEL", "Уровень"),
+        opponent->level,
+        opponent->trophies,
+        opponent->gain,
+        opponent->loss
+    );
+    if (event)
+        snprintf(
+            ui->mastery,
+            sizeof(ui->mastery),
+            "%s %d   +%d / +%d",
+            LocGetOr("LEADERBOARD_LEVEL", "Уровень"),
+            opponent->level,
+            ui->pvp_gain,
+            PvpEventBannerReward(opponent, player->pvp.event.banners, false)
+        );
+    snprintf(ui->next_label, sizeof(ui->next_label), "%s (%d)", LocGet("BUTTON_MATCHMAKING_NEXT"), nexts);
 }
 
 void BattleUiSetNewMapOnWin(BattleUi *ui, bool enabled) {
@@ -894,7 +946,11 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
             BattleUiRewardRow(tag_right, y, GuiTex(GUI_MM_XP), false, ui->xp);
             y -= stride;
         }
-        if (ui->gold > 0) BattleUiRewardRow(tag_right, y, GuiTex(GUI_HUD_GOLD), true, ui->gold);
+        if (ui->gold > 0) {
+            BattleUiRewardRow(tag_right, y, GuiTex(GUI_HUD_GOLD), true, ui->gold);
+            y -= stride;
+        }
+        if (ui->pvp) BattleUiRewardRow(tag_right, y, GuiTex(ui->pvp_stake_icon), false, ui->pvp_gain);
     }
 
     {
@@ -924,8 +980,14 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
             UiDrawTextCentered(tab_font, num, (Rectangle){r.x, r.y, r.width, size}, fs, WHITE);
         }
 
-        if (ButtonDrawEx(&ui->retreat, (Rectangle){right - MM_X(480), MM_Y(497), MM_X(240), 60 * MM_SY}, input_ok))
-            result = BATTLE_UI_RETREAT;
+        Rectangle retreat_dst = {right - MM_X(480), MM_Y(497), MM_X(240), 60 * MM_SY};
+        if (ui->pvp && ui->pvp_can_next) {
+            retreat_dst.x = right - MM_X(600);
+            retreat_dst.width = MM_X(180);
+            Rectangle next_dst = {right - MM_X(420), MM_Y(497), MM_X(180), 60 * MM_SY};
+            if (ButtonDrawEx(&ui->next, next_dst, input_ok && ui->pvp_nexts > 0)) result = BATTLE_UI_NEXT;
+        }
+        if (ButtonDrawEx(&ui->retreat, retreat_dst, input_ok)) result = BATTLE_UI_RETREAT;
 
         Rectangle fight_dst = {right - MM_X(240), MM_Y(497), MM_X(240), 60 * MM_SY};
         if (ui->energy_cost <= 0) {
@@ -947,7 +1009,7 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
                 WHITE
             );
 
-            Texture2D potion = GuiTex(GUI_MM_POTION);
+            Texture2D potion = GuiTex(ui->pvp ? GUI_HUD_STAMINA : GUI_MM_POTION);
             float ps = 39 * MM_SY;
             UiDrawTexture(potion, (Rectangle){fight_dst.x + MM_X(185), MM_Y(508), ps, ps}, WHITE);
         }

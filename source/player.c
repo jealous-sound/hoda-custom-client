@@ -117,6 +117,7 @@ typedef struct {
     PlayerGear gear;
     PlayerGallery gallery;
     PlayerMissions missions;
+    PlayerPvp pvp;
 } Player;
 
 static cJSON *CatalogFindCharacter(const cJSON *characters, const char *id) {
@@ -530,6 +531,12 @@ float PlayerStaminaRegenRemaining(const Player *p) {
 bool PlayerSpendEnergy(Player *p, int cost) {
     if (cost < 0 || p->energy < cost) return false;
     p->energy -= cost;
+    return true;
+}
+
+bool PlayerSpendStamina(Player *p, int cost) {
+    if (cost < 0 || p->stamina < cost) return false;
+    p->stamina -= cost;
     return true;
 }
 

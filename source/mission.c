@@ -27,6 +27,13 @@ typedef enum {
     MISSION_STAT_CHALLENGE_ATTEMPTS,
     MISSION_STAT_BATTLE_DAYS,
     MISSION_STAT_FACTION_HITS,
+    MISSION_STAT_PVP_BATTLES,
+    MISSION_STAT_PVP_WINS,
+    MISSION_STAT_PVP_WIN_STREAK,
+    MISSION_STAT_PVP_TROPHIES_WON,
+    MISSION_STAT_PVP_TROPHIES_HELD,
+    MISSION_STAT_EVENT_BANNERS,
+    MISSION_STAT_EVENT_BUFFED_SQUADS,
     MISSION_STAT_COUNT
 } MissionStat;
 
@@ -52,6 +59,13 @@ static const char *const MISSION_STAT_NAMES[MISSION_STAT_COUNT] = {
     [MISSION_STAT_CHALLENGE_ATTEMPTS] = "challenge_attempts",
     [MISSION_STAT_BATTLE_DAYS] = "battle_days",
     [MISSION_STAT_FACTION_HITS] = "faction_hits",
+    [MISSION_STAT_PVP_BATTLES] = "pvp_battles",
+    [MISSION_STAT_PVP_WINS] = "pvp_wins",
+    [MISSION_STAT_PVP_WIN_STREAK] = "pvp_win_streak",
+    [MISSION_STAT_PVP_TROPHIES_WON] = "pvp_trophies_won",
+    [MISSION_STAT_PVP_TROPHIES_HELD] = "pvp_trophies_held",
+    [MISSION_STAT_EVENT_BANNERS] = "event_banners",
+    [MISSION_STAT_EVENT_BUFFED_SQUADS] = "event_buffed_squads",
 };
 
 typedef struct {

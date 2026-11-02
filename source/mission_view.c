@@ -1,7 +1,5 @@
 #define MISSIONS_ROW_HEIGHT 104.0f
 #define MISSIONS_ROW_GAP 6.0f
-#define MISSIONS_WHEEL_STEP 70.0f
-#define MISSIONS_DRAG_THRESHOLD 13.0f
 #define MISSIONS_SUMMARY_HEIGHT 60.0f
 #define MISSIONS_FLASH_IN_TIME 0.3f
 #define MISSIONS_FLASH_OUT_TIME 0.3f
@@ -14,8 +12,15 @@
 #define MISSIONS_TEXT_SIZE 256
 #define MISSIONS_BAR_INNER_WIDTH 0.79f
 #define MISSIONS_BAR_INNER_HEIGHT 0.4f
+#define MISSIONS_TABS_INSET_X 61.0f
+#define MISSIONS_TABS_TOP 76.0f
+#define MISSIONS_TABS_WIDTH 818.0f
+#define MISSIONS_TABS_HEIGHT 65.0f
+#define MISSIONS_CONTENT_INSET_X 62.0f
+#define MISSIONS_CONTENT_GAP 6.0f
+#define MISSIONS_CONTENT_HEIGHT 414.0f
 
-typedef enum { MISSIONS_NONE = 0, MISSIONS_CLOSE } MissionsAction;
+typedef enum { MISSIONS_NONE = 0, MISSIONS_CLOSE, MISSIONS_FIGHT_BOT, MISSIONS_REVENGE } MissionsAction;
 
 static const Color MISSIONS_TEXT = {235, 232, 220, 255};
 static const Color MISSIONS_TEXT_DIM = {182, 178, 168, 255};
@@ -28,11 +33,9 @@ typedef struct {
     Texture2D icons[MISSION_CAPACITY];
     bool icon_loaded[MISSION_CAPACITY];
     int order[MISSION_SERIES_CAPACITY];
-    float scroll;
-    bool dragging;
-    bool drag_scrolled;
-    float drag_start_y;
-    float scroll_start;
+    GoalsTabs tabs;
+    GoalsTab tab;
+    GoalsScroll scroll;
     int claim_series;
     int claim_mission;
     float claim_time;
@@ -60,20 +63,31 @@ void MissionsInitialize(MissionsScreen *s) {
     );
     ButtonSetClickSound(&s->claim, SND_MISSION_COLLECT);
     s->claim_series = MISSION_NONE;
+    GoalsTabsInitialize(&s->tabs);
 }
 
-void MissionsOpen(MissionsScreen *s, PlayerMissions *m) {
+static void MissionsSelectTab(MissionsScreen *s, Player *p, GoalsTab tab) {
+    s->tab = tab;
+    GoalsScrollReset(&s->scroll);
+    if (tab == GOALS_TAB_TROPHIES) {
+        GoalsRefreshLeaderboard(&s->tabs, p, (long long)time(NULL));
+        p->pvp.trophies_seen = p->pvp.trophies;
+    }
+}
+
+void MissionsOpen(MissionsScreen *s, Player *p, GoalsTab tab) {
+    PvpEventSync(&p->pvp, (long long)time(NULL));
+    if (PvpEventUnclaimedCount(&p->pvp) > 0 && tab == GOALS_TAB_MISSIONS) tab = GOALS_TAB_EVENTS;
+    PlayerMissions *m = &p->missions;
     int count = 0;
     for (int pass = 0; pass < 2; pass++) {
         for (int series = 0; series < MissionSeriesCount(); series++) {
             if (MissionSeriesNeedsCollection(m, series) == (pass == 0)) s->order[count++] = series;
         }
     }
-    s->scroll = 0.0f;
-    s->dragging = false;
-    s->drag_scrolled = false;
     s->claim_series = MISSION_NONE;
     MissionMarkAllSeen(m);
+    MissionsSelectTab(s, p, tab);
 }
 
 static Texture2D MissionsIcon(MissionsScreen *s, int mission) {
@@ -239,37 +253,10 @@ static bool MissionsDrawRow(
         };
         Vector2 mouse = UiMouse();
         bool visible = CheckCollisionPointRec(mouse, clip);
-        claimed = ButtonDrawEx(&s->claim, button, interactive && visible && !s->drag_scrolled);
+        claimed = ButtonDrawEx(&s->claim, button, interactive && visible && !s->scroll.drag_scrolled);
     }
     if (animating) DrawRectangleRec(row, Fade(WHITE, MissionsFlashAlpha(s->claim_time)));
     return claimed;
-}
-
-static float MissionsMaxScroll(Rectangle list) {
-    float content = MissionSeriesCount() * (MISSIONS_ROW_HEIGHT + MISSIONS_ROW_GAP) - MISSIONS_ROW_GAP;
-    return content > list.height ? content - list.height : 0.0f;
-}
-
-static void MissionsUpdateScroll(MissionsScreen *s, Rectangle list) {
-    Vector2 mouse = UiMouse();
-    if (!UiInputBlocked()) {
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(mouse, list)) {
-            s->dragging = true;
-            s->drag_start_y = mouse.y;
-            s->scroll_start = s->scroll;
-        }
-        if (s->dragging) {
-            float delta = mouse.y - s->drag_start_y;
-            if (fabsf(delta) > MISSIONS_DRAG_THRESHOLD) s->drag_scrolled = true;
-            if (s->drag_scrolled) s->scroll = s->scroll_start - delta;
-            if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT)) s->dragging = false;
-        } else if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-            s->drag_scrolled = false;
-        }
-        float wheel = GetMouseWheelMove();
-        if (wheel != 0.0f && CheckCollisionPointRec(mouse, list)) s->scroll -= wheel * MISSIONS_WHEEL_STEP;
-    }
-    s->scroll = Clamp(s->scroll, 0.0f, MissionsMaxScroll(list));
 }
 
 static void MissionsDrawSummaryEntry(const MissionsScreen *s, Texture2D icon, const char *text, Rectangle area) {
@@ -299,6 +286,30 @@ static void MissionsDrawSummary(const MissionsScreen *s, const PlayerMissions *m
     );
 }
 
+static void MissionsDrawAchievements(MissionsScreen *s, Hud *hud, Player *p, Rectangle content, bool interactive) {
+    Rectangle list = {content.x, content.y, content.width, content.height - MISSIONS_SUMMARY_HEIGHT - 8.0f};
+    Rectangle summary = {list.x, list.y + list.height + 8.0f, list.width, MISSIONS_SUMMARY_HEIGHT};
+    float stride = MISSIONS_ROW_HEIGHT + MISSIONS_ROW_GAP;
+    GoalsScrollUpdate(&s->scroll, list, MissionSeriesCount() * stride - MISSIONS_ROW_GAP);
+
+    GoalsBeginClip(list);
+    int claimed_series = MISSION_NONE;
+    Rectangle claimed_row = {0};
+    for (int i = 0; i < MissionSeriesCount(); i++) {
+        float y = list.y + i * stride - s->scroll.offset;
+        if (y + MISSIONS_ROW_HEIGHT < list.y || y > list.y + list.height) continue;
+        Rectangle row = {list.x, y, list.width, MISSIONS_ROW_HEIGHT};
+        if (MissionsDrawRow(s, &p->missions, s->order[i], row, list, interactive)) {
+            claimed_series = s->order[i];
+            claimed_row = row;
+        }
+    }
+    EndScissorMode();
+
+    if (claimed_series != MISSION_NONE) MissionsBeginClaim(s, hud, p, claimed_series, claimed_row);
+    MissionsDrawSummary(s, &p->missions, summary);
+}
+
 MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, float dt) {
     Rectangle root = UiRoot();
     DrawRectangle(0, 0, root.width, root.height, (Color){0, 0, 0, 170});
@@ -311,46 +322,41 @@ MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, float dt) {
         42.0f,
         MISSIONS_TEXT
     );
-    UiDrawTextCentered(
-        s->body,
-        LocGetOr("LEADERBOARD_MISSIONS_BUTTON", "Достижения"),
-        (Rectangle){0.0f, panel.y + 76.0f, UiWidth(), 0.0f},
-        20.0f,
-        MISSIONS_TEXT_DIM
-    );
 
     if (s->claim_series != MISSION_NONE) {
         s->claim_time += dt;
         if (s->claim_time >= MISSIONS_CLAIM_TIME) MissionsFinishClaim(s, hud, p);
     }
 
-    Rectangle list = {panel.x + 62.0f, panel.y + 100.0f, panel.width - 124.0f, 374.0f};
-    Rectangle summary = {list.x, list.y + list.height + 8.0f, list.width, MISSIONS_SUMMARY_HEIGHT};
-    MissionsUpdateScroll(s, list);
     bool interactive = !UiInputBlocked() && s->claim_series == MISSION_NONE;
-
-    float scale = UiScale();
-    BeginScissorMode(
-        (int)(list.x * scale), (int)(list.y * scale), (int)(list.width * scale), (int)(list.height * scale)
-    );
-    int claimed_series = MISSION_NONE;
-    Rectangle claimed_row = {0};
-    for (int i = 0; i < MissionSeriesCount(); i++) {
-        float y = list.y + i * (MISSIONS_ROW_HEIGHT + MISSIONS_ROW_GAP) - s->scroll;
-        if (y + MISSIONS_ROW_HEIGHT < list.y || y > list.y + list.height) continue;
-        Rectangle row = {list.x, y, list.width, MISSIONS_ROW_HEIGHT};
-        if (MissionsDrawRow(s, &p->missions, s->order[i], row, list, interactive)) {
-            claimed_series = s->order[i];
-            claimed_row = row;
-        }
-    }
-    EndScissorMode();
-
-    if (claimed_series != MISSION_NONE) MissionsBeginClaim(s, hud, p, claimed_series, claimed_row);
-
-    MissionsDrawSummary(s, &p->missions, summary);
+    Rectangle bar = {
+        panel.x + MISSIONS_TABS_INSET_X, panel.y + MISSIONS_TABS_TOP, MISSIONS_TABS_WIDTH, MISSIONS_TABS_HEIGHT
+    };
+    GoalsTab pressed_tab = GoalsDrawTabBar(&s->tabs, s->tab, bar, interactive);
+    if (pressed_tab != s->tab) MissionsSelectTab(s, p, pressed_tab);
+    Rectangle content = {
+        panel.x + MISSIONS_CONTENT_INSET_X,
+        bar.y + bar.height + MISSIONS_CONTENT_GAP,
+        panel.width - MISSIONS_CONTENT_INSET_X * 2.0f,
+        MISSIONS_CONTENT_HEIGHT,
+    };
 
     MissionsAction action = MISSIONS_NONE;
+    GoalsAction goal = GOALS_NONE;
+    long long now = (long long)time(NULL);
+    if (s->tab == GOALS_TAB_MISSIONS) {
+        MissionsDrawAchievements(s, hud, p, content, interactive);
+    } else if (s->tab == GOALS_TAB_TROPHIES) {
+        goal = GoalsDrawTrophies(&s->tabs, &s->scroll, p, content, interactive);
+    } else if (s->tab == GOALS_TAB_BATTLES) {
+        goal = GoalsDrawBattles(&s->tabs, &s->scroll, &p->pvp, content, interactive, now);
+    } else {
+        goal = GoalsDrawEvents(&s->tabs, &s->scroll, &p->pvp, content, interactive);
+    }
+    if (goal == GOALS_CLAIM_EVENT && PvpEventClaim(p, s->tabs.selected)) ProgressionSave(p);
+    if (goal == GOALS_FIGHT_BOT) action = MISSIONS_FIGHT_BOT;
+    if (goal == GOALS_REVENGE) action = MISSIONS_REVENGE;
+
     float close_size = 61.0f;
     Rectangle close = {
         panel.x + panel.width - close_size * 1.25f, panel.y + panel.height * 0.07f, close_size, close_size

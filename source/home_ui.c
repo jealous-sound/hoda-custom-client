@@ -52,7 +52,7 @@ HomeButton HomeUIDraw(HomeUI *hui, bool interactive, int heroes_badge, int missi
     float pvp_x = screen_w - pad - size;
     float quests_x = pvp_x - gap - size;
     if (ButtonDrawEx(&hui->quests, (Rectangle){quests_x, y, size, size}, interactive)) clicked = HOME_QUESTS;
-    ButtonDrawEx(&hui->pvp, (Rectangle){pvp_x, y, size, size}, false);
+    if (ButtonDrawEx(&hui->pvp, (Rectangle){pvp_x, y, size, size}, interactive)) clicked = HOME_PVP;
 
     return clicked;
 }

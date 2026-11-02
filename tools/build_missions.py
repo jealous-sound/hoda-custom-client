@@ -108,6 +108,14 @@ def build_series(map_count: int) -> list[list[dict]]:
             for index, (mission_id, reward) in enumerate(zip(numbered(52, 4), LADDER_REWARDS[1:]))
         ],
         [mission('a63', 'origins_squad', ORIGINS_SQUAD_SIZE, {'gems': 5})],
+        [mission('a5', 'pvp_trophies_won', 50, LADDER_REWARDS[0])]
+        + ladder('pvp_trophies_won', (('a34', 500), ('a35', 1000), ('a36', 1500), ('a37', 2500)), LADDER_REWARDS[1:]),
+        ladder('pvp_trophies_held', (('a60', 500), ('a61', 750), ('a62', 1000), ('a83', 1500), ('a84', 2000))),
+        [mission('a11', 'pvp_battles', 1, LADDER_REWARDS[0])]
+        + ladder('pvp_wins', (('a12', 25), ('a13', 100), ('a14', 250), ('a80', 500)), LADDER_REWARDS[1:]),
+        [mission('a59', 'pvp_win_streak', 5, SINGLE_REWARD)],
+        ladder('event_banners', (('a121', 1000), ('a122', 5000), ('a123', 10000), ('a124', 20000), ('a125', 50000))),
+        ladder('event_buffed_squads', (('a126', 1), ('a127', 5), ('a128', 10), ('a129', 20), ('a130', 50))),
         trainer_series(91, 'common', common_targets),
         trainer_series(96, 'uncommon', common_targets),
         trainer_series(101, 'rare', common_targets),

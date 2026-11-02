@@ -637,6 +637,240 @@
   {
    "series": 17,
    "tier": 0,
+   "id": "a5",
+   "stat": "pvp_trophies_won",
+   "target": 50,
+   "gold": 500,
+   "gems": 0
+  },
+  {
+   "series": 17,
+   "tier": 1,
+   "id": "a34",
+   "stat": "pvp_trophies_won",
+   "target": 500,
+   "gold": 1000,
+   "gems": 0
+  },
+  {
+   "series": 17,
+   "tier": 2,
+   "id": "a35",
+   "stat": "pvp_trophies_won",
+   "target": 1000,
+   "gold": 2000,
+   "gems": 0
+  },
+  {
+   "series": 17,
+   "tier": 3,
+   "id": "a36",
+   "stat": "pvp_trophies_won",
+   "target": 1500,
+   "gold": 0,
+   "gems": 2
+  },
+  {
+   "series": 17,
+   "tier": 4,
+   "id": "a37",
+   "stat": "pvp_trophies_won",
+   "target": 2500,
+   "gold": 0,
+   "gems": 3
+  },
+  {
+   "series": 18,
+   "tier": 0,
+   "id": "a60",
+   "stat": "pvp_trophies_held",
+   "target": 500,
+   "gold": 500,
+   "gems": 0
+  },
+  {
+   "series": 18,
+   "tier": 1,
+   "id": "a61",
+   "stat": "pvp_trophies_held",
+   "target": 750,
+   "gold": 1000,
+   "gems": 0
+  },
+  {
+   "series": 18,
+   "tier": 2,
+   "id": "a62",
+   "stat": "pvp_trophies_held",
+   "target": 1000,
+   "gold": 2000,
+   "gems": 0
+  },
+  {
+   "series": 18,
+   "tier": 3,
+   "id": "a83",
+   "stat": "pvp_trophies_held",
+   "target": 1500,
+   "gold": 0,
+   "gems": 2
+  },
+  {
+   "series": 18,
+   "tier": 4,
+   "id": "a84",
+   "stat": "pvp_trophies_held",
+   "target": 2000,
+   "gold": 0,
+   "gems": 3
+  },
+  {
+   "series": 19,
+   "tier": 0,
+   "id": "a11",
+   "stat": "pvp_battles",
+   "target": 1,
+   "gold": 500,
+   "gems": 0
+  },
+  {
+   "series": 19,
+   "tier": 1,
+   "id": "a12",
+   "stat": "pvp_wins",
+   "target": 25,
+   "gold": 1000,
+   "gems": 0
+  },
+  {
+   "series": 19,
+   "tier": 2,
+   "id": "a13",
+   "stat": "pvp_wins",
+   "target": 100,
+   "gold": 2000,
+   "gems": 0
+  },
+  {
+   "series": 19,
+   "tier": 3,
+   "id": "a14",
+   "stat": "pvp_wins",
+   "target": 250,
+   "gold": 0,
+   "gems": 2
+  },
+  {
+   "series": 19,
+   "tier": 4,
+   "id": "a80",
+   "stat": "pvp_wins",
+   "target": 500,
+   "gold": 0,
+   "gems": 3
+  },
+  {
+   "series": 20,
+   "tier": 0,
+   "id": "a59",
+   "stat": "pvp_win_streak",
+   "target": 5,
+   "gold": 0,
+   "gems": 2
+  },
+  {
+   "series": 21,
+   "tier": 0,
+   "id": "a121",
+   "stat": "event_banners",
+   "target": 1000,
+   "gold": 500,
+   "gems": 0
+  },
+  {
+   "series": 21,
+   "tier": 1,
+   "id": "a122",
+   "stat": "event_banners",
+   "target": 5000,
+   "gold": 1000,
+   "gems": 0
+  },
+  {
+   "series": 21,
+   "tier": 2,
+   "id": "a123",
+   "stat": "event_banners",
+   "target": 10000,
+   "gold": 2000,
+   "gems": 0
+  },
+  {
+   "series": 21,
+   "tier": 3,
+   "id": "a124",
+   "stat": "event_banners",
+   "target": 20000,
+   "gold": 0,
+   "gems": 2
+  },
+  {
+   "series": 21,
+   "tier": 4,
+   "id": "a125",
+   "stat": "event_banners",
+   "target": 50000,
+   "gold": 0,
+   "gems": 3
+  },
+  {
+   "series": 22,
+   "tier": 0,
+   "id": "a126",
+   "stat": "event_buffed_squads",
+   "target": 1,
+   "gold": 500,
+   "gems": 0
+  },
+  {
+   "series": 22,
+   "tier": 1,
+   "id": "a127",
+   "stat": "event_buffed_squads",
+   "target": 5,
+   "gold": 1000,
+   "gems": 0
+  },
+  {
+   "series": 22,
+   "tier": 2,
+   "id": "a128",
+   "stat": "event_buffed_squads",
+   "target": 10,
+   "gold": 2000,
+   "gems": 0
+  },
+  {
+   "series": 22,
+   "tier": 3,
+   "id": "a129",
+   "stat": "event_buffed_squads",
+   "target": 20,
+   "gold": 0,
+   "gems": 2
+  },
+  {
+   "series": 22,
+   "tier": 4,
+   "id": "a130",
+   "stat": "event_buffed_squads",
+   "target": 50,
+   "gold": 0,
+   "gems": 3
+  },
+  {
+   "series": 23,
+   "tier": 0,
    "id": "a91",
    "stat": "collected",
    "target": 4,
@@ -646,7 +880,7 @@
    "hero_tier": 0
   },
   {
-   "series": 17,
+   "series": 23,
    "tier": 1,
    "id": "a92",
    "stat": "collected",
@@ -657,7 +891,7 @@
    "hero_tier": 1
   },
   {
-   "series": 17,
+   "series": 23,
    "tier": 2,
    "id": "a93",
    "stat": "collected",
@@ -668,7 +902,7 @@
    "hero_tier": 2
   },
   {
-   "series": 17,
+   "series": 23,
    "tier": 3,
    "id": "a94",
    "stat": "collected",
@@ -679,7 +913,7 @@
    "hero_tier": 3
   },
   {
-   "series": 17,
+   "series": 23,
    "tier": 4,
    "id": "a95",
    "stat": "collected",
@@ -690,7 +924,7 @@
    "hero_tier": 3
   },
   {
-   "series": 18,
+   "series": 24,
    "tier": 0,
    "id": "a96",
    "stat": "collected",
@@ -701,7 +935,7 @@
    "hero_tier": 0
   },
   {
-   "series": 18,
+   "series": 24,
    "tier": 1,
    "id": "a97",
    "stat": "collected",
@@ -712,7 +946,7 @@
    "hero_tier": 1
   },
   {
-   "series": 18,
+   "series": 24,
    "tier": 2,
    "id": "a98",
    "stat": "collected",
@@ -723,7 +957,7 @@
    "hero_tier": 2
   },
   {
-   "series": 18,
+   "series": 24,
    "tier": 3,
    "id": "a99",
    "stat": "collected",
@@ -734,7 +968,7 @@
    "hero_tier": 3
   },
   {
-   "series": 18,
+   "series": 24,
    "tier": 4,
    "id": "a100",
    "stat": "collected",
@@ -745,7 +979,7 @@
    "hero_tier": 3
   },
   {
-   "series": 19,
+   "series": 25,
    "tier": 0,
    "id": "a101",
    "stat": "collected",
@@ -756,7 +990,7 @@
    "hero_tier": 0
   },
   {
-   "series": 19,
+   "series": 25,
    "tier": 1,
    "id": "a102",
    "stat": "collected",
@@ -767,7 +1001,7 @@
    "hero_tier": 1
   },
   {
-   "series": 19,
+   "series": 25,
    "tier": 2,
    "id": "a103",
    "stat": "collected",
@@ -778,7 +1012,7 @@
    "hero_tier": 2
   },
   {
-   "series": 19,
+   "series": 25,
    "tier": 3,
    "id": "a104",
    "stat": "collected",
@@ -789,7 +1023,7 @@
    "hero_tier": 3
   },
   {
-   "series": 19,
+   "series": 25,
    "tier": 4,
    "id": "a105",
    "stat": "collected",
@@ -800,7 +1034,7 @@
    "hero_tier": 3
   },
   {
-   "series": 20,
+   "series": 26,
    "tier": 0,
    "id": "a106",
    "stat": "collected",
@@ -811,7 +1045,7 @@
    "hero_tier": 0
   },
   {
-   "series": 20,
+   "series": 26,
    "tier": 1,
    "id": "a107",
    "stat": "collected",
@@ -822,7 +1056,7 @@
    "hero_tier": 1
   },
   {
-   "series": 20,
+   "series": 26,
    "tier": 2,
    "id": "a108",
    "stat": "collected",
@@ -833,7 +1067,7 @@
    "hero_tier": 2
   },
   {
-   "series": 20,
+   "series": 26,
    "tier": 3,
    "id": "a109",
    "stat": "collected",
@@ -844,7 +1078,7 @@
    "hero_tier": 3
   },
   {
-   "series": 20,
+   "series": 26,
    "tier": 4,
    "id": "a110",
    "stat": "collected",
@@ -855,7 +1089,7 @@
    "hero_tier": 3
   },
   {
-   "series": 21,
+   "series": 27,
    "tier": 0,
    "id": "a111",
    "stat": "collected",
@@ -866,7 +1100,7 @@
    "hero_tier": 0
   },
   {
-   "series": 21,
+   "series": 27,
    "tier": 1,
    "id": "a112",
    "stat": "collected",
@@ -877,7 +1111,7 @@
    "hero_tier": 1
   },
   {
-   "series": 21,
+   "series": 27,
    "tier": 2,
    "id": "a113",
    "stat": "collected",
@@ -888,7 +1122,7 @@
    "hero_tier": 2
   },
   {
-   "series": 21,
+   "series": 27,
    "tier": 3,
    "id": "a114",
    "stat": "collected",
@@ -899,7 +1133,7 @@
    "hero_tier": 3
   },
   {
-   "series": 21,
+   "series": 27,
    "tier": 4,
    "id": "a115",
    "stat": "collected",
@@ -910,7 +1144,7 @@
    "hero_tier": 3
   },
   {
-   "series": 22,
+   "series": 28,
    "tier": 0,
    "id": "a116",
    "stat": "tier_iv_level",
@@ -921,7 +1155,7 @@
    "icon": "a95"
   },
   {
-   "series": 23,
+   "series": 29,
    "tier": 0,
    "id": "a117",
    "stat": "tier_iv_level",
@@ -932,7 +1166,7 @@
    "icon": "a100"
   },
   {
-   "series": 24,
+   "series": 30,
    "tier": 0,
    "id": "a118",
    "stat": "tier_iv_level",
@@ -943,7 +1177,7 @@
    "icon": "a105"
   },
   {
-   "series": 25,
+   "series": 31,
    "tier": 0,
    "id": "a119",
    "stat": "tier_iv_level",
@@ -954,7 +1188,7 @@
    "icon": "a110"
   },
   {
-   "series": 26,
+   "series": 32,
    "tier": 0,
    "id": "a120",
    "stat": "tier_iv_level",
@@ -965,7 +1199,7 @@
    "icon": "a115"
   },
   {
-   "series": 27,
+   "series": 33,
    "tier": 0,
    "id": "a24",
    "stat": "map_mastered",
@@ -975,7 +1209,7 @@
    "map": 0
   },
   {
-   "series": 28,
+   "series": 34,
    "tier": 0,
    "id": "a25",
    "stat": "map_mastered",
@@ -985,7 +1219,7 @@
    "map": 1
   },
   {
-   "series": 29,
+   "series": 35,
    "tier": 0,
    "id": "a26",
    "stat": "map_mastered",
@@ -995,7 +1229,7 @@
    "map": 2
   },
   {
-   "series": 30,
+   "series": 36,
    "tier": 0,
    "id": "a27",
    "stat": "map_mastered",
@@ -1005,7 +1239,7 @@
    "map": 3
   },
   {
-   "series": 31,
+   "series": 37,
    "tier": 0,
    "id": "a28",
    "stat": "map_mastered",
@@ -1015,7 +1249,7 @@
    "map": 4
   },
   {
-   "series": 32,
+   "series": 38,
    "tier": 0,
    "id": "a29",
    "stat": "map_mastered",
@@ -1025,7 +1259,7 @@
    "map": 5
   },
   {
-   "series": 33,
+   "series": 39,
    "tier": 0,
    "id": "a30",
    "stat": "map_mastered",
@@ -1035,7 +1269,7 @@
    "map": 6
   },
   {
-   "series": 34,
+   "series": 40,
    "tier": 0,
    "id": "a31",
    "stat": "map_mastered",
@@ -1045,7 +1279,7 @@
    "map": 7
   },
   {
-   "series": 35,
+   "series": 41,
    "tier": 0,
    "id": "a32",
    "stat": "map_mastered",
@@ -1055,7 +1289,7 @@
    "map": 8
   },
   {
-   "series": 36,
+   "series": 42,
    "tier": 0,
    "id": "a33",
    "stat": "map_mastered",
@@ -1065,7 +1299,7 @@
    "map": 9
   },
   {
-   "series": 37,
+   "series": 43,
    "tier": 0,
    "id": "a141",
    "stat": "map_mastered",
@@ -1075,7 +1309,7 @@
    "map": 10
   },
   {
-   "series": 38,
+   "series": 44,
    "tier": 0,
    "id": "a142",
    "stat": "map_mastered",
@@ -1085,7 +1319,7 @@
    "map": 11
   },
   {
-   "series": 39,
+   "series": 45,
    "tier": 0,
    "id": "a143",
    "stat": "map_mastered",
@@ -1095,7 +1329,7 @@
    "map": 12
   },
   {
-   "series": 40,
+   "series": 46,
    "tier": 0,
    "id": "a144",
    "stat": "map_mastered",
@@ -1105,7 +1339,7 @@
    "map": 13
   },
   {
-   "series": 41,
+   "series": 47,
    "tier": 0,
    "id": "a145",
    "stat": "map_mastered",
@@ -1115,7 +1349,7 @@
    "map": 14
   },
   {
-   "series": 42,
+   "series": 48,
    "tier": 0,
    "id": "a146",
    "stat": "map_mastered",

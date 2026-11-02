@@ -11,6 +11,13 @@ typedef struct {
 } DebugShot;
 
 #define DEBUG_SHOT_DEFAULT_FRAMES 90
+#define DEBUG_PVP_TROPHIES 640
+#define DEBUG_PVP_FIGHT_SEED 7
+#define DEBUG_PVP_BANNERS 320
+#define DEBUG_PVP_MILESTONES 2
+#define DEBUG_PVP_BATTLES 5
+#define DEBUG_PVP_BATTLE_SPACING 5400
+#define DEBUG_PVP_DEFENSE_DELAY 90000
 #define DEBUG_BFX_DEFAULT_AGE 30
 #define DEBUG_PACK_FUNDS 999999
 #define DEBUG_RUNE_FX_START_FRAME 30
@@ -345,6 +352,46 @@ static BattleResultsPresentation DebugResultsPresentation(const DebugShot *shot)
     return presentation;
 }
 
+static void DebugPreparePvp(Game *game, DebugShot *shot) {
+    if (DebugShotIs(shot, "pvp_hub")) {
+        if (shot->frames_drawn == 0) GameOpenPvpHub(game);
+        game->screen = SCREEN_PVP_HUB;
+        return;
+    }
+    if (DebugShotIs(shot, "pvp_event")) {
+        if (shot->frames_drawn == 0) {
+            PvpEventSync(&game->player.pvp, (long long)time(NULL));
+            game->player.pvp.event.banners = DEBUG_PVP_BANNERS;
+            game->player.pvp.event.milestones_paid = DEBUG_PVP_MILESTONES;
+            GameOpenPvpEvent(game);
+        }
+        game->screen = SCREEN_PVP_EVENT;
+        return;
+    }
+    if (!DebugShotIsAny(
+            shot,
+            (const char *const[]){"pvp_match", "pvp_fight", "pvp_results", "pvp_event_match", "pvp_event_results"},
+            5
+        ))
+        return;
+    game->screen = SCREEN_BATTLE;
+    if (!game->battle.squads_loaded) {
+        game->player.pvp.trophies = DEBUG_PVP_TROPHIES;
+        game->pvp_event = DebugShotIsAny(shot, (const char *const[]){"pvp_event_match", "pvp_event_results"}, 2);
+        GameEnterLadderBattle(game, SCREEN_PVP_HUB);
+        return;
+    }
+    const char *fight_seed = getenv("HOD_FIGHT");
+    if (DebugShotIs(shot, "pvp_fight") && fight_seed && !BattlePlayActive(&game->battle_play))
+        BattlePlayStart(&game->battle_play, &game->battle, &game->player, (unsigned)atoi(fight_seed));
+    if (DebugShotIsAny(shot, (const char *const[]){"pvp_results", "pvp_event_results"}, 2) && !shot->flow_started) {
+        BattlePlayStart(&game->battle_play, &game->battle, &game->player, DEBUG_PVP_FIGHT_SEED);
+        GameCommitBattleOutcome(game, game->battle_play.sim.player_won);
+        BattleResultsFlowStart(&game->battle_results, GameBattleResultsSnapshot(game));
+        shot->flow_started = true;
+    }
+}
+
 static void DebugPrepareBattle(Game *game, DebugShot *shot) {
     static const char *const names[] = {
         "battle", "levelup", "completion", "results", "completion_mastery", "results_repeat", "results_loss"
@@ -476,6 +523,31 @@ static void DebugPrepareRunes(Game *game, DebugShot *shot) {
     }
 }
 
+static void DebugSeedGoals(Game *game, DebugShot *shot) {
+    if (shot->frames_drawn != 0) return;
+    static const struct {
+        const char *name;
+        GoalsTab tab;
+    } shots[] = {
+        {"goals_trophies", GOALS_TAB_TROPHIES},
+        {"goals_battles", GOALS_TAB_BATTLES},
+        {"goals_events", GOALS_TAB_EVENTS},
+    };
+    for (int i = 0; i < (int)(sizeof(shots) / sizeof(shots[0])); i++) {
+        if (!DebugShotIs(shot, shots[i].name)) continue;
+        PlayerPvp *pvp = &game->player.pvp;
+        long long now = (long long)time(NULL);
+        pvp->trophies = DEBUG_PVP_TROPHIES;
+        for (unsigned seed = 1; seed <= DEBUG_PVP_BATTLES; seed++) {
+            PvpOpponent o = PvpOpponentGenerate(game->player.level, pvp->trophies, PvpDay(now), seed);
+            PvpRecordAttack(pvp, &o, seed % 3 != 0, now - seed * DEBUG_PVP_BATTLE_SPACING);
+        }
+        PvpSimulateDefense(pvp, game->player.level, now + DEBUG_PVP_DEFENSE_DELAY);
+        pvp->event = (PlayerPvpEvent){.cycle = PvpEventCycle(now) - 1, .banners = DEBUG_PVP_BANNERS};
+        MissionsOpen(&game->missions, &game->player, shots[i].tab);
+    }
+}
+
 static void DebugSeedMissions(Game *game, DebugShot *shot) {
     if (!DebugShotIsAny(shot, (const char *const[]){"missions", "missions_claim"}, 2)) return;
     if (shot->frames_drawn == 0) {
@@ -486,7 +558,7 @@ static void DebugSeedMissions(Game *game, DebugShot *shot) {
         MissionsSync(&game->player, &game->map);
         for (int tier = 0; tier < DEBUG_MISSION_CLAIMED_TIERS; tier++)
             m->claimed[MissionSeriesTierAt(DEBUG_MISSION_SUMMON_SERIES, tier)] = true;
-        MissionsOpen(&game->missions, m);
+        MissionsOpen(&game->missions, &game->player, GOALS_TAB_MISSIONS);
         game->screen = SCREEN_MISSIONS;
     }
     if (DebugShotIs(shot, "missions_claim") && shot->frames_drawn == DEBUG_MISSION_CLAIM_FRAME) {
@@ -640,12 +712,18 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     game->screen = shot->consume_opened ? SCREEN_CONSUME : SCREEN_HEROES;
     if (DebugShotIs(shot, "home")) game->screen = SCREEN_HOME;
     if (DebugShotIs(shot, "quests")) game->screen = SCREEN_QUESTS;
-    if (DebugShotIsAny(shot, (const char *const[]){"missions", "missions_claim"}, 2)) game->screen = SCREEN_MISSIONS;
+    if (DebugShotIsAny(
+            shot,
+            (const char *const[]){"missions", "missions_claim", "goals_trophies", "goals_battles", "goals_events"},
+            5
+        ))
+        game->screen = SCREEN_MISSIONS;
     DebugActivateBattleRunes(game, shot);
     DebugPrepareRunes(game, shot);
     DebugPrepareConsume(game, shot);
     DebugPrepareGear(game, shot);
     DebugPrepareGallery(game, shot);
+    DebugSeedGoals(game, shot);
     DebugSeedMissions(game, shot);
     if (DebugShotIs(shot, "gallery_unit")) game->screen = SCREEN_GALLERY;
     DebugPrepareStore(game, shot);
@@ -655,6 +733,7 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     DebugPrepareCampaignMap(game, shot);
     DebugPrepareNexusBattle(game, shot);
     DebugPrepareBattle(game, shot);
+    DebugPreparePvp(game, shot);
     DebugPrepareMapProgress(game, shot);
     int selected_hero = EnvInt("HOD_SELECT", -1);
     if (selected_hero >= 0 && selected_hero < game->heroes.card_count) game->heroes.selected = selected_hero;

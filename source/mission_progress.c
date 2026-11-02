@@ -140,6 +140,16 @@ static long long MissionValue(const Player *p, const Campaign *campaign, const M
             return MissionSquadAllFaction(p, def->faction);
         case MISSION_STAT_ORIGINS_SQUAD:
             return MissionOriginsSquadMembers(p);
+        case MISSION_STAT_PVP_BATTLES:
+            return (long long)p->pvp.wins + p->pvp.losses;
+        case MISSION_STAT_PVP_WINS:
+            return p->pvp.wins;
+        case MISSION_STAT_PVP_WIN_STREAK:
+            return p->pvp.best_win_streak;
+        case MISSION_STAT_PVP_TROPHIES_WON:
+            return p->pvp.trophies_won;
+        case MISSION_STAT_PVP_TROPHIES_HELD:
+            return PvpTrophiesHeld(&p->pvp, RuneNow());
         default:
             return p->missions.counters[def->stat];
     }
@@ -187,6 +197,24 @@ void MissionsRecordBattle(Player *p, const BattleSim *sim, int crits, bool chall
         m->last_battle_day = day;
         MissionAddCounter(m, MISSION_STAT_BATTLE_DAYS, 1);
     }
+}
+
+static bool MissionSquadFullyBuffed(const BattleSim *sim) {
+    bool any = false;
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        const SimUnit *unit = &sim->units[slot];
+        if (!unit->present) continue;
+        if (!unit->game_changer_applied) return false;
+        any = true;
+    }
+    return any;
+}
+
+void MissionsRecordEventBattle(Player *p, const BattleSim *sim, int banners) {
+    MissionAddCounter(&p->missions, MISSION_STAT_EVENT_BANNERS, banners);
+    if (p->pvp.event.buffed || !MissionSquadFullyBuffed(sim)) return;
+    p->pvp.event.buffed = true;
+    MissionAddCounter(&p->missions, MISSION_STAT_EVENT_BUFFED_SQUADS, 1);
 }
 
 bool MissionsClaim(Player *p, int index) {

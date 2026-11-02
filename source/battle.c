@@ -3467,9 +3467,7 @@ void BattleExitNode(Battle *b) {
     b->squads_loaded = false;
 }
 
-void BattleEnterNodeFrom(Battle *b, const Player *player, const char *rosters_path, const char *map_id, int step) {
-    BattleExitNode(b);
-    BattleRosterLoad(&b->enemy_roster, rosters_path, HOD_CACHE "characters.json", map_id, step);
+static void BattleEnterLoadedRoster(Battle *b, const Player *player) {
     BattleAudioBindSquads(b, player, &b->enemy_roster);
     BattleSquadsLoad(&b->squads, player, &b->enemy_roster, HOD_CACHE "meshes", HOD_CACHE "char_pack");
     b->squads_loaded = true;
@@ -3478,6 +3476,18 @@ void BattleEnterNodeFrom(Battle *b, const Player *player, const char *rosters_pa
     b->tac_t = 0.0f;
     b->combat_cam_t = 0.0f;
     b->cam = b->cam_matchmaking;
+}
+
+void BattleEnterPvp(Battle *b, const Player *player, const PvpOpponent *opponent) {
+    BattleExitNode(b);
+    PvpOpponentRoster(&b->enemy_roster, opponent);
+    BattleEnterLoadedRoster(b, player);
+}
+
+void BattleEnterNodeFrom(Battle *b, const Player *player, const char *rosters_path, const char *map_id, int step) {
+    BattleExitNode(b);
+    BattleRosterLoad(&b->enemy_roster, rosters_path, HOD_CACHE "characters.json", map_id, step);
+    BattleEnterLoadedRoster(b, player);
     TraceLog(LOG_INFO, "Battle: entered %s step %d", map_id, step);
 }
 

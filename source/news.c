@@ -106,6 +106,7 @@ typedef struct {
     bool auto_shown;
     int target_event;
     float ticker_time;
+    bool pvp_event_requested;
     int featured_scroll;
     float list_scroll;
     bool dragging;
@@ -583,15 +584,53 @@ NewsAction NewsDrawOverlay(News *news, Quests *quests, const Nexus *nexus, const
     return NewsDrawMessage(news, quests, nexus);
 }
 
+static void NewsDrawPvpTicker(News *news, Color tint, bool interactive) {
+    long long now = (long long)time(NULL);
+    Rectangle frame = {(UiWidth() - NEWS_TICKER_W) * 0.5f, NEWS_TICKER_Y, NEWS_TICKER_W, NEWS_TICKER_H};
+    UiDrawTexture(GuiTex(GUI_NEWS_TICKER), frame, WHITE);
+    Rectangle image = {
+        frame.x + NEWS_TICKER_IMAGE_X, frame.y + NEWS_TICKER_IMAGE_Y, NEWS_TICKER_IMAGE_SIZE, NEWS_TICKER_IMAGE_SIZE
+    };
+    NewsDrawImageFit(GuiTex(GUI_PVP_BANNER), image, tint);
+    Rectangle title = {
+        frame.x + NEWS_TICKER_TEXT_X, frame.y + NEWS_TICKER_TITLE_Y, NEWS_TICKER_TEXT_W, NEWS_TICKER_TITLE_H
+    };
+    QuestsDrawFit(
+        GuiFont(FNT_COOL),
+        LocGetOr("INTERSTITIAL_TICKER_TODAYS_EVENT", "Событие дня"),
+        title,
+        24.0f,
+        Fade(NEWS_TEXT, tint.a / 255.0f)
+    );
+    char time_text[48], timer[160];
+    QuestsShortTime(time_text, sizeof(time_text), PvpEventRemaining(now));
+    snprintf(timer, sizeof(timer), "%s (%s)", LocGet(PvpEventForCycle(PvpEventCycle(now))->title_key), time_text);
+    Rectangle timer_box = {title.x, frame.y + NEWS_TICKER_TIMER_Y, title.width, NEWS_TICKER_TIMER_H};
+    NewsDrawRich(GuiFont(FNT_MENU), timer, timer_box, 16.0f, Fade(NEWS_TITLE_COLOR, tint.a / 255.0f));
+    if (interactive && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(UiMouse(), frame)) {
+        GuiSoundPlay(SND_UI_BIG_BUTTON);
+        news->pvp_event_requested = true;
+    }
+}
+
+bool NewsTakePvpEventRequest(News *news) {
+    bool requested = news->pvp_event_requested;
+    news->pvp_event_requested = false;
+    return requested;
+}
+
 static void NewsDrawTicker(News *news, Quests *quests, const Nexus *nexus, bool interactive, float dt) {
-    if (news->featured_count == 0) return;
     news->ticker_time += dt;
-    int index = (int)(news->ticker_time / NEWS_TICKER_SECONDS) % news->featured_count;
+    int slot = (int)(news->ticker_time / NEWS_TICKER_SECONDS) % (news->featured_count + 1);
     float phase = fmodf(news->ticker_time, NEWS_TICKER_SECONDS);
     float fade = fminf(phase, NEWS_TICKER_SECONDS - phase) / NEWS_TICKER_FADE_SECONDS;
     Color tint = Fade(WHITE, Clamp(fade, 0.0f, 1.0f));
+    if (slot == 0) {
+        NewsDrawPvpTicker(news, tint, interactive);
+        return;
+    }
 
-    const NewsMessage *message = &news->messages[index];
+    const NewsMessage *message = &news->messages[slot - 1];
     Rectangle frame = {(UiWidth() - NEWS_TICKER_W) * 0.5f, NEWS_TICKER_Y, NEWS_TICKER_W, NEWS_TICKER_H};
     UiDrawTexture(GuiTex(GUI_NEWS_TICKER), frame, WHITE);
     Rectangle image = {

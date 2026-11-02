@@ -185,3 +185,12 @@ static void DrawGroundDecal(Texture2D tex, SceneShadowDecal decal, Color tint) {
     rlEnd();
     rlSetTexture(0);
 }
+
+void StrReplaceToken(char *out, size_t size, const char *text, const char *token, const char *value) {
+    const char *found = strstr(text, token);
+    if (!found) {
+        StrCopy(out, size, text);
+        return;
+    }
+    snprintf(out, size, "%.*s%s%s", (int)(found - text), text, value, found + strlen(token));
+}

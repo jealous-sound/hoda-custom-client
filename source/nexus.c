@@ -131,23 +131,6 @@ int NexusFindEvent(const Nexus *n, const char *event_id) {
     return -1;
 }
 
-static void NexusChangerEffectLoad(BattleChangerEffect *effect, const cJSON *json) {
-    cJSON *item = NULL;
-    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive(json, "groups")) {
-        if (effect->group_count == BATTLE_CHANGER_MAX_GROUPS) TraceLog(LOG_FATAL, "Nexus: too many changer groups");
-        StrCopy(effect->groups[effect->group_count++], sizeof(effect->groups[0]), item->valuestring);
-    }
-    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive(json, "units")) {
-        if (effect->unit_count == BATTLE_CHANGER_MAX_UNITS) TraceLog(LOG_FATAL, "Nexus: too many changer units");
-        StrCopy(effect->units[effect->unit_count++], sizeof(effect->units[0]), item->valuestring);
-    }
-    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive(json, "factions")) {
-        effect->faction_mask |= SimFactionMask(FactionFromString(item->valuestring));
-    }
-    effect->health_pct = JsonInt(json, "health_pct");
-    effect->power_pct = JsonInt(json, "power_pct");
-}
-
 static void NexusGameChangersLoad(Nexus *n, const char *path) {
     cJSON *root = JsonLoadFile(path);
     if (!cJSON_IsArray(root)) TraceLog(LOG_FATAL, "Nexus: %s is not an array", path);
@@ -162,7 +145,7 @@ static void NexusGameChangersLoad(Nexus *n, const char *path) {
         cJSON_ArrayForEach(effect, cJSON_GetObjectItemCaseSensitive(item, "effects")) {
             if (changer->effect_count == BATTLE_CHANGER_MAX_EFFECTS)
                 TraceLog(LOG_FATAL, "Nexus: too many changer effects");
-            NexusChangerEffectLoad(&changer->effects[changer->effect_count++], effect);
+            BattleChangerEffectLoad(&changer->effects[changer->effect_count++], effect);
         }
     }
     cJSON_Delete(root);

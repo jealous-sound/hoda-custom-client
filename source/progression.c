@@ -1,6 +1,7 @@
 #include <limits.h>
 
-#define PROGRESSION_SAVE_VERSION 7
+#define PROGRESSION_SAVE_VERSION 8
+#define PROGRESSION_FIRST_PVP_VERSION 8
 #define PROGRESSION_FIRST_FULL_ROSTER_VERSION 7
 #define PROGRESSION_LOCAL_MAX_LEVEL 100
 #define PROGRESSION_START_ENERGY_MAX 12
@@ -52,6 +53,7 @@ void ProgressionInitializePlayerDefaults(Player *p) {
     memset(p->keys, 0, sizeof(p->keys));
     p->nexus_run = (PlayerNexusRun){0};
     p->nexus_events = (PlayerNexusEvents){0};
+    p->pvp = (PlayerPvp){0};
 }
 
 typedef struct {
@@ -104,6 +106,8 @@ typedef struct {
     int energy_max_pre;
     int energy_max_post;
     int stamina_post;
+    int trophy_delta;
+    int banner_delta;
 } BattleRewardResult;
 
 static int ProgressionSaturatingAdd(int value, int amount) {
@@ -322,6 +326,43 @@ void NexusResetRun(Player *player) {
         node->wins = 0;
         node->losses = 0;
     }
+}
+
+bool PvpEventClaim(Player *player, int index) {
+    PlayerPvp *pvp = &player->pvp;
+    if (index < 0 || index >= pvp->event_result_count || pvp->event_results[index].claimed) return false;
+    PlayerPvpEventResult *result = &pvp->event_results[index];
+    result->claimed = true;
+    player->gold = ProgressionSaturatingAdd(player->gold, result->gold);
+    player->gems = ProgressionSaturatingAdd(player->gems, result->gems);
+    PvpEventSortResults(pvp);
+    return true;
+}
+
+BattleRewardResult PvpResolveBattle(
+    Player *player, const PvpOpponent *opponent, bool won, int revenge_index, int crit_gold, long long now, bool event
+) {
+    BattleRewardResult result = {.won = won, .resolved = true};
+    BattleRewardSnapshotPre(&result, player);
+    PlayerPvp *pvp = &player->pvp;
+    if (revenge_index >= 0 && revenge_index < pvp->history_count) pvp->history[revenge_index].revenged = true;
+    PlayerPvpBattle battle =
+        event ? PvpRecordEventAttack(pvp, opponent, won, now) : PvpRecordAttack(pvp, opponent, won, now);
+    result.trophy_delta = battle.trophy_delta;
+    result.banner_delta = battle.banners;
+    PvpEventMilestone milestones = event ? PvpEventTakeMilestones(pvp) : (PvpEventMilestone){0};
+    result.gems_reward = milestones.gems;
+    player->gems = ProgressionSaturatingAdd(player->gems, milestones.gems);
+    result.crit_gold_reward = crit_gold > 0 ? crit_gold : 0;
+    result.gold_reward = ProgressionSaturatingAdd(battle.gold, result.crit_gold_reward);
+    result.gold_reward = ProgressionSaturatingAdd(result.gold_reward, milestones.gold);
+    result.xp_reward = battle.xp;
+    if (won) StoreAwardVoucherForWin(player);
+    ProgressionApplyRuneRewards(player, &result);
+    player->gold = ProgressionSaturatingAdd(player->gold, result.gold_reward);
+    ProgressionAwardBattleXp(player, result.xp_reward);
+    BattleRewardSnapshotPost(&result, player);
+    return result;
 }
 
 BattleRewardResult NexusResolveBattle(Player *player, const Nexus *nexus, int step, bool won, int crit_gold) {
@@ -631,6 +672,80 @@ static cJSON *ProgressionSaveRunes(const PlayerRunes *runes) {
     return NULL;
 }
 
+static bool ProgressionPvpAddBattle(cJSON *history, const PlayerPvpBattle *battle) {
+    cJSON *entry = cJSON_CreateObject();
+    if (!entry || !cJSON_AddNumberToObject(entry, "at", (double)battle->at) ||
+        !cJSON_AddNumberToObject(entry, "bot", battle->bot) ||
+        !cJSON_AddNumberToObject(entry, "squad", battle->squad) ||
+        !cJSON_AddNumberToObject(entry, "level", battle->level) ||
+        !cJSON_AddNumberToObject(entry, "opponent_trophies", battle->opponent_trophies) ||
+        !cJSON_AddNumberToObject(entry, "trophy_delta", battle->trophy_delta) ||
+        !cJSON_AddNumberToObject(entry, "gold", battle->gold) || !cJSON_AddNumberToObject(entry, "xp", battle->xp) ||
+        !cJSON_AddNumberToObject(entry, "banners", battle->banners) ||
+        !cJSON_AddNumberToObject(entry, "seed", battle->seed) ||
+        !cJSON_AddBoolToObject(entry, "defense", battle->defense) ||
+        !cJSON_AddBoolToObject(entry, "won", battle->won) ||
+        !cJSON_AddBoolToObject(entry, "revenged", battle->revenged)) {
+        cJSON_Delete(entry);
+        return false;
+    }
+    return ProgressionJsonAddArrayItem(history, entry);
+}
+
+static bool ProgressionPvpAddEvents(cJSON *json, const PlayerPvp *pvp) {
+    cJSON *event = cJSON_AddObjectToObject(json, "event");
+    cJSON *results = cJSON_AddArrayToObject(json, "event_results");
+    if (!event || !results || !cJSON_AddNumberToObject(event, "cycle", (double)pvp->event.cycle) ||
+        !cJSON_AddNumberToObject(event, "banners", pvp->event.banners) ||
+        !cJSON_AddNumberToObject(event, "milestones_paid", pvp->event.milestones_paid) ||
+        !cJSON_AddBoolToObject(event, "buffed", pvp->event.buffed))
+        return false;
+    for (int i = 0; i < pvp->event_result_count; i++) {
+        const PlayerPvpEventResult *result = &pvp->event_results[i];
+        cJSON *entry = cJSON_CreateObject();
+        if (!entry || !cJSON_AddNumberToObject(entry, "cycle", (double)result->cycle) ||
+            !cJSON_AddNumberToObject(entry, "banners", result->banners) ||
+            !cJSON_AddNumberToObject(entry, "rank", result->rank) ||
+            !cJSON_AddNumberToObject(entry, "gold", result->gold) ||
+            !cJSON_AddNumberToObject(entry, "gems", result->gems) ||
+            !cJSON_AddBoolToObject(entry, "claimed", result->claimed)) {
+            cJSON_Delete(entry);
+            return false;
+        }
+        if (!ProgressionJsonAddArrayItem(results, entry)) return false;
+    }
+    return true;
+}
+
+static cJSON *ProgressionSavePvp(const PlayerPvp *pvp) {
+    cJSON *json = cJSON_CreateObject();
+    cJSON *history = json ? cJSON_AddArrayToObject(json, "history") : NULL;
+    bool ok = history && cJSON_AddNumberToObject(json, "trophies", pvp->trophies) &&
+              cJSON_AddNumberToObject(json, "best_trophies", pvp->best_trophies) &&
+              cJSON_AddNumberToObject(json, "trophies_seen", pvp->trophies_seen) &&
+              cJSON_AddNumberToObject(json, "wins", pvp->wins) &&
+              cJSON_AddNumberToObject(json, "losses", pvp->losses) &&
+              cJSON_AddNumberToObject(json, "win_streak", pvp->win_streak) &&
+              cJSON_AddNumberToObject(json, "best_win_streak", pvp->best_win_streak) &&
+              cJSON_AddNumberToObject(json, "trophies_won", pvp->trophies_won) &&
+              cJSON_AddNumberToObject(json, "defense_wins", pvp->defense_wins) &&
+              cJSON_AddNumberToObject(json, "defense_losses", pvp->defense_losses) &&
+              cJSON_AddNumberToObject(json, "nexts_used", pvp->nexts_used) &&
+              cJSON_AddNumberToObject(json, "nexts_day", (double)pvp->nexts_day) &&
+              cJSON_AddNumberToObject(json, "defense_checked_at", (double)pvp->defense_checked_at);
+    cJSON *held_since = ok ? cJSON_AddArrayToObject(json, "held_since") : NULL;
+    ok = ok && held_since;
+    for (int i = 0; ok && i < PVP_HOLD_THRESHOLD_COUNT; i++)
+        ok = ProgressionJsonAddArrayNumber(held_since, (double)pvp->held_since[i]);
+    for (int i = 0; ok && i < pvp->history_count; i++) ok = ProgressionPvpAddBattle(history, &pvp->history[i]);
+    ok = ok && ProgressionPvpAddEvents(json, pvp);
+    if (!ok) {
+        cJSON_Delete(json);
+        return NULL;
+    }
+    return json;
+}
+
 static cJSON *ProgressionSaveMissions(const PlayerMissions *missions) {
     cJSON *root = cJSON_CreateObject();
     cJSON *counters = cJSON_AddObjectToObject(root, "counters");
@@ -924,6 +1039,12 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
         return false;
     }
 
+    cJSON *pvp = ProgressionSavePvp(&player->pvp);
+    if (!pvp || !cJSON_AddItemToObject(root, "pvp", pvp)) {
+        cJSON_Delete(pvp);
+        goto save_json_failed;
+    }
+
     cJSON *gallery = ProgressionSaveGallery(&player->gallery);
     if (!gallery || !cJSON_AddItemToObject(root, "gallery", gallery)) {
         cJSON_Delete(gallery);
@@ -1073,6 +1194,85 @@ static void ProgressionLoadMissions(const cJSON *json, PlayerMissions *missions)
         int index = id ? MissionIndexById(id) : MISSION_NONE;
         if (index != MISSION_NONE && MissionCompleted(missions, index)) missions->claimed[index] = true;
     }
+}
+
+static bool ProgressionLoadPvpBattle(const cJSON *entry, PlayerPvpBattle *battle) {
+    uint64_t at = 0, seed = 0;
+    bool ok = ProgressionJsonU64(entry, "at", 0, PROGRESSION_JSON_MAX_SAFE_INTEGER, &at) &&
+              ProgressionJsonU64(entry, "seed", 0, UINT32_MAX, &seed) &&
+              ProgressionJsonInt(entry, "bot", 0, INT_MAX, &battle->bot) &&
+              ProgressionJsonInt(entry, "squad", 0, INT_MAX, &battle->squad) &&
+              ProgressionJsonInt(entry, "level", 1, PROGRESSION_LOCAL_MAX_LEVEL, &battle->level) &&
+              ProgressionJsonInt(entry, "opponent_trophies", 0, INT_MAX, &battle->opponent_trophies) &&
+              ProgressionJsonInt(entry, "trophy_delta", INT_MIN, INT_MAX, &battle->trophy_delta) &&
+              ProgressionJsonInt(entry, "gold", 0, INT_MAX, &battle->gold) &&
+              ProgressionJsonInt(entry, "xp", 0, INT_MAX, &battle->xp) &&
+              ProgressionJsonInt(entry, "banners", 0, INT_MAX, &battle->banners);
+    battle->at = (long long)at;
+    battle->seed = (unsigned)seed;
+    battle->defense = JsonBool(entry, "defense");
+    battle->won = JsonBool(entry, "won");
+    battle->revenged = JsonBool(entry, "revenged");
+    return ok;
+}
+
+static bool ProgressionLoadPvpEvents(const cJSON *json, PlayerPvp *pvp) {
+    const cJSON *event = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "event");
+    const cJSON *results = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "event_results");
+    uint64_t cycle = 0;
+    bool ok = cJSON_IsObject(event) && cJSON_IsArray(results) &&
+              ProgressionJsonU64(event, "cycle", 0, PROGRESSION_JSON_MAX_SAFE_INTEGER, &cycle) &&
+              ProgressionJsonInt(event, "banners", 0, INT_MAX, &pvp->event.banners) &&
+              ProgressionJsonInt(event, "milestones_paid", 0, INT_MAX, &pvp->event.milestones_paid);
+    pvp->event.cycle = (long long)cycle;
+    pvp->event.buffed = JsonBool(event, "buffed");
+    const cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, (cJSON *)results) {
+        if (!ok || pvp->event_result_count == PVP_EVENT_RESULT_CAPACITY) break;
+        PlayerPvpEventResult *result = &pvp->event_results[pvp->event_result_count++];
+        ok = ProgressionJsonU64(entry, "cycle", 0, PROGRESSION_JSON_MAX_SAFE_INTEGER, &cycle) &&
+             ProgressionJsonInt(entry, "banners", 0, INT_MAX, &result->banners) &&
+             ProgressionJsonInt(entry, "rank", 1, INT_MAX, &result->rank) &&
+             ProgressionJsonInt(entry, "gold", 0, INT_MAX, &result->gold) &&
+             ProgressionJsonInt(entry, "gems", 0, INT_MAX, &result->gems);
+        result->cycle = (long long)cycle;
+        result->claimed = JsonBool(entry, "claimed");
+    }
+    return ok;
+}
+
+static bool ProgressionLoadPvp(const cJSON *json, PlayerPvp *pvp) {
+    uint64_t nexts_day = 0, checked_at = 0;
+    const cJSON *history = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "history");
+    bool ok = cJSON_IsObject(json) && cJSON_IsArray(history) &&
+              ProgressionJsonInt(json, "trophies", 0, INT_MAX, &pvp->trophies) &&
+              ProgressionJsonInt(json, "best_trophies", 0, INT_MAX, &pvp->best_trophies) &&
+              ProgressionJsonInt(json, "trophies_seen", 0, INT_MAX, &pvp->trophies_seen) &&
+              ProgressionJsonInt(json, "wins", 0, INT_MAX, &pvp->wins) &&
+              ProgressionJsonInt(json, "losses", 0, INT_MAX, &pvp->losses) &&
+              ProgressionJsonInt(json, "win_streak", 0, INT_MAX, &pvp->win_streak) &&
+              ProgressionJsonInt(json, "best_win_streak", 0, INT_MAX, &pvp->best_win_streak) &&
+              ProgressionJsonInt(json, "trophies_won", 0, INT_MAX, &pvp->trophies_won) &&
+              ProgressionJsonInt(json, "defense_wins", 0, INT_MAX, &pvp->defense_wins) &&
+              ProgressionJsonInt(json, "defense_losses", 0, INT_MAX, &pvp->defense_losses) &&
+              ProgressionJsonInt(json, "nexts_used", 0, INT_MAX, &pvp->nexts_used) &&
+              ProgressionJsonU64(json, "nexts_day", 0, PROGRESSION_JSON_MAX_SAFE_INTEGER, &nexts_day) &&
+              ProgressionJsonU64(json, "defense_checked_at", 0, PROGRESSION_JSON_MAX_SAFE_INTEGER, &checked_at);
+    pvp->nexts_day = (long long)nexts_day;
+    pvp->defense_checked_at = (long long)checked_at;
+    const cJSON *held_since = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "held_since");
+    ok = ok && cJSON_IsArray(held_since) && cJSON_GetArraySize(held_since) == PVP_HOLD_THRESHOLD_COUNT;
+    for (int i = 0; ok && i < PVP_HOLD_THRESHOLD_COUNT; i++) {
+        uint64_t stamp = 0;
+        ok = ProgressionJsonItemU64(cJSON_GetArrayItem(held_since, i), 0, PROGRESSION_JSON_MAX_SAFE_INTEGER, &stamp);
+        pvp->held_since[i] = (long long)stamp;
+    }
+    const cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, (cJSON *)history) {
+        if (!ok || pvp->history_count == PVP_HISTORY_CAPACITY) break;
+        ok = ProgressionLoadPvpBattle(entry, &pvp->history[pvp->history_count++]);
+    }
+    return ok && ProgressionLoadPvpEvents(json, pvp);
 }
 
 static bool ProgressionLoadGallery(const cJSON *json, PlayerGallery *gallery) {
@@ -1431,6 +1631,11 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
     if (valid && version >= 6)
         valid = ProgressionLoadGallery(cJSON_GetObjectItemCaseSensitive(root, "gallery"), &loaded_gallery);
 
+    static PlayerPvp loaded_pvp;
+    memset(&loaded_pvp, 0, sizeof(loaded_pvp));
+    if (valid && version >= PROGRESSION_FIRST_PVP_VERSION)
+        valid = ProgressionLoadPvp(cJSON_GetObjectItemCaseSensitive(root, "pvp"), &loaded_pvp);
+
     cJSON *loaded_gear = cJSON_DetachItemFromObjectCaseSensitive(root, "gear");
     cJSON_Delete(root);
     if (!valid) {
@@ -1493,6 +1698,8 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
     GalleryFree(&player->gallery);
     player->gallery = loaded_gallery;
     player->missions = loaded_missions;
+    player->pvp = loaded_pvp;
+    PvpHistorySanitize(&player->pvp);
     free(loaded_runes);
     free(loaded_additions);
     return true;

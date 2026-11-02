@@ -1,3 +1,4 @@
+#define BATTLE_RESULTS_MAX_REWARDS 4
 
 typedef struct {
     bool victory;
@@ -16,6 +17,9 @@ typedef struct {
     int completion_mastery_gems;
     int gems;
     bool escrowed;
+    bool pvp;
+    int trophy_delta;
+    int banner_delta;
 } BattleResultsPresentation;
 
 typedef enum {
@@ -97,7 +101,7 @@ static bool BattleResultsHasCompletion(const BattleResultsPresentation *p) {
 }
 
 static int BattleResultsRewardCount(const BattleResultsPresentation *p) {
-    return (p->gems > 0) + (p->xp > 0) + (p->gold > 0);
+    return (p->gems > 0) + (p->xp > 0) + (p->gold > 0) + (p->trophy_delta != 0) + (p->banner_delta != 0);
 }
 
 static float BattleResultsPopupScale(void) {
@@ -478,8 +482,12 @@ static void BattleResultsDrawNodeCompletion(const BattleResultsFlow *flow) {
     );
 }
 
-static int BattleResultsBuildRewards(const BattleResultsPresentation *p, BattleResultsReward rewards[3]) {
+static int
+BattleResultsBuildRewards(const BattleResultsPresentation *p, BattleResultsReward rewards[BATTLE_RESULTS_MAX_REWARDS]) {
     int count = 0;
+    if (p->banner_delta != 0) rewards[count++] = (BattleResultsReward){GUI_PVP_BANNER, p->banner_delta, false, true};
+    if (p->trophy_delta != 0)
+        rewards[count++] = (BattleResultsReward){GUI_TAB_TROPHY, p->trophy_delta, false, p->trophy_delta > 0};
     if (p->gems > 0) rewards[count++] = (BattleResultsReward){GUI_STORE_CURRENCY_GEMS, p->gems, false, true};
     if (p->xp > 0) rewards[count++] = (BattleResultsReward){GUI_MM_XP, p->xp, true, false};
     if (p->gold > 0) rewards[count++] = (BattleResultsReward){GUI_HUD_GOLD, p->gold, true, false};
@@ -589,6 +597,7 @@ BattleResultsDrawCurrencyParticles(Texture2D texture, Vector2 start, Vector2 end
 }
 
 static const char *BattleResultsContinueLabel(const BattleResultsPresentation *p) {
+    if (p->pvp) return LocGet("BUTTON_MATCHMAKING_NEXT");
     if (!p->victory) return "Повторить";
     if (p->first_win || p->mastered) return "След. задание";
     if (p->wins_to_master > 0 && p->completions_post > p->wins_to_master) return "Повтор квеста";
@@ -714,7 +723,7 @@ BattleResultsDrawRewards(const BattleResultsFlow *flow, const Player *player, co
         false
     );
 
-    BattleResultsReward rewards[3];
+    BattleResultsReward rewards[BATTLE_RESULTS_MAX_REWARDS];
     int count = BattleResultsBuildRewards(p, rewards);
     for (int i = 0; i < count; i++) BattleResultsDrawRewardItem(flow, rewards[i], rewards_rect, i, count, popup_fade);
 

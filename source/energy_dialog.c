@@ -1,4 +1,4 @@
-typedef enum { ENERGY_DIALOG_ACTION_NONE = 0, ENERGY_DIALOG_ACTION_QUESTS } EnergyDialogAction;
+typedef enum { ENERGY_DIALOG_ACTION_NONE = 0, ENERGY_DIALOG_ACTION_QUESTS, ENERGY_DIALOG_ACTION_PVP } EnergyDialogAction;
 
 typedef struct {
     bool open;
@@ -153,10 +153,10 @@ EnergyDialogAction EnergyDialogDraw(EnergyDialog *d, Player *player, bool allow_
     }
 
     Rectangle navigate = {panel.x + 533.0f, panel.y + 375.0f, 304.0f, 76.0f};
-    if (ButtonDrawEx(&d->navigate, navigate, allow_navigation && d->stamina)) {
+    if (ButtonDrawEx(&d->navigate, navigate, allow_navigation)) {
         d->open = false;
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
-        return ENERGY_DIALOG_ACTION_QUESTS;
+        return d->stamina ? ENERGY_DIALOG_ACTION_QUESTS : ENERGY_DIALOG_ACTION_PVP;
     }
 
     Rectangle close = {panel.x + 970.0f, panel.y - 22.0f, 82.0f, 82.0f};

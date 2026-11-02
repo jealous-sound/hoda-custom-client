@@ -3592,7 +3592,8 @@ static void TestConsumeRespectsCaps(void) {
     assert(outcome.crit_chance == 30);
 
     int tiered_index;
-    Character *tiered = ConsumeTestAdd(&player, catalog, ConsumeTestFirstId(catalog, "Rare", false, true), &tiered_index);
+    Character *tiered =
+        ConsumeTestAdd(&player, catalog, ConsumeTestFirstId(catalog, "Rare", false, true), &tiered_index);
     tiered->tier = TIER_II;
     tiered->consume_xp = 0;
     ConsumeNormalizeCharacter(tiered);
@@ -4065,7 +4066,8 @@ static void TestGalleryCatalogMatchesReferenceRules(void) {
         assert(previous->rarity >= unit->rarity);
         if (previous->rarity == unit->rarity)
             assert(
-                previous->stats[GalleryLowestTier(previous)].base_power >= unit->stats[GalleryLowestTier(unit)].base_power
+                previous->stats[GalleryLowestTier(previous)].base_power >=
+                unit->stats[GalleryLowestTier(unit)].base_power
             );
     }
     for (int g = 1; g < catalog.group_count; g++) assert(strcasecmp(catalog.groups[g - 1], catalog.groups[g]) < 0);
@@ -4231,7 +4233,8 @@ static void TestMissionBattleRecording(void) {
     sim.action_count = 2;
     sim.actions[0].actor = 0;
     sim.actions[0].target_count = 2;
-    sim.actions[0].targets[0] = (BattleSimTarget){.unit = SQUAD_SLOT_COUNT, .health_delta = -100, .health_faction_delta = -20};
+    sim.actions[0].targets[0] =
+        (BattleSimTarget){.unit = SQUAD_SLOT_COUNT, .health_delta = -100, .health_faction_delta = -20};
     sim.actions[0].targets[1] = (BattleSimTarget){.unit = 1, .health_delta = 50};
     sim.actions[1].actor = SQUAD_SLOT_COUNT;
     sim.actions[1].target_count = 1;
@@ -4975,7 +4978,8 @@ static void TestAscendedHeroLoadsAboveTheOldLevelCap(void) {
     cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
     const cJSON *entry = NULL, *legend = NULL;
     cJSON_ArrayForEach(entry, catalog) {
-        if (!legend && !strcmp(JsonStr(entry, "rarity"), "Legendary") && JsonInt(entry, "gear_slots") == 4) legend = entry;
+        if (!legend && !strcmp(JsonStr(entry, "rarity"), "Legendary") && JsonInt(entry, "gear_slots") == 4)
+            legend = entry;
     }
     assert(legend);
     const cJSON *defs[1] = {legend};
@@ -5012,7 +5016,8 @@ static void TestHeroLevelTableCoversAscendedCap(void) {
     StrCopy(hero.id, sizeof(hero.id), "UNIT_MERRILL");
     const ConsumeProfile *profile = ConsumeProfileFor(&hero);
     assert(profile && profile->level_table->count >= CONSUME_ASCENDED_LEVEL_CAP);
-    for (int i = 1; i < profile->level_table->count; i++) assert(profile->level_table->xp[i] >= profile->level_table->xp[i - 1]);
+    for (int i = 1; i < profile->level_table->count; i++)
+        assert(profile->level_table->xp[i] >= profile->level_table->xp[i - 1]);
 }
 
 static void TestBoardIgnoresClicksBehindGearAndDetails(void) {
@@ -5145,7 +5150,462 @@ static void TestNexusGameChangerTableAffectsRealRosters(void) {
     free(nexus);
 }
 
+static void TestPvpOpponentsAreDeterministic(void) {
+    for (unsigned seed = 1; seed < 40; seed++) {
+        PvpOpponent a = PvpOpponentGenerate(18, 400, 20000, seed);
+        PvpOpponent b = PvpOpponentGenerate(18, 400, 20000, seed);
+        assert(memcmp(&a, &b, sizeof(a)) == 0);
+    }
+    PvpOpponent first = PvpOpponentGenerate(18, 400, 20000, 1);
+    bool varied = false;
+    for (unsigned seed = 2; seed < 40; seed++) {
+        PvpOpponent other = PvpOpponentGenerate(18, 400, 20000, seed);
+        varied = varied || other.bot != first.bot || other.squad != first.squad;
+    }
+    assert(varied);
+}
+
+static double PvpTestMeanSquadRating(int level) {
+    const PvpTable *table = PvpTableEnsure();
+    double total = 0.0;
+    for (unsigned seed = 1; seed <= 200; seed++)
+        total += table->squads[PvpOpponentGenerate(level, 0, 20000, seed).squad].rating;
+    return total / 200.0;
+}
+
+static void TestPvpOpponentsScaleWithLevel(void) {
+    double previous = 0.0;
+    int levels[] = {1, 10, 25, 50, 100};
+    for (int i = 0; i < 5; i++) {
+        double rating = PvpTestMeanSquadRating(levels[i]);
+        assert(rating > previous);
+        previous = rating;
+    }
+    assert(PvpTargetRating(20, 200) > PvpTargetRating(20, 0));
+    assert(PvpTargetRating(20, -200) < PvpTargetRating(20, 0));
+    assert(PvpTargetRating(20, 1000000) == PvpTargetRating(20, 2000000));
+    PvpOpponent o = PvpOpponentGenerate(1, 0, 20000, 7);
+    assert(o.level >= 1 && o.level <= 3 && o.rune_count == 0);
+    PvpOpponent veteran = PvpOpponentGenerate(100, 3000, 20000, 7);
+    assert(veteran.level <= PVP_LOCAL_MAX_LEVEL && veteran.rune_count > 0 && veteran.rune_count <= RUNE_SLOT_COUNT);
+}
+
+static void TestPvpMatchingStaysInTheTrophyWindow(void) {
+    const PvpRules *rules = &PvpTableEnsure()->rules;
+    for (unsigned seed = 1; seed < 100; seed++) {
+        PvpOpponent o = PvpOpponentGenerate(30, 2000, 20000, seed);
+        assert(o.trophies >= 2000 - rules->window_below && o.trophies <= 2000 + rules->window_above);
+    }
+    PvpOpponent past_the_top = PvpOpponentGenerate(30, 900000, 20000, 3);
+    assert(past_the_top.bot >= 0 && past_the_top.bot < PvpTableEnsure()->bot_count);
+}
+
+static void TestPvpTrophyBounds(void) {
+    const PvpRules *rules = &PvpTableEnsure()->rules;
+    assert(PvpTrophyGain(1000, 1000) == rules->base_gain);
+    assert(PvpTrophyLoss(1000, 1000) == rules->base_loss);
+    assert(PvpTrophyGain(0, 1000000) == rules->max_gain);
+    assert(PvpTrophyGain(1000000, 0) == rules->min_gain);
+    assert(PvpTrophyLoss(1000000, 0) == rules->max_loss);
+    assert(PvpTrophyLoss(0, 1000000) == rules->min_loss);
+
+    PlayerPvp pvp = {.trophies = 3};
+    PvpOpponent o = PvpOpponentGenerate(10, 3, 20000, 5);
+    PlayerPvpBattle lost = PvpRecordAttack(&pvp, &o, false, 1000);
+    assert(pvp.trophies == 0 && lost.trophy_delta == -3 && pvp.losses == 1);
+    PlayerPvpBattle won = PvpRecordAttack(&pvp, &o, true, 2000);
+    assert(pvp.trophies == o.gain && won.trophy_delta == o.gain);
+    assert(pvp.best_trophies == o.gain && pvp.win_streak == 1);
+    assert(pvp.history_count == 2 && pvp.history[0].at == 2000 && pvp.history[1].at == 1000);
+    PvpRecordAttack(&pvp, &o, false, 3000);
+    assert(pvp.best_trophies == o.gain && pvp.win_streak == 0);
+    assert(PvpGoldReward(&o, true) > PvpGoldReward(&o, false));
+}
+
+static void TestPvpNextsResetDaily(void) {
+    PlayerPvp pvp = {0};
+    long long day = 20000 * NEXUS_SECONDS_PER_DAY;
+    int limit = PvpNextsRemaining(&pvp, day);
+    assert(limit > 0);
+    for (int i = 0; i < limit; i++) assert(PvpSpendNext(&pvp, day + i));
+    assert(PvpNextsRemaining(&pvp, day) == 0 && !PvpSpendNext(&pvp, day));
+    assert(PvpNextsRemaining(&pvp, day + NEXUS_SECONDS_PER_DAY) == limit);
+    assert(PvpSpendNext(&pvp, day + NEXUS_SECONDS_PER_DAY));
+    assert(PvpNextsRemaining(&pvp, day + NEXUS_SECONDS_PER_DAY) == limit - 1);
+}
+
+static void TestPvpDefenseLogWaitsForFirstBattleAndCapsAttacks(void) {
+    const PvpRules *rules = &PvpTableEnsure()->rules;
+    long long now = 20000 * NEXUS_SECONDS_PER_DAY;
+    PlayerPvp fresh = {0};
+    assert(PvpSimulateDefense(&fresh, 10, now) == 0 && fresh.history_count == 0);
+
+    PlayerPvp pvp = {.trophies = 500};
+    PvpOpponent o = PvpOpponentGenerate(10, 500, PvpDay(now), 9);
+    PvpRecordAttack(&pvp, &o, true, now);
+    assert(pvp.defense_checked_at == now);
+    assert(PvpSimulateDefense(&pvp, 10, now + rules->attack_interval_seconds - 1) == 0);
+    long long later = now + 100LL * rules->attack_interval_seconds;
+    assert(PvpSimulateDefense(&pvp, 10, later) == rules->max_attacks_per_login);
+    assert(pvp.history_count == 1 + rules->max_attacks_per_login);
+    assert(pvp.defense_wins + pvp.defense_losses == rules->max_attacks_per_login);
+    assert(pvp.history[0].defense && pvp.history[0].at == later);
+    assert(PvpSimulateDefense(&pvp, 10, later) == 0);
+
+    PlayerPvp copy = {.trophies = 500};
+    PvpRecordAttack(&copy, &o, true, now);
+    PvpSimulateDefense(&copy, 10, later);
+    assert(memcmp(&copy, &pvp, sizeof(copy)) == 0);
+}
+
+static void TestPvpRevengeRebuildsTheSameOpponent(void) {
+    PvpOpponent o = PvpOpponentGenerate(40, 800, 20000, 11);
+    PlayerPvpBattle battle = {
+        .bot = o.bot,
+        .squad = o.squad,
+        .level = o.level,
+        .opponent_trophies = o.trophies,
+        .seed = o.seed,
+        .defense = true,
+    };
+    assert(PvpCanRevenge(&battle));
+    PvpOpponent rebuilt = PvpOpponentFromBattle(&battle, 800);
+    assert(memcmp(&rebuilt, &o, sizeof(o)) == 0);
+    battle.revenged = true;
+    assert(!PvpCanRevenge(&battle));
+    battle.revenged = false;
+    battle.won = true;
+    assert(!PvpCanRevenge(&battle));
+}
+
+static void TestPvpEveryPooledSquadFights(void) {
+    static Player player;
+    static BattleRoster roster;
+    static BattleSim sim;
+    memset(&player, 0, sizeof(player));
+    Character ch = {0};
+    Ability ability = {0};
+    TestCharacter(&ch, &ability, "UNIT_A", "ABILITY_DAMAGE", TARGET_ONE, 50, 500);
+    player.roster = &ch;
+    player.roster_count = 1;
+    for (int q = 0; q < PLAYER_MAX_SQUADS; q++)
+        for (int s = 0; s < SQUAD_SLOT_COUNT; s++) player.squads[q][s] = -1;
+    player.squads[0][0] = 0;
+    const PvpTable *table = PvpTableEnsure();
+    int stride = table->squad_count / 12;
+    for (int squad = 0; squad < table->squad_count; squad += stride) {
+        PvpOpponent o = {.squad = squad, .level = 50, .seed = 3};
+        PvpOpponentDerive(&o, 0);
+        PvpOpponentRoster(&roster, &o);
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+            const PvpSquadCell *cell = &table->squads[squad].cells[slot];
+            assert(roster.present[slot] == cell->present);
+            if (!cell->present) continue;
+            assert(roster.chars[slot].giant == (slot == SQUAD_SLOT_LARGE));
+            assert(roster.chars[slot].has_tier[roster.chars[slot].tier]);
+        }
+        BattleSimRun(&sim, &player, &roster, 77);
+        assert(sim.rounds >= 1);
+    }
+}
+
+static void TestPvpOpponentRunesApplyToTheEnemySide(void) {
+    int power_rune = -1;
+    for (int def = 0; def < RuneCatalogCount() && power_rune < 0; def++)
+        if (RuneDefAt(def)->buff == RUNE_BUFF_POWER) power_rune = def;
+    assert(power_rune >= 0);
+    static Player player;
+    static BattleRoster roster;
+    static SimUnit plain[SIM_UNIT_COUNT], buffed[SIM_UNIT_COUNT];
+    memset(&player, 0, sizeof(player));
+    memset(&roster, 0, sizeof(roster));
+    for (int q = 0; q < PLAYER_MAX_SQUADS; q++)
+        for (int s = 0; s < SQUAD_SLOT_COUNT; s++) player.squads[q][s] = -1;
+    Ability ability = {0};
+    TestCharacter(&roster.chars[0], &ability, "UNIT_A", "ABILITY_DAMAGE", TARGET_ONE, 100, 500);
+    roster.present[0] = true;
+    BattleSimPreview(plain, &player, &roster);
+    roster.rune_defs[0] = power_rune;
+    roster.rune_def_count = 1;
+    BattleSimPreview(buffed, &player, &roster);
+    int enemy = SQUAD_SLOT_COUNT;
+    assert(buffed[enemy].power > plain[enemy].power);
+    assert(buffed[enemy].max_health == plain[enemy].max_health);
+}
+
+static void TestPvpSaveRoundTrip(void) {
+    static Player saved, loaded;
+    memset(&saved, 0, sizeof(saved));
+    memset(&loaded, 0, sizeof(loaded));
+    ProgressionInitializePlayerDefaults(&saved);
+    ProgressionInitializePlayerDefaults(&loaded);
+    for (int q = 0; q < PLAYER_MAX_SQUADS; q++) {
+        for (int s = 0; s < SQUAD_SLOT_COUNT; s++) saved.squads[q][s] = loaded.squads[q][s] = -1;
+    }
+    PvpOpponent o = PvpOpponentGenerate(5, 0, 20000, 21);
+    PvpRecordAttack(&saved.pvp, &o, true, 1700000000);
+    saved.pvp.history[0].revenged = true;
+    saved.pvp.nexts_used = 2;
+    saved.pvp.nexts_day = 20000;
+    saved.pvp.event = (PlayerPvpEvent){.cycle = 700, .banners = 90, .milestones_paid = 1, .buffed = true};
+    saved.pvp.event_result_count = 1;
+    saved.pvp.event_results[0] = (PlayerPvpEventResult){.cycle = 699, .banners = 40, .rank = 12, .gold = 5, .gems = 2};
+    const char *path = "/tmp/hod_pvp_save_test.json";
+    assert(ProgressionSaveToPath(&saved, path));
+    assert(ProgressionLoadFromPath(&loaded, path));
+    assert(memcmp(&saved.pvp, &loaded.pvp, sizeof(saved.pvp)) == 0);
+
+    char *text = LoadFileText(path);
+    cJSON *root = cJSON_Parse(text);
+    UnloadFileText(text);
+    cJSON_DeleteItemFromObjectCaseSensitive(root, "pvp");
+    cJSON_ReplaceItemInObjectCaseSensitive(root, "version", cJSON_CreateNumber(PROGRESSION_FIRST_PVP_VERSION - 1));
+    char *legacy = cJSON_Print(root);
+    assert(SaveFileText(path, legacy));
+    cJSON_free(legacy);
+    cJSON_Delete(root);
+    assert(ProgressionLoadFromPath(&loaded, path));
+    assert(loaded.pvp.trophies == 0 && loaded.pvp.history_count == 0);
+
+    cJSON *bad_root = NULL;
+    assert(ProgressionSaveToPath(&saved, path));
+    text = LoadFileText(path);
+    bad_root = cJSON_Parse(text);
+    UnloadFileText(text);
+    cJSON_DeleteItemFromObjectCaseSensitive(bad_root, "pvp");
+    char *corrupt = cJSON_Print(bad_root);
+    assert(SaveFileText(path, corrupt));
+    cJSON_free(corrupt);
+    cJSON_Delete(bad_root);
+    assert(!ProgressionLoadFromPath(&loaded, path));
+    remove(path);
+
+    saved.pvp.history_count = 1;
+    saved.pvp.history[0].bot = 1000000;
+    PvpHistorySanitize(&saved.pvp);
+    assert(saved.pvp.history_count == 0);
+}
+
+static void TestPvpLeaderboardRanksThePlayer(void) {
+    static PvpRankEntry entries[PVP_BOT_CAPACITY + 1];
+    int count = PvpLeaderboardBuild(entries, 1000000, 20000);
+    assert(count == PvpTableEnsure()->bot_count + 1);
+    assert(PvpLeaderboardRank(entries, count) == 1);
+    for (int i = 1; i < count; i++) assert(entries[i - 1].trophies >= entries[i].trophies);
+    count = PvpLeaderboardBuild(entries, 0, 20000);
+    assert(PvpLeaderboardRank(entries, count) > 1);
+}
+
+static void TestPvpTrophiesHeldNeedsAWeekAboveTheLine(void) {
+    PlayerPvp pvp = {.trophies = 490};
+    long long start = 1700000000;
+    PvpOpponent o = PvpOpponentGenerate(10, 490, 20000, 2);
+    PvpRecordAttack(&pvp, &o, true, start);
+    assert(pvp.trophies > 500 && pvp.held_since[0] == start);
+    assert(PvpTrophiesHeld(&pvp, start + PVP_HOLD_SECONDS - 1) == 0);
+    assert(PvpTrophiesHeld(&pvp, start + PVP_HOLD_SECONDS) == 500);
+    pvp.trophies = 480;
+    PvpHoldUpdate(&pvp, start + 1);
+    assert(pvp.held_since[0] == 0 && PvpTrophiesHeld(&pvp, start + 2 * PVP_HOLD_SECONDS) == 0);
+}
+
+static void TestPvpAchievementsFollowTheLadder(void) {
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    Campaign campaign = {0};
+    MissionCatalogLoad("data/missions.json");
+    player.level = 1;
+    player.pvp.wins = 25;
+    player.pvp.best_win_streak = 5;
+    player.pvp.trophies_won = 500;
+    MissionsSync(&player, &campaign);
+    assert(MissionCompleted(&player.missions, MissionIndexById("a11")));
+    assert(MissionCompleted(&player.missions, MissionIndexById("a12")));
+    assert(!MissionCompleted(&player.missions, MissionIndexById("a13")));
+    assert(MissionCompleted(&player.missions, MissionIndexById("a59")));
+    assert(MissionCompleted(&player.missions, MissionIndexById("a5")));
+    assert(MissionCompleted(&player.missions, MissionIndexById("a34")));
+    assert(!MissionCompleted(&player.missions, MissionIndexById("a35")));
+}
+
+static void TestPvpResolveBattlePaysAndMarksRevenge(void) {
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    ProgressionInitializePlayerDefaults(&player);
+    player.gold = 100;
+    PvpOpponent o = PvpOpponentGenerate(10, 0, 20000, 4);
+    player.pvp.history_count = 1;
+    player.pvp.history[0] = (PlayerPvpBattle){.bot = o.bot, .defense = true};
+    BattleRewardResult win = PvpResolveBattle(&player, &o, true, 0, 12, 1700000000, false);
+    assert(win.resolved && win.won && win.trophy_delta == o.gain);
+    assert(win.gold_reward == PvpGoldReward(&o, true) + 12);
+    assert(player.gold == 100 + win.gold_reward);
+    assert(player.experience == win.xp_reward && win.xp_reward == PvpXpReward(&o, true));
+    assert(player.pvp.history_count == 2 && player.pvp.history[1].revenged);
+    assert(!PvpCanRevenge(&player.pvp.history[1]));
+
+    int gold = player.gold;
+    BattleRewardResult loss = PvpResolveBattle(&player, &o, false, -1, 0, 1700000100, false);
+    assert(!loss.won && loss.trophy_delta < 0 && loss.gold_reward == PvpGoldReward(&o, false));
+    assert(player.gold == gold + loss.gold_reward && player.pvp.losses == 1);
+}
+
+static void TestPvpSpendsStaminaNotEnergy(void) {
+    Player player = {.stamina = 1, .energy = 5};
+    assert(PlayerSpendStamina(&player, PVP_STAMINA_COST));
+    assert(player.stamina == 0 && player.energy == 5);
+    assert(!PlayerSpendStamina(&player, PVP_STAMINA_COST));
+}
+
+static void TestPvpEventRotatesThroughTheCatalog(void) {
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    long long duration = rules->duration_seconds;
+    long long start = 1700000000 / duration * duration;
+    assert(PvpEventRemaining(start) == duration);
+    assert(PvpEventRemaining(start + duration - 1) == 1);
+    long long cycle = PvpEventCycle(start);
+    assert(PvpEventForCycle(cycle) != PvpEventForCycle(cycle + 1));
+    assert(PvpEventForCycle(cycle) == PvpEventForCycle(cycle + rules->catalog_count));
+    for (int i = 0; i < rules->catalog_count; i++) assert(rules->catalog[i].changer.effect_count > 0);
+}
+
+static void TestPvpEventBannersMilestonesAndClaim(void) {
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    ProgressionInitializePlayerDefaults(&player);
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    long long duration = rules->duration_seconds;
+    long long start = 1700000000 / duration * duration;
+    PlayerPvp *pvp = &player.pvp;
+    PvpOpponent o = PvpOpponentGenerate(10, 0, PvpDay(start), 8);
+
+    PvpEventSync(pvp, start);
+    assert(pvp->event.cycle == PvpEventCycle(start) && pvp->event_result_count == 0);
+    pvp->event.banners = rules->milestones[0].banners - 1;
+    int gold = player.gold;
+    int expected_banners = PvpEventBannerReward(&o, pvp->event.banners, true);
+    BattleRewardResult win = PvpResolveBattle(&player, &o, true, -1, 0, start + 10, true);
+    assert(win.trophy_delta == 0 && pvp->trophies == 0);
+    assert(win.banner_delta == expected_banners);
+    assert(pvp->event.banners == rules->milestones[0].banners - 1 + win.banner_delta);
+    assert(pvp->event.milestones_paid == 1);
+    assert(player.gold >= gold + rules->milestones[0].gold);
+    assert(pvp->history[0].banners == win.banner_delta);
+    BattleRewardResult loss = PvpResolveBattle(&player, &o, false, -1, 0, start + 20, true);
+    assert(loss.banner_delta == rules->loss_banners);
+
+    int banners = pvp->event.banners;
+    PvpEventSync(pvp, start + duration + 1);
+    assert(pvp->event.banners == 0 && pvp->event.milestones_paid == 0);
+    assert(pvp->event_result_count == 1 && PvpEventUnclaimedCount(pvp) == 1);
+    PlayerPvpEventResult *result = &pvp->event_results[0];
+    assert(result->banners == banners && result->rank >= 1);
+    const PvpEventRankReward *reward = PvpEventRewardForRank(result->rank);
+    assert(reward && result->gold == reward->gold && result->gems == reward->gems);
+    gold = player.gold;
+    assert(PvpEventClaim(&player, 0));
+    assert(player.gold == gold + result->gold);
+    assert(!PvpEventClaim(&player, 0) && PvpEventUnclaimedCount(pvp) == 0);
+
+    PvpEventSync(pvp, start + 3 * duration);
+    assert(pvp->event_result_count == 1);
+}
+
+static void TestPvpEventRankRisesWithBannersAndCoversEveryone(void) {
+    long long cycle = 5000;
+    int duration = PvpTableEnsure()->events.duration_seconds;
+    assert(PvpEventRankAt(0, cycle, duration) > PvpEventRankAt(2000, cycle, duration));
+    assert(PvpEventRankAt(1000000, cycle, duration) == 1);
+    assert(PvpEventRankAt(0, cycle, 0) == 1);
+    int last = PvpTableEnsure()->bot_count + 1;
+    for (int rank = 1; rank <= last; rank++) assert(PvpEventRewardForRank(rank));
+}
+
+static void TestPvpEventSquadBuffCountsOncePerEvent(void) {
+    static Player player;
+    static BattleSim sim;
+    memset(&player, 0, sizeof(player));
+    memset(&sim, 0, sizeof(sim));
+    sim.units[0].present = sim.units[1].present = true;
+    sim.units[0].game_changer_applied = true;
+    MissionsRecordEventBattle(&player, &sim, 30);
+    assert(player.missions.counters[MISSION_STAT_EVENT_BANNERS] == 30);
+    assert(player.missions.counters[MISSION_STAT_EVENT_BUFFED_SQUADS] == 0);
+    sim.units[1].game_changer_applied = true;
+    MissionsRecordEventBattle(&player, &sim, 0);
+    MissionsRecordEventBattle(&player, &sim, 0);
+    assert(player.missions.counters[MISSION_STAT_EVENT_BUFFED_SQUADS] == 1);
+}
+
+static void TestPvpBannerCurvePeaksAtTheLadderMidpoint(void) {
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    int ladder = rules->milestones[rules->milestone_count - 1].banners;
+    int start = rules->win_banners_start, peak = start + rules->win_banners_peak_bonus;
+    assert(PvpEventMaxBannersPerWin(0) == start);
+    assert(PvpEventMaxBannersPerWin(ladder / rules->win_banners_steps_to_peak) == start + 1);
+    assert(PvpEventMaxBannersPerWin(ladder / 2) == peak);
+    int end = PvpEventMaxBannersPerWin(ladder);
+    assert(end < peak && end > start);
+    assert(PvpEventMaxBannersPerWin(ladder * 3) == end);
+    for (int banners = 0; banners <= ladder; banners += 50) assert(PvpEventMaxBannersPerWin(banners) <= peak);
+    PvpOpponent weak = {.gain = PvpTableEnsure()->rules.min_gain};
+    PvpOpponent strong = {.gain = PvpTableEnsure()->rules.max_gain};
+    assert(PvpEventBannerReward(&strong, ladder / 2, true) == peak);
+    assert(PvpEventBannerReward(&weak, ladder / 2, true) < peak);
+}
+
+static void TestPvpEventResultsKeepNineteenUnclaimedFirst(void) {
+    PlayerPvp pvp = {0};
+    long long duration = PvpTableEnsure()->events.duration_seconds;
+    for (long long cycle = 100; cycle < 100 + PVP_EVENT_RESULT_CAPACITY + 1; cycle++) {
+        pvp.event = (PlayerPvpEvent){.cycle = cycle, .banners = 10};
+        PvpEventSync(&pvp, (cycle + 1) * duration);
+    }
+    assert(pvp.event_result_count == PVP_EVENT_RESULT_CAPACITY && PVP_EVENT_RESULT_CAPACITY == 19);
+    assert(pvp.event_results[0].cycle == 100 + PVP_EVENT_RESULT_CAPACITY);
+    assert(pvp.event_results[PVP_EVENT_RESULT_CAPACITY - 1].cycle == 101);
+    pvp.event_results[0].claimed = true;
+    PvpEventSortResults(&pvp);
+    assert(!pvp.event_results[0].claimed && pvp.event_results[PVP_EVENT_RESULT_CAPACITY - 1].claimed);
+    assert(pvp.event_results[0].cycle == 100 + PVP_EVENT_RESULT_CAPACITY - 1);
+}
+
+static void TestPvpEventMatchmakingFollowsBanners(void) {
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    long long duration = rules->duration_seconds;
+    long long now = 1700000000 / duration * duration + duration - 1;
+    long long cycle = PvpEventCycle(now), elapsed = now % duration;
+    for (unsigned seed = 1; seed < 60; seed++) {
+        PvpOpponent o = PvpEventOpponentGenerate(30, 500, 900, now, seed);
+        assert(abs(PvpBotBanners(o.bot, cycle, elapsed) - 900) <= rules->matchmaking_banner_window);
+        PvpOpponent again = PvpEventOpponentGenerate(30, 500, 900, now, seed);
+        assert(memcmp(&o, &again, sizeof(o)) == 0);
+    }
+}
+
 int main(void) {
+    TestPvpBannerCurvePeaksAtTheLadderMidpoint();
+    TestPvpEventResultsKeepNineteenUnclaimedFirst();
+    TestPvpEventMatchmakingFollowsBanners();
+    TestPvpEventRotatesThroughTheCatalog();
+    TestPvpEventBannersMilestonesAndClaim();
+    TestPvpEventRankRisesWithBannersAndCoversEveryone();
+    TestPvpEventSquadBuffCountsOncePerEvent();
+    TestPvpResolveBattlePaysAndMarksRevenge();
+    TestPvpSpendsStaminaNotEnergy();
+    TestPvpLeaderboardRanksThePlayer();
+    TestPvpTrophiesHeldNeedsAWeekAboveTheLine();
+    TestPvpAchievementsFollowTheLadder();
+    TestPvpOpponentsAreDeterministic();
+    TestPvpOpponentsScaleWithLevel();
+    TestPvpMatchingStaysInTheTrophyWindow();
+    TestPvpTrophyBounds();
+    TestPvpNextsResetDaily();
+    TestPvpDefenseLogWaitsForFirstBattleAndCapsAttacks();
+    TestPvpRevengeRebuildsTheSameOpponent();
+    TestPvpEveryPooledSquadFights();
+    TestPvpOpponentRunesApplyToTheEnemySide();
+    TestPvpSaveRoundTrip();
     TestNexusGameChangerBoostsMatchingUnitsOnBothSides();
     TestNexusGameChangerNarrowsByFactionAndUnit();
     TestNexusGameChangerTableAffectsRealRosters();

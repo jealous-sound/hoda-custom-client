@@ -7,6 +7,8 @@ typedef enum {
     SCREEN_GALLERY,
     SCREEN_QUESTS,
     SCREEN_MISSIONS,
+    SCREEN_PVP_HUB,
+    SCREEN_PVP_EVENT,
     SCREEN_MAP,
     SCREEN_NEXUS,
     SCREEN_BATTLE
@@ -53,6 +55,15 @@ typedef struct {
     EnergyDialog stamina_dialog;
     bool stamina_dialog_top;
 
+    PvpHub pvp_hub;
+    PvpEventView pvp_event_view;
+    bool battle_is_pvp;
+    bool pvp_event;
+    bool pvp_can_next;
+    int pvp_revenge_index;
+    PvpOpponent pvp_opponent;
+    Screen pvp_return_screen;
+
     bool battle_is_nexus;
     int battle_map_index;
     int battle_node_index;
@@ -68,6 +79,11 @@ static bool GameBattleSelectionValid(const Game *g) {
     if (g->battle_map_index < 0 || g->battle_map_index >= g->map.map_count) return false;
     const CampaignMap *map = &g->map.maps[g->battle_map_index];
     return g->battle_node_index >= 0 && g->battle_node_index < map->node_count;
+}
+
+static void GameClearBattleOutcome(Game *g) {
+    g->battle_outcome_committed = false;
+    g->battle_reward = (BattleRewardResult){0};
 }
 
 static void GameEnterSelectedBattle(Game *g) {
@@ -117,6 +133,48 @@ static void GameEnterSelectedNexusBattle(Game *g) {
     g->battle_squad_index = g->player.current_squad;
 }
 
+static void GameEnterPvpOpponent(Game *g) {
+    long long now = (long long)time(NULL);
+    BattleEnterPvp(&g->battle, &g->player, &g->pvp_opponent);
+    if (g->pvp_event) g->battle.enemy_roster.game_changer = &PvpEventForCycle(PvpEventCycle(now))->changer;
+    int nexts = g->pvp_can_next ? PvpNextsRemaining(&g->player.pvp, now) : -1;
+    BattleUiEnterPvp(
+        &g->battle_ui, &g->player, &g->battle.enemy_roster, &g->pvp_opponent, PVP_STAMINA_COST, nexts, g->pvp_event
+    );
+    g->battle_is_pvp = true;
+    g->battle_is_nexus = false;
+    g->battle_squad_index = g->player.current_squad;
+    g->battle_energy_cost = PVP_STAMINA_COST;
+    g->battle_energy_spent = false;
+    GameClearBattleOutcome(g);
+    g->screen = SCREEN_BATTLE;
+}
+
+static PvpOpponent GameLadderOpponent(const Game *g) {
+    long long now = (long long)time(NULL);
+    unsigned seed = (unsigned)GetRandomValue(1, 0x7FFFFFFF);
+    const PlayerPvp *pvp = &g->player.pvp;
+    if (g->pvp_event) return PvpEventOpponentGenerate(g->player.level, pvp->trophies, pvp->event.banners, now, seed);
+    return PvpOpponentGenerate(g->player.level, pvp->trophies, PvpDay(now), seed);
+}
+
+static void GameEnterLadderBattle(Game *g, Screen return_screen) {
+    g->pvp_opponent = GameLadderOpponent(g);
+    g->pvp_can_next = true;
+    g->pvp_revenge_index = -1;
+    g->pvp_return_screen = return_screen;
+    GameEnterPvpOpponent(g);
+}
+
+static void GameEnterFixedPvpBattle(Game *g, PvpOpponent opponent, int revenge_index, Screen return_screen) {
+    g->pvp_event = false;
+    g->pvp_opponent = opponent;
+    g->pvp_can_next = false;
+    g->pvp_revenge_index = revenge_index;
+    g->pvp_return_screen = return_screen;
+    GameEnterPvpOpponent(g);
+}
+
 static PlayerCampaignAnimation
 GamePendingCampaignAnimation(const Campaign *campaign, const BattleRewardResult *reward) {
     PlayerCampaignAnimation animation = {0};
@@ -142,8 +200,24 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
     g->battle_outcome_committed = true;
     GalleryRecordBattle(&g->player.gallery, &g->battle.enemy_roster, &g->battle_play.sim);
     int crits = BattlePlayCriticalGold(&g->battle_play) / BP_CRIT_GOLD_REWARD;
-    bool challenge = !g->battle_is_nexus && g->map.maps[g->battle_map_index].nodes[g->battle_node_index].grind;
+    bool challenge = !g->battle_is_nexus && !g->battle_is_pvp && g->map.maps[g->battle_map_index].nodes[g->battle_node_index].grind;
     MissionsRecordBattle(&g->player, &g->battle_play.sim, crits, challenge, (long long)time(NULL));
+    if (g->battle_is_pvp) {
+        g->battle_reward = PvpResolveBattle(
+            &g->player,
+            &g->pvp_opponent,
+            won,
+            g->pvp_revenge_index,
+            BattlePlayCriticalGold(&g->battle_play),
+            (long long)time(NULL),
+            g->pvp_event
+        );
+        g->pvp_revenge_index = -1;
+        if (g->pvp_event) MissionsRecordEventBattle(&g->player, &g->battle_play.sim, g->battle_reward.banner_delta);
+        MissionsSync(&g->player, &g->map);
+        ProgressionSave(&g->player);
+        return;
+    }
     if (g->battle_is_nexus) {
         PlayerNexusRun *run = &g->player.nexus_run;
         int from_step = g->battle_node_index + 1;
@@ -182,6 +256,9 @@ static BattleResultsPresentation GameBattleResultsSnapshot(const Game *g) {
         .completion_mastery_gems = g->battle_reward.mastery_gems_reward,
         .gems = g->battle_reward.gems_reward,
         .escrowed = g->battle_is_nexus,
+        .pvp = g->battle_is_pvp,
+        .trophy_delta = g->battle_reward.trophy_delta,
+        .banner_delta = g->battle_reward.banner_delta,
     };
 }
 
@@ -239,10 +316,6 @@ static void GameStartPendingCampaignAnimation(Game *g) {
         CampaignBeginMasteryAnimation(&g->map, animation.from_map, animation.from_node, animation.to_node);
 }
 
-static void GameClearBattleOutcome(Game *g) {
-    g->battle_outcome_committed = false;
-    g->battle_reward = (BattleRewardResult){0};
-}
 
 static void GameExitBattleTo(Game *g, Screen destination) {
     BattlePlayStop(&g->battle_play);
@@ -256,6 +329,31 @@ static void GameExitBattleTo(Game *g, Screen destination) {
     if (destination == SCREEN_MAP) GameStartPendingCampaignAnimation(g);
     if (destination == SCREEN_NEXUS) GameStartPendingNexusAnimation(g);
     if (destination != SCREEN_NEXUS && destination != SCREEN_BATTLE) g->battle_is_nexus = false;
+    if (destination != SCREEN_BATTLE) g->battle_is_pvp = false;
+    if (destination != SCREEN_BATTLE) g->pvp_event = false;
+    if (destination == SCREEN_PVP_HUB) PvpHubOpen(&g->pvp_hub, &g->player, (long long)time(NULL));
+    if (destination == SCREEN_MISSIONS) MissionsSelectTab(&g->missions, &g->player, g->missions.tab);
+}
+
+static void GameContinuePvp(Game *g) {
+    if (!g->pvp_can_next) {
+        GameExitBattleTo(g, g->pvp_return_screen);
+        return;
+    }
+    BattlePlayStop(&g->battle_play);
+    BattleResultsFlowReset(&g->battle_results);
+    BattleStopAmbience(&g->battle);
+    GameEnterLadderBattle(g, g->pvp_return_screen);
+}
+
+static void GameOpenPvpEvent(Game *g) {
+    PvpEventSync(&g->player.pvp, (long long)time(NULL));
+    g->screen = SCREEN_PVP_EVENT;
+}
+
+static void GameOpenPvpHub(Game *g) {
+    PvpHubOpen(&g->pvp_hub, &g->player, (long long)time(NULL));
+    g->screen = SCREEN_PVP_HUB;
 }
 
 static void GameReturnToBattleMatchmaking(Game *g) {
@@ -282,6 +380,8 @@ void GameInitialize(Game *g) {
 
     PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
     ProgressionLoad(&g->player);
+    PvpEventSync(&g->player.pvp, (long long)time(NULL));
+    if (PvpSimulateDefense(&g->player.pvp, g->player.level, (long long)time(NULL)) > 0) ProgressionSave(&g->player);
     PlayerGallerySync(&g->player);
 
     HudInitialize(&g->hud);
@@ -301,6 +401,8 @@ void GameInitialize(Game *g) {
     QuestsInitialize(&g->quests);
     CampaignInitialize(&g->map, "data/campaign_maps.json");
     MissionsInitialize(&g->missions);
+    PvpHubInitialize(&g->pvp_hub);
+    PvpEventViewInitialize(&g->pvp_event_view);
     MissionsSync(&g->player, &g->map);
     CampaignProgressSync(&g->map, &g->player.campaign_progress);
     NexusInitialize(&g->nexus, "data/nexus_maps.json");
@@ -354,7 +456,7 @@ bool GameHandlePopupBack(Game *g) {
     if (g->screen == SCREEN_CONSUME) return ConsumeHandleBack(&g->consume);
     if (g->screen == SCREEN_HOME && NewsHandleBack(&g->news)) return true;
     if (g->screen == SCREEN_QUESTS && QuestsHandleBack(&g->quests)) return true;
-    if (g->screen == SCREEN_MISSIONS) {
+    if (g->screen == SCREEN_MISSIONS || g->screen == SCREEN_PVP_HUB || g->screen == SCREEN_PVP_EVENT) {
         g->screen = SCREEN_HOME;
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return true;
@@ -453,6 +555,9 @@ static void GameHandleConsumeLeave(Game *g, ConsumeLeave leave) {
             break;
         case CONSUME_LEAVE_QUESTS:
             g->screen = SCREEN_QUESTS;
+            break;
+        case CONSUME_LEAVE_PVP:
+            GameOpenPvpHub(g);
             break;
         case CONSUME_LEAVE_RUNES:
             GameOpenRunes(g, SCREEN_HEROES);
@@ -576,6 +681,14 @@ static void GameHandleHudAction(Game *g, HudAction a) {
         case HUD_STAMINA:
             GameToggleResourceDialog(g, true);
             break;
+        case HUD_BANNERS:
+            if (g->screen != SCREEN_BATTLE) GameOpenPvpEvent(g);
+            break;
+        case HUD_TROPHIES:
+            if (g->screen == SCREEN_BATTLE) break;
+            MissionsOpen(&g->missions, &g->player, GOALS_TAB_TROPHIES);
+            g->screen = SCREEN_MISSIONS;
+            break;
         case HUD_GOLD:
         case HUD_GEMS:
             if (g->screen == SCREEN_BATTLE) break;
@@ -606,6 +719,9 @@ static void GameDrawGalleryPopup(Game *g, bool resource_modal) {
 void GameDraw(Game *g) {
     float dt = GetFrameTime();
     Screen screen_at_frame_start = g->screen;
+    bool pvp_battle = g->screen == SCREEN_BATTLE && g->battle_is_pvp;
+    g->hud.show_banners = g->screen == SCREEN_PVP_EVENT || (pvp_battle && g->pvp_event);
+    g->hud.show_trophies = g->screen == SCREEN_PVP_HUB || (pvp_battle && !g->pvp_event);
     if (g->screen != SCREEN_BATTLE) MusicPlayerUpdate(&g->music);
     PlayerUpdate(&g->player, dt);
     if (g->player.roster_count != g->player.gallery.synced_roster_count) PlayerGallerySync(&g->player);
@@ -628,8 +744,11 @@ void GameDraw(Game *g) {
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, home_interactive, true));
 
             int missions_badge = MissionUnseenClaimableCount(&g->player.missions);
+            missions_badge += PvpEventUnclaimedCount(&g->player.pvp);
+            if (missions_badge == 0) missions_badge = abs(g->player.pvp.trophies - g->player.pvp.trophies_seen);
             HomeButton pressed = HomeUIDraw(&g->home_ui, home_interactive, g->player.gallery.badge, missions_badge);
             NewsDrawHome(&g->news, &g->quests, &g->nexus, &g->player, home_interactive && !resource_modal, dt);
+            if (NewsTakePvpEventRequest(&g->news)) GameOpenPvpEvent(g);
             if (!news_open && NewsIsOpen(&g->news)) ProgressionSave(&g->player);
             if (NewsDrawOverlay(&g->news, &g->quests, &g->nexus, &g->player) == NEWS_OPEN_EVENT) {
                 QuestsOpenEvent(&g->quests, &g->nexus, &g->player, NewsTargetEvent(&g->news));
@@ -649,10 +768,10 @@ void GameDraw(Game *g) {
                 g->screen = SCREEN_QUESTS;
             } else if (pressed == HOME_HISTORY) {
                 MissionsSync(&g->player, &g->map);
-                MissionsOpen(&g->missions, &g->player.missions);
+                MissionsOpen(&g->missions, &g->player, GOALS_TAB_MISSIONS);
                 g->screen = SCREEN_MISSIONS;
-            } else if (pressed != HOME_NONE) {
-                TraceLog(LOG_INFO, "Main screen button pressed: %d", pressed);
+            } else if (pressed == HOME_PVP) {
+                GameOpenPvpHub(g);
             }
             break;
         }
@@ -869,7 +988,59 @@ void GameDraw(Game *g) {
             HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
             MissionsAction pressed = MissionsDraw(&g->missions, &g->hud, &g->player, dt);
             UiFrameEnd();
-            if (pressed == MISSIONS_CLOSE) g->screen = SCREEN_HOME;
+            long long now = (long long)time(NULL);
+            if (pressed == MISSIONS_CLOSE) {
+                g->screen = SCREEN_HOME;
+            } else if (pressed == MISSIONS_FIGHT_BOT) {
+                unsigned seed = (unsigned)GetRandomValue(1, 0x7FFFFFFF);
+                GameEnterFixedPvpBattle(
+                    g,
+                    PvpOpponentFromBot(
+                        g->missions.tabs.selected, g->player.level, g->player.pvp.trophies, PvpDay(now), seed
+                    ),
+                    -1,
+                    SCREEN_MISSIONS
+                );
+            } else if (pressed == MISSIONS_REVENGE) {
+                int index = g->missions.tabs.selected;
+                PvpOpponent opponent = PvpOpponentFromBattle(&g->player.pvp.history[index], g->player.pvp.trophies);
+                GameEnterFixedPvpBattle(g, opponent, index, SCREEN_MISSIONS);
+            }
+            break;
+        }
+        case SCREEN_PVP_HUB: {
+            HomeBackgroundUpdate(&g->scene, dt);
+            HomeBackgroundDraw(&g->scene);
+            GameDrawSceneFx(g, g->scene.cam, dt);
+
+            UiFrameBegin();
+            if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
+            HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
+            PvpHubAction pressed = PvpHubDraw(&g->pvp_hub, &g->player);
+            UiFrameEnd();
+            if (pressed == PVP_HUB_CLOSE) g->screen = SCREEN_HOME;
+            if (pressed == PVP_HUB_EVENT) GameOpenPvpEvent(g);
+            if (pressed == PVP_HUB_LADDER) {
+                g->pvp_event = false;
+                GameEnterLadderBattle(g, SCREEN_PVP_HUB);
+            }
+            break;
+        }
+        case SCREEN_PVP_EVENT: {
+            HomeBackgroundUpdate(&g->scene, dt);
+            HomeBackgroundDraw(&g->scene);
+            GameDrawSceneFx(g, g->scene.cam, dt);
+
+            UiFrameBegin();
+            if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
+            HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
+            PvpEventViewAction pressed = PvpEventViewDraw(&g->pvp_event_view, &g->player);
+            UiFrameEnd();
+            if (pressed == PVP_EVENT_VIEW_CLOSE) g->screen = SCREEN_HOME;
+            if (pressed == PVP_EVENT_VIEW_ENTER) {
+                g->pvp_event = true;
+                GameEnterLadderBattle(g, SCREEN_PVP_EVENT);
+            }
             break;
         }
         case SCREEN_MAP: {
@@ -963,7 +1134,16 @@ void GameDraw(Game *g) {
                 BattleResultsAction result_action = BattleResultsFlowUpdate(&g->battle_results, dt, !resource_modal);
                 if (result_action != BATTLE_RESULTS_ACTION_NONE) {
                     bool completion_route = g->battle_reward.first_win || g->battle_reward.mastered;
-                    if (result_action == BATTLE_RESULTS_ACTION_CONTINUE && !completion_route && !g->battle_is_nexus) {
+                    if (g->battle_is_pvp) {
+                        if (result_action == BATTLE_RESULTS_ACTION_CONTINUE)
+                            GameContinuePvp(g);
+                        else
+                            GameExitBattleTo(
+                                g,
+                                result_action == BATTLE_RESULTS_ACTION_HEROES ? SCREEN_HEROES : g->pvp_return_screen
+                            );
+                    } else if (result_action == BATTLE_RESULTS_ACTION_CONTINUE && !completion_route &&
+                               !g->battle_is_nexus) {
                         GameReturnToBattleMatchmaking(g);
                     } else {
                         Screen map_screen = g->battle_is_nexus ? SCREEN_NEXUS : SCREEN_MAP;
@@ -973,7 +1153,10 @@ void GameDraw(Game *g) {
                 }
             } else {
                 if (ba == BATTLE_UI_FIGHT && !combat) {
-                    if (g->battle_energy_spent || PlayerSpendEnergy(&g->player, g->battle_energy_cost)) {
+                    bool paid = g->battle_energy_spent ||
+                                (g->battle_is_pvp ? PlayerSpendStamina(&g->player, g->battle_energy_cost)
+                                                  : PlayerSpendEnergy(&g->player, g->battle_energy_cost));
+                    if (paid) {
                         g->battle_energy_spent = true;
                         GameClearBattleOutcome(g);
                         ProgressionSave(&g->player);
@@ -982,8 +1165,13 @@ void GameDraw(Game *g) {
                         );
                         GameCommitBattleOutcome(g, g->battle_play.sim.player_won);
                     } else {
-                        GameOpenResourceDialogSilently(g, false);
+                        GameOpenResourceDialogSilently(g, g->battle_is_pvp);
                     }
+                }
+                if (ba == BATTLE_UI_NEXT && !combat && PvpSpendNext(&g->player.pvp, (long long)time(NULL))) {
+                    ProgressionSave(&g->player);
+                    g->pvp_opponent = GameLadderOpponent(g);
+                    GameEnterPvpOpponent(g);
                 }
                 leave = ba == BATTLE_UI_RETREAT;
                 bool battle_continue = !resource_modal && (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) ||
@@ -996,7 +1184,10 @@ void GameDraw(Game *g) {
                 }
             }
             if (leave) {
-                GameExitBattleTo(g, g->battle_is_nexus ? SCREEN_NEXUS : SCREEN_MAP);
+                Screen retreat_screen = g->battle_is_pvp      ? g->pvp_return_screen
+                                        : g->battle_is_nexus ? SCREEN_NEXUS
+                                                             : SCREEN_MAP;
+                GameExitBattleTo(g, retreat_screen);
             } else if (ba == BATTLE_UI_RUNES && !combat) {
                 BattleStopAmbience(&g->battle);
                 GameOpenRunes(g, SCREEN_BATTLE);
@@ -1023,6 +1214,14 @@ void GameDraw(Game *g) {
             popup_hud_player = BattleResultsFlowHudPlayer(&g->battle_results, &g->player);
         popup_hud_action = HudDraw(&g->hud, &popup_hud_player, resource_modal, false);
         UiFrameEnd();
+    }
+    if (resource_dialog_action == ENERGY_DIALOG_ACTION_PVP) {
+        EnergyDialogClose(&g->energy_dialog);
+        EnergyDialogClose(&g->stamina_dialog);
+        if (g->screen == SCREEN_BATTLE)
+            GameExitBattleTo(g, SCREEN_PVP_HUB);
+        else
+            GameOpenPvpHub(g);
     }
     if (resource_dialog_action == ENERGY_DIALOG_ACTION_QUESTS) {
         EnergyDialogClose(&g->energy_dialog);

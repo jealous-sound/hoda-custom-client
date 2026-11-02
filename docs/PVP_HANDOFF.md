@@ -1,7 +1,9 @@
 # Handoff: PvP system and PvP events
 
-Written 2026-11-02 from a read of the code, decompiled clients, caches, backend and web archives. Nothing here is
-implemented yet. Follow `AGENTS.md`: no source comments, name every cache object, run the relevant checks.
+Written 2026-11-02 from a read of the code, decompiled clients, caches, backend and web archives. Phases 1 to 4 are
+implemented: `source/pvp.c`, `source/goals_tabs.c`, `source/pvp_hub.c`, `source/pvp_event_view.c`, tuned through
+`tools/build_pvp_rules.py`. Not done: `PVP_EVENT_SCREEN` items in the news feed (the home ticker does list the event)
+and phase 5. Follow `AGENTS.md`: no source comments, name every cache object, run the relevant checks.
 
 ## Baseline
 
@@ -106,6 +108,17 @@ Onslaught variants; filter it. Values are late game, and prizes name post-4.4 it
 `client-additional-data/event_research/archived_threads.txt`. Treat text as reference and use original loc keys.
 
 The archive also confirmed `Elven Mages +300/+125` and `Nature Nexus +250% Black and Red`, matching loc keys.
+
+## Player-reported rules
+
+From archived forum threads 2221957 (FAQ) and 74982. These are community posts, not client data. The client follows the
+first three.
+
+- Max banners per win starts at 25 and rises by 1 every tenth of the ladder to 30 at the midpoint, then slowly drops.
+  The drop rate is not recorded, so `win_banners_decline_slowdown` is a guess.
+- My Events holds 19 events, unclaimed first and then by date. Older unclaimed rewards are lost.
+- PvP event and Proving Grounds matchmaking picks a random opponent from a pool based on rank and trophy or banner count.
+- Defender gear with no stated value absorbs 50%.
 
 ## Decisions to confirm with the owner before building
 

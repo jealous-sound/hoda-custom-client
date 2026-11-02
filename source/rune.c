@@ -471,6 +471,12 @@ RuneBonus RuneSquadBonus(const PlayerRunes *runes, int squad, long long now) {
     return bonus;
 }
 
+RuneBonus RuneDefsBonus(const int *defs, int count) {
+    RuneBonus bonus = {0};
+    for (int i = 0; i < count; i++) RuneBonusAdd(&bonus, RuneDefAt(defs[i]));
+    return bonus;
+}
+
 int RuneActiveDefs(const PlayerRunes *runes, int squad, long long now, int out[RUNE_SLOT_COUNT]) {
     int count = 0;
     for (int slot = 0; slot < RUNE_SLOT_COUNT; slot++) {

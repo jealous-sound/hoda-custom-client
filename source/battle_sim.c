@@ -1960,6 +1960,8 @@ static void SimUnitsSetup(
     SimUnitsFormationBonus(units, 1, &faction[1], &bonus_pct[1]);
     RuneBonus rune_bonus = SimPlayerRuneBonus(player);
     SimUnitsRuneBonus(units, 0, &rune_bonus);
+    RuneBonus enemy_rune_bonus = RuneDefsBonus(enemy->rune_defs, enemy->rune_def_count);
+    SimUnitsRuneBonus(units, 1, &enemy_rune_bonus);
     SimUnitsGameChanger(units, enemy->game_changer);
 }
 
@@ -1967,6 +1969,7 @@ void BattleSimSetup(BattleSim *s, const Player *player, const BattleRoster *enem
     memset(s, 0, sizeof(*s));
     SimUnitsSetup(s->units, s->formation_faction, s->formation_bonus_pct, player, enemy);
     s->rune_bonus[0] = SimPlayerRuneBonus(player);
+    s->rune_bonus[1] = RuneDefsBonus(enemy->rune_defs, enemy->rune_def_count);
     s->rune_def_count = RuneActiveDefs(&player->runes, player->current_squad, RuneNow(), s->rune_defs);
 }
 

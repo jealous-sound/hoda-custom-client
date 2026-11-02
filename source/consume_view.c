@@ -39,6 +39,7 @@ typedef enum {
     CONSUME_LEAVE_STORE,
     CONSUME_LEAVE_RUNES,
     CONSUME_LEAVE_GALLERY,
+    CONSUME_LEAVE_PVP,
     CONSUME_LEAVE_QUESTS
 } ConsumeLeave;
 
@@ -849,7 +850,7 @@ static void ConsumeUpdateResults(ConsumeScreen *c, const Character *final, float
 }
 
 static ConsumeLeave ConsumeDrawResultsActions(ConsumeScreen *c, const Player *p, bool input) {
-    ButtonDrawEx(&c->pvp, RosterPx(0.0f, 828.0f, 196.0f, 98.0f), false);
+    bool pvp = ButtonDrawEx(&c->pvp, RosterPx(0.0f, 828.0f, 196.0f, 98.0f), input);
     bool squad = ButtonDrawEx(&c->heroes, RosterPx(196.0f, 828.0f, 196.0f, 98.0f), input);
     bool quests = ButtonDrawEx(&c->pve, RosterPx(392.0f, 828.0f, 196.0f, 98.0f), input);
     bool again = ButtonDrawEx(&c->again, RosterPx(1638.0f, 828.0f, 392.0f, 98.0f), input);
@@ -861,6 +862,7 @@ static ConsumeLeave ConsumeDrawResultsActions(ConsumeScreen *c, const Player *p,
         ConsumeSyncShownBars(c, &p->roster[target]);
         return CONSUME_LEAVE_NONE;
     }
+    if (pvp) return CONSUME_LEAVE_PVP;
     return squad ? CONSUME_LEAVE_SQUAD : quests ? CONSUME_LEAVE_QUESTS : CONSUME_LEAVE_NONE;
 }
 
