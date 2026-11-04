@@ -18,20 +18,20 @@
       {
        "id": "UNIT_HURLOCKBOLTER",
        "tier": "I",
-       "level": 2,
+       "level": 1,
        "why": "footage t79-83: pale darkspawn archer (bow-variant Bolter model)"
       },
       {
        "id": "UNIT_HURLOCKGRUNT",
        "tier": "I",
-       "level": 2,
+       "level": 1,
        "why": "footage t42-79: bald falchion hurlock x2, front pad"
       },
       null,
       {
        "id": "UNIT_HURLOCKGRUNT",
        "tier": "I",
-       "level": 2,
+       "level": 1,
        "why": "second identical Grunt in same footage, front pad"
       },
       null
@@ -50,19 +50,19 @@
       {
        "id": "UNIT_HURLOCKBOLTER",
        "tier": "I",
-       "level": 4,
+       "level": 1,
        "why": "footage t17/t41-45: kettle-helm crossbowman x2 (matches t4 Bolter portrait)"
       },
       {
        "id": "UNIT_HURLOCKGRUNT",
        "tier": "I",
-       "level": 4,
+       "level": 1,
        "why": "footage: falchion grunt between the crossbowmen, front pad"
       },
       {
        "id": "UNIT_HURLOCKBOLTER",
        "tier": "I",
-       "level": 4,
+       "level": 1,
        "why": "second identical crossbowman in same footage"
       },
       null,
@@ -83,19 +83,19 @@
       {
        "id": "UNIT_HURLOCKBOLTER",
        "tier": "I",
-       "level": 6,
+       "level": 2,
        "why": "footage t27: kettle-helm crossbowman x2 on standard pads"
       },
       {
        "id": "UNIT_HURLOCKEMISSARY",
        "tier": "I",
-       "level": 7,
+       "level": 2,
        "why": "footage: gaunt bone-white caster w/ red sash on ornate stone pad (special slot)"
       },
       {
        "id": "UNIT_HURLOCKBOLTER",
        "tier": "I",
-       "level": 6,
+       "level": 2,
        "why": "second identical crossbowman in same footage"
       },
       null,
@@ -115,25 +115,25 @@
       {
        "id": "UNIT_HURLOCKBOLTER",
        "tier": "I",
-       "level": 8,
+       "level": 1,
        "why": "footage t21/t47: kettle-helm crossbowman at right of enemy line"
       },
       {
        "id": "UNIT_HURLOCKGRUNT",
        "tier": "I",
-       "level": 8,
+       "level": 1,
        "why": "footage: falchion grunt x2 in the 4-enemy line"
       },
       {
        "id": "UNIT_GENLOCKBRUTE",
        "tier": "I",
-       "level": 9,
+       "level": 1,
        "why": "footage: bulky quadrupedal genlock on ornate stone pad, 'Slow' claw attack t53"
       },
       {
        "id": "UNIT_HURLOCKGRUNT",
        "tier": "I",
-       "level": 8,
+       "level": 1,
        "why": "second identical Grunt in same footage"
       },
       null
@@ -152,30 +152,30 @@
       {
        "id": "UNIT_HURLOCKEMISSARY",
        "tier": "I",
-       "level": 11,
+       "level": 5,
        "why": "footage t28/t36: staff-wielding emissary on stone pad directly behind boss"
       },
       {
        "id": "UNIT_GENLOCKBRUTE",
        "tier": "I",
-       "level": 12,
+       "level": 5,
        "why": "BOSS — tutorial text on screen t28: 'the boss is a Genlock Brute... can stun multiple heroes'; gold pad"
       },
       {
        "id": "UNIT_HURLOCKBOLTER",
        "tier": "I",
-       "level": 11,
+       "level": 5,
        "why": "footage t44: bow-archer variant, same model as node 1"
       },
       {
        "id": "UNIT_HURLOCKGRUNT",
        "tier": "I",
-       "level": 11,
+       "level": 5,
        "why": "footage t36: falchion grunt, fourth enemy"
       },
       null
      ],
-     "notes": "Exact 4-unit boss squad from Modojo footage — the only Map-1 node where the game names an enemy on screen (Genlock Brute, the 'alpha' of the map goal). Boss front slot 1 on gold pad, Emissary back slot 0 behind it, per filmed layout. Difficulty spike authored at levels 11-12 (+~3-4 over node 4, boss highest): the filmed 4-unit player squad LOSES here, confirming the spike. Map 1 has no separate Challenge node (5 story nodes only). Grunt/Bolter tier-I cap is 15, Emissary/Brute 20 — all levels legal. Do NOT add Shriek/Ogre/Genlock Alpha as fill-ins: absent from all Map-1 footage."
+     "notes": "Exact 4-unit boss squad from Modojo footage — the only Map-1 node where the game names an enemy on screen (Genlock Brute, the 'alpha' of the map goal). Boss front slot 1 on gold pad, Emissary back slot 0 behind it, per filmed layout. Levels retuned 2026-11-04 (map 1 nodes 1-5 at 1/1/2/1/5) so the 5.4.4 tutorial's scripted outcomes hold in battle_sim: the squad with Ashaad loses here, the squad with the tutorial Rare wins. The filmed player squad also LOSES here. Map 1 has no separate Challenge node (5 story nodes only). Grunt/Bolter tier-I cap is 15, Emissary/Brute 20 — all levels legal. Do NOT add Shriek/Ogre/Genlock Alpha as fill-ins: absent from all Map-1 footage."
     }
    ]
   },

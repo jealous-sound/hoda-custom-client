@@ -5702,6 +5702,32 @@
  ],
  "squad_pool": [
   {
+   "rating": 1471,
+   "cells": [
+    {
+     "id": "UNIT_HURLOCKBOLTER",
+     "tier": "I",
+     "level": 1
+    },
+    {
+     "id": "UNIT_HURLOCKGRUNT",
+     "tier": "I",
+     "level": 1
+    },
+    {
+     "id": "UNIT_GENLOCKBRUTE",
+     "tier": "I",
+     "level": 1
+    },
+    {
+     "id": "UNIT_HURLOCKGRUNT",
+     "tier": "I",
+     "level": 1
+    },
+    null
+   ]
+  },
+  {
    "rating": 1934,
    "cells": [
     {
@@ -5728,27 +5754,27 @@
    ]
   },
   {
-   "rating": 2503,
+   "rating": 2428,
    "cells": [
     {
-     "id": "UNIT_HURLOCKBOLTER",
+     "id": "UNIT_HURLOCKEMISSARY",
      "tier": "I",
-     "level": 8
-    },
-    {
-     "id": "UNIT_HURLOCKGRUNT",
-     "tier": "I",
-     "level": 8
+     "level": 5
     },
     {
      "id": "UNIT_GENLOCKBRUTE",
      "tier": "I",
-     "level": 9
+     "level": 5
+    },
+    {
+     "id": "UNIT_HURLOCKBOLTER",
+     "tier": "I",
+     "level": 5
     },
     {
      "id": "UNIT_HURLOCKGRUNT",
      "tier": "I",
-     "level": 8
+     "level": 5
     },
     null
    ]
@@ -5857,32 +5883,6 @@
      "id": "UNIT_CARTATHUG",
      "tier": "II",
      "level": 16
-    },
-    null
-   ]
-  },
-  {
-   "rating": 3428,
-   "cells": [
-    {
-     "id": "UNIT_HURLOCKEMISSARY",
-     "tier": "I",
-     "level": 11
-    },
-    {
-     "id": "UNIT_GENLOCKBRUTE",
-     "tier": "I",
-     "level": 12
-    },
-    {
-     "id": "UNIT_HURLOCKBOLTER",
-     "tier": "I",
-     "level": 11
-    },
-    {
-     "id": "UNIT_HURLOCKGRUNT",
-     "tier": "I",
-     "level": 11
     },
     null
    ]
