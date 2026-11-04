@@ -46,6 +46,11 @@ python3 tools/check_comments.py
 `player_save.dat` as before. `hoda-original-backend` is the separate Python server for the original
 Android client.
 
+`make dist` builds a playable copy in `../hoda-custom-dist` (override with `DIST_DIR=`): the binary with raylib
+bundled next to it, `data/`, and only the parts of `client-additional-data` the game reads (about 2.1 GB of the
+local cache). Players start it with `play.sh`; `DIST_BACKEND_URL=http://host:port` makes that the default server.
+Rebuilding replaces only a folder this target made. Most of the copy is EA's original 4.4.0 game data.
+
 A first launch (no save, or no backend profile) creates a guest account and runs the 5.4.4 tutorial on the
 three-hero starter squad in `data/new_player.json`; the name prompt follows it. Against the backend the guest's id
 and secret live in `account.dat` (`HOD_ACCOUNT_PATH`). `HOD_SKIP_TUTORIAL=1` skips the tutorial and

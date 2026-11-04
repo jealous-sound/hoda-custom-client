@@ -8,6 +8,8 @@ SRC     = source/main.c
 DEPS    = $(wildcard source/*.c source/*.h source/vendors/*.c source/vendors/*.h)
 TEST_TARGET = tests/battle_sim_test
 BACKEND_DIR ?= ../hoda-custom-backend
+DIST_DIR ?= ../hoda-custom-dist
+DIST_BACKEND_URL ?=
 
 $(TARGET): $(DEPS) Makefile
 	$(CC) $(CFLAGS) $(SRC) -o $(TARGET) $(LDFLAGS) $(LIBS)
@@ -17,7 +19,7 @@ $(TEST_TARGET): tests/battle_sim_test.c $(DEPS) Makefile
 
 test: $(TEST_TARGET)
 	python3 client-additional-data/validate_characters.py
-	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py
+	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py tests/test_build_dist.py
 	python3 tools/audit_character_models.py --deep
 	python3 tools/validate_ability_recipes.py
 	python3 tools/validate_intrinsic_passives.py
@@ -42,6 +44,9 @@ run: $(TARGET)
 play:
 	HOD_CLIENT_DIR="$(CURDIR)" "$(BACKEND_DIR)/scripts/play-local.sh"
 
+dist: $(TARGET)
+	python3 tools/build_dist.py --replace --out "$(DIST_DIR)" --backend-url "$(DIST_BACKEND_URL)"
+
 clean:
 	rm -f $(TARGET) $(TEST_TARGET)
 
@@ -51,4 +56,4 @@ format:
 format-check:
 	clang-format --dry-run --Werror source/*.c
 
-.PHONY: run play test clean format format-check
+.PHONY: run play dist test clean format format-check
