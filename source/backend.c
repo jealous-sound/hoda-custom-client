@@ -29,6 +29,7 @@ typedef struct {
     long long session_failed_at;
     char token[BACKEND_TOKEN_CAP];
     bool account_ready;
+    bool account_fresh;
     char player_id[BACKEND_PLAYER_ID_CAP];
     char secret[BACKEND_SECRET_CAP];
     long long clock_offset;
@@ -74,6 +75,10 @@ static BackendState *BackendResolve(void) {
     backend_state.enabled = BackendParseUrl(url, &backend_state);
     if (!backend_state.enabled) TraceLog(LOG_WARNING, "Backend: unsupported %s=%s", BACKEND_URL_ENV, url);
     return &backend_state;
+}
+
+void BackendRetryNow(void) {
+    backend_state.session_failed_at = 0;
 }
 
 bool BackendEnabled(void) {
@@ -264,6 +269,7 @@ static bool BackendCreateGuest(BackendState *state, const char *path) {
     if (!BackendRequest("POST", "/v1/players", NULL, -1, &response)) return false;
     cJSON *json = response.status == BACKEND_HTTP_CREATED ? cJSON_Parse(response.body) : NULL;
     bool ok = BackendAdoptCredentials(state, json) && BackendWriteAccount(state, path);
+    state->account_fresh = ok;
     if (ok)
         TraceLog(LOG_INFO, "Backend: created guest account %s", state->player_id);
     else
@@ -359,6 +365,12 @@ BackendProfileFetch BackendFetchProfile(char **out_text, long long *out_revision
     *out_text = NULL;
     *out_revision = BACKEND_REVISION_UNKNOWN;
     if (!BackendOpenSession()) return BACKEND_PROFILE_UNAVAILABLE;
+    if (backend_state.account_fresh) {
+        backend_state.account_fresh = false;
+        BackendAcceptProfile(0);
+        TraceLog(LOG_INFO, "Backend: new guest %s has no profile yet, starting fresh", BackendPlayerId());
+        return BACKEND_PROFILE_MISSING;
+    }
     char path[BACKEND_PATH_CAP];
     BackendProfilePath(path, sizeof(path));
     BackendResponse response;

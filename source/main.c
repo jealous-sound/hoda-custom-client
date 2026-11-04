@@ -80,7 +80,7 @@
 
 static void RunGame(void) {
     Game game = {0};
-    GameInitialize(&game);
+    if (!GameInitialize(&game)) return;
 
     DebugShot shot = DebugShotFromEnvironment();
     float mouse_x = 0.0f, mouse_y = 0.0f;

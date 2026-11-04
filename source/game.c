@@ -647,8 +647,67 @@ static void GameDrawNamePrompt(Game *g, float dt) {
 }
 
 #define STARTUP_IMAGE_MANIFEST HOD_CACHE "startup_images.txt"
+#define GAME_CONNECTION_TITLE_SIZE 30.0f
+#define GAME_CONNECTION_MESSAGE_SIZE 22.0f
+#define GAME_CONNECTION_TEXT_COLOR ((Color){242, 236, 218, 255})
 
-void GameInitialize(Game *g) {
+static bool GameDrawConnectionError(Button *retry) {
+    Rectangle popup = MessagePopupDrawFrame();
+    Rectangle content = MessagePopupContent(popup);
+    UiDrawTextCentered(
+        GuiFont(FNT_COOL),
+        LocGet("CONNECTION_ERROR_TITLE"),
+        UiRect(content, 0.5f, 0.0f, 1.0f, 0.22f),
+        GAME_CONNECTION_TITLE_SIZE,
+        GAME_CONNECTION_TEXT_COLOR
+    );
+    MessagePopupDrawText(
+        GuiFont(FNT_MENU),
+        LocGet("CONNECTION_ERROR_MESSAGE"),
+        UiRect(content, 0.5f, 0.55f, 1.0f, 0.6f),
+        GAME_CONNECTION_MESSAGE_SIZE,
+        GAME_CONNECTION_TEXT_COLOR
+    );
+    bool pressed = ButtonDraw(retry, MessagePopupOkButton(popup));
+    return pressed || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER);
+}
+
+static bool GameAwaitServerRetry(void) {
+    Button retry = ButtonLoadText(
+        GUI_BTN_GOLD,
+        GUI_BTN_GOLD_ON,
+        LocGet("CONNECTION_ERROR_TRY_AGAIN"),
+        GuiFont(FNT_COOL),
+        (Vector2){0.5f, 0.5f},
+        0.34f
+    );
+    while (!WindowShouldClose() && !IsKeyPressed(KEY_ESCAPE)) {
+        BeginDrawing();
+        ClearBackground(BLACK);
+        UiFrameBegin();
+        bool retried = GameDrawConnectionError(&retry);
+        UiFrameEnd();
+        EndDrawing();
+        if (retried) {
+            BackendRetryNow();
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool GameLoadProgression(Game *g) {
+    ProgressionLoadResult loaded = ProgressionLoad(&g->player);
+    while (loaded == PROGRESSION_LOAD_UNAVAILABLE && ProgressionNeedsServer()) {
+        TraceLog(LOG_WARNING, "Account: server unreachable, waiting for retry");
+        if (!GameAwaitServerRetry()) return false;
+        loaded = ProgressionLoad(&g->player);
+    }
+    if (loaded == PROGRESSION_LOAD_NEW_ACCOUNT) GameStartNewAccount(g);
+    return true;
+}
+
+bool GameInitialize(Game *g) {
     g->screen = SCREEN_HOME;
     ProgressionInitializePlayerDefaults(&g->player);
 
@@ -659,7 +718,7 @@ void GameInitialize(Game *g) {
     MissionCatalogLoad("data/missions.json");
 
     PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
-    if (ProgressionLoad(&g->player) == PROGRESSION_LOAD_NEW_ACCOUNT) GameStartNewAccount(g);
+    if (!GameLoadProgression(g)) return false;
     PvpEventSync(&g->player.pvp, ServerNow());
     if (PvpSimulateDefense(&g->player.pvp, g->player.level, ServerNow()) > 0) ProgressionSave(&g->player);
     PlayerGallerySync(&g->player);
@@ -703,6 +762,7 @@ void GameInitialize(Game *g) {
     g->tutorial_init_signal = true;
     NamePromptInitialize(&g->name_prompt);
     ResourceRecordImagesEnd(STARTUP_IMAGE_MANIFEST);
+    return true;
 }
 
 static bool GameResourceDialogOpen(const Game *g) {

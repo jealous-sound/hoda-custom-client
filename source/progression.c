@@ -1834,6 +1834,10 @@ ProgressionLoadResult ProgressionLoad(Player *player) {
     return ProgressionLoadFromPath(player, path) ? PROGRESSION_LOAD_RESTORED : PROGRESSION_LOAD_UNAVAILABLE;
 }
 
+bool ProgressionNeedsServer(void) {
+    return ProgressionPersistenceEnabled() && BackendEnabled();
+}
+
 bool ProgressionSave(const Player *player) {
     if (!ProgressionPersistenceEnabled()) return true;
     if (BackendEnabled()) return ProgressionSaveToBackend(player);
