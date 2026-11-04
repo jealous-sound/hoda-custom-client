@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -15,10 +16,13 @@
 #define BACKEND_REVISION_HEADER "X-Profile-Revision"
 #define BACKEND_HTTP_OK 200
 #define BACKEND_HTTP_CREATED 201
+#define BACKEND_HTTP_UNAUTHORIZED 401
 #define BACKEND_HTTP_NOT_FOUND 404
 #define BACKEND_HTTP_CONFLICT 409
 #define BACKEND_SESSION_RETRY_SECONDS 10
 #define BACKEND_REVISION_UNKNOWN -1
+#define BACKEND_UPLOAD_RETRY_SECONDS BACKEND_SESSION_RETRY_SECONDS
+#define BACKEND_SHUTDOWN_FLUSH_SECONDS 8
 
 typedef struct {
     bool resolved;
@@ -33,7 +37,6 @@ typedef struct {
     char player_id[BACKEND_PLAYER_ID_CAP];
     char secret[BACKEND_SECRET_CAP];
     long long clock_offset;
-    long long profile_revision;
 } BackendState;
 
 static BackendState backend_state;
@@ -43,8 +46,6 @@ typedef struct {
     char *body;
     long long revision;
 } BackendResponse;
-
-static long long BackendProfileRevision(void);
 
 static bool BackendParseUrl(const char *url, BackendState *state) {
     const char *scheme = "http://";
@@ -75,10 +76,6 @@ static BackendState *BackendResolve(void) {
     backend_state.enabled = BackendParseUrl(url, &backend_state);
     if (!backend_state.enabled) TraceLog(LOG_WARNING, "Backend: unsupported %s=%s", BACKEND_URL_ENV, url);
     return &backend_state;
-}
-
-void BackendRetryNow(void) {
-    backend_state.session_failed_at = 0;
 }
 
 bool BackendEnabled(void) {
@@ -337,22 +334,8 @@ static bool BackendOpenSession(void) {
     return state->session_open;
 }
 
-long long ServerNow(void) {
-    long long now = (long long)time(NULL);
-    if (!BackendEnabled() || !BackendOpenSession()) return now;
-    return now + backend_state.clock_offset;
-}
-
 static void BackendProfilePath(char *path, int cap) {
     snprintf(path, cap, "/v1/players/%s/profile", BackendPlayerId());
-}
-
-static long long BackendProfileRevision(void) {
-    return BackendResolve()->profile_revision;
-}
-
-void BackendAcceptProfile(long long revision) {
-    backend_state.profile_revision = revision;
 }
 
 typedef enum {
@@ -361,13 +344,13 @@ typedef enum {
     BACKEND_PROFILE_UNAVAILABLE,
 } BackendProfileFetch;
 
-BackendProfileFetch BackendFetchProfile(char **out_text, long long *out_revision) {
+static BackendProfileFetch BackendDownloadProfile(char **out_text, long long *out_revision) {
     *out_text = NULL;
     *out_revision = BACKEND_REVISION_UNKNOWN;
     if (!BackendOpenSession()) return BACKEND_PROFILE_UNAVAILABLE;
     if (backend_state.account_fresh) {
         backend_state.account_fresh = false;
-        BackendAcceptProfile(0);
+        *out_revision = 0;
         TraceLog(LOG_INFO, "Backend: new guest %s has no profile yet, starting fresh", BackendPlayerId());
         return BACKEND_PROFILE_MISSING;
     }
@@ -382,7 +365,7 @@ BackendProfileFetch BackendFetchProfile(char **out_text, long long *out_revision
     }
     BackendProfileFetch result = BACKEND_PROFILE_UNAVAILABLE;
     if (response.status == BACKEND_HTTP_NOT_FOUND) {
-        BackendAcceptProfile(0);
+        *out_revision = 0;
         result = BACKEND_PROFILE_MISSING;
         TraceLog(LOG_INFO, "Backend: no profile for %s yet, starting fresh", BackendPlayerId());
     } else {
@@ -392,27 +375,288 @@ BackendProfileFetch BackendFetchProfile(char **out_text, long long *out_revision
     return result;
 }
 
-bool BackendStoreProfile(const char *text) {
-    if (BackendProfileRevision() == BACKEND_REVISION_UNKNOWN) {
-        TraceLog(LOG_WARNING, "Backend: profile was never loaded, save refused to protect server progress");
-        return false;
-    }
-    if (!BackendOpenSession()) return false;
+typedef enum {
+    BACKEND_UPLOAD_STORED,
+    BACKEND_UPLOAD_REJECTED,
+    BACKEND_UPLOAD_UNREACHABLE,
+} BackendUpload;
+
+static BackendUpload BackendUploadProfile(const char *text, long long revision, long long *stored_revision) {
+    if (!BackendOpenSession()) return BACKEND_UPLOAD_UNREACHABLE;
     char path[BACKEND_PATH_CAP];
     BackendProfilePath(path, sizeof(path));
     BackendResponse response;
-    if (!BackendRequest("PUT", path, text, backend_state.profile_revision, &response)) return false;
-    bool ok = response.status == BACKEND_HTTP_OK;
-    if (ok)
-        backend_state.profile_revision = response.revision;
-    else if (response.status == BACKEND_HTTP_CONFLICT)
-        TraceLog(
-            LOG_WARNING,
-            "Backend: profile changed elsewhere, save rejected (revision %lld)",
-            backend_state.profile_revision
-        );
-    else
+    if (!BackendRequest("PUT", path, text, revision, &response)) return BACKEND_UPLOAD_UNREACHABLE;
+    BackendUpload result = BACKEND_UPLOAD_REJECTED;
+    if (response.status == BACKEND_HTTP_OK) {
+        *stored_revision = response.revision;
+        result = BACKEND_UPLOAD_STORED;
+    } else if (response.status == BACKEND_HTTP_UNAUTHORIZED) {
+        backend_state.session_open = false;
+        result = BACKEND_UPLOAD_UNREACHABLE;
+        TraceLog(LOG_WARNING, "Backend: session expired, reopening before the next save");
+    } else if (response.status == BACKEND_HTTP_CONFLICT) {
+        TraceLog(LOG_WARNING, "Backend: profile changed elsewhere, save rejected (revision %lld)", revision);
+    } else {
         TraceLog(LOG_WARNING, "Backend: profile save failed (HTTP %d): %s", response.status, response.body);
+    }
     free(response.body);
-    return ok;
+    return result;
+}
+
+typedef struct {
+    pthread_mutex_t lock;
+    pthread_cond_t wake;
+    pthread_cond_t settled;
+    pthread_t thread;
+    bool started;
+    bool stopping;
+    bool retry_wanted;
+    bool session_wanted;
+    bool fetch_wanted;
+    bool fetch_running;
+    bool fetch_ready;
+    BackendProfileFetch fetch_result;
+    char *fetch_text;
+    long long fetch_revision;
+    char *upload_text;
+    bool upload_running;
+    long long upload_due_at;
+    long long revision;
+    bool clock_known;
+    long long clock_offset;
+} BackendWorker;
+
+static BackendWorker backend_worker = {
+    .lock = PTHREAD_MUTEX_INITIALIZER,
+    .wake = PTHREAD_COND_INITIALIZER,
+    .settled = PTHREAD_COND_INITIALIZER,
+    .revision = BACKEND_REVISION_UNKNOWN,
+};
+
+static void BackendWorkerPublishClock(BackendWorker *w) {
+    if (!backend_state.session_open) return;
+    w->clock_known = true;
+    w->clock_offset = backend_state.clock_offset;
+}
+
+static void BackendWorkerFetch(BackendWorker *w) {
+    w->fetch_wanted = false;
+    w->fetch_running = true;
+    pthread_mutex_unlock(&w->lock);
+    char *text = NULL;
+    long long revision = BACKEND_REVISION_UNKNOWN;
+    BackendProfileFetch result = BackendDownloadProfile(&text, &revision);
+    pthread_mutex_lock(&w->lock);
+    free(w->fetch_text);
+    w->fetch_text = text;
+    w->fetch_revision = revision;
+    w->fetch_result = result;
+    w->fetch_running = false;
+    w->fetch_ready = true;
+}
+
+static void BackendWorkerUpload(BackendWorker *w) {
+    char *text = w->upload_text;
+    long long revision = w->revision;
+    w->upload_text = NULL;
+    w->upload_running = true;
+    pthread_mutex_unlock(&w->lock);
+    long long stored_revision = revision;
+    BackendUpload result = BackendUploadProfile(text, revision, &stored_revision);
+    pthread_mutex_lock(&w->lock);
+    w->upload_running = false;
+    if (result == BACKEND_UPLOAD_STORED) w->revision = stored_revision;
+    if (result == BACKEND_UPLOAD_UNREACHABLE && !w->upload_text) {
+        w->upload_text = text;
+        w->upload_due_at = (long long)time(NULL) + BACKEND_UPLOAD_RETRY_SECONDS;
+    } else {
+        free(text);
+    }
+}
+
+static void BackendWorkerOpenSession(BackendWorker *w) {
+    w->session_wanted = false;
+    pthread_mutex_unlock(&w->lock);
+    BackendOpenSession();
+    pthread_mutex_lock(&w->lock);
+}
+
+static void BackendWorkerSleep(BackendWorker *w) {
+    if (!w->upload_text) {
+        pthread_cond_wait(&w->wake, &w->lock);
+        return;
+    }
+    struct timespec due = {.tv_sec = (time_t)w->upload_due_at};
+    pthread_cond_timedwait(&w->wake, &w->lock, &due);
+}
+
+static void *BackendWorkerRun(void *argument) {
+    BackendWorker *w = argument;
+    pthread_mutex_lock(&w->lock);
+    for (;;) {
+        bool upload_due = w->upload_text && (long long)time(NULL) >= w->upload_due_at;
+        if (w->retry_wanted) {
+            w->retry_wanted = false;
+            backend_state.session_failed_at = 0;
+        } else if (w->fetch_wanted) {
+            BackendWorkerFetch(w);
+        } else if (upload_due) {
+            BackendWorkerUpload(w);
+        } else if (w->session_wanted) {
+            BackendWorkerOpenSession(w);
+        } else if (w->stopping) {
+            break;
+        } else {
+            BackendWorkerSleep(w);
+            continue;
+        }
+        BackendWorkerPublishClock(w);
+        pthread_cond_broadcast(&w->settled);
+    }
+    pthread_mutex_unlock(&w->lock);
+    return NULL;
+}
+
+static BackendWorker *BackendWorkerStart(void) {
+    BackendWorker *w = &backend_worker;
+    BackendResolve();
+    if (w->started) return w;
+    if (pthread_create(&w->thread, NULL, BackendWorkerRun, w) != 0)
+        TraceLog(LOG_FATAL, "Backend: could not start the network worker");
+    w->started = true;
+    return w;
+}
+
+static void BackendWorkerSignal(BackendWorker *w) {
+    pthread_cond_signal(&w->wake);
+}
+
+void BackendRetryNow(void) {
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    w->retry_wanted = true;
+    BackendWorkerSignal(w);
+    pthread_mutex_unlock(&w->lock);
+}
+
+long long ServerNow(void) {
+    long long now = (long long)time(NULL);
+    if (!BackendEnabled()) return now;
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    bool known = w->clock_known;
+    long long offset = w->clock_offset;
+    if (!known && !w->session_wanted) {
+        w->session_wanted = true;
+        BackendWorkerSignal(w);
+    }
+    pthread_mutex_unlock(&w->lock);
+    return known ? now + offset : now;
+}
+
+static void BackendRequestFetchLocked(BackendWorker *w) {
+    if (w->fetch_ready || w->fetch_running || w->fetch_wanted) return;
+    w->fetch_wanted = true;
+    BackendWorkerSignal(w);
+}
+
+void BackendBeginProfileFetch(void) {
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    BackendRequestFetchLocked(w);
+    pthread_mutex_unlock(&w->lock);
+}
+
+bool BackendProfileFetchSettled(void) {
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    bool settled = w->fetch_ready;
+    pthread_mutex_unlock(&w->lock);
+    return settled;
+}
+
+BackendProfileFetch BackendFetchProfile(char **out_text, long long *out_revision) {
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    BackendRequestFetchLocked(w);
+    while (!w->fetch_ready) pthread_cond_wait(&w->settled, &w->lock);
+    w->fetch_ready = false;
+    *out_text = w->fetch_text;
+    *out_revision = w->fetch_revision;
+    w->fetch_text = NULL;
+    BackendProfileFetch result = w->fetch_result;
+    if (result == BACKEND_PROFILE_MISSING) w->revision = w->fetch_revision;
+    pthread_mutex_unlock(&w->lock);
+    return result;
+}
+
+void BackendAcceptProfile(long long revision) {
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    w->revision = revision;
+    pthread_mutex_unlock(&w->lock);
+}
+
+static char *BackendCopyText(const char *text) {
+    size_t length = strlen(text);
+    char *copy = malloc(length + 1);
+    if (copy) memcpy(copy, text, length + 1);
+    return copy;
+}
+
+bool BackendStoreProfile(const char *text) {
+    BackendWorker *w = BackendWorkerStart();
+    char *copy = BackendCopyText(text);
+    if (!copy) return false;
+    pthread_mutex_lock(&w->lock);
+    bool loaded = w->revision != BACKEND_REVISION_UNKNOWN;
+    if (loaded) {
+        free(w->upload_text);
+        w->upload_text = copy;
+        w->upload_due_at = 0;
+        BackendWorkerSignal(w);
+    }
+    pthread_mutex_unlock(&w->lock);
+    if (!loaded) {
+        free(copy);
+        TraceLog(LOG_WARNING, "Backend: profile was never loaded, save refused to protect server progress");
+    }
+    return loaded;
+}
+
+static bool BackendWorkerInFlight(const BackendWorker *w) {
+    bool upload_due = w->upload_text && (long long)time(NULL) >= w->upload_due_at;
+    return w->fetch_wanted || w->fetch_running || w->upload_running || upload_due;
+}
+
+bool BackendBusy(void) {
+    if (!BackendEnabled()) return false;
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    bool busy = BackendWorkerInFlight(w);
+    pthread_mutex_unlock(&w->lock);
+    return busy;
+}
+
+void BackendShutdown(void) {
+    BackendWorker *w = &backend_worker;
+    if (!w->started) return;
+    pthread_mutex_lock(&w->lock);
+    if (w->upload_text) w->upload_due_at = 0;
+    BackendWorkerSignal(w);
+    struct timespec deadline = {.tv_sec = time(NULL) + BACKEND_SHUTDOWN_FLUSH_SECONDS};
+    while ((w->upload_text || w->upload_running) &&
+           pthread_cond_timedwait(&w->settled, &w->lock, &deadline) != ETIMEDOUT) {}
+    bool unsaved = w->upload_text || w->upload_running;
+    bool idle = !w->upload_running && !w->fetch_running;
+    w->stopping = true;
+    BackendWorkerSignal(w);
+    pthread_mutex_unlock(&w->lock);
+    if (unsaved) TraceLog(LOG_WARNING, "Backend: the last save did not reach the server before exit");
+    if (idle)
+        pthread_join(w->thread, NULL);
+    else
+        pthread_detach(w->thread);
+    w->started = false;
 }

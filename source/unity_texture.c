@@ -6,12 +6,15 @@ typedef enum {
     UNITY_TEXTURE_RGBA4444 = 13,
     UNITY_TEXTURE_PVRTC_RGB4 = 32,
     UNITY_TEXTURE_PVRTC_RGBA4 = 33,
+    UNITY_TEXTURE_ETC_RGB4 = 34,
 } UnityTextureFormat;
 
 #define TEXTURE_BLOCK_SIZE 4
 #define TEXTURE_BLOCK_PIXELS (TEXTURE_BLOCK_SIZE * TEXTURE_BLOCK_SIZE)
 #define PVRTC_BLOCK_BYTES 8
 #define DXT5_BLOCK_BYTES 16
+#define ETC1_BLOCK_BYTES 8
+#define ETC1_HALF_BLOCK 2
 
 typedef struct {
     int r, g, b, a;
@@ -212,6 +215,79 @@ static bool Dxt5Decode(const unsigned char *data, Image *image) {
     return true;
 }
 
+static const int ETC1_MODIFIERS[8][2] = {{2, 8}, {5, 17}, {9, 29}, {13, 42}, {18, 60}, {24, 80}, {33, 106}, {47, 183}};
+
+static int Etc1Extend4(int v) {
+    return v << 4 | v;
+}
+
+static int Etc1Extend5(int v) {
+    return v << 3 | v >> 2;
+}
+
+static int Etc1SignedDelta(int v) {
+    return v >= 4 ? v - 8 : v;
+}
+
+static unsigned char Etc1Clamp(int v) {
+    return (unsigned char)(v < 0 ? 0 : v > 255 ? 255 : v);
+}
+
+static void Etc1BaseColors(const unsigned char *block, int out[2][3]) {
+    bool differential = block[3] & 2;
+    for (int channel = 0; channel < 3; channel++) {
+        int byte = block[channel];
+        if (differential) {
+            int first = byte >> 3;
+            out[0][channel] = Etc1Extend5(first);
+            out[1][channel] = Etc1Extend5((first + Etc1SignedDelta(byte & 7)) & 31);
+        } else {
+            out[0][channel] = Etc1Extend4(byte >> 4);
+            out[1][channel] = Etc1Extend4(byte & 15);
+        }
+    }
+}
+
+static void Etc1DecodeBlock(const unsigned char *block, Color out[TEXTURE_BLOCK_PIXELS]) {
+    int base[2][3];
+    Etc1BaseColors(block, base);
+    bool flipped = block[3] & 1;
+    int tables[2] = {block[3] >> 5, block[3] >> 2 & 7};
+    unsigned int msb = (unsigned int)block[4] << 8 | block[5];
+    unsigned int lsb = (unsigned int)block[6] << 8 | block[7];
+    for (int x = 0; x < TEXTURE_BLOCK_SIZE; x++) {
+        for (int y = 0; y < TEXTURE_BLOCK_SIZE; y++) {
+            int bit = x * TEXTURE_BLOCK_SIZE + y;
+            int half = (flipped ? y : x) >= ETC1_HALF_BLOCK;
+            int index = (int)((msb >> bit & 1) << 1 | (lsb >> bit & 1));
+            int magnitude = ETC1_MODIFIERS[tables[half]][index & 1];
+            int modifier = index & 2 ? -magnitude : magnitude;
+            out[y * TEXTURE_BLOCK_SIZE + x] = (Color){
+                Etc1Clamp(base[half][0] + modifier),
+                Etc1Clamp(base[half][1] + modifier),
+                Etc1Clamp(base[half][2] + modifier),
+                255,
+            };
+        }
+    }
+}
+
+static int Etc1DataSize(int width, int height) {
+    return TextureBlocksAcross(width) * TextureBlocksAcross(height) * ETC1_BLOCK_BYTES;
+}
+
+static bool Etc1Decode(const unsigned char *data, Image *image) {
+    Color block[TEXTURE_BLOCK_PIXELS];
+    int blocks_x = TextureBlocksAcross(image->width), blocks_y = TextureBlocksAcross(image->height);
+    for (int by = 0; by < blocks_y; by++) {
+        for (int bx = 0; bx < blocks_x; bx++, data += ETC1_BLOCK_BYTES) {
+            Etc1DecodeBlock(data, block);
+            TextureCopyBlock(image, bx, by, block);
+        }
+    }
+    return true;
+}
+
 static Color UncompressedPixel(UnityTextureFormat format, const unsigned char *p) {
     switch (format) {
         case UNITY_TEXTURE_RGB24:
@@ -248,6 +324,8 @@ static int UnityTextureDataSize(UnityTextureFormat format, int width, int height
             return PvrtcDataSize(width, height);
         case UNITY_TEXTURE_DXT5:
             return Dxt5DataSize(width, height);
+        case UNITY_TEXTURE_ETC_RGB4:
+            return Etc1DataSize(width, height);
         default:
             return width * height * UncompressedPixelBytes(format);
     }
@@ -266,6 +344,8 @@ static Image UnityDecodeTextureData(UnityTextureFormat format, int width, int he
         decoded = PvrtcDecode(data, &image);
     } else if (format == UNITY_TEXTURE_DXT5) {
         decoded = Dxt5Decode(data, &image);
+    } else if (format == UNITY_TEXTURE_ETC_RGB4) {
+        decoded = Etc1Decode(data, &image);
     } else if (UncompressedPixelBytes(format) > 0) {
         int stride = UncompressedPixelBytes(format);
         for (int y = 0; y < height; y++)

@@ -25,6 +25,7 @@
 #include "ui.c"
 #include "assets.c"
 #include "loc.c"
+#include "loading_screen.c"
 #include "character.c"
 #include "consume.c"
 #include "passive.c"
@@ -87,12 +88,14 @@ static void RunGame(void) {
     bool mouse_override = DebugMousePosition(&mouse_x, &mouse_y);
 
     while (!WindowShouldClose()) {
-        if (IsKeyPressed(KEY_ESCAPE) && !GameHandlePopupBack(&game)) break;
+        bool server_wait = GameBusyOverlayUpdate(&game, GetFrameTime());
+        if (!server_wait && IsKeyPressed(KEY_ESCAPE) && !GameHandlePopupBack(&game)) break;
         if (mouse_override) SetMousePosition((int)(mouse_x * UiScale()), (int)(mouse_y * UiScale()));
         if (shot.output) DebugShotPrepare(&game, &shot);
 
         BeginDrawing();
         GameDraw(&game);
+        GameBusyOverlayDraw();
         bool captured = shot.output && DebugShotCapture(&shot);
         EndDrawing();
 

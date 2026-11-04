@@ -630,9 +630,12 @@ static void GameDrawTutorial(Game *g, float dt) {
     GameHandleTutorialRequests(g);
 }
 
+static bool GameAwaitingPlayerName(const Game *g) {
+    return g->player.tutorial.main_complete && !g->player.name[0] && ProgressionPersistenceEnabled();
+}
+
 static void GameDrawNamePrompt(Game *g, float dt) {
-    bool wanted = g->player.tutorial.main_complete && !g->player.name[0] && !TutorialActive(&g->tutorial) &&
-                  g->screen == SCREEN_HOME && ProgressionPersistenceEnabled();
+    bool wanted = GameAwaitingPlayerName(g) && !TutorialActive(&g->tutorial) && g->screen == SCREEN_HOME;
     if (wanted && !NamePromptIsOpen(&g->name_prompt)) NamePromptOpen(&g->name_prompt);
     if (!NamePromptIsOpen(&g->name_prompt)) return;
     UiSetInputBlocked(false);
@@ -650,6 +653,12 @@ static void GameDrawNamePrompt(Game *g, float dt) {
 #define GAME_CONNECTION_TITLE_SIZE 30.0f
 #define GAME_CONNECTION_MESSAGE_SIZE 22.0f
 #define GAME_CONNECTION_TEXT_COLOR ((Color){242, 236, 218, 255})
+#define GAME_BUSY_OVERLAY_DELAY_SECONDS 1.0f
+#define GAME_BUSY_DIM_OPACITY 0.7f
+#define GAME_BUSY_SPINNER_HEIGHT 0.2f
+#define GAME_BUSY_CORNER_X 0.98f
+#define GAME_BUSY_CORNER_Y 0.97f
+#define GAME_BUSY_CORNER_HEIGHT 0.1f
 
 static bool GameDrawConnectionError(Button *retry) {
     Rectangle popup = MessagePopupDrawFrame();
@@ -696,12 +705,67 @@ static bool GameAwaitServerRetry(void) {
     return false;
 }
 
+static bool GameAwaitProfileFetch(void) {
+    BackendBeginProfileFetch();
+    while (!BackendProfileFetchSettled()) {
+        if (WindowShouldClose()) return false;
+        LoadingScreenPresent();
+    }
+    return true;
+}
+
+static ProgressionLoadResult GameFetchProgression(Game *g, bool *window_closed) {
+    *window_closed = ProgressionNeedsServer() && !GameAwaitProfileFetch();
+    if (*window_closed) return PROGRESSION_LOAD_UNAVAILABLE;
+    return ProgressionLoad(&g->player);
+}
+
+typedef enum {
+    GAME_BUSY_HIDDEN,
+    GAME_BUSY_DIMMED,
+    GAME_BUSY_CORNER,
+} GameBusyOverlay;
+
+static GameBusyOverlay game_busy_overlay = GAME_BUSY_HIDDEN;
+
+bool GameBusyOverlayUpdate(const Game *g, float dt) {
+    static float busy_seconds = 0.0f;
+    busy_seconds = BackendBusy() ? busy_seconds + dt : 0.0f;
+    bool slow = busy_seconds >= GAME_BUSY_OVERLAY_DELAY_SECONDS;
+    if (!slow)
+        game_busy_overlay = GAME_BUSY_HIDDEN;
+    else
+        game_busy_overlay = g->screen == SCREEN_BATTLE ? GAME_BUSY_CORNER : GAME_BUSY_DIMMED;
+    bool blocking = game_busy_overlay == GAME_BUSY_DIMMED;
+    UiSetInputSuspended(blocking);
+    return blocking;
+}
+
+void GameBusyOverlayDraw(void) {
+    if (game_busy_overlay == GAME_BUSY_HIDDEN) return;
+    UiFrameBegin();
+    Rectangle root = UiRoot();
+    Texture2D ring = GuiTex(GUI_LOADING_RING);
+    if (game_busy_overlay == GAME_BUSY_DIMMED) {
+        DrawRectangleRec(root, Fade(BLACK, GAME_BUSY_DIM_OPACITY));
+        LoadingIndicatorDraw(ring, LoadingIndicatorBox(root, 0.5f, 0.5f, GAME_BUSY_SPINNER_HEIGHT));
+    } else {
+        LoadingIndicatorDraw(
+            ring, LoadingIndicatorBox(root, GAME_BUSY_CORNER_X, GAME_BUSY_CORNER_Y, GAME_BUSY_CORNER_HEIGHT)
+        );
+    }
+    UiFrameEnd();
+}
+
 static bool GameLoadProgression(Game *g) {
-    ProgressionLoadResult loaded = ProgressionLoad(&g->player);
+    bool window_closed = false;
+    ProgressionLoadResult loaded = GameFetchProgression(g, &window_closed);
+    if (window_closed) return false;
     while (loaded == PROGRESSION_LOAD_UNAVAILABLE && ProgressionNeedsServer()) {
         TraceLog(LOG_WARNING, "Account: server unreachable, waiting for retry");
         if (!GameAwaitServerRetry()) return false;
-        loaded = ProgressionLoad(&g->player);
+        loaded = GameFetchProgression(g, &window_closed);
+        if (window_closed) return false;
     }
     if (loaded == PROGRESSION_LOAD_NEW_ACCOUNT) GameStartNewAccount(g);
     return true;
@@ -711,23 +775,35 @@ bool GameInitialize(Game *g) {
     g->screen = SCREEN_HOME;
     ProgressionInitializePlayerDefaults(&g->player);
 
+    LoadingScreenBegin();
+    LoadingScreenPresent();
     ResourcePrefetchImages(STARTUP_IMAGE_MANIFEST);
     ResourceRecordImagesBegin();
     AssetsLoad();
     LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
+    LoadingScreenShowMessage();
+    LoadingScreenPresent();
     MissionCatalogLoad("data/missions.json");
 
     PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
-    if (!GameLoadProgression(g)) return false;
+    LoadingScreenPresent();
+    if (!GameLoadProgression(g)) {
+        LoadingScreenEnd();
+        return false;
+    }
     PvpEventSync(&g->player.pvp, ServerNow());
     if (PvpSimulateDefense(&g->player.pvp, g->player.level, ServerNow()) > 0) ProgressionSave(&g->player);
     PlayerGallerySync(&g->player);
 
     HudInitialize(&g->hud);
     HomeUIInitialize(&g->home_ui);
+    LoadingScreenPresent();
     HomeBackgroundInitialize(&g->scene, HOD_CACHE "meshes", HOD_CACHE "char_pack", &g->player);
+    LoadingScreenPresent();
     HeroesBackgroundInitialize(&g->heroes_scene, HOD_CACHE "meshes", HOD_CACHE "char_pack", &g->player);
+    LoadingScreenPresent();
     BattleInitialize(&g->battle, HOD_CACHE "meshes");
+    LoadingScreenPresent();
     BattleUiInitialize(&g->battle_ui);
     memset(&g->battle_play, 0, sizeof(g->battle_play));
     MusicPlayerInitialize(&g->music);
@@ -762,6 +838,7 @@ bool GameInitialize(Game *g) {
     g->tutorial_init_signal = true;
     NamePromptInitialize(&g->name_prompt);
     ResourceRecordImagesEnd(STARTUP_IMAGE_MANIFEST);
+    LoadingScreenEnd();
     return true;
 }
 
@@ -1086,7 +1163,8 @@ void GameDraw(Game *g) {
 
             UiFrameBegin();
             bool news_allowed = !TutorialMainActive(&g->tutorial);
-            if (news_allowed && NewsAutoShow(&g->news, &g->player)) ProgressionSave(&g->player);
+            bool news_auto_show = news_allowed && !GameAwaitingPlayerName(g);
+            if (news_auto_show && NewsAutoShow(&g->news, &g->player)) ProgressionSave(&g->player);
             bool news_open = news_allowed && NewsIsOpen(&g->news);
             bool home_interactive = !news_open;
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, home_interactive, true));
@@ -1648,6 +1726,7 @@ void GameDestroy(Game *g) {
     HeroesDestroy(&g->heroes);
     LocUnload();
     ProgressionSave(&g->player);
+    BackendShutdown();
     PlayerUnloadRoster(&g->player);
     HomeBackgroundDestroy(&g->scene);
     HeroesBackgroundDestroy(&g->heroes_scene);

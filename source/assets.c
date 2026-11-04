@@ -372,6 +372,7 @@ typedef enum {
     GUI_FTUE_ICON_BATTLE,
     GUI_FTUE_ICON_GIANT,
     GUI_FTUE_ICON_SPEEDS,
+    GUI_LOADING_RING,
     GUI_COUNT
 } GuiId;
 
@@ -446,6 +447,7 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_HUD_XP_METER] = CACHE_RESOURCE("playerlevel_bar"),
     [GUI_HUD_RESOURCE_FRAME] = CACHE_RESOURCE("tex.EnergyStaminaContainer"),
     [GUI_HUD_ENERGY] = APK_RESOURCE("Ico_EnergyHUD"),
+    [GUI_LOADING_RING] = APK_RESOURCE("loadingSmooth"),
     [GUI_HUD_STAMINA] = APK_RESOURCE("Ico_StaminaHUD"),
     [GUI_HUD_GOLD] = APK_RESOURCE("tex.softcurrency"),
     [GUI_HUD_GOLD_SELECTED] = CACHE_RESOURCE("tex.softcurrency_active"),
