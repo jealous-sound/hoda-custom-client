@@ -119,7 +119,7 @@ typedef enum { RUNE_CRAFT_MODE_TYPE, RUNE_CRAFT_MODE_RARITY } RuneCraftMode;
 static RuneCatalog rune_catalog;
 
 long long RuneNow(void) {
-    return (long long)time(NULL);
+    return ServerNow();
 }
 
 static RuneBuff RuneBuffFromType(const char *type) {

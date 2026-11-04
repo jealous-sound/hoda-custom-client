@@ -7,6 +7,7 @@ TARGET  = game
 SRC     = source/main.c
 DEPS    = $(wildcard source/*.c source/*.h source/vendors/*.c source/vendors/*.h)
 TEST_TARGET = tests/battle_sim_test
+BACKEND_DIR ?= ../hoda-custom-backend
 
 $(TARGET): $(DEPS) Makefile
 	$(CC) $(CFLAGS) $(SRC) -o $(TARGET) $(LDFLAGS) $(LIBS)
@@ -38,6 +39,9 @@ test: $(TEST_TARGET)
 run: $(TARGET)
 	./$(TARGET)
 
+play:
+	HOD_CLIENT_DIR="$(CURDIR)" "$(BACKEND_DIR)/scripts/play-local.sh"
+
 clean:
 	rm -f $(TARGET) $(TEST_TARGET)
 
@@ -47,4 +51,4 @@ format:
 format-check:
 	clang-format --dry-run --Werror source/*.c
 
-.PHONY: run test clean format format-check
+.PHONY: run play test clean format format-check

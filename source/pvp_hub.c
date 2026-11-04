@@ -132,7 +132,7 @@ PvpHubAction PvpHubDraw(PvpHub *hub, const Player *p) {
         LocGetOr("PVP_HUB_EVENT_SIDE_TITLE", "Сегодняшнее событие"),
         LocGetOr("PVP_HUB_EVENT_SIDE_DESCRIPTION", "")
     );
-    PvpHubDrawEventColumn(hub, &p->pvp, event_area, (long long)time(NULL));
+    PvpHubDrawEventColumn(hub, &p->pvp, event_area, ServerNow());
     if (PvpHubDrawGo(&hub->event, left, interactive)) action = PVP_HUB_EVENT;
 
     Rectangle ladder_area = PvpHubColumnBody(

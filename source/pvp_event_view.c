@@ -108,7 +108,7 @@ void PvpEventViewInitialize(PvpEventView *v) {
 }
 
 static const PvpEvent *PvpEventViewEvent(void) {
-    return PvpEventForCycle(PvpEventCycle((long long)time(NULL)));
+    return PvpEventForCycle(PvpEventCycle(ServerNow()));
 }
 
 void PvpEventViewOpen(PvpEventView *v) {
@@ -653,7 +653,7 @@ static void PvpEventViewDrawBattlesTab(PvpEventView *v, const PlayerPvp *pvp, Re
 }
 
 PvpEventViewAction PvpEventViewDraw(PvpEventView *v, const Player *p) {
-    long long now = (long long)time(NULL);
+    long long now = ServerNow();
     const PvpEvent *event = PvpEventForCycle(PvpEventCycle(now));
     Rectangle root = UiRoot();
     DrawRectangle(0, 0, root.width, root.height, (Color){0, 0, 0, 170});

@@ -35,9 +35,13 @@ original object; any other string is a file path.
 
 ```sh
 make run
+make play
 make test
 make format-check
 python3 tools/check_comments.py
 ```
 
-The companion backend lives in `heroes-of-dragon-age-backend`.
+`make play` runs the game against the Go backend in `../hoda-custom-backend` (override with
+`BACKEND_DIR=`), which then owns the save and the clock. With `HOD_BACKEND_URL` unset the game uses
+`player_save.dat` as before. `hoda-original-backend` is the separate Python server for the original
+Android client.

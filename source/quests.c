@@ -171,7 +171,7 @@ bool QuestsHandleBack(Quests *q) {
 }
 
 static long long QuestsNow(void) {
-    return (long long)time(NULL);
+    return ServerNow();
 }
 
 static bool QuestsEventLocked(const Nexus *nexus, const Player *player, int event) {

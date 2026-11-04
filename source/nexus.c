@@ -380,7 +380,7 @@ bool NexusEventLive(const NexusEvent *e, int weekday_today) {
 }
 
 int NexusWeekdayToday(void) {
-    time_t now = time(NULL);
+    time_t now = (time_t)ServerNow();
     struct tm *local = localtime(&now);
     if (!local) return 1;
     return local->tm_wday == 0 ? 7 : local->tm_wday;
@@ -449,7 +449,7 @@ long long NexusEventTimeRemaining(const Nexus *n, const Player *player, int even
 bool NexusEventUnlocked(const Nexus *n, const Player *player, int event) {
     const NexusEvent *e = NexusEventAt(n, event);
     if (!e || !NexusEventLive(e, NexusWeekdayToday())) return false;
-    return !NexusEventLocked(n, player, event, (long long)time(NULL));
+    return !NexusEventLocked(n, player, event, ServerNow());
 }
 
 bool NexusEventScheduled(const Nexus *n, const Player *player, int event, long long now) {

@@ -21,6 +21,7 @@
 #include "apk_archive.c"
 #include "resource.c"
 #include "utils.c"
+#include "backend.c"
 #include "ui.c"
 #include "assets.c"
 #include "loc.c"

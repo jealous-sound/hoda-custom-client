@@ -131,7 +131,7 @@ first three.
 
 1. **Opponents.** No server or real players exist. Recommended: a local generated ladder of named bots whose squads
    come from `data/campaign_rosters.json`, `data/nexus_rosters.json` and the character catalog, scaled to player
-   level and deterministic per seed. Alternative: real asynchronous PvP via `heroes-of-dragon-age-backend`, which has
+   level and deterministic per seed. Alternative: real asynchronous PvP via `hoda-original-backend`, which has
    no matchmaking, leaderboard or PvP RPC today. That is far larger.
 2. **Entry.** Recommended: the 5.4.4 hub, since the project targets 5.4.4 screens and has the text.
 3. **Stat values.** Trophy gain and loss, nexts per day, attack ranges, reward tiers and event cadence have to be

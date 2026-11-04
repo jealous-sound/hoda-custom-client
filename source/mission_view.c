@@ -70,13 +70,13 @@ static void MissionsSelectTab(MissionsScreen *s, Player *p, GoalsTab tab) {
     s->tab = tab;
     GoalsScrollReset(&s->scroll);
     if (tab == GOALS_TAB_TROPHIES) {
-        GoalsRefreshLeaderboard(&s->tabs, p, (long long)time(NULL));
+        GoalsRefreshLeaderboard(&s->tabs, p, ServerNow());
         p->pvp.trophies_seen = p->pvp.trophies;
     }
 }
 
 void MissionsOpen(MissionsScreen *s, Player *p, GoalsTab tab) {
-    PvpEventSync(&p->pvp, (long long)time(NULL));
+    PvpEventSync(&p->pvp, ServerNow());
     if (PvpEventUnclaimedCount(&p->pvp) > 0 && tab == GOALS_TAB_MISSIONS) tab = GOALS_TAB_EVENTS;
     PlayerMissions *m = &p->missions;
     int count = 0;
@@ -343,7 +343,7 @@ MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, float dt) {
 
     MissionsAction action = MISSIONS_NONE;
     GoalsAction goal = GOALS_NONE;
-    long long now = (long long)time(NULL);
+    long long now = ServerNow();
     if (s->tab == GOALS_TAB_MISSIONS) {
         MissionsDrawAchievements(s, hud, p, content, interactive);
     } else if (s->tab == GOALS_TAB_TROPHIES) {

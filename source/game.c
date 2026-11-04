@@ -134,7 +134,7 @@ static void GameEnterSelectedNexusBattle(Game *g) {
 }
 
 static void GameEnterPvpOpponent(Game *g) {
-    long long now = (long long)time(NULL);
+    long long now = ServerNow();
     BattleEnterPvp(&g->battle, &g->player, &g->pvp_opponent);
     if (g->pvp_event) g->battle.enemy_roster.game_changer = &PvpEventForCycle(PvpEventCycle(now))->changer;
     int nexts = g->pvp_can_next ? PvpNextsRemaining(&g->player.pvp, now) : -1;
@@ -151,7 +151,7 @@ static void GameEnterPvpOpponent(Game *g) {
 }
 
 static PvpOpponent GameLadderOpponent(const Game *g) {
-    long long now = (long long)time(NULL);
+    long long now = ServerNow();
     unsigned seed = (unsigned)GetRandomValue(1, 0x7FFFFFFF);
     const PlayerPvp *pvp = &g->player.pvp;
     if (g->pvp_event) return PvpEventOpponentGenerate(g->player.level, pvp->trophies, pvp->event.banners, now, seed);
@@ -167,7 +167,7 @@ static void GameEnterLadderBattle(Game *g, Screen return_screen) {
 }
 
 static void GameEnterEventBotBattle(Game *g, int bot) {
-    long long now = (long long)time(NULL);
+    long long now = ServerNow();
     unsigned seed = (unsigned)GetRandomValue(1, 0x7FFFFFFF);
     g->pvp_event = true;
     g->pvp_opponent = PvpOpponentFromBot(bot, g->player.level, g->player.pvp.trophies, PvpDay(now), seed);
@@ -212,7 +212,7 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
     GalleryRecordBattle(&g->player.gallery, &g->battle.enemy_roster, &g->battle_play.sim);
     int crits = BattlePlayCriticalGold(&g->battle_play) / BP_CRIT_GOLD_REWARD;
     bool challenge = !g->battle_is_nexus && !g->battle_is_pvp && g->map.maps[g->battle_map_index].nodes[g->battle_node_index].grind;
-    MissionsRecordBattle(&g->player, &g->battle_play.sim, crits, challenge, (long long)time(NULL));
+    MissionsRecordBattle(&g->player, &g->battle_play.sim, crits, challenge, ServerNow());
     if (g->battle_is_pvp) {
         g->battle_reward = PvpResolveBattle(
             &g->player,
@@ -220,7 +220,7 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
             won,
             g->pvp_revenge_index,
             BattlePlayCriticalGold(&g->battle_play),
-            (long long)time(NULL),
+            ServerNow(),
             g->pvp_event
         );
         g->pvp_revenge_index = -1;
@@ -343,7 +343,7 @@ static void GameExitBattleTo(Game *g, Screen destination) {
     if (destination != SCREEN_NEXUS && destination != SCREEN_BATTLE) g->battle_is_nexus = false;
     if (destination != SCREEN_BATTLE) g->battle_is_pvp = false;
     if (destination != SCREEN_BATTLE) g->pvp_event = false;
-    if (destination == SCREEN_PVP_HUB) PvpHubOpen(&g->pvp_hub, &g->player, (long long)time(NULL));
+    if (destination == SCREEN_PVP_HUB) PvpHubOpen(&g->pvp_hub, &g->player, ServerNow());
     if (destination == SCREEN_MISSIONS) MissionsSelectTab(&g->missions, &g->player, g->missions.tab);
 }
 
@@ -359,13 +359,13 @@ static void GameContinuePvp(Game *g) {
 }
 
 static void GameOpenPvpEvent(Game *g) {
-    PvpEventSync(&g->player.pvp, (long long)time(NULL));
+    PvpEventSync(&g->player.pvp, ServerNow());
     PvpEventViewOpen(&g->pvp_event_view);
     g->screen = SCREEN_PVP_EVENT;
 }
 
 static void GameOpenPvpHub(Game *g) {
-    PvpHubOpen(&g->pvp_hub, &g->player, (long long)time(NULL));
+    PvpHubOpen(&g->pvp_hub, &g->player, ServerNow());
     g->screen = SCREEN_PVP_HUB;
 }
 
@@ -393,8 +393,8 @@ void GameInitialize(Game *g) {
 
     PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
     ProgressionLoad(&g->player);
-    PvpEventSync(&g->player.pvp, (long long)time(NULL));
-    if (PvpSimulateDefense(&g->player.pvp, g->player.level, (long long)time(NULL)) > 0) ProgressionSave(&g->player);
+    PvpEventSync(&g->player.pvp, ServerNow());
+    if (PvpSimulateDefense(&g->player.pvp, g->player.level, ServerNow()) > 0) ProgressionSave(&g->player);
     PlayerGallerySync(&g->player);
 
     HudInitialize(&g->hud);
@@ -1001,7 +1001,7 @@ void GameDraw(Game *g) {
             HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
             MissionsAction pressed = MissionsDraw(&g->missions, &g->hud, &g->player, dt);
             UiFrameEnd();
-            long long now = (long long)time(NULL);
+            long long now = ServerNow();
             if (pressed == MISSIONS_CLOSE) {
                 g->screen = SCREEN_HOME;
             } else if (pressed == MISSIONS_FIGHT_BOT) {
@@ -1186,7 +1186,7 @@ void GameDraw(Game *g) {
                         GameOpenResourceDialogSilently(g, g->battle_is_pvp);
                     }
                 }
-                if (ba == BATTLE_UI_NEXT && !combat && PvpSpendNext(&g->player.pvp, (long long)time(NULL))) {
+                if (ba == BATTLE_UI_NEXT && !combat && PvpSpendNext(&g->player.pvp, ServerNow())) {
                     ProgressionSave(&g->player);
                     g->pvp_opponent = GameLadderOpponent(g);
                     GameEnterPvpOpponent(g);

@@ -546,7 +546,7 @@ bool NexusUnlockEvent(Player *player, const Nexus *nexus, int event) {
     if (!player || !definition || event < 0 || event >= NEXUS_MAX_EVENTS) return false;
     if (definition->unlock_key != 0 && !PlayerSpendKeys(player, definition->unlock_key, definition->unlock_key_qty))
         return false;
-    player->nexus_events.unlocked_at[event] = (long long)time(NULL);
+    player->nexus_events.unlocked_at[event] = ServerNow();
     player->nexus_events.remaining_runs[event] = definition->max_runs;
     return true;
 }
@@ -835,18 +835,18 @@ static cJSON *ProgressionSaveGallery(const PlayerGallery *gallery) {
     return NULL;
 }
 
-bool ProgressionSaveToPath(const Player *player, const char *path) {
-    if (!player || !path || !path[0]) return false;
+char *ProgressionSerialize(const Player *player) {
+    if (!player) return NULL;
     bool managed_roster = player->roster && player->roster_abilities && player->roster_capacity > 0;
-    if (!ProgressionRosterStateValid(player)) return false;
-    if (player->store_opened_total < 0 || player->champion_since_legendary < 0) return false;
+    if (!ProgressionRosterStateValid(player)) return NULL;
+    if (player->store_opened_total < 0 || player->champion_since_legendary < 0) return NULL;
     int opened_sum = 0;
     for (int pack = 0; pack < PLAYER_STORE_PACK_COUNT; pack++) {
         if (player->store_opened_by_pack[pack] < 0 || opened_sum > INT_MAX - player->store_opened_by_pack[pack])
-            return false;
+            return NULL;
         opened_sum += player->store_opened_by_pack[pack];
     }
-    if (opened_sum != player->store_opened_total || player->champion_since_legendary > opened_sum) return false;
+    if (opened_sum != player->store_opened_total || player->champion_since_legendary > opened_sum) return NULL;
 
     cJSON *root = cJSON_CreateObject();
     cJSON *account_owner = cJSON_CreateObject();
@@ -1083,7 +1083,7 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
     if (!missions || !cJSON_AddItemToObject(root, "missions", missions)) {
         cJSON_Delete(missions);
         cJSON_Delete(root);
-        return false;
+        return NULL;
     }
 
     cJSON *pvp = ProgressionSavePvp(&player->pvp);
@@ -1105,14 +1105,7 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
 
 #undef PROGRESSION_SAVE_NUMBER
 
-    char temporary[1024];
-    int needed = snprintf(temporary, sizeof(temporary), "%s.tmp", path);
-    bool ok = needed > 0 && needed < (int)sizeof(temporary) && SaveFileText(temporary, serialized);
-    cJSON_free(serialized);
-    if (ok) ok = rename(temporary, path) == 0;
-    if (!ok && needed > 0 && needed < (int)sizeof(temporary)) remove(temporary);
-    if (!ok) TraceLog(LOG_WARNING, "Progression: could not save %s", path);
-    return ok;
+    return serialized;
 
 save_json_failed:
     cJSON_Delete(root);
@@ -1136,7 +1129,21 @@ save_json_failed:
     cJSON_Delete(unlocked_at_owner);
     cJSON_Delete(remaining_runs_owner);
     if (serialized) cJSON_free(serialized);
-    return false;
+    return NULL;
+}
+
+bool ProgressionSaveToPath(const Player *player, const char *path) {
+    if (!player || !path || !path[0]) return false;
+    char *serialized = ProgressionSerialize(player);
+    if (!serialized) return false;
+    char temporary[1024];
+    int needed = snprintf(temporary, sizeof(temporary), "%s.tmp", path);
+    bool ok = needed > 0 && needed < (int)sizeof(temporary) && SaveFileText(temporary, serialized);
+    cJSON_free(serialized);
+    if (ok) ok = rename(temporary, path) == 0;
+    if (!ok && needed > 0 && needed < (int)sizeof(temporary)) remove(temporary);
+    if (!ok) TraceLog(LOG_WARNING, "Progression: could not save %s", path);
+    return ok;
 }
 
 typedef struct {
@@ -1345,15 +1352,12 @@ static bool ProgressionLoadGallery(const cJSON *json, PlayerGallery *gallery) {
     return true;
 }
 
-bool ProgressionLoadFromPath(Player *player, const char *path) {
-    if (!player || !path || !path[0] || !FileExists(path)) return false;
-    char *text = LoadFileText(path);
-    if (!text) return false;
+bool ProgressionLoadFromText(Player *player, const char *text, const char *origin) {
+    if (!player || !text) return false;
     cJSON *root = cJSON_Parse(text);
-    UnloadFileText(text);
     if (!cJSON_IsObject(root)) {
         cJSON_Delete(root);
-        TraceLog(LOG_WARNING, "Progression: invalid save %s", path);
+        TraceLog(LOG_WARNING, "Progression: invalid save %s", origin);
         return false;
     }
 
@@ -1690,7 +1694,7 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
         GalleryFree(&loaded_gallery);
         free(loaded_runes);
         free(loaded_additions);
-        TraceLog(LOG_WARNING, "Progression: rejected incompatible or corrupt save %s", path);
+        TraceLog(LOG_WARNING, "Progression: rejected incompatible or corrupt save %s", origin);
         return false;
     }
 
@@ -1752,12 +1756,41 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
     return true;
 }
 
+bool ProgressionLoadFromPath(Player *player, const char *path) {
+    if (!player || !path || !path[0] || !FileExists(path)) return false;
+    char *text = LoadFileText(path);
+    if (!text) return false;
+    bool ok = ProgressionLoadFromText(player, text, path);
+    UnloadFileText(text);
+    return ok;
+}
+
+static bool ProgressionLoadFromBackend(Player *player) {
+    char *text = NULL;
+    long long revision = 0;
+    if (!BackendFetchProfile(&text, &revision)) return false;
+    bool ok = ProgressionLoadFromText(player, text, "from backend");
+    free(text);
+    if (ok) BackendAcceptProfile(revision);
+    return ok;
+}
+
+static bool ProgressionSaveToBackend(const Player *player) {
+    char *serialized = ProgressionSerialize(player);
+    if (!serialized) return false;
+    bool ok = BackendStoreProfile(serialized);
+    cJSON_free(serialized);
+    return ok;
+}
+
 bool ProgressionLoad(Player *player) {
     if (!ProgressionPersistenceEnabled()) return false;
+    if (BackendEnabled()) return ProgressionLoadFromBackend(player);
     return ProgressionLoadFromPath(player, ProgressionSavePath());
 }
 
 bool ProgressionSave(const Player *player) {
     if (!ProgressionPersistenceEnabled()) return true;
+    if (BackendEnabled()) return ProgressionSaveToBackend(player);
     return ProgressionSaveToPath(player, ProgressionSavePath());
 }

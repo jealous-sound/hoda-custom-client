@@ -222,7 +222,7 @@ void NewsOpen(News *news, Player *player) {
     news->list_scroll = 0.0f;
     news->featured_scroll = 0;
     news->scrim_armed = false;
-    player->news_seen_at = (long long)time(NULL);
+    player->news_seen_at = ServerNow();
 }
 
 bool NewsAutoShow(News *news, Player *player) {
@@ -241,7 +241,7 @@ static void NewsOpenMessage(News *news, const NewsMessage *message, bool from_fe
 }
 
 void NewsOpenEvent(News *news, const Nexus *nexus, const Player *player, int event) {
-    NewsCollect(news, nexus, player, (long long)time(NULL));
+    NewsCollect(news, nexus, player, ServerNow());
     for (int i = 0; i < news->message_count; i++) {
         if (news->messages[i].event == event) {
             NewsOpenMessage(news, &news->messages[i], false);
@@ -574,7 +574,7 @@ static NewsAction NewsDrawMessage(News *news, Quests *quests, const Nexus *nexus
 NewsAction NewsDrawOverlay(News *news, Quests *quests, const Nexus *nexus, const Player *player) {
     if (!NewsIsOpen(news) || NewsZoomAdvance(news, GetFrameTime())) return NEWS_NONE;
     QuestsEnsureHubImages(quests, nexus);
-    long long now = (long long)time(NULL);
+    long long now = ServerNow();
     NewsCollect(news, nexus, player, now);
     NewsDrawScrim();
     if (news->view == NEWS_VIEW_FEED) {
@@ -585,7 +585,7 @@ NewsAction NewsDrawOverlay(News *news, Quests *quests, const Nexus *nexus, const
 }
 
 static void NewsDrawPvpTicker(News *news, Color tint, bool interactive) {
-    long long now = (long long)time(NULL);
+    long long now = ServerNow();
     Rectangle frame = {(UiWidth() - NEWS_TICKER_W) * 0.5f, NEWS_TICKER_Y, NEWS_TICKER_W, NEWS_TICKER_H};
     UiDrawTexture(GuiTex(GUI_NEWS_TICKER), frame, WHITE);
     Rectangle image = {
@@ -662,7 +662,7 @@ static void NewsDrawTicker(News *news, Quests *quests, const Nexus *nexus, bool 
 
 void NewsDrawHome(News *news, Quests *quests, const Nexus *nexus, Player *player, bool interactive, float dt) {
     QuestsEnsureHubImages(quests, nexus);
-    NewsCollect(news, nexus, player, (long long)time(NULL));
+    NewsCollect(news, nexus, player, ServerNow());
     Rectangle button = {NEWS_BUTTON_X, NEWS_BUTTON_Y, NEWS_BUTTON_SIZE, NEWS_BUTTON_SIZE};
     if (ButtonDrawEx(&news->feed_button, button, interactive)) NewsOpen(news, player);
     ButtonDrawBadge(button, news->unseen_count);
