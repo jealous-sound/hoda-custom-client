@@ -34,6 +34,7 @@
 #include "mission.c"
 #include "pvp_state.c"
 #include "player.c"
+#include "tutorial_hooks.c"
 #include "button.c"
 #include "energy_dialog.c"
 #include "hud.c"
@@ -49,6 +50,7 @@
 #include "music_player.c"
 #include "heroes.c"
 #include "message_popup.c"
+#include "name_prompt.c"
 #include "runes.c"
 #include "gear_view.c"
 #include "consume_view.c"
@@ -72,6 +74,7 @@
 #include "mission_view.c"
 #include "pvp_hub.c"
 #include "pvp_event_view.c"
+#include "tutorial.c"
 #include "game.c"
 #include "debug_harness.c"
 

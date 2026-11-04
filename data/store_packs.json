@@ -101,6 +101,52 @@
   ],
   "packs": [
     {
+      "id": "tutorial_consume",
+      "kind": "hero",
+      "loc_id": "TUTORIAL_CONSUME",
+      "category": "UNITS",
+      "order": 5,
+      "header": "cache:tex.Store_HeaderBGGoldPack",
+      "icon": "cache:tex.Store_IconGreyWardenKnight",
+      "offers": [
+        {
+          "currency": "gold",
+          "price": 0
+        }
+      ],
+      "bullets": [
+        {
+          "text_ru": "Для обучения",
+          "rarity": 0
+        }
+      ],
+      "schedule": null,
+      "rotation": null,
+      "opened_counter": 0,
+      "hero_count": 2,
+      "minimum_rarity": "Rare",
+      "guaranteed_legendary": 0,
+      "guaranteed_epic": 0,
+      "legendary_pity": 0,
+      "weights": {
+        "Common": 0,
+        "Uncommon": 0,
+        "Rare": 6600,
+        "Epic": 2700,
+        "Legendary": 700
+      },
+      "rune_chance_pct": 0,
+      "rune_min_rarity": 1,
+      "rune_max_rarity": 2,
+      "rune_count": 1,
+      "gear_chance_pct": 0,
+      "gear_min_rarity": 1,
+      "gear_max_rarity": 3,
+      "name_ru": "Набор для обучения",
+      "tutorial_only": true,
+      "info_ru": "Бесплатная пара героев, чтобы научиться поглощению."
+    },
+    {
       "id": "recruit",
       "kind": "hero",
       "loc_id": "ITEM_BRONZE_IDENTIFIER",

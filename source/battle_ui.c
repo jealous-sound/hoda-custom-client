@@ -730,7 +730,7 @@ static void BattleUiDrawCombat(BattleUi *ui, BattlePlay *bp) {
 
     if (bp->state != BP_END_SPLASH && bp->state != BP_SUMMARY) {
         Rectangle r = {12.8f, 356.4f, 72, 72};
-        Texture2D ff = GuiTex(bp->speed_mult > 1.5f ? GUI_COMBAT_FF_ON : GUI_COMBAT_FF);
+        Texture2D ff = GuiTex(BattlePlayFast(bp) ? GUI_COMBAT_FF_ON : GUI_COMBAT_FF);
         UiDrawTexture(ff, r, WHITE);
         bool hover = CheckCollisionPointRec(UiMouse(), r);
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) ui->fast_forward_armed = hover;
@@ -987,12 +987,16 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
             Rectangle next_dst = {right - MM_X(420), MM_Y(497), MM_X(180), 60 * MM_SY};
             if (ButtonDrawEx(&ui->next, next_dst, input_ok && ui->pvp_nexts > 0)) result = BATTLE_UI_NEXT;
         }
-        if (ButtonDrawEx(&ui->retreat, retreat_dst, input_ok)) result = BATTLE_UI_RETREAT;
+        TutorialAnchorSet(TUTORIAL_ANCHOR_BATTLE_RETREAT, retreat_dst);
+        if (!TutorialHides(TUTORIAL_ANCHOR_BATTLE_RETREAT) && ButtonDrawEx(&ui->retreat, retreat_dst, input_ok))
+            result = BATTLE_UI_RETREAT;
 
         Rectangle fight_dst = {right - MM_X(240), MM_Y(497), MM_X(240), 60 * MM_SY};
+        TutorialAnchorSet(TUTORIAL_ANCHOR_BATTLE_FIGHT, fight_dst);
+        bool fight_shown = !TutorialHides(TUTORIAL_ANCHOR_BATTLE_FIGHT);
         if (ui->energy_cost <= 0) {
-            if (ButtonDrawEx(&ui->fight_zero, fight_dst, input_ok)) result = BATTLE_UI_FIGHT;
-        } else {
+            if (fight_shown && ButtonDrawEx(&ui->fight_zero, fight_dst, input_ok)) result = BATTLE_UI_FIGHT;
+        } else if (fight_shown) {
             if (ButtonDrawEx(&ui->fight, fight_dst, input_ok)) result = BATTLE_UI_FIGHT;
 
             char cost[8];

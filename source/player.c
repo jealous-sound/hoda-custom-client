@@ -7,6 +7,8 @@
 #define PLAYER_STORE_PACK_COUNT 4
 #define PLAYER_VOUCHER_CAPACITY 16
 #define PLAYER_INSTANCE_ID_MAX 9007199254740991ULL
+#define PLAYER_NAME_MAX_CHARACTERS 25
+#define PLAYER_NAME_CAPACITY (PLAYER_NAME_MAX_CHARACTERS * 4 + 1)
 
 int SquadSlotReferencePosition(int slot) {
     static const int reference_position[SQUAD_SLOT_COUNT] = {2, 0, 3, 1, -1};
@@ -77,6 +79,12 @@ typedef struct {
 } PlayerNexusEvents;
 
 typedef struct {
+    bool main_complete;
+    bool consume_complete;
+    int restore_step;
+} PlayerTutorial;
+
+typedef struct {
     int level;
     int experience;
     int experience_min;
@@ -118,7 +126,47 @@ typedef struct {
     PlayerGallery gallery;
     PlayerMissions missions;
     PlayerPvp pvp;
+
+    char name[PLAYER_NAME_CAPACITY];
+    PlayerTutorial tutorial;
+    bool fast_battles;
 } Player;
+
+static int PlayerNameNextCodepoint(const unsigned char **cursor) {
+    const unsigned char *c = *cursor;
+    int length = c[0] < 0x80             ? 1
+                 : (c[0] & 0xE0) == 0xC0 ? 2
+                 : (c[0] & 0xF0) == 0xE0 ? 3
+                 : (c[0] & 0xF8) == 0xF0 ? 4
+                                         : 0;
+    if (length == 0) return -1;
+    int codepoint = length == 1 ? c[0] : c[0] & (0x7F >> length);
+    for (int i = 1; i < length; i++) {
+        if ((c[i] & 0xC0) != 0x80) return -1;
+        codepoint = (codepoint << 6) | (c[i] & 0x3F);
+    }
+    *cursor = c + length;
+    return codepoint;
+}
+
+static bool PlayerNameCodepointAllowed(int c) {
+    bool ascii = (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == ' ' || c == '-';
+    bool latin = c >= 0xC0 && c <= 0x24F && c != 0xD7 && c != 0xF7;
+    bool greek = c >= 0x386 && c <= 0x3FF;
+    bool cyrillic = c >= 0x400 && c <= 0x52F;
+    return ascii || latin || greek || cyrillic;
+}
+
+bool PlayerNameValid(const char *name) {
+    if (!name || !name[0] || name[0] == ' ') return false;
+    const unsigned char *cursor = (const unsigned char *)name;
+    int count = 0, last = 0;
+    while (*cursor) {
+        last = PlayerNameNextCodepoint(&cursor);
+        if (last < 0 || !PlayerNameCodepointAllowed(last) || ++count > PLAYER_NAME_MAX_CHARACTERS) return false;
+    }
+    return last != ' ';
+}
 
 static cJSON *CatalogFindCharacter(const cJSON *characters, const char *id) {
     cJSON *c = NULL;

@@ -18,6 +18,9 @@ Rectangle UiRoot(void) {
 }
 
 static bool ui_input_blocked = false;
+static bool ui_input_window_active = false;
+static Rectangle ui_input_window = {0};
+
 void UiSetInputBlocked(bool blocked) {
     ui_input_blocked = blocked;
 }
@@ -26,15 +29,32 @@ bool UiInputBlocked(void) {
     return ui_input_blocked;
 }
 
-Vector2 UiMouse(void) {
-    if (ui_input_blocked) return (Vector2){-1.0e6f, -1.0e6f};
+void UiSetInputWindow(bool active, Rectangle window) {
+    ui_input_window_active = active;
+    ui_input_window = window;
+}
+
+Vector2 UiPointer(void) {
     Vector2 m = GetMousePosition();
     float s = UiScale();
     return (Vector2){m.x / s, m.y / s};
 }
 
+static bool UiPointerOutsideWindow(void) {
+    return ui_input_window_active && !CheckCollisionPointRec(UiPointer(), ui_input_window);
+}
+
+bool UiClicksReachScreen(void) {
+    return !ui_input_blocked && !UiPointerOutsideWindow();
+}
+
+Vector2 UiMouse(void) {
+    if (ui_input_blocked || UiPointerOutsideWindow()) return (Vector2){-1.0e6f, -1.0e6f};
+    return UiPointer();
+}
+
 Vector2 UiMouseDelta(void) {
-    if (ui_input_blocked) return (Vector2){0, 0};
+    if (ui_input_blocked || UiPointerOutsideWindow()) return (Vector2){0, 0};
     Vector2 d = GetMouseDelta();
     float s = UiScale();
     return (Vector2){d.x / s, d.y / s};

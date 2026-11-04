@@ -4,6 +4,7 @@
 #define BP_DELAY_BETWEEN_ACTIONS 0.25f
 #define BP_MESSAGE_TIME 1.06f
 #define BP_INTRO_DELAY 1.0f
+#define BP_FAST_SPEED 3.0f
 #define BP_BANNER_TIME 1.0f
 #define BP_RUNE_AURA_FX "fx_eff_initiative_charge_pre"
 #define BP_RUNE_AURA_COLOR ((Color){0, 255, 0, 255})
@@ -1197,8 +1198,16 @@ bool BattlePlayFinished(const BattlePlay *bp) {
 void BattlePlayStop(BattlePlay *bp) {
     bp->state = BP_OFF;
 }
+bool BattlePlayFast(const BattlePlay *bp) {
+    return bp->speed_mult > 1.0f;
+}
+
+void BattlePlaySetFast(BattlePlay *bp, bool fast) {
+    bp->speed_mult = fast ? BP_FAST_SPEED : 1.0f;
+}
+
 void BattlePlayToggleSpeed(BattlePlay *bp) {
-    bp->speed_mult = bp->speed_mult > 1.5f ? 1.0f : 3.0f;
+    BattlePlaySetFast(bp, !BattlePlayFast(bp));
 }
 
 float BattlePlayTeamPct(const BattlePlay *bp, int side) {

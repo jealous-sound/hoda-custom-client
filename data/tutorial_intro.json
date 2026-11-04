@@ -1,0 +1,74 @@
+{
+ "version": 1,
+ "source": "authored: the original intro was a server replay (FtueSpecialActions.ShowFtueBattle, BattleReplayRequest) that did not survive; zzzFTUE_PART1_START2 names the defeat of Archdemon Urthemiel",
+ "outcome": "victory",
+ "characters": [
+  {
+   "id": "UNIT_MORRIGAN",
+   "tier": "IV",
+   "level": 50
+  },
+  {
+   "id": "UNIT_GREYWARDENALISTAIR",
+   "tier": "IV",
+   "level": 50
+  },
+  {
+   "id": "UNIT_WYNNE",
+   "tier": "IV",
+   "level": 50
+  },
+  {
+   "id": "UNIT_RIORDAN",
+   "tier": "IV",
+   "level": 50
+  }
+ ],
+ "squads": [
+  [
+   "UNIT_MORRIGAN",
+   "UNIT_GREYWARDENALISTAIR",
+   "UNIT_WYNNE",
+   "UNIT_RIORDAN",
+   null
+  ]
+ ],
+ "current_squad": 0,
+ "campaigns": [
+  {
+   "campaign": "TUTORIAL_INTRO",
+   "nodes": [
+    {
+     "step": 1,
+     "roster": [
+      {
+       "id": "UNIT_SHRIEKALPHA",
+       "tier": "II",
+       "level": 20
+      },
+      {
+       "id": "UNIT_HURLOCKGRUNT",
+       "tier": "III",
+       "level": 25
+      },
+      {
+       "id": "UNIT_DARKSPAWNEMISSARY",
+       "tier": "II",
+       "level": 20
+      },
+      {
+       "id": "UNIT_GENLOCKALPHA",
+       "tier": "II",
+       "level": 20
+      },
+      {
+       "id": "UNIT_ARCHDEMONURTHEMIEL",
+       "tier": "I",
+       "level": 1
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

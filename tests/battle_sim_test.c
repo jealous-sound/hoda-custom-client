@@ -5816,6 +5816,127 @@ static void TestCreatureClipFramesStayOnIdleGround(void) {
     assert(!UnitClipsHoldGround("c_wisp_common_t1_rl.glb"));
 }
 
+static const TutorialStep *TutorialStepAt(Tutorial *t, float step) {
+    assert(TutorialJumpTo(t, step));
+    return TutorialCurrent(t);
+}
+
+static void TestTutorialScriptCoversBothFunnels(void) {
+    static Tutorial t;
+    if (loc.count == 0) LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
+    TutorialLoad(&t);
+    assert(t.step_count[TUTORIAL_FUNNEL_MAIN] == 78);
+    assert(t.step_count[TUTORIAL_FUNNEL_CONSUME] == 10);
+    for (int funnel = 0; funnel < TUTORIAL_FUNNEL_COUNT; funnel++) {
+        for (int i = 0; i < t.step_count[funnel]; i++) {
+            const TutorialStep *step = &t.steps[funnel][i];
+            assert(step->signal != TUTORIAL_SIGNAL_UNSUPPORTED);
+            assert(step->event != TUTORIAL_EVENT_COUNT);
+            assert(step->action != TUTORIAL_ACTION_UNSUPPORTED);
+            assert(
+                !step->highlight_required || step->highlight != TUTORIAL_ANCHOR_NONE ||
+                step->action == TUTORIAL_ACTION_ABOUT_SCREEN
+            );
+            assert(!step->text[0] || LocGet(step->text)[0]);
+            if (i > 0) assert(step->step > t.steps[funnel][i - 1].step);
+        }
+    }
+    assert(TutorialStepAt(&t, 0.2f)->action == TUTORIAL_ACTION_START_INTRO_BATTLE);
+    assert(TutorialStepAt(&t, 1.3f)->highlight == TUTORIAL_ANCHOR_HOME_QUESTS);
+    assert(TutorialStepAt(&t, 6.0f)->hold_battle && TutorialStepAt(&t, 6.0f)->highlight_position == 2);
+    assert(TutorialStepAt(&t, 103.0f)->funnel_end == TUTORIAL_FUNNEL_END_MAIN);
+    assert(TutorialStepAt(&t, 128.0f)->funnel_end == TUTORIAL_FUNNEL_END_CONSUME);
+    assert(!TutorialJumpTo(&t, 63.0f));
+}
+
+static void TestTutorialScriptsTheTwoLostBattles(void) {
+    static Tutorial t;
+    TutorialLoad(&t);
+    float wins[] = {5.0f, 11.75f, 31.0f, 36.0f, 57.0f, 93.0f};
+    float losses[] = {16.0f, 41.0f};
+    for (int i = 0; i < (int)(sizeof(wins) / sizeof(wins[0])); i++) {
+        TutorialStepAt(&t, wins[i]);
+        assert(TutorialWantsVictory(&t));
+    }
+    for (int i = 0; i < (int)(sizeof(losses) / sizeof(losses[0])); i++) {
+        TutorialStepAt(&t, losses[i]);
+        assert(!TutorialWantsVictory(&t));
+    }
+}
+
+static void TestTutorialResumesAtTheSavedRestorePoint(void) {
+    static Tutorial t;
+    TutorialLoad(&t);
+    TutorialResumeMain(&t, &(PlayerTutorial){.restore_step = 19});
+    assert(TutorialCurrent(&t)->step == 19.0f);
+    TutorialResumeMain(&t, &(PlayerTutorial){0});
+    assert(TutorialCurrent(&t)->step == 0.2f);
+    TutorialResumeMain(&t, &(PlayerTutorial){.restore_step = 63});
+    assert(TutorialCurrent(&t)->step == 0.2f);
+}
+
+static void TestTutorialPackRewardsResolve(void) {
+    static Tutorial t;
+    TutorialLoad(&t);
+    cJSON *catalog_root = ProgressionLoadCharacterCatalog();
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
+    const char *packs[] = {TUTORIAL_SOLDIER_PACK_ID, TUTORIAL_CHAMPION_PACK_ID, TUTORIAL_CONSUME_PACK_ID};
+    for (int i = 0; i < 3; i++) {
+        const TutorialPackReward *reward = TutorialPackRewardFor(&t, packs[i]);
+        assert(reward && reward->hero_count > 0);
+        for (int h = 0; h < reward->hero_count; h++) assert(CatalogFindCharacter(catalog, reward->heroes[h]));
+        assert(!reward->rune[0] || RuneDefIndex(reward->rune) >= 0);
+    }
+    assert(CatalogFindCharacter(catalog, t.giant) && JsonBool(CatalogFindCharacter(catalog, t.giant), "giant"));
+    assert(t.gem_pack_gems > 0 && t.gift_hero_count > 0);
+    cJSON_Delete(catalog_root);
+}
+
+static void TestPlayerNameFollowsTheOriginalRule(void) {
+    assert(PlayerNameValid("Knight-Commander Meredith"));
+    assert(PlayerNameValid("Морриган"));
+    assert(PlayerNameValid("Hawke 2"));
+    assert(!PlayerNameValid(""));
+    assert(!PlayerNameValid(" Hawke"));
+    assert(!PlayerNameValid("Hawke "));
+    assert(!PlayerNameValid("Grey_Warden"));
+    assert(!PlayerNameValid("Hawke!"));
+    assert(!PlayerNameValid("abcdefghijklmnopqrstuvwxyz"));
+}
+
+static void TestProgressionKeepsNameAndTutorialState(void) {
+    static Player saved, loaded;
+    memset(&saved, 0, sizeof(saved));
+    memset(&loaded, 0, sizeof(loaded));
+    ProgressionInitializePlayerDefaults(&saved);
+    ProgressionInitializePlayerDefaults(&loaded);
+    for (int q = 0; q < PLAYER_MAX_SQUADS; q++) {
+        for (int s = 0; s < SQUAD_SLOT_COUNT; s++) saved.squads[q][s] = loaded.squads[q][s] = -1;
+    }
+    StrCopy(saved.name, sizeof(saved.name), "Морриган");
+    saved.tutorial = (PlayerTutorial){.main_complete = false, .consume_complete = false, .restore_step = 44};
+    saved.fast_battles = true;
+    const char *path = "/tmp/hod_tutorial_save_test.json";
+    assert(ProgressionSaveToPath(&saved, path));
+    assert(ProgressionLoadFromPath(&loaded, path));
+    assert(!strcmp(loaded.name, "Морриган"));
+    assert(!loaded.tutorial.main_complete && !loaded.tutorial.consume_complete && loaded.tutorial.restore_step == 44);
+    assert(loaded.fast_battles);
+
+    char *text = LoadFileText(path);
+    cJSON *root = cJSON_Parse(text);
+    UnloadFileText(text);
+    cJSON_DeleteItemFromObjectCaseSensitive(root, "tutorial");
+    cJSON_DeleteItemFromObjectCaseSensitive(cJSON_GetObjectItemCaseSensitive(root, "account"), "name");
+    char *older = cJSON_Print(root);
+    assert(SaveFileText(path, older));
+    cJSON_free(older);
+    cJSON_Delete(root);
+    assert(ProgressionLoadFromPath(&loaded, path));
+    assert(loaded.tutorial.main_complete && loaded.tutorial.consume_complete && !loaded.name[0]);
+    remove(path);
+}
+
 int main(void) {
     TestBattleFeetSitOnPadsWhoseBottomsShareOnePlane();
     TestPvpBannerCurvePeaksAtTheLadderMidpoint();
@@ -5845,6 +5966,12 @@ int main(void) {
     TestPvpEveryPooledSquadFights();
     TestPvpOpponentRunesApplyToTheEnemySide();
     TestPvpSaveRoundTrip();
+    TestTutorialScriptCoversBothFunnels();
+    TestTutorialScriptsTheTwoLostBattles();
+    TestTutorialResumesAtTheSavedRestorePoint();
+    TestTutorialPackRewardsResolve();
+    TestPlayerNameFollowsTheOriginalRule();
+    TestProgressionKeepsNameAndTutorialState();
     TestNexusGameChangerBoostsMatchingUnitsOnBothSides();
     TestNexusGameChangerNarrowsByFactionAndUnit();
     TestNexusGameChangerTableAffectsRealRosters();

@@ -38,6 +38,7 @@ typedef enum {
     BATTLE_RESULTS_ACTION_CONTINUE,
     BATTLE_RESULTS_ACTION_HEROES,
     BATTLE_RESULTS_ACTION_MAP,
+    BATTLE_RESULTS_ACTION_STORE,
 } BattleResultsAction;
 
 typedef struct {
@@ -239,6 +240,8 @@ BattleResultsAction BattleResultsFlowUpdate(BattleResultsFlow *flow, float dt, b
             under_mouse = BATTLE_RESULTS_ACTION_HEROES;
         else if (CheckCollisionPointRec(UiMouse(), BattleResultsRewardsMapRect()))
             under_mouse = BATTLE_RESULTS_ACTION_MAP;
+        else if (CheckCollisionPointRec(UiMouse(), BattleResultsRewardsStoreRect()))
+            under_mouse = BATTLE_RESULTS_ACTION_STORE;
     } else {
         under_mouse = BATTLE_RESULTS_ACTION_CONTINUE;
     }
@@ -255,7 +258,8 @@ BattleResultsAction BattleResultsFlowUpdate(BattleResultsFlow *flow, float dt, b
     if (action == BATTLE_RESULTS_ACTION_NONE || flow->stage_time < 0.22f) return BATTLE_RESULTS_ACTION_NONE;
 
     if (flow->stage == BATTLE_RESULTS_REWARDS) {
-        if (action == BATTLE_RESULTS_ACTION_HEROES || action == BATTLE_RESULTS_ACTION_MAP)
+        if (action == BATTLE_RESULTS_ACTION_HEROES || action == BATTLE_RESULTS_ACTION_MAP ||
+            action == BATTLE_RESULTS_ACTION_STORE)
             GuiSoundPlay(SND_UI_BIG_BUTTON);
         else
             GuiClickSoundPlay();
@@ -786,8 +790,10 @@ BattleResultsDrawRewards(const BattleResultsFlow *flow, const Player *player, co
 
     BattleResultsDrawRoster(roster, player, heroes, squad_index, popup_fade);
 
+    TutorialAnchorSet(TUTORIAL_ANCHOR_RESULTS_STORE, BattleResultsRewardsStoreRect());
+    TutorialAnchorSet(TUTORIAL_ANCHOR_RESULTS_CONTINUE, BattleResultsRewardsContinueRect());
     BattleResultsDrawLeftButton(
-        GUI_RESULTS_STORE, GUI_RESULTS_STORE_ON, BattleResultsRewardsStoreRect(), popup_fade, false
+        GUI_RESULTS_STORE, GUI_RESULTS_STORE_ON, BattleResultsRewardsStoreRect(), popup_fade, true
     );
     BattleResultsDrawLeftButton(
         GUI_RESULTS_HEROES, GUI_RESULTS_HEROES_ON, BattleResultsRewardsHeroesRect(), popup_fade, true

@@ -849,7 +849,24 @@ static void RosterDrawCard(const HeroCard *card, Rectangle cell, const RosterCar
 typedef struct {
     const Heroes *heroes;
     const Player *player;
+    int newest_unit;
 } HeroesCardContext;
+
+static int HeroesNewestRosterIndex(const Player *p) {
+    int newest = -1;
+    for (int i = 0; i < p->roster_count; i++)
+        if (newest < 0 || p->roster[i].instance_id > p->roster[newest].instance_id) newest = i;
+    return newest;
+}
+
+static void
+HeroesPublishTutorialCard(const HeroesCardContext *c, const HeroCard *card, Rectangle cell, int index, bool in_squad) {
+    if (index == c->newest_unit) TutorialAnchorSet(TUTORIAL_ANCHOR_HEROES_NEWEST_UNIT, cell);
+    Rectangle published;
+    if (!in_squad && TutorialWantsDragFrom(card->ch) &&
+        !TutorialAnchorRect(TUTORIAL_ANCHOR_HEROES_DRAG_SOURCE, &published))
+        TutorialAnchorSet(TUTORIAL_ANCHOR_HEROES_DRAG_SOURCE, cell);
+}
 
 static void HeroesDrawRosterCard(const HeroCard *card, Rectangle cell, int roster_index, const void *context) {
     const HeroesCardContext *c = (const HeroesCardContext *)context;
@@ -862,6 +879,7 @@ static void HeroesDrawRosterCard(const HeroCard *card, Rectangle cell, int roste
         .selected = roster_index == c->heroes->selected,
     };
     RosterDrawCard(card, cell, &state);
+    if (TutorialRunning()) HeroesPublishTutorialCard(c, card, cell, roster_index, in_squad);
 }
 
 HeroesButton HeroesDrawNav(Heroes *h, HeroesButton active, bool interactive, int runes_badge, int gallery_badge) {
@@ -892,6 +910,7 @@ HeroesButton HeroesDrawNav(Heroes *h, HeroesButton active, bool interactive, int
     ButtonDrawBadge(gallery, gallery_badge);
     y += w + gap;
     Rectangle squad = {x, y, w, w};
+    if (active == HEROES_CONSUME) TutorialAnchorSet(TUTORIAL_ANCHOR_CONSUME_SQUAD, squad);
     if (active == HEROES_SQUAD)
         ButtonDrawSelected(&h->squad, squad);
     else if (ButtonDrawEx(&h->squad, squad, interactive))
@@ -976,7 +995,8 @@ static const Rectangle HEROES_SQUAD_TABS = {8.0f, 644.0f, 246.0f, 64.0f};
 HeroesButton HeroesDraw(Heroes *h, Player *p) {
     HeroesButton clicked = HEROES_NONE;
 
-    HeroesCardContext card_context = {h, p};
+    HeroesCardContext card_context = {h, p, TutorialRunning() ? HeroesNewestRosterIndex(p) : -1};
+    int selected_before = h->selected;
     bool gear_open = GearViewIsOpen();
     int hovered = -1;
     RosterSyncPinnedSquad(&h->roster, p);
@@ -996,11 +1016,13 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
         bool ui_input = !UiInputBlocked() && !gear_open;
         if (h->selected >= 0) {
             Rectangle details = HeroesDetailsBounds(156.0f, UiWidth() - 256.0f);
+            TutorialAnchorSet(TUTORIAL_ANCHOR_HEROES_DETAILS, details);
             details.width += HEROES_GEAR_COLUMN_WIDTH;
+            bool tap_closes = TutorialRequires(TUTORIAL_ANCHOR_HEROES_DETAILS);
             if (ui_input && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-                h->details_close_armed = !CheckCollisionPointRec(mouse, details);
+                h->details_close_armed = tap_closes || !CheckCollisionPointRec(mouse, details);
             if (ui_input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-                if (h->details_close_armed && !CheckCollisionPointRec(mouse, details)) h->selected = -1;
+                if (h->details_close_armed && (tap_closes || !CheckCollisionPointRec(mouse, details))) h->selected = -1;
                 h->details_close_armed = false;
             }
             h->press_card = -1;
@@ -1041,7 +1063,9 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
             else
                 GearViewOpenInventory();
         }
-        if (ButtonDrawEx(&h->gray, (Rectangle){x, y, -1, -1}, buttons_active)) clicked = HEROES_QUEST;
+        Rectangle quest = {x, y, (float)h->gray.idle.width, (float)h->gray.idle.height};
+        TutorialAnchorSet(TUTORIAL_ANCHOR_HEROES_QUEST, quest);
+        if (ButtonDrawEx(&h->gray, quest, buttons_active)) clicked = HEROES_QUEST;
         x += h->gray.idle.width + gap;
         ButtonDrawEx(&h->gold, (Rectangle){x, y, -1, -1}, false);
     }
@@ -1072,5 +1096,7 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
         }
     }
 
+    if (selected_before < 0 && h->selected >= 0) TutorialRaise(TUTORIAL_EVENT_UNIT_DETAILS_SHOWING);
+    if (selected_before >= 0 && h->selected < 0) TutorialRaise(TUTORIAL_EVENT_UNIT_DETAILS_CLOSED);
     return clicked;
 }

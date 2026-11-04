@@ -49,6 +49,8 @@ client-additional-data/vfx_tools/*
 tests/battle_sim_test
 player_save.dat
 player_save.dat.tmp
+account.dat
+account.dat.tmp
 
 # Local visual QA
 scratchpad/

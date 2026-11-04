@@ -560,8 +560,9 @@ static float CampaignProgressionPanEnd(const Campaign *c) {
 }
 
 static Rectangle CampaignLayoutRect(Rectangle part, Vector2 centre, float world_w, float screen_h) {
-    return (Rectangle
-    ){centre.x + part.x * world_w, centre.y + part.y * screen_h, part.width * world_w, part.height * screen_h};
+    return (Rectangle){
+        centre.x + part.x * world_w, centre.y + part.y * screen_h, part.width * world_w, part.height * screen_h
+    };
 }
 
 static void CampaignDrawWrapped(
@@ -847,8 +848,10 @@ static void CampaignDrawAbout(Campaign *c, const PlayerCampaignProgress *pcp, in
     Rectangle close = CampaignAboutRect(CAMPAIGN_ABOUT_CLOSE, dx);
     if (ButtonDrawEx(&c->about_close, close, interactive)) {
         c->about_open = false;
-    } else if (interactive && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && UiMouse().y > HUD_TOP_HEIGHT &&
-               !CheckCollisionPointRec(UiMouse(), frame)) {
+    } else if (
+        interactive && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && UiMouse().y > HUD_TOP_HEIGHT &&
+        !CheckCollisionPointRec(UiMouse(), frame)
+    ) {
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         c->about_open = false;
     }
@@ -1055,11 +1058,11 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
     if (!c->tray_open) {
         {
             bool unlocked = c->selected_node <= pcp->node_index;
-            if (ButtonDrawEx(
-                    &c->enter_map, (Rectangle){screen_w - 264.0f, screen_h - 72.0f, -1, -1}, !progression_input_locked
-                ) &&
-                unlocked)
-                action = CAMPAIGN_ENTER;
+            Rectangle enter = {
+                screen_w - 264.0f, screen_h - 72.0f, (float)c->enter_map.idle.width, (float)c->enter_map.idle.height
+            };
+            TutorialAnchorSet(TUTORIAL_ANCHOR_MAP_ENTER, enter);
+            if (ButtonDrawEx(&c->enter_map, enter, !progression_input_locked) && unlocked) action = CAMPAIGN_ENTER;
         }
 
         Rectangle lore = {screen_w - c->lore.width / 1.3f, 72.0f, c->lore.width / 1.3f, c->lore.height / 1.3f};

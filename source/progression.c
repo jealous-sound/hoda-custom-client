@@ -54,6 +54,9 @@ void ProgressionInitializePlayerDefaults(Player *p) {
     p->nexus_run = (PlayerNexusRun){0};
     p->nexus_events = (PlayerNexusEvents){0};
     p->pvp = (PlayerPvp){0};
+    p->name[0] = '\0';
+    p->tutorial = (PlayerTutorial){.main_complete = true, .consume_complete = true};
+    p->fast_battles = false;
 }
 
 typedef struct {
@@ -932,6 +935,7 @@ char *ProgressionSerialize(const Player *player) {
     PROGRESSION_SAVE_NUMBER(account, "stamina_regen_timer", player->stamina_regen_timer);
     PROGRESSION_SAVE_NUMBER(account, "gold", player->gold);
     PROGRESSION_SAVE_NUMBER(account, "gems", player->gems);
+    if (player->name[0] && !cJSON_AddStringToObject(account, "name", player->name)) goto save_json_failed;
 
     PROGRESSION_SAVE_NUMBER(store, "rng_state", player->store_rng_state);
     PROGRESSION_SAVE_NUMBER(store, "opened_total", player->store_opened_total);
@@ -1097,6 +1101,15 @@ char *ProgressionSerialize(const Player *player) {
         cJSON_Delete(gallery);
         goto save_json_failed;
     }
+
+    cJSON *tutorial = cJSON_AddObjectToObject(root, "tutorial");
+    if (!tutorial || !cJSON_AddBoolToObject(tutorial, "complete", player->tutorial.main_complete) ||
+        !cJSON_AddBoolToObject(tutorial, "consume_complete", player->tutorial.consume_complete))
+        goto save_json_failed;
+    PROGRESSION_SAVE_NUMBER(tutorial, "restore_step", player->tutorial.restore_step);
+
+    cJSON *settings = cJSON_AddObjectToObject(root, "settings");
+    if (!settings || !cJSON_AddBoolToObject(settings, "fast_battles", player->fast_battles)) goto save_json_failed;
 
     serialized = cJSON_Print(root);
     cJSON_Delete(root);
@@ -1687,6 +1700,25 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
     if (valid && version >= PROGRESSION_FIRST_PVP_VERSION)
         valid = ProgressionLoadPvp(cJSON_GetObjectItemCaseSensitive(root, "pvp"), &loaded_pvp);
 
+    char loaded_name[PLAYER_NAME_CAPACITY] = "";
+    cJSON *name = cJSON_GetObjectItemCaseSensitive(account, "name");
+    if (valid && name) {
+        valid = cJSON_IsString(name) && PlayerNameValid(name->valuestring);
+        if (valid) StrCopy(loaded_name, sizeof(loaded_name), name->valuestring);
+    }
+    PlayerTutorial loaded_tutorial = {.main_complete = true, .consume_complete = true};
+    cJSON *tutorial = cJSON_GetObjectItemCaseSensitive(root, "tutorial");
+    if (valid && tutorial) {
+        cJSON *complete = cJSON_GetObjectItemCaseSensitive(tutorial, "complete");
+        cJSON *consume_complete = cJSON_GetObjectItemCaseSensitive(tutorial, "consume_complete");
+        valid = cJSON_IsBool(complete) && cJSON_IsBool(consume_complete) &&
+                ProgressionJsonInt(tutorial, "restore_step", 0, INT_MAX, &loaded_tutorial.restore_step);
+        loaded_tutorial.main_complete = cJSON_IsTrue(complete);
+        loaded_tutorial.consume_complete = cJSON_IsTrue(consume_complete);
+    }
+
+    bool loaded_fast_battles = JsonBool(cJSON_GetObjectItemCaseSensitive(root, "settings"), "fast_battles");
+
     cJSON *loaded_gear = cJSON_DetachItemFromObjectCaseSensitive(root, "gear");
     cJSON_Delete(root);
     if (!valid) {
@@ -1710,6 +1742,9 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
     player->stamina_regen_timer = stamina == stamina_max ? 0.0f : stamina_timer;
     player->gold = gold;
     player->gems = gems;
+    StrCopy(player->name, sizeof(player->name), loaded_name);
+    player->tutorial = loaded_tutorial;
+    player->fast_battles = loaded_fast_battles;
     player->campaign_progress = loaded_progress;
     if (version >= 4) {
         player->potions = loaded_potions;
@@ -1765,14 +1800,22 @@ bool ProgressionLoadFromPath(Player *player, const char *path) {
     return ok;
 }
 
-static bool ProgressionLoadFromBackend(Player *player) {
+typedef enum {
+    PROGRESSION_LOAD_RESTORED,
+    PROGRESSION_LOAD_NEW_ACCOUNT,
+    PROGRESSION_LOAD_UNAVAILABLE,
+} ProgressionLoadResult;
+
+static ProgressionLoadResult ProgressionLoadFromBackend(Player *player) {
     char *text = NULL;
     long long revision = 0;
-    if (!BackendFetchProfile(&text, &revision)) return false;
+    BackendProfileFetch fetched = BackendFetchProfile(&text, &revision);
+    if (fetched == BACKEND_PROFILE_MISSING) return PROGRESSION_LOAD_NEW_ACCOUNT;
+    if (fetched != BACKEND_PROFILE_FOUND) return PROGRESSION_LOAD_UNAVAILABLE;
     bool ok = ProgressionLoadFromText(player, text, "from backend");
     free(text);
     if (ok) BackendAcceptProfile(revision);
-    return ok;
+    return ok ? PROGRESSION_LOAD_RESTORED : PROGRESSION_LOAD_UNAVAILABLE;
 }
 
 static bool ProgressionSaveToBackend(const Player *player) {
@@ -1783,10 +1826,12 @@ static bool ProgressionSaveToBackend(const Player *player) {
     return ok;
 }
 
-bool ProgressionLoad(Player *player) {
-    if (!ProgressionPersistenceEnabled()) return false;
+ProgressionLoadResult ProgressionLoad(Player *player) {
+    if (!ProgressionPersistenceEnabled()) return PROGRESSION_LOAD_UNAVAILABLE;
     if (BackendEnabled()) return ProgressionLoadFromBackend(player);
-    return ProgressionLoadFromPath(player, ProgressionSavePath());
+    const char *path = ProgressionSavePath();
+    if (!FileExists(path)) return PROGRESSION_LOAD_NEW_ACCOUNT;
+    return ProgressionLoadFromPath(player, path) ? PROGRESSION_LOAD_RESTORED : PROGRESSION_LOAD_UNAVAILABLE;
 }
 
 bool ProgressionSave(const Player *player) {

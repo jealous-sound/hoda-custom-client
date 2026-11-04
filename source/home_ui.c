@@ -40,7 +40,9 @@ HomeButton HomeUIDraw(HomeUI *hui, bool interactive, int heroes_badge, int missi
 
     HomeButton clicked = HOME_NONE;
 
-    if (ButtonDrawEx(&hui->store, (Rectangle){pad, y, size, size}, interactive)) clicked = HOME_STORE;
+    Rectangle store = {pad, y, size, size};
+    TutorialAnchorSet(TUTORIAL_ANCHOR_HOME_STORE, store);
+    if (ButtonDrawEx(&hui->store, store, interactive)) clicked = HOME_STORE;
     Rectangle history = {pad + size + gap, y, size, size};
     if (ButtonDrawEx(&hui->history, history, interactive)) clicked = HOME_HISTORY;
     ButtonDrawBadge(history, missions_badge);
@@ -51,7 +53,9 @@ HomeButton HomeUIDraw(HomeUI *hui, bool interactive, int heroes_badge, int missi
 
     float pvp_x = screen_w - pad - size;
     float quests_x = pvp_x - gap - size;
-    if (ButtonDrawEx(&hui->quests, (Rectangle){quests_x, y, size, size}, interactive)) clicked = HOME_QUESTS;
+    Rectangle quests = {quests_x, y, size, size};
+    TutorialAnchorSet(TUTORIAL_ANCHOR_HOME_QUESTS, quests);
+    if (ButtonDrawEx(&hui->quests, quests, interactive)) clicked = HOME_QUESTS;
     if (ButtonDrawEx(&hui->pvp, (Rectangle){pvp_x, y, size, size}, interactive)) clicked = HOME_PVP;
 
     return clicked;

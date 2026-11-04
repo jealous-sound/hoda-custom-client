@@ -15,6 +15,14 @@ typedef enum {
 } Screen;
 
 #define GAME_WISP_LOOP_CAPACITY 64
+#define GAME_NEW_PLAYER_PATH "data/new_player.json"
+#define GAME_NEW_PLAYER_ENV "HOD_NEW_PLAYER"
+#define GAME_SKIP_TUTORIAL_ENV "HOD_SKIP_TUTORIAL"
+#define GAME_TUTORIAL_INTRO_PATH "data/tutorial_intro.json"
+#define GAME_TUTORIAL_INTRO_MAP "TUTORIAL_INTRO"
+#define GAME_TUTORIAL_SEED_ATTEMPTS 1024
+#define GAME_TUTORIAL_UNIT_MARKER_SIZE 80.0f
+#define GAME_TUTORIAL_UNIT_HEAD_LIFT 1.6f
 
 typedef struct {
     int index;
@@ -73,6 +81,13 @@ typedef struct {
     bool battle_outcome_committed;
     BattleRewardResult battle_reward;
     BattleResultsFlow battle_results;
+    bool battle_end_announced;
+
+    Tutorial tutorial;
+    bool tutorial_init_signal;
+    bool battle_is_intro;
+    Player intro_player;
+    NamePrompt name_prompt;
 } Game;
 
 static bool GameBattleSelectionValid(const Game *g) {
@@ -206,12 +221,13 @@ GamePendingCampaignAnimation(const Campaign *campaign, const BattleRewardResult 
 }
 
 static void GameCommitBattleOutcome(Game *g, bool won) {
-    if (g->battle_outcome_committed) return;
+    if (g->battle_outcome_committed || g->battle_is_intro) return;
 
     g->battle_outcome_committed = true;
     GalleryRecordBattle(&g->player.gallery, &g->battle.enemy_roster, &g->battle_play.sim);
     int crits = BattlePlayCriticalGold(&g->battle_play) / BP_CRIT_GOLD_REWARD;
-    bool challenge = !g->battle_is_nexus && !g->battle_is_pvp && g->map.maps[g->battle_map_index].nodes[g->battle_node_index].grind;
+    bool challenge =
+        !g->battle_is_nexus && !g->battle_is_pvp && g->map.maps[g->battle_map_index].nodes[g->battle_node_index].grind;
     MissionsRecordBattle(&g->player, &g->battle_play.sim, crits, challenge, ServerNow());
     if (g->battle_is_pvp) {
         g->battle_reward = PvpResolveBattle(
@@ -328,7 +344,6 @@ static void GameStartPendingCampaignAnimation(Game *g) {
         CampaignBeginMasteryAnimation(&g->map, animation.from_map, animation.from_node, animation.to_node);
 }
 
-
 static void GameExitBattleTo(Game *g, Screen destination) {
     BattlePlayStop(&g->battle_play);
     BattleResultsFlowReset(&g->battle_results);
@@ -379,6 +394,258 @@ static void GameReturnToBattleMatchmaking(Game *g) {
     GameEnterSelectedBattle(g);
 }
 
+static void GameOpenStore(Game *g, Screen return_screen) {
+    g->store_return_screen = return_screen;
+    StoreOpen(&g->store);
+    if (TutorialActive(&g->tutorial)) StoreShowHeroes(&g->store);
+    g->screen = SCREEN_STORE;
+}
+
+static void GameOpenQuests(Game *g) {
+    if (!TutorialMainActive(&g->tutorial)) {
+        g->screen = SCREEN_QUESTS;
+        return;
+    }
+    g->screen = SCREEN_MAP;
+    GameStartPendingCampaignAnimation(g);
+}
+
+static void GameStartNewAccount(Game *g) {
+    const char *starter = getenv(GAME_NEW_PLAYER_ENV);
+    PlayerUnloadRoster(&g->player);
+    PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", starter && starter[0] ? starter : GAME_NEW_PLAYER_PATH);
+    bool skip = EnvFlag(GAME_SKIP_TUTORIAL_ENV);
+    g->player.tutorial = (PlayerTutorial){.main_complete = skip, .consume_complete = skip};
+    ProgressionSave(&g->player);
+    TraceLog(LOG_INFO, "Account: new player, tutorial %s", skip ? "skipped" : "starts");
+}
+
+static unsigned GameTutorialBattleSeed(Game *g, const Player *player) {
+    unsigned seed = (unsigned)GetRandomValue(1, 0x7FFFFFFF);
+    if (!TutorialActive(&g->tutorial)) return seed;
+    bool victory = g->battle_is_intro || TutorialWantsVictory(&g->tutorial);
+    static BattleSim trial;
+    for (int attempt = 0; attempt < GAME_TUTORIAL_SEED_ATTEMPTS; attempt++, seed++) {
+        BattleSimRun(&trial, player, &g->battle.enemy_roster, seed);
+        if (trial.player_won == victory) return seed;
+    }
+    TraceLog(LOG_WARNING, "Tutorial: no seed gives the scripted %s", victory ? "victory" : "defeat");
+    return seed;
+}
+
+static void GameStartBattlePlay(Game *g, const Player *player) {
+    g->battle_end_announced = false;
+    BattlePlayStart(&g->battle_play, &g->battle, player, GameTutorialBattleSeed(g, player));
+    BattlePlaySetFast(&g->battle_play, g->player.fast_battles);
+}
+
+static void GameStartIntroBattle(Game *g) {
+    PlayerLoadRoster(&g->intro_player, HOD_CACHE "characters.json", GAME_TUTORIAL_INTRO_PATH);
+    g->battle_is_intro = true;
+    g->battle_is_pvp = false;
+    g->battle_is_nexus = false;
+    BattleEnterNodeFrom(&g->battle, &g->intro_player, GAME_TUTORIAL_INTRO_PATH, GAME_TUTORIAL_INTRO_MAP, 1);
+    GameClearBattleOutcome(g);
+    GameStartBattlePlay(g, &g->intro_player);
+    g->screen = SCREEN_BATTLE;
+}
+
+static void GameExitIntroBattle(Game *g) {
+    if (!g->battle_is_intro) return;
+    GameExitBattleTo(g, SCREEN_HOME);
+    PlayerUnloadRoster(&g->intro_player);
+    g->battle_is_intro = false;
+}
+
+static const Player *GameBattlePlayer(const Game *g) {
+    return g->battle_is_intro ? &g->intro_player : &g->player;
+}
+
+static void GameTutorialSelectMapNode(Game *g, const char *map_id, int node) {
+    PlayerCampaignProgress *pcp = &g->player.campaign_progress;
+    for (int i = 0; i < g->map.map_count; i++) {
+        if (strcasecmp(g->map.maps[i].id, map_id) != 0) continue;
+        if (!CampaignMapUnlocked(&g->map, pcp, i)) return;
+        if (pcp->campaign_index != i) CampaignSelectMap(&g->map, pcp, i);
+        if (node >= 0 && node < g->map.maps[i].node_count && node <= CampaignFrontierForMap(&g->map, pcp, i))
+            g->map.selected_node = node;
+        return;
+    }
+}
+
+static int GameGrantTutorialHeroes(Game *g, const char (*ids)[TUTORIAL_ID_CAPACITY], int count) {
+    const cJSON *definitions[TUTORIAL_PACK_REWARD_HEROES] = {0};
+    int found = 0;
+    for (int i = 0; i < count && found < TUTORIAL_PACK_REWARD_HEROES; i++) {
+        definitions[found] = CatalogFindCharacter(g->store.catalog, ids[i]);
+        if (definitions[found])
+            found++;
+        else
+            TraceLog(LOG_WARNING, "Tutorial: reward hero %s is not in the catalog", ids[i]);
+    }
+    int first = -1;
+    if (found == 0 || !PlayerRosterAppendDefinitions(&g->player, definitions, found, &first)) return -1;
+    if (!HeroesSyncRoster(&g->heroes, &g->player))
+        TraceLog(LOG_FATAL, "Tutorial: rewarded roster cannot sync to Heroes");
+    return first;
+}
+
+static void GameTutorialAwardGiant(Game *g) {
+    char giant[1][TUTORIAL_ID_CAPACITY];
+    StrCopy(giant[0], sizeof(giant[0]), g->tutorial.giant);
+    int first = GameGrantTutorialHeroes(g, giant, 1);
+    if (first < 0) return;
+    ProgressionSave(&g->player);
+    StoreRevealGrantedHeroes(&g->store, first, 1);
+    g->store_return_screen = SCREEN_HOME;
+    g->screen = SCREEN_STORE;
+}
+
+static void GameTutorialPartingGift(Game *g) {
+    GameGrantTutorialHeroes(g, g->tutorial.gift_heroes, g->tutorial.gift_hero_count);
+    for (int i = 0; i < g->tutorial.gift_rune_count; i++)
+        RuneGrantById(&g->player.runes, g->tutorial.gift_runes[i], RuneNow());
+    HomeBackgroundMarkSquadStale(&g->scene);
+}
+
+static TutorialSignal GameTutorialBattleSignal(const Game *g) {
+    if (BattleResultsFlowActive(&g->battle_results)) {
+        if (g->battle_results.stage == BATTLE_RESULTS_NODE_COMPLETION) return TUTORIAL_SIGNAL_NODE_COMPLETION;
+        if (g->battle_results.stage == BATTLE_RESULTS_REWARDS) return TUTORIAL_SIGNAL_BATTLE_RESULTS;
+        return TUTORIAL_SIGNAL_UNSUPPORTED;
+    }
+    return g->battle_play.state == BP_OFF ? TUTORIAL_SIGNAL_BATTLE_MATCHMAKING : TUTORIAL_SIGNAL_BATTLE;
+}
+
+static TutorialSignal GameTutorialSignal(const Game *g) {
+    if (g->tutorial_init_signal) return TUTORIAL_SIGNAL_MAIN_INIT;
+    switch (g->screen) {
+        case SCREEN_HOME:
+            return TUTORIAL_SIGNAL_MAIN_SCREEN;
+        case SCREEN_MAP:
+            return TUTORIAL_SIGNAL_BATTLE_MAP;
+        case SCREEN_HEROES:
+            return TUTORIAL_SIGNAL_EDIT_FORMATION;
+        case SCREEN_CONSUME:
+            return TUTORIAL_SIGNAL_CONSUME;
+        case SCREEN_STORE:
+            return StoreShowsPackOpening(&g->store) ? TUTORIAL_SIGNAL_PACK_OPENING : TUTORIAL_SIGNAL_STORE;
+        case SCREEN_BATTLE:
+            return GameTutorialBattleSignal(g);
+        default:
+            return TUTORIAL_SIGNAL_UNSUPPORTED;
+    }
+}
+
+static Rectangle GameTutorialMarker(Vector3 world, Camera3D camera) {
+    Vector2 at = GetWorldToScreen(world, camera);
+    float scale = UiScale(), size = GAME_TUTORIAL_UNIT_MARKER_SIZE;
+    return (Rectangle){at.x / scale - size * 0.5f, at.y / scale - size * 0.5f, size, size};
+}
+
+static void GamePublishBattleUnitAnchors(const Game *g) {
+    for (int side = 0; side < 2; side++) {
+        TutorialAnchor first = side == 0 ? TUTORIAL_ANCHOR_PLAYER_UNIT_0 : TUTORIAL_ANCHOR_ENEMY_UNIT_0;
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+            const BattleSpot *spot = BpSpot(side, slot);
+            Vector3 head = {spot->x, BattleFeetY(1.0f) + GAME_TUTORIAL_UNIT_HEAD_LIFT, spot->z};
+            TutorialAnchorSet(first + slot, GameTutorialMarker(head, g->battle.cam));
+        }
+    }
+}
+
+static int GameTutorialDragTargetSlot(const Player *p) {
+    if (TutorialDragsGiant()) return SQUAD_SLOT_LARGE;
+    for (int slot = 0; slot < SQUAD_SLOT_LARGE; slot++)
+        if (PlayerSquadUnitAt(p, p->current_squad, slot) < 0) return slot;
+    for (int slot = 0; slot < SQUAD_SLOT_LARGE; slot++) {
+        int unit = PlayerSquadUnitAt(p, p->current_squad, slot);
+        if (unit >= 0 && p->roster[unit].rarity == RARITY_COMMON) return slot;
+    }
+    return 0;
+}
+
+static void GamePublishHeroesDragTarget(const Game *g) {
+    if (!TutorialWantsDrag()) return;
+    Vector3 pad = HeroesBackgroundSlotPosition(GameTutorialDragTargetSlot(&g->player));
+    TutorialAnchorSet(TUTORIAL_ANCHOR_HEROES_DRAG_TARGET, GameTutorialMarker(pad, g->heroes_scene.cam));
+}
+
+static void GameRaiseSquadAddition(const Game *g, int roster_index) {
+    if (roster_index < 0 || PlayerSquadFindUnit(&g->player, g->player.current_squad, roster_index) < 0) return;
+    TutorialRaise(
+        g->player.roster[roster_index].giant ? TUTORIAL_EVENT_GIANT_UNIT_ADDED_TO_SQUAD
+                                             : TUTORIAL_EVENT_UNIT_ADDED_TO_SQUAD
+    );
+}
+
+static void GameHandleTutorialRequests(Game *g) {
+    TutorialRequest request;
+    while (TutorialTakeRequest(&g->tutorial, &request)) {
+        switch (request.kind) {
+            case TUTORIAL_REQUEST_START_INTRO_BATTLE:
+                GameStartIntroBattle(g);
+                break;
+            case TUTORIAL_REQUEST_EXIT_INTRO_BATTLE:
+                GameExitIntroBattle(g);
+                break;
+            case TUTORIAL_REQUEST_SELECT_MAP_NODE:
+                GameTutorialSelectMapNode(g, request.map_id, request.node);
+                break;
+            case TUTORIAL_REQUEST_AWARD_GIANT:
+                GameTutorialAwardGiant(g);
+                break;
+            case TUTORIAL_REQUEST_AWARD_GEM_PACK:
+                g->player.gems += g->tutorial.gem_pack_gems;
+                ProgressionSave(&g->player);
+                break;
+            case TUTORIAL_REQUEST_GO_HOME:
+                if (g->screen == SCREEN_MAP) g->screen = SCREEN_HOME;
+                break;
+            case TUTORIAL_REQUEST_MAIN_FINISHED:
+                GameTutorialPartingGift(g);
+                ProgressionSave(&g->player);
+                break;
+            case TUTORIAL_REQUEST_SAVE:
+            case TUTORIAL_REQUEST_CONSUME_FINISHED:
+                ProgressionSave(&g->player);
+                break;
+            case TUTORIAL_REQUEST_NONE:
+                break;
+        }
+    }
+}
+
+static void GameDrawTutorial(Game *g, float dt) {
+    TutorialFrame frame = {
+        .signal = GameTutorialSignal(g),
+        .squad = GameBattlePlayer(g),
+        .enemy = g->screen == SCREEN_BATTLE ? &g->battle.enemy_roster : NULL,
+    };
+    if (g->screen == SCREEN_BATTLE && TutorialRunning()) GamePublishBattleUnitAnchors(g);
+    UiFrameBegin();
+    TutorialDraw(&g->tutorial, &g->player, &frame, dt);
+    UiFrameEnd();
+    g->tutorial_init_signal = false;
+    GameHandleTutorialRequests(g);
+}
+
+static void GameDrawNamePrompt(Game *g, float dt) {
+    bool wanted = g->player.tutorial.main_complete && !g->player.name[0] && !TutorialActive(&g->tutorial) &&
+                  g->screen == SCREEN_HOME && ProgressionPersistenceEnabled();
+    if (wanted && !NamePromptIsOpen(&g->name_prompt)) NamePromptOpen(&g->name_prompt);
+    if (!NamePromptIsOpen(&g->name_prompt)) return;
+    UiSetInputBlocked(false);
+    UiSetInputWindow(false, (Rectangle){0});
+    UiFrameBegin();
+    bool named = NamePromptDraw(&g->name_prompt, &g->player, dt);
+    UiFrameEnd();
+    if (named) {
+        ProgressionSave(&g->player);
+        TraceLog(LOG_INFO, "Account: player named %s", g->player.name);
+    }
+}
+
 #define STARTUP_IMAGE_MANIFEST HOD_CACHE "startup_images.txt"
 
 void GameInitialize(Game *g) {
@@ -392,7 +659,7 @@ void GameInitialize(Game *g) {
     MissionCatalogLoad("data/missions.json");
 
     PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
-    ProgressionLoad(&g->player);
+    if (ProgressionLoad(&g->player) == PROGRESSION_LOAD_NEW_ACCOUNT) GameStartNewAccount(g);
     PvpEventSync(&g->player.pvp, ServerNow());
     if (PvpSimulateDefense(&g->player.pvp, g->player.level, ServerNow()) > 0) ProgressionSave(&g->player);
     PlayerGallerySync(&g->player);
@@ -431,6 +698,10 @@ void GameInitialize(Game *g) {
     g->battle_energy_spent = false;
     GameClearBattleOutcome(g);
     BattleResultsFlowInitialize(&g->battle_results);
+    TutorialLoad(&g->tutorial);
+    if (!g->player.tutorial.main_complete) TutorialResumeMain(&g->tutorial, &g->player.tutorial);
+    g->tutorial_init_signal = true;
+    NamePromptInitialize(&g->name_prompt);
     ResourceRecordImagesEnd(STARTUP_IMAGE_MANIFEST);
 }
 
@@ -549,6 +820,7 @@ static void GameDrawSceneFx(Game *g, Camera3D camera, float dt) {
 }
 
 static void GameOpenConsume(Game *g) {
+    if (g->player.tutorial.main_complete && !g->player.tutorial.consume_complete) TutorialStartConsume(&g->tutorial);
     ConsumeOpen(&g->consume, &g->player);
     g->consume_attack_pending = CONSUME_ATTACK_NONE;
     const Character *empty[CONSUME_MAX_SEEDS + 1] = {0};
@@ -731,6 +1003,8 @@ static void GameDrawGalleryPopup(Game *g, bool resource_modal) {
 
 void GameDraw(Game *g) {
     float dt = GetFrameTime();
+    TutorialHooksBeginFrame();
+    if (NamePromptIsOpen(&g->name_prompt)) UiSetInputWindow(true, (Rectangle){0});
     Screen screen_at_frame_start = g->screen;
     bool pvp_battle = g->screen == SCREEN_BATTLE && g->battle_is_pvp;
     g->hud.show_banners = g->screen == SCREEN_PVP_EVENT || (pvp_battle && g->pvp_event);
@@ -751,8 +1025,9 @@ void GameDraw(Game *g) {
             GameDrawSceneFx(g, g->scene.cam, dt);
 
             UiFrameBegin();
-            if (NewsAutoShow(&g->news, &g->player)) ProgressionSave(&g->player);
-            bool news_open = NewsIsOpen(&g->news);
+            bool news_allowed = !TutorialMainActive(&g->tutorial);
+            if (news_allowed && NewsAutoShow(&g->news, &g->player)) ProgressionSave(&g->player);
+            bool news_open = news_allowed && NewsIsOpen(&g->news);
             bool home_interactive = !news_open;
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, home_interactive, true));
 
@@ -760,25 +1035,24 @@ void GameDraw(Game *g) {
             missions_badge += PvpEventUnclaimedCount(&g->player.pvp);
             if (missions_badge == 0) missions_badge = abs(g->player.pvp.trophies - g->player.pvp.trophies_seen);
             HomeButton pressed = HomeUIDraw(&g->home_ui, home_interactive, g->player.gallery.badge, missions_badge);
-            NewsDrawHome(&g->news, &g->quests, &g->nexus, &g->player, home_interactive && !resource_modal, dt);
+            if (news_allowed)
+                NewsDrawHome(&g->news, &g->quests, &g->nexus, &g->player, home_interactive && !resource_modal, dt);
             if (NewsTakePvpEventRequest(&g->news)) GameOpenPvpEvent(g);
             if (!news_open && NewsIsOpen(&g->news)) ProgressionSave(&g->player);
-            if (NewsDrawOverlay(&g->news, &g->quests, &g->nexus, &g->player) == NEWS_OPEN_EVENT) {
+            if (news_allowed && NewsDrawOverlay(&g->news, &g->quests, &g->nexus, &g->player) == NEWS_OPEN_EVENT) {
                 QuestsOpenEvent(&g->quests, &g->nexus, &g->player, NewsTargetEvent(&g->news));
                 g->screen = SCREEN_QUESTS;
             }
             UiFrameEnd();
-            if (pressed == HOME_NONE && home_interactive && !NewsIsOpen(&g->news) && !resource_modal &&
+            if (pressed == HOME_NONE && home_interactive && !news_open && !resource_modal &&
                 IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
                 HomeBackgroundSquadClick(&g->scene, GetMousePosition());
             if (pressed == HOME_HEROES) {
                 g->screen = SCREEN_HEROES;
             } else if (pressed == HOME_STORE) {
-                g->store_return_screen = SCREEN_HOME;
-                StoreOpen(&g->store);
-                g->screen = SCREEN_STORE;
+                GameOpenStore(g, SCREEN_HOME);
             } else if (pressed == HOME_QUESTS) {
-                g->screen = SCREEN_QUESTS;
+                GameOpenQuests(g);
             } else if (pressed == HOME_HISTORY) {
                 MissionsSync(&g->player, &g->map);
                 MissionsOpen(&g->missions, &g->player, GOALS_TAB_MISSIONS);
@@ -842,7 +1116,7 @@ void GameDraw(Game *g) {
             UiFrameEnd();
 
             if (heroes_action == HEROES_QUEST) {
-                g->screen = SCREEN_QUESTS;
+                GameOpenQuests(g);
             } else if (GearViewTakeStoreRequest()) {
                 GearViewClose();
                 StoreOpen(&g->store);
@@ -877,7 +1151,10 @@ void GameDraw(Game *g) {
                                           : -1;
                 HeroesBackgroundDragMove(&g->heroes_scene, over_tray);
                 if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+                    int dragged = HeroesBackgroundDragRosterIndex(&g->heroes_scene);
+                    bool from_board = HeroesBackgroundDragFromBoard(&g->heroes_scene);
                     squad_changed = HeroesBackgroundDragDrop(&g->heroes_scene, &g->player, over_tray);
+                    if (squad_changed && !from_board) GameRaiseSquadAddition(g, dragged);
                     g->heroes.drag_icon = -1;
                 }
             }
@@ -887,6 +1164,7 @@ void GameDraw(Game *g) {
                 squad_changed = true;
             }
             if (squad_changed) HomeBackgroundMarkSquadStale(&g->scene);
+            GamePublishHeroesDragTarget(g);
             break;
         }
         case SCREEN_RUNES: {
@@ -921,6 +1199,14 @@ void GameDraw(Game *g) {
             }
             ConsumeLeave leave = ConsumeDraw(&g->consume, &g->heroes_scene, &g->heroes, &g->player, dt);
             UiFrameEnd();
+            if (TutorialWantsDrag())
+                TutorialAnchorSet(
+                    TUTORIAL_ANCHOR_CONSUME_DRAG_TARGET,
+                    GameTutorialMarker(
+                        HeroesBackgroundConsumeTargetRoot(&g->heroes_scene),
+                        HeroesBackgroundConsumeCamera(&g->heroes_scene)
+                    )
+                );
             GameHandleConsumeLeave(g, leave);
             GameHandleHudAction(g, hud_action);
             break;
@@ -1064,10 +1350,13 @@ void GameDraw(Game *g) {
         case SCREEN_MAP: {
             UiFrameBegin();
             CampaignAction act = CampaignDraw(&g->map, &g->player.campaign_progress);
+            if (!g->map.progression_active) TutorialRaise(TUTORIAL_EVENT_BATTLE_MAP_NODE_PAN_FINISHED);
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
             UiFrameEnd();
             if (act == CAMPAIGN_ENTER) {
                 int cost = CampaignSelectedEnergyCost(&g->map, &g->player.campaign_progress);
+                if (TutorialMainActive(&g->tutorial) && g->player.energy < cost)
+                    g->player.energy = g->player.energy_max;
                 if (g->player.energy >= cost) {
                     g->battle_map_index = g->player.campaign_progress.campaign_index;
                     g->battle_node_index = g->map.selected_node;
@@ -1122,10 +1411,13 @@ void GameDraw(Game *g) {
         case SCREEN_BATTLE: {
             bool showing_results = BattleResultsFlowActive(&g->battle_results);
             if (!showing_results) {
-                BattlePlayUpdate(&g->battle_play, &g->battle, dt);
-                if (!g->battle_outcome_committed &&
-                    (g->battle_play.state == BP_END_SPLASH || g->battle_play.state == BP_SUMMARY))
-                    GameCommitBattleOutcome(g, g->battle_play.won);
+                BattlePlayUpdate(&g->battle_play, &g->battle, TutorialHoldsBattle(&g->tutorial) ? 0.0f : dt);
+                bool ended = g->battle_play.state == BP_END_SPLASH || g->battle_play.state == BP_SUMMARY;
+                if (ended && !g->battle_end_announced) {
+                    g->battle_end_announced = true;
+                    TutorialRaise(TUTORIAL_EVENT_VICTORY_OR_DEFEAT);
+                }
+                if (!g->battle_outcome_committed && ended) GameCommitBattleOutcome(g, g->battle_play.won);
             }
             BattleUpdate(&g->battle, showing_results ? dt : dt * BattlePlayTimeScale(&g->battle_play));
             BattleDraw(&g->battle);
@@ -1142,26 +1434,40 @@ void GameDraw(Game *g) {
                 }
                 BattleResultsFlowDraw(&g->battle_results, &g->player, &g->heroes, g->battle_squad_index);
             } else {
-                if (!resource_modal && !combat) a = HudDraw(&g->hud, &g->player, true, false);
-                ba = BattleUiDraw(&g->battle_ui, &g->player, &g->battle, &g->battle_play);
+                if (!resource_modal && !combat && !g->battle_is_intro) a = HudDraw(&g->hud, &g->player, true, false);
+                if (!g->battle_is_intro || !g->battle_end_announced)
+                    ba = BattleUiDraw(&g->battle_ui, GameBattlePlayer(g), &g->battle, &g->battle_play);
+                if (combat && BattlePlayFast(&g->battle_play) != g->player.fast_battles) {
+                    g->player.fast_battles = BattlePlayFast(&g->battle_play);
+                    ProgressionSave(&g->player);
+                }
             }
             UiFrameEnd();
 
             bool leave = false;
             if (showing_results) {
-                BattleResultsAction result_action = BattleResultsFlowUpdate(&g->battle_results, dt, !resource_modal);
+                BattleResultsAction result_action =
+                    BattleResultsFlowUpdate(&g->battle_results, dt, !resource_modal && UiClicksReachScreen());
                 if (result_action != BATTLE_RESULTS_ACTION_NONE) {
                     bool completion_route = g->battle_reward.first_win || g->battle_reward.mastered;
-                    if (g->battle_is_pvp) {
+                    if (result_action == BATTLE_RESULTS_ACTION_STORE) {
+                        GameExitBattleTo(
+                            g,
+                            g->battle_is_pvp     ? g->pvp_return_screen
+                            : g->battle_is_nexus ? SCREEN_NEXUS
+                                                 : SCREEN_MAP
+                        );
+                        GameOpenStore(g, g->screen);
+                    } else if (g->battle_is_pvp) {
                         if (result_action == BATTLE_RESULTS_ACTION_CONTINUE)
                             GameContinuePvp(g);
                         else
                             GameExitBattleTo(
-                                g,
-                                result_action == BATTLE_RESULTS_ACTION_HEROES ? SCREEN_HEROES : g->pvp_return_screen
+                                g, result_action == BATTLE_RESULTS_ACTION_HEROES ? SCREEN_HEROES : g->pvp_return_screen
                             );
-                    } else if (result_action == BATTLE_RESULTS_ACTION_CONTINUE && !completion_route &&
-                               !g->battle_is_nexus) {
+                    } else if (
+                        result_action == BATTLE_RESULTS_ACTION_CONTINUE && !completion_route && !g->battle_is_nexus
+                    ) {
                         GameReturnToBattleMatchmaking(g);
                     } else {
                         Screen map_screen = g->battle_is_nexus ? SCREEN_NEXUS : SCREEN_MAP;
@@ -1178,9 +1484,7 @@ void GameDraw(Game *g) {
                         g->battle_energy_spent = true;
                         GameClearBattleOutcome(g);
                         ProgressionSave(&g->player);
-                        BattlePlayStart(
-                            &g->battle_play, &g->battle, &g->player, (unsigned)GetRandomValue(1, 0x7FFFFFFF)
-                        );
+                        GameStartBattlePlay(g, &g->player);
                         GameCommitBattleOutcome(g, g->battle_play.sim.player_won);
                     } else {
                         GameOpenResourceDialogSilently(g, g->battle_is_pvp);
@@ -1192,8 +1496,9 @@ void GameDraw(Game *g) {
                     GameEnterPvpOpponent(g);
                 }
                 leave = ba == BATTLE_UI_RETREAT;
-                bool battle_continue = !resource_modal && (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) ||
-                                                           IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE));
+                bool battle_continue =
+                    !resource_modal && !g->battle_is_intro && UiClicksReachScreen() &&
+                    (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE));
                 if (g->battle_play.state == BP_END_SPLASH && battle_continue) {
                     g->battle_play.state = BP_SUMMARY;
                     g->battle_play.t = 0.0f;
@@ -1202,7 +1507,7 @@ void GameDraw(Game *g) {
                 }
             }
             if (leave) {
-                Screen retreat_screen = g->battle_is_pvp      ? g->pvp_return_screen
+                Screen retreat_screen = g->battle_is_pvp     ? g->pvp_return_screen
                                         : g->battle_is_nexus ? SCREEN_NEXUS
                                                              : SCREEN_MAP;
                 GameExitBattleTo(g, retreat_screen);
@@ -1269,10 +1574,13 @@ void GameDraw(Game *g) {
         NexusAwardEscrow(&g->player);
         ProgressionSave(&g->player);
     }
+    GameDrawTutorial(g, dt);
+    GameDrawNamePrompt(g, dt);
     GameStopUnseenWispLoops(g);
 }
 
 void GameDestroy(Game *g) {
+    if (g->battle_is_intro) PlayerUnloadRoster(&g->intro_player);
     ConsumeCatalogUnload();
     StoreDestroy(&g->store);
     GalleryDestroy(&g->gallery);

@@ -4,13 +4,17 @@
 
 #define BACKEND_URL_ENV "HOD_BACKEND_URL"
 #define BACKEND_PLAYER_ENV "HOD_PLAYER_ID"
-#define BACKEND_DEFAULT_PLAYER "local"
+#define BACKEND_ACCOUNT_ENV "HOD_ACCOUNT_PATH"
+#define BACKEND_DEFAULT_ACCOUNT_PATH "account.dat"
+#define BACKEND_PLAYER_ID_CAP 65
+#define BACKEND_SECRET_CAP 129
 #define BACKEND_TIMEOUT_SECONDS 5
 #define BACKEND_HOST_CAP 256
 #define BACKEND_PATH_CAP 512
 #define BACKEND_TOKEN_CAP 128
 #define BACKEND_REVISION_HEADER "X-Profile-Revision"
 #define BACKEND_HTTP_OK 200
+#define BACKEND_HTTP_CREATED 201
 #define BACKEND_HTTP_NOT_FOUND 404
 #define BACKEND_HTTP_CONFLICT 409
 #define BACKEND_SESSION_RETRY_SECONDS 10
@@ -24,6 +28,9 @@ typedef struct {
     bool session_open;
     long long session_failed_at;
     char token[BACKEND_TOKEN_CAP];
+    bool account_ready;
+    char player_id[BACKEND_PLAYER_ID_CAP];
+    char secret[BACKEND_SECRET_CAP];
     long long clock_offset;
     long long profile_revision;
 } BackendState;
@@ -210,9 +217,79 @@ BackendRequest(const char *method, const char *path, const char *body, long long
     return response->body != NULL;
 }
 
+static const char *BackendAccountPath(void) {
+    const char *path = getenv(BACKEND_ACCOUNT_ENV);
+    return path && path[0] ? path : BACKEND_DEFAULT_ACCOUNT_PATH;
+}
+
+static bool BackendAdoptCredentials(BackendState *state, const cJSON *json) {
+    const char *player_id = JsonStr(json, "player_id");
+    const char *secret = JsonStr(json, "secret");
+    if (!player_id[0] || !secret[0] || strlen(player_id) >= sizeof(state->player_id) ||
+        strlen(secret) >= sizeof(state->secret))
+        return false;
+    StrCopy(state->player_id, sizeof(state->player_id), player_id);
+    StrCopy(state->secret, sizeof(state->secret), secret);
+    return true;
+}
+
+static bool BackendLoadAccount(BackendState *state, const char *path) {
+    if (!FileExists(path)) return false;
+    char *text = LoadFileText(path);
+    cJSON *json = text ? cJSON_Parse(text) : NULL;
+    bool ok = BackendAdoptCredentials(state, json);
+    cJSON_Delete(json);
+    if (text) UnloadFileText(text);
+    if (!ok) TraceLog(LOG_WARNING, "Backend: ignoring unreadable account file %s", path);
+    return ok;
+}
+
+static bool BackendWriteAccount(const BackendState *state, const char *path) {
+    cJSON *json = cJSON_CreateObject();
+    cJSON_AddStringToObject(json, "player_id", state->player_id);
+    cJSON_AddStringToObject(json, "secret", state->secret);
+    char *text = cJSON_Print(json);
+    cJSON_Delete(json);
+    char temporary[1024];
+    int needed = snprintf(temporary, sizeof(temporary), "%s.tmp", path);
+    bool ok = text && needed > 0 && needed < (int)sizeof(temporary) && SaveFileText(temporary, text);
+    cJSON_free(text);
+    if (ok) ok = rename(temporary, path) == 0;
+    if (!ok) TraceLog(LOG_WARNING, "Backend: could not write account file %s", path);
+    return ok;
+}
+
+static bool BackendCreateGuest(BackendState *state, const char *path) {
+    BackendResponse response;
+    if (!BackendRequest("POST", "/v1/players", NULL, -1, &response)) return false;
+    cJSON *json = response.status == BACKEND_HTTP_CREATED ? cJSON_Parse(response.body) : NULL;
+    bool ok = BackendAdoptCredentials(state, json) && BackendWriteAccount(state, path);
+    if (ok)
+        TraceLog(LOG_INFO, "Backend: created guest account %s", state->player_id);
+    else
+        TraceLog(LOG_WARNING, "Backend: guest account creation failed (HTTP %d)", response.status);
+    cJSON_Delete(json);
+    free(response.body);
+    return ok;
+}
+
+static bool BackendResolveAccount(BackendState *state) {
+    if (state->account_ready) return true;
+    const char *forced = getenv(BACKEND_PLAYER_ENV);
+    if (forced && forced[0]) {
+        if (strlen(forced) >= sizeof(state->player_id)) return false;
+        StrCopy(state->player_id, sizeof(state->player_id), forced);
+        state->secret[0] = '\0';
+        state->account_ready = true;
+        return true;
+    }
+    const char *path = BackendAccountPath();
+    state->account_ready = BackendLoadAccount(state, path) || BackendCreateGuest(state, path);
+    return state->account_ready;
+}
+
 static const char *BackendPlayerId(void) {
-    const char *player = getenv(BACKEND_PLAYER_ENV);
-    return player && player[0] ? player : BACKEND_DEFAULT_PLAYER;
+    return backend_state.player_id;
 }
 
 static bool BackendOpenSession(void) {
@@ -220,8 +297,13 @@ static bool BackendOpenSession(void) {
     if (state->session_open) return true;
     long long sent_at = (long long)time(NULL);
     if (state->session_failed_at && sent_at - state->session_failed_at < BACKEND_SESSION_RETRY_SECONDS) return false;
+    if (!BackendResolveAccount(state)) {
+        state->session_failed_at = sent_at;
+        return false;
+    }
     cJSON *request = cJSON_CreateObject();
     cJSON_AddStringToObject(request, "player_id", BackendPlayerId());
+    if (state->secret[0]) cJSON_AddStringToObject(request, "secret", state->secret);
     char *body = cJSON_PrintUnformatted(request);
     cJSON_Delete(request);
     if (!body) return false;
@@ -267,27 +349,35 @@ void BackendAcceptProfile(long long revision) {
     backend_state.profile_revision = revision;
 }
 
-bool BackendFetchProfile(char **out_text, long long *out_revision) {
+typedef enum {
+    BACKEND_PROFILE_FOUND,
+    BACKEND_PROFILE_MISSING,
+    BACKEND_PROFILE_UNAVAILABLE,
+} BackendProfileFetch;
+
+BackendProfileFetch BackendFetchProfile(char **out_text, long long *out_revision) {
     *out_text = NULL;
     *out_revision = BACKEND_REVISION_UNKNOWN;
-    if (!BackendOpenSession()) return false;
+    if (!BackendOpenSession()) return BACKEND_PROFILE_UNAVAILABLE;
     char path[BACKEND_PATH_CAP];
     BackendProfilePath(path, sizeof(path));
     BackendResponse response;
-    if (!BackendRequest("GET", path, NULL, -1, &response)) return false;
+    if (!BackendRequest("GET", path, NULL, -1, &response)) return BACKEND_PROFILE_UNAVAILABLE;
     if (response.status == BACKEND_HTTP_OK) {
         *out_text = response.body;
         *out_revision = response.revision;
-        return true;
+        return BACKEND_PROFILE_FOUND;
     }
+    BackendProfileFetch result = BACKEND_PROFILE_UNAVAILABLE;
     if (response.status == BACKEND_HTTP_NOT_FOUND) {
         BackendAcceptProfile(0);
+        result = BACKEND_PROFILE_MISSING;
         TraceLog(LOG_INFO, "Backend: no profile for %s yet, starting fresh", BackendPlayerId());
     } else {
         TraceLog(LOG_WARNING, "Backend: profile fetch failed (HTTP %d)", response.status);
     }
     free(response.body);
-    return false;
+    return result;
 }
 
 bool BackendStoreProfile(const char *text) {

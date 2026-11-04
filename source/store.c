@@ -214,6 +214,7 @@ typedef struct {
     StoreRuneSlot slots[STORE_RUNE_PACK_SLOTS];
     int slot_count;
     int gear_pack;
+    bool tutorial_only;
 } StorePackDef;
 
 typedef struct {
@@ -562,6 +563,7 @@ static void StoreLoadPack(Store *store, StorePackDef *pack, const cJSON *json) {
     pack->header = JsonStr(json, "header");
     pack->icon = JsonStr(json, "icon");
     pack->page = StorePageFromCategory(JsonStr(json, "category"));
+    pack->tutorial_only = JsonBool(json, "tutorial_only");
     StoreLoadOffers(store, pack, json);
 
     pack->flash_index = -1;
@@ -778,8 +780,16 @@ void StoreShowPage(Store *store, bool gems_page) {
     if (store->view != target) StoreEnterPage(store, target);
 }
 
+void StoreShowHeroes(Store *store) {
+    StoreEnterPage(store, STORE_VIEW_HEROES);
+}
+
 void StoreShowItems(Store *store) {
     StoreEnterPage(store, STORE_VIEW_ITEMS);
+}
+
+bool StoreShowsPackOpening(const Store *store) {
+    return store->view == STORE_VIEW_OPENING || store->view == STORE_VIEW_RESULT;
 }
 
 bool StoreDialogOpen(const Store *store) {
@@ -1069,6 +1079,44 @@ static void StoreSortResults(const cJSON **definitions, Rarity *rarities, int co
     }
 }
 
+static bool StoreScriptedDefinitions(
+    const Store *store, const TutorialPackReward *reward, int count, const cJSON **definitions, Rarity *rarities
+) {
+    if (!reward || reward->hero_count != count) return false;
+    for (int i = 0; i < count; i++) {
+        definitions[i] = CatalogFindCharacter(store->catalog, reward->heroes[i]);
+        if (!definitions[i]) {
+            TraceLog(LOG_WARNING, "Store: tutorial hero %s is not in the catalog", reward->heroes[i]);
+            return false;
+        }
+        rarities[i] = RarityFromString(JsonStr(definitions[i], "rarity"));
+    }
+    return true;
+}
+
+static int StoreGrantScriptedRune(const TutorialPackReward *reward, PlayerRunes *runes) {
+    if (!reward->rune[0]) return -1;
+    int def = RuneDefIndex(reward->rune);
+    return def >= 0 && RuneGrant(runes, def, RuneNow()) ? def : -1;
+}
+
+static void StoreBeginHeroReveal(Store *store, int pack_index, int first_index, int count) {
+    store->selected_pack = pack_index;
+    store->return_view = pack_index >= 0 ? store->packs[pack_index].page : STORE_VIEW_HEROES;
+    store->result_count = count;
+    for (int i = 0; i < count; i++) store->result_roster_indices[i] = first_index + i;
+    store->reveal_index = 0;
+    store->loaded_reveal_index = -1;
+    store->status_time = 0.0f;
+    StoreBeginCurrentResult(store);
+}
+
+void StoreRevealGrantedHeroes(Store *store, int first_index, int count) {
+    store->pack_rune_def = -1;
+    store->pack_gear_def = -1;
+    StoreBeginHeroReveal(store, -1, first_index, count);
+}
+
 static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, int pack_index) {
     const StorePackDef *pack = &store->packs[pack_index];
     StoreOffer offer = StoreActiveOffer(pack, player);
@@ -1117,6 +1165,8 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
         }
         if (tracks_pity) next_pity = rarities[i] == RARITY_LEGENDARY ? 0 : next_pity + 1;
     }
+    const TutorialPackReward *scripted = TutorialScriptedPack(pack->id);
+    if (!StoreScriptedDefinitions(store, scripted, pack->hero_count, definitions, rarities)) scripted = NULL;
     if (pack->hero_count > 1) StoreSortResults(definitions, rarities, pack->hero_count);
 
     int first_index = -1;
@@ -1128,8 +1178,9 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
     StoreOfferPay(offer, player);
     static PlayerRunes old_runes;
     old_runes = player->runes;
-    int pack_rune = StoreRollPackRunes(pack, &rng, &player->runes, RuneNow());
-    int pack_gear = StoreRollBonusGear(pack, &rng);
+    int pack_rune = scripted ? StoreGrantScriptedRune(scripted, &player->runes)
+                             : StoreRollPackRunes(pack, &rng, &player->runes, RuneNow());
+    int pack_gear = scripted ? -1 : StoreRollBonusGear(pack, &rng);
     if (pack_gear >= 0) GearGrant(&player->gear, pack_gear);
 
     player->store_rng_state = rng;
@@ -1156,16 +1207,10 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
     }
 
     if (!HeroesSyncRoster(heroes, player)) TraceLog(LOG_FATAL, "Store: persisted roster cannot sync to Heroes");
-    store->selected_pack = pack_index;
-    store->return_view = pack->page;
     store->pack_rune_def = pack_rune;
     store->pack_gear_def = pack_gear;
-    store->result_count = pack->hero_count;
-    for (int i = 0; i < pack->hero_count; i++) store->result_roster_indices[i] = first_index + i;
-    store->reveal_index = 0;
-    store->loaded_reveal_index = -1;
-    store->status_time = 0.0f;
-    StoreBeginCurrentResult(store);
+    StoreBeginHeroReveal(store, pack_index, first_index, pack->hero_count);
+    TutorialRaise(TUTORIAL_EVENT_UNIT_PURCHASE_SUCCEEDED);
     return true;
 }
 
@@ -1467,6 +1512,18 @@ static void StoreDrawTimerBanner(Store *store, Rectangle cell, long long seconds
     StoreDrawCenteredFit(store->body_font, StoreShortTime(seconds), text, banner.height * 0.62f, WHITE);
 }
 
+static void StorePublishTutorialAnchors(const StorePackDef *pack, Rectangle cell, Rectangle buy) {
+    if (!strcmp(pack->id, TUTORIAL_SOLDIER_PACK_ID)) {
+        TutorialAnchorSet(TUTORIAL_ANCHOR_STORE_SOLDIER_CARD, cell);
+        TutorialAnchorSet(TUTORIAL_ANCHOR_STORE_SOLDIER_BUY, buy);
+    } else if (!strcmp(pack->id, TUTORIAL_CHAMPION_PACK_ID)) {
+        TutorialAnchorSet(TUTORIAL_ANCHOR_STORE_CHAMPION_CARD, cell);
+        TutorialAnchorSet(TUTORIAL_ANCHOR_STORE_CHAMPION_BUY, buy);
+    } else if (!strcmp(pack->id, TUTORIAL_CONSUME_PACK_ID)) {
+        TutorialAnchorSet(TUTORIAL_ANCHOR_STORE_TUTORIAL_PACK_BUY, buy);
+    }
+}
+
 static bool StoreDrawPackCard(
     Store *store, Player *player, Heroes *heroes, int pack_index, Rectangle cell, long long seconds_left
 ) {
@@ -1516,6 +1573,7 @@ static bool StoreDrawPackCard(
     );
 
     Rectangle buy = StoreCellPart(cell, STORE_CELL_BUY);
+    StorePublishTutorialAnchors(pack, cell, buy);
     bool clicked = ButtonDrawEx(&store->buy[pack_index], buy, !StoreInputBlocked(store) && in_viewport);
     StoreDrawBuyPrice(store, StoreActiveOffer(pack, player), player, buy);
 
@@ -1734,6 +1792,7 @@ static void StoreRefreshVisible(Store *store, StoreView page) {
     for (int i = 0; i < store->pack_count; i++) {
         const StorePackDef *pack = &store->packs[i];
         if (pack->page != page) continue;
+        if (pack->tutorial_only && !TutorialScriptedPack(pack->id)) continue;
         if (StorePackSecondsLeft(pack, store->flash_days, store->flash_count, now) == STORE_PACK_UNAVAILABLE) continue;
         store->visible[store->visible_count++] = i;
     }
@@ -1971,6 +2030,8 @@ static void StoreFinishCurrentResult(Store *store, Heroes *heroes, bool skipped)
     store->view = STORE_VIEW_RESULT;
     store->phase_time = STORE_OPEN_COMPLETE;
     store->result_time = 0.0f;
+    bool last = store->reveal_index + 1 >= store->result_count;
+    TutorialRaise(last ? TUTORIAL_EVENT_UNIT_PURCHASE_FINISHED : TUTORIAL_EVENT_UNIT_PURCHASE_NEXT_BUTTON_APPEARED);
     PackHeroSetVisible(&store->opening_hero, true);
     if (!store->rarity_sound_played) {
         StorePlayCurrentRaritySound(store, heroes);
@@ -1990,10 +2051,12 @@ static StoreAction StoreDrawOpening(Store *store, Heroes *heroes) {
 
 static bool StoreDrawResultNavigation(Store *store, bool last) {
     if (!last) return false;
-    store->nav_consume_clicked =
-        ButtonDrawEx(&store->nav_train, (Rectangle){4.0f, 662.0f, 106.0f, 49.5f}, !StoreInputBlocked(store));
+    Rectangle consume = {4.0f, 662.0f, 106.0f, 49.5f}, squad = {236.0f, 662.0f, 106.0f, 49.5f};
+    TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_CONSUME, consume);
+    TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_SQUAD, squad);
+    store->nav_consume_clicked = ButtonDrawEx(&store->nav_train, consume, !StoreInputBlocked(store));
     ButtonDrawEx(&store->nav_runes, (Rectangle){120.0f, 662.0f, 106.0f, 49.5f}, false);
-    return ButtonDrawEx(&store->nav_squad, (Rectangle){236.0f, 662.0f, 106.0f, 49.5f}, !StoreInputBlocked(store));
+    return ButtonDrawEx(&store->nav_squad, squad, !StoreInputBlocked(store));
 }
 
 static Rectangle StoreScaledAround(Rectangle rect, float scale) {
@@ -2054,12 +2117,15 @@ static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes)
     } else if (store->pack_rune_def >= 0 && first_result) {
         const RuneDef *rune = RuneDefAt(store->pack_rune_def);
         StoreDrawPackBonus(store, RuneIconLoad(rune->icon), rune->rarity);
+        TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_RUNE, STORE_PACK_RUNE_RECT);
     }
     bool squad = StoreDrawResultNavigation(store, last);
 
     bool interactive = !StoreInputBlocked(store);
     if (!last) {
-        if (ButtonDrawEx(&store->next, (Rectangle){1044.0f, 654.0f, 236.0f, 59.0f}, interactive)) {
+        Rectangle next = {1044.0f, 654.0f, 236.0f, 59.0f};
+        TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_NEXT, next);
+        if (ButtonDrawEx(&store->next, next, interactive)) {
             store->reveal_index++;
             store->loaded_reveal_index = -1;
             StoreBeginCurrentResult(store);
@@ -2067,7 +2133,8 @@ static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes)
         return STORE_ACTION_NONE;
     }
 
-    bool again = ButtonDrawEx(&store->buy_again, (Rectangle){808.0f, 654.0f, 236.0f, 59.0f}, interactive);
+    bool again = store->selected_pack >= 0 &&
+                 ButtonDrawEx(&store->buy_again, (Rectangle){808.0f, 654.0f, 236.0f, 59.0f}, interactive);
     if (ButtonDrawEx(&store->done, (Rectangle){1044.0f, 654.0f, 236.0f, 59.0f}, interactive)) {
         store->view = store->return_view;
         store->info_pack = -1;

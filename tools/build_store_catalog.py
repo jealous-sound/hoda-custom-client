@@ -135,6 +135,18 @@ def weekly(index):
     return {'group': 'flash', 'index': index}
 
 
+TUTORIAL_CONSUME_ICON = 'cache:tex.Store_IconGreyWardenKnight'
+
+
+def tutorial_consume_pack():
+    row = hero('tutorial_consume', 'TUTORIAL_CONSUME', 5, 'UNITS', GOLD, TUTORIAL_CONSUME_ICON,
+               [offer('gold', 0)], RARE_TIER, count=2, bullets=[bullet('Для обучения')],
+               info='Бесплатная пара героев, чтобы научиться поглощению.')
+    row['name_ru'] = 'Набор для обучения'
+    row['tutorial_only'] = True
+    return row
+
+
 def hero_packs():
     gold, gems = (lambda p: [offer('gold', p)]), (lambda p: [offer('gems', p)])
     icon = 'cache:tex.Store_Icon'
@@ -285,9 +297,9 @@ RARITY_RU = {'Common': 'обычный', 'Uncommon': 'необычный', 'Rare
 
 
 def build(russian):
-    packs = hero_packs() + rune_packs() + gear_packs()
+    packs = [tutorial_consume_pack()] + hero_packs() + rune_packs() + gear_packs()
     for pack in packs:
-        pack['name_ru'] = russian.get(f"{pack['loc_id']}_PACK_NAME", pack['id'])
+        pack['name_ru'] = russian.get(f"{pack['loc_id']}_PACK_NAME") or pack.get('name_ru') or pack['id']
         pack['info_ru'] = pack_info(pack, russian)
     return {
         'version': 3,

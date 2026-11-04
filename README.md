@@ -45,3 +45,11 @@ python3 tools/check_comments.py
 `BACKEND_DIR=`), which then owns the save and the clock. With `HOD_BACKEND_URL` unset the game uses
 `player_save.dat` as before. `hoda-original-backend` is the separate Python server for the original
 Android client.
+
+A first launch (no save, or no backend profile) creates a guest account and runs the 5.4.4 tutorial on the
+three-hero starter squad in `data/new_player.json`; the name prompt follows it. Against the backend the guest's id
+and secret live in `account.dat` (`HOD_ACCOUNT_PATH`). `HOD_SKIP_TUTORIAL=1` skips the tutorial and
+`HOD_NEW_PLAYER=<file>` starts from another roster, such as the full `client-additional-data/player_starter.json`.
+The script comes from the original prefab via `tools/build_ftue_script.py` (UnityPy venv); its reconstructed parts
+(intro battle, pack contents, giant, gem pack, parting gift) are marked in `data/tutorial_intro.json` and
+`data/tutorial_rewards.json`.

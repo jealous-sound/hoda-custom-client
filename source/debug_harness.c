@@ -11,6 +11,7 @@ typedef struct {
 } DebugShot;
 
 #define DEBUG_SHOT_DEFAULT_FRAMES 90
+#define DEBUG_TUTORIAL_SELECT_FRAME 5
 #define DEBUG_PVP_TROPHIES 640
 #define DEBUG_PVP_FIGHT_SEED 7
 #define DEBUG_PVP_BANNERS 320
@@ -745,7 +746,43 @@ static void DebugPrepareConsume(Game *game, DebugShot *shot) {
     if (DebugShotIs(shot, "consume_results")) ConsumeBeginResults(c, &game->heroes, &game->player);
 }
 
+static bool DebugPrepareTutorial(Game *game, DebugShot *shot) {
+    if (!DebugShotIs(shot, "tutorial")) return false;
+    int selected = EnvInt("HOD_SELECT", -1);
+    if (shot->frames_drawn == DEBUG_TUTORIAL_SELECT_FRAME && selected >= 0 && selected < game->heroes.card_count) {
+        game->heroes.selected = selected;
+        TutorialRaise(TUTORIAL_EVENT_UNIT_DETAILS_SHOWING);
+    }
+    if (shot->frames_drawn > 0) return true;
+    const char *step = getenv("HOD_TUTORIAL_STEP");
+    const char *screen = getenv("HOD_TUTORIAL_SCREEN");
+    if (step && !TutorialJumpTo(&game->tutorial, strtof(step, NULL)))
+        TraceLog(LOG_WARNING, "Tutorial: no step %s", step);
+    if (!step) TutorialResumeMain(&game->tutorial, &(PlayerTutorial){0});
+    if (screen && !strcmp(screen, "map")) game->screen = SCREEN_MAP;
+    if (screen && !strcmp(screen, "heroes")) game->screen = SCREEN_HEROES;
+    if (screen && !strcmp(screen, "store")) GameOpenStore(game, SCREEN_HOME);
+    bool fight = screen && !strcmp(screen, "fight");
+    if (fight || (screen && !strcmp(screen, "battle"))) {
+        game->battle_map_index = EnvInt("HOD_MAP", 1) - 1;
+        game->battle_node_index = EnvInt("HOD_NODE", 1) - 1;
+        GameEnterSelectedBattle(game);
+        game->screen = SCREEN_BATTLE;
+    }
+    if (fight) GameStartBattlePlay(game, &game->player);
+    if (screen && !strcmp(screen, "intro")) GameStartIntroBattle(game);
+    return true;
+}
+
+static bool DebugPrepareNamePrompt(Game *game, DebugShot *shot) {
+    if (!DebugShotIs(shot, "name_prompt")) return false;
+    game->screen = SCREEN_HOME;
+    if (shot->frames_drawn == 0) NamePromptOpen(&game->name_prompt);
+    return true;
+}
+
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
+    if (DebugPrepareTutorial(game, shot) || DebugPrepareNamePrompt(game, shot)) return;
     game->screen = shot->consume_opened ? SCREEN_CONSUME : SCREEN_HEROES;
     if (DebugShotIs(shot, "home")) game->screen = SCREEN_HOME;
     if (DebugShotIs(shot, "quests")) game->screen = SCREEN_QUESTS;

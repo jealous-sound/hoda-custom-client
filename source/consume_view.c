@@ -279,6 +279,7 @@ static void ConsumeQueueSeedFly(ConsumeScreen *c, const Character *target, const
 }
 
 static void ConsumeSeedAdd(ConsumeScreen *c, const Player *p, int index) {
+    TutorialRaise(TUTORIAL_EVENT_SEED_UNIT_ADDED);
     c->seeds[c->seed_count++] = index;
     c->placed_spot = c->seed_count;
     c->board_dirty = true;
@@ -311,6 +312,7 @@ static void ConsumePlaceUnit(ConsumeScreen *c, HeroesBackground *scene, const Pl
         c->target = index;
         c->placed_spot = 0;
         c->board_dirty = true;
+        TutorialRaise(TUTORIAL_EVENT_TARGET_UNIT_ADDED);
         ConsumeSyncShownBars(c, ch);
         HeroesBackgroundPlayPlace(scene);
         return;
@@ -442,6 +444,10 @@ static void ConsumeDrawRosterCard(const HeroCard *card, Rectangle cell, int rost
         ConsumeLadderLabel(profile, ch->consume_level, label, sizeof(label), &state.unlock_icon);
     }
     RosterDrawCard(card, cell, &state);
+    Rectangle published;
+    if (!state.in_use && TutorialWantsDragFrom(ch) &&
+        !TutorialAnchorRect(TUTORIAL_ANCHOR_CONSUME_DRAG_SOURCE, &published))
+        TutorialAnchorSet(TUTORIAL_ANCHOR_CONSUME_DRAG_SOURCE, cell);
 }
 
 static void ConsumeDrawRoster(ConsumeScreen *c, const Heroes *h, const Player *p, bool input) {
@@ -851,7 +857,9 @@ static void ConsumeUpdateResults(ConsumeScreen *c, const Character *final, float
 
 static ConsumeLeave ConsumeDrawResultsActions(ConsumeScreen *c, const Player *p, bool input) {
     bool pvp = ButtonDrawEx(&c->pvp, RosterPx(0.0f, 828.0f, 196.0f, 98.0f), input);
-    bool squad = ButtonDrawEx(&c->heroes, RosterPx(196.0f, 828.0f, 196.0f, 98.0f), input);
+    Rectangle squad_rect = RosterPx(196.0f, 828.0f, 196.0f, 98.0f);
+    TutorialAnchorSet(TUTORIAL_ANCHOR_CONSUME_SQUAD, squad_rect);
+    bool squad = ButtonDrawEx(&c->heroes, squad_rect, input);
     bool quests = ButtonDrawEx(&c->pve, RosterPx(392.0f, 828.0f, 196.0f, 98.0f), input);
     bool again = ButtonDrawEx(&c->again, RosterPx(1638.0f, 828.0f, 392.0f, 98.0f), input);
     if (again) {
@@ -926,7 +934,9 @@ static void ConsumeDrawActions(ConsumeScreen *c, Player *p, Heroes *h, bool inpu
     }
     if (ButtonDrawEx(&c->multiple, RosterPx(944.0f, 828.0f, 392.0f, 98.0f), input))
         c->dialog = CONSUME_DIALOG_MULTI_TYPE;
-    if (ButtonDrawEx(&c->consume, RosterPx(1336.0f, 828.0f, 392.0f, 98.0f), input)) ConsumeBeginResults(c, h, p);
+    Rectangle consume = RosterPx(1336.0f, 828.0f, 392.0f, 98.0f);
+    TutorialAnchorSet(TUTORIAL_ANCHOR_CONSUME_BUTTON, consume);
+    if (ButtonDrawEx(&c->consume, consume, input)) ConsumeBeginResults(c, h, p);
 }
 
 static Rectangle ConsumeMultiPopup(void) {

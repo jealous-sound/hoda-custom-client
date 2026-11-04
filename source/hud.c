@@ -419,6 +419,9 @@ HudAction HudDraw(Hud *hud, Player *player, bool interactive, bool on_home) {
     UiDrawTexture(hud->background, layout.background, WHITE);
 
     bool home_clicked = false;
+    TutorialAnchorSet(TUTORIAL_ANCHOR_HUD_HOME, layout.home);
+    TutorialAnchorSet(TUTORIAL_ANCHOR_HUD_ENERGY, layout.energy_hit);
+    TutorialAnchorSet(TUTORIAL_ANCHOR_HUD_STAMINA, layout.stamina_hit);
     if (on_home)
         UiDrawTexture(hud->home_inactive, layout.home, WHITE);
     else
@@ -456,7 +459,13 @@ HudAction HudDraw(Hud *hud, Player *player, bool interactive, bool on_home) {
         &hud->gold_tally
     );
     if (hud->show_trophies || hud->show_banners)
-        HudDrawCurrency(hud, GuiTex(hud->show_banners ? GUI_PVP_BANNER : GUI_TAB_TROPHY), layout.gems_icon, layout.gems_label, &hud->trophies_tally);
+        HudDrawCurrency(
+            hud,
+            GuiTex(hud->show_banners ? GUI_PVP_BANNER : GUI_TAB_TROPHY),
+            layout.gems_icon,
+            layout.gems_label,
+            &hud->trophies_tally
+        );
     else
         HudDrawCurrency(
             hud,
