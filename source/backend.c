@@ -442,6 +442,34 @@ BackendSendAction(const char *route, const char *body, long long revision, char 
     return state;
 }
 
+typedef enum {
+    BACKEND_QUERY_IDLE,
+    BACKEND_QUERY_PENDING,
+    BACKEND_QUERY_ANSWERED,
+    BACKEND_QUERY_UNREACHABLE,
+} BackendQueryState;
+
+#define BACKEND_QUERY_METHOD_CAP 8
+
+static BackendQueryState
+BackendSendQuery(const char *method, const char *route, const char *body, char **out_text, int *out_status) {
+    *out_text = NULL;
+    *out_status = 0;
+    if (!BackendOpenSession()) return BACKEND_QUERY_UNREACHABLE;
+    char path[BACKEND_PATH_CAP];
+    snprintf(path, sizeof(path), "/v1/players/%s/%s", BackendPlayerId(), route);
+    BackendResponse response;
+    if (!BackendRequest(method, path, body, BACKEND_REVISION_UNKNOWN, &response)) return BACKEND_QUERY_UNREACHABLE;
+    if (response.status == BACKEND_HTTP_UNAUTHORIZED) {
+        backend_state.session_open = false;
+        free(response.body);
+        return BACKEND_QUERY_UNREACHABLE;
+    }
+    *out_status = response.status;
+    *out_text = response.body;
+    return BACKEND_QUERY_ANSWERED;
+}
+
 typedef struct {
     pthread_mutex_t lock;
     pthread_cond_t wake;
@@ -473,6 +501,16 @@ typedef struct {
     char *action_text;
     char *retry_route_body;
     char retry_request_id[BACKEND_REQUEST_ID_CAP];
+    char query_method[BACKEND_QUERY_METHOD_CAP];
+    char query_route[BACKEND_PATH_CAP];
+    char *query_body;
+    bool query_wanted;
+    bool query_running;
+    BackendQueryState query_state;
+    int query_status;
+    int query_ticket;
+    int next_query_ticket;
+    char *query_text;
 } BackendWorker;
 
 static BackendWorker backend_worker = {
@@ -546,6 +584,28 @@ static void BackendWorkerAction(BackendWorker *w) {
     w->action_state = state;
 }
 
+static void BackendWorkerQuery(BackendWorker *w) {
+    char *body = w->query_body;
+    char method[BACKEND_QUERY_METHOD_CAP];
+    char route[BACKEND_PATH_CAP];
+    StrCopy(method, sizeof(method), w->query_method);
+    StrCopy(route, sizeof(route), w->query_route);
+    w->query_body = NULL;
+    w->query_wanted = false;
+    w->query_running = true;
+    pthread_mutex_unlock(&w->lock);
+    char *text = NULL;
+    int status = 0;
+    BackendQueryState state = BackendSendQuery(method, route, body, &text, &status);
+    free(body);
+    pthread_mutex_lock(&w->lock);
+    w->query_running = false;
+    free(w->query_text);
+    w->query_text = text;
+    w->query_status = status;
+    w->query_state = state;
+}
+
 static void BackendWorkerOpenSession(BackendWorker *w) {
     w->session_wanted = false;
     pthread_mutex_unlock(&w->lock);
@@ -576,6 +636,8 @@ static void *BackendWorkerRun(void *argument) {
             BackendWorkerUpload(w);
         } else if (w->action_wanted) {
             BackendWorkerAction(w);
+        } else if (w->query_wanted) {
+            BackendWorkerQuery(w);
         } else if (w->session_wanted) {
             BackendWorkerOpenSession(w);
         } else if (w->stopping) {
@@ -777,6 +839,55 @@ BackendActionState BackendPollAction(int ticket, cJSON **out_json) {
             free(w->retry_route_body);
             w->retry_route_body = NULL;
         }
+    }
+    pthread_mutex_unlock(&w->lock);
+    return state;
+}
+
+int BackendBeginQuery(const char *method, const char *route, const cJSON *fields) {
+    if (!BackendEnabled()) return BACKEND_NO_TICKET;
+    char *body = fields ? cJSON_PrintUnformatted(fields) : NULL;
+    if (fields && !body) return BACKEND_NO_TICKET;
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    bool busy = w->query_wanted || w->query_running || w->query_state == BACKEND_QUERY_PENDING;
+    int ticket = BACKEND_NO_TICKET;
+    if (!busy) {
+        StrCopy(w->query_method, sizeof(w->query_method), method);
+        StrCopy(w->query_route, sizeof(w->query_route), route);
+        free(w->query_body);
+        w->query_body = NULL;
+        if (body) w->query_body = BackendCopyText(body);
+        w->query_wanted = !body || w->query_body;
+        w->query_state = w->query_wanted ? BACKEND_QUERY_PENDING : BACKEND_QUERY_IDLE;
+        if (w->query_wanted) {
+            w->next_query_ticket = w->next_query_ticket == INT_MAX ? BACKEND_NO_TICKET + 1 : w->next_query_ticket + 1;
+            ticket = w->query_ticket = w->next_query_ticket;
+        }
+        BackendWorkerSignal(w);
+    }
+    pthread_mutex_unlock(&w->lock);
+    if (body) cJSON_free(body);
+    return ticket;
+}
+
+BackendQueryState BackendPollQuery(int ticket, cJSON **out_json, int *out_status) {
+    *out_json = NULL;
+    *out_status = 0;
+    if (!BackendEnabled() || ticket == BACKEND_NO_TICKET) return BACKEND_QUERY_IDLE;
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    if (w->query_ticket != ticket) {
+        pthread_mutex_unlock(&w->lock);
+        return BACKEND_QUERY_IDLE;
+    }
+    BackendQueryState state = w->query_state;
+    if (state == BACKEND_QUERY_ANSWERED || state == BACKEND_QUERY_UNREACHABLE) {
+        *out_json = w->query_text ? cJSON_Parse(w->query_text) : NULL;
+        *out_status = w->query_status;
+        free(w->query_text);
+        w->query_text = NULL;
+        w->query_state = BACKEND_QUERY_IDLE;
     }
     pthread_mutex_unlock(&w->lock);
     return state;

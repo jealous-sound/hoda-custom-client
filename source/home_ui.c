@@ -5,7 +5,17 @@ typedef enum {
     HOME_HEROES,
     HOME_QUESTS,
     HOME_PVP,
+    HOME_GUILD,
+    HOME_GUILD_LOCKED,
+    HOME_GUILD_CHAT,
+    HOME_GUILD_CHAT_LOCKED,
 } HomeButton;
+
+#define HOME_GUILD_BUTTON_X 13.0f
+#define HOME_GUILD_BUTTON_Y 324.0f
+#define HOME_GUILD_CHAT_BUTTON_Y 421.0f
+#define HOME_GUILD_BUTTON_SIZE 73.0f
+#define HOME_GUILD_BADGE_SHOWN_MAX 3
 
 typedef struct {
     Button store;
@@ -13,6 +23,10 @@ typedef struct {
     Button heroes;
     Button quests;
     Button pvp;
+    Button guild;
+    Button guild_locked;
+    Button guild_chat;
+    Button guild_chat_locked;
 } HomeUI;
 
 void HomeUIInitialize(HomeUI *hui) {
@@ -29,6 +43,33 @@ void HomeUIInitialize(HomeUI *hui) {
     ButtonSetClickSound(&hui->heroes, SND_UI_BIG_BUTTON);
     ButtonSetClickSound(&hui->quests, SND_UI_BIG_BUTTON);
     ButtonSetClickSound(&hui->pvp, SND_UI_BIG_BUTTON);
+    hui->guild = ButtonLoad(GUI_GUILD_BUTTON, GUI_GUILD_BUTTON);
+    hui->guild_locked = ButtonLoad(GUI_GUILD_BUTTON_OFF, GUI_GUILD_BUTTON_OFF);
+    hui->guild_chat = ButtonLoad(GUI_GUILD_CHAT_BUTTON, GUI_GUILD_CHAT_BUTTON);
+    hui->guild_chat_locked = ButtonLoad(GUI_GUILD_CHAT_BUTTON_OFF, GUI_GUILD_CHAT_BUTTON_OFF);
+    ButtonSetClickSound(&hui->guild, SND_UI_BIG_BUTTON);
+    ButtonSetClickSound(&hui->guild_chat, SND_UI_BIG_BUTTON);
+}
+
+static void HomeUIDrawGuildBadge(Rectangle button, int count) {
+    if (count <= 0) return;
+    Rectangle badge = {button.x + 48.0f, button.y - 13.0f, 33.0f, 33.0f};
+    UiDrawTexture(GuiTex(GUI_GUILD_BADGE), badge, WHITE);
+    const char *text =
+        count > HOME_GUILD_BADGE_SHOWN_MAX ? TextFormat("%d+", HOME_GUILD_BADGE_SHOWN_MAX) : TextFormat("%d", count);
+    UiDrawTextCentered(GuiFont(FNT_MENU), text, badge, 20.0f, WHITE);
+}
+
+HomeButton HomeUIDrawGuild(HomeUI *hui, bool interactive, bool unlocked, bool member, int chat_badge) {
+    HomeButton clicked = HOME_NONE;
+    Rectangle guild = {HOME_GUILD_BUTTON_X, HOME_GUILD_BUTTON_Y, HOME_GUILD_BUTTON_SIZE, HOME_GUILD_BUTTON_SIZE};
+    Rectangle chat = {HOME_GUILD_BUTTON_X, HOME_GUILD_CHAT_BUTTON_Y, HOME_GUILD_BUTTON_SIZE, HOME_GUILD_BUTTON_SIZE};
+    if (ButtonDrawEx(unlocked ? &hui->guild : &hui->guild_locked, guild, interactive))
+        clicked = unlocked ? HOME_GUILD : HOME_GUILD_LOCKED;
+    if (ButtonDrawEx(member ? &hui->guild_chat : &hui->guild_chat_locked, chat, interactive))
+        clicked = member ? HOME_GUILD_CHAT : HOME_GUILD_CHAT_LOCKED;
+    if (member) HomeUIDrawGuildBadge(chat, chat_badge);
+    return clicked;
 }
 
 HomeButton HomeUIDraw(HomeUI *hui, bool interactive, int heroes_badge, int missions_badge) {

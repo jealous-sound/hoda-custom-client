@@ -9,6 +9,7 @@ typedef enum {
     SCREEN_MISSIONS,
     SCREEN_PVP_HUB,
     SCREEN_PVP_EVENT,
+    SCREEN_GUILD,
     SCREEN_MAP,
     SCREEN_NEXUS,
     SCREEN_BATTLE
@@ -65,6 +66,9 @@ typedef struct {
 
     PvpHub pvp_hub;
     PvpEventView pvp_event_view;
+    Guild guild;
+    GuildView guild_view;
+    GuildNoticePopup guild_notice;
     bool battle_is_pvp;
     bool pvp_event;
     bool pvp_can_next;
@@ -453,6 +457,28 @@ static void GameOpenPvpEvent(Game *g) {
     PvpEventSync(&g->player.pvp, ServerNow());
     PvpEventViewOpen(&g->pvp_event_view);
     g->screen = SCREEN_PVP_EVENT;
+}
+
+static void GameOpenGuild(Game *g, bool chat) {
+    GuildViewOpen(&g->guild_view, &g->guild, chat);
+    g->screen = SCREEN_GUILD;
+}
+
+static void GameHandleGuildButton(Game *g, HomeButton pressed) {
+    if (pressed == HOME_GUILD_LOCKED) {
+        const char *args[] = {TextFormat("%d", GUILD_LEVEL_UNLOCK)};
+        char message[GUILD_MESSAGE_CAP];
+        LocFormatArgs(message, sizeof(message), "GUILD_NOT_AVAILABLE_MESSAGE", args, 1);
+        GuildNoticePopupShow(&g->guild_notice, LocGet("GUILD_NOT_AVAILABLE_TITLE"), message);
+    } else if (pressed == HOME_GUILD_CHAT_LOCKED) {
+        GuildNoticePopupShow(
+            &g->guild_notice, LocGet("GUILD_CHAT_JOIN_GUILD_TITLE"), LocGet("GUILD_CHAT_JOIN_GUILD_MESSAGE")
+        );
+    } else if (!GuildAvailable()) {
+        GuildNoticePopupShow(&g->guild_notice, LocGet("GUILD_FIND_TITLE"), GUILD_OFFLINE_MESSAGE);
+    } else {
+        GameOpenGuild(g, pressed == HOME_GUILD_CHAT);
+    }
 }
 
 static void GameOpenPvpHub(Game *g) {
@@ -898,6 +924,9 @@ bool GameInitialize(Game *g) {
     MissionsInitialize(&g->missions);
     PvpHubInitialize(&g->pvp_hub);
     PvpEventViewInitialize(&g->pvp_event_view);
+    GuildInitialize(&g->guild);
+    GuildViewInitialize(&g->guild_view);
+    GuildNoticePopupInitialize(&g->guild_notice);
     MissionsSync(&g->player, &g->map);
     CampaignProgressSync(&g->map, &g->player.campaign_progress);
     NexusInitialize(&g->nexus, "data/nexus_maps.json");
@@ -956,6 +985,15 @@ bool GameHandlePopupBack(Game *g) {
     if (g->screen == SCREEN_RUNES) return RunesHandleBack(&g->runes);
     if (g->screen == SCREEN_CONSUME) return ConsumeHandleBack(&g->consume);
     if (g->screen == SCREEN_HOME && NewsHandleBack(&g->news)) return true;
+    if (g->screen == SCREEN_HOME && GuildNoticePopupClose(&g->guild_notice)) return true;
+    if (g->screen == SCREEN_GUILD) {
+        if (!GuildViewHandleBack(&g->guild_view, &g->guild)) {
+            GuildViewLeave(&g->guild_view, &g->guild);
+            g->screen = SCREEN_HOME;
+        }
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+        return true;
+    }
     if (g->screen == SCREEN_QUESTS && QuestsHandleBack(&g->quests)) return true;
     if (g->screen == SCREEN_MISSIONS || g->screen == SCREEN_PVP_HUB || g->screen == SCREEN_PVP_EVENT) {
         g->screen = SCREEN_HOME;
@@ -1251,6 +1289,8 @@ void GameDraw(Game *g) {
     PlayerUpdate(&g->player, dt);
     if (g->screen != SCREEN_STORE) StorePollServerPurchase(&g->store, &g->player, &g->heroes);
     GameSyncServerActions(g);
+    if (g->screen != SCREEN_GUILD) GuildSetChatVisible(&g->guild, false);
+    GuildUpdate(&g->guild, &g->player);
     if (g->player.roster_count != g->player.gallery.synced_roster_count) PlayerGallerySync(&g->player);
 
     ClearBackground(RAYWHITE);
@@ -1275,7 +1315,19 @@ void GameDraw(Game *g) {
             int missions_badge = MissionUnseenClaimableCount(&g->player.missions);
             missions_badge += PvpEventUnclaimedCount(&g->player.pvp);
             if (missions_badge == 0) missions_badge = abs(g->player.pvp.trophies - g->player.pvp.trophies_seen);
+            bool guild_notice_open = news_allowed && !news_open && GuildNoticePopupIsOpen(&g->guild_notice);
+            if (guild_notice_open) home_interactive = false;
             HomeButton pressed = HomeUIDraw(&g->home_ui, home_interactive, g->player.gallery.badge, missions_badge);
+            if (news_allowed) {
+                HomeButton guild_pressed = HomeUIDrawGuild(
+                    &g->home_ui,
+                    home_interactive && !resource_modal,
+                    GuildUnlocked(&g->player),
+                    GuildIsMember(&g->guild),
+                    g->guild.unread
+                );
+                if (guild_pressed != HOME_NONE) pressed = guild_pressed;
+            }
             if (news_allowed)
                 NewsDrawHome(&g->news, &g->quests, &g->nexus, &g->player, home_interactive && !resource_modal, dt);
             if (NewsTakePvpEventRequest(&g->news)) GameOpenPvpEvent(g);
@@ -1284,6 +1336,8 @@ void GameDraw(Game *g) {
                 QuestsOpenEvent(&g->quests, &g->nexus, &g->player, NewsTargetEvent(&g->news));
                 g->screen = SCREEN_QUESTS;
             }
+            if (news_allowed && !NewsIsOpen(&g->news) && !resource_modal)
+                GuildNoticePopupDraw(&g->guild_notice, &g->guild);
             UiFrameEnd();
             if (pressed == HOME_NONE && home_interactive && !news_open && !resource_modal &&
                 IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
@@ -1300,6 +1354,8 @@ void GameDraw(Game *g) {
                 g->screen = SCREEN_MISSIONS;
             } else if (pressed == HOME_PVP) {
                 GameOpenPvpHub(g);
+            } else if (pressed != HOME_NONE) {
+                GameHandleGuildButton(g, pressed);
             }
             break;
         }
@@ -1570,6 +1626,19 @@ void GameDraw(Game *g) {
                 g->pvp_event = false;
                 GameEnterLadderBattle(g, SCREEN_PVP_HUB);
             }
+            break;
+        }
+        case SCREEN_GUILD: {
+            HomeBackgroundUpdate(&g->scene, dt);
+            HomeBackgroundDraw(&g->scene);
+            GameDrawSceneFx(g, g->scene.cam, dt);
+
+            UiFrameBegin();
+            if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
+            HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
+            GuildViewAction pressed = GuildViewDraw(&g->guild_view, &g->guild, &g->player);
+            UiFrameEnd();
+            if (pressed == GUILD_VIEW_CLOSE) g->screen = SCREEN_HOME;
             break;
         }
         case SCREEN_PVP_EVENT: {

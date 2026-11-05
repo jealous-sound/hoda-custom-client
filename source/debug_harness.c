@@ -781,6 +781,180 @@ static bool DebugPrepareNamePrompt(Game *game, DebugShot *shot) {
     return true;
 }
 
+static const char *const DEBUG_GUILD_MEMBERS[] = {
+    "Hawke",
+    "Varric",
+    "Aveline",
+    "Merrill",
+    "Fenris",
+    "Isabela",
+    "Anders",
+    "Sebastian",
+};
+
+static const char *const DEBUG_GUILD_CHAT[] = {
+    "{\"id\":1,\"time\":%lld,\"title\":\"GUILD_CHAT_EVENT_GUILD_CREATION_TITLE\","
+    "\"text\":\"GUILD_CHAT_EVENT_GUILD_CREATION_MESSAGE\",\"player_rank\":999,"
+    "\"params\":[{\"text\":\"Hawke\",\"loc_key\":false}]}",
+    "{\"id\":2,\"time\":%lld,\"title\":\"GUILD_CHAT_EVENT_MEMBER_JOINED_TITLE\","
+    "\"text\":\"GUILD_CHAT_EVENT_MEMBER_JOINED_MESSAGE\",\"player_rank\":999,"
+    "\"params\":[{\"text\":\"Varric\",\"loc_key\":false}]}",
+    "{\"id\":3,\"time\":%lld,\"title\":\"GUILD_CHAT_EVENT_PROMOTION_TITLE\","
+    "\"text\":\"GUILD_CHAT_EVENT_PROMOTION_MESSAGE\",\"player_rank\":999,"
+    "\"params\":[{\"text\":\"Varric\",\"loc_key\":false},{\"text\":\"GUILD_RANK_OFFICER\",\"loc_key\":true},"
+    "{\"text\":\"Hawke\",\"loc_key\":false}]}",
+    "{\"id\":4,\"time\":%lld,\"text\":\"Кто идёт в Нексус сегодня вечером?\",\"player_name\":\"Hawke\","
+    "\"player_level\":24,\"player_rank\":2}",
+    "{\"id\":5,\"time\":%lld,\"text\":\"Я в деле, но сначала прокачаю рунами отряд. Ещё пару боёв на третьей карте, "
+    "и можно выдвигаться всем вместе через главные ворота.\",\"player_name\":\"Varric\",\"player_level\":21,"
+    "\"player_rank\":1}",
+    "{\"id\":6,\"time\":%lld,\"title\":\"GUILD_CHAT_EVENT_PLAYER_APPLICATION_TITLE\","
+    "\"text\":\"GUILD_CHAT_EVENT_PLAYER_APPLICATION_MESSAGE\",\"player_rank\":999,"
+    "\"params\":[{\"text\":\"Bethany\",\"loc_key\":false}]}",
+    "{\"id\":7,\"time\":%lld,\"text\":\"Привет всем!\",\"player_name\":\"Merrill\",\"player_level\":12,"
+    "\"player_rank\":0}",
+};
+
+#define DEBUG_GUILD_MEMBER_COUNT ((int)(sizeof(DEBUG_GUILD_MEMBERS) / sizeof(DEBUG_GUILD_MEMBERS[0])))
+#define DEBUG_GUILD_CHAT_COUNT ((int)(sizeof(DEBUG_GUILD_CHAT) / sizeof(DEBUG_GUILD_CHAT[0])))
+#define DEBUG_GUILD_CHAT_STEP_SECONDS 1700LL
+#define DEBUG_GUILD_LOGIN_STEP_SECONDS 5400LL
+#define DEBUG_GUILD_RECOMMENDED 6
+
+static void DebugSeedGuildInfo(GuildInfo *info, const char *name, int icon, GuildStatus status, long long now) {
+    memset(info, 0, sizeof(*info));
+    snprintf(info->summary.id, sizeof(info->summary.id), "guild-%s", name);
+    StrCopy(info->summary.name, sizeof(info->summary.name), name);
+    StrCopy(
+        info->summary.description,
+        sizeof(info->summary.description),
+        "Защитники Киркволла. Ежедневные походы в Нексус и PvP-события."
+    );
+    StrCopy(info->motd, sizeof(info->motd), "Штурм в субботу! Не забудьте прокачать руны.");
+    StrCopy(info->summary.language, sizeof(info->summary.language), "ru");
+    info->summary.icon = icon;
+    info->summary.status = status;
+    info->summary.required_level = 10;
+    info->summary.max_members = GUILD_MAX_MEMBERS;
+    for (int i = 0; i < DEBUG_GUILD_MEMBER_COUNT; i++) {
+        GuildMember *m = &info->members[info->member_total++];
+        snprintf(m->id, sizeof(m->id), "member-%d", i);
+        StrCopy(m->name, sizeof(m->name), DEBUG_GUILD_MEMBERS[i]);
+        m->rank = i == 0 ? GUILD_RANK_LEADER : (i < 3 ? GUILD_RANK_OFFICER : GUILD_RANK_MEMBER);
+        m->level = 24 - i * 2;
+        m->last_login = now - i * i * DEBUG_GUILD_LOGIN_STEP_SECONDS;
+    }
+    info->summary.member_count = info->member_total;
+    static const char *const applicants[] = {"Bethany", "Carver"};
+    for (int i = 0; i < 2; i++) {
+        GuildApplicant *a = &info->applicants[info->applicant_count++];
+        snprintf(a->id, sizeof(a->id), "applicant-%d", i);
+        StrCopy(a->name, sizeof(a->name), applicants[i]);
+        a->level = 9 + i;
+        StrCopy(a->text, sizeof(a->text), "Возьмите меня, я умею лечить!");
+    }
+}
+
+static void DebugSeedGuild(Game *game) {
+    Guild *g = &game->guild;
+    long long now = ServerNow();
+    GuildInitialize(g);
+    g->known = true;
+    g->rank = GUILD_RANK_LEADER;
+    DebugSeedGuildInfo(&g->mine, "Защитники", 7, GUILD_STATUS_APPLICATION_ONLY, now);
+    StrCopy(g->mine.members[0].id, sizeof(g->mine.members[0].id), GuildPlayerId());
+    DebugSeedGuildInfo(&g->observed, "Серые Стражи", 12, GUILD_STATUS_OPEN, now);
+    g->observed_ready = true;
+    static const char *const names[DEBUG_GUILD_RECOMMENDED] = {
+        "Серые Стражи",
+        "Храмовники",
+        "Круг Магов",
+        "Вороны Антивы",
+        "Хартия",
+        "Кунари",
+    };
+    for (int i = 0; i < DEBUG_GUILD_RECOMMENDED; i++) {
+        GuildSummary *s = &g->list[g->list_count++];
+        snprintf(s->id, sizeof(s->id), "guild-%d", i);
+        StrCopy(s->name, sizeof(s->name), names[i]);
+        StrCopy(s->description, sizeof(s->description), "Ищем активных игроков для Нексуса и PvP.");
+        StrCopy(s->language, sizeof(s->language), i % 3 ? "ru" : "en");
+        s->icon = 1 + i * 3;
+        s->status = (GuildStatus)(i % GUILD_STATUS_COUNT);
+        s->required_level = 5 + i * 3;
+        s->member_count = 30 - i * 4;
+    }
+    g->list_ready = true;
+    for (int i = 0; i < DEBUG_GUILD_CHAT_COUNT; i++) {
+        cJSON *message = cJSON_Parse(
+            TextFormat(DEBUG_GUILD_CHAT[i], now - (DEBUG_GUILD_CHAT_COUNT - i) * DEBUG_GUILD_CHAT_STEP_SECONDS)
+        );
+        GuildAppendChat(g, message);
+        cJSON_Delete(message);
+    }
+    g->unread = 2;
+    g->notices[g->notice_count++] = (GuildNotice){GUILD_NOTICE_PROMOTED, "Защитники", GUILD_RANK_OFFICER};
+}
+
+static void DebugPrepareGuild(Game *game, DebugShot *shot) {
+    static const struct {
+        const char *screen;
+        GuildPage page;
+        GuildHomeMode mode;
+    } shots[] = {
+        {"guild_find", GUILD_PAGE_FIND, GUILD_HOME_MEMBER},
+        {"guild_create", GUILD_PAGE_CREATE, GUILD_HOME_MEMBER},
+        {"guild_home", GUILD_PAGE_HOME, GUILD_HOME_MEMBER},
+        {"guild_observe", GUILD_PAGE_HOME, GUILD_HOME_OBSERVE},
+        {"guild_applications", GUILD_PAGE_HOME, GUILD_HOME_APPLICATIONS},
+        {"guild_chat", GUILD_PAGE_CHAT, GUILD_HOME_MEMBER},
+        {"guild_war", GUILD_PAGE_WAR, GUILD_HOME_MEMBER},
+    };
+    bool live_chat = DebugShotIs(shot, "guild_live_chat");
+    if (live_chat || DebugShotIs(shot, "guild_live_home")) {
+        static bool opened = false;
+        if (game->player.level < GUILD_LEVEL_UNLOCK) game->player.level = GUILD_LEVEL_UNLOCK;
+        if (!opened && game->guild.known && !GuildBusy(&game->guild)) {
+            GameOpenGuild(game, live_chat);
+            opened = true;
+        }
+        game->screen = opened ? SCREEN_GUILD : SCREEN_HOME;
+        return;
+    }
+    bool home_buttons = DebugShotIs(shot, "guild_home_buttons");
+    int match = -1;
+    for (int i = 0; i < (int)(sizeof(shots) / sizeof(shots[0])); i++)
+        if (DebugShotIs(shot, shots[i].screen)) match = i;
+    if (match < 0 && !home_buttons) return;
+    if (shot->frames_drawn == 0) {
+        if (match >= 0 && shots[match].page == GUILD_PAGE_FIND)
+            GuildViewShowFind(&game->guild_view, &game->guild, GUILD_FIND_RECOMMENDED);
+        DebugSeedGuild(game);
+        if (game->player.level < GUILD_LEVEL_UNLOCK) game->player.level = GUILD_LEVEL_UNLOCK;
+        if (match >= 0) {
+            GuildViewLoadEmblems(&game->guild_view);
+            if (shots[match].page == GUILD_PAGE_FIND) {
+                game->guild.rank = GUILD_RANK_NOT_MEMBER;
+                game->guild.has_application = true;
+                game->guild.applied = game->guild.list[1];
+            } else if (shots[match].page == GUILD_PAGE_CREATE) {
+                GuildViewShowCreate(&game->guild_view, &game->guild, false);
+                game->guild_view.draft.icon = 7;
+                TextFieldSet(&game->guild_view.name, "Защитники");
+            } else if (shots[match].page == GUILD_PAGE_CHAT) {
+                GuildViewShowChat(&game->guild_view, &game->guild);
+                TextFieldSet(&game->guild_view.chat_input, "Встречаемся у ворот");
+            } else if (shots[match].page == GUILD_PAGE_HOME) {
+                GuildViewShowHome(&game->guild_view, shots[match].mode);
+                if (shots[match].mode == GUILD_HOME_MEMBER) game->guild_view.expanded_member = 1;
+            } else {
+                game->guild_view.page = shots[match].page;
+            }
+        }
+    }
+    game->screen = home_buttons ? SCREEN_HOME : SCREEN_GUILD;
+}
+
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
     if (DebugPrepareTutorial(game, shot) || DebugPrepareNamePrompt(game, shot)) return;
     game->screen = shot->consume_opened ? SCREEN_CONSUME : SCREEN_HEROES;
@@ -808,6 +982,7 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     DebugPrepareNexusBattle(game, shot);
     DebugPrepareBattle(game, shot);
     DebugPreparePvp(game, shot);
+    DebugPrepareGuild(game, shot);
     DebugPrepareMapProgress(game, shot);
     int selected_hero = EnvInt("HOD_SELECT", -1);
     if (selected_hero >= 0 && selected_hero < game->heroes.card_count) game->heroes.selected = selected_hero;

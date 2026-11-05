@@ -68,3 +68,13 @@ and secret live in `account.dat` (`HOD_ACCOUNT_PATH`). `HOD_SKIP_TUTORIAL=1` ski
 The script comes from the original prefab via `tools/build_ftue_script.py` (UnityPy venv); its reconstructed parts
 (intro battle, pack contents, giant, gem pack, parting gift) are marked in `data/tutorial_intro.json` and
 `data/tutorial_rewards.json`.
+
+Guilds and guild chat (5.4.4's only chat) need the backend. The Guild and Chat buttons sit under the news feed on the
+home screen; Guild unlocks at level 5 and Chat once you are in a guild. The screens follow the original `GuildFindV`,
+`GuildCreateV`, `GuildHomeV` and `GuildChatV` layouts and art from the 4.4.0 cache: find, search, create (10000 gold),
+settings, member ranks, applications, chat with its event log, and rank-change notices on the home screen. The client
+polls chat every 10 then 30 seconds while it is open and every 60 seconds otherwise, through its own request slot in
+`source/backend.c` so polling never waits on profile saves. Onslaught shows its original "no leaderboard yet" state;
+duels and abuse reports are left out. `HOD_SHOT_SCREEN=guild_find`, `guild_create`, `guild_home`, `guild_observe`,
+`guild_applications`, `guild_chat`, `guild_war` and `guild_home_buttons` render the screens with sample data;
+`guild_live_home` and `guild_live_chat` open them from a running backend.
