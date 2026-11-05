@@ -31,6 +31,7 @@ typedef struct {
     int pvp_nexts;
     int pvp_gain;
     GuiId pvp_stake_icon;
+    char pvp_player_name[64];
 
     char title[128];
     char mastery[64];
@@ -262,26 +263,7 @@ void BattleUiEnterPvp(
     ui->gold = PvpGoldReward(opponent, true);
     ui->xp = PvpXpReward(opponent, true);
     StrCopy(ui->title, sizeof(ui->title), PvpOpponentName(opponent));
-    snprintf(
-        ui->mastery,
-        sizeof(ui->mastery),
-        "%s %d   %d   +%d / -%d",
-        LocGetOr("LEADERBOARD_LEVEL", "Уровень"),
-        opponent->level,
-        opponent->trophies,
-        opponent->gain,
-        opponent->loss
-    );
-    if (event)
-        snprintf(
-            ui->mastery,
-            sizeof(ui->mastery),
-            "%s %d   +%d / +%d",
-            LocGetOr("LEADERBOARD_LEVEL", "Уровень"),
-            opponent->level,
-            ui->pvp_gain,
-            PvpEventBannerReward(opponent, player->pvp.event.banners, false)
-        );
+    StrCopy(ui->pvp_player_name, sizeof(ui->pvp_player_name), player->name);
     snprintf(ui->next_label, sizeof(ui->next_label), "%s (%d)", LocGet("BUTTON_MATCHMAKING_NEXT"), nexts);
 }
 
@@ -853,6 +835,59 @@ static bool BattleUiDrawRuneSlots(const Player *player, bool input_ok) {
     return input_ok && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(UiMouse(), area);
 }
 
+static const char VS_LABEL[] = "VS";
+static const Rectangle VS_PLAYER_PLATE = {-398.5f, 20.0f, 321.0f, 61.0f};
+static const Rectangle VS_OPPONENT_PLATE = {78.5f, 20.0f, 321.0f, 61.0f};
+static const Rectangle VS_PLAYER_NAME = {-368.5f, 27.0f, 261.0f, 50.0f};
+static const Rectangle VS_OPPONENT_NAME = {109.5f, 27.0f, 261.0f, 50.0f};
+static const Rectangle VS_LABEL_BOX = {-103.5f, 15.0f, 207.0f, 61.0f};
+static const Rectangle VS_INFO_BUTTON = {-125.5f, 71.0f, 251.0f, 61.0f};
+static const float VS_NAME_FONT = 15.0f;
+static const float VS_LABEL_FONT_FRACTION = 0.77f;
+static const Vector2 VS_LABEL_SHADOW = {0.01f, 0.05f};
+static const Color VS_LABEL_SHADOW_COLOR = {26, 26, 26, 128};
+
+static Rectangle BattleUiMatchmakingRect(float cx, Rectangle design) {
+    return (Rectangle){cx + MM_X(design.x), MM_Y(design.y), MM_X(design.width), design.height * MM_SY};
+}
+
+static void BattleUiDrawVsPlate(Rectangle box) {
+    Texture2D tex = GuiTex(GUI_MM_VS_PLATE);
+    float height = fminf(box.height, box.width * (float)tex.height / (float)tex.width);
+    float width = height * (float)tex.width / (float)tex.height;
+    Rectangle dst = {box.x + (box.width - width) * 0.5f, box.y + (box.height - height) * 0.5f, width, height};
+    UiDrawTexture(tex, dst, WHITE);
+}
+
+static void BattleUiDrawVsHeader(BattleUi *ui, Battle *battle, float cx, bool input_ok) {
+    Font font = GuiFont(FNT_COOL);
+    Color off_white = {230, 230, 230, 255};
+    BattleUiDrawVsPlate(BattleUiMatchmakingRect(cx, VS_PLAYER_PLATE));
+    BattleUiDrawVsPlate(BattleUiMatchmakingRect(cx, VS_OPPONENT_PLATE));
+    float name_size = VS_NAME_FONT * MM_SY;
+    const char *player_name = ui->pvp_player_name[0] ? ui->pvp_player_name : LocGet("BATTLE_SUMMARY_PLAYER");
+    UiDrawTextCentered(font, player_name, BattleUiMatchmakingRect(cx, VS_PLAYER_NAME), name_size, off_white);
+    UiDrawTextCentered(font, ui->title, BattleUiMatchmakingRect(cx, VS_OPPONENT_NAME), name_size, off_white);
+
+    Rectangle vs = BattleUiMatchmakingRect(cx, VS_LABEL_BOX);
+    float vs_size = vs.height * VS_LABEL_FONT_FRACTION;
+    Rectangle shadow = vs;
+    shadow.x += VS_LABEL_SHADOW.x * vs.width;
+    shadow.y += VS_LABEL_SHADOW.y * vs.height;
+    UiDrawTextCentered(font, VS_LABEL, shadow, vs_size, VS_LABEL_SHADOW_COLOR);
+    UiDrawTextCentered(font, VS_LABEL, vs, vs_size, off_white);
+
+    if (ButtonDrawEx(&ui->info, BattleUiMatchmakingRect(cx, VS_INFO_BUTTON), input_ok))
+        BattleUiSetTactical(ui, battle, !ui->tactical);
+}
+
+static void BattleUiDrawTacticalNote(float cx, float y) {
+    const char *note = LocGet("MATCHMAKING_UNIT_DETAILS_NOTE");
+    float nfs = 18.0f;
+    Vector2 nsz = MeasureTextEx(GuiFont(FNT_MENU), note, nfs, 1.0f);
+    DrawTextEx(GuiFont(FNT_MENU), note, (Vector2){cx - nsz.x * 0.5f, y}, nfs, 1.0f, (Color){230, 230, 230, 255});
+}
+
 BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, BattlePlay *bp) {
     Font font = GuiFont(FNT_COOL);
     Color off_white = {230, 230, 230, 255};
@@ -890,7 +925,10 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
         }
     }
 
-    {
+    if (ui->pvp) {
+        BattleUiDrawVsHeader(ui, battle, cx, input_ok);
+        if (ui->tactical) BattleUiDrawTacticalNote(cx, MM_Y(VS_INFO_BUTTON.y + VS_INFO_BUTTON.height + 4.0f));
+    } else {
         Texture2D panel = GuiTex(GUI_MM_PANEL);
         Rectangle dst = {cx - MM_X(266.5f), MM_Y(17), MM_X(534), 113 * MM_SY};
         UiDrawTexture(panel, dst, WHITE);
@@ -924,12 +962,7 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
         if (ButtonDrawEx(&ui->info, (Rectangle){cx - MM_X(104), MM_Y(132), MM_X(208), 52 * MM_SY}, input_ok))
             BattleUiSetTactical(ui, battle, !ui->tactical);
 
-        if (ui->tactical) {
-            const char *note = LocGet("MATCHMAKING_UNIT_DETAILS_NOTE");
-            float nfs = 18.0f;
-            Vector2 nsz = MeasureTextEx(GuiFont(FNT_MENU), note, nfs, 1.0f);
-            DrawTextEx(GuiFont(FNT_MENU), note, (Vector2){cx - nsz.x * 0.5f, MM_Y(190)}, nfs, 1.0f, off_white);
-        }
+        if (ui->tactical) BattleUiDrawTacticalNote(cx, MM_Y(190));
     }
 
     if (BattleUiDrawRuneSlots(player, input_ok)) result = BATTLE_UI_RUNES;
