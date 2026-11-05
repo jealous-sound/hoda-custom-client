@@ -189,7 +189,7 @@
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
       "name_ru": "recruit",
-      "info_ru": "Дает 1 героя. Как минимум обычный боец; есть шанс на необычного, редкого, эпического или легендарного."
+      "info_ru": "Дает 1 героя и шанс на 1 руну. Как минимум обычный боец; есть шанс на необычного, редкого, эпического или легендарного."
     },
     {
       "id": "soldier",
@@ -234,7 +234,7 @@
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
       "name_ru": "soldier",
-      "info_ru": "Дает 1 героя или крупное существо. Как минимум необычный боец; есть шанс на редкого, эпического или легендарного."
+      "info_ru": "Дает 1 героя или крупное существо и шанс на 1 руну. Как минимум необычный боец; есть шанс на редкого, эпического или легендарного."
     },
     {
       "id": "champion",
@@ -284,7 +284,7 @@
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
       "name_ru": "champion",
-      "info_ru": "Дает 1 героя и 1 руну. Как минимум редкий боец; есть шанс на эпического или легендарного."
+      "info_ru": "Дает 1 героя или крупное существо и 1 руну. Как минимум редкий боец; есть шанс на эпического или легендарного."
     },
     {
       "id": "grand_champion",
@@ -341,7 +341,7 @@
       "loc_id": "MERCENARY",
       "category": "UNITS",
       "order": 50,
-      "header": "cache:tex.Store_HeaderBGBronzePack",
+      "header": "cache:tex.Store_HeaderBGSilverPack",
       "icon": "cache:tex.Store_IconWarriorPack",
       "offers": [
         {
@@ -377,6 +377,7 @@
       "gear_chance_pct": 0,
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
+      "header_tint": "#B070FF",
       "name_ru": "Набор наемника",
       "info_ru": "Дает героев: 1. Как минимум необычный боец."
     },
@@ -397,33 +398,33 @@
       "bullets": [
         {
           "text_ru": "Шанс на",
-          "rarity": 4
+          "rarity": 5
         }
       ],
       "schedule": null,
       "rotation": null,
       "opened_counter": 1,
       "hero_count": 1,
-      "minimum_rarity": "Uncommon",
+      "minimum_rarity": "Rare",
       "guaranteed_legendary": 0,
       "guaranteed_epic": 0,
       "legendary_pity": 0,
       "weights": {
         "Common": 0,
-        "Uncommon": 7000,
-        "Rare": 2200,
-        "Epic": 700,
-        "Legendary": 100
+        "Uncommon": 0,
+        "Rare": 6600,
+        "Epic": 2700,
+        "Legendary": 700
       },
-      "rune_chance_pct": 40,
+      "rune_chance_pct": 100,
       "rune_min_rarity": 2,
-      "rune_max_rarity": 4,
+      "rune_max_rarity": 5,
       "rune_count": 1,
-      "gear_chance_pct": 10,
+      "gear_chance_pct": 0,
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
       "name_ru": "Рыцарский набор",
-      "info_ru": "Дает героев: 1. Как минимум необычный боец."
+      "info_ru": "В наборе — как минимум редкий герой с шансом на эпического или легендарного, в числе которых Сэндал и Великая Чародейка Фиона. Также содержит одну необычную, редкую, эпическую или легендарную руну."
     },
     {
       "id": "commander",
@@ -476,7 +477,7 @@
       "loc_id": "ELITE",
       "category": "UNITS",
       "order": 80,
-      "header": "cache:tex.Store_HeaderChampionPack",
+      "header": "cache:tex.Store_HeaderBGSilverPack",
       "icon": "cache:tex.Store_IconGreyWardenFiona",
       "offers": [
         {
@@ -512,6 +513,7 @@
       "gear_chance_pct": 50,
       "gear_min_rarity": 3,
       "gear_max_rarity": 5,
+      "header_tint": "#B070FF",
       "name_ru": "Элитный набор",
       "info_ru": "Дает героев: 10. Как минимум эпический боец."
     },
@@ -559,7 +561,7 @@
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
       "name_ru": "Железный набор",
-      "info_ru": "Дает героев: 1. Как минимум редкий боец."
+      "info_ru": "Премиальный призовой набор. Гарантированный легендарный герой в одном из 6 наборов!"
     },
     {
       "id": "bloodstone",
@@ -579,14 +581,14 @@
       "bullets": [
         {
           "text_ru": "Гарантировано",
-          "rarity": 4
+          "rarity": 5
         }
       ],
       "schedule": null,
       "rotation": null,
       "opened_counter": 2,
       "hero_count": 1,
-      "minimum_rarity": "Epic",
+      "minimum_rarity": "Legendary",
       "guaranteed_legendary": 0,
       "guaranteed_epic": 0,
       "legendary_pity": 0,
@@ -594,8 +596,8 @@
         "Common": 0,
         "Uncommon": 0,
         "Rare": 0,
-        "Epic": 8500,
-        "Legendary": 1500
+        "Epic": 0,
+        "Legendary": 10000
       },
       "rune_chance_pct": 50,
       "rune_min_rarity": 3,
@@ -605,7 +607,7 @@
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
       "name_ru": "Кровавиковый набор",
-      "info_ru": "Дает героев: 1. Как минимум эпический боец."
+      "info_ru": "Потрясающий призовой набор. Как минимум однозвездочный легендарный герой с шансом получить вместо него двух- или трехзвездочного!"
     },
     {
       "id": "lyrium_vein",
@@ -724,24 +726,28 @@
       "hero_count": 5,
       "minimum_rarity": "Rare",
       "guaranteed_legendary": 0,
-      "guaranteed_epic": 2,
+      "guaranteed_epic": 0,
       "legendary_pity": 0,
       "weights": {
         "Common": 0,
         "Uncommon": 0,
-        "Rare": 6600,
-        "Epic": 2700,
-        "Legendary": 700
+        "Rare": 10000,
+        "Epic": 0,
+        "Legendary": 0
       },
       "rune_chance_pct": 100,
-      "rune_min_rarity": 3,
-      "rune_max_rarity": 4,
+      "rune_min_rarity": 5,
+      "rune_max_rarity": 5,
       "rune_count": 5,
       "gear_chance_pct": 0,
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
+      "fixed_heroes": [
+        "UNIT_BARKSPAWN",
+        "UNIT_VARTERRAL"
+      ],
       "name_ru": "Стартовый набор",
-      "info_ru": "Дает героев: 5. Как минимум редкий боец."
+      "info_ru": "Спешите! Легендарный Моровой, эпический гигант вартеррал, три редких героя и пять легендарных рун. Скидка более 50 %!"
     },
     {
       "id": "wisp",
@@ -766,17 +772,17 @@
       "schedule": null,
       "rotation": null,
       "opened_counter": 0,
-      "hero_count": 1,
-      "minimum_rarity": "Uncommon",
+      "hero_count": 10,
+      "minimum_rarity": "Rare",
       "guaranteed_legendary": 0,
-      "guaranteed_epic": 0,
+      "guaranteed_epic": 1,
       "legendary_pity": 0,
       "weights": {
         "Common": 0,
-        "Uncommon": 7000,
-        "Rare": 2200,
-        "Epic": 700,
-        "Legendary": 100
+        "Uncommon": 0,
+        "Rare": 6600,
+        "Epic": 2700,
+        "Legendary": 700
       },
       "rune_chance_pct": 0,
       "rune_min_rarity": 1,
@@ -785,8 +791,9 @@
       "gear_chance_pct": 0,
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
+      "pool_tag": "WISP",
       "name_ru": "Набор огоньков",
-      "info_ru": "Дает героев: 1. Как минимум необычный боец."
+      "info_ru": "10 огоньков (редких или лучше). Как минимум 1 эпический с шансом на легендарный."
     },
     {
       "id": "divine_wisp",
@@ -811,10 +818,10 @@
       "schedule": null,
       "rotation": null,
       "opened_counter": 2,
-      "hero_count": 1,
+      "hero_count": 10,
       "minimum_rarity": "Rare",
-      "guaranteed_legendary": 0,
-      "guaranteed_epic": 0,
+      "guaranteed_legendary": 1,
+      "guaranteed_epic": 2,
       "legendary_pity": 0,
       "weights": {
         "Common": 0,
@@ -830,8 +837,9 @@
       "gear_chance_pct": 0,
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
+      "pool_tag": "WISP",
       "name_ru": "Набор \"Огоньки Верховной жрицы\"",
-      "info_ru": "Дает героев: 1. Как минимум редкий боец."
+      "info_ru": "10 огоньков (редких или лучше), из них как минимум 2 эпических и 1 легендарный."
     },
     {
       "id": "training",
@@ -856,17 +864,17 @@
       "schedule": null,
       "rotation": null,
       "opened_counter": 0,
-      "hero_count": 3,
-      "minimum_rarity": "Common",
+      "hero_count": 2,
+      "minimum_rarity": "Uncommon",
       "guaranteed_legendary": 0,
       "guaranteed_epic": 0,
       "legendary_pity": 0,
       "weights": {
-        "Common": 7500,
-        "Uncommon": 2000,
-        "Rare": 400,
-        "Epic": 90,
-        "Legendary": 10
+        "Common": 0,
+        "Uncommon": 10000,
+        "Rare": 0,
+        "Epic": 0,
+        "Legendary": 0
       },
       "rune_chance_pct": 0,
       "rune_min_rarity": 1,
@@ -875,8 +883,9 @@
       "gear_chance_pct": 0,
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
+      "guaranteed_rare": 1,
       "name_ru": "Учебный набор",
-      "info_ru": "Дает героев: 3. Как минимум обычный боец."
+      "info_ru": "Дает 1 редкого и 1 необычного героя, чтобы помочь освоить поглощение."
     },
     {
       "id": "free_wisp",
@@ -904,27 +913,29 @@
       },
       "rotation": null,
       "opened_counter": 0,
-      "hero_count": 1,
-      "minimum_rarity": "Common",
+      "hero_count": 4,
+      "minimum_rarity": "Rare",
       "guaranteed_legendary": 0,
       "guaranteed_epic": 0,
       "legendary_pity": 0,
       "weights": {
-        "Common": 7500,
-        "Uncommon": 2000,
-        "Rare": 400,
-        "Epic": 90,
-        "Legendary": 10
+        "Common": 0,
+        "Uncommon": 0,
+        "Rare": 10000,
+        "Epic": 0,
+        "Legendary": 0
       },
-      "rune_chance_pct": 0,
-      "rune_min_rarity": 1,
-      "rune_max_rarity": 2,
-      "rune_count": 1,
+      "rune_chance_pct": 100,
+      "rune_min_rarity": 3,
+      "rune_max_rarity": 3,
+      "rune_count": 4,
       "gear_chance_pct": 0,
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
+      "pool_tag": "WISP",
+      "unique_heroes": true,
       "name_ru": "Бесплатные огоньки",
-      "info_ru": "Дает героев: 1. Как минимум обычный боец."
+      "info_ru": "Дает 4 уникальных редких огонька и 4 редкие руны."
     },
     {
       "id": "booster_blackwhite",
@@ -1134,16 +1145,16 @@
       "rotation": null,
       "opened_counter": 2,
       "hero_count": 1,
-      "minimum_rarity": "Rare",
+      "minimum_rarity": "Common",
       "guaranteed_legendary": 0,
       "guaranteed_epic": 0,
       "legendary_pity": 0,
       "weights": {
-        "Common": 0,
-        "Uncommon": 0,
-        "Rare": 6600,
-        "Epic": 2700,
-        "Legendary": 700
+        "Common": 7500,
+        "Uncommon": 2000,
+        "Rare": 400,
+        "Epic": 90,
+        "Legendary": 10
       },
       "rune_chance_pct": 40,
       "rune_min_rarity": 3,
@@ -1152,8 +1163,9 @@
       "gear_chance_pct": 0,
       "gear_min_rarity": 1,
       "gear_max_rarity": 3,
+      "pool_tag": "GOAT",
       "name_ru": "Кознабор!",
-      "info_ru": "Дает героев: 1. Как минимум редкий боец."
+      "info_ru": "Есть шанс заполучить обычную, необычную, редкую, эпическую или легендарную КОЗУ!"
     },
     {
       "id": "nug",
@@ -2397,7 +2409,7 @@
         }
       ],
       "name_ru": "Рунный набор \"Быстрота\"",
-      "info_ru": "Руна скорости и две другие руны."
+      "info_ru": "Как минимум одна легендарная (а при удаче — сверхлегендарная) руна скорости. Также содержит еще две руны силы, здоровья или скорости, каждая из которых может быть эпической или легендарной. Ограничение — 15 в день."
     },
     {
       "id": "ancient_lore",
@@ -2445,7 +2457,7 @@
         }
       ],
       "name_ru": "Рунный набор \"Легенда\"",
-      "info_ru": "Три руны знаний."
+      "info_ru": "Как минимум одна легендарная (а при удаче — сверхлегендарная) руна знания. Также содержит еще две руны знания, каждая из которых может быть эпической или легендарной. Ограничение — 15 в день."
     },
     {
       "id": "grab_bag",
@@ -2499,7 +2511,7 @@
         }
       ],
       "name_ru": "Рунный набор \"Ассорти\"",
-      "info_ru": "Три руны редкого качества или выше."
+      "info_ru": "Три как минимум редкие руны, одна из которых — руна знания, а две другие — руны силы, здоровья, скорости или контроля. Ограничение — 25 в день."
     },
     {
       "id": "legendary_runes",
@@ -2541,7 +2553,7 @@
         }
       ],
       "name_ru": "Набор легендарных рун",
-      "info_ru": "Три легендарные руны."
+      "info_ru": "В этом наборе — 3 гарантированные легендарные руны."
     },
     {
       "id": "prestige_runes",

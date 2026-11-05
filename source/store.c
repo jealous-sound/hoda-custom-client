@@ -15,6 +15,10 @@ static void CampaignDrawWrapped(
 #define STORE_VOUCHER_WIN_DROP_PCT 5
 #define STORE_RUNE_PACK_SLOTS 3
 #define STORE_RUNE_SLOT_FAMILIES 4
+#define STORE_POOL_TAG_CAPACITY 16
+#define STORE_UNIQUE_HERO_REROLLS 32
+#define STORE_DEFAULT_POOL_EXCLUDED_TAG "WISP"
+#define STORE_NEVER_SOLD_TAG "BANNER"
 #define STORE_MAX_ITEM_RESULTS                                                                                         \
     (GEAR_PACK_MAX_ROLLS > STORE_RUNE_PACK_SLOTS ? GEAR_PACK_MAX_ROLLS : STORE_RUNE_PACK_SLOTS)
 #define STORE_PACK_UNAVAILABLE (-1LL)
@@ -186,6 +190,7 @@ typedef struct {
     const char *name;
     const char *info;
     const char *header;
+    Color header_tint;
     const char *icon;
     StoreBullet bullets[STORE_PACK_BULLET_MAX];
     int bullet_count;
@@ -202,6 +207,11 @@ typedef struct {
     Rarity minimum_rarity;
     int guaranteed_legendary;
     int guaranteed_epic;
+    int guaranteed_rare;
+    const char *fixed_heroes[STORE_MAX_RESULTS];
+    int fixed_hero_count;
+    char pool_tag[STORE_POOL_TAG_CAPACITY];
+    bool unique_heroes;
     int legendary_pity;
     int weights[RARITY_LEGENDARY + 1];
     int rune_chance_pct;
@@ -497,12 +507,29 @@ static void StoreLoadOffers(Store *store, StorePackDef *pack, const cJSON *json)
     if (!pack->has_paid_offer && pack->voucher < 0) TraceLog(LOG_FATAL, "Store: pack %s has no offer", pack->id);
 }
 
+static Color StoreParseTint(const char *hex, const char *pack_id) {
+    if (!hex[0]) return WHITE;
+    unsigned int rgb = 0;
+    if (hex[0] != '#' || strlen(hex) != 7 || sscanf(hex + 1, "%6x", &rgb) != 1)
+        TraceLog(LOG_FATAL, "Store: %s has an invalid header tint %s", pack_id, hex);
+    return (Color){(unsigned char)(rgb >> 16), (unsigned char)(rgb >> 8), (unsigned char)rgb, 255};
+}
+
 static void StoreLoadHeroContents(StorePackDef *pack, const cJSON *json) {
     pack->opened_counter = JsonInt(json, "opened_counter");
     pack->hero_count = JsonInt(json, "hero_count");
     pack->minimum_rarity = RarityFromString(JsonStr(json, "minimum_rarity"));
     pack->guaranteed_legendary = JsonInt(json, "guaranteed_legendary");
     pack->guaranteed_epic = JsonInt(json, "guaranteed_epic");
+    pack->guaranteed_rare = JsonInt(json, "guaranteed_rare");
+    StrCopy(pack->pool_tag, sizeof(pack->pool_tag), JsonStr(json, "pool_tag"));
+    pack->unique_heroes = JsonBool(json, "unique_heroes");
+    const cJSON *fixed = NULL;
+    cJSON_ArrayForEach(fixed, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "fixed_heroes")) {
+        if (!cJSON_IsString(fixed) || pack->fixed_hero_count >= STORE_MAX_RESULTS)
+            TraceLog(LOG_FATAL, "Store: invalid fixed heroes in %s", pack->id);
+        pack->fixed_heroes[pack->fixed_hero_count++] = fixed->valuestring;
+    }
     pack->legendary_pity = JsonInt(json, "legendary_pity");
     pack->rune_chance_pct = JsonInt(json, "rune_chance_pct");
     pack->rune_count = JsonInt(json, "rune_count");
@@ -522,7 +549,9 @@ static void StoreLoadHeroContents(StorePackDef *pack, const cJSON *json) {
             TraceLog(LOG_FATAL, "Store: %s assigns weight below its minimum rarity", pack->id);
     }
     if (pack->hero_count <= 0 || pack->hero_count > STORE_MAX_RESULTS || pack->guaranteed_legendary < 0 ||
-        pack->guaranteed_epic < 0 || pack->guaranteed_legendary + pack->guaranteed_epic > pack->hero_count ||
+        pack->guaranteed_epic < 0 || pack->guaranteed_rare < 0 ||
+        pack->fixed_hero_count + pack->guaranteed_legendary + pack->guaranteed_epic + pack->guaranteed_rare >
+            pack->hero_count ||
         pack->opened_counter < 0 || pack->opened_counter >= PLAYER_STORE_PACK_COUNT || total != 10000)
         TraceLog(LOG_FATAL, "Store: invalid hero pack %s", pack->id);
 }
@@ -561,6 +590,7 @@ static void StoreLoadPack(Store *store, StorePackDef *pack, const cJSON *json) {
     pack->name = StorePackLocText(json, "_PACK_NAME", "name_ru");
     pack->info = StorePackLocText(json, "_PACK_INFO", "info_ru");
     pack->header = JsonStr(json, "header");
+    pack->header_tint = StoreParseTint(JsonStr(json, "header_tint"), pack->id);
     pack->icon = JsonStr(json, "icon");
     pack->page = StorePageFromCategory(JsonStr(json, "category"));
     pack->tutorial_only = JsonBool(json, "tutorial_only");
@@ -615,12 +645,45 @@ static void StoreLoadGemSku(StoreGemSku *sku, const cJSON *json, int index) {
         TraceLog(LOG_FATAL, "Store: invalid gem sku at index %d", index);
 }
 
-static bool StoreHeroDefinitionEligible(const cJSON *entry) {
+static bool StoreHeroDefinitionSellable(const cJSON *entry) {
     if (!JsonBool(entry, "obtainable")) return false;
-    const char *id = JsonStr(entry, "id");
-    if (strstr(id, "WISP") || strstr(id, "BANNER")) return false;
+    if (strstr(JsonStr(entry, "id"), STORE_NEVER_SOLD_TAG)) return false;
     Rarity rarity = RarityFromString(JsonStr(entry, "rarity"));
     return rarity >= RARITY_COMMON && rarity <= RARITY_LEGENDARY;
+}
+
+static bool StoreHeroDefinitionEligible(const cJSON *entry) {
+    return StoreHeroDefinitionSellable(entry) && !strstr(JsonStr(entry, "id"), STORE_DEFAULT_POOL_EXCLUDED_TAG);
+}
+
+static bool StoreHeroDefinitionInPool(const cJSON *entry, const char *tag, Rarity rarity) {
+    return StoreHeroDefinitionSellable(entry) && strstr(JsonStr(entry, "id"), tag) &&
+           RarityFromString(JsonStr(entry, "rarity")) == rarity;
+}
+
+static int StoreTaggedPoolCount(const Store *store, const char *tag, Rarity rarity) {
+    int count = 0;
+    const cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, (cJSON *)store->catalog) count += StoreHeroDefinitionInPool(entry, tag, rarity);
+    return count;
+}
+
+static void StoreValidateHeroPools(const Store *store) {
+    for (int i = 0; i < store->pack_count; i++) {
+        const StorePackDef *pack = &store->packs[i];
+        if (pack->kind != STORE_KIND_HERO) continue;
+        for (int f = 0; f < pack->fixed_hero_count; f++)
+            if (!CatalogFindCharacter(store->catalog, pack->fixed_heroes[f]))
+                TraceLog(LOG_FATAL, "Store: %s fixes unknown hero %s", pack->id, pack->fixed_heroes[f]);
+        if (!pack->pool_tag[0]) continue;
+        for (int rarity = RARITY_COMMON; rarity <= RARITY_LEGENDARY; rarity++) {
+            bool needed = pack->weights[rarity] > 0 || (rarity == RARITY_LEGENDARY && pack->guaranteed_legendary) ||
+                          (rarity == RARITY_EPIC && pack->guaranteed_epic) ||
+                          (rarity == RARITY_RARE && pack->guaranteed_rare);
+            if (needed && StoreTaggedPoolCount(store, pack->pool_tag, (Rarity)rarity) == 0)
+                TraceLog(LOG_FATAL, "Store: %s has no %s heroes of rarity %d", pack->id, pack->pool_tag, rarity);
+        }
+    }
 }
 
 static void StoreBuildRarityPools(Store *store) {
@@ -670,6 +733,7 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
     store->catalog = cJSON_GetObjectItemCaseSensitive(store->catalog_root, "characters");
     if (!cJSON_IsArray(store->catalog)) TraceLog(LOG_FATAL, "Store: catalog has no characters array");
     StoreBuildRarityPools(store);
+    StoreValidateHeroPools(store);
     PackSceneInitialize(&store->opening_scene);
     PackFxInitialize(&store->opening_fx);
     PackHeroInitialize(&store->opening_hero, HOD_CACHE "char_pack");
@@ -887,6 +951,48 @@ StoreAction StoreHandleBack(Store *store, Heroes *heroes) {
 static const cJSON *StoreRandomDefinition(Store *store, Rarity rarity, uint32_t *rng) {
     int count = store->rarity_pool_count[rarity];
     return count > 0 ? store->rarity_pool[rarity][StoreRngRange(rng, count)] : NULL;
+}
+
+static const cJSON *StoreRandomTaggedDefinition(const Store *store, const char *tag, Rarity rarity, uint32_t *rng) {
+    int pick = StoreRngRange(rng, StoreTaggedPoolCount(store, tag, rarity));
+    const cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, (cJSON *)store->catalog) {
+        if (!StoreHeroDefinitionInPool(entry, tag, rarity)) continue;
+        if (pick-- == 0) return entry;
+    }
+    return NULL;
+}
+
+static const cJSON *StorePackDefinition(Store *store, const StorePackDef *pack, Rarity rarity, uint32_t *rng) {
+    return pack->pool_tag[0] ? StoreRandomTaggedDefinition(store, pack->pool_tag, rarity, rng)
+                             : StoreRandomDefinition(store, rarity, rng);
+}
+
+static bool StoreDefinitionAlreadyRolled(const cJSON *definition, const cJSON *const *definitions, int count) {
+    for (int i = 0; i < count; i++)
+        if (definitions[i] == definition) return true;
+    return false;
+}
+
+static const cJSON *StoreRollPackDefinition(
+    Store *store, const StorePackDef *pack, Rarity rarity, const cJSON *const *rolled, int count, uint32_t *rng
+) {
+    const cJSON *definition = StorePackDefinition(store, pack, rarity, rng);
+    for (int attempt = 0; pack->unique_heroes && attempt < STORE_UNIQUE_HERO_REROLLS &&
+                          StoreDefinitionAlreadyRolled(definition, rolled, count);
+         attempt++)
+        definition = StorePackDefinition(store, pack, rarity, rng);
+    return definition;
+}
+
+static Rarity StorePackSlotRarity(const StorePackDef *pack, int rolled_slot, bool pity, uint32_t *rng) {
+    int legendary_end = pack->guaranteed_legendary;
+    int epic_end = legendary_end + pack->guaranteed_epic;
+    int rare_end = epic_end + pack->guaranteed_rare;
+    if (rolled_slot < legendary_end || pity) return RARITY_LEGENDARY;
+    if (rolled_slot < epic_end) return RARITY_EPIC;
+    if (rolled_slot < rare_end) return RARITY_RARE;
+    return StoreRollRarity(pack, rng);
 }
 
 static bool StoreRuneFamilyMatches(const RuneDef *def, const StoreRuneSlot *slot) {
@@ -1151,13 +1257,14 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
     bool tracks_pity = pack->legendary_pity > 0;
     int next_pity = player->champion_since_legendary;
     for (int i = 0; i < pack->hero_count; i++) {
-        bool guaranteed_legendary = i < pack->guaranteed_legendary;
-        bool guaranteed_epic =
-            i >= pack->guaranteed_legendary && i < pack->guaranteed_legendary + pack->guaranteed_epic;
-        bool pity = tracks_pity && next_pity >= pack->legendary_pity - 1;
-        rarities[i] = (guaranteed_legendary || pity) ? RARITY_LEGENDARY
-                                                     : (guaranteed_epic ? RARITY_EPIC : StoreRollRarity(pack, &rng));
-        definitions[i] = StoreRandomDefinition(store, rarities[i], &rng);
+        if (i < pack->fixed_hero_count) {
+            definitions[i] = CatalogFindCharacter(store->catalog, pack->fixed_heroes[i]);
+            rarities[i] = definitions[i] ? RarityFromString(JsonStr(definitions[i], "rarity")) : RARITY_COMMON;
+        } else {
+            bool pity = tracks_pity && next_pity >= pack->legendary_pity - 1;
+            rarities[i] = StorePackSlotRarity(pack, i - pack->fixed_hero_count, pity, &rng);
+            definitions[i] = StoreRollPackDefinition(store, pack, rarities[i], definitions, i, &rng);
+        }
         if (!definitions[i]) {
             StoreSetStatus(store, "Этот пак временно недоступен");
             GuiSoundPlay(SND_STORE_ERROR);
@@ -1541,7 +1648,7 @@ static bool StoreDrawPackCard(
 
     Rectangle top = StoreCellPart(cell, STORE_CELL_HEADER);
     Texture2D header = RuneIconLoad(pack->header);
-    if (header.id != 0) UiDrawTexture(header, top, WHITE);
+    if (header.id != 0) UiDrawTexture(header, top, pack->header_tint);
     StoreDrawCenteredFit(
         store->title_font,
         pack->name,
