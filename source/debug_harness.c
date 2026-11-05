@@ -1067,6 +1067,7 @@ static void DebugPrepareGuild(Game *game, DebugShot *shot) {
     } shots[] = {
         {"guild_find", GUILD_PAGE_FIND, GUILD_HOME_MEMBER},
         {"guild_create", GUILD_PAGE_CREATE, GUILD_HOME_MEMBER},
+        {"guild_create_confirm", GUILD_PAGE_CREATE, GUILD_HOME_MEMBER},
         {"guild_home", GUILD_PAGE_HOME, GUILD_HOME_MEMBER},
         {"guild_observe", GUILD_PAGE_HOME, GUILD_HOME_OBSERVE},
         {"guild_applications", GUILD_PAGE_HOME, GUILD_HOME_APPLICATIONS},
@@ -1103,6 +1104,11 @@ static void DebugPrepareGuild(Game *game, DebugShot *shot) {
                 GuildViewShowCreate(&game->guild_view, &game->guild, false);
                 game->guild_view.draft.icon = 7;
                 TextFieldSet(&game->guild_view.name, "Защитники");
+                if (DebugShotIs(shot, "guild_create_confirm")) {
+                    game->guild.rank = GUILD_RANK_NOT_MEMBER;
+                    game->player.gold = GUILD_CREATION_GOLD_COST;
+                    GuildViewSubmitCreate(&game->guild_view, &game->guild, &game->player);
+                }
             } else if (shots[match].page == GUILD_PAGE_CHAT) {
                 GuildViewShowChat(&game->guild_view, &game->guild);
                 TextFieldSet(&game->guild_view.chat_input, "Встречаемся у ворот");

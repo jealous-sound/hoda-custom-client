@@ -3,9 +3,36 @@
 #define MESSAGE_POPUP_HEIGHT 0.625f
 #define MESSAGE_POPUP_ASPECT 2.13f
 
-static void MessagePopupDrawLine(Font font, const char *line, Rectangle rect, float y, float size, Color color) {
-    float width = MeasureTextEx(font, line, size, 1.0f).x;
-    DrawTextEx(font, line, (Vector2){rect.x + (rect.width - width) * 0.5f, y}, size, 1.0f, color);
+#define MESSAGE_POPUP_SPACING 1.0f
+
+static float
+MessagePopupRichRun(Font font, const char *line, Vector2 at, float size, Color base, Color *color, bool draw) {
+    float x = 0.0f;
+    for (const char *c = line;;) {
+        HeroesRichToken token = HeroesRichNextToken(c, base);
+        if (token.kind == HEROES_RICH_END) break;
+        if (token.kind == HEROES_RICH_COLOR_OPEN) *color = token.color;
+        if (token.kind == HEROES_RICH_COLOR_CLOSE) *color = base;
+        if (token.kind == HEROES_RICH_SPACE || token.kind == HEROES_RICH_TEXT) {
+            char piece[MESSAGE_POPUP_TEXT_CAP];
+            snprintf(piece, sizeof(piece), "%.*s", token.bytes, c);
+            if (draw) DrawTextEx(font, piece, (Vector2){at.x + x, at.y}, size, MESSAGE_POPUP_SPACING, *color);
+            x += MeasureTextEx(font, piece, size, MESSAGE_POPUP_SPACING).x + MESSAGE_POPUP_SPACING;
+        }
+        c += token.bytes;
+    }
+    return x > 0.0f ? x - MESSAGE_POPUP_SPACING : 0.0f;
+}
+
+static float MessagePopupRichWidth(Font font, const char *line, float size) {
+    Color unused = WHITE;
+    return MessagePopupRichRun(font, line, (Vector2){0.0f, 0.0f}, size, WHITE, &unused, false);
+}
+
+static void
+MessagePopupDrawLine(Font font, const char *line, Rectangle rect, float y, float size, Color base, Color *color) {
+    float width = MessagePopupRichWidth(font, line, size);
+    MessagePopupRichRun(font, line, (Vector2){rect.x + (rect.width - width) * 0.5f, y}, size, base, color, true);
 }
 
 static int
@@ -26,7 +53,7 @@ MessagePopupWrap(Font font, const char *text, float width, float size, char line
         while (*end && *end != ' ' && *end != '\n' && !(end[0] == '\\' && end[1] == 'n')) end++;
         char candidate[MESSAGE_POPUP_TEXT_CAP];
         snprintf(candidate, sizeof(candidate), "%s%s%.*s", line, used ? " " : "", (int)(end - c), c);
-        if (used && MeasureTextEx(font, candidate, size, 1.0f).x > width) {
+        if (used && MessagePopupRichWidth(font, candidate, size) > width) {
             if (count < cap) StrCopy(lines[count++], MESSAGE_POPUP_TEXT_CAP, line);
             snprintf(candidate, sizeof(candidate), "%.*s", (int)(end - c), c);
         }
@@ -42,7 +69,8 @@ static void MessagePopupDrawText(Font font, const char *text, Rectangle rect, fl
     int count = MessagePopupWrap(font, text, rect.width, size, lines, MESSAGE_POPUP_LINES);
     float line_h = size * 1.25f;
     float y = rect.y + (rect.height - count * line_h) * 0.5f;
-    for (int i = 0; i < count; i++) MessagePopupDrawLine(font, lines[i], rect, y + i * line_h, size, color);
+    Color current = color;
+    for (int i = 0; i < count; i++) MessagePopupDrawLine(font, lines[i], rect, y + i * line_h, size, color, &current);
 }
 
 static void MessagePopupDrawScrim(void) {
