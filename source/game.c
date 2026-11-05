@@ -344,27 +344,33 @@ static void GameStartPendingNexusAnimation(Game *g) {
         NexusBeginProgressionAnimation(&g->nexus, from, to);
 }
 
-static void GameOpenNexusRecapFromServer(Game *g, const cJSON *reply) {
-    NexusAward award = {.potions = g->nexus_award_potions};
-    const cJSON *gold = cJSON_GetObjectItemCaseSensitive(reply, "gold");
+NexusAward GameNexusAwardFromReply(const Player *player, const cJSON *reply, int potions) {
+    NexusAward award = {.potions = potions};
+    const cJSON *result = cJSON_GetObjectItemCaseSensitive(reply, "granted");
+    const cJSON *gold = cJSON_GetObjectItemCaseSensitive(result, "gold");
     award.gold = cJSON_IsNumber(gold) ? gold->valueint : 0;
     const cJSON *heroes =
-        cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(reply, "granted"), "heroes");
+        cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(result, "granted"), "heroes");
     const cJSON *hero = NULL;
     cJSON_ArrayForEach(hero, heroes) {
         if (award.unit_count >= NEXUS_MAX_NODES) break;
         uint64_t instance = (uint64_t)JsonFloat(hero, "instance_id");
         int index = -1;
-        for (int r = 0; r < g->player.roster_count && index < 0; r++)
-            if (g->player.roster[r].instance_id == instance) index = r;
+        for (int r = 0; r < player->roster_count && index < 0; r++)
+            if (player->roster[r].instance_id == instance) index = r;
         if (index < 0) continue;
         bool owned = false;
         for (int other = 0; other < index && !owned; other++)
-            owned = strcmp(g->player.roster[other].id, g->player.roster[index].id) == 0;
+            owned = strcmp(player->roster[other].id, player->roster[index].id) == 0;
         award.unit_roster[award.unit_count] = index;
         award.unit_newly_owned[award.unit_count] = !owned;
         award.unit_count++;
     }
+    return award;
+}
+
+static void GameOpenNexusRecapFromServer(Game *g, const cJSON *reply) {
+    NexusAward award = GameNexusAwardFromReply(&g->player, reply, g->nexus_award_potions);
     NexusRecapOpen(&g->nexus_recap, &award);
 }
 

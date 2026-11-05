@@ -3921,6 +3921,28 @@ static void TestRuneCrafting(void) {
     assert(runes.count == 4);
 }
 
+static void TestNexusAwardReadsTheServerReply(void) {
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    const Character *last = &player.roster[player.roster_count - 1];
+    char text[256];
+    snprintf(
+        text,
+        sizeof(text),
+        "{\"granted\":{\"gold\":500,\"granted\":{\"heroes\":[{\"id\":\"%s\",\"instance_id\":%llu},"
+        "{\"id\":\"UNIT_X\",\"instance_id\":999999}]}}}",
+        last->id,
+        (unsigned long long)last->instance_id
+    );
+    cJSON *reply = cJSON_Parse(text);
+    NexusAward award = GameNexusAwardFromReply(&player, reply, 2);
+    assert(award.gold == 500 && award.potions == 2 && award.unit_count == 1);
+    assert(award.unit_roster[0] == player.roster_count - 1);
+    cJSON_Delete(reply);
+}
+
 static void TestServerActionsStayLocalWithoutABackend(void) {
     ServerActionSubmit(ServerActionCreate("battle"));
     assert(ServerActionsDrained());
@@ -6101,6 +6123,7 @@ int main(void) {
     TestRuneExpiry();
     TestRuneCrafting();
     TestServerActionsStayLocalWithoutABackend();
+    TestNexusAwardReadsTheServerReply();
     TestRuneBonusStacksAndScalesRewards();
     TestRuneMitigationAndRetaliation();
     TestRuneResistsBlockAilments();
