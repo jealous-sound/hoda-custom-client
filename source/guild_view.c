@@ -21,6 +21,12 @@
 #define GUILD_WAR_FRAME_VISIBLE_RIGHT 605.0f
 #define GUILD_WAR_TOGGLE_STEP 50.0f
 #define GUILD_WAR_TOGGLE_SIZE 44.0f
+#define GUILD_WAR_EMBLEM_SIZE 67.0f
+#define GUILD_WAR_STATUS_Y 177.0f
+#define GUILD_WAR_STATUS_HEIGHT 26.0f
+#define GUILD_WAR_ENTER_HEIGHT 52.0f
+#define GUILD_WAR_ENTER_Y (GUILD_WAR_STATUS_Y + (GUILD_WAR_STATUS_HEIGHT - GUILD_WAR_ENTER_HEIGHT) * 0.5f)
+#define GUILD_WAR_MINIMUM_GAP 6.0f
 #define GUILD_WAR_ENTER_VISIBLE_LEFT 994.0f
 #define GUILD_HEADING_SIZE 24.0f
 #define GUILD_BODY_SIZE 20.0f
@@ -1782,7 +1788,8 @@ static void GuildViewDrawWarHeader(GuildView *v, const Guild *g, const GuildWarE
     const GuildSummary *s = &g->mine.summary;
     GuildDrawPanel(GuildRect(86.0f, 161.0f, 445.0f, 103.0f));
     GuildDrawPanel(GuildRect(530.0f, 161.0f, 668.0f, 103.0f));
-    GuildDrawEmblem(v, s->icon, GuildRect(86.0f, 179.0f, 67.0f, 67.0f), WHITE);
+    float emblem_x = GUILD_WAR_FRAME_VISIBLE_LEFT + (GUILD_WAR_TOGGLE_SIZE - GUILD_WAR_EMBLEM_SIZE) * 0.5f;
+    GuildDrawEmblem(v, s->icon, GuildRect(emblem_x, 179.0f, GUILD_WAR_EMBLEM_SIZE, GUILD_WAR_EMBLEM_SIZE), WHITE);
     GuildFitText(v->font, s->name, GuildRect(186.0f, 174.0f, 334.0f, 28.0f), GUILD_HEADING_SIZE, GUILD_TEXT, false);
     GuildFitText(
         v->body,
@@ -1792,7 +1799,7 @@ static void GuildViewDrawWarHeader(GuildView *v, const Guild *g, const GuildWarE
         GUILD_TEXT_DIM,
         false
     );
-    Rectangle status = GuildRect(540.0f, 177.0f, 435.0f, 26.0f);
+    Rectangle status = GuildRect(540.0f, GUILD_WAR_STATUS_Y, 435.0f, GUILD_WAR_STATUS_HEIGHT);
     Rectangle name = GuildRect(540.0f, 204.0f, 435.0f, 26.0f);
     if (events->state == GUILD_WAR_CURRENT_EVENT) {
         GuildFitText(
@@ -2034,7 +2041,12 @@ GuildViewDrawWarRewards(GuildView *v, const GuildWarEvents *events, const GuildO
         GuildDrawWrapped(
             v->body,
             text,
-            GuildRect(GUILD_WAR_ENTER_VISIBLE_LEFT, 250.0f, 1198.0f - GUILD_WAR_ENTER_VISIBLE_LEFT, 64.0f),
+            GuildRect(
+                GUILD_WAR_ENTER_VISIBLE_LEFT,
+                GUILD_WAR_ENTER_Y + GUILD_WAR_ENTER_HEIGHT + GUILD_WAR_MINIMUM_GAP,
+                1198.0f - GUILD_WAR_ENTER_VISIBLE_LEFT,
+                64.0f
+            ),
             GUILD_SMALL_SIZE - 5.0f,
             GUILD_TEXT
         );
@@ -2059,7 +2071,7 @@ static void GuildViewDrawWar(GuildView *v, Guild *g, bool interactive) {
     if (o && o->cycle != events.shown) GuildRequestOnslaught(g, events.shown);
     GuildViewDrawWarHeader(v, g, &events, now);
     if (events.state == GUILD_WAR_CURRENT_EVENT &&
-        ButtonDrawEx(&v->enter, GuildRect(988.0f, 187.0f, 201.0f, 52.0f), interactive))
+        ButtonDrawEx(&v->enter, GuildRect(988.0f, GUILD_WAR_ENTER_Y, 201.0f, GUILD_WAR_ENTER_HEIGHT), interactive))
         v->pending = GUILD_VIEW_ENTER_ONSLAUGHT;
     GuildViewDrawWarLeaderboard(v, g, o, interactive);
     GuildViewDrawWarRewards(v, &events, o, interactive);
