@@ -130,6 +130,8 @@ static void MissionsBeginClaim(MissionsScreen *s, Hud *hud, Player *p, int serie
         HudCurrencyRelease(hud, p, gems);
         return;
     }
+    cJSON *fields = ServerActionCreate("mission_claim");
+    if (fields) cJSON_AddStringToObject(fields, "mission", MissionAt(mission)->id);
     Rectangle icon = MissionsRewardIconRect(row, true);
     s->claim_series = series;
     s->claim_mission = mission;
@@ -137,6 +139,7 @@ static void MissionsBeginClaim(MissionsScreen *s, Hud *hud, Player *p, int serie
     s->claim_gems = gems;
     s->burst_start = (Vector2){icon.x + icon.width * 0.5f, icon.y + icon.height * 0.5f};
     ProgressionSave(p);
+    ServerActionSubmit(fields);
 }
 
 static void MissionsFinishClaim(MissionsScreen *s, Hud *hud, const Player *p) {
@@ -353,7 +356,17 @@ MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, float dt) {
     } else {
         goal = GoalsDrawEvents(&s->tabs, &s->scroll, &p->pvp, content, interactive);
     }
-    if (goal == GOALS_CLAIM_EVENT && PvpEventClaim(p, s->tabs.selected)) ProgressionSave(p);
+    if (goal == GOALS_CLAIM_EVENT) {
+        int selected = s->tabs.selected;
+        long long cycle =
+            selected >= 0 && selected < p->pvp.event_result_count ? p->pvp.event_results[selected].cycle : -1;
+        if (PvpEventClaim(p, selected)) {
+            ProgressionSave(p);
+            cJSON *fields = ServerActionCreate("pvp_event_claim");
+            if (fields) cJSON_AddNumberToObject(fields, "cycle", (double)cycle);
+            ServerActionSubmit(fields);
+        }
+    }
     if (goal == GOALS_FIGHT_BOT) action = MISSIONS_FIGHT_BOT;
     if (goal == GOALS_REVENGE) action = MISSIONS_REVENGE;
 

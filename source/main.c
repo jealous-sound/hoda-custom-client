@@ -22,6 +22,7 @@
 #include "resource.c"
 #include "utils.c"
 #include "backend.c"
+#include "server_actions.c"
 #include "ui.c"
 #include "assets.c"
 #include "loc.c"

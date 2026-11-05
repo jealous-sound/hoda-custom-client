@@ -293,25 +293,45 @@ static void GearViewRequestSell(void) {
     gear_view.dialog = GEAR_VIEW_DIALOG_SELL;
 }
 
+static void GearViewSubmit(const char *action, const char *gear, uint64_t instance_id) {
+    cJSON *fields = ServerActionCreate(action);
+    if (!fields) return;
+    if (gear) cJSON_AddStringToObject(fields, "gear", gear);
+    if (instance_id) cJSON_AddNumberToObject(fields, "instance_id", (double)instance_id);
+    ServerActionSubmit(fields);
+}
+
 static void GearViewConfirm(Player *p) {
     GearViewDialog dialog = gear_view.dialog;
+    const char *submit = NULL;
+    const char *gear = NULL;
+    uint64_t instance_id = 0;
     gear_view.dialog = GEAR_VIEW_DIALOG_NONE;
     if (dialog == GEAR_VIEW_DIALOG_EQUIP) {
         GearEquip(&p->gear, &p->roster[gear_view.hero], gear_view.slot, gear_view.selected);
         GearViewClose();
     } else if (dialog == GEAR_VIEW_DIALOG_SELL) {
-        PlayerSellGear(p, gear_view.selected);
+        if (PlayerSellGear(p, gear_view.selected)) {
+            submit = "gear_sell";
+            gear = GearDefAt(gear_view.selected)->id;
+        }
         if (p->gear.counts[gear_view.selected] <= 0) gear_view.selected = -1;
     } else if (dialog == GEAR_VIEW_DIALOG_ASCEND) {
         if (GearAscend(&p->gear, &p->roster[gear_view.hero])) {
+            submit = "ascend";
+            instance_id = p->roster[gear_view.hero].instance_id;
             gear_view.changed_hero = gear_view.hero + 1;
             GuiSoundPlay(SND_PACK_RARE);
         }
     } else if (dialog == GEAR_VIEW_DIALOG_PRESTIGE && !PlayerUnlockPrestigeGearSlot(p, &p->roster[gear_view.hero])) {
         GearViewShowMessage(LocGet("MESSAGE_CANT_AFFORD_BODY"));
         return;
+    } else if (dialog == GEAR_VIEW_DIALOG_PRESTIGE) {
+        submit = "gear_prestige";
+        instance_id = p->roster[gear_view.hero].instance_id;
     }
     ProgressionSave(p);
+    if (submit) GearViewSubmit(submit, gear, instance_id);
 }
 
 static void GearViewDrawAscendBody(const Player *p, Rectangle content) {

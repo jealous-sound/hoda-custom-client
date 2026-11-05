@@ -299,6 +299,7 @@ typedef struct {
     int selected_pack;
     int pending_pack;
     int awaiting_pack;
+    int awaiting_ticket;
     int info_pack;
     float scroll;
     bool dragging;
@@ -801,6 +802,7 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
     store->return_view = STORE_VIEW_HEROES;
     store->info_pack = -1;
     store->awaiting_pack = STORE_NO_SERVER_PURCHASE;
+    store->awaiting_ticket = BACKEND_NO_TICKET;
 }
 
 void StoreDestroy(Store *store) {
@@ -1362,9 +1364,9 @@ static bool StoreRequestServerPurchase(Store *store, Player *player, int pack_in
     cJSON_AddStringToObject(fields, "currency", StoreOfferCurrency(offer));
     cJSON_AddNumberToObject(fields, "price", offer.price);
     cJSON_AddBoolToObject(fields, "scripted", pack->kind == STORE_KIND_HERO && TutorialScriptedPack(pack->id));
-    bool sent = BackendBeginAction(STORE_PURCHASE_ROUTE, fields);
+    store->awaiting_ticket = BackendBeginAction(STORE_PURCHASE_ROUTE, fields);
     cJSON_Delete(fields);
-    if (!sent) {
+    if (store->awaiting_ticket == BACKEND_NO_TICKET) {
         StoreSetStatus(store, "Сервер занят, попробуйте ещё раз");
         GuiSoundPlay(SND_STORE_ERROR);
         return false;
@@ -1444,9 +1446,10 @@ static void StoreShowServerRefusal(Store *store, const cJSON *response) {
 static bool StorePollServerPurchase(Store *store, Player *player, Heroes *heroes) {
     if (store->awaiting_pack == STORE_NO_SERVER_PURCHASE) return false;
     cJSON *response = NULL;
-    BackendActionState state = BackendPollAction(&response);
+    BackendActionState state = BackendPollAction(store->awaiting_ticket, &response);
     if (state == BACKEND_ACTION_PENDING) return false;
     int pack_index = store->awaiting_pack;
+    store->awaiting_ticket = BACKEND_NO_TICKET;
     store->awaiting_pack = STORE_NO_SERVER_PURCHASE;
     bool purchased = false;
     if (state == BACKEND_ACTION_APPLIED) {

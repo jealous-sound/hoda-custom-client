@@ -3912,10 +3912,20 @@ static void TestRuneCrafting(void) {
     runes = (PlayerRunes){0};
     for (int i = 0; i < 5; i++) RuneGrantById(&runes, "rune-power-1", now);
     for (int i = 0; i < 2; i++) RuneGrantById(&runes, "rune-health-1", now);
-    assert(RuneCraftAll(&runes, RUNE_CRAFT_MODE_TYPE, RuneDefIndex("rune-power-1"), now) == 2);
+    static RuneCraftLog log;
+    log.count = 0;
+    assert(RuneCraftAll(&runes, RUNE_CRAFT_MODE_TYPE, RuneDefIndex("rune-power-1"), now, &log) == 2);
     assert(runes.count == 5);
-    assert(RuneCraftAll(&runes, RUNE_CRAFT_MODE_RARITY, RuneDefIndex("rune-health-1"), now) == 1);
+    assert(log.count == 2 && log.pairs[0][0] == 1 && log.pairs[0][1] == 2 && log.pairs[1][0] == 3);
+    assert(RuneCraftAll(&runes, RUNE_CRAFT_MODE_RARITY, RuneDefIndex("rune-health-1"), now, NULL) == 1);
     assert(runes.count == 4);
+}
+
+static void TestServerActionsStayLocalWithoutABackend(void) {
+    ServerActionSubmit(ServerActionCreate("battle"));
+    assert(ServerActionsDrained());
+    cJSON *reply = NULL;
+    assert(!ServerActionsTakeReply(SERVER_REPLY_NEXUS_AWARD, &reply) && !reply);
 }
 
 static void TestRuneBonusStacksAndScalesRewards(void) {
@@ -6090,6 +6100,7 @@ int main(void) {
     TestRuneSlotRulesAndReplacement();
     TestRuneExpiry();
     TestRuneCrafting();
+    TestServerActionsStayLocalWithoutABackend();
     TestRuneBonusStacksAndScalesRewards();
     TestRuneMitigationAndRetaliation();
     TestRuneResistsBlockAilments();

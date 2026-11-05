@@ -21,6 +21,7 @@
 #define BACKEND_HTTP_CONFLICT 409
 #define BACKEND_HTTP_UNPROCESSABLE 422
 #define BACKEND_REQUEST_ID_CAP 33
+#define BACKEND_NO_TICKET 0
 #define BACKEND_SESSION_RETRY_SECONDS 10
 #define BACKEND_REVISION_UNKNOWN -1
 #define BACKEND_UPLOAD_RETRY_SECONDS BACKEND_SESSION_RETRY_SECONDS
@@ -467,6 +468,8 @@ typedef struct {
     bool action_wanted;
     bool action_running;
     BackendActionState action_state;
+    int action_ticket;
+    int next_ticket;
     char *action_text;
     char *retry_route_body;
     char retry_request_id[BACKEND_REQUEST_ID_CAP];
@@ -725,14 +728,14 @@ static void BackendChooseRequestId(BackendWorker *w, const char *route, const ch
     w->retry_route_body = signature;
 }
 
-bool BackendBeginAction(const char *route, cJSON *fields) {
-    if (!BackendEnabled() || !fields) return false;
+int BackendBeginAction(const char *route, cJSON *fields) {
+    if (!BackendEnabled() || !fields) return BACKEND_NO_TICKET;
     char *unsigned_body = cJSON_PrintUnformatted(fields);
-    if (!unsigned_body) return false;
+    if (!unsigned_body) return BACKEND_NO_TICKET;
     BackendWorker *w = BackendWorkerStart();
     pthread_mutex_lock(&w->lock);
     bool busy = w->action_wanted || w->action_running || w->action_state == BACKEND_ACTION_PENDING;
-    bool started = false;
+    int ticket = BACKEND_NO_TICKET;
     if (!busy) {
         BackendChooseRequestId(w, route, unsigned_body);
         cJSON_DeleteItemFromObjectCaseSensitive(fields, "request_id");
@@ -743,19 +746,26 @@ bool BackendBeginAction(const char *route, cJSON *fields) {
         w->action_wanted = w->action_body != NULL;
         w->action_state = w->action_wanted ? BACKEND_ACTION_PENDING : BACKEND_ACTION_IDLE;
         if (w->upload_text) w->upload_due_at = 0;
-        started = w->action_wanted;
+        if (w->action_wanted) {
+            w->next_ticket = w->next_ticket == INT_MAX ? BACKEND_NO_TICKET + 1 : w->next_ticket + 1;
+            ticket = w->action_ticket = w->next_ticket;
+        }
         BackendWorkerSignal(w);
     }
     pthread_mutex_unlock(&w->lock);
     cJSON_free(unsigned_body);
-    return started;
+    return ticket;
 }
 
-BackendActionState BackendPollAction(cJSON **out_json) {
+BackendActionState BackendPollAction(int ticket, cJSON **out_json) {
     *out_json = NULL;
-    if (!BackendEnabled()) return BACKEND_ACTION_IDLE;
+    if (!BackendEnabled() || ticket == BACKEND_NO_TICKET) return BACKEND_ACTION_IDLE;
     BackendWorker *w = BackendWorkerStart();
     pthread_mutex_lock(&w->lock);
+    if (w->action_ticket != ticket) {
+        pthread_mutex_unlock(&w->lock);
+        return BACKEND_ACTION_IDLE;
+    }
     BackendActionState state = w->action_state;
     bool settled = state != BACKEND_ACTION_IDLE && state != BACKEND_ACTION_PENDING;
     if (settled) {
@@ -770,6 +780,15 @@ BackendActionState BackendPollAction(cJSON **out_json) {
     }
     pthread_mutex_unlock(&w->lock);
     return state;
+}
+
+bool BackendUploadPending(void) {
+    if (!BackendEnabled()) return false;
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    bool pending = w->upload_text != NULL || w->upload_running;
+    pthread_mutex_unlock(&w->lock);
+    return pending;
 }
 
 bool BackendBusy(void) {

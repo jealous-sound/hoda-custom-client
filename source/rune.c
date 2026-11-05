@@ -381,7 +381,12 @@ static bool RuneCraftAllMatches(const RuneDef *def, const RuneDef *pattern, Rune
     return RuneCanCraft(def) && (mode == RUNE_CRAFT_MODE_TYPE ? def == pattern : def->rarity == pattern->rarity);
 }
 
-int RuneCraftAll(PlayerRunes *runes, RuneCraftMode mode, int pattern_def, long long now) {
+typedef struct {
+    uint64_t pairs[RUNE_INVENTORY_CAPACITY / 2][2];
+    int count;
+} RuneCraftLog;
+
+int RuneCraftAll(PlayerRunes *runes, RuneCraftMode mode, int pattern_def, long long now, RuneCraftLog *log) {
     const RuneDef *pattern = RuneDefAt(pattern_def);
     if (!RuneCanCraft(pattern)) return 0;
     int crafted = 0;
@@ -395,8 +400,15 @@ int RuneCraftAll(PlayerRunes *runes, RuneCraftMode mode, int pattern_def, long l
         for (int i = 0; i < runes->count; i++)
             if (runes->items[i].def == def && RuneIsAvailable(&runes->items[i], now))
                 pair[count++] = runes->items[i].uuid;
-        for (int i = 0; i + 1 < count; i += 2)
-            if (RuneCraft(runes, pair[i], pair[i + 1], now, NULL) == RUNE_CRAFT_SUCCESS) crafted++;
+        for (int i = 0; i + 1 < count; i += 2) {
+            if (RuneCraft(runes, pair[i], pair[i + 1], now, NULL) != RUNE_CRAFT_SUCCESS) continue;
+            crafted++;
+            if (log && log->count < RUNE_INVENTORY_CAPACITY / 2) {
+                log->pairs[log->count][0] = pair[i];
+                log->pairs[log->count][1] = pair[i + 1];
+                log->count++;
+            }
+        }
     }
     return crafted;
 }

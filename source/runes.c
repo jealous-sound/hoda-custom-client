@@ -616,17 +616,36 @@ static void RunesCompleteCraft(RunesScreen *r, Player *p, RuneCraftResult result
     }
 }
 
+static void RunesSubmitCraft(const RuneCraftLog *log) {
+    if (log->count == 0) return;
+    cJSON *fields = ServerActionCreate("rune_craft");
+    cJSON *pairs = fields ? cJSON_AddArrayToObject(fields, "pairs") : NULL;
+    for (int i = 0; pairs && i < log->count; i++) {
+        cJSON *pair = cJSON_CreateArray();
+        cJSON_AddItemToArray(pair, cJSON_CreateNumber((double)log->pairs[i][0]));
+        cJSON_AddItemToArray(pair, cJSON_CreateNumber((double)log->pairs[i][1]));
+        cJSON_AddItemToArray(pairs, pair);
+    }
+    ServerActionSubmit(fields);
+}
+
 static void RunesCraftSingle(RunesScreen *r, Player *p, long long now) {
     int def = -1;
+    RuneCraftLog log = {.pairs = {{r->craft[0], r->craft[1]}}};
     RuneCraftResult result = RuneCraft(&p->runes, r->craft[0], r->craft[1], now, &def);
+    log.count = result == RUNE_CRAFT_SUCCESS;
     RunesCompleteCraft(r, p, result, 0, def);
+    RunesSubmitCraft(&log);
 }
 
 static void RunesCraftMultiple(RunesScreen *r, Player *p, RuneCraftMode mode, long long now) {
     const PlayerRune *rune = RuneByUuidConst(&p->runes, r->craft[0]);
     if (!rune) return;
-    int crafted = RuneCraftAll(&p->runes, mode, rune->def, now);
+    static RuneCraftLog log;
+    log.count = 0;
+    int crafted = RuneCraftAll(&p->runes, mode, rune->def, now, &log);
     RunesCompleteCraft(r, p, RUNE_CRAFT_SUCCESS, crafted, -1);
+    RunesSubmitCraft(&log);
 }
 
 static void RunesDrawDragged(const RunesScreen *r, const Player *p) {
@@ -787,9 +806,12 @@ static void RunesDrawPrestigeUnlock(RunesScreen *r, Player *p) {
     if (!cancel && !unlock) return;
     RunesCloseDialog(r);
     if (!unlock) return;
-    if (PlayerUnlockPrestigeRuneSlot(p, p->current_squad))
+    if (PlayerUnlockPrestigeRuneSlot(p, p->current_squad)) {
         ProgressionSave(p);
-    else
+        cJSON *fields = ServerActionCreate("rune_prestige");
+        if (fields) cJSON_AddNumberToObject(fields, "squad", p->current_squad);
+        ServerActionSubmit(fields);
+    } else
         RunesShowMessage(r, LocGet("MESSAGE_CANT_AFFORD_BODY"));
 }
 

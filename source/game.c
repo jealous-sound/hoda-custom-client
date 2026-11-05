@@ -78,7 +78,10 @@ typedef struct {
     int battle_squad_index;
     int battle_energy_cost;
     bool battle_energy_spent;
+    bool battle_nexus_revived;
     bool battle_outcome_committed;
+    bool nexus_award_waiting;
+    int nexus_award_potions;
     BattleRewardResult battle_reward;
     BattleResultsFlow battle_results;
     bool battle_end_announced;
@@ -220,6 +223,38 @@ GamePendingCampaignAnimation(const Campaign *campaign, const BattleRewardResult 
     return animation;
 }
 
+static void GameSubmitBattle(const Game *g, bool won) {
+    cJSON *fields = ServerActionCreate("battle");
+    if (!fields) return;
+    cJSON_AddBoolToObject(fields, "won", won);
+    cJSON_AddNumberToObject(fields, "crit_gold", BattlePlayCriticalGold(&g->battle_play));
+    if (g->battle_is_pvp) {
+        cJSON_AddStringToObject(fields, "mode", "pvp");
+        cJSON_AddNumberToObject(fields, "seed", g->pvp_opponent.seed);
+        cJSON_AddBoolToObject(fields, "event", g->pvp_event);
+        cJSON_AddNumberToObject(fields, "banners", g->battle_reward.banner_delta);
+    } else if (g->battle_is_nexus) {
+        cJSON_AddStringToObject(fields, "mode", "nexus");
+        cJSON_AddNumberToObject(fields, "step", g->battle_node_index + 1);
+        cJSON_AddBoolToObject(fields, "revive", g->battle_nexus_revived);
+    } else {
+        cJSON_AddStringToObject(fields, "mode", "campaign");
+        cJSON_AddNumberToObject(fields, "map", g->battle_map_index);
+        cJSON_AddNumberToObject(fields, "node", g->battle_node_index);
+    }
+    ServerActionSubmit(fields);
+}
+
+static void GameSubmitSimpleAction(const char *action) {
+    ServerActionSubmit(ServerActionCreate(action));
+}
+
+static void GameSubmitTutorialReward(const char *reward) {
+    cJSON *fields = ServerActionCreate("tutorial_reward");
+    if (fields) cJSON_AddStringToObject(fields, "reward", reward);
+    ServerActionSubmit(fields);
+}
+
 static void GameCommitBattleOutcome(Game *g, bool won) {
     if (g->battle_outcome_committed || g->battle_is_intro) return;
 
@@ -243,6 +278,7 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
         if (g->pvp_event) MissionsRecordEventBattle(&g->player, &g->battle_play.sim, g->battle_reward.banner_delta);
         MissionsSync(&g->player, &g->map);
         ProgressionSave(&g->player);
+        GameSubmitBattle(g, won);
         return;
     }
     if (g->battle_is_nexus) {
@@ -255,6 +291,8 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
         run->pending_to_step = run->current_node_step;
         MissionsSync(&g->player, &g->map);
         ProgressionSave(&g->player);
+        GameSubmitBattle(g, won);
+        g->battle_nexus_revived = false;
         return;
     }
     g->battle_reward = CampaignResolveBattle(
@@ -263,6 +301,7 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
     g->player.campaign_progress.pending_animation = GamePendingCampaignAnimation(&g->map, &g->battle_reward);
     MissionsSync(&g->player, &g->map);
     ProgressionSave(&g->player);
+    GameSubmitBattle(g, won);
 }
 
 static BattleResultsPresentation GameBattleResultsSnapshot(const Game *g) {
@@ -305,8 +344,39 @@ static void GameStartPendingNexusAnimation(Game *g) {
         NexusBeginProgressionAnimation(&g->nexus, from, to);
 }
 
+static void GameOpenNexusRecapFromServer(Game *g, const cJSON *reply) {
+    NexusAward award = {.potions = g->nexus_award_potions};
+    const cJSON *gold = cJSON_GetObjectItemCaseSensitive(reply, "gold");
+    award.gold = cJSON_IsNumber(gold) ? gold->valueint : 0;
+    const cJSON *heroes =
+        cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(reply, "granted"), "heroes");
+    const cJSON *hero = NULL;
+    cJSON_ArrayForEach(hero, heroes) {
+        if (award.unit_count >= NEXUS_MAX_NODES) break;
+        uint64_t instance = (uint64_t)JsonFloat(hero, "instance_id");
+        int index = -1;
+        for (int r = 0; r < g->player.roster_count && index < 0; r++)
+            if (g->player.roster[r].instance_id == instance) index = r;
+        if (index < 0) continue;
+        bool owned = false;
+        for (int other = 0; other < index && !owned; other++)
+            owned = strcmp(g->player.roster[other].id, g->player.roster[index].id) == 0;
+        award.unit_roster[award.unit_count] = index;
+        award.unit_newly_owned[award.unit_count] = !owned;
+        award.unit_count++;
+    }
+    NexusRecapOpen(&g->nexus_recap, &award);
+}
+
 static void GameOpenNexusRecap(Game *g) {
     HudCurrencyHold(&g->hud, false);
+    if (ServerActionsActive()) {
+        g->nexus_award_potions = g->player.nexus_run.escrow_potions;
+        g->nexus_award_waiting = true;
+        ProgressionSave(&g->player);
+        ServerActionSubmitTagged(ServerActionCreate("nexus_award"), SERVER_REPLY_NEXUS_AWARD);
+        return;
+    }
     NexusAward award = NexusAwardEscrow(&g->player);
     if (!HeroesSyncRoster(&g->heroes, &g->player)) TraceLog(LOG_FATAL, "Nexus: granted units cannot sync to Heroes");
     ProgressionSave(&g->player);
@@ -496,6 +566,7 @@ static void GameTutorialAwardGiant(Game *g) {
     int first = GameGrantTutorialHeroes(g, giant, 1);
     if (first < 0) return;
     ProgressionSave(&g->player);
+    GameSubmitTutorialReward("giant");
     StoreRevealGrantedHeroes(&g->store, first, 1);
     g->store_return_screen = SCREEN_HOME;
     g->screen = SCREEN_STORE;
@@ -506,6 +577,8 @@ static void GameTutorialPartingGift(Game *g) {
     for (int i = 0; i < g->tutorial.gift_rune_count; i++)
         RuneGrantById(&g->player.runes, g->tutorial.gift_runes[i], RuneNow());
     HomeBackgroundMarkSquadStale(&g->scene);
+    ProgressionSave(&g->player);
+    GameSubmitTutorialReward("parting_gift");
 }
 
 static TutorialSignal GameTutorialBattleSignal(const Game *g) {
@@ -598,6 +671,7 @@ static void GameHandleTutorialRequests(Game *g) {
             case TUTORIAL_REQUEST_AWARD_GEM_PACK:
                 g->player.gems += g->tutorial.gem_pack_gems;
                 ProgressionSave(&g->player);
+                GameSubmitTutorialReward("gem_pack");
                 break;
             case TUTORIAL_REQUEST_GO_HOME:
                 if (g->screen == SCREEN_MAP) g->screen = SCREEN_HOME;
@@ -1138,6 +1212,27 @@ static void GameDrawGalleryPopup(Game *g, bool resource_modal) {
     g->screen = SCREEN_GALLERY;
 }
 
+static void GameSyncServerActions(Game *g) {
+    ServerActionsPump();
+    if (g->screen == SCREEN_BATTLE) return;
+    cJSON *adopt = ServerActionsTakeAdoption();
+    if (adopt) {
+        if (ProgressionAdoptServerProfile(&g->player, adopt)) {
+            if (!HeroesSyncRoster(&g->heroes, &g->player))
+                TraceLog(LOG_WARNING, "Server: adopted roster cannot sync to Heroes");
+            HomeBackgroundMarkSquadStale(&g->scene);
+            MissionsSync(&g->player, &g->map);
+        }
+        cJSON_Delete(adopt);
+    }
+    cJSON *reply = NULL;
+    if (g->nexus_award_waiting && ServerActionsTakeReply(SERVER_REPLY_NEXUS_AWARD, &reply)) {
+        g->nexus_award_waiting = false;
+        GameOpenNexusRecapFromServer(g, reply);
+        cJSON_Delete(reply);
+    }
+}
+
 void GameDraw(Game *g) {
     float dt = GetFrameTime();
     TutorialHooksBeginFrame();
@@ -1149,6 +1244,7 @@ void GameDraw(Game *g) {
     if (g->screen != SCREEN_BATTLE) MusicPlayerUpdate(&g->music);
     PlayerUpdate(&g->player, dt);
     if (g->screen != SCREEN_STORE) StorePollServerPurchase(&g->store, &g->player, &g->heroes);
+    GameSyncServerActions(g);
     if (g->player.roster_count != g->player.gallery.synced_roster_count) PlayerGallerySync(&g->player);
 
     ClearBackground(RAYWHITE);
@@ -1401,11 +1497,17 @@ void GameDraw(Game *g) {
                     g->screen = SCREEN_NEXUS;
                 }
             } else if (pressed == QUESTS_UNLOCK) {
-                if (NexusUnlockEvent(&g->player, &g->nexus, QuestsPendingNexusEvent(&g->quests)))
+                int event = QuestsPendingNexusEvent(&g->quests);
+                if (NexusUnlockEvent(&g->player, &g->nexus, event)) {
                     ProgressionSave(&g->player);
+                    cJSON *fields = ServerActionCreate("nexus_unlock");
+                    if (fields) cJSON_AddNumberToObject(fields, "event", event);
+                    ServerActionSubmit(fields);
+                }
             } else if (pressed == QUESTS_FORFEIT) {
                 NexusResetRun(&g->player);
                 ProgressionSave(&g->player);
+                GameSubmitSimpleAction("nexus_reset");
                 QuestsOpenLadder(&g->quests, QuestsPendingNexusEvent(&g->quests));
             } else if (pressed == QUESTS_NEWS) {
                 NewsOpen(&g->news, &g->player);
@@ -1528,6 +1630,7 @@ void GameDraw(Game *g) {
             if (act == NEXUS_ENTER || act == NEXUS_REVIVE) {
                 int cost = NexusSelectedEnergyCost(&g->nexus, &g->player);
                 bool paid = act != NEXUS_REVIVE || NexusReviveRun(&g->player);
+                g->battle_nexus_revived = act == NEXUS_REVIVE && paid;
                 if (paid && g->player.energy >= cost) {
                     g->battle_is_nexus = true;
                     g->battle_node_index = g->nexus.selected_node;
@@ -1541,7 +1644,11 @@ void GameDraw(Game *g) {
                     GameOpenResourceDialogSilently(g, false);
                 }
             } else if (act == NEXUS_QUIT || act == NEXUS_LEAVE) {
-                if (act == NEXUS_QUIT && !NexusRunComplete(&g->nexus, &g->player.nexus_run)) NexusResetRun(&g->player);
+                if (act == NEXUS_QUIT && !NexusRunComplete(&g->nexus, &g->player.nexus_run)) {
+                    NexusResetRun(&g->player);
+                    ProgressionSave(&g->player);
+                    GameSubmitSimpleAction("nexus_reset");
+                }
                 if (act == NEXUS_LEAVE) QuestsOpenLadder(&g->quests, g->nexus.active_event);
                 g->screen = SCREEN_QUESTS;
             }
@@ -1709,9 +1816,10 @@ void GameDraw(Game *g) {
     if (screen_at_frame_start == SCREEN_GALLERY && g->screen != SCREEN_GALLERY && g->screen != SCREEN_STORE)
         HomeBackgroundGalleryClear(&g->scene);
     if (screen_at_frame_start == SCREEN_NEXUS && g->screen != SCREEN_NEXUS && g->screen != SCREEN_BATTLE &&
-        NexusRunComplete(&g->nexus, &g->player.nexus_run)) {
+        NexusRunComplete(&g->nexus, &g->player.nexus_run) && !g->nexus_award_waiting) {
         NexusAwardEscrow(&g->player);
         ProgressionSave(&g->player);
+        GameSubmitSimpleAction("nexus_award");
     }
     GameDrawTutorial(g, dt);
     GameDrawNamePrompt(g, dt);

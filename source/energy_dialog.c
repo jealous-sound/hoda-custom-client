@@ -15,7 +15,7 @@ typedef struct {
     bool stamina;
     bool opening_release;
     bool scrim_armed;
-    bool refill_awaiting_server;
+    int refill_ticket;
     Font font;
     Texture2D bg;
     Texture2D brush;
@@ -31,7 +31,7 @@ static void EnergyDialogInitializeKind(EnergyDialog *d, bool stamina) {
     d->stamina = stamina;
     d->opening_release = false;
     d->scrim_armed = false;
-    d->refill_awaiting_server = false;
+    d->refill_ticket = BACKEND_NO_TICKET;
     d->font = GuiFont(FNT_COOL);
     d->bg = GuiTex(GUI_STORE_OVERLAY);
     d->brush = GuiTex(GUI_REWARD_BRUSH);
@@ -93,19 +93,19 @@ static void EnergyDialogPlayRefilled(EnergyDialog *d) {
 }
 
 static void EnergyDialogRequestServerRefill(EnergyDialog *d, const Player *player) {
-    if (d->refill_awaiting_server || !ProgressionSave(player)) return;
+    if (d->refill_ticket != BACKEND_NO_TICKET || !ProgressionSave(player)) return;
     cJSON *fields = cJSON_CreateObject();
     cJSON_AddStringToObject(fields, "kind", d->stamina ? "stamina" : "energy");
-    d->refill_awaiting_server = BackendBeginAction(ENERGY_DIALOG_REFILL_ROUTE, fields);
+    d->refill_ticket = BackendBeginAction(ENERGY_DIALOG_REFILL_ROUTE, fields);
     cJSON_Delete(fields);
 }
 
 static void EnergyDialogPollServerRefill(EnergyDialog *d, Player *player) {
-    if (!d->refill_awaiting_server) return;
+    if (d->refill_ticket == BACKEND_NO_TICKET) return;
     cJSON *response = NULL;
-    BackendActionState state = BackendPollAction(&response);
+    BackendActionState state = BackendPollAction(d->refill_ticket, &response);
     if (state == BACKEND_ACTION_PENDING) return;
-    d->refill_awaiting_server = false;
+    d->refill_ticket = BACKEND_NO_TICKET;
     if (state == BACKEND_ACTION_APPLIED && ProgressionAdoptServerProfile(player, response))
         EnergyDialogPlayRefilled(d);
     else
@@ -183,7 +183,7 @@ EnergyDialogAction EnergyDialogDraw(EnergyDialog *d, Player *player, bool allow_
     bool pool_not_full = d->stamina ? player->stamina < player->stamina_max : player->energy < player->energy_max;
     bool can_refill = pool_not_full && can_afford;
     Rectangle refill = {panel.x + 229.0f, panel.y + 375.0f, 304.0f, 76.0f};
-    if (ButtonDrawEx(&d->refill, refill, can_refill && !d->refill_awaiting_server)) {
+    if (ButtonDrawEx(&d->refill, refill, can_refill && d->refill_ticket == BACKEND_NO_TICKET)) {
         if (ProgressionNeedsServer())
             EnergyDialogRequestServerRefill(d, player);
         else if (d->stamina ? PlayerRefillStamina(player) : PlayerRefillEnergy(player))
@@ -191,7 +191,7 @@ EnergyDialogAction EnergyDialogDraw(EnergyDialog *d, Player *player, bool allow_
     }
 
     Rectangle navigate = {panel.x + 533.0f, panel.y + 375.0f, 304.0f, 76.0f};
-    if (ButtonDrawEx(&d->navigate, navigate, allow_navigation && !d->refill_awaiting_server)) {
+    if (ButtonDrawEx(&d->navigate, navigate, allow_navigation && d->refill_ticket == BACKEND_NO_TICKET)) {
         d->open = false;
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return d->stamina ? ENERGY_DIALOG_ACTION_QUESTS : ENERGY_DIALOG_ACTION_PVP;
@@ -205,7 +205,7 @@ EnergyDialogAction EnergyDialogDraw(EnergyDialog *d, Player *player, bool allow_
     if (!d->opening_release && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) d->scrim_armed = scrim_hover;
 
     bool close_clicked = ButtonDraw(&d->close, close);
-    if (d->refill_awaiting_server) {
+    if (d->refill_ticket != BACKEND_NO_TICKET) {
         d->scrim_armed = false;
     } else if (close_clicked) {
         if (d->stamina) GuiSoundPlay(SND_UI_POPUP_CLOSE);
