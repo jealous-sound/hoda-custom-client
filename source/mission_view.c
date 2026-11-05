@@ -20,7 +20,13 @@
 #define MISSIONS_CONTENT_GAP 6.0f
 #define MISSIONS_CONTENT_HEIGHT 414.0f
 
-typedef enum { MISSIONS_NONE = 0, MISSIONS_CLOSE, MISSIONS_FIGHT_BOT, MISSIONS_REVENGE } MissionsAction;
+typedef enum {
+    MISSIONS_NONE = 0,
+    MISSIONS_CLOSE,
+    MISSIONS_FIGHT_BOT,
+    MISSIONS_REVENGE,
+    MISSIONS_CLAIM_GUILD_EVENT,
+} MissionsAction;
 
 static const Color MISSIONS_TEXT = {235, 232, 220, 255};
 static const Color MISSIONS_TEXT_DIM = {182, 178, 168, 255};
@@ -313,7 +319,7 @@ static void MissionsDrawAchievements(MissionsScreen *s, Hud *hud, Player *p, Rec
     MissionsDrawSummary(s, &p->missions, summary);
 }
 
-MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, float dt) {
+MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, const GoalsGuildAward *award, float dt) {
     Rectangle root = UiRoot();
     DrawRectangle(0, 0, root.width, root.height, (Color){0, 0, 0, 170});
     Rectangle panel = UiRect(root, 0.5f, 0.6f, 940.0f, 597.0f);
@@ -354,7 +360,7 @@ MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, float dt) {
     } else if (s->tab == GOALS_TAB_BATTLES) {
         goal = GoalsDrawBattles(&s->tabs, &s->scroll, &p->pvp, content, interactive, now);
     } else {
-        goal = GoalsDrawEvents(&s->tabs, &s->scroll, &p->pvp, content, interactive);
+        goal = GoalsDrawEvents(&s->tabs, &s->scroll, &p->pvp, award, content, interactive);
     }
     if (goal == GOALS_CLAIM_EVENT) {
         int selected = s->tabs.selected;
@@ -369,6 +375,7 @@ MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, float dt) {
     }
     if (goal == GOALS_FIGHT_BOT) action = MISSIONS_FIGHT_BOT;
     if (goal == GOALS_REVENGE) action = MISSIONS_REVENGE;
+    if (goal == GOALS_CLAIM_GUILD_EVENT) action = MISSIONS_CLAIM_GUILD_EVENT;
 
     float close_size = 61.0f;
     Rectangle close = {

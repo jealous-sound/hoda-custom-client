@@ -15,11 +15,11 @@ RESEARCH = ROOT / "data/pvp_rewards_research.json"
 RESEARCH_SHA256 = "2378ab802a2e76bf318a77b1828524aa831fee3ad9f943bdaf654bc3047d256f"
 ROSTER_SOURCES = [ROOT / "data/campaign_rosters.json", ROOT / "data/nexus_rosters.json"]
 CHARACTERS = ROOT / "client-additional-data/characters.json"
-LOCALIZATION = (
-    ROOT
-    / "client-additional-data/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization"
-    / "Loc_RUS_RU.txt"
+LOCALIZATION_DIR = (
+    ROOT / "client-additional-data/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization"
 )
+LOCALIZATION = LOCALIZATION_DIR / "Loc_RUS_RU.txt"
+ENGLISH_LOCALIZATION = LOCALIZATION_DIR / "Loc_ENG_US.txt"
 CLI_DESCRIPTION = "Build the tunable PvP rule table, bot ladder and opponent squad pool."
 
 SQUAD_CELLS = 5
@@ -144,6 +144,13 @@ UNSUPPORTED_PRIZES = {
 }
 VOUCHER_PACKS = {"iron pack": "iron", "bloodstone pack": "bloodstone", "lyrium vein pack": "lyrium_mine"}
 TOME_PRIZE = "tome of ascension"
+GUILD_EVERY_CYCLES = 4
+GUILD_MINIMUM_BANNERS = 100
+GUILD_OPEN_RANK = 10000000
+GUILD_PRIZE_LINE = re.compile(
+    r"(\d+)(?:st|nd|rd|th)(?: - (\d+)(?:st|nd|rd|th))? Place( or below)? = (.+)"
+)
+GUILD_PRIZE_ARTICLES = {"a": 1, "an": 1}
 TOME_NAME_KEY = "TOME_POPUP_TITLE"
 
 EVENTS = {
@@ -210,6 +217,29 @@ EVENTS = {
     ],
 }
 
+GUILD_EVENTS = [
+    {
+        **event("DANGEROUS_PURPOSE", "pvp|battle royale", faction("Red", health=300, power=300), suffix="_KEY"),
+        "guild_prizes": "INTERSTITIAL_GUILD_EVENT_ANNOUNCEMENT_MESSAGE1_KEY",
+    },
+    {
+        "title_key": "WAR_OF_ATTRITION_APR_14_TITLE_KEY",
+        "text_key": "",
+        "effects": [],
+        "ladder": "pvp|untamed harts",
+        "guild_prizes": "INTERSTITIAL_GUILD_EVENT2_ANNOUNCEMENT_MESSAGE1_KEY",
+    },
+    {
+        **event(
+            "ONSLAUGHT_ASCENSION_JUNE_19",
+            "pvp|the imperium",
+            faction("Blue", health=200),
+            faction("White", power=100),
+        ),
+        "guild_prizes": "INTERSTITIAL_GUILD_EVENT2_ANNOUNCEMENT_MESSAGE1_KEY",
+    },
+]
+
 
 def localization_keys():
     with LOCALIZATION.open(encoding="utf-8", errors="replace") as file:
@@ -219,9 +249,11 @@ def localization_keys():
 def validate_events(characters):
     keys = localization_keys()
     groups = {name for character in characters.values() for name in character["groups"]}
-    for entry in EVENTS["catalog"]:
+    for entry in EVENTS["catalog"] + GUILD_EVENTS:
+        if entry["effects"] and not entry["text_key"]:
+            raise ValueError(f"{entry['title_key']}: an event with effects needs its text")
         for key in (entry["title_key"], entry["text_key"]):
-            if key not in keys:
+            if key and key not in keys:
                 raise ValueError(f"missing text {key}")
         for effect in entry["effects"]:
             missing = set(effect["groups"]) - groups
@@ -341,6 +373,48 @@ def event_ladder(entry, research, catalog):
     }
 
 
+def english_text(key):
+    with ENGLISH_LOCALIZATION.open(encoding="utf-8", errors="replace") as file:
+        for line in file:
+            name, _, text = line.rstrip("\n").partition("|")
+            if name == key:
+                return text
+    raise ValueError(f"missing announcement {key}")
+
+
+def guild_prize_bundle(text, catalog):
+    bundle = {"gold": 0, "gems": 0, "prizes": []}
+    plain = re.sub(r"</?color[^>]*>", "", text)
+    for part in re.split(r",? and |, ", plain):
+        words = part.strip().split(" ", 1)
+        count = GUILD_PRIZE_ARTICLES.get(words[0]) or int(words[0].rstrip("k")) * (1000 if words[0].endswith("k") else 1)
+        name = words[1]
+        if name in ("gem", "gems"):
+            bundle["gems"] += count
+        elif name == "gold":
+            bundle["gold"] += count
+        else:
+            bundle["prizes"].append(catalog.resolve(name, count))
+    return bundle
+
+
+def guild_rank_rewards(key, catalog):
+    tiers = []
+    for line in english_text(key).split("\\n"):
+        match = GUILD_PRIZE_LINE.fullmatch(line.strip())
+        if not match:
+            continue
+        first = int(match[1])
+        last = GUILD_OPEN_RANK if match[3] else int(match[2] or match[1])
+        tiers.append({"first": first, "last": last, **guild_prize_bundle(match[4], catalog)})
+    if not tiers or tiers[0]["first"] != 1:
+        raise ValueError(f"{key}: no guild prize table")
+    for previous, current in zip(tiers, tiers[1:]):
+        if current["first"] != previous["last"] + 1:
+            raise ValueError(f"{key}: guild prize ranks {previous['last']} and {current['first']} are not adjacent")
+    return tiers
+
+
 def resolve_ladders(characters):
     research = load_research()
     catalog = PrizeCatalog(characters)
@@ -348,7 +422,19 @@ def resolve_ladders(characters):
     for entry in EVENTS["catalog"]:
         fields = {key: value for key, value in entry.items() if key != "ladder"}
         entries.append({**fields, **event_ladder(entry, research, catalog)})
-    return {**EVENTS, "catalog": entries}
+    guild_entries = []
+    for entry in GUILD_EVENTS:
+        fields = {key: value for key, value in entry.items() if key not in ("ladder", "guild_prizes")}
+        guild_entries.append(
+            {
+                **fields,
+                **event_ladder(entry, research, catalog),
+                "guild_source": entry["guild_prizes"],
+                "guild_minimum_banners": GUILD_MINIMUM_BANNERS,
+                "guild_rank_rewards": guild_rank_rewards(entry["guild_prizes"], catalog),
+            }
+        )
+    return {**EVENTS, "catalog": entries, "guild_every_cycles": GUILD_EVERY_CYCLES, "guild_catalog": guild_entries}
 
 
 def rating(characters, roster):

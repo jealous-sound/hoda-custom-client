@@ -19,6 +19,13 @@
 #define GUILD_SMALL_SIZE 18.0f
 #define GUILD_MESSAGE_CAP 1024
 #define GUILD_TIME_TEXT_CAP 64
+#define GUILD_WAR_SHOW_NEXT_SECONDS 172800LL
+#define GUILD_WAR_OPEN_RANK 10000000
+#define GUILD_WAR_ROW_SMART_HEIGHT 101.0f
+#define GUILD_REWARD_SMART_HEIGHT 252.0f
+#define GUILD_REWARD_CENTERED_SLOTS 3
+#define GUILD_REWARD_SLOTS 6
+#define GUILD_REWARD_MEDALS 4
 #define GUILD_OFFLINE_MESSAGE "Гильдии и чат работают только при подключении к серверу."
 #define GUILD_UNREACHABLE_MESSAGE "Нет связи с сервером. Попробуйте ещё раз."
 #define GUILD_BUSY_MESSAGE "Сервер занят, попробуйте ещё раз."
@@ -33,6 +40,31 @@ static const Color GUILD_ROW_EVEN = {15, 15, 15, 170};
 static const Color GUILD_ROW_ODD = {31, 31, 31, 170};
 static const Color GUILD_DISABLED_TINT = {120, 120, 120, 255};
 static const Color GUILD_SCRIM = {0, 0, 0, 170};
+static const Color GUILD_TEXT_ORANGE = {255, 165, 0, 255};
+static const Color GUILD_PLAYER_ROW_TEXT = {36, 22, 8, 255};
+static const GuiId GUILD_REWARD_MEDAL_IDS[GUILD_REWARD_MEDALS] = {
+    GUI_GUILD_MEDAL_WARDEN, GUI_GUILD_MEDAL_GOLD, GUI_GUILD_MEDAL_SILVER, GUI_GUILD_MEDAL_BRONZE
+};
+static const Vector2 GUILD_REWARD_CENTERED_SLOT_AT[GUILD_REWARD_CENTERED_SLOTS] = {
+    {512.0f, 69.0f}, {768.0f, 69.0f}, {1023.0f, 69.0f}
+};
+static const Vector2 GUILD_REWARD_SLOT_AT[GUILD_REWARD_SLOTS] = {
+    {512.0f, 7.0f}, {768.0f, 7.0f}, {1023.0f, 7.0f}, {512.0f, 125.0f}, {768.0f, 125.0f}, {1023.0f, 125.0f}
+};
+
+typedef struct {
+    GuildAbuseType type;
+    const char *label_key;
+    Vector2 guild_at;
+    Vector2 application_at;
+} GuildAbuseOption;
+
+static const GuildAbuseOption GUILD_ABUSE_OPTIONS[] = {
+    {GUILD_ABUSE_HARASSMENT, "REPORT_ABUSE_HARRASSMENT", {262.0f, 357.0f}, {262.0f, 429.0f}},
+    {GUILD_ABUSE_EXPLICIT, "REPORT_ABUSE_EXPLICIT", {796.0f, 357.0f}, {796.0f, 429.0f}},
+    {GUILD_ABUSE_SEXUAL, "REPORT_ABUSE_SEXUAL", {262.0f, 423.0f}, {262.0f, 495.0f}},
+    {GUILD_ABUSE_OTHER, "REPORT_ABUSE_OTHER", {796.0f, 423.0f}, {796.0f, 495.0f}},
+};
 
 static const char *const GUILD_EMBLEM_REFS[GUILD_EMBLEM_COUNT] = {
     CACHE_RESOURCE("tex.Guild_Emblem_01"), CACHE_RESOURCE("tex.Guild_Emblem_02"), CACHE_RESOURCE("tex.Guild_Emblem_03"),
@@ -71,7 +103,32 @@ typedef enum {
     GUILD_CONFIRM_KICK,
 } GuildConfirm;
 
-typedef enum { GUILD_VIEW_NONE, GUILD_VIEW_CLOSE } GuildViewAction;
+typedef enum {
+    GUILD_VIEW_NONE,
+    GUILD_VIEW_CLOSE,
+    GUILD_VIEW_DUEL,
+    GUILD_VIEW_ENTER_ONSLAUGHT,
+    GUILD_VIEW_CLAIM_ONSLAUGHT,
+} GuildViewAction;
+
+typedef enum { GUILD_WAR_GUILDS, GUILD_WAR_MEMBERS } GuildWarBoard;
+
+typedef enum {
+    GUILD_WAR_NEXT_EVENT,
+    GUILD_WAR_CURRENT_EVENT,
+    GUILD_WAR_PREVIOUS_EVENT,
+    GUILD_WAR_NO_EVENT,
+} GuildWarState;
+
+typedef struct {
+    GuildWarState state;
+    long long previous;
+    long long current;
+    long long next;
+    long long shown;
+} GuildWarEvents;
+
+typedef enum { GUILD_REPORT_APPLICATION, GUILD_REPORT_GUILD } GuildReportState;
 
 typedef struct {
     Font font;
@@ -123,6 +180,23 @@ typedef struct {
     Button ok;
     Button yes;
     Button no;
+    Button report;
+    Button enter;
+    Button claim;
+    Button help;
+    Button submit;
+    Button cancel;
+    GuildViewAction pending;
+    GuildWarBoard war_board;
+    bool war_help;
+    GoalsScroll war_scroll;
+    GoalsScroll reward_scroll;
+    bool report_open;
+    GuildReportState report_state;
+    GuildAbuseType report_choice;
+    char report_target[GUILD_ID_CAP];
+    char report_name[GUILD_NAME_CAP];
+    char report_text[GUILD_TEXT_CAP];
 } GuildView;
 
 static float GuildLeft(void) {
@@ -163,6 +237,15 @@ void GuildViewInitialize(GuildView *v) {
     v->ok = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("MAIN_MESSAGE_DIALOG_OK"), v->font, centre, 0.34f);
     v->yes = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("CONFIRM_DIALOG_YES"), v->font, centre, 0.34f);
     v->no = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("CONFIRM_DIALOG_NO"), v->font, centre, 0.34f);
+    v->report = ButtonLoad(GUI_GUILD_REPORT, GUI_GUILD_REPORT_ON);
+    v->enter =
+        ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("GUILD_WAR_ONSLAUGHT_BUTTON"), v->font, centre, 0.42f);
+    v->claim = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("GUILD_WAR_CLAIM_BUTTON"), v->font, centre, 0.42f);
+    v->help = ButtonLoad(GUI_STORE_INFO_ICON, GUI_STORE_INFO_ICON_ON);
+    v->submit =
+        ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("REPORT_ABUSE_SUBMIT_BUTTON"), v->font, centre, 0.34f);
+    v->cancel =
+        ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("REPORT_ABUSE_CANCEL_BUTTON"), v->font, centre, 0.34f);
     TextFieldInit(&v->search, GUILD_SEARCH_MAX_RUNES, false);
     TextFieldInit(&v->name, GUILD_NAME_MAX_RUNES, false);
     TextFieldInit(&v->description, GUILD_DESCRIPTION_MAX_RUNES, false);
@@ -283,8 +366,12 @@ static void GuildViewShowOffline(GuildView *v) {
     GuildViewShowMessage(v, "ERROR_GENERAL_TITLE", GUILD_UNREACHABLE_MESSAGE);
 }
 
-static bool GuildViewInteractive(const GuildView *v) {
+static bool GuildViewOverlayInteractive(const GuildView *v) {
     return v->dialog == GUILD_DIALOG_NONE && v->waiting_for == GUILD_REQUEST_NONE && !UiInputBlocked();
+}
+
+static bool GuildViewInteractive(const GuildView *v) {
+    return GuildViewOverlayInteractive(v) && !v->report_open;
 }
 
 static void GuildViewWait(GuildView *v, GuildRequestKind kind) {
@@ -381,6 +468,8 @@ void GuildViewOpen(GuildView *v, Guild *g, bool chat) {
     v->dialog = GUILD_DIALOG_NONE;
     v->waiting_for = GUILD_REQUEST_NONE;
     v->scrim_armed = false;
+    v->report_open = false;
+    v->pending = GUILD_VIEW_NONE;
     if (GuildIsMember(g)) {
         if (chat)
             GuildViewShowChat(v, g);
@@ -426,7 +515,7 @@ static bool GuildViewDrawFrame(GuildView *v, bool interactive) {
         UiDrawTexture(GuiTex(GUI_GUILD_CHAT_BUTTON), GuildRect(421.0f, 78.0f, 78.0f, 78.0f), WHITE);
     else if (v->page == GUILD_PAGE_HOME || v->page == GUILD_PAGE_FIND)
         UiDrawTexture(GuiTex(GUI_GUILD_BUTTON), GuildRect(421.0f, 78.0f, 78.0f, 78.0f), WHITE);
-    bool closed = ButtonDrawEx(&v->close, GuildRect(1188.0f, 110.0f, 74.0f, 74.0f), interactive);
+    bool closed = !v->report_open && ButtonDrawEx(&v->close, GuildRect(1188.0f, 110.0f, 74.0f, 74.0f), interactive);
     Vector2 mouse = UiMouse();
     Rectangle top = {0.0f, 0.0f, UiWidth(), 72.0f};
     bool outside = !CheckCollisionPointRec(mouse, frame) && !CheckCollisionPointRec(mouse, top);
@@ -495,6 +584,7 @@ typedef enum {
     GUILD_FOOTER_TAB_WAR,
     GUILD_FOOTER_SETTINGS,
     GUILD_FOOTER_APPLICATIONS,
+    GUILD_FOOTER_REPORT,
     GUILD_FOOTER_LEAVE,
 } GuildFooterAction;
 
@@ -511,7 +601,9 @@ static GuildFooterAction GuildDrawFooter(
     if (GuildIconButton(&v->applications, GUI_GUILD_APPLICATIONS_OFF, applications_rect, applications, interactive))
         action = GUILD_FOOTER_APPLICATIONS;
     if (applications) GuildDrawBadge(v, GuildRect(200.0f, 620.0f, 28.0f, 24.0f), g->mine.applicant_count);
-    if (GuildIconButton(&v->leave, GUI_GUILD_LEAVE_OFF, GuildRect(240.0f, 624.0f, 56.0f, 47.0f), member, interactive))
+    if (!applications_hidden && ButtonDrawEx(&v->report, GuildRect(240.0f, 624.0f, 56.0f, 47.0f), interactive))
+        action = GUILD_FOOTER_REPORT;
+    if (GuildIconButton(&v->leave, GUI_GUILD_LEAVE_OFF, GuildRect(314.0f, 624.0f, 56.0f, 47.0f), member, interactive))
         action = GUILD_FOOTER_LEAVE;
     if (!tabs_shown) return action;
     static const float tab_x[GUILD_TAB_COUNT] = {670.0f, 848.0f, 1025.0f};
@@ -544,6 +636,54 @@ static void GuildViewLeavePressed(GuildView *v, const Guild *g) {
     GuildViewShowConfirm(v, GUILD_CONFIRM_LEAVE, "GUILD_LEAVE_CONFIRMATION_TITLE", message);
 }
 
+static void
+GuildViewOpenReport(GuildView *v, GuildReportState state, const char *target, const char *name, const char *text) {
+    GuildViewBlurFields(v);
+    v->report_open = true;
+    v->report_state = state;
+    v->report_choice = GUILD_ABUSE_NONE;
+    StrCopy(v->report_target, sizeof(v->report_target), target);
+    StrCopy(v->report_name, sizeof(v->report_name), name);
+    StrCopy(v->report_text, sizeof(v->report_text), text);
+}
+
+static GuildWarEvents GuildWarCheckEvents(long long now) {
+    GuildWarEvents events = {
+        .previous = GuildPreviousOnslaughtCycle(),
+        .current = GuildCurrentOnslaughtCycle(),
+        .next = GuildNextOnslaughtCycle(),
+        .shown = -1,
+    };
+    if (events.current >= 0) {
+        events.state = GUILD_WAR_CURRENT_EVENT;
+        events.shown = events.current;
+    } else if (events.next >= 0 && PvpEventCycleStart(events.next) - now < GUILD_WAR_SHOW_NEXT_SECONDS) {
+        events.state = GUILD_WAR_NEXT_EVENT;
+        events.shown = events.next;
+    } else if (events.previous >= 0) {
+        events.state = GUILD_WAR_PREVIOUS_EVENT;
+        events.shown = events.previous;
+    } else {
+        events.state = GUILD_WAR_NO_EVENT;
+    }
+    return events;
+}
+
+static bool GuildWarHasStandings(const GuildWarEvents *events) {
+    return events->state == GUILD_WAR_CURRENT_EVENT || events->state == GUILD_WAR_PREVIOUS_EVENT;
+}
+
+static void GuildViewShowWar(GuildView *v, Guild *g) {
+    v->page = GUILD_PAGE_WAR;
+    v->war_board = GUILD_WAR_GUILDS;
+    v->war_help = false;
+    GoalsScrollReset(&v->war_scroll);
+    GoalsScrollReset(&v->reward_scroll);
+    GuildViewBlurFields(v);
+    GuildWarEvents events = GuildWarCheckEvents(ServerNow());
+    if (GuildWarHasStandings(&events)) GuildRequestOnslaught(g, events.shown);
+}
+
 static void GuildViewHandleFooter(GuildView *v, Guild *g, GuildFooterAction action) {
     switch (action) {
         case GUILD_FOOTER_TAB_HOME:
@@ -555,8 +695,10 @@ static void GuildViewHandleFooter(GuildView *v, Guild *g, GuildFooterAction acti
             break;
         case GUILD_FOOTER_TAB_WAR:
             GuildSetChatVisible(g, false);
-            v->page = GUILD_PAGE_WAR;
-            GuildViewBlurFields(v);
+            GuildViewShowWar(v, g);
+            break;
+        case GUILD_FOOTER_REPORT:
+            GuildViewOpenReport(v, GUILD_REPORT_GUILD, g->mine.summary.id, "", "");
             break;
         case GUILD_FOOTER_SETTINGS:
             GuildSetChatVisible(g, false);
@@ -1206,7 +1348,7 @@ static bool GuildRowButton(GuildView *v, const char *key, Rectangle rect, bool e
 
 static void GuildDrawMemberRow(
     GuildView *v,
-    const Guild *g,
+    Guild *g,
     const GuildMember *m,
     Rectangle row,
     int index,
@@ -1247,6 +1389,16 @@ static void GuildDrawMemberRow(
         );
     }
     if (!member_mode) return;
+    if (!expanded && GuildRowButton(
+                         v,
+                         "GUILD_MEMBER_DUEL_BUTTON",
+                         GuildSmart(row, h, 1048.0f, 18.0f, 154.0f, 145.0f),
+                         !me,
+                         row_interactive && !v->list_scroll.drag_scrolled
+                     )) {
+        GuildRequestDuel(g, m->id);
+        GuildViewWait(v, GUILD_REQUEST_DUEL);
+    }
     Rectangle rollout = GuildSmart(row, h, 1215.0f, 18.0f, 65.0f, 145.0f);
     Texture2D arrow = GuiTex(CheckCollisionPointRec(UiMouse(), rollout) ? GUI_GUILD_ROW_ARROW_ON : GUI_GUILD_ROW_ARROW);
     float side = fminf(rollout.width, rollout.height);
@@ -1374,6 +1526,8 @@ static void GuildViewDrawHomeFooter(GuildView *v, Guild *g, const Player *p, boo
     if (ButtonDrawEx(&v->back, GuildRect(953.0f, 629.0f, 55.5f, 37.0f), interactive))
         GuildViewShowFind(v, g, GUILD_FIND_RECOMMENDED);
     const GuildSummary *s = &g->observed.summary;
+    if (ButtonDrawEx(&v->report, GuildRect(240.0f, 624.0f, 56.0f, 47.0f), interactive))
+        GuildViewOpenReport(v, GUILD_REPORT_GUILD, s->id, "", "");
     Rectangle action = GuildRect(1022.0f, 626.0f, 167.0f, 42.0f);
     if (g->observed_applied) {
         if (GuildTextButton(v, &v->grey, LocGet("GUILD_FIND_CANCEL_REQUEST"), action, true, interactive)) {
@@ -1571,39 +1725,396 @@ static void GuildViewDrawChat(GuildView *v, Guild *g, bool interactive) {
     GuildViewHandleFooter(v, g, GuildDrawFooter(v, g, GUILD_TAB_CHAT, true, false, interactive));
 }
 
-static void GuildViewDrawWar(GuildView *v, Guild *g, bool interactive) {
-    const GuildSummary *s = &g->mine.summary;
-    GuildDrawPanel(GuildRect(86.0f, 161.0f, 1112.0f, 103.0f));
-    GuildDrawEmblem(v, s->icon, GuildRect(86.0f, 171.0f, 84.0f, 84.0f), WHITE);
-    GuildFitText(
-        v->font, s->name, GuildRect(184.0f, 172.0f, 417.0f, 32.0f), GUILD_HEADING_SIZE + 4.0f, GUILD_TEXT, false
+static void GuildDrawTitleBackground(Rectangle rect) {
+    DrawRectangleRec(rect, GUILD_HEADER_TINT);
+    GuildDrawRule((Rectangle){rect.x, rect.y + rect.height - 2.0f, rect.width, 2.0f});
+}
+
+static void GuildDrawEventName(const GuildView *v, const PvpEvent *event, long long seconds, Rectangle rect) {
+    char time_text[GUILD_TIME_TEXT_CAP];
+    QuestsShortTime(time_text, sizeof(time_text), seconds > 0 ? seconds : 0);
+    const char *title = LocGet(event->title_key);
+    const char *timer = TextFormat(" (%s)", time_text);
+    float size = GUILD_BODY_SIZE;
+    float title_width = MeasureTextEx(v->body, title, size, 1.0f).x;
+    float timer_width = MeasureTextEx(v->body, timer, size, 1.0f).x;
+    if (title_width + timer_width > rect.width) {
+        float scale = rect.width / (title_width + timer_width);
+        size *= scale;
+        title_width *= scale;
+        timer_width *= scale;
+    }
+    UiDrawTextLeftMiddle(v->body, title, (Rectangle){rect.x, rect.y, title_width, rect.height}, size, GUILD_TEXT);
+    UiDrawTextLeftMiddle(
+        v->body, timer, (Rectangle){rect.x + title_width, rect.y, timer_width, rect.height}, size, GUILD_TEXT_ORANGE
     );
+}
+
+static void GuildViewDrawWarHeader(GuildView *v, const Guild *g, const GuildWarEvents *events, long long now) {
+    const GuildSummary *s = &g->mine.summary;
+    GuildDrawPanel(GuildRect(86.0f, 161.0f, 445.0f, 103.0f));
+    GuildDrawPanel(GuildRect(530.0f, 161.0f, 668.0f, 103.0f));
+    GuildDrawEmblem(v, s->icon, GuildRect(86.0f, 179.0f, 67.0f, 67.0f), WHITE);
+    GuildFitText(v->font, s->name, GuildRect(186.0f, 174.0f, 334.0f, 28.0f), GUILD_HEADING_SIZE, GUILD_TEXT, false);
     GuildFitText(
         v->body,
         LocGet(GuildStatusKey(s->status)),
-        GuildRect(184.0f, 214.0f, 417.0f, 26.0f),
+        GuildRect(186.0f, 216.0f, 334.0f, 26.0f),
         GUILD_BODY_SIZE,
         GUILD_TEXT_DIM,
         false
     );
-    Rectangle body = GuildRect(186.0f, 300.0f, 912.0f, 280.0f);
-    GuildDrawPanel(body);
+    Rectangle status = GuildRect(540.0f, 177.0f, 435.0f, 26.0f);
+    Rectangle name = GuildRect(540.0f, 204.0f, 435.0f, 26.0f);
+    if (events->state == GUILD_WAR_CURRENT_EVENT) {
+        GuildFitText(
+            v->body, LocGet("GUILD_WAR_GUILD_EVENT_RUNNING_NOW"), status, GUILD_BODY_SIZE, GUILD_TEXT_GOLD, false
+        );
+        long long end = PvpEventCycleStart(events->current + 1);
+        GuildDrawEventName(v, PvpEventForCycle(events->current), end - now, name);
+        return;
+    }
+    if (events->next < 0) return;
+    GuildFitText(v->body, LocGet("GUILD_WAR_NEXT_GUILD_EVENT"), status, GUILD_BODY_SIZE, GUILD_TEXT_GOLD, false);
+    GuildDrawEventName(v, PvpEventForCycle(events->next), PvpEventCycleStart(events->next) - now, name);
+}
+
+typedef struct {
+    int rank;
+    int icon;
+    const char *name;
+    int banners;
+} GuildWarRow;
+
+static void GuildDrawWarRow(const GuildView *v, const GuildWarRow *entry, Rectangle row, int index) {
+    float h = GUILD_WAR_ROW_SMART_HEIGHT;
+    DrawRectangleRec(row, index % 2 ? GUILD_ROW_ODD : GUILD_ROW_EVEN);
+    float size = row.height * 0.42f;
+    UiDrawTextCentered(
+        v->font, TextFormat("%d", entry->rank), GuildSmart(row, h, 0.0f, 0.0f, 129.0f, h), size, GUILD_TEXT
+    );
+    GuildDrawEmblem(v, entry->icon, GuildSmart(row, h, 118.0f, 0.0f, 101.0f, h), WHITE);
+    GuildFitText(v->body, entry->name, GuildSmart(row, h, 231.0f, 0.0f, 717.0f, h), size, GUILD_TEXT, false);
+    UiDrawTextRight(
+        v->font, TextFormat("%d", entry->banners), GuildSmart(row, h, 946.0f, 0.0f, 205.0f, h), size, GUILD_TEXT
+    );
+    UiDrawTexture(GuiTex(GUI_PVP_BANNER), GuildSmart(row, h, 1179.0f, 0.0f, 101.0f, h), WHITE);
+}
+
+static int
+GuildWarRows(const GuildView *v, const Guild *g, const GuildOnslaught *o, GuildWarRow *rows, GuildWarRow *player) {
+    int count = 0;
+    if (v->war_board == GUILD_WAR_GUILDS) {
+        for (int i = 0; i < o->guild_count; i++)
+            rows[count++] =
+                (GuildWarRow){o->guilds[i].rank, o->guilds[i].icon, o->guilds[i].name, o->guilds[i].banners};
+        const GuildSummary *mine = &g->mine.summary;
+        *player = o->has_mine ? (GuildWarRow){o->mine.rank, o->mine.icon, o->mine.name, o->mine.banners}
+                              : (GuildWarRow){0, mine->icon, mine->name, 0};
+        return count;
+    }
+    *player = (GuildWarRow){0};
+    for (int i = 0; i < o->member_count; i++) {
+        const GuildContribution *c = &o->members[i];
+        rows[count++] = (GuildWarRow){c->rank, 0, c->name, c->banners};
+        if (!strcmp(c->id, GuildPlayerId())) *player = rows[count - 1];
+    }
+    return count;
+}
+
+static void GuildDrawWarFooter(const GuildView *v, const GuildWarRow *player) {
+    UiDrawTexture(GuiTex(GUI_GUILD_WAR_PLAYER_ROW), GuildRect(134.0f, 581.0f, 456.0f, 36.0f), WHITE);
+    float size = GUILD_BODY_SIZE;
+    UiDrawTextCentered(
+        v->font, TextFormat("%d", player->rank), GuildRect(137.0f, 581.0f, 43.0f, 36.0f), size, GUILD_PLAYER_ROW_TEXT
+    );
+    GuildDrawEmblem(v, player->icon, GuildRect(177.0f, 581.0f, 36.0f, 36.0f), WHITE);
+    GuildFitText(
+        v->body,
+        player->name ? player->name : "",
+        GuildRect(218.0f, 581.0f, 228.0f, 36.0f),
+        size,
+        GUILD_PLAYER_ROW_TEXT,
+        false
+    );
+    UiDrawTextRight(
+        v->font, TextFormat("%d", player->banners), GuildRect(439.0f, 581.0f, 86.0f, 36.0f), size, GUILD_PLAYER_ROW_TEXT
+    );
+    UiDrawTexture(GuiTex(GUI_PVP_BANNER), GuildRect(530.0f, 581.0f, 36.0f, 36.0f), WHITE);
+}
+
+static void GuildViewDrawWarBoardToggles(GuildView *v, const Guild *g, bool interactive) {
+    Rectangle guilds = GuildRect(100.0f, 252.0f, 44.0f, 44.0f);
+    Rectangle members = GuildRect(150.0f, 252.0f, 44.0f, 44.0f);
+    bool guild_board = v->war_board == GUILD_WAR_GUILDS;
+    UiDrawTexture(GuiTex(guild_board ? GUI_GUILD_BUTTON : GUI_GUILD_BUTTON_OFF), guilds, WHITE);
+    DrawRectangleRec(members, GUILD_HEADER_TINT);
+    GuildDrawEmblem(v, g->mine.summary.icon, members, guild_board ? GUILD_DISABLED_TINT : WHITE);
+    if (!interactive || !IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) return;
+    Vector2 mouse = UiMouse();
+    GuildWarBoard pressed = v->war_board;
+    if (CheckCollisionPointRec(mouse, guilds)) pressed = GUILD_WAR_GUILDS;
+    if (CheckCollisionPointRec(mouse, members)) pressed = GUILD_WAR_MEMBERS;
+    if (pressed == v->war_board && !v->war_help) return;
+    if (!CheckCollisionPointRec(mouse, guilds) && !CheckCollisionPointRec(mouse, members)) return;
+    GuiSoundPlay(SND_UI_CLICK);
+    v->war_board = pressed;
+    v->war_help = false;
+    GoalsScrollReset(&v->war_scroll);
+}
+
+static void GuildViewDrawWarLeaderboard(GuildView *v, const Guild *g, const GuildOnslaught *o, bool interactive) {
+    GuildDrawTitleBackground(GuildRect(197.0f, 248.0f, 334.0f, 50.0f));
+    const char *title_key =
+        v->war_board == GUILD_WAR_GUILDS ? "GUILD_WAR_LEADERBOARD_TITLE" : "GUILD_WAR_MY_GUILD_LEADERBOARD_TITLE";
+    GuildFitText(
+        v->font, LocGet(title_key), GuildRect(254.0f, 258.0f, 267.0f, 33.0f), GUILD_HEADING_SIZE, GUILD_TEXT_GOLD, true
+    );
+    GuildViewDrawWarBoardToggles(v, g, interactive);
+    if (ButtonDrawEx(&v->help, GuildRect(200.0f, 252.0f, 44.0f, 44.0f), interactive)) v->war_help = !v->war_help;
+    UiDrawTexture(GuiTex(GUI_GUILD_WAR_FRAME), GuildRect(90.0f, 294.0f, 545.0f, 324.0f), WHITE);
+    Rectangle list = GuildRect(96.0f, 300.0f, 533.0f, 278.0f);
+    if (v->war_help) {
+        GuildDrawWrapped(
+            v->body,
+            LocGet("GUILD_WAR_LEADERBOARD_HELP"),
+            UiRect(list, 0.5f, 0.5f, 0.9f, 0.9f),
+            GUILD_BODY_SIZE,
+            GUILD_TEXT
+        );
+        return;
+    }
+    static GuildWarRow rows[GUILD_ONSLAUGHT_LIMIT + GUILD_ONSLAUGHT_MEMBER_CAP];
+    GuildWarRow player = {0};
+    int count = o && o->ready ? GuildWarRows(v, g, o, rows, &player) : 0;
+    if (o && !o->ready) {
+        UiDrawTextCentered(v->body, "...", list, GUILD_HEADING_SIZE, GUILD_TEXT_DIM);
+        return;
+    }
+    if (count == 0) {
+        GuildDrawWrapped(
+            v->body,
+            LocGet("GUILD_WAR_NO_LEADERBOARD"),
+            GuildRect(142.0f, 327.0f, 445.0f, 144.0f),
+            GUILD_BODY_SIZE,
+            GUILD_TEXT
+        );
+        return;
+    }
+    float row_height = list.width * GUILD_WAR_ROW_SMART_HEIGHT / GUILD_SMART_WIDTH;
+    GoalsScrollUpdate(&v->war_scroll, list, row_height * count);
+    GoalsBeginClip(list);
+    for (int i = 0; i < count; i++) {
+        Rectangle row = {list.x, list.y + i * row_height - v->war_scroll.offset, list.width, row_height};
+        if (row.y + row.height < list.y || row.y > list.y + list.height) continue;
+        GuildDrawWarRow(v, &rows[i], row, i);
+    }
+    EndScissorMode();
+    GuildDrawWarFooter(v, &player);
+}
+
+static void GuildRankRewardLabel(char *out, size_t size, const PvpEventRankReward *tier) {
+    if (tier->last >= GUILD_WAR_OPEN_RANK) {
+        snprintf(out, size, "%d+", tier->first);
+    } else if (tier->first == tier->last) {
+        const char *args[] = {TextFormat("%d", tier->first)};
+        LocFormatArgs(out, size, "GUILD_ONSLAUGHT_RANK_TITLE", args, 1);
+    } else {
+        snprintf(out, size, "%d - %d", tier->first, tier->last);
+    }
+}
+
+static void GuildDrawRewardSlot(const GuildView *v, Rectangle row, Vector2 at, int count, Texture2D icon) {
+    float h = GUILD_REWARD_SMART_HEIGHT;
+    char amount[GUILD_TIME_TEXT_CAP];
+    GuildAbbreviate(amount, sizeof(amount), count);
+    Rectangle label = GuildSmart(row, h, at.x, at.y, 129.0f, 114.0f);
+    float size = label.height * 0.42f;
+    float width = MeasureTextEx(v->font, amount, size, 1.0f).x;
+    if (width > label.width) size *= label.width / width;
+    UiDrawTextRight(v->font, amount, label, size, GUILD_TEXT);
+    UiDrawTexture(icon, GuildSmart(row, h, at.x + 143.0f, at.y, 114.0f, 114.0f), WHITE);
+}
+
+static void GuildDrawRewardRow(const GuildView *v, const PvpEventRankReward *tier, Rectangle row, int index) {
+    float h = GUILD_REWARD_SMART_HEIGHT;
+    if (index < GUILD_REWARD_MEDALS)
+        UiDrawTexture(GuiTex(GUILD_REWARD_MEDAL_IDS[index]), GuildSmart(row, h, 0.0f, 38.0f, 177.0f, 177.0f), WHITE);
+    char label[GUILD_TIME_TEXT_CAP];
+    GuildRankRewardLabel(label, sizeof(label), tier);
+    Rectangle rank = GuildSmart(row, h, 198.0f, 0.0f, 295.0f, h);
+    GuildFitText(v->font, label, rank, rank.height * 0.2f, GUILD_TEXT, true);
+    const PvpReward *reward = &tier->reward;
+    int items = (reward->gems > 0) + (reward->gold > 0) + reward->prize_count;
+    bool centred = items <= GUILD_REWARD_CENTERED_SLOTS;
+    const Vector2 *slots = centred ? GUILD_REWARD_CENTERED_SLOT_AT : GUILD_REWARD_SLOT_AT;
+    int capacity = centred ? GUILD_REWARD_CENTERED_SLOTS : GUILD_REWARD_SLOTS;
+    int slot = 0;
+    if (reward->gems > 0 && slot < capacity)
+        GuildDrawRewardSlot(v, row, slots[slot++], reward->gems, GuiTex(GUI_MISSION_GEM));
+    if (reward->gold > 0 && slot < capacity)
+        GuildDrawRewardSlot(v, row, slots[slot++], reward->gold, GuiTex(GUI_MISSION_GOLD));
+    for (int i = 0; i < reward->prize_count && slot < capacity; i++)
+        GuildDrawRewardSlot(v, row, slots[slot++], reward->prizes[i].count, PvpPrizeTexture(&reward->prizes[i]));
+    UiDrawTexture(GuiTex(GUI_GUILD_REWARD_RULE), GuildSmart(row, h, 0.0f, 239.0f, 1280.0f, 13.0f), WHITE);
+}
+
+static void
+GuildViewDrawWarRewards(GuildView *v, const GuildWarEvents *events, const GuildOnslaught *o, bool interactive) {
+    GuildDrawTitleBackground(GuildRect(781.0f, 248.0f, 278.0f, 50.0f));
     GuildFitText(
         v->font,
-        LocGet("GUILD_WAR_LEADERBOARD_TITLE"),
-        GuildRect(186.0f, 310.0f, 912.0f, 40.0f),
+        LocGet("GUILD_WAR_REWARDS_TITLE"),
+        GuildRect(791.0f, 258.0f, 258.0f, 33.0f),
         GUILD_HEADING_SIZE,
         GUILD_TEXT_GOLD,
         true
     );
-    GuildDrawWrapped(
-        v->body,
-        LocGet("GUILD_WAR_NO_LEADERBOARD"),
-        GuildRect(226.0f, 380.0f, 832.0f, 180.0f),
-        GUILD_BODY_SIZE + 2.0f,
-        GUILD_TEXT
-    );
+    const PvpEvent *event = events->shown >= 0 ? PvpEventForCycle(events->shown) : NULL;
+    bool previous = events->state == GUILD_WAR_PREVIOUS_EVENT;
+    if (previous)
+        GuildFitText(
+            v->body,
+            LocGet("GUILD_WAR_PREVIOUS_RESULTS"),
+            GuildRect(531.0f, 245.0f, 239.0f, 47.0f),
+            GUILD_BODY_SIZE,
+            GUILD_TEXT_ORANGE,
+            true
+        );
+    bool award = previous && o && GuildOnslaughtAwardAvailable(o);
+    bool minimum = event && event->guild_minimum_banners > 0 && events->state != GUILD_WAR_NO_EVENT && !award;
+    if (award && ButtonDrawEx(&v->claim, GuildRect(1055.0f, 262.0f, 139.0f, 47.0f), interactive))
+        v->pending = GUILD_VIEW_CLAIM_ONSLAUGHT;
+    if (minimum) {
+        char text[GUILD_MESSAGE_CAP];
+        const char *args[] = {TextFormat("%d", event->guild_minimum_banners)};
+        LocFormatArgs(text, sizeof(text), "GUILD_WAR_MINIMUM_BANNERS", args, 1);
+        GuildDrawWrapped(v->body, text, GuildRect(1053.0f, 250.0f, 145.0f, 64.0f), GUILD_SMALL_SIZE - 5.0f, GUILD_TEXT);
+    }
+    if (!event) return;
+    Rectangle list = GuildRect(648.0f, 312.0f, 544.0f, 306.0f);
+    float row_height = list.width * GUILD_REWARD_SMART_HEIGHT / GUILD_SMART_WIDTH;
+    GoalsScrollUpdate(&v->reward_scroll, list, row_height * event->guild_rank_reward_count);
+    GoalsBeginClip(list);
+    for (int i = 0; i < event->guild_rank_reward_count; i++) {
+        Rectangle row = {list.x, list.y + i * row_height - v->reward_scroll.offset, list.width, row_height};
+        if (row.y + row.height < list.y || row.y > list.y + list.height) continue;
+        GuildDrawRewardRow(v, &event->guild_rank_rewards[i], row, i);
+    }
+    EndScissorMode();
+}
+
+static void GuildViewDrawWar(GuildView *v, Guild *g, bool interactive) {
+    long long now = ServerNow();
+    GuildWarEvents events = GuildWarCheckEvents(now);
+    GuildOnslaught *o = GuildWarHasStandings(&events) ? GuildOnslaughtFor(g, events.shown) : NULL;
+    if (o && o->cycle != events.shown) GuildRequestOnslaught(g, events.shown);
+    GuildViewDrawWarHeader(v, g, &events, now);
+    if (events.state == GUILD_WAR_CURRENT_EVENT &&
+        ButtonDrawEx(&v->enter, GuildRect(988.0f, 187.0f, 201.0f, 52.0f), interactive))
+        v->pending = GUILD_VIEW_ENTER_ONSLAUGHT;
+    GuildViewDrawWarLeaderboard(v, g, o, interactive);
+    GuildViewDrawWarRewards(v, &events, o, interactive);
     GuildViewHandleFooter(v, g, GuildDrawFooter(v, g, GUILD_TAB_WAR, true, false, interactive));
+}
+
+static void GuildDrawRadio(const GuildView *v, const GuildAbuseOption *option, Vector2 at, bool selected) {
+    Rectangle radio = GuildRect(at.x, at.y, 45.0f, 45.0f);
+    UiDrawTexture(GuiTex(selected ? GUI_GUILD_RADIO_ON : GUI_GUILD_RADIO), radio, WHITE);
+    GuildFitText(
+        v->body,
+        LocGet(option->label_key),
+        GuildRect(at.x + 55.0f, at.y + 9.0f, 420.0f, 28.0f),
+        GUILD_BODY_SIZE,
+        selected ? GUILD_TEXT_GOLD : GUILD_TEXT,
+        false
+    );
+}
+
+static void GuildViewSubmitReport(GuildView *v, Guild *g) {
+    if (v->report_choice == GUILD_ABUSE_NONE) {
+        GuildViewShowKeys(
+            v, "REPORT_ABUSE_ERROR_NOTHING_SELECTED_TITLE", "REPORT_ABUSE_ERROR_NOTHING_SELECTED_MESSAGE"
+        );
+        return;
+    }
+    bool guild = v->report_state == GUILD_REPORT_GUILD;
+    GuildRequestReport(
+        g, guild ? GUILD_REPORT_KIND_GUILD : GUILD_REPORT_KIND_APPLICATION, v->report_choice, v->report_target
+    );
+    GuiSoundPlay(SND_UI_POPUP_CLOSE);
+    v->report_open = false;
+    GuildViewWait(v, GUILD_REQUEST_REPORT);
+}
+
+static void GuildViewDrawReport(GuildView *v, Guild *g) {
+    bool interactive = GuildViewOverlayInteractive(v);
+    DrawRectangleRec(UiRoot(), GUILD_SCRIM);
+    UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), GuildRect(0.0f, 88.0f, UI_DESIGN_W, 616.0f), WHITE);
+    bool guild = v->report_state == GUILD_REPORT_GUILD;
+    if (guild) {
+        GuildFitText(
+            v->font,
+            LocGet("REPORT_ABUSE_GUILD_ABUSE_TITLE"),
+            GuildRect(194.0f, 146.0f, 892.0f, 54.0f),
+            GUILD_TITLE_SIZE,
+            GUILD_TEXT,
+            true
+        );
+        GuildDrawWrapped(
+            v->body,
+            LocGet("REPORT_ABUSE_GUILD_ABUSE_MESSAGE"),
+            GuildRect(194.0f, 233.0f, 892.0f, 88.0f),
+            GUILD_HEADING_SIZE,
+            GUILD_TEXT
+        );
+    } else {
+        GuildFitText(
+            v->font, v->report_name, GuildRect(194.0f, 146.0f, 892.0f, 54.0f), GUILD_TITLE_SIZE, GUILD_TEXT, true
+        );
+        GuildDrawWrapped(
+            v->body,
+            v->report_text[0] ? v->report_text : "-",
+            GuildRect(194.0f, 213.0f, 892.0f, 108.0f),
+            GUILD_BODY_SIZE + 2.0f,
+            GUILD_TEXT
+        );
+        GuildDrawRule(GuildRect(139.0f, 341.0f, 1003.0f, 3.0f));
+        GuildDrawWrapped(
+            v->body,
+            LocGet("REPORT_ABUSE_APPLICATION_MESSAGE"),
+            GuildRect(194.0f, 356.0f, 892.0f, 60.0f),
+            GUILD_HEADING_SIZE,
+            GUILD_TEXT
+        );
+    }
+    for (size_t i = 0; i < sizeof(GUILD_ABUSE_OPTIONS) / sizeof(GUILD_ABUSE_OPTIONS[0]); i++) {
+        const GuildAbuseOption *option = &GUILD_ABUSE_OPTIONS[i];
+        Vector2 at = guild ? option->guild_at : option->application_at;
+        bool selected = v->report_choice == option->type;
+        GuildDrawRadio(v, option, at, selected);
+        bool hit = interactive && CheckCollisionPointRec(UiMouse(), GuildRect(at.x, at.y, 223.0f, 45.0f));
+        if (!hit || !IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) continue;
+        GuiSoundPlay(SND_UI_CLICK);
+        v->report_choice = selected ? GUILD_ABUSE_NONE : option->type;
+    }
+    if (GuildTextButton(
+            v,
+            &v->submit,
+            LocGet("REPORT_ABUSE_SUBMIT_BUTTON"),
+            GuildRect(219.0f, 585.0f, 273.0f, 71.0f),
+            true,
+            interactive
+        ))
+        GuildViewSubmitReport(v, g);
+    bool closed = GuildTextButton(
+        v, &v->cancel, LocGet("REPORT_ABUSE_CANCEL_BUTTON"), GuildRect(790.0f, 585.0f, 273.0f, 71.0f), true, interactive
+    );
+    closed |= ButtonDrawEx(&v->close, GuildRect(1188.0f, 72.0f, 74.0f, 74.0f), interactive);
+    if (closed) {
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+        v->report_open = false;
+    }
 }
 
 static Rectangle GuildDialogFrame(void) {
@@ -1715,16 +2226,27 @@ static void GuildViewDrawReviewDialog(GuildView *v, Guild *g) {
     );
     Rectangle row = MessagePopupChoiceRow(popup);
     if (GuildTextButton(
-            v, &v->grey, LocGet("GUILD_APPLICATION_REJECT_BUTTON"), UiRect(row, 0.0f, 0.0f, 0.48f, 1.0f), true, true
+            v, &v->gold, LocGet("GUILD_APPLICATION_ACCEPT_BUTTON"), UiRect(row, 0.0f, 0.0f, 0.32f, 1.0f), true, true
+        )) {
+        v->dialog = GUILD_DIALOG_NONE;
+        GuildViewAccept(v, g, v->target_id);
+    }
+    if (GuildTextButton(
+            v, &v->grey, LocGet("GUILD_APPLICATION_REJECT_BUTTON"), UiRect(row, 0.5f, 0.0f, 0.32f, 1.0f), true, true
         )) {
         v->dialog = GUILD_DIALOG_NONE;
         GuildViewDeny(v, g, v->target_id);
     }
     if (GuildTextButton(
-            v, &v->gold, LocGet("GUILD_APPLICATION_ACCEPT_BUTTON"), UiRect(row, 1.0f, 0.0f, 0.48f, 1.0f), true, true
+            v,
+            &v->grey,
+            LocGet("GUILD_APPLICATION_REPORTABUSE_BUTTON"),
+            UiRect(row, 1.0f, 0.0f, 0.32f, 1.0f),
+            true,
+            true
         )) {
         v->dialog = GUILD_DIALOG_NONE;
-        GuildViewAccept(v, g, v->target_id);
+        GuildViewOpenReport(v, GUILD_REPORT_APPLICATION, v->target_id, v->target_name, v->review_text);
     }
 }
 
@@ -1829,6 +2351,13 @@ static void GuildViewJoined(GuildView *v, Guild *g) {
 
 static void GuildViewHandleResult(GuildView *v, Guild *g, const GuildResult *result) {
     if (result->kind == v->waiting_for) v->waiting_for = GUILD_REQUEST_NONE;
+    if (result->kind == GUILD_REQUEST_REPORT) {
+        if (result->outcome == GUILD_OUTCOME_OK)
+            GuildViewShowKeys(v, "REPORT_ABUSE_SUCCESS_TITLE", "REPORT_ABUSE_SUCCESS_MESSAGE");
+        else
+            GuildViewShowKeys(v, "REPORT_ABUSE_FAILED_TITLE", "REPORT_ABUSE_FAILED_MESSAGE");
+        return;
+    }
     if (result->outcome == GUILD_OUTCOME_OFFLINE) {
         if (!strcmp(result->code, GUILD_CODE_PROFILE_CHANGED)) {
             GuildViewShowMessage(v, "ERROR_GENERAL_TITLE", GUILD_PROFILE_CHANGED_MESSAGE);
@@ -1876,6 +2405,12 @@ static void GuildViewHandleResult(GuildView *v, Guild *g, const GuildResult *res
             break;
         case GUILD_REQUEST_SEND:
             if (!ok) GuildViewShowKeys(v, "ERROR_GENERAL_TITLE", "ERROR_GENERAL_MESSAGE");
+            break;
+        case GUILD_REQUEST_DUEL:
+            if (ok)
+                v->pending = GUILD_VIEW_DUEL;
+            else
+                GuildViewShowKeys(v, "ERROR_GENERAL_TITLE", "ERROR_GENERAL_MESSAGE");
             break;
         case GUILD_REQUEST_ACCEPT:
         case GUILD_REQUEST_DENY:
@@ -1940,9 +2475,12 @@ GuildViewAction GuildViewDraw(GuildView *v, Guild *g, Player *p) {
             break;
     }
     if (v->page != GUILD_PAGE_CHAT) GuildSetChatVisible(g, false);
+    if (v->report_open) GuildViewDrawReport(v, g);
     if (v->dialog != GUILD_DIALOG_NONE) GuildViewDrawDialog(v, g, p);
     if (v->waiting_for != GUILD_REQUEST_NONE) GuildViewDrawWaiting(v);
-    if (action == GUILD_VIEW_CLOSE) GuildViewLeave(v, g);
+    if (action == GUILD_VIEW_NONE && v->pending != GUILD_VIEW_NONE) action = v->pending;
+    v->pending = GUILD_VIEW_NONE;
+    if (action != GUILD_VIEW_NONE) GuildViewLeave(v, g);
     return action;
 }
 
@@ -1956,6 +2494,10 @@ bool GuildViewHandleBack(GuildView *v, Guild *g) {
     if (v->dialog != GUILD_DIALOG_NONE) {
         v->dialog = GUILD_DIALOG_NONE;
         GuildViewBlurFields(v);
+        return true;
+    }
+    if (v->report_open) {
+        v->report_open = false;
         return true;
     }
     if (GuildViewAnyFocused(v)) {

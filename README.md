@@ -74,7 +74,23 @@ home screen; Guild unlocks at level 5 and Chat once you are in a guild. The scre
 `GuildCreateV`, `GuildHomeV` and `GuildChatV` layouts and art from the 4.4.0 cache: find, search, create (10000 gold),
 settings, member ranks, applications, chat with its event log, and rank-change notices on the home screen. The client
 polls chat every 10 then 30 seconds while it is open and every 60 seconds otherwise, through its own request slot in
-`source/backend.c` so polling never waits on profile saves. Onslaught shows its original "no leaderboard yet" state;
-duels and abuse reports are left out. `HOD_SHOT_SCREEN=guild_find`, `guild_create`, `guild_home`, `guild_observe`,
-`guild_applications`, `guild_chat`, `guild_war` and `guild_home_buttons` render the screens with sample data;
-`guild_live_home` and `guild_live_chat` open them from a running backend.
+`source/backend.c` so polling never waits on profile saves.
+
+Onslaught follows `GuildWarPopupView`: every fourth PvP event cycle is a guild event from `guild_catalog` in
+`data/pvp_rules.json` (Dangerous Purpose, War of Attrition, Ascension). The War tab shows the running, next (within 2
+days) or previous Onslaught, the leaderboard of guilds by summed member banners with a toggle to your own guild's
+members and a help text, the guild rank rewards from the original announcement tables (`tools/build_pvp_rules.py`
+parses them from the English localization), the minimum of 100 banners, Enter (opens the PvP event) and Claim (opens
+Goals → My Events, where the guild row shows `GUILD_EVENT_RANKING` and claims through the server). Banners count for
+the guild a player was in when the event started. The Duel button on member rows fetches the member's current squad
+and active runes and starts an ordinary PvP fight against it (1 stamina, trophies by the usual rules, no Next); the
+member's own trophies do not change, and the cached `GuildMemberSmart` puts Duel over the last-login column, so it sits
+in the rightmost action slot. Report Abuse (`ReportAbuseV`) sits in the footer of member and observed guilds and in
+the application review; reports go to the server's `runtime/reports.jsonl`.
+
+`HOD_SHOT_SCREEN=guild_find`, `guild_create`, `guild_home`, `guild_observe`, `guild_applications`, `guild_chat`,
+`guild_war` (running Onslaught), `guild_war_members`, `guild_war_help`, `guild_war_previous` (claim),
+`guild_war_next`, `guild_report`, `guild_report_application`, `guild_review`, `goals_guild_award` and
+`guild_home_buttons` render the screens with sample data and a pinned clock. `guild_live_home`, `guild_live_chat`,
+`guild_live_war`, `guild_live_duel`, `guild_live_report` and `guild_live_claim` drive them against a running
+backend.

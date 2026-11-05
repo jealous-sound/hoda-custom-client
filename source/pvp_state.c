@@ -1,6 +1,7 @@
 #define PVP_HISTORY_CAPACITY 30
 #define PVP_EVENT_RESULT_CAPACITY 19
 #define PVP_HOLD_THRESHOLD_COUNT 5
+#define PVP_OPPONENT_NAME_CAP 105
 #define PVP_HOLD_SECONDS (7LL * NEXUS_SECONDS_PER_DAY)
 
 static const int PVP_HOLD_THRESHOLDS[PVP_HOLD_THRESHOLD_COUNT] = {500, 750, 1000, 1500, 2000};
@@ -19,7 +20,13 @@ typedef struct {
     bool defense;
     bool won;
     bool revenged;
+    char opponent[PVP_OPPONENT_NAME_CAP];
 } PlayerPvpBattle;
+
+_Static_assert(
+    sizeof(PlayerPvpBattle) == offsetof(PlayerPvpBattle, opponent) + PVP_OPPONENT_NAME_CAP,
+    "PvP history records carry no padding, so equal histories compare equal byte for byte"
+);
 
 typedef struct {
     long long cycle;

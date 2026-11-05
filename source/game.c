@@ -227,6 +227,35 @@ GamePendingCampaignAnimation(const Campaign *campaign, const BattleRewardResult 
     return animation;
 }
 
+static PvpOpponent GameDuelOpponent(const Game *g) {
+    const GuildDuel *d = &g->guild.duel;
+    unsigned seed = (unsigned)GetRandomValue(1, 0x7FFFFFFF);
+    PvpOpponent opponent = PvpOpponentFromDuel(d->id, d->name, d->level, d->trophies, g->player.pvp.trophies, seed);
+    for (int i = 0; i < d->unit_count; i++) {
+        const GuildDuelUnit *unit = &d->units[i];
+        PvpOpponentAddDuelUnit(&opponent, unit->slot, unit->id, TierFromString(unit->tier), unit->level);
+    }
+    for (int i = 0; i < d->rune_count; i++) PvpOpponentAddDuelRune(&opponent, d->runes[i]);
+    return opponent;
+}
+
+static GoalsGuildAward GameGuildAward(const Game *g) {
+    const GuildOnslaught *o = &g->guild.previous;
+    return (GoalsGuildAward){
+        .shown = o->ready && o->finished && o->award_rank > 0,
+        .cycle = o->cycle,
+        .rank = o->award_rank,
+        .banners = o->my_banners,
+        .claimed = o->claimed,
+        .pending = GuildClaimPending(&g->guild),
+    };
+}
+
+static int GameGuildAwardBadge(const Game *g) {
+    GoalsGuildAward award = GameGuildAward(g);
+    return award.shown && !award.claimed;
+}
+
 static void GameSubmitBattle(const Game *g, bool won) {
     cJSON *fields = ServerActionCreate("battle");
     if (!fields) return;
@@ -237,6 +266,7 @@ static void GameSubmitBattle(const Game *g, bool won) {
         cJSON_AddNumberToObject(fields, "seed", g->pvp_opponent.seed);
         cJSON_AddBoolToObject(fields, "event", g->pvp_event);
         cJSON_AddNumberToObject(fields, "banners", g->battle_reward.banner_delta);
+        if (g->pvp_opponent.duel) cJSON_AddStringToObject(fields, "duel", g->pvp_opponent.duel_id);
     } else if (g->battle_is_nexus) {
         cJSON_AddStringToObject(fields, "mode", "nexus");
         cJSON_AddNumberToObject(fields, "step", g->battle_node_index + 1);
@@ -1313,7 +1343,7 @@ void GameDraw(Game *g) {
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, home_interactive, true));
 
             int missions_badge = MissionUnseenClaimableCount(&g->player.missions);
-            missions_badge += PvpEventUnclaimedCount(&g->player.pvp);
+            missions_badge += PvpEventUnclaimedCount(&g->player.pvp) + GameGuildAwardBadge(g);
             if (missions_badge == 0) missions_badge = abs(g->player.pvp.trophies - g->player.pvp.trophies_seen);
             bool guild_notice_open = news_allowed && !news_open && GuildNoticePopupIsOpen(&g->guild_notice);
             if (guild_notice_open) home_interactive = false;
@@ -1350,7 +1380,7 @@ void GameDraw(Game *g) {
                 GameOpenQuests(g);
             } else if (pressed == HOME_HISTORY) {
                 MissionsSync(&g->player, &g->map);
-                MissionsOpen(&g->missions, &g->player, GOALS_TAB_MISSIONS);
+                MissionsOpen(&g->missions, &g->player, GameGuildAwardBadge(g) ? GOALS_TAB_EVENTS : GOALS_TAB_MISSIONS);
                 g->screen = SCREEN_MISSIONS;
             } else if (pressed == HOME_PVP) {
                 GameOpenPvpHub(g);
@@ -1588,7 +1618,8 @@ void GameDraw(Game *g) {
             UiFrameBegin();
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
             HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
-            MissionsAction pressed = MissionsDraw(&g->missions, &g->hud, &g->player, dt);
+            GoalsGuildAward award = GameGuildAward(g);
+            MissionsAction pressed = MissionsDraw(&g->missions, &g->hud, &g->player, &award, dt);
             UiFrameEnd();
             long long now = ServerNow();
             if (pressed == MISSIONS_CLOSE) {
@@ -1603,6 +1634,8 @@ void GameDraw(Game *g) {
                     -1,
                     SCREEN_MISSIONS
                 );
+            } else if (pressed == MISSIONS_CLAIM_GUILD_EVENT) {
+                GuildClaimOnslaught(&g->guild, &g->player);
             } else if (pressed == MISSIONS_REVENGE) {
                 int index = g->missions.tabs.selected;
                 PvpOpponent opponent = PvpOpponentFromBattle(&g->player.pvp.history[index], g->player.pvp.trophies);
@@ -1639,6 +1672,12 @@ void GameDraw(Game *g) {
             GuildViewAction pressed = GuildViewDraw(&g->guild_view, &g->guild, &g->player);
             UiFrameEnd();
             if (pressed == GUILD_VIEW_CLOSE) g->screen = SCREEN_HOME;
+            if (pressed == GUILD_VIEW_ENTER_ONSLAUGHT) GameOpenPvpEvent(g);
+            if (pressed == GUILD_VIEW_DUEL) GameEnterFixedPvpBattle(g, GameDuelOpponent(g), -1, SCREEN_GUILD);
+            if (pressed == GUILD_VIEW_CLAIM_ONSLAUGHT) {
+                MissionsOpen(&g->missions, &g->player, GOALS_TAB_EVENTS);
+                g->screen = SCREEN_MISSIONS;
+            }
             break;
         }
         case SCREEN_PVP_EVENT: {

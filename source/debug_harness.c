@@ -896,7 +896,170 @@ static void DebugSeedGuild(Game *game) {
     g->notices[g->notice_count++] = (GuildNotice){GUILD_NOTICE_PROMOTED, "Защитники", GUILD_RANK_OFFICER};
 }
 
+#define DEBUG_ONSLAUGHT_GUILDS 9
+#define DEBUG_ONSLAUGHT_TOP_BANNERS 4200
+#define DEBUG_ONSLAUGHT_BANNER_STEP 380
+#define DEBUG_ONSLAUGHT_MEMBER_BANNERS 520
+#define DEBUG_ONSLAUGHT_MY_RANK 2
+#define DEBUG_ONSLAUGHT_RUNNING_FOR (36LL * 3600LL)
+#define DEBUG_ONSLAUGHT_ENDED_FOR (12LL * 3600LL)
+#define DEBUG_ONSLAUGHT_STARTS_IN (20LL * 3600LL)
+
+typedef enum { DEBUG_WAR_CURRENT, DEBUG_WAR_PREVIOUS, DEBUG_WAR_NEXT } DebugWarPhase;
+
+static void DebugSeedOnslaught(Guild *g, long long cycle, bool finished) {
+    static const char *const names[DEBUG_ONSLAUGHT_GUILDS] = {
+        "Серые Стражи",
+        "Защитники",
+        "Храмовники",
+        "Круг Магов",
+        "Вороны Антивы",
+        "Хартия",
+        "Кунари",
+        "Инквизиция",
+        "Долийцы",
+    };
+    GuildOnslaught *o = GuildOnslaughtFor(g, cycle);
+    memset(o, 0, sizeof(*o));
+    o->cycle = cycle;
+    o->ready = true;
+    o->finished = finished;
+    o->total_guilds = DEBUG_ONSLAUGHT_GUILDS;
+    for (int i = 0; i < DEBUG_ONSLAUGHT_GUILDS; i++) {
+        GuildStanding *s = &o->guilds[o->guild_count++];
+        snprintf(s->id, sizeof(s->id), "guild-%d", i);
+        StrCopy(s->name, sizeof(s->name), names[i]);
+        s->icon = i == DEBUG_ONSLAUGHT_MY_RANK - 1 ? g->mine.summary.icon : 2 + i * 2;
+        s->banners = DEBUG_ONSLAUGHT_TOP_BANNERS - i * DEBUG_ONSLAUGHT_BANNER_STEP;
+        s->rank = i + 1;
+    }
+    o->mine = o->guilds[DEBUG_ONSLAUGHT_MY_RANK - 1];
+    o->has_mine = true;
+    for (int i = 0; i < g->mine.member_total; i++) {
+        GuildContribution *c = &o->members[o->member_count++];
+        StrCopy(c->id, sizeof(c->id), g->mine.members[i].id);
+        StrCopy(c->name, sizeof(c->name), g->mine.members[i].name);
+        c->banners = DEBUG_ONSLAUGHT_MEMBER_BANNERS - i * i * 12;
+    }
+    GuildRankContributions(o);
+    o->my_banners = o->members[0].banners;
+    o->minimum_banners = PvpEventForCycle(cycle)->guild_minimum_banners;
+    o->award_rank = finished ? DEBUG_ONSLAUGHT_MY_RANK : 0;
+}
+
+static void DebugPinOnslaughtClock(DebugWarPhase phase) {
+    ServerNowShift(0);
+    long long guild = PvpGuildCycleAfter(PvpEventCycle(ServerNow()));
+    long long at = PvpEventCycleStart(guild) - DEBUG_ONSLAUGHT_STARTS_IN;
+    if (phase == DEBUG_WAR_CURRENT) at = PvpEventCycleStart(guild) + DEBUG_ONSLAUGHT_RUNNING_FOR;
+    if (phase == DEBUG_WAR_PREVIOUS) at = PvpEventCycleStart(guild + 1) + DEBUG_ONSLAUGHT_ENDED_FOR;
+    ServerNowShift(at - (long long)time(NULL));
+}
+
+static bool DebugPrepareOnslaught(Game *game, DebugShot *shot) {
+    static const struct {
+        const char *screen;
+        DebugWarPhase phase;
+    } shots[] = {
+        {"guild_war", DEBUG_WAR_CURRENT},
+        {"guild_war_members", DEBUG_WAR_CURRENT},
+        {"guild_war_help", DEBUG_WAR_CURRENT},
+        {"guild_war_previous", DEBUG_WAR_PREVIOUS},
+        {"guild_war_next", DEBUG_WAR_NEXT},
+        {"goals_guild_award", DEBUG_WAR_PREVIOUS},
+    };
+    int match = -1;
+    for (int i = 0; i < (int)(sizeof(shots) / sizeof(shots[0])); i++)
+        if (DebugShotIs(shot, shots[i].screen)) match = i;
+    if (match < 0) return false;
+    if (shot->frames_drawn == 0) {
+        DebugSeedGuild(game);
+        DebugPinOnslaughtClock(shots[match].phase);
+        if (game->player.level < GUILD_LEVEL_UNLOCK) game->player.level = GUILD_LEVEL_UNLOCK;
+        GuildViewLoadEmblems(&game->guild_view);
+        if (shots[match].phase == DEBUG_WAR_CURRENT)
+            DebugSeedOnslaught(&game->guild, GuildCurrentOnslaughtCycle(), false);
+        if (shots[match].phase == DEBUG_WAR_PREVIOUS)
+            DebugSeedOnslaught(&game->guild, GuildPreviousOnslaughtCycle(), true);
+        GuildViewShowWar(&game->guild_view, &game->guild);
+        game->guild_view.war_board = DebugShotIs(shot, "guild_war_members") ? GUILD_WAR_MEMBERS : GUILD_WAR_GUILDS;
+        game->guild_view.war_help = DebugShotIs(shot, "guild_war_help");
+        if (DebugShotIs(shot, "goals_guild_award")) MissionsOpen(&game->missions, &game->player, GOALS_TAB_EVENTS);
+    }
+    game->screen = DebugShotIs(shot, "goals_guild_award") ? SCREEN_MISSIONS : SCREEN_GUILD;
+    return true;
+}
+
+static bool DebugPrepareGuildDialogs(Game *game, DebugShot *shot) {
+    bool report = DebugShotIs(shot, "guild_report");
+    bool application = DebugShotIs(shot, "guild_report_application");
+    bool review = DebugShotIs(shot, "guild_review");
+    if (!report && !application && !review) return false;
+    if (shot->frames_drawn == 0) {
+        DebugSeedGuild(game);
+        if (game->player.level < GUILD_LEVEL_UNLOCK) game->player.level = GUILD_LEVEL_UNLOCK;
+        GuildView *v = &game->guild_view;
+        GuildViewLoadEmblems(v);
+        const GuildApplicant *a = &game->guild.mine.applicants[0];
+        GuildViewShowHome(v, report ? GUILD_HOME_MEMBER : GUILD_HOME_APPLICATIONS);
+        if (report) GuildViewOpenReport(v, GUILD_REPORT_GUILD, game->guild.mine.summary.id, "", "");
+        if (application) GuildViewOpenReport(v, GUILD_REPORT_APPLICATION, a->id, a->name, a->text);
+        if (report) v->report_choice = GUILD_ABUSE_SEXUAL;
+        if (review) GuildViewReview(v, a);
+    }
+    game->screen = SCREEN_GUILD;
+    return true;
+}
+
+static const GuildMember *DebugLiveDuelTarget(const Guild *g) {
+    for (int i = 0; i < g->mine.member_total; i++)
+        if (strcmp(g->mine.members[i].id, GuildPlayerId())) return &g->mine.members[i];
+    return NULL;
+}
+
+static bool DebugPrepareLiveGuildFlow(Game *game, DebugShot *shot) {
+    bool war = DebugShotIs(shot, "guild_live_war");
+    bool duel = DebugShotIs(shot, "guild_live_duel");
+    bool report = DebugShotIs(shot, "guild_live_report");
+    bool claim = DebugShotIs(shot, "guild_live_claim");
+    if (!war && !duel && !report && !claim) return false;
+    static bool started = false;
+    Guild *g = &game->guild;
+    if (game->player.level < GUILD_LEVEL_UNLOCK) game->player.level = GUILD_LEVEL_UNLOCK;
+    if (started) return true;
+    game->screen = SCREEN_HOME;
+    if (claim) BackendBeginProfileFetch();
+    bool settled = g->known && !GuildBusy(g) && (!claim || (g->previous.ready && BackendProfileFetchSettled()));
+    if (!settled) return true;
+    started = true;
+    if (claim) {
+        char *text = NULL;
+        long long revision = 0;
+        if (BackendFetchProfile(&text, &revision) == BACKEND_PROFILE_FOUND) BackendAcceptProfile(revision);
+        free(text);
+        MissionsOpen(&game->missions, &game->player, GOALS_TAB_EVENTS);
+        game->screen = SCREEN_MISSIONS;
+        GuildClaimOnslaught(g, &game->player);
+        return true;
+    }
+    GameOpenGuild(game, false);
+    GuildView *v = &game->guild_view;
+    if (war) GuildViewShowWar(v, g);
+    const GuildMember *target = DebugLiveDuelTarget(g);
+    if (duel && target) {
+        GuildRequestDuel(g, target->id);
+        GuildViewWait(v, GUILD_REQUEST_DUEL);
+    }
+    if (report) {
+        GuildViewOpenReport(v, GUILD_REPORT_GUILD, g->mine.summary.id, "", "");
+        v->report_choice = GUILD_ABUSE_HARASSMENT;
+        GuildViewSubmitReport(v, g);
+    }
+    return true;
+}
+
 static void DebugPrepareGuild(Game *game, DebugShot *shot) {
+    if (DebugPrepareOnslaught(game, shot) || DebugPrepareGuildDialogs(game, shot)) return;
     static const struct {
         const char *screen;
         GuildPage page;
@@ -908,7 +1071,6 @@ static void DebugPrepareGuild(Game *game, DebugShot *shot) {
         {"guild_observe", GUILD_PAGE_HOME, GUILD_HOME_OBSERVE},
         {"guild_applications", GUILD_PAGE_HOME, GUILD_HOME_APPLICATIONS},
         {"guild_chat", GUILD_PAGE_CHAT, GUILD_HOME_MEMBER},
-        {"guild_war", GUILD_PAGE_WAR, GUILD_HOME_MEMBER},
     };
     bool live_chat = DebugShotIs(shot, "guild_live_chat");
     if (live_chat || DebugShotIs(shot, "guild_live_home")) {
@@ -947,8 +1109,6 @@ static void DebugPrepareGuild(Game *game, DebugShot *shot) {
             } else if (shots[match].page == GUILD_PAGE_HOME) {
                 GuildViewShowHome(&game->guild_view, shots[match].mode);
                 if (shots[match].mode == GUILD_HOME_MEMBER) game->guild_view.expanded_member = 1;
-            } else {
-                game->guild_view.page = shots[match].page;
             }
         }
     }
@@ -957,6 +1117,7 @@ static void DebugPrepareGuild(Game *game, DebugShot *shot) {
 
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
     if (DebugPrepareTutorial(game, shot) || DebugPrepareNamePrompt(game, shot)) return;
+    if (DebugPrepareLiveGuildFlow(game, shot)) return;
     game->screen = shot->consume_opened ? SCREEN_CONSUME : SCREEN_HEROES;
     if (DebugShotIs(shot, "home")) game->screen = SCREEN_HOME;
     if (DebugShotIs(shot, "quests")) game->screen = SCREEN_QUESTS;

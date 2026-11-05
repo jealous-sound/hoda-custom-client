@@ -14,6 +14,8 @@
 #define PVP_DEFENSE_SALT 0x3D6F02u
 
 #define PVP_EVENT_CAPACITY 16
+#define PVP_GUILD_EVENT_CAPACITY 8
+#define PVP_DUEL_ID_CAP 48
 #define PVP_EVENT_REWARD_CAPACITY 16
 #define PVP_EVENT_KEY_CAP 96
 #define PVP_EVENT_SKILL_JITTER_PCT 25
@@ -70,6 +72,10 @@ typedef struct {
     int milestone_count;
     PvpEventRankReward rank_rewards[PVP_EVENT_REWARD_CAPACITY];
     int rank_reward_count;
+    bool guild;
+    int guild_minimum_banners;
+    PvpEventRankReward guild_rank_rewards[PVP_EVENT_REWARD_CAPACITY];
+    int guild_rank_reward_count;
 } PvpEvent;
 
 typedef struct {
@@ -81,6 +87,9 @@ typedef struct {
     int ladder_banners;
     PvpEvent catalog[PVP_EVENT_CAPACITY];
     int catalog_count;
+    long long guild_every_cycles;
+    PvpEvent guild_catalog[PVP_GUILD_EVENT_CAPACITY];
+    int guild_catalog_count;
 } PvpEventRules;
 
 typedef struct {
@@ -133,6 +142,10 @@ typedef struct {
     unsigned seed;
     int rune_defs[RUNE_SLOT_COUNT];
     int rune_count;
+    bool duel;
+    char duel_id[PVP_DUEL_ID_CAP];
+    char duel_name[PLAYER_NAME_CAPACITY];
+    PvpSquadCell duel_cells[SQUAD_SLOT_COUNT];
 } PvpOpponent;
 
 #define PVP_RANK_PLAYER (-1)
@@ -232,6 +245,14 @@ static PvpReward PvpRewardParse(const cJSON *json) {
     return reward;
 }
 
+static void PvpRankRewardsParse(PvpEventRankReward *out, int *count, const cJSON *json) {
+    const cJSON *item = NULL;
+    cJSON_ArrayForEach(item, json) {
+        if (*count == PVP_EVENT_REWARD_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many rank rewards");
+        out[(*count)++] = (PvpEventRankReward){JsonInt(item, "first"), JsonInt(item, "last"), PvpRewardParse(item)};
+    }
+}
+
 static void PvpEventLadderParse(PvpEvent *event, const cJSON *json) {
     const cJSON *item = NULL;
     cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "milestones")) {
@@ -239,10 +260,27 @@ static void PvpEventLadderParse(PvpEvent *event, const cJSON *json) {
         event->milestones[event->milestone_count++] =
             (PvpEventMilestone){JsonInt(item, "banners"), PvpRewardParse(item)};
     }
-    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "rank_rewards")) {
-        if (event->rank_reward_count == PVP_EVENT_REWARD_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many rank rewards");
-        event->rank_rewards[event->rank_reward_count++] =
-            (PvpEventRankReward){JsonInt(item, "first"), JsonInt(item, "last"), PvpRewardParse(item)};
+    PvpRankRewardsParse(
+        event->rank_rewards, &event->rank_reward_count, cJSON_GetObjectItemCaseSensitive(json, "rank_rewards")
+    );
+    PvpRankRewardsParse(
+        event->guild_rank_rewards,
+        &event->guild_rank_reward_count,
+        cJSON_GetObjectItemCaseSensitive(json, "guild_rank_rewards")
+    );
+    event->guild_minimum_banners = JsonInt(json, "guild_minimum_banners");
+}
+
+static void PvpEventParse(PvpEvent *event, const cJSON *item, bool guild) {
+    StrCopy(event->title_key, sizeof(event->title_key), JsonStr(item, "title_key"));
+    PvpEventLadderParse(event, item);
+    event->guild = guild;
+    StrCopy(event->changer.text_key, sizeof(event->changer.text_key), JsonStr(item, "text_key"));
+    const cJSON *effect = NULL;
+    cJSON_ArrayForEach(effect, cJSON_GetObjectItemCaseSensitive((cJSON *)item, "effects")) {
+        if (event->changer.effect_count == BATTLE_CHANGER_MAX_EFFECTS)
+            TraceLog(LOG_FATAL, "Pvp: too many event effects");
+        BattleChangerEffectLoad(&event->changer.effects[event->changer.effect_count++], effect);
     }
 }
 
@@ -261,18 +299,15 @@ static void PvpEventsParse(PvpEventRules *e, const cJSON *root) {
     const cJSON *item = NULL;
     cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "catalog")) {
         if (e->catalog_count == PVP_EVENT_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many events");
-        PvpEvent *event = &e->catalog[e->catalog_count++];
-        StrCopy(event->title_key, sizeof(event->title_key), JsonStr(item, "title_key"));
-        PvpEventLadderParse(event, item);
-        StrCopy(event->changer.text_key, sizeof(event->changer.text_key), JsonStr(item, "text_key"));
-        const cJSON *effect = NULL;
-        cJSON_ArrayForEach(effect, cJSON_GetObjectItemCaseSensitive((cJSON *)item, "effects")) {
-            if (event->changer.effect_count == BATTLE_CHANGER_MAX_EFFECTS)
-                TraceLog(LOG_FATAL, "Pvp: too many event effects");
-            BattleChangerEffectLoad(&event->changer.effects[event->changer.effect_count++], effect);
-        }
+        PvpEventParse(&e->catalog[e->catalog_count++], item, false);
+    }
+    e->guild_every_cycles = JsonInt(json, "guild_every_cycles");
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "guild_catalog")) {
+        if (e->guild_catalog_count == PVP_GUILD_EVENT_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many guild events");
+        PvpEventParse(&e->guild_catalog[e->guild_catalog_count++], item, true);
     }
     if (e->catalog_count == 0 || e->duration_seconds <= 0) TraceLog(LOG_FATAL, "Pvp: no events");
+    if (e->guild_catalog_count > 0 && e->guild_every_cycles <= 0) TraceLog(LOG_FATAL, "Pvp: no guild event cadence");
 }
 
 static void PvpBotsParse(PvpTable *t, const cJSON *root) {
@@ -450,7 +485,35 @@ PvpOpponent PvpOpponentFromBattle(const PlayerPvpBattle *battle, int trophies) {
     return o;
 }
 
+PvpOpponent
+PvpOpponentFromDuel(const char *id, const char *name, int level, int opponent_trophies, int trophies, unsigned seed) {
+    PvpOpponent o = {.bot = -1, .squad = -1, .duel = true, .seed = seed ? seed : 1u};
+    StrCopy(o.duel_id, sizeof(o.duel_id), id);
+    StrCopy(o.duel_name, sizeof(o.duel_name), name);
+    o.level = Clamp(level, 1, PVP_LOCAL_MAX_LEVEL);
+    o.trophies = opponent_trophies;
+    o.gain = PvpTrophyGain(trophies, o.trophies);
+    o.loss = PvpTrophyLoss(trophies, o.trophies);
+    return o;
+}
+
+bool PvpOpponentAddDuelUnit(PvpOpponent *o, int slot, const char *id, Tier tier, int level) {
+    if (slot < 0 || slot >= SQUAD_SLOT_COUNT || !id[0]) return false;
+    PvpSquadCell *cell = &o->duel_cells[slot];
+    StrCopy(cell->id, sizeof(cell->id), id);
+    cell->tier = tier;
+    cell->level = level > 0 ? level : 1;
+    cell->present = true;
+    return true;
+}
+
+void PvpOpponentAddDuelRune(PvpOpponent *o, const char *rune_id) {
+    int def = RuneDefIndex(rune_id);
+    if (def >= 0 && o->rune_count < RUNE_SLOT_COUNT) o->rune_defs[o->rune_count++] = def;
+}
+
 const char *PvpOpponentName(const PvpOpponent *o) {
+    if (o->duel) return o->duel_name;
     return PvpTableEnsure()->bots[o->bot].name;
 }
 
@@ -458,11 +521,12 @@ void PvpOpponentRoster(BattleRoster *roster, const PvpOpponent *o) {
     memset(roster, 0, sizeof(*roster));
     cJSON *catalog_root = JsonLoadFile(PVP_CATALOG_PATH);
     cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
-    const PvpSquad *squad = &PvpTableEnsure()->squads[o->squad];
+    const PvpSquadCell *cells = o->duel ? o->duel_cells : PvpTableEnsure()->squads[o->squad].cells;
     for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
-        const PvpSquadCell *cell = &squad->cells[slot];
+        const PvpSquadCell *cell = &cells[slot];
         if (!cell->present) continue;
         cJSON *def = CatalogFindCharacter(catalog, cell->id);
+        if (!def && o->duel) continue;
         if (!def) TraceLog(LOG_FATAL, "Pvp: unit %s is not in the catalog", cell->id);
         CharacterParse(def, &roster->chars[slot], &roster->abilities[slot]);
         roster->chars[slot].tier = cell->tier;
@@ -540,8 +604,8 @@ PlayerPvpBattle PvpRecordAttack(PlayerPvp *pvp, const PvpOpponent *o, bool won, 
     if (delta > 0) pvp->trophies_won += delta;
     PlayerPvpBattle battle = {
         .at = now,
-        .bot = o->bot,
-        .squad = o->squad,
+        .bot = o->duel ? 0 : o->bot,
+        .squad = o->duel ? 0 : o->squad,
         .level = o->level,
         .opponent_trophies = o->trophies,
         .trophy_delta = delta,
@@ -550,6 +614,7 @@ PlayerPvpBattle PvpRecordAttack(PlayerPvp *pvp, const PvpOpponent *o, bool won, 
         .seed = o->seed,
         .won = won,
     };
+    if (o->duel) StrCopy(battle.opponent, sizeof(battle.opponent), o->duel_name);
     PvpHistoryPush(pvp, &battle);
     return battle;
 }
@@ -602,9 +667,39 @@ long long PvpEventCycle(long long now) {
     return now / PvpTableEnsure()->events.duration_seconds;
 }
 
+bool PvpEventIsGuildCycle(long long cycle) {
+    const PvpEventRules *e = &PvpTableEnsure()->events;
+    return e->guild_catalog_count > 0 && cycle >= 0 && cycle % e->guild_every_cycles == 0;
+}
+
 const PvpEvent *PvpEventForCycle(long long cycle) {
     const PvpEventRules *e = &PvpTableEnsure()->events;
+    if (PvpEventIsGuildCycle(cycle)) return &e->guild_catalog[(cycle / e->guild_every_cycles) % e->guild_catalog_count];
     return &e->catalog[cycle % e->catalog_count];
+}
+
+long long PvpEventCycleStart(long long cycle) {
+    return cycle * PvpTableEnsure()->events.duration_seconds;
+}
+
+long long PvpGuildCycleBefore(long long cycle) {
+    const PvpEventRules *e = &PvpTableEnsure()->events;
+    if (e->guild_catalog_count == 0 || cycle <= 0) return -1;
+    return (cycle - 1) / e->guild_every_cycles * e->guild_every_cycles;
+}
+
+long long PvpGuildCycleAfter(long long cycle) {
+    const PvpEventRules *e = &PvpTableEnsure()->events;
+    if (e->guild_catalog_count == 0) return -1;
+    return (cycle / e->guild_every_cycles + 1) * e->guild_every_cycles;
+}
+
+const PvpEventRankReward *PvpGuildRewardForRank(const PvpEvent *event, int rank) {
+    for (int i = 0; i < event->guild_rank_reward_count; i++) {
+        const PvpEventRankReward *tier = &event->guild_rank_rewards[i];
+        if (rank >= tier->first && rank <= tier->last) return tier;
+    }
+    return NULL;
 }
 
 long long PvpEventRemaining(long long now) {

@@ -5567,6 +5567,45 @@ static void TestPvpEventRotatesThroughTheCatalog(void) {
     for (int i = 0; i < rules->catalog_count; i++) assert(rules->catalog[i].changer.effect_count > 0);
 }
 
+static void TestOnslaughtReplacesEveryFewPvpEvents(void) {
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    assert(rules->guild_catalog_count > 0 && rules->guild_every_cycles > 1);
+    long long cycles = rules->guild_every_cycles * rules->guild_catalog_count;
+    int guild_cycles = 0;
+    for (long long cycle = 1; cycle <= cycles; cycle++) {
+        const PvpEvent *event = PvpEventForCycle(cycle);
+        assert(event->guild == PvpEventIsGuildCycle(cycle));
+        long long before = PvpGuildCycleBefore(cycle), after = PvpGuildCycleAfter(cycle);
+        assert(PvpEventIsGuildCycle(before) && before < cycle && cycle - before <= rules->guild_every_cycles);
+        assert(PvpEventIsGuildCycle(after) && after > cycle && after - cycle <= rules->guild_every_cycles);
+        if (!event->guild) continue;
+        guild_cycles++;
+        assert(event->guild_minimum_banners > 0 && event->rank_reward_count > 0);
+        const PvpEventRankReward *first = PvpGuildRewardForRank(event, 1);
+        assert(first && first->reward.gems > 0 && PvpGuildRewardForRank(event, 0) == NULL);
+    }
+    assert(guild_cycles == rules->guild_catalog_count);
+}
+
+static void TestDuelOpponentFightsTheMembersSquad(void) {
+    PvpOpponent o = PvpOpponentFromDuel("ally", "Varric", 22, 340, 100, 5);
+    assert(o.duel && !strcmp(PvpOpponentName(&o), "Varric") && o.level == 22 && o.trophies == 340);
+    assert(o.gain == PvpTrophyGain(100, 340) && o.loss == PvpTrophyLoss(100, 340));
+    assert(PvpOpponentAddDuelUnit(&o, 0, "UNIT_VIVIENNE", TIER_II, 9));
+    assert(PvpOpponentAddDuelUnit(&o, 2, "UNIT_NOT_IN_THE_CATALOG", TIER_I, 3));
+    assert(!PvpOpponentAddDuelUnit(&o, SQUAD_SLOT_COUNT, "UNIT_VIVIENNE", TIER_I, 1));
+    PvpOpponentAddDuelRune(&o, "rune-power-1");
+    PvpOpponentAddDuelRune(&o, "rune-that-does-not-exist");
+    static BattleRoster roster;
+    PvpOpponentRoster(&roster, &o);
+    assert(roster.present[0] && !roster.present[2] && roster.chars[0].level == 9 && roster.chars[0].tier == TIER_II);
+    assert(roster.rune_def_count == 1 && roster.rune_defs[0] == RuneDefIndex("rune-power-1"));
+    PlayerPvp pvp = {.trophies = 100};
+    PlayerPvpBattle battle = PvpRecordAttack(&pvp, &o, true, 1700000000);
+    assert(!strcmp(battle.opponent, "Varric") && battle.bot == 0 && pvp.trophies == 100 + o.gain);
+    assert(battle.gold == PvpGoldReward(&o, true));
+}
+
 static void TestPvpEventBannersMilestonesAndClaim(void) {
     static Player player;
     memset(&player, 0, sizeof(player));
@@ -6038,6 +6077,8 @@ int main(void) {
     TestPvpEventResultsKeepNineteenUnclaimedFirst();
     TestPvpEventMatchmakingFollowsBanners();
     TestPvpEventRotatesThroughTheCatalog();
+    TestOnslaughtReplacesEveryFewPvpEvents();
+    TestDuelOpponentFightsTheMembersSquad();
     TestPvpEventBannersMilestonesAndClaim();
     TestPvpEventPrizesAreOwnableAndHaveArt();
     TestPvpEventMilestonesPayWispGearAndTome();

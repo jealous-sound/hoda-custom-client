@@ -675,8 +675,14 @@ void BackendRetryNow(void) {
     pthread_mutex_unlock(&w->lock);
 }
 
+static long long server_now_shift;
+
+void ServerNowShift(long long seconds) {
+    server_now_shift = seconds;
+}
+
 long long ServerNow(void) {
-    long long now = (long long)time(NULL);
+    long long now = (long long)time(NULL) + server_now_shift;
     if (!BackendEnabled()) return now;
     BackendWorker *w = BackendWorkerStart();
     pthread_mutex_lock(&w->lock);

@@ -735,7 +735,8 @@ static bool ProgressionPvpAddBattle(cJSON *history, const PlayerPvpBattle *battl
         !cJSON_AddNumberToObject(entry, "seed", battle->seed) ||
         !cJSON_AddBoolToObject(entry, "defense", battle->defense) ||
         !cJSON_AddBoolToObject(entry, "won", battle->won) ||
-        !cJSON_AddBoolToObject(entry, "revenged", battle->revenged)) {
+        !cJSON_AddBoolToObject(entry, "revenged", battle->revenged) ||
+        (battle->opponent[0] && !cJSON_AddStringToObject(entry, "opponent", battle->opponent))) {
         cJSON_Delete(entry);
         return false;
     }
@@ -1280,6 +1281,7 @@ static bool ProgressionLoadPvpBattle(const cJSON *entry, PlayerPvpBattle *battle
     battle->defense = JsonBool(entry, "defense");
     battle->won = JsonBool(entry, "won");
     battle->revenged = JsonBool(entry, "revenged");
+    StrCopy(battle->opponent, sizeof(battle->opponent), JsonStr(entry, "opponent"));
     return ok;
 }
 

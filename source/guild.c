@@ -33,6 +33,13 @@
 #define GUILD_HTTP_REFUSED 422
 #define GUILD_HTTP_NOT_FOUND 404
 #define GUILD_CREATE_ROUTE "guilds"
+#define GUILD_ONSLAUGHT_CLAIM_ROUTE "guild/onslaught/claim"
+#define GUILD_ONSLAUGHT_LIMIT 100
+#define GUILD_ONSLAUGHT_MEMBER_CAP (GUILD_MAX_MEMBERS * 2)
+#define GUILD_DUEL_RUNE_CAP 3
+#define GUILD_RUNE_ID_CAP 48
+#define GUILD_REPORT_KIND_GUILD "guild"
+#define GUILD_REPORT_KIND_APPLICATION "application"
 #define GUILD_DEFAULT_LANGUAGE "ru"
 #define GUILD_CODE_CANT_AFFORD "cant_afford"
 #define GUILD_CODE_NOT_FOUND "GUILD_NOT_FOUND"
@@ -191,7 +198,70 @@ typedef enum {
     GUILD_REQUEST_MESSAGES,
     GUILD_REQUEST_SEND,
     GUILD_REQUEST_CREATE,
+    GUILD_REQUEST_ONSLAUGHT,
+    GUILD_REQUEST_DUEL,
+    GUILD_REQUEST_REPORT,
 } GuildRequestKind;
+
+typedef enum {
+    GUILD_ABUSE_NONE,
+    GUILD_ABUSE_HARASSMENT,
+    GUILD_ABUSE_SEXUAL,
+    GUILD_ABUSE_EXPLICIT,
+    GUILD_ABUSE_OTHER,
+} GuildAbuseType;
+
+static const char *const GUILD_ABUSE_NAMES[] = {"NONE", "HARRASSMENT", "SEXUAL", "EXPLICIT", "OTHER"};
+
+typedef struct {
+    char id[GUILD_ID_CAP];
+    char name[GUILD_NAME_CAP];
+    int icon;
+    int banners;
+    int rank;
+} GuildStanding;
+
+typedef struct {
+    char id[GUILD_ID_CAP];
+    char name[PLAYER_NAME_CAPACITY];
+    int banners;
+    int rank;
+} GuildContribution;
+
+typedef struct {
+    long long cycle;
+    bool ready;
+    bool finished;
+    int total_guilds;
+    GuildStanding guilds[GUILD_ONSLAUGHT_LIMIT];
+    int guild_count;
+    bool has_mine;
+    GuildStanding mine;
+    GuildContribution members[GUILD_ONSLAUGHT_MEMBER_CAP];
+    int member_count;
+    int my_banners;
+    int minimum_banners;
+    int award_rank;
+    bool claimed;
+} GuildOnslaught;
+
+typedef struct {
+    int slot;
+    char id[GUILD_ID_CAP];
+    char tier[8];
+    int level;
+} GuildDuelUnit;
+
+typedef struct {
+    char id[GUILD_ID_CAP];
+    char name[PLAYER_NAME_CAPACITY];
+    int level;
+    int trophies;
+    GuildDuelUnit units[SQUAD_SLOT_COUNT];
+    int unit_count;
+    char runes[GUILD_DUEL_RUNE_CAP][GUILD_RUNE_ID_CAP];
+    int rune_count;
+} GuildDuel;
 
 typedef struct {
     GuildRequestKind kind;
@@ -238,11 +308,19 @@ typedef struct {
     int result_count;
     double next_state_at;
     double next_chat_at;
+    GuildOnslaught current;
+    GuildOnslaught previous;
+    long long onslaught_inflight;
+    GuildDuel duel;
+    int claim_ticket;
 } Guild;
 
 void GuildInitialize(Guild *g) {
     memset(g, 0, sizeof(*g));
     g->rank = GUILD_RANK_NOT_MEMBER;
+    g->current.cycle = -1;
+    g->previous.cycle = -1;
+    g->claim_ticket = BACKEND_NO_TICKET;
 }
 
 bool GuildIsMember(const Guild *g) {
@@ -545,7 +623,176 @@ bool GuildTakeNotice(Guild *g, GuildNotice *out) {
 }
 
 bool GuildBusy(const Guild *g) {
-    return g->inflight != GUILD_REQUEST_NONE || g->queue_count > 0 || g->create_ticket != BACKEND_NO_TICKET;
+    return g->inflight != GUILD_REQUEST_NONE || g->queue_count > 0 || g->create_ticket != BACKEND_NO_TICKET ||
+           g->claim_ticket != BACKEND_NO_TICKET;
+}
+
+static long long GuildNowCycle(void) {
+    return PvpEventCycle(ServerNow());
+}
+
+long long GuildCurrentOnslaughtCycle(void) {
+    long long cycle = GuildNowCycle();
+    return PvpEventIsGuildCycle(cycle) ? cycle : -1;
+}
+
+long long GuildPreviousOnslaughtCycle(void) {
+    return PvpGuildCycleBefore(GuildNowCycle());
+}
+
+long long GuildNextOnslaughtCycle(void) {
+    return PvpGuildCycleAfter(GuildNowCycle());
+}
+
+GuildOnslaught *GuildOnslaughtFor(Guild *g, long long cycle) {
+    if (cycle < 0) return NULL;
+    if (cycle == GuildCurrentOnslaughtCycle()) return &g->current;
+    return &g->previous;
+}
+
+void GuildRequestOnslaught(Guild *g, long long cycle) {
+    GuildOnslaught *slot = GuildOnslaughtFor(g, cycle);
+    if (!slot) return;
+    const char *route = TextFormat("guild/onslaught?cycle=%lld", cycle);
+    if (g->inflight == GUILD_REQUEST_ONSLAUGHT && g->onslaught_inflight == cycle) return;
+    for (int i = 0; i < g->queue_count; i++)
+        if (g->queue[i].kind == GUILD_REQUEST_ONSLAUGHT && !strcmp(g->queue[i].route, route)) return;
+    if (slot->cycle != cycle) {
+        memset(slot, 0, sizeof(*slot));
+        slot->cycle = cycle;
+    }
+    GuildEnqueue(g, GUILD_REQUEST_ONSLAUGHT, "GET", route, NULL);
+}
+
+static void GuildOnslaughtFailed(Guild *g) {
+    GuildOnslaught *o = GuildOnslaughtFor(g, g->onslaught_inflight);
+    if (o && o->cycle == g->onslaught_inflight) o->ready = true;
+}
+
+static void GuildRequestOnslaughts(Guild *g) {
+    GuildRequestOnslaught(g, GuildCurrentOnslaughtCycle());
+    GuildRequestOnslaught(g, GuildPreviousOnslaughtCycle());
+}
+
+static void GuildParseStanding(GuildStanding *out, const cJSON *json) {
+    memset(out, 0, sizeof(*out));
+    StrCopy(out->id, sizeof(out->id), JsonStr(json, "id"));
+    StrCopy(out->name, sizeof(out->name), JsonStr(json, "name"));
+    out->icon = JsonInt(json, "icon");
+    out->banners = JsonInt(json, "banners");
+    out->rank = JsonInt(json, "rank");
+}
+
+static void GuildRankContributions(GuildOnslaught *o) {
+    int rank = 1;
+    for (int i = 0; i < o->member_count; i++) {
+        if (i > 0 && o->members[i].banners < o->members[i - 1].banners) rank = i + 1;
+        o->members[i].rank = rank;
+    }
+}
+
+static void GuildHandleOnslaught(Guild *g, const cJSON *json) {
+    long long cycle = GuildJsonLong(json, "cycle");
+    GuildOnslaught *o = GuildOnslaughtFor(g, cycle);
+    if (!o) return;
+    memset(o, 0, sizeof(*o));
+    o->cycle = cycle;
+    o->ready = true;
+    o->finished = JsonBool(json, "finished");
+    o->total_guilds = JsonInt(json, "total_guilds");
+    const cJSON *entry;
+    cJSON_ArrayForEach(entry, cJSON_GetObjectItemCaseSensitive(json, "guilds")) {
+        if (o->guild_count >= GUILD_ONSLAUGHT_LIMIT) break;
+        GuildParseStanding(&o->guilds[o->guild_count++], entry);
+    }
+    const cJSON *mine = cJSON_GetObjectItemCaseSensitive(json, "mine");
+    o->has_mine = cJSON_IsObject(mine);
+    if (o->has_mine) GuildParseStanding(&o->mine, mine);
+    cJSON_ArrayForEach(entry, cJSON_GetObjectItemCaseSensitive(json, "members")) {
+        if (o->member_count >= GUILD_ONSLAUGHT_MEMBER_CAP) break;
+        GuildContribution *c = &o->members[o->member_count++];
+        StrCopy(c->id, sizeof(c->id), JsonStr(entry, "id"));
+        StrCopy(c->name, sizeof(c->name), JsonStr(entry, "name"));
+        c->banners = JsonInt(entry, "banners");
+    }
+    GuildRankContributions(o);
+    o->my_banners = JsonInt(json, "my_banners");
+    o->minimum_banners = JsonInt(json, "minimum_banners");
+    o->award_rank = JsonInt(json, "award_rank");
+    o->claimed = JsonBool(json, "claimed");
+}
+
+bool GuildOnslaughtAwardAvailable(const GuildOnslaught *o) {
+    return o->ready && o->finished && o->award_rank > 0 && !o->claimed;
+}
+
+bool GuildClaimOnslaught(Guild *g, Player *p) {
+    GuildOnslaught *o = &g->previous;
+    if (g->claim_ticket != BACKEND_NO_TICKET || !GuildOnslaughtAwardAvailable(o)) return false;
+    if (!ProgressionSave(p)) return false;
+    cJSON *fields = cJSON_CreateObject();
+    cJSON_AddNumberToObject(fields, "cycle", (double)o->cycle);
+    g->claim_ticket = BackendBeginAction(GUILD_ONSLAUGHT_CLAIM_ROUTE, fields);
+    cJSON_Delete(fields);
+    return g->claim_ticket != BACKEND_NO_TICKET;
+}
+
+bool GuildClaimPending(const Guild *g) {
+    return g->claim_ticket != BACKEND_NO_TICKET;
+}
+
+static void GuildPollClaim(Guild *g, Player *p) {
+    if (g->claim_ticket == BACKEND_NO_TICKET) return;
+    cJSON *response = NULL;
+    BackendActionState state = BackendPollAction(g->claim_ticket, &response);
+    if (state == BACKEND_ACTION_PENDING) return;
+    g->claim_ticket = BACKEND_NO_TICKET;
+    if (state == BACKEND_ACTION_APPLIED) {
+        ProgressionAdoptServerProfile(p, response);
+        g->previous.claimed = true;
+        GuiSoundPlay(SND_MISSION_COLLECT);
+    } else {
+        if (state == BACKEND_ACTION_REFUSED && cJSON_GetObjectItemCaseSensitive(response, "profile"))
+            ProgressionAdoptServerProfile(p, response);
+        GuildRequestOnslaught(g, g->previous.cycle);
+    }
+    cJSON_Delete(response);
+}
+
+void GuildRequestDuel(Guild *g, const char *member_id) {
+    memset(&g->duel, 0, sizeof(g->duel));
+    GuildEnqueue(g, GUILD_REQUEST_DUEL, "GET", TextFormat("guild/members/%s/duel", member_id), NULL);
+}
+
+static void GuildHandleDuel(Guild *g, const cJSON *json) {
+    GuildDuel *d = &g->duel;
+    memset(d, 0, sizeof(*d));
+    StrCopy(d->id, sizeof(d->id), JsonStr(json, "id"));
+    StrCopy(d->name, sizeof(d->name), JsonStr(json, "name"));
+    d->level = JsonInt(json, "level");
+    d->trophies = JsonInt(json, "trophies");
+    const cJSON *item;
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive(json, "units")) {
+        if (d->unit_count >= SQUAD_SLOT_COUNT) break;
+        GuildDuelUnit *unit = &d->units[d->unit_count++];
+        unit->slot = JsonInt(item, "slot");
+        StrCopy(unit->id, sizeof(unit->id), JsonStr(item, "id"));
+        StrCopy(unit->tier, sizeof(unit->tier), JsonStr(item, "tier"));
+        unit->level = JsonInt(item, "level");
+    }
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive(json, "runes")) {
+        if (d->rune_count >= GUILD_DUEL_RUNE_CAP || !cJSON_IsString(item)) continue;
+        StrCopy(d->runes[d->rune_count++], GUILD_RUNE_ID_CAP, item->valuestring);
+    }
+}
+
+void GuildRequestReport(Guild *g, const char *kind, GuildAbuseType abuse, const char *target_id) {
+    cJSON *body = cJSON_CreateObject();
+    cJSON_AddStringToObject(body, "kind", kind);
+    cJSON_AddStringToObject(body, "abuse_type", GUILD_ABUSE_NAMES[abuse]);
+    bool guild = !strcmp(kind, GUILD_REPORT_KIND_GUILD);
+    cJSON_AddStringToObject(body, guild ? "guild_id" : "applicant_id", target_id);
+    GuildEnqueue(g, GUILD_REQUEST_REPORT, "POST", "reports", body);
 }
 
 static cJSON *GuildMessagesBody(const Guild *g, const char *text) {
@@ -556,8 +803,11 @@ static cJSON *GuildMessagesBody(const Guild *g, const char *text) {
     return body;
 }
 
+static void GuildRequestOnslaughts(Guild *g);
+
 void GuildRefresh(Guild *g) {
     if (!GuildQueued(g, GUILD_REQUEST_STATE)) GuildEnqueue(g, GUILD_REQUEST_STATE, "GET", "guild", NULL);
+    GuildRequestOnslaughts(g);
     g->next_state_at = GetTime() + GUILD_STATE_REFRESH_SECONDS;
 }
 
@@ -710,6 +960,10 @@ static void GuildHandleAnswer(Guild *g, GuildRequestKind kind, int status, const
             g->next_state_at = GetTime() + GUILD_RETRY_SECONDS;
             return;
         }
+        if (kind == GUILD_REQUEST_ONSLAUGHT) {
+            GuildOnslaughtFailed(g);
+            return;
+        }
         GuildPushResult(
             g,
             kind,
@@ -730,6 +984,14 @@ static void GuildHandleAnswer(Guild *g, GuildRequestKind kind, int status, const
         case GUILD_REQUEST_MESSAGES:
         case GUILD_REQUEST_SEND:
             GuildAdoptMessages(g, json);
+            break;
+        case GUILD_REQUEST_ONSLAUGHT:
+            GuildHandleOnslaught(g, json);
+            return;
+        case GUILD_REQUEST_DUEL:
+            GuildHandleDuel(g, json);
+            break;
+        case GUILD_REQUEST_REPORT:
             break;
         default:
             GuildAdoptState(g, json);
@@ -755,6 +1017,8 @@ static void GuildPollInflight(Guild *g) {
         g->next_chat_at = GetTime() + GUILD_RETRY_SECONDS;
     } else if (kind == GUILD_REQUEST_STATE) {
         g->next_state_at = GetTime() + GUILD_RETRY_SECONDS;
+    } else if (kind == GUILD_REQUEST_ONSLAUGHT) {
+        GuildOnslaughtFailed(g);
     } else {
         if (kind == GUILD_REQUEST_RECOMMENDED || kind == GUILD_REQUEST_SEARCH) g->list_ready = true;
         GuildPushResult(g, kind, GUILD_OUTCOME_OFFLINE, "");
@@ -769,6 +1033,8 @@ static void GuildStartNext(Guild *g) {
     if (ticket == BACKEND_NO_TICKET) return;
     g->inflight = request->kind;
     g->ticket = ticket;
+    const char *cycle = strchr(request->route, '=');
+    if (request->kind == GUILD_REQUEST_ONSLAUGHT && cycle) g->onslaught_inflight = atoll(cycle + 1);
     cJSON_Delete(request->body);
     memmove(&g->queue[0], &g->queue[1], sizeof(g->queue[0]) * (size_t)(g->queue_count - 1));
     g->queue_count--;
@@ -797,6 +1063,7 @@ static void GuildPollCreate(Guild *g, Player *p) {
 void GuildUpdate(Guild *g, Player *p) {
     if (!GuildAvailable()) return;
     GuildPollCreate(g, p);
+    GuildPollClaim(g, p);
     GuildPollInflight(g);
     double now = GetTime();
     bool engaged = GuildUnlocked(p) || GuildIsMember(g) || g->has_application;

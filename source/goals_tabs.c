@@ -18,7 +18,16 @@
 
 typedef enum { GOALS_TAB_TROPHIES, GOALS_TAB_MISSIONS, GOALS_TAB_EVENTS, GOALS_TAB_BATTLES, GOALS_TAB_COUNT } GoalsTab;
 
-typedef enum { GOALS_NONE = 0, GOALS_FIGHT_BOT, GOALS_REVENGE, GOALS_CLAIM_EVENT } GoalsAction;
+typedef enum { GOALS_NONE = 0, GOALS_FIGHT_BOT, GOALS_REVENGE, GOALS_CLAIM_EVENT, GOALS_CLAIM_GUILD_EVENT } GoalsAction;
+
+typedef struct {
+    bool shown;
+    long long cycle;
+    int rank;
+    int banners;
+    bool claimed;
+    bool pending;
+} GoalsGuildAward;
 
 static const Color GOALS_TEXT = {235, 232, 220, 255};
 static const Color GOALS_TEXT_DIM = {182, 178, 168, 255};
@@ -252,7 +261,8 @@ static void GoalsBattleText(char *out, size_t size, const PlayerPvpBattle *battl
     const char *key =
         TextFormat("BATTLE_HISTORY_%s_&_%s", battle->defense ? "DEFEND" : "ATTACK", battle->won ? "WIN" : "LOSE");
     char named[GOALS_TEXT_SIZE];
-    StrReplaceToken(named, sizeof(named), LocGet(key), "[opponent]", PvpTableEnsure()->bots[battle->bot].name);
+    const char *opponent = battle->opponent[0] ? battle->opponent : PvpTableEnsure()->bots[battle->bot].name;
+    StrReplaceToken(named, sizeof(named), LocGet(key), "[opponent]", opponent);
     StrReplaceToken(out, size, named, "[xp]", TextFormat("%d", battle->xp));
 }
 
@@ -354,19 +364,74 @@ static void GoalsDrawEventRow(const GoalsTabs *t, const PlayerPvpEventResult *re
     );
 }
 
-GoalsAction
-GoalsDrawEvents(GoalsTabs *t, GoalsScroll *scroll, const PlayerPvp *pvp, Rectangle content, bool interactive) {
-    if (pvp->event_result_count == 0) {
+static void GoalsDrawGuildEventRow(const GoalsTabs *t, const GoalsGuildAward *award, Rectangle row) {
+    DrawRectangleRec(row, GOALS_ROW_TINT);
+    Rectangle banner = {row.x + 12.0f, row.y + (row.height - 58.0f) * 0.5f, 58.0f, 58.0f};
+    UiDrawTexture(GuiTex(GUI_PVP_BANNER), banner, WHITE);
+    float x = banner.x + banner.width + 12.0f;
+    float width = row.width - GOALS_BUTTON_WIDTH - banner.width - 200.0f;
+    const PvpEvent *event = PvpEventForCycle(award->cycle);
+    UiDrawTextLeftMiddle(
+        t->font, LocGet(event->title_key), (Rectangle){x, row.y + 8.0f, width, 34.0f}, 22.0f, GOALS_TEXT
+    );
+    char rank[GOALS_TEXT_SIZE];
+    const char *args[] = {TextFormat("%d", award->rank)};
+    LocFormatArgs(rank, sizeof(rank), "GUILD_EVENT_RANKING", args, 1);
+    UiDrawTextLeftMiddle(
+        t->body,
+        TextFormat("%s   %s %d", rank, LocGetOr("PVP_EVENT_BANNERS", "Знамена"), award->banners),
+        (Rectangle){x, row.y + 44.0f, width, 26.0f},
+        18.0f,
+        GOALS_TEXT_DIM
+    );
+    const PvpEventRankReward *reward = PvpGuildRewardForRank(event, award->rank);
+    if (!reward) return;
+    Rectangle amount = {row.x + row.width - GOALS_BUTTON_WIDTH - 180.0f, row.y, 120.0f, row.height};
+    UiDrawTextRight(t->font, TextFormat("+%d", reward->reward.gems), amount, 28.0f, GOALS_TEXT);
+    UiDrawTexture(
+        GuiTex(GUI_MISSION_GEM),
+        (Rectangle){amount.x + amount.width + 6.0f, row.y + (row.height - 40.0f) * 0.5f, 40.0f, 40.0f},
+        WHITE
+    );
+}
+
+GoalsAction GoalsDrawEvents(
+    GoalsTabs *t,
+    GoalsScroll *scroll,
+    const PlayerPvp *pvp,
+    const GoalsGuildAward *award,
+    Rectangle content,
+    bool interactive
+) {
+    int guild_rows = award && award->shown ? 1 : 0;
+    if (pvp->event_result_count + guild_rows == 0) {
         GoalsDrawEmpty(t, "Завершённых событий пока нет.", content);
         return GOALS_NONE;
     }
     float stride = GOALS_BATTLE_ROW_HEIGHT + GOALS_ROW_GAP;
-    GoalsScrollUpdate(scroll, content, pvp->event_result_count * stride - GOALS_ROW_GAP);
+    GoalsScrollUpdate(scroll, content, (pvp->event_result_count + guild_rows) * stride - GOALS_ROW_GAP);
     GoalsAction action = GOALS_NONE;
     bool visible = CheckCollisionPointRec(UiMouse(), content);
     GoalsBeginClip(content);
+    if (guild_rows) {
+        Rectangle row = {content.x, content.y - scroll->offset, content.width, GOALS_BATTLE_ROW_HEIGHT};
+        GoalsDrawGuildEventRow(t, award, row);
+        Rectangle button = {
+            row.x + row.width - GOALS_BUTTON_WIDTH - 6.0f,
+            row.y + (row.height - GOALS_BUTTON_HEIGHT) * 0.5f,
+            GOALS_BUTTON_WIDTH,
+            GOALS_BUTTON_HEIGHT,
+        };
+        if (award->claimed) {
+            UiDrawTextCentered(t->body, LocGetOr("PVP_EVENT_DONE", "готово"), button, 20.0f, GOALS_TEXT_DIM);
+        } else if (award->pending) {
+            UiDrawTextCentered(t->body, "...", button, 20.0f, GOALS_TEXT_DIM);
+        } else if (ButtonDrawEx(&t->claim, button, interactive && visible && !scroll->drag_scrolled)) {
+            action = GOALS_CLAIM_GUILD_EVENT;
+        }
+    }
     for (int i = 0; i < pvp->event_result_count; i++) {
-        float y = content.y + i * stride - scroll->offset;
+        float y = content.y + (i + guild_rows) * stride - scroll->offset;
         if (y + GOALS_BATTLE_ROW_HEIGHT < content.y || y > content.y + content.height) continue;
         Rectangle row = {content.x, y, content.width, GOALS_BATTLE_ROW_HEIGHT};
         GoalsDrawEventRow(t, &pvp->event_results[i], row);
