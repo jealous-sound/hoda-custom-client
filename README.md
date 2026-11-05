@@ -46,6 +46,11 @@ python3 tools/check_comments.py
 `player_save.dat` as before. `hoda-original-backend` is the separate Python server for the original
 Android client.
 
+Against the backend, store pack purchases and energy/stamina refills are decided by the server: the client asks for
+the pack and loads the profile the server sends back. `data/hero_pool.json` (`tools/build_hero_pool.py`) is the hero
+list the server rolls from; after changing it or `store_packs.json`, `runes.json`, `gear.json` or
+`tutorial_rewards.json`, run `scripts/sync-client-data.sh` in the backend. Store schedules use UTC dates.
+
 `make dist` builds a playable copy in `../hoda-custom-dist` (override with `DIST_DIR=`): the binary with raylib
 bundled next to it, `data/`, and only the parts of `client-additional-data` the game reads (about 2.1 GB of the
 local cache). Players start it with `play.sh`; `DIST_BACKEND_URL=http://host:port` makes that the default server.

@@ -1,5 +1,7 @@
 
 bool ProgressionSave(const Player *player);
+bool ProgressionNeedsServer(void);
+bool ProgressionAdoptServerProfile(Player *player, const cJSON *response);
 Color GearRarityColor(int rarity);
 void GearDrawTile(const GearDef *def, Rectangle r, bool selected);
 static void CampaignDrawWrapped(
@@ -28,6 +30,8 @@ static void CampaignDrawWrapped(
 #define STORE_BULLET_FADE_SECONDS 1.0f
 #define STORE_BULLET_CYCLE_SECONDS 5.0f
 #define STORE_DIALOG_TEXT_CAPACITY 512
+#define STORE_PURCHASE_ROUTE "store/purchases"
+#define STORE_NO_SERVER_PURCHASE (-1)
 #define STORE_ITEMS_TITLE "Предметы"
 #define STORE_VAULT_TITLE "Хранилище"
 #define STORE_FEATURED_TITLE "Популярное"
@@ -294,6 +298,7 @@ typedef struct {
     long long clock_override;
     int selected_pack;
     int pending_pack;
+    int awaiting_pack;
     int info_pack;
     float scroll;
     bool dragging;
@@ -436,7 +441,7 @@ long long StorePackSecondsLeft(const StorePackDef *pack, int flash_days, int fla
     }
     if (!pack->schedule_start) return STORE_PACK_ALWAYS;
     time_t stamp = (time_t)now;
-    struct tm date = *localtime(&stamp);
+    struct tm date = *gmtime(&stamp);
     int today = (date.tm_mon + 1) * 100 + date.tm_mday;
     bool wraps = pack->schedule_start > pack->schedule_end;
     bool active = wraps ? today >= pack->schedule_start || today <= pack->schedule_end
@@ -447,8 +452,7 @@ long long StorePackSecondsLeft(const StorePackDef *pack, int flash_days, int fla
     end.tm_mon = pack->schedule_end / 100 - 1;
     end.tm_mday = pack->schedule_end % 100 + 1;
     end.tm_hour = end.tm_min = end.tm_sec = 0;
-    end.tm_isdst = -1;
-    return (long long)mktime(&end) - now;
+    return (long long)timegm(&end) - now;
 }
 
 static StoreOffer StoreActiveOffer(const StorePackDef *pack, const Player *player) {
@@ -796,6 +800,7 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
     store->view = STORE_VIEW_LANDING;
     store->return_view = STORE_VIEW_HEROES;
     store->info_pack = -1;
+    store->awaiting_pack = STORE_NO_SERVER_PURCHASE;
 }
 
 void StoreDestroy(Store *store) {
@@ -1321,8 +1326,154 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
     return true;
 }
 
+static const char *StoreOfferCurrency(StoreOffer offer) {
+    if (offer.voucher >= 0) return "voucher";
+    return offer.gems ? "gems" : "gold";
+}
+
+static bool StoreServerPurchaseFits(Store *store, const Player *player, const StorePackDef *pack, StoreOffer offer) {
+    bool fits = true;
+    if (pack->kind == STORE_KIND_HERO) fits = PlayerRosterHasCapacity(player, pack->hero_count);
+    if (pack->kind == STORE_KIND_RUNE) fits = RUNE_INVENTORY_CAPACITY - player->runes.count >= pack->slot_count;
+    if (!fits) {
+        StoreOpenDialog(store, STORE_DIALOG_ROSTER_FULL);
+        return false;
+    }
+    if (!StoreOfferAffordable(offer, player)) {
+        StoreOpenDialog(store, STORE_DIALOG_CANT_AFFORD);
+        return false;
+    }
+    return true;
+}
+
+static PlayerRunes store_runes_before_purchase;
+
+static bool StoreRequestServerPurchase(Store *store, Player *player, int pack_index) {
+    if (store->awaiting_pack != STORE_NO_SERVER_PURCHASE) return false;
+    const StorePackDef *pack = &store->packs[pack_index];
+    StoreOffer offer = StoreActiveOffer(pack, player);
+    if (!StoreServerPurchaseFits(store, player, pack, offer)) return false;
+    if (!ProgressionSave(player)) {
+        StorePurchaseSaveFailed(store);
+        return false;
+    }
+    cJSON *fields = cJSON_CreateObject();
+    cJSON_AddStringToObject(fields, "pack", pack->id);
+    cJSON_AddStringToObject(fields, "currency", StoreOfferCurrency(offer));
+    cJSON_AddNumberToObject(fields, "price", offer.price);
+    cJSON_AddBoolToObject(fields, "scripted", pack->kind == STORE_KIND_HERO && TutorialScriptedPack(pack->id));
+    bool sent = BackendBeginAction(STORE_PURCHASE_ROUTE, fields);
+    cJSON_Delete(fields);
+    if (!sent) {
+        StoreSetStatus(store, "Сервер занят, попробуйте ещё раз");
+        GuiSoundPlay(SND_STORE_ERROR);
+        return false;
+    }
+    store_runes_before_purchase = player->runes;
+    store->awaiting_pack = pack_index;
+    return false;
+}
+
+static int StoreRosterIndexOfInstance(const Player *player, uint64_t instance_id) {
+    for (int i = 0; i < player->roster_count; i++)
+        if (player->roster[i].instance_id == instance_id) return i;
+    return -1;
+}
+
+static int StoreGrantedDef(const cJSON *granted, const char *list, int index, bool rune) {
+    const char *id = cJSON_GetStringValue(cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(granted, list), index));
+    if (!id) return -1;
+    return rune ? RuneDefIndex(id) : GearDefIndex(id);
+}
+
+static bool
+StoreRevealServerHeroes(Store *store, Player *player, Heroes *heroes, int pack_index, const cJSON *granted) {
+    const cJSON *granted_heroes = cJSON_GetObjectItemCaseSensitive(granted, "heroes");
+    int count = cJSON_GetArraySize(granted_heroes);
+    const cJSON *first = cJSON_GetArrayItem(granted_heroes, 0);
+    const cJSON *first_id = cJSON_GetObjectItemCaseSensitive(first, "instance_id");
+    int first_index =
+        cJSON_IsNumber(first_id) ? StoreRosterIndexOfInstance(player, (uint64_t)first_id->valuedouble) : -1;
+    if (count <= 0 || count > STORE_MAX_RESULTS || first_index < 0 || first_index + count > player->roster_count) {
+        StoreSetStatus(store, "Не удалось добавить героев в ростер");
+        GuiSoundPlay(SND_STORE_ERROR);
+        return false;
+    }
+    if (!HeroesSyncRoster(heroes, player)) TraceLog(LOG_FATAL, "Store: persisted roster cannot sync to Heroes");
+    store->pack_rune_def = StoreGrantedDef(granted, "runes", 0, true);
+    store->pack_gear_def = StoreGrantedDef(granted, "gear", 0, false);
+    StoreBeginHeroReveal(store, pack_index, first_index, count);
+    TutorialRaise(TUTORIAL_EVENT_UNIT_PURCHASE_SUCCEEDED);
+    return true;
+}
+
+static void StoreRevealServerItems(Store *store, int pack_index, const cJSON *granted) {
+    bool runes = store->packs[pack_index].kind == STORE_KIND_RUNE;
+    const cJSON *list = cJSON_GetObjectItemCaseSensitive(granted, runes ? "runes" : "gear");
+    int count = 0;
+    for (int i = 0; i < cJSON_GetArraySize(list) && count < STORE_MAX_ITEM_RESULTS; i++) {
+        int def = StoreGrantedDef(granted, runes ? "runes" : "gear", i, runes);
+        if (def < 0) continue;
+        bool newly_owned = !runes || !StoreRuneDefOwned(&store_runes_before_purchase, def);
+        store->item_results[count++] = (StoreItemResult){def, newly_owned, false, 0.0f};
+    }
+    if (!runes && cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(granted, "tome")) && count < STORE_MAX_ITEM_RESULTS)
+        store->item_results[count++] = (StoreItemResult){GEAR_ROLL_TOME, true, false, 0.0f};
+    StoreBeginItemReveal(store, pack_index, runes ? STORE_KIND_RUNE : STORE_KIND_GEAR, count);
+}
+
+static void StoreShowServerRefusal(Store *store, const cJSON *response) {
+    const char *code = JsonStr(response, "code");
+    if (!strcmp(code, "cant_afford")) {
+        StoreOpenDialog(store, STORE_DIALOG_CANT_AFFORD);
+        return;
+    }
+    if (!strcmp(code, "inventory_full")) {
+        StoreOpenDialog(store, STORE_DIALOG_ROSTER_FULL);
+        return;
+    }
+    if (!strcmp(code, "counter_limit"))
+        StoreSetStatus(store, "Достигнут предел счётчика покупок");
+    else if (!strcmp(code, "offer_changed"))
+        StoreSetStatus(store, "Цена изменилась, попробуйте ещё раз");
+    else
+        StoreSetStatus(store, "Этот пак временно недоступен");
+    GuiSoundPlay(SND_STORE_ERROR);
+}
+
+static bool StorePollServerPurchase(Store *store, Player *player, Heroes *heroes) {
+    if (store->awaiting_pack == STORE_NO_SERVER_PURCHASE) return false;
+    cJSON *response = NULL;
+    BackendActionState state = BackendPollAction(&response);
+    if (state == BACKEND_ACTION_PENDING) return false;
+    int pack_index = store->awaiting_pack;
+    store->awaiting_pack = STORE_NO_SERVER_PURCHASE;
+    bool purchased = false;
+    if (state == BACKEND_ACTION_APPLIED) {
+        const cJSON *granted = cJSON_GetObjectItemCaseSensitive(response, "granted");
+        if (!ProgressionAdoptServerProfile(player, response)) {
+            StorePurchaseSaveFailed(store);
+        } else if (store->packs[pack_index].kind == STORE_KIND_HERO) {
+            purchased = StoreRevealServerHeroes(store, player, heroes, pack_index, granted);
+        } else {
+            StoreRevealServerItems(store, pack_index, granted);
+            purchased = true;
+        }
+    } else if (state == BACKEND_ACTION_REFUSED) {
+        StoreShowServerRefusal(store, response);
+    } else {
+        StoreSetStatus(
+            store, state == BACKEND_ACTION_CONFLICT ? "Профиль изменился на сервере" : "Нет связи с сервером"
+        );
+        GuiSoundPlay(SND_STORE_ERROR);
+    }
+    cJSON_Delete(response);
+    return purchased;
+}
+
 static bool StoreTryPurchase(Store *store, Player *player, Heroes *heroes, int pack_index) {
     if (pack_index < 0 || pack_index >= store->pack_count) return false;
+    if (ProgressionNeedsServer()) return StoreRequestServerPurchase(store, player, pack_index);
     switch (store->packs[pack_index].kind) {
         case STORE_KIND_RUNE:
             return StoreTryBuyRunePack(store, player, pack_index);
@@ -2345,6 +2496,7 @@ static bool StoreDrawDialog(Store *store, Player *player, Heroes *heroes) {
 
 StoreAction StoreDraw(Store *store, Player *player, Heroes *heroes, float dt) {
     if (dt < 0.0f) dt = 0.0f;
+    bool server_purchased = StorePollServerPurchase(store, player, heroes);
     if (store->status_time > 0.0f) store->status_time = fmaxf(0.0f, store->status_time - dt);
     if (store->view == STORE_VIEW_HEROES || store->view == STORE_VIEW_ITEMS || store->view == STORE_VIEW_FEATURED) {
         store->bullet_time += dt;
@@ -2405,6 +2557,6 @@ StoreAction StoreDraw(Store *store, Player *player, Heroes *heroes, float dt) {
             action = StoreDrawItemReveal(store, player, heroes, dt);
             break;
     }
-    if (StoreDrawDialog(store, player, heroes)) action = STORE_ACTION_PURCHASED;
+    if (StoreDrawDialog(store, player, heroes) || server_purchased) action = STORE_ACTION_PURCHASED;
     return action;
 }

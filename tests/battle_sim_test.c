@@ -5937,6 +5937,69 @@ static void TestProgressionKeepsNameAndTutorialState(void) {
     remove(path);
 }
 
+static cJSON *ServerPurchaseResponse(const Player *player, const char *hero, uint64_t instance_id) {
+    char *text = ProgressionSerialize(player);
+    cJSON *profile = cJSON_Parse(text);
+    cJSON_free(text);
+    cJSON *account = cJSON_GetObjectItemCaseSensitive(profile, "account");
+    cJSON_ReplaceItemInObjectCaseSensitive(account, "gems", cJSON_CreateNumber(player->gems - 30));
+    cJSON *roster = cJSON_GetObjectItemCaseSensitive(profile, "roster");
+    cJSON *addition = cJSON_CreateObject();
+    cJSON_AddStringToObject(addition, "id", hero);
+    cJSON_AddNumberToObject(addition, "instance_id", (double)instance_id);
+    cJSON_AddStringToObject(addition, "tier", "I");
+    cJSON_AddNumberToObject(addition, "level", 1);
+    cJSON_AddNumberToObject(addition, "xp", 0);
+    cJSON_AddBoolToObject(addition, "ascended", false);
+    cJSON_AddNumberToObject(addition, "consume_xp", 0);
+    cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(roster, "additions"), addition);
+    cJSON_ReplaceItemInObjectCaseSensitive(roster, "next_instance_id", cJSON_CreateNumber((double)instance_id + 1));
+    cJSON *runes = cJSON_GetObjectItemCaseSensitive(profile, "runes");
+    uint64_t uuid = (uint64_t)cJSON_GetObjectItemCaseSensitive(runes, "next_uuid")->valuedouble;
+    if (!uuid) uuid = 1;
+    cJSON *rune = cJSON_CreateObject();
+    cJSON_AddNumberToObject(rune, "uuid", (double)uuid);
+    cJSON_AddStringToObject(rune, "def", "rune-power-2");
+    cJSON_AddNumberToObject(rune, "expire_at", 0);
+    cJSON_AddNumberToObject(rune, "inventory_expire_at", 4102444800.0);
+    cJSON_AddItemToArray(cJSON_GetObjectItemCaseSensitive(runes, "items"), rune);
+    cJSON_ReplaceItemInObjectCaseSensitive(runes, "next_uuid", cJSON_CreateNumber((double)uuid + 1));
+    cJSON *inventory = cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(profile, "gear"), "inventory");
+    cJSON_AddNumberToObject(inventory, GearDefAt(0)->id, 1);
+    cJSON *response = cJSON_CreateObject();
+    cJSON_AddItemToObject(response, "profile", profile);
+    return response;
+}
+
+static void TestServerPurchaseProfileReplacesThePlayer(void) {
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    player.gems = 100;
+    int roster_before = player.roster_count;
+    int runes_before = player.runes.count;
+    uint64_t instance_id = player.next_instance_id + 5;
+    cJSON *response = ServerPurchaseResponse(&player, "UNIT_ELVENMAGE", instance_id);
+
+    assert(ProgressionAdoptServerProfile(&player, response));
+    assert(player.gems == 70);
+    assert(player.roster_count == roster_before + 1);
+    const Character *added = &player.roster[player.roster_count - 1];
+    assert(!strcmp(added->id, "UNIT_ELVENMAGE") && added->instance_id == instance_id && added->level == 1);
+    assert(player.next_instance_id == instance_id + 1);
+    assert(player.runes.count == runes_before + 1);
+    assert(player.runes.items[player.runes.count - 1].def == RuneDefIndex("rune-power-2"));
+    assert(player.gear.counts[0] == 1);
+    cJSON_Delete(response);
+
+    cJSON *broken = cJSON_CreateObject();
+    assert(!ProgressionAdoptServerProfile(&player, broken));
+    assert(player.gems == 70);
+    cJSON_Delete(broken);
+    PlayerUnloadRoster(&player);
+}
+
 int main(void) {
     TestBattleFeetSitOnPadsWhoseBottomsShareOnePlane();
     TestPvpBannerCurvePeaksAtTheLadderMidpoint();
@@ -5972,6 +6035,7 @@ int main(void) {
     TestTutorialPackRewardsResolve();
     TestPlayerNameFollowsTheOriginalRule();
     TestProgressionKeepsNameAndTutorialState();
+    TestServerPurchaseProfileReplacesThePlayer();
     TestNexusGameChangerBoostsMatchingUnitsOnBothSides();
     TestNexusGameChangerNarrowsByFactionAndUnit();
     TestNexusGameChangerTableAffectsRealRosters();

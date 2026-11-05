@@ -1,10 +1,21 @@
-typedef enum { ENERGY_DIALOG_ACTION_NONE = 0, ENERGY_DIALOG_ACTION_QUESTS, ENERGY_DIALOG_ACTION_PVP } EnergyDialogAction;
+bool ProgressionSave(const Player *player);
+bool ProgressionNeedsServer(void);
+bool ProgressionAdoptServerProfile(Player *player, const cJSON *response);
+
+#define ENERGY_DIALOG_REFILL_ROUTE "refills"
+
+typedef enum {
+    ENERGY_DIALOG_ACTION_NONE = 0,
+    ENERGY_DIALOG_ACTION_QUESTS,
+    ENERGY_DIALOG_ACTION_PVP
+} EnergyDialogAction;
 
 typedef struct {
     bool open;
     bool stamina;
     bool opening_release;
     bool scrim_armed;
+    bool refill_awaiting_server;
     Font font;
     Texture2D bg;
     Texture2D brush;
@@ -20,6 +31,7 @@ static void EnergyDialogInitializeKind(EnergyDialog *d, bool stamina) {
     d->stamina = stamina;
     d->opening_release = false;
     d->scrim_armed = false;
+    d->refill_awaiting_server = false;
     d->font = GuiFont(FNT_COOL);
     d->bg = GuiTex(GUI_STORE_OVERLAY);
     d->brush = GuiTex(GUI_REWARD_BRUSH);
@@ -67,7 +79,42 @@ bool EnergyDialogIsOpen(const EnergyDialog *d) {
     return d->open;
 }
 
+static void EnergyDialogPlayRefilled(EnergyDialog *d) {
+    if (d->stamina) {
+        GuiClickSoundPlay();
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+        GuiSoundPlay(SND_STAMINA_REFRESH);
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+    } else {
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+        GuiSoundPlay(SND_STAMINA_REFRESH);
+    }
+    d->open = false;
+}
+
+static void EnergyDialogRequestServerRefill(EnergyDialog *d, const Player *player) {
+    if (d->refill_awaiting_server || !ProgressionSave(player)) return;
+    cJSON *fields = cJSON_CreateObject();
+    cJSON_AddStringToObject(fields, "kind", d->stamina ? "stamina" : "energy");
+    d->refill_awaiting_server = BackendBeginAction(ENERGY_DIALOG_REFILL_ROUTE, fields);
+    cJSON_Delete(fields);
+}
+
+static void EnergyDialogPollServerRefill(EnergyDialog *d, Player *player) {
+    if (!d->refill_awaiting_server) return;
+    cJSON *response = NULL;
+    BackendActionState state = BackendPollAction(&response);
+    if (state == BACKEND_ACTION_PENDING) return;
+    d->refill_awaiting_server = false;
+    if (state == BACKEND_ACTION_APPLIED && ProgressionAdoptServerProfile(player, response))
+        EnergyDialogPlayRefilled(d);
+    else
+        GuiSoundPlay(SND_STORE_ERROR);
+    cJSON_Delete(response);
+}
+
 EnergyDialogAction EnergyDialogDraw(EnergyDialog *d, Player *player, bool allow_navigation) {
+    EnergyDialogPollServerRefill(d, player);
     Font menu_font = GuiFont(FNT_MENU);
     Font cool_font = d->font;
     Rectangle root = UiRoot();
@@ -136,24 +183,15 @@ EnergyDialogAction EnergyDialogDraw(EnergyDialog *d, Player *player, bool allow_
     bool pool_not_full = d->stamina ? player->stamina < player->stamina_max : player->energy < player->energy_max;
     bool can_refill = pool_not_full && can_afford;
     Rectangle refill = {panel.x + 229.0f, panel.y + 375.0f, 304.0f, 76.0f};
-    if (ButtonDrawEx(&d->refill, refill, can_refill)) {
-        bool refilled = d->stamina ? PlayerRefillStamina(player) : PlayerRefillEnergy(player);
-        if (refilled) {
-            if (d->stamina) {
-                GuiClickSoundPlay();
-                GuiSoundPlay(SND_UI_POPUP_CLOSE);
-                GuiSoundPlay(SND_STAMINA_REFRESH);
-                GuiSoundPlay(SND_UI_POPUP_CLOSE);
-            } else {
-                GuiSoundPlay(SND_UI_POPUP_CLOSE);
-                GuiSoundPlay(SND_STAMINA_REFRESH);
-            }
-            d->open = false;
-        }
+    if (ButtonDrawEx(&d->refill, refill, can_refill && !d->refill_awaiting_server)) {
+        if (ProgressionNeedsServer())
+            EnergyDialogRequestServerRefill(d, player);
+        else if (d->stamina ? PlayerRefillStamina(player) : PlayerRefillEnergy(player))
+            EnergyDialogPlayRefilled(d);
     }
 
     Rectangle navigate = {panel.x + 533.0f, panel.y + 375.0f, 304.0f, 76.0f};
-    if (ButtonDrawEx(&d->navigate, navigate, allow_navigation)) {
+    if (ButtonDrawEx(&d->navigate, navigate, allow_navigation && !d->refill_awaiting_server)) {
         d->open = false;
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return d->stamina ? ENERGY_DIALOG_ACTION_QUESTS : ENERGY_DIALOG_ACTION_PVP;
@@ -167,7 +205,9 @@ EnergyDialogAction EnergyDialogDraw(EnergyDialog *d, Player *player, bool allow_
     if (!d->opening_release && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) d->scrim_armed = scrim_hover;
 
     bool close_clicked = ButtonDraw(&d->close, close);
-    if (close_clicked) {
+    if (d->refill_awaiting_server) {
+        d->scrim_armed = false;
+    } else if (close_clicked) {
         if (d->stamina) GuiSoundPlay(SND_UI_POPUP_CLOSE);
         d->open = false;
     } else if (!d->opening_release && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && d->scrim_armed && scrim_hover) {

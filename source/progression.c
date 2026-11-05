@@ -1834,6 +1834,15 @@ ProgressionLoadResult ProgressionLoad(Player *player) {
     return ProgressionLoadFromPath(player, path) ? PROGRESSION_LOAD_RESTORED : PROGRESSION_LOAD_UNAVAILABLE;
 }
 
+bool ProgressionAdoptServerProfile(Player *player, const cJSON *response) {
+    const cJSON *profile = cJSON_GetObjectItemCaseSensitive(response, "profile");
+    char *text = cJSON_IsObject(profile) ? cJSON_PrintUnformatted(profile) : NULL;
+    bool ok = text && ProgressionLoadFromText(player, text, "from a server action");
+    cJSON_free(text);
+    if (!ok) TraceLog(LOG_WARNING, "Progression: the server applied an action but its profile did not load");
+    return ok;
+}
+
 bool ProgressionNeedsServer(void) {
     return ProgressionPersistenceEnabled() && BackendEnabled();
 }

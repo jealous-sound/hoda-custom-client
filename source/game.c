@@ -1148,6 +1148,7 @@ void GameDraw(Game *g) {
     g->hud.show_trophies = g->screen == SCREEN_PVP_HUB || (pvp_battle && !g->pvp_event);
     if (g->screen != SCREEN_BATTLE) MusicPlayerUpdate(&g->music);
     PlayerUpdate(&g->player, dt);
+    if (g->screen != SCREEN_STORE) StorePollServerPurchase(&g->store, &g->player, &g->heroes);
     if (g->player.roster_count != g->player.gallery.synced_roster_count) PlayerGallerySync(&g->player);
 
     ClearBackground(RAYWHITE);

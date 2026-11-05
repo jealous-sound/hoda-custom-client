@@ -19,6 +19,8 @@
 #define BACKEND_HTTP_UNAUTHORIZED 401
 #define BACKEND_HTTP_NOT_FOUND 404
 #define BACKEND_HTTP_CONFLICT 409
+#define BACKEND_HTTP_UNPROCESSABLE 422
+#define BACKEND_REQUEST_ID_CAP 33
 #define BACKEND_SESSION_RETRY_SECONDS 10
 #define BACKEND_REVISION_UNKNOWN -1
 #define BACKEND_UPLOAD_RETRY_SECONDS BACKEND_SESSION_RETRY_SECONDS
@@ -404,6 +406,41 @@ static BackendUpload BackendUploadProfile(const char *text, long long revision, 
     return result;
 }
 
+typedef enum {
+    BACKEND_ACTION_IDLE,
+    BACKEND_ACTION_PENDING,
+    BACKEND_ACTION_APPLIED,
+    BACKEND_ACTION_REFUSED,
+    BACKEND_ACTION_CONFLICT,
+    BACKEND_ACTION_UNREACHABLE,
+} BackendActionState;
+
+static BackendActionState
+BackendSendAction(const char *route, const char *body, long long revision, char **out_text, long long *out_revision) {
+    *out_text = NULL;
+    if (!BackendOpenSession()) return BACKEND_ACTION_UNREACHABLE;
+    char path[BACKEND_PATH_CAP];
+    snprintf(path, sizeof(path), "/v1/players/%s/%s", BackendPlayerId(), route);
+    BackendResponse response;
+    if (!BackendRequest("POST", path, body, revision, &response)) return BACKEND_ACTION_UNREACHABLE;
+    BackendActionState state = BACKEND_ACTION_UNREACHABLE;
+    if (response.status == BACKEND_HTTP_OK) {
+        state = BACKEND_ACTION_APPLIED;
+        *out_revision = response.revision;
+    } else if (response.status == BACKEND_HTTP_UNPROCESSABLE) {
+        state = BACKEND_ACTION_REFUSED;
+    } else if (response.status == BACKEND_HTTP_CONFLICT) {
+        state = BACKEND_ACTION_CONFLICT;
+        TraceLog(LOG_WARNING, "Backend: %s refused, profile changed since revision %lld", route, revision);
+    } else if (response.status == BACKEND_HTTP_UNAUTHORIZED) {
+        backend_state.session_open = false;
+    } else {
+        TraceLog(LOG_WARNING, "Backend: %s failed (HTTP %d): %s", route, response.status, response.body);
+    }
+    *out_text = response.body;
+    return state;
+}
+
 typedef struct {
     pthread_mutex_t lock;
     pthread_cond_t wake;
@@ -425,6 +462,14 @@ typedef struct {
     long long revision;
     bool clock_known;
     long long clock_offset;
+    char action_route[BACKEND_PATH_CAP];
+    char *action_body;
+    bool action_wanted;
+    bool action_running;
+    BackendActionState action_state;
+    char *action_text;
+    char *retry_route_body;
+    char retry_request_id[BACKEND_REQUEST_ID_CAP];
 } BackendWorker;
 
 static BackendWorker backend_worker = {
@@ -475,6 +520,29 @@ static void BackendWorkerUpload(BackendWorker *w) {
     }
 }
 
+static void BackendWorkerAction(BackendWorker *w) {
+    char *body = w->action_body;
+    long long revision = w->revision;
+    char route[BACKEND_PATH_CAP];
+    StrCopy(route, sizeof(route), w->action_route);
+    bool upload_stuck = w->upload_text != NULL;
+    w->action_body = NULL;
+    w->action_wanted = false;
+    w->action_running = true;
+    pthread_mutex_unlock(&w->lock);
+    char *text = NULL;
+    long long stored_revision = revision;
+    BackendActionState state =
+        upload_stuck ? BACKEND_ACTION_UNREACHABLE : BackendSendAction(route, body, revision, &text, &stored_revision);
+    free(body);
+    pthread_mutex_lock(&w->lock);
+    w->action_running = false;
+    if (state == BACKEND_ACTION_APPLIED) w->revision = stored_revision;
+    free(w->action_text);
+    w->action_text = text;
+    w->action_state = state;
+}
+
 static void BackendWorkerOpenSession(BackendWorker *w) {
     w->session_wanted = false;
     pthread_mutex_unlock(&w->lock);
@@ -503,6 +571,8 @@ static void *BackendWorkerRun(void *argument) {
             BackendWorkerFetch(w);
         } else if (upload_due) {
             BackendWorkerUpload(w);
+        } else if (w->action_wanted) {
+            BackendWorkerAction(w);
         } else if (w->session_wanted) {
             BackendWorkerOpenSession(w);
         } else if (w->stopping) {
@@ -627,7 +697,79 @@ bool BackendStoreProfile(const char *text) {
 
 static bool BackendWorkerInFlight(const BackendWorker *w) {
     bool upload_due = w->upload_text && (long long)time(NULL) >= w->upload_due_at;
-    return w->fetch_wanted || w->fetch_running || w->upload_running || upload_due;
+    return w->fetch_wanted || w->fetch_running || w->upload_running || upload_due || w->action_wanted ||
+           w->action_running;
+}
+
+static char *BackendJoinRouteBody(const char *route, const char *body) {
+    size_t length = strlen(route) + strlen(body) + 2;
+    char *joined = malloc(length);
+    if (joined) snprintf(joined, length, "%s\n%s", route, body);
+    return joined;
+}
+
+static void BackendChooseRequestId(BackendWorker *w, const char *route, const char *body) {
+    char *signature = BackendJoinRouteBody(route, body);
+    bool retrying = signature && w->retry_route_body && !strcmp(signature, w->retry_route_body);
+    if (!retrying) {
+        snprintf(
+            w->retry_request_id,
+            sizeof(w->retry_request_id),
+            "%08x%08x%08llx",
+            (unsigned)GetRandomValue(0, INT_MAX),
+            (unsigned)GetRandomValue(0, INT_MAX),
+            (unsigned long long)time(NULL)
+        );
+    }
+    free(w->retry_route_body);
+    w->retry_route_body = signature;
+}
+
+bool BackendBeginAction(const char *route, cJSON *fields) {
+    if (!BackendEnabled() || !fields) return false;
+    char *unsigned_body = cJSON_PrintUnformatted(fields);
+    if (!unsigned_body) return false;
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    bool busy = w->action_wanted || w->action_running || w->action_state == BACKEND_ACTION_PENDING;
+    bool started = false;
+    if (!busy) {
+        BackendChooseRequestId(w, route, unsigned_body);
+        cJSON_DeleteItemFromObjectCaseSensitive(fields, "request_id");
+        cJSON_AddStringToObject(fields, "request_id", w->retry_request_id);
+        free(w->action_body);
+        w->action_body = cJSON_PrintUnformatted(fields);
+        StrCopy(w->action_route, sizeof(w->action_route), route);
+        w->action_wanted = w->action_body != NULL;
+        w->action_state = w->action_wanted ? BACKEND_ACTION_PENDING : BACKEND_ACTION_IDLE;
+        if (w->upload_text) w->upload_due_at = 0;
+        started = w->action_wanted;
+        BackendWorkerSignal(w);
+    }
+    pthread_mutex_unlock(&w->lock);
+    cJSON_free(unsigned_body);
+    return started;
+}
+
+BackendActionState BackendPollAction(cJSON **out_json) {
+    *out_json = NULL;
+    if (!BackendEnabled()) return BACKEND_ACTION_IDLE;
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    BackendActionState state = w->action_state;
+    bool settled = state != BACKEND_ACTION_IDLE && state != BACKEND_ACTION_PENDING;
+    if (settled) {
+        *out_json = w->action_text ? cJSON_Parse(w->action_text) : NULL;
+        free(w->action_text);
+        w->action_text = NULL;
+        w->action_state = BACKEND_ACTION_IDLE;
+        if (state != BACKEND_ACTION_UNREACHABLE) {
+            free(w->retry_route_body);
+            w->retry_route_body = NULL;
+        }
+    }
+    pthread_mutex_unlock(&w->lock);
+    return state;
 }
 
 bool BackendBusy(void) {
