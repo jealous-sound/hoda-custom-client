@@ -128,6 +128,7 @@ typedef struct {
 typedef struct {
     uint64_t instance_id;
     char id[64];
+    char based_on[64];
     char name[64];
     char name_ru[96];
     Rarity rarity;
@@ -283,6 +284,7 @@ static void CharacterParse(const cJSON *c, Character *ch, Ability *ab) {
     memset(ab, 0, sizeof(*ab));
 
     StrCopy(ch->id, sizeof(ch->id), JsonStr(c, "id"));
+    StrCopy(ch->based_on, sizeof(ch->based_on), JsonStr(c, "based_on"));
     StrCopy(ch->name, sizeof(ch->name), JsonStr(c, "name"));
     StrCopy(ch->name_ru, sizeof(ch->name_ru), JsonStr(c, "name_ru"));
     ch->rarity = RarityFromString(JsonStr(c, "rarity"));
@@ -348,6 +350,23 @@ static void CharacterParse(const cJSON *c, Character *ch, Ability *ab) {
         s->health_per_level = JsonInt(tier, "health_per_level");
     }
     ch->max_tier = TierFromString(JsonStr(c, "max_tier"));
+}
+
+#define CUSTOM_HERO_CATALOG_PATH "data/custom_heroes.json"
+
+static cJSON *CharacterCatalogAddCustomHeroes(cJSON *catalog_root) {
+    cJSON *characters = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
+    if (!cJSON_IsArray(characters) || !FileExists(CUSTOM_HERO_CATALOG_PATH)) return catalog_root;
+    cJSON *custom_root = JsonLoadFile(CUSTOM_HERO_CATALOG_PATH);
+    cJSON *custom = cJSON_GetObjectItemCaseSensitive(custom_root, "characters");
+    for (cJSON *hero = cJSON_DetachItemFromArray(custom, 0); hero; hero = cJSON_DetachItemFromArray(custom, 0))
+        cJSON_AddItemToArray(characters, hero);
+    cJSON_Delete(custom_root);
+    return catalog_root;
+}
+
+static const char *CharacterDataId(const Character *ch) {
+    return ch->based_on[0] ? ch->based_on : ch->id;
 }
 
 int CharacterStatPower(const Character *ch) {

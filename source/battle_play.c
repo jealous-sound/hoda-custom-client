@@ -755,7 +755,7 @@ static void BpBeginNextIntroEvent(BattlePlay *bp, Battle *b) {
 
 static bool BpBreathMuzzle(const BattlePlay *bp, Battle *b, int actor, Vector3 *position, Vector3 *aim) {
     const Character *ch = bp->sim.units[actor].ch;
-    const BattleVfxWire *wire = ch ? BattleUnitWire(b, ch->id, ch->tier) : NULL;
+    const BattleVfxWire *wire = ch ? BattleUnitWire(b, CharacterDataId(ch), ch->tier) : NULL;
     if (!wire || !wire->muzzle_bone[0]) return false;
     const HomeSquadUnit *unit = &b->squads.units[actor / SQUAD_SLOT_COUNT][actor % SQUAD_SLOT_COUNT];
     return HomeSquadUnitBoneAnchor(unit, wire->muzzle_bone, wire->muzzle_offset, wire->muzzle_forward, position, aim);
@@ -782,7 +782,7 @@ static void BpFire(BattlePlay *bp, Battle *b) {
     int actor_side = a->actor / SQUAD_SLOT_COUNT, actor_slot = a->actor % SQUAD_SLOT_COUNT;
     const Character *ch = bp->sim.units[a->actor].ch;
 
-    const BattleVfxWire *w = BattleUnitWire(b, ch->id, ch->tier);
+    const BattleVfxWire *w = BattleUnitWire(b, CharacterDataId(ch), ch->tier);
     const char *ability = w && w->ability[0] ? w->ability : NULL;
     const char *impact = w && w->impact[0] ? w->impact : NULL;
     const char *muzzle = w && w->muzzle[0] ? w->muzzle : NULL;

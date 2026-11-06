@@ -193,7 +193,7 @@ void ConsumeCatalogUnload(void) {
 static const ConsumeProfile *ConsumeProfileFor(const Character *ch) {
     ConsumeCatalogEnsure();
     for (int i = 0; i < consume_catalog.profile_count; i++)
-        if (!strcmp(consume_catalog.profiles[i].id, ch->id)) return &consume_catalog.profiles[i];
+        if (!strcmp(consume_catalog.profiles[i].id, CharacterDataId(ch))) return &consume_catalog.profiles[i];
     TraceLog(LOG_FATAL, "Consume: %s has no profile; rerun tools/build_consume_tables.py", ch->id);
     return NULL;
 }

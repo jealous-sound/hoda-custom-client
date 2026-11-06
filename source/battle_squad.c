@@ -34,7 +34,7 @@ BattleRosterLoad(BattleRoster *r, const char *rosters_path, const char *catalog_
     memset(r, 0, sizeof(*r));
 
     cJSON *root = JsonLoadFile(rosters_path);
-    cJSON *catalog_root = JsonLoadFile(catalog_path);
+    cJSON *catalog_root = CharacterCatalogAddCustomHeroes(JsonLoadFile(catalog_path));
     cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
     if (!cJSON_IsArray(catalog)) TraceLog(LOG_FATAL, "Battle: no character catalog in %s", catalog_path);
 

@@ -3358,7 +3358,7 @@ static bool BattleAudioBindUnit(Battle *b, int side, int slot, const Character *
     if (!ch) return true;
     StrCopy(unit->unit, sizeof(unit->unit), ch->id);
 
-    const BattleAudioUnitDef *def = BattleAudioUnitFind(b, ch->id);
+    const BattleAudioUnitDef *def = BattleAudioUnitFind(b, CharacterDataId(ch));
     if (!def || !def->has_tier[ch->tier]) {
         TraceLog(LOG_WARNING, "Battle: no unit-audio mapping for %s tier %s", ch->id, TIER_NAMES[ch->tier]);
         return false;

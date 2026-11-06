@@ -40,6 +40,30 @@ static void TestUnitPoolReusesReleasedUnits(void) {
     assert(unit_pool_count == 0);
 }
 
+static void TestWispIdleDriftsLikeTheOriginalFx(void) {
+    assert(WispDriftProgress(0.0f) == 0.0f);
+    assert(fabsf(WispDriftProgress(0.25f) - 0.15625f) < 1e-5f);
+    assert(fabsf(WispDriftProgress(0.5f) - 0.5f) < 1e-5f);
+    assert(fabsf(WispDriftProgress(1.0f) - 1.0f) < 1e-5f);
+    assert(fabsf(WispDriftProgress(1.75f) - 0.15625f) < 1e-5f);
+
+    Quaternion chest_rest = QuaternionNormalize((Quaternion){0.4669f, 0.5310f, 0.4669f, 0.5310f});
+    Vector3 reach = WispDriftReach(chest_rest);
+    assert(Vector3Distance(reach, (Vector3){0.2f, -0.1856f, 0.1248f}) < 1e-3f);
+
+    HomeSquadUnit wisp = {.active = true, .wisp_fx = "fx_wispchar_t1_pre", .wisp_bone = -1, .wisp_drift_reach = reach};
+    wisp.xform = MatrixMultiply(
+        MatrixMultiply(MatrixScale(2.0f, 2.0f, 2.0f), MatrixRotateY(PI / 2.0f)), MatrixTranslate(10.0f, 0.0f, 0.0f)
+    );
+    Vector3 rest = HomeSquadWispPosition(&wisp);
+    HomeSquadUnitUpdate(&wisp, 1.0f);
+    Vector3 turned_reach =
+        Vector3RotateByQuaternion(reach, QuaternionFromAxisAngle((Vector3){0.0f, 1.0f, 0.0f}, PI / 2.0f));
+    assert(Vector3Distance(Vector3Subtract(HomeSquadWispPosition(&wisp), rest), turned_reach) < 1e-4f);
+    HomeSquadUnitUpdate(&wisp, 1.0f);
+    assert(Vector3Distance(HomeSquadWispPosition(&wisp), rest) < 1e-4f);
+}
+
 static void TestCharacter(
     Character *ch, Ability *ability, const char *id, const char *key, TargetPattern target, int power, int health
 ) {
@@ -1878,6 +1902,56 @@ static void TestCatalogStatGrowth(void) {
     assert(CharacterStatHealth(&ch) == 1278);
 
     cJSON_Delete(root);
+}
+
+static void TestCustomHeroesInheritTheirBaseHeroData(void) {
+    Battle *battle = calloc(1, sizeof(*battle));
+    assert(battle);
+    BattleAudioManifestLoad(battle, "data/unit_audio.json");
+    PassiveManifestEnsure();
+    cJSON *custom_root = JsonLoadFile(CUSTOM_HERO_CATALOG_PATH);
+    cJSON *root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    int heroes = 0;
+    cJSON *hero = NULL;
+    cJSON_ArrayForEach(hero, cJSON_GetObjectItemCaseSensitive(custom_root, "characters")) {
+        Character custom, base;
+        Ability custom_ability, base_ability;
+        const cJSON *custom_definition = CatalogFindCharacter(catalog, JsonStr(hero, "id"));
+        assert(custom_definition);
+        CharacterParse(custom_definition, &custom, &custom_ability);
+        const cJSON *base_definition = CatalogFindCharacter(catalog, custom.based_on);
+        assert(base_definition);
+        CharacterParse(base_definition, &base, &base_ability);
+        assert(!base.based_on[0]);
+        assert(!strcmp(CharacterDataId(&base), base.id));
+        assert(!strcmp(CharacterDataId(&custom), base.id));
+        assert(!strcmp(custom_ability.key, base_ability.key));
+        custom.level = base.level = 1;
+        for (int tier = 0; tier < TIER_COUNT; tier++) {
+            if (!custom.has_tier[tier]) continue;
+            custom.tier = base.tier = (Tier)tier;
+            assert(strcmp(custom.model_prefab[tier], base.model_prefab[tier]) != 0);
+            assert(strcmp(custom.icon_prefab[tier], base.icon_prefab[tier]) != 0);
+            assert(ConsumeProfileFor(&custom) == ConsumeProfileFor(&base));
+
+            SimUnit units[2 * SQUAD_SLOT_COUNT];
+            SimUnitsInit(units, 0, 0, &custom);
+            SimUnitsInit(units, 1, 0, &base);
+            assert(units[0].passives == units[SQUAD_SLOT_COUNT].passives);
+
+            assert(BattleAudioBindUnit(battle, 0, 0, &custom) == BattleAudioBindUnit(battle, 1, 0, &base));
+            assert(!strcmp(battle->unit_audio[0][0].unit, custom.id));
+            assert(!strcmp(battle->unit_audio[0][0].profile, battle->unit_audio[1][0].profile));
+            assert(battle->unit_audio[0][0].attack_capable == battle->unit_audio[1][0].attack_capable);
+        }
+        heroes++;
+    }
+    assert(heroes > 0);
+    cJSON_Delete(root);
+    cJSON_Delete(custom_root);
+    BattleAudioManifestUnload(battle);
+    free(battle);
 }
 
 static void TestFxPresetLiveEmitterSizes(void) {
@@ -6223,6 +6297,7 @@ int main(void) {
     TestTimelineCapacity();
     TestLegendaryStars();
     TestCatalogStatGrowth();
+    TestCustomHeroesInheritTheirBaseHeroData();
     TestFxPresetLiveEmitterSizes();
     TestGeneratedFxCurvesAndDragonJet();
     TestPortraitCoverage();
@@ -6267,6 +6342,7 @@ int main(void) {
     TestAllCampaignMapsAdvance();
     TestEnergyAndStaminaPools();
     TestUnitPoolReusesReleasedUnits();
+    TestWispIdleDriftsLikeTheOriginalFx();
     TestFxKeyoutPreservesSourceTransparency();
     TestCreatureClipFramesStayOnIdleGround();
     puts("battle_sim_test: ok");
