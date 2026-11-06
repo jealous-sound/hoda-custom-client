@@ -1,14 +1,19 @@
 #include <errno.h>
 
 #define BACKEND_URL_ENV "HOD_BACKEND_URL"
+#ifndef HOD_SERVER_URL
+#define HOD_SERVER_URL ""
+#endif
 #define BACKEND_PLAYER_ENV "HOD_PLAYER_ID"
 #define BACKEND_ACCOUNT_ENV "HOD_ACCOUNT_PATH"
 #define BACKEND_DEFAULT_ACCOUNT_PATH "account.dat"
 #define BACKEND_PLAYER_ID_CAP 65
 #define BACKEND_SECRET_CAP 129
-#define BACKEND_TIMEOUT_SECONDS 5
-#define BACKEND_HOST_CAP 256
+#define BACKEND_TIMEOUT_SECONDS 10
+#define BACKEND_URL_CAP 256
 #define BACKEND_PATH_CAP 512
+#define BACKEND_HEADER_CAP 192
+#define BACKEND_HEADER_SLOTS 3
 #define BACKEND_TOKEN_CAP 128
 #define BACKEND_REVISION_HEADER "X-Profile-Revision"
 #define BACKEND_HTTP_OK 200
@@ -25,10 +30,8 @@
 #define BACKEND_SHUTDOWN_FLUSH_SECONDS 8
 
 typedef struct {
-    bool resolved;
     bool enabled;
-    char host[BACKEND_HOST_CAP];
-    char port[16];
+    char base_url[BACKEND_URL_CAP];
     bool session_open;
     long long session_failed_at;
     char token[BACKEND_TOKEN_CAP];
@@ -47,158 +50,88 @@ typedef struct {
     long long revision;
 } BackendResponse;
 
-static bool BackendParseUrl(const char *url, BackendState *state) {
-    const char *scheme = "http://";
-    if (strncmp(url, scheme, strlen(scheme)) != 0) return false;
-    const char *authority = url + strlen(scheme);
-    size_t length = strcspn(authority, "/");
-    const char *colon = memchr(authority, ':', length);
-    size_t host_length = colon ? (size_t)(colon - authority) : length;
-    if (host_length == 0 || host_length >= sizeof(state->host)) return false;
-    memcpy(state->host, authority, host_length);
-    state->host[host_length] = '\0';
-    size_t port_length = colon ? length - host_length - 1 : 2;
-    if (port_length == 0 || port_length >= sizeof(state->port)) return false;
-    if (colon) {
-        memcpy(state->port, colon + 1, port_length);
-        state->port[port_length] = '\0';
-    } else {
-        StrCopy(state->port, sizeof(state->port), "80");
-    }
+static bool BackendUrlHasScheme(const char *url) {
+    return strncmp(url, "http://", strlen("http://")) == 0 || strncmp(url, "https://", strlen("https://")) == 0;
+}
+
+static bool BackendAcceptUrl(const char *url, BackendState *state) {
+    if (!url || !BackendUrlHasScheme(url)) return false;
+    const char *authority = strstr(url, "://") + strlen("://");
+    size_t length = strlen(url);
+    while (length > 0 && url[length - 1] == '/') length--;
+    if (url + length <= authority || length >= sizeof(state->base_url)) return false;
+    memcpy(state->base_url, url, length);
+    state->base_url[length] = '\0';
     return true;
 }
 
-static BackendState *BackendResolve(void) {
-    if (backend_state.resolved) return &backend_state;
-    backend_state.resolved = true;
+const char *BackendUrlOverride(void) {
     const char *url = getenv(BACKEND_URL_ENV);
-    if (!url || !url[0]) return &backend_state;
-    backend_state.enabled = BackendParseUrl(url, &backend_state);
-    if (!backend_state.enabled) TraceLog(LOG_WARNING, "Backend: unsupported %s=%s", BACKEND_URL_ENV, url);
-    return &backend_state;
+    return url && url[0] ? url : NULL;
+}
+
+const char *BackendDefaultUrl(void) {
+    return HOD_SERVER_URL[0] ? HOD_SERVER_URL : NULL;
+}
+
+bool BackendConnect(const char *url) {
+    backend_state.enabled = BackendAcceptUrl(url, &backend_state);
+    if (backend_state.enabled)
+        TraceLog(LOG_INFO, "Backend: playing online against %s", backend_state.base_url);
+    else
+        TraceLog(LOG_WARNING, "Backend: unsupported server address %s", url ? url : "(none)");
+    return backend_state.enabled;
 }
 
 bool BackendEnabled(void) {
-    return BackendResolve()->enabled;
+    return backend_state.enabled;
 }
 
-static bool BackendSendAll(intptr_t connection, const char *data, size_t length) {
-    while (length > 0) {
-        long sent = PlatformSocketSend(connection, data, length);
-        if (sent <= 0) return false;
-        data += sent;
-        length -= (size_t)sent;
+static int BackendRequestHeaders(
+    const BackendState *state, long long if_match, char storage[][BACKEND_HEADER_CAP], const char **headers
+) {
+    int count = 0;
+    headers[count++] = "Content-Type: application/json";
+    if (state->session_open) {
+        snprintf(storage[count], BACKEND_HEADER_CAP, "Authorization: Bearer %s", state->token);
+        headers[count] = storage[count];
+        count++;
     }
-    return true;
-}
-
-static char *BackendReceiveAll(intptr_t connection, size_t *out_length) {
-    size_t capacity = 16384, length = 0;
-    char *buffer = malloc(capacity + 1);
-    if (!buffer) return NULL;
-    for (;;) {
-        if (length == capacity) {
-            char *grown = realloc(buffer, capacity * 2 + 1);
-            if (!grown) {
-                free(buffer);
-                return NULL;
-            }
-            buffer = grown;
-            capacity *= 2;
-        }
-        long received = PlatformSocketReceive(connection, buffer + length, capacity - length);
-        if (received < 0) {
-            free(buffer);
-            return NULL;
-        }
-        if (received == 0) break;
-        length += (size_t)received;
+    if (if_match >= 0) {
+        snprintf(storage[count], BACKEND_HEADER_CAP, "If-Match: \"%lld\"", if_match);
+        headers[count] = storage[count];
+        count++;
     }
-    buffer[length] = '\0';
-    *out_length = length;
-    return buffer;
-}
-
-static long long BackendHeaderInt(const char *headers, const char *headers_end, const char *name) {
-    size_t name_length = strlen(name);
-    for (const char *line = headers; line && line < headers_end;) {
-        const char *next = strstr(line, "\r\n");
-        if (!next || next > headers_end) break;
-        if (strncasecmp(line, name, name_length) == 0 && line[name_length] == ':')
-            return strtoll(line + name_length + 1, NULL, 10);
-        line = next + 2;
-    }
-    return 0;
+    return count;
 }
 
 static bool
 BackendRequest(const char *method, const char *path, const char *body, long long if_match, BackendResponse *response) {
-    BackendState *state = BackendResolve();
+    BackendState *state = &backend_state;
     memset(response, 0, sizeof(*response));
     if (!state->enabled) return false;
-    intptr_t connection = PlatformSocketConnect(state->host, state->port, BACKEND_TIMEOUT_SECONDS);
-    if (connection == PLATFORM_SOCKET_INVALID) {
-        TraceLog(LOG_WARNING, "Backend: cannot reach %s:%s", state->host, state->port);
+    char url[BACKEND_URL_CAP + BACKEND_PATH_CAP];
+    snprintf(url, sizeof(url), "%s%s", state->base_url, path);
+    char storage[BACKEND_HEADER_SLOTS][BACKEND_HEADER_CAP];
+    const char *headers[BACKEND_HEADER_SLOTS];
+    PlatformHttpRequest request = {
+        .method = method,
+        .url = url,
+        .headers = headers,
+        .header_count = BackendRequestHeaders(state, if_match, storage, headers),
+        .body = body,
+        .timeout_seconds = BACKEND_TIMEOUT_SECONDS,
+        .reply_header = BACKEND_REVISION_HEADER,
+    };
+    PlatformHttpResponse reply;
+    if (!PlatformHttpSend(&request, &reply)) {
+        TraceLog(LOG_WARNING, "Backend: %s %s%s failed", method, state->base_url, path);
         return false;
     }
-
-    size_t body_length = body ? strlen(body) : 0;
-    char head[1024];
-    int head_length = snprintf(
-        head,
-        sizeof(head),
-        "%s %s HTTP/1.1\r\nHost: %s:%s\r\nConnection: close\r\n"
-        "Content-Type: application/json\r\nContent-Length: %zu\r\n",
-        method,
-        path,
-        state->host,
-        state->port,
-        body_length
-    );
-    if (state->session_open && head_length > 0 && head_length < (int)sizeof(head))
-        head_length += snprintf(
-            head + head_length, sizeof(head) - (size_t)head_length, "Authorization: Bearer %s\r\n", state->token
-        );
-    if (if_match >= 0 && head_length > 0 && head_length < (int)sizeof(head))
-        head_length +=
-            snprintf(head + head_length, sizeof(head) - (size_t)head_length, "If-Match: \"%lld\"\r\n", if_match);
-    if (head_length > 0 && head_length < (int)sizeof(head))
-        head_length += snprintf(head + head_length, sizeof(head) - (size_t)head_length, "\r\n");
-    bool sent = head_length > 0 && head_length < (int)sizeof(head) &&
-                BackendSendAll(connection, head, (size_t)head_length) &&
-                (!body || BackendSendAll(connection, body, body_length));
-    size_t raw_length = 0;
-    char *raw = sent ? BackendReceiveAll(connection, &raw_length) : NULL;
-    PlatformSocketClose(connection);
-    if (!raw) {
-        TraceLog(LOG_WARNING, "Backend: %s %s failed", method, path);
-        return false;
-    }
-
-    char *headers_end = strstr(raw, "\r\n\r\n");
-    if (!headers_end || sscanf(raw, "HTTP/%*s %d", &response->status) != 1) {
-        free(raw);
-        TraceLog(LOG_WARNING, "Backend: malformed response to %s %s", method, path);
-        return false;
-    }
-    response->revision = BackendHeaderInt(raw, headers_end, BACKEND_REVISION_HEADER);
-    const char *payload = headers_end + 4;
-    size_t payload_length = raw_length - (size_t)(payload - raw);
-    long long declared_length = BackendHeaderInt(raw, headers_end, "Content-Length");
-    if (declared_length != (long long)payload_length) {
-        free(raw);
-        TraceLog(
-            LOG_WARNING, "Backend: %s %s returned %zu of %lld bytes", method, path, payload_length, declared_length
-        );
-        return false;
-    }
-    response->body = malloc(payload_length + 1);
-    if (response->body) {
-        memcpy(response->body, payload, payload_length);
-        response->body[payload_length] = '\0';
-    }
-    free(raw);
-    return response->body != NULL;
+    response->status = reply.status;
+    response->body = reply.body;
+    response->revision = strtoll(reply.reply_header_value, NULL, 10);
+    return true;
 }
 
 static const char *BackendAccountPath(void) {
@@ -278,7 +211,7 @@ static const char *BackendPlayerId(void) {
 }
 
 static bool BackendOpenSession(void) {
-    BackendState *state = BackendResolve();
+    BackendState *state = &backend_state;
     if (state->session_open) return true;
     long long sent_at = (long long)time(NULL);
     if (state->session_failed_at && sent_at - state->session_failed_at < BACKEND_SESSION_RETRY_SECONDS) return false;
@@ -634,7 +567,6 @@ static void *BackendWorkerRun(void *argument) {
 
 static BackendWorker *BackendWorkerStart(void) {
     BackendWorker *w = &backend_worker;
-    BackendResolve();
     if (w->started) return w;
     if (pthread_create(&w->thread, NULL, BackendWorkerRun, w) != 0)
         TraceLog(LOG_FATAL, "Backend: could not start the network worker");

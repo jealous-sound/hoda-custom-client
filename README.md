@@ -70,10 +70,13 @@ make format-check
 python3 tools/check_comments.py
 ```
 
-`make play` runs the game against the Go backend in `../hoda-custom-backend` (override with
-`BACKEND_DIR=`), which then owns the save and the clock. With `HOD_BACKEND_URL` unset the game uses
-`player_save.dat` as before. `hoda-original-backend` is the separate Python server for the original
-Android client.
+After the game data is in place, the game shows the splash with two buttons: local play keeps the save in
+`player_save.dat`, online play connects to `SERVER_URL` (baked in at build time, default
+`https://api.hodareborn.com`), which then owns the save and the clock. Building with `SERVER_URL=` leaves the server
+out and starts local play without asking. `HOD_BACKEND_URL=<http or https URL>` skips the choice and plays online
+against that server; `make play` uses it to run the game against the Go backend in `../hoda-custom-backend`
+(override with `BACKEND_DIR=`). Requests to the server go through libcurl on macOS and Linux and WinHTTP on Windows,
+like the data download. `hoda-original-backend` is the separate Python server for the original Android client.
 
 Against the backend, the server owns the economy: gold, gems, vouchers, energy, level, potions, keys, tomes and which
 heroes, runes and gear exist. Store purchases and refills wait for the server's answer. Battles, Nexus awards,
@@ -92,7 +95,7 @@ hero list the server rolls from; after changing it or `store_packs.json`, `runes
 `make PLATFORM=linux` builds `build/linux/Heroes of Dragon Age`; `make PLATFORM=windows` cross-compiles
 `build/windows/Heroes of Dragon Age.exe` with MinGW-w64 and embeds `packaging/windows/app_icon.ico`. Point
 `RAYLIB_DIR=` at a raylib 5.5 release and set `RAYLIB_LINK=$RAYLIB_DIR/lib/libraylib.a` to link it statically.
-OS-specific calls (sockets, positional reads, atomic file replace, CPU count, UTC time) live in
+OS-specific calls (HTTP requests, positional reads, atomic file replace, CPU count, UTC time) live in
 `source/platform.c`, a separate translation unit so `<windows.h>` never meets raylib's names.
 
 `.github/workflows/build.yml` builds all three on every push to `master` (or by hand from the Actions tab) and

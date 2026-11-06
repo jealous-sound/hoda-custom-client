@@ -5,8 +5,9 @@ RAYLIB_DIR ?= /opt/homebrew/opt/raylib
 EXTRA_CFLAGS ?=
 RAYLIB_LINK ?= -lraylib
 CONTENT_URL ?= https://cdn.hodareborn.com
+SERVER_URL ?= https://api.hodareborn.com
 CONTENT_BUCKET ?= hoda-assets
-CFLAGS  = -Wall -O2 -std=c99 -I$(RAYLIB_DIR)/include -DHOD_CONTENT_URL='"$(CONTENT_URL)"' $(PLATFORM_CFLAGS) $(EXTRA_CFLAGS)
+CFLAGS  = -Wall -O2 -std=c99 -I$(RAYLIB_DIR)/include -DHOD_CONTENT_URL='"$(CONTENT_URL)"' -DHOD_SERVER_URL='"$(SERVER_URL)"' $(PLATFORM_CFLAGS) $(EXTRA_CFLAGS)
 LDFLAGS = -L$(RAYLIB_DIR)/lib
 SRC     = source/main.c source/platform.c
 DEPS    = $(wildcard source/*.c source/*.h source/vendors/*.c source/vendors/*.h)
@@ -54,7 +55,7 @@ endif
 ifeq ($(PLATFORM),windows)
 CC      = x86_64-w64-mingw32-gcc
 WINDRES ?= x86_64-w64-mingw32-windres
-LIBS    = $(RAYLIB_LINK) -lopengl32 -lgdi32 -lwinmm -lws2_32 -lwinhttp -lpthread -static -mwindows
+LIBS    = $(RAYLIB_LINK) -lopengl32 -lgdi32 -lwinmm -lwinhttp -lpthread -static -mwindows
 APP_EXECUTABLE = build/windows/$(APP_NAME).exe
 TARGET  = build/windows/Heroes\ of\ Dragon\ Age.exe
 WINDOWS_RESOURCES = build/windows/app_resources.o

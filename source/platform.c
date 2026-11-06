@@ -7,17 +7,16 @@
 #define PLATFORM_DOWNLOAD_STALL_BYTES_PER_SECOND 1L
 #define PLATFORM_DOWNLOAD_STALL_SECONDS 20L
 #define PLATFORM_DOWNLOAD_MAX_REDIRECTS 5L
+#define PLATFORM_HTTP_BODY_INITIAL_BYTES 16384
+#define PLATFORM_HTTP_STALL_BYTES_PER_SECOND 1L
 
 #ifdef _WIN32
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #include <windows.h>
 #include <winhttp.h>
 #include <direct.h>
 #include <errno.h>
 #include <io.h>
 
-#define PLATFORM_WINSOCK_VERSION MAKEWORD(2, 2)
 #define PLATFORM_MILLISECONDS_PER_SECOND 1000
 #define PLATFORM_DOWNLOAD_TIMEOUT_MILLISECONDS 30000
 #define PLATFORM_DOWNLOAD_USER_AGENT L"HeroesOfDragonAge"
@@ -25,50 +24,13 @@
 #define PLATFORM_WIDE_URL_CAP 2048
 #define PLATFORM_HOST_CAP 256
 #define PLATFORM_RANGE_HEADER_CAP 64
+#define PLATFORM_HTTP_METHOD_CAP 16
+#define PLATFORM_HTTP_HEADER_NAME_CAP 64
+#define PLATFORM_HTTP_HEADERS_CAP 2048
 #define PLATFORM_HTTP_OK 200
 #define PLATFORM_HTTP_PARTIAL_CONTENT 206
 #define PLATFORM_HTTP_RANGE_NOT_SATISFIABLE 416
 #define PLATFORM_APP_DATA_ENV "APPDATA"
-
-static bool PlatformNetworkReady(void) {
-    static bool started = false;
-    if (started) return true;
-    WSADATA data;
-    started = WSAStartup(PLATFORM_WINSOCK_VERSION, &data) == 0;
-    return started;
-}
-
-intptr_t PlatformSocketConnect(const char *host, const char *port, int timeout_seconds) {
-    if (!PlatformNetworkReady()) return PLATFORM_SOCKET_INVALID;
-    struct addrinfo hints = {.ai_family = AF_UNSPEC, .ai_socktype = SOCK_STREAM};
-    struct addrinfo *addresses = NULL;
-    if (getaddrinfo(host, port, &hints, &addresses) != 0) return PLATFORM_SOCKET_INVALID;
-    SOCKET connected = INVALID_SOCKET;
-    DWORD timeout = (DWORD)timeout_seconds * PLATFORM_MILLISECONDS_PER_SECOND;
-    for (struct addrinfo *address = addresses; address; address = address->ai_next) {
-        connected = socket(address->ai_family, address->ai_socktype, address->ai_protocol);
-        if (connected == INVALID_SOCKET) continue;
-        setsockopt(connected, SOL_SOCKET, SO_RCVTIMEO, (const char *)&timeout, sizeof(timeout));
-        setsockopt(connected, SOL_SOCKET, SO_SNDTIMEO, (const char *)&timeout, sizeof(timeout));
-        if (connect(connected, address->ai_addr, (int)address->ai_addrlen) == 0) break;
-        closesocket(connected);
-        connected = INVALID_SOCKET;
-    }
-    freeaddrinfo(addresses);
-    return connected == INVALID_SOCKET ? PLATFORM_SOCKET_INVALID : (intptr_t)connected;
-}
-
-long PlatformSocketSend(intptr_t socket_handle, const char *data, size_t length) {
-    return send((SOCKET)socket_handle, data, (int)length, 0);
-}
-
-long PlatformSocketReceive(intptr_t socket_handle, char *buffer, size_t capacity) {
-    return recv((SOCKET)socket_handle, buffer, (int)capacity, 0);
-}
-
-void PlatformSocketClose(intptr_t socket_handle) {
-    closesocket((SOCKET)socket_handle);
-}
 
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size) {
     HANDLE handle = (HANDLE)_get_osfhandle(_fileno(file));
@@ -136,14 +98,22 @@ static PlatformDownloadResult PlatformReceiveBody(
     return result;
 }
 
-static PlatformDownloadResult PlatformTransfer(
-    const wchar_t *url,
-    const char *path,
-    long long offset,
-    PlatformDownloadProgress progress,
-    void *context,
-    bool *resume_rejected
-) {
+typedef struct {
+    HINTERNET session;
+    HINTERNET connection;
+    HINTERNET request;
+} PlatformWinHttp;
+
+static void PlatformWinHttpClose(PlatformWinHttp *handles) {
+    if (handles->request) WinHttpCloseHandle(handles->request);
+    if (handles->connection) WinHttpCloseHandle(handles->connection);
+    if (handles->session) WinHttpCloseHandle(handles->session);
+    *handles = (PlatformWinHttp){0};
+}
+
+static bool
+PlatformWinHttpOpen(const wchar_t *url, const wchar_t *method, DWORD timeout_milliseconds, PlatformWinHttp *handles) {
+    *handles = (PlatformWinHttp){0};
     wchar_t host[PLATFORM_HOST_CAP], request_path[PLATFORM_WIDE_URL_CAP], extra[PLATFORM_WIDE_URL_CAP];
     URL_COMPONENTS parts = {
         .dwStructSize = sizeof(parts),
@@ -154,10 +124,58 @@ static PlatformDownloadResult PlatformTransfer(
         .lpszExtraInfo = extra,
         .dwExtraInfoLength = PLATFORM_WIDE_URL_CAP,
     };
-    if (!WinHttpCrackUrl(url, 0, 0, &parts)) return PLATFORM_DOWNLOAD_NETWORK_ERROR;
-    if (wcslen(request_path) + wcslen(extra) >= PLATFORM_WIDE_URL_CAP) return PLATFORM_DOWNLOAD_NETWORK_ERROR;
+    if (!WinHttpCrackUrl(url, 0, 0, &parts)) return false;
+    if (wcslen(request_path) + wcslen(extra) >= PLATFORM_WIDE_URL_CAP) return false;
     wcscat(request_path, extra);
 
+    handles->session = WinHttpOpen(
+        PLATFORM_DOWNLOAD_USER_AGENT,
+        WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
+        WINHTTP_NO_PROXY_NAME,
+        WINHTTP_NO_PROXY_BYPASS,
+        0
+    );
+    if (handles->session)
+        WinHttpSetTimeouts(
+            handles->session, timeout_milliseconds, timeout_milliseconds, timeout_milliseconds, timeout_milliseconds
+        );
+    handles->connection = handles->session ? WinHttpConnect(handles->session, host, parts.nPort, 0) : NULL;
+    DWORD secure = parts.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0;
+    handles->request = handles->connection ? WinHttpOpenRequest(
+                                                 handles->connection,
+                                                 method,
+                                                 request_path,
+                                                 NULL,
+                                                 WINHTTP_NO_REFERER,
+                                                 WINHTTP_DEFAULT_ACCEPT_TYPES,
+                                                 secure
+                                             )
+                                           : NULL;
+    if (handles->request) return true;
+    PlatformWinHttpClose(handles);
+    return false;
+}
+
+static bool PlatformWinHttpStatus(HINTERNET request, DWORD *status) {
+    DWORD status_size = sizeof(*status);
+    return WinHttpQueryHeaders(
+        request,
+        WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
+        WINHTTP_HEADER_NAME_BY_INDEX,
+        status,
+        &status_size,
+        WINHTTP_NO_HEADER_INDEX
+    );
+}
+
+static PlatformDownloadResult PlatformTransfer(
+    const wchar_t *url,
+    const char *path,
+    long long offset,
+    PlatformDownloadProgress progress,
+    void *context,
+    bool *resume_rejected
+) {
     wchar_t range[PLATFORM_RANGE_HEADER_CAP] = L"";
     if (offset > 0) {
         char narrow[PLATFORM_RANGE_HEADER_CAP];
@@ -165,34 +183,12 @@ static PlatformDownloadResult PlatformTransfer(
         PlatformWiden(narrow, range, PLATFORM_RANGE_HEADER_CAP);
     }
 
-    HINTERNET session = WinHttpOpen(
-        PLATFORM_DOWNLOAD_USER_AGENT,
-        WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
-        WINHTTP_NO_PROXY_NAME,
-        WINHTTP_NO_PROXY_BYPASS,
-        0
-    );
-    HINTERNET connection = session ? WinHttpConnect(session, host, parts.nPort, 0) : NULL;
-    DWORD secure = parts.nScheme == INTERNET_SCHEME_HTTPS ? WINHTTP_FLAG_SECURE : 0;
-    HINTERNET request =
-        connection
-            ? WinHttpOpenRequest(
-                  connection, L"GET", request_path, NULL, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, secure
-              )
-            : NULL;
-    if (session) {
-        WinHttpSetTimeouts(
-            session,
-            PLATFORM_DOWNLOAD_TIMEOUT_MILLISECONDS,
-            PLATFORM_DOWNLOAD_TIMEOUT_MILLISECONDS,
-            PLATFORM_DOWNLOAD_TIMEOUT_MILLISECONDS,
-            PLATFORM_DOWNLOAD_TIMEOUT_MILLISECONDS
-        );
-    }
-    DWORD status = 0, status_size = sizeof(status);
-    bool answered = request &&
-                    WinHttpSendRequest(
-                        request,
+    PlatformWinHttp handles;
+    if (!PlatformWinHttpOpen(url, L"GET", PLATFORM_DOWNLOAD_TIMEOUT_MILLISECONDS, &handles))
+        return PLATFORM_DOWNLOAD_NETWORK_ERROR;
+    DWORD status = 0;
+    bool answered = WinHttpSendRequest(
+                        handles.request,
                         offset > 0 ? range : WINHTTP_NO_ADDITIONAL_HEADERS,
                         offset > 0 ? (DWORD)-1L : 0,
                         WINHTTP_NO_REQUEST_DATA,
@@ -200,15 +196,7 @@ static PlatformDownloadResult PlatformTransfer(
                         0,
                         0
                     ) &&
-                    WinHttpReceiveResponse(request, NULL) &&
-                    WinHttpQueryHeaders(
-                        request,
-                        WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER,
-                        WINHTTP_HEADER_NAME_BY_INDEX,
-                        &status,
-                        &status_size,
-                        WINHTTP_NO_HEADER_INDEX
-                    );
+                    WinHttpReceiveResponse(handles.request, NULL) && PlatformWinHttpStatus(handles.request, &status);
 
     PlatformDownloadResult result = PLATFORM_DOWNLOAD_NETWORK_ERROR;
     bool resumed = offset > 0 && status == PLATFORM_HTTP_PARTIAL_CONTENT;
@@ -219,15 +207,13 @@ static PlatformDownloadResult PlatformTransfer(
         result = PLATFORM_DOWNLOAD_SERVER_ERROR;
     } else if (status == PLATFORM_HTTP_OK || resumed) {
         FILE *file = fopen(path, resumed ? "ab" : "wb");
-        result = file ? PlatformReceiveBody(request, file, resumed ? offset : 0, progress, context)
+        result = file ? PlatformReceiveBody(handles.request, file, resumed ? offset : 0, progress, context)
                       : PLATFORM_DOWNLOAD_FILE_ERROR;
         if (file && fclose(file) != 0 && result == PLATFORM_DOWNLOAD_OK) result = PLATFORM_DOWNLOAD_FILE_ERROR;
     } else {
         result = PLATFORM_DOWNLOAD_SERVER_ERROR;
     }
-    if (request) WinHttpCloseHandle(request);
-    if (connection) WinHttpCloseHandle(connection);
-    if (session) WinHttpCloseHandle(session);
+    PlatformWinHttpClose(&handles);
     return result;
 }
 
@@ -242,6 +228,83 @@ PlatformDownload(const char *url, const char *path, bool resume, PlatformDownloa
     return result;
 }
 
+static bool PlatformWinHttpHeaders(const PlatformHttpRequest *request, wchar_t *out, int capacity) {
+    char joined[PLATFORM_HTTP_HEADERS_CAP] = "";
+    size_t used = 0;
+    for (int i = 0; i < request->header_count; i++) {
+        int written = snprintf(joined + used, sizeof(joined) - used, "%s\r\n", request->headers[i]);
+        if (written < 0 || (size_t)written >= sizeof(joined) - used) return false;
+        used += (size_t)written;
+    }
+    return PlatformWiden(joined, out, capacity);
+}
+
+static void PlatformWinHttpReplyHeader(HINTERNET request, const char *name, char *out, int capacity) {
+    out[0] = '\0';
+    wchar_t wide_name[PLATFORM_HTTP_HEADER_NAME_CAP], value[PLATFORM_HTTP_HEADER_VALUE_CAP];
+    DWORD value_size = sizeof(value);
+    if (!name || !PlatformWiden(name, wide_name, PLATFORM_HTTP_HEADER_NAME_CAP)) return;
+    if (!WinHttpQueryHeaders(request, WINHTTP_QUERY_CUSTOM, wide_name, value, &value_size, WINHTTP_NO_HEADER_INDEX))
+        return;
+    if (WideCharToMultiByte(CP_UTF8, 0, value, -1, out, capacity, NULL, NULL) == 0) out[0] = '\0';
+}
+
+static char *PlatformWinHttpReadBody(HINTERNET request) {
+    size_t length = 0, capacity = PLATFORM_HTTP_BODY_INITIAL_BYTES;
+    char *body = malloc(capacity + 1);
+    for (;;) {
+        DWORD available = 0, read = 0;
+        if (!body || !WinHttpQueryDataAvailable(request, &available)) break;
+        if (available == 0) {
+            body[length] = '\0';
+            return body;
+        }
+        if (length + available > capacity) {
+            while (length + available > capacity) capacity *= 2;
+            char *grown = realloc(body, capacity + 1);
+            if (!grown) break;
+            body = grown;
+        }
+        if (!WinHttpReadData(request, body + length, available, &read)) break;
+        length += read;
+    }
+    free(body);
+    return NULL;
+}
+
+bool PlatformHttpSend(const PlatformHttpRequest *request, PlatformHttpResponse *response) {
+    *response = (PlatformHttpResponse){0};
+    wchar_t url[PLATFORM_WIDE_URL_CAP], method[PLATFORM_HTTP_METHOD_CAP], headers[PLATFORM_HTTP_HEADERS_CAP];
+    if (!PlatformWiden(request->url, url, PLATFORM_WIDE_URL_CAP) ||
+        !PlatformWiden(request->method, method, PLATFORM_HTTP_METHOD_CAP) ||
+        !PlatformWinHttpHeaders(request, headers, PLATFORM_HTTP_HEADERS_CAP))
+        return false;
+    PlatformWinHttp handles;
+    DWORD timeout = (DWORD)request->timeout_seconds * PLATFORM_MILLISECONDS_PER_SECOND;
+    if (!PlatformWinHttpOpen(url, method, timeout, &handles)) return false;
+    DWORD body_length = request->body ? (DWORD)strlen(request->body) : 0;
+    DWORD status = 0;
+    bool answered = WinHttpSendRequest(
+                        handles.request,
+                        headers[0] ? headers : WINHTTP_NO_ADDITIONAL_HEADERS,
+                        headers[0] ? (DWORD)-1L : 0,
+                        body_length ? (LPVOID)request->body : WINHTTP_NO_REQUEST_DATA,
+                        body_length,
+                        body_length,
+                        0
+                    ) &&
+                    WinHttpReceiveResponse(handles.request, NULL) && PlatformWinHttpStatus(handles.request, &status);
+    if (answered) {
+        PlatformWinHttpReplyHeader(
+            handles.request, request->reply_header, response->reply_header_value, PLATFORM_HTTP_HEADER_VALUE_CAP
+        );
+        response->body = PlatformWinHttpReadBody(handles.request);
+        response->status = (int)status;
+    }
+    PlatformWinHttpClose(&handles);
+    return response->body != NULL;
+}
+
 bool PlatformUserDataDirectory(const char *app_name, char *out, size_t capacity) {
     const char *base = getenv(PLATFORM_APP_DATA_ENV);
     if (!base || !base[0]) return false;
@@ -254,14 +317,13 @@ bool PlatformMakeDirectory(const char *path) {
 }
 
 #else
+#include <ctype.h>
 #include <curl/curl.h>
 #include <dlfcn.h>
 #include <errno.h>
-#include <netdb.h>
 #include <pthread.h>
-#include <sys/socket.h>
+#include <strings.h>
 #include <sys/stat.h>
-#include <sys/time.h>
 #include <unistd.h>
 
 #define PLATFORM_DOWNLOAD_USER_AGENT "HeroesOfDragonAge"
@@ -269,6 +331,8 @@ bool PlatformMakeDirectory(const char *path) {
 #define PLATFORM_DIRECTORY_MODE 0755
 #define PLATFORM_HOME_ENV "HOME"
 #define PLATFORM_XDG_DATA_ENV "XDG_DATA_HOME"
+#define PLATFORM_HTTP_NO_EXPECT_HEADER "Expect:"
+#define PLATFORM_HTTP_GET "GET"
 
 #ifdef __APPLE__
 #define PLATFORM_USER_DATA_SUFFIX "Library/Application Support"
@@ -285,6 +349,8 @@ typedef struct {
     CURLcode (*easy_perform)(CURL *handle);
     CURLcode (*easy_getinfo)(CURL *handle, CURLINFO info, ...);
     void (*easy_cleanup)(CURL *handle);
+    struct curl_slist *(*slist_append)(struct curl_slist *list, const char *text);
+    void (*slist_free_all)(struct curl_slist *list);
     bool ready;
 } PlatformCurl;
 
@@ -316,8 +382,11 @@ static void PlatformCurlLoad(void) {
     *(void **)&platform_curl.easy_perform = PlatformCurlSymbol(library, "curl_easy_perform");
     *(void **)&platform_curl.easy_getinfo = PlatformCurlSymbol(library, "curl_easy_getinfo");
     *(void **)&platform_curl.easy_cleanup = PlatformCurlSymbol(library, "curl_easy_cleanup");
+    *(void **)&platform_curl.slist_append = PlatformCurlSymbol(library, "curl_slist_append");
+    *(void **)&platform_curl.slist_free_all = PlatformCurlSymbol(library, "curl_slist_free_all");
     bool resolved = platform_curl.global_init && platform_curl.easy_init && platform_curl.easy_setopt &&
-                    platform_curl.easy_perform && platform_curl.easy_getinfo && platform_curl.easy_cleanup;
+                    platform_curl.easy_perform && platform_curl.easy_getinfo && platform_curl.easy_cleanup &&
+                    platform_curl.slist_append && platform_curl.slist_free_all;
     platform_curl.ready = resolved && platform_curl.global_init(CURL_GLOBAL_DEFAULT) == CURLE_OK;
 }
 
@@ -406,6 +475,107 @@ PlatformDownload(const char *url, const char *path, bool resume, PlatformDownloa
     return result;
 }
 
+typedef struct {
+    char *body;
+    size_t length;
+    size_t capacity;
+    bool failed;
+    const char *header_name;
+    char header_value[PLATFORM_HTTP_HEADER_VALUE_CAP];
+} PlatformHttpReply;
+
+static size_t PlatformHttpCollectBody(char *data, size_t size, size_t count, void *user) {
+    PlatformHttpReply *reply = user;
+    size_t length = size * count;
+    size_t needed = reply->length + length + 1;
+    if (needed > reply->capacity) {
+        size_t capacity = reply->capacity ? reply->capacity : PLATFORM_HTTP_BODY_INITIAL_BYTES;
+        while (capacity < needed) capacity *= 2;
+        char *grown = realloc(reply->body, capacity);
+        if (!grown) {
+            reply->failed = true;
+            return 0;
+        }
+        reply->body = grown;
+        reply->capacity = capacity;
+    }
+    memcpy(reply->body + reply->length, data, length);
+    reply->length += length;
+    reply->body[reply->length] = '\0';
+    return length;
+}
+
+static size_t PlatformHttpCollectHeader(char *data, size_t size, size_t count, void *user) {
+    PlatformHttpReply *reply = user;
+    size_t length = size * count;
+    size_t name_length = reply->header_name ? strlen(reply->header_name) : 0;
+    bool wanted = name_length > 0 && length > name_length && data[name_length] == ':' &&
+                  strncasecmp(data, reply->header_name, name_length) == 0;
+    if (!wanted) return length;
+    const char *value = data + name_length + 1, *end = data + length;
+    while (value < end && isspace((unsigned char)*value)) value++;
+    while (end > value && isspace((unsigned char)end[-1])) end--;
+    size_t value_length = (size_t)(end - value);
+    if (value_length >= sizeof(reply->header_value)) value_length = sizeof(reply->header_value) - 1;
+    memcpy(reply->header_value, value, value_length);
+    reply->header_value[value_length] = '\0';
+    return length;
+}
+
+static struct curl_slist *PlatformHttpHeaderList(const PlatformHttpRequest *request) {
+    struct curl_slist *headers = platform_curl.slist_append(NULL, PLATFORM_HTTP_NO_EXPECT_HEADER);
+    for (int i = 0; headers && i < request->header_count; i++) {
+        struct curl_slist *appended = platform_curl.slist_append(headers, request->headers[i]);
+        if (!appended) platform_curl.slist_free_all(headers);
+        headers = appended;
+    }
+    return headers;
+}
+
+bool PlatformHttpSend(const PlatformHttpRequest *request, PlatformHttpResponse *response) {
+    *response = (PlatformHttpResponse){0};
+    pthread_once(&platform_curl_once, PlatformCurlLoad);
+    if (!platform_curl.ready) return false;
+    struct curl_slist *headers = PlatformHttpHeaderList(request);
+    CURL *curl = headers ? platform_curl.easy_init() : NULL;
+    if (!curl) {
+        if (headers) platform_curl.slist_free_all(headers);
+        return false;
+    }
+    PlatformHttpReply reply = {.header_name = request->reply_header};
+    long timeout = (long)request->timeout_seconds;
+    platform_curl.easy_setopt(curl, CURLOPT_URL, request->url);
+    platform_curl.easy_setopt(curl, CURLOPT_CUSTOMREQUEST, request->method);
+    platform_curl.easy_setopt(curl, CURLOPT_USERAGENT, PLATFORM_DOWNLOAD_USER_AGENT);
+    platform_curl.easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+    platform_curl.easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, timeout);
+    platform_curl.easy_setopt(curl, CURLOPT_LOW_SPEED_LIMIT, PLATFORM_HTTP_STALL_BYTES_PER_SECOND);
+    platform_curl.easy_setopt(curl, CURLOPT_LOW_SPEED_TIME, timeout);
+    platform_curl.easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    platform_curl.easy_setopt(curl, CURLOPT_WRITEFUNCTION, PlatformHttpCollectBody);
+    platform_curl.easy_setopt(curl, CURLOPT_WRITEDATA, &reply);
+    platform_curl.easy_setopt(curl, CURLOPT_HEADERFUNCTION, PlatformHttpCollectHeader);
+    platform_curl.easy_setopt(curl, CURLOPT_HEADERDATA, &reply);
+    if (request->body || strcmp(request->method, PLATFORM_HTTP_GET) != 0) {
+        const char *body = request->body ? request->body : "";
+        platform_curl.easy_setopt(curl, CURLOPT_POSTFIELDS, body);
+        platform_curl.easy_setopt(curl, CURLOPT_POSTFIELDSIZE_LARGE, (curl_off_t)strlen(body));
+    }
+    CURLcode code = platform_curl.easy_perform(curl);
+    long status = 0;
+    platform_curl.easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &status);
+    platform_curl.easy_cleanup(curl);
+    platform_curl.slist_free_all(headers);
+    if (code != CURLE_OK || reply.failed) {
+        free(reply.body);
+        return false;
+    }
+    response->body = reply.body ? reply.body : calloc(1, 1);
+    response->status = (int)status;
+    memcpy(response->reply_header_value, reply.header_value, sizeof(reply.header_value));
+    return response->body != NULL;
+}
+
 bool PlatformUserDataDirectory(const char *app_name, char *out, size_t capacity) {
     const char *xdg = getenv(PLATFORM_XDG_DATA_ENV);
     const char *home = getenv(PLATFORM_HOME_ENV);
@@ -422,37 +592,6 @@ bool PlatformUserDataDirectory(const char *app_name, char *out, size_t capacity)
 
 bool PlatformMakeDirectory(const char *path) {
     return mkdir(path, PLATFORM_DIRECTORY_MODE) == 0 || errno == EEXIST;
-}
-
-intptr_t PlatformSocketConnect(const char *host, const char *port, int timeout_seconds) {
-    struct addrinfo hints = {.ai_family = AF_UNSPEC, .ai_socktype = SOCK_STREAM};
-    struct addrinfo *addresses = NULL;
-    if (getaddrinfo(host, port, &hints, &addresses) != 0) return PLATFORM_SOCKET_INVALID;
-    int connected = -1;
-    struct timeval timeout = {.tv_sec = timeout_seconds};
-    for (struct addrinfo *address = addresses; address; address = address->ai_next) {
-        connected = socket(address->ai_family, address->ai_socktype, address->ai_protocol);
-        if (connected < 0) continue;
-        setsockopt(connected, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-        setsockopt(connected, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
-        if (connect(connected, address->ai_addr, address->ai_addrlen) == 0) break;
-        close(connected);
-        connected = -1;
-    }
-    freeaddrinfo(addresses);
-    return connected < 0 ? PLATFORM_SOCKET_INVALID : (intptr_t)connected;
-}
-
-long PlatformSocketSend(intptr_t socket_handle, const char *data, size_t length) {
-    return (long)send((int)socket_handle, data, length, 0);
-}
-
-long PlatformSocketReceive(intptr_t socket_handle, char *buffer, size_t capacity) {
-    return (long)recv((int)socket_handle, buffer, capacity, 0);
-}
-
-void PlatformSocketClose(intptr_t socket_handle) {
-    close((int)socket_handle);
 }
 
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size) {
