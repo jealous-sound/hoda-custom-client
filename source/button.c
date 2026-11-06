@@ -13,18 +13,25 @@ typedef struct {
     bool armed;
 } Button;
 
-Button ButtonLoadText(GuiId idle, GuiId active, const char *label, Font font, Vector2 label_anchor, float label_scale) {
+Button ButtonFromTextures(
+    Texture2D idle, Texture2D active, const char *label, Font font, Vector2 label_anchor, float label_scale
+) {
     return (Button){
-        .idle = GuiTex(idle),
-        .active = GuiTex(active),
+        .idle = idle,
+        .active = active,
         .label = label,
         .font = font,
         .label_anchor = label_anchor,
         .label_scale = label_scale,
         .label_color = (Color){235, 232, 220, 255},
-        .click = GuiSound(SND_UI_CLICK),
         .click_allow_duplicate = false,
     };
+}
+
+Button ButtonLoadText(GuiId idle, GuiId active, const char *label, Font font, Vector2 label_anchor, float label_scale) {
+    Button button = ButtonFromTextures(GuiTex(idle), GuiTex(active), label, font, label_anchor, label_scale);
+    button.click = GuiSound(SND_UI_CLICK);
+    return button;
 }
 
 Button ButtonLoad(GuiId idle, GuiId active) {

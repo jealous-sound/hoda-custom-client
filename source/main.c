@@ -26,6 +26,8 @@
 #include "resource.c"
 #include "app_bundle.c"
 #include "utils.c"
+#include "sha256.c"
+#include "content_update.c"
 #include "backend.c"
 #include "server_actions.c"
 #include "ui.c"
@@ -57,6 +59,7 @@
 #include "music_player.c"
 #include "heroes.c"
 #include "message_popup.c"
+#include "content_screen.c"
 #include "name_prompt.c"
 #include "runes.c"
 #include "gear_view.c"
@@ -114,6 +117,16 @@ static void RunGame(void) {
     GameDestroy(&game);
 }
 
+static void RunSelectedMode(void) {
+    if (EnvFlag("HOD_LOADTEST")) {
+        DebugRunModelLoadTest(getenv("HOD_LOADTEST"));
+    } else if (EnvFlag("HOD_NEXUS_SCENE")) {
+        DebugRenderNexusScene(getenv("HOD_NEXUS_SCENE"));
+    } else {
+        RunGame();
+    }
+}
+
 int main(void) {
     AppBundleEnterParentDirectory();
     bool screenshot_mode = EnvFlag("HOD_SHOT");
@@ -131,13 +144,7 @@ int main(void) {
     if (screenshot_mode || EnvFlag("HOD_MUTE")) SetMasterVolume(0.0f);
     SetTargetFPS(144);
 
-    if (EnvFlag("HOD_LOADTEST")) {
-        DebugRunModelLoadTest(getenv("HOD_LOADTEST"));
-    } else if (EnvFlag("HOD_NEXUS_SCENE")) {
-        DebugRenderNexusScene(getenv("HOD_NEXUS_SCENE"));
-    } else {
-        RunGame();
-    }
+    if (ContentScreenRun()) RunSelectedMode();
 
     CloseAudioDevice();
     CloseWindow();

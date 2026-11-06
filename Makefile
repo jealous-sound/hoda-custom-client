@@ -4,11 +4,14 @@ PLATFORM ?= $(HOST_PLATFORM)
 RAYLIB_DIR ?= /opt/homebrew/opt/raylib
 EXTRA_CFLAGS ?=
 RAYLIB_LINK ?= -lraylib
-CFLAGS  = -Wall -O2 -std=c99 -I$(RAYLIB_DIR)/include $(PLATFORM_CFLAGS) $(EXTRA_CFLAGS)
+CONTENT_URL ?= https://pub-71d9bb5f2f2f4381b94db2fd88969215.r2.dev
+CONTENT_BUCKET ?= hoda-assets
+CFLAGS  = -Wall -O2 -std=c99 -I$(RAYLIB_DIR)/include -DHOD_CONTENT_URL='"$(CONTENT_URL)"' $(PLATFORM_CFLAGS) $(EXTRA_CFLAGS)
 LDFLAGS = -L$(RAYLIB_DIR)/lib
 SRC     = source/main.c source/platform.c
 DEPS    = $(wildcard source/*.c source/*.h source/vendors/*.c source/vendors/*.h)
 TEST_TARGET = tests/battle_sim_test
+CONTENT_TEST_TARGET = tests/content_update_test
 BACKEND_DIR ?= ../hoda-custom-backend
 DIST_DIR ?= ../hoda-custom-dist
 DIST_BACKEND_URL ?=
@@ -51,7 +54,7 @@ endif
 ifeq ($(PLATFORM),windows)
 CC      = x86_64-w64-mingw32-gcc
 WINDRES ?= x86_64-w64-mingw32-windres
-LIBS    = $(RAYLIB_LINK) -lopengl32 -lgdi32 -lwinmm -lws2_32 -lpthread -static -mwindows
+LIBS    = $(RAYLIB_LINK) -lopengl32 -lgdi32 -lwinmm -lws2_32 -lwinhttp -lpthread -static -mwindows
 APP_EXECUTABLE = build/windows/$(APP_NAME).exe
 TARGET  = build/windows/Heroes\ of\ Dragon\ Age.exe
 WINDOWS_RESOURCES = build/windows/app_resources.o
@@ -69,9 +72,12 @@ app: $(TARGET)
 $(TEST_TARGET): tests/battle_sim_test.c $(DEPS) Makefile
 	$(CC) $(CFLAGS) tests/battle_sim_test.c source/platform.c -o $(TEST_TARGET) $(LDFLAGS) $(LIBS)
 
-test: $(TEST_TARGET)
+$(CONTENT_TEST_TARGET): tests/content_update_test.c $(DEPS) Makefile
+	$(CC) $(CFLAGS) tests/content_update_test.c source/platform.c -o $(CONTENT_TEST_TARGET) $(LDFLAGS) $(LIBS)
+
+test: $(TEST_TARGET) $(CONTENT_TEST_TARGET)
 	python3 client-additional-data/validate_characters.py
-	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py tests/test_build_dist.py tests/test_build_custom_heroes.py
+	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py tests/test_build_dist.py tests/test_build_custom_heroes.py tests/test_content_packs.py
 	python3 tools/audit_character_models.py --deep
 	python3 tools/validate_ability_recipes.py
 	python3 tools/validate_intrinsic_passives.py
@@ -91,6 +97,7 @@ test: $(TEST_TARGET)
 	python3 tools/build_consume_tables.py --check
 	python3 tools/build_consume_scene.py --check
 	./$(TEST_TARGET)
+	./$(CONTENT_TEST_TARGET)
 
 run: $(TARGET)
 	"./$(APP_EXECUTABLE)"
@@ -101,8 +108,11 @@ play:
 dist: $(TARGET)
 	python3 tools/build_dist.py --replace --out "$(DIST_DIR)" --backend-url "$(DIST_BACKEND_URL)"
 
+content:
+	python3 tools/publish_content.py --bucket "$(CONTENT_BUCKET)" --content-url "$(CONTENT_URL)"
+
 clean:
-	rm -rf "$(APP_NAME).app" build $(TEST_TARGET)
+	rm -rf "$(APP_NAME).app" build $(TEST_TARGET) $(CONTENT_TEST_TARGET)
 
 format:
 	clang-format -i source/*.c
@@ -110,4 +120,4 @@ format:
 format-check:
 	clang-format --dry-run --Werror source/*.c
 
-.PHONY: app run play dist test clean format format-check
+.PHONY: app run play dist content test clean format format-check

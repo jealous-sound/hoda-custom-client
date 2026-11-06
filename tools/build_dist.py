@@ -29,8 +29,11 @@ APP_INFO = f"{APP_CONTENTS}/Info.plist"
 LAUNCHER = "play.sh"
 ASSETS = "client-additional-data"
 ORIGINAL_GAME = f"{ASSETS}/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row"
+ORIGINAL_APK = f"{ASSETS}/Heroes-of-Dragon-Age-v4-4-0-androidp1.com.apk"
+ORIGINAL_BUNDLES = f"{ORIGINAL_GAME}/files/UnityCache/Shared"
+EXTRA_DIR = f"{ASSETS}/extra"
 SINGLE_FILES = (
-    f"{ASSETS}/Heroes-of-Dragon-Age-v4-4-0-androidp1.com.apk",
+    ORIGINAL_APK,
     f"{ASSETS}/characters.json",
     f"{ASSETS}/player_starter.json",
     f"{ASSETS}/startup_images.txt",
@@ -39,8 +42,8 @@ SINGLE_FILES = (
 )
 WHOLE_TREES = (
     "data",
-    f"{ORIGINAL_GAME}/files/UnityCache/Shared",
-    f"{ASSETS}/extra",
+    ORIGINAL_BUNDLES,
+    EXTRA_DIR,
 )
 MESH_DIR = f"{ASSETS}/meshes"
 MESH_RUNTIME_SUFFIXES = frozenset({".obj", ".ply", ".png", ".glb", ".json", ".bin", ".mp3"})
@@ -56,6 +59,8 @@ cd "$(dirname "$0")" || exit 1
 {backend}exec "./{executable}" "$@"
 """
 EXECUTABLE_BITS = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+WINDOWS_FORBIDDEN_CHARACTERS = frozenset('<>:"\\|?*')
+WINDOWS_TRAILING_CHARACTERS = (".", " ")
 
 
 def glb_image_uris(path: Path) -> list[str]:
@@ -85,12 +90,22 @@ def character_files(root: Path) -> list[str]:
     return found
 
 
+def portable_path(relative: str) -> bool:
+    return not WINDOWS_FORBIDDEN_CHARACTERS.intersection(relative) and not any(
+        part.endswith(WINDOWS_TRAILING_CHARACTERS) for part in relative.split("/")
+    )
+
+
 def mesh_files(root: Path) -> list[str]:
-    return [path for path in tree_files(root, MESH_DIR) if Path(path).suffix in MESH_RUNTIME_SUFFIXES]
+    return [
+        path
+        for path in tree_files(root, MESH_DIR)
+        if Path(path).suffix in MESH_RUNTIME_SUFFIXES and portable_path(path)
+    ]
 
 
-def runtime_files(root: Path) -> list[str]:
-    files = tree_files(root, APP_BUNDLE)
+def content_files(root: Path) -> list[str]:
+    files = []
     for relative in SINGLE_FILES:
         if not (root / relative).is_file():
             raise SystemExit(f"missing {root / relative}")
@@ -100,6 +115,10 @@ def runtime_files(root: Path) -> list[str]:
     files += mesh_files(root)
     files += character_files(root)
     return sorted(set(files))
+
+
+def runtime_files(root: Path) -> list[str]:
+    return sorted(set(tree_files(root, APP_BUNDLE) + content_files(root)))
 
 
 def linked_raylib(binary: Path) -> Path | None:

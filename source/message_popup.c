@@ -4,6 +4,10 @@
 #define MESSAGE_POPUP_ASPECT 2.13f
 
 #define MESSAGE_POPUP_SPACING 1.0f
+#define MESSAGE_POPUP_LINE_SPACING 1.25f
+#define MESSAGE_POPUP_TITLE_SIZE 30.0f
+#define MESSAGE_POPUP_MESSAGE_SIZE 22.0f
+#define MESSAGE_POPUP_TEXT_COLOR ((Color){242, 236, 218, 255})
 
 static float
 MessagePopupRichRun(Font font, const char *line, Vector2 at, float size, Color base, Color *color, bool draw) {
@@ -67,7 +71,7 @@ MessagePopupWrap(Font font, const char *text, float width, float size, char line
 static void MessagePopupDrawText(Font font, const char *text, Rectangle rect, float size, Color color) {
     char lines[MESSAGE_POPUP_LINES][MESSAGE_POPUP_TEXT_CAP];
     int count = MessagePopupWrap(font, text, rect.width, size, lines, MESSAGE_POPUP_LINES);
-    float line_h = size * 1.25f;
+    float line_h = size * MESSAGE_POPUP_LINE_SPACING;
     float y = rect.y + (rect.height - count * line_h) * 0.5f;
     Color current = color;
     for (int i = 0; i < count; i++) MessagePopupDrawLine(font, lines[i], rect, y + i * line_h, size, color, &current);
@@ -95,9 +99,32 @@ static Rectangle MessagePopupContent(Rectangle popup) {
     return UiRect(popup, 0.5f, 0.5f, 0.8f, 0.8f);
 }
 
-static Rectangle MessagePopupDrawFrame(void) {
+static Rectangle MessagePopupDrawFrameWith(Texture2D frame) {
     Rectangle popup = MessagePopupRect();
     MessagePopupDrawScrim();
-    UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), popup, WHITE);
+    UiDrawTexture(frame, popup, WHITE);
     return popup;
+}
+
+static Rectangle MessagePopupDrawFrame(void) {
+    return MessagePopupDrawFrameWith(GuiTex(GUI_STORE_OVERLAY));
+}
+
+static bool MessagePopupDrawAlert(
+    Texture2D frame, Font title_font, Font body_font, const char *title, const char *message, Button *button
+) {
+    Rectangle popup = MessagePopupDrawFrameWith(frame);
+    Rectangle content = MessagePopupContent(popup);
+    UiDrawTextCentered(
+        title_font, title, UiRect(content, 0.5f, 0.0f, 1.0f, 0.22f), MESSAGE_POPUP_TITLE_SIZE, MESSAGE_POPUP_TEXT_COLOR
+    );
+    MessagePopupDrawText(
+        body_font,
+        message,
+        UiRect(content, 0.5f, 0.55f, 1.0f, 0.6f),
+        MESSAGE_POPUP_MESSAGE_SIZE,
+        MESSAGE_POPUP_TEXT_COLOR
+    );
+    bool pressed = ButtonDraw(button, MessagePopupOkButton(popup));
+    return pressed || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER);
 }

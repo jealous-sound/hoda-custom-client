@@ -97,7 +97,27 @@ OS-specific calls (sockets, positional reads, atomic file replace, CPU count, UT
 
 `.github/workflows/build.yml` builds all three on every push to `master` (or by hand from the Actions tab) and
 attaches a universal macOS app, a Linux x86-64 binary and a Windows x86-64 executable to the run as artifacts. They
-carry no game data: put the binary or app next to `data/` and `client-additional-data/` from `make dist`.
+carry no game data and download it on first launch.
+
+## Downloaded game data
+
+When no `client-additional-data/` sits next to the game (a CI build, or any copy without `make dist` data), the game
+keeps its data in a per-user folder: `~/Library/Application Support/Heroes of Dragon Age` on macOS,
+`$XDG_DATA_HOME` or `~/.local/share/Heroes of Dragon Age` on Linux, and `%APPDATA%\Heroes of Dragon Age` on
+Windows. Saves and `account.dat` live there too. On every launch it reads `manifest.json` from `CONTENT_URL` (baked
+in at build time; `HOD_CONTENT_URL` overrides it), downloads only the packs it doesn't have yet, checks their SHA-256,
+unpacks them and deletes files that later versions dropped. Interrupted downloads resume. Without a connection it
+starts with the data it already has. `HOD_CONTENT_DIR=<folder>` uses another folder and forces downloading even in a
+checkout. The APK and core packs install first; from then on the download screen is 5.4.4's `LoadingScreenV` (splash, spinner, `loader_message` plate with the original Russian messages, red bar, `МБ из` counter and percentage) and errors use the game's connection and download-error popups. Downloads use libcurl on macOS and Linux (loaded at runtime, so any distro's `libcurl.so.4` works) and
+WinHTTP on Windows.
+
+`make content` publishes the data from this checkout to the R2 bucket `CONTENT_BUCKET` (default `hoda-assets`)
+through Wrangler (`npx wrangler login` once). `tools/build_content_packs.py` groups the files `make dist` would ship
+into deterministic zip packs (rule tables, the APK, core files, and hashed buckets of heroes, scenes, Unity bundles
+and extras) named by their SHA-256. Packs whose files did not change keep their published entry, so a release
+uploads, and players download, only the packs that changed. The manifest goes up last with `Cache-Control:
+no-cache`; packs never change once uploaded and are cached for a year. `--dry-run` builds into `build/content`
+without uploading.
 
 `make dist` builds a playable copy in `../hoda-custom-dist` (override with `DIST_DIR=`): the app bundle with raylib
 in its `Frameworks`, `data/`, and only the parts of `client-additional-data` the game reads (about 2.1 GB of the

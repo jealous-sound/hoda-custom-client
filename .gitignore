@@ -48,6 +48,8 @@ client-additional-data/anim_tools/*
 client-additional-data/vfx_tools/*
 !client-additional-data/vfx_tools/build_fx_presets.py
 tests/battle_sim_test
+tests/content_update_test
+.wrangler/
 player_save.dat
 player_save.dat.tmp
 account.dat
