@@ -897,7 +897,8 @@ static void HomeSquadUnitDestroy(HomeSquadUnit *unit) {
 
 static void HomeSquadUiSoundBind(HomeSquad *squad, int slot, const Character *ch, const cJSON *manifest) {
     squad->ui_sound_ref[slot][0] = '\0';
-    cJSON *unit = cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(manifest, "characters"), ch->id);
+    cJSON *unit =
+        cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(manifest, "characters"), CharacterDataId(ch));
     cJSON *tier = cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(unit, "tiers"), TIER_NAMES[ch->tier]);
     cJSON *profile_name = cJSON_GetObjectItemCaseSensitive(tier, "profile");
     if (!cJSON_IsString(profile_name)) return;

@@ -519,7 +519,7 @@ const char *PvpOpponentName(const PvpOpponent *o) {
 
 void PvpOpponentRoster(BattleRoster *roster, const PvpOpponent *o) {
     memset(roster, 0, sizeof(*roster));
-    cJSON *catalog_root = JsonLoadFile(PVP_CATALOG_PATH);
+    cJSON *catalog_root = CharacterCatalogAddCustomHeroes(JsonLoadFile(PVP_CATALOG_PATH));
     cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
     const PvpSquadCell *cells = o->duel ? o->duel_cells : PvpTableEnsure()->squads[o->squad].cells;
     for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {

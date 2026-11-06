@@ -192,7 +192,7 @@ static void GalleryCatalogFinish(GalleryCatalog *catalog) {
 
 void GalleryCatalogLoad(GalleryCatalog *catalog, const char *path) {
     memset(catalog, 0, sizeof(*catalog));
-    cJSON *root = JsonLoadFile(path);
+    cJSON *root = CharacterCatalogAddCustomHeroes(JsonLoadFile(path));
     cJSON *characters = cJSON_GetObjectItemCaseSensitive(root, "characters");
     int capacity = cJSON_GetArraySize(characters);
     catalog->units = (Character *)MemAlloc((unsigned int)capacity * sizeof(Character));

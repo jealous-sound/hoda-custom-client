@@ -310,7 +310,7 @@ static cJSON *ProgressionLoadCharacterCatalog(void) {
         cJSON_Delete(root);
         return NULL;
     }
-    return root;
+    return CharacterCatalogAddCustomHeroes(root);
 }
 
 void NexusResetRun(Player *player) {

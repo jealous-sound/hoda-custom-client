@@ -734,7 +734,7 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
     for (int i = 0; i < STORE_GEM_SKU_COUNT; i++)
         StoreLoadGemSku(&store->gem_skus[i], cJSON_GetArrayItem(gem_skus, i), i);
 
-    store->catalog_root = JsonLoadFile(catalog_path);
+    store->catalog_root = CharacterCatalogAddCustomHeroes(JsonLoadFile(catalog_path));
     store->catalog = cJSON_GetObjectItemCaseSensitive(store->catalog_root, "characters");
     if (!cJSON_IsArray(store->catalog)) TraceLog(LOG_FATAL, "Store: catalog has no characters array");
     StoreBuildRarityPools(store);

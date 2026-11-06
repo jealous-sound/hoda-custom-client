@@ -19,7 +19,7 @@ $(TEST_TARGET): tests/battle_sim_test.c $(DEPS) Makefile
 
 test: $(TEST_TARGET)
 	python3 client-additional-data/validate_characters.py
-	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py tests/test_build_dist.py
+	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py tests/test_build_dist.py tests/test_build_custom_heroes.py
 	python3 tools/audit_character_models.py --deep
 	python3 tools/validate_ability_recipes.py
 	python3 tools/validate_intrinsic_passives.py
@@ -28,6 +28,7 @@ test: $(TEST_TARGET)
 	python3 tools/validate_gear.py
 	python3 tools/build_store_catalog.py --check
 	python3 tools/build_hero_pool.py --check
+	python3 tools/build_custom_heroes.py --check
 	python3 tools/validate_cache_refs.py
 	python3 tools/build_campaign_node_layout.py --check
 	python3 tools/build_runes.py --check

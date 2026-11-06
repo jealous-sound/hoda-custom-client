@@ -1904,6 +1904,43 @@ static void TestCatalogStatGrowth(void) {
     cJSON_Delete(root);
 }
 
+static void TestCustomHeroesResolveThroughTheirBaseHero(void) {
+    cJSON *custom_root = JsonLoadFile(CUSTOM_HERO_CATALOG_PATH);
+    cJSON *root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    PassiveManifestEnsure();
+    int heroes = 0;
+    cJSON *hero = NULL;
+    cJSON_ArrayForEach(hero, cJSON_GetObjectItemCaseSensitive(custom_root, "characters")) {
+        Character custom, base;
+        Ability custom_ability, base_ability;
+        const cJSON *custom_definition = CatalogFindCharacter(catalog, JsonStr(hero, "id"));
+        assert(custom_definition);
+        CharacterParse(custom_definition, &custom, &custom_ability);
+        const cJSON *base_definition = CatalogFindCharacter(catalog, custom.based_on);
+        assert(base_definition);
+        CharacterParse(base_definition, &base, &base_ability);
+        assert(!base.based_on[0]);
+        assert(!strcmp(CharacterDataId(&base), base.id));
+        assert(!strcmp(CharacterDataId(&custom), base.id));
+        assert(!strcmp(custom_ability.key, base_ability.key));
+        assert(ConsumeProfileFor(&custom) == ConsumeProfileFor(&base));
+        assert(PassiveManifestFind(CharacterDataId(&custom)) == PassiveManifestFind(base.id));
+        for (int tier = 0; tier < TIER_COUNT; tier++) {
+            char path[512];
+            custom.tier = (Tier)tier;
+            const char *prefab = HomeSquadResolvePrefab(HOD_CACHE "char_pack", &custom, path, sizeof(path));
+            assert(prefab && !strcmp(prefab, custom.model_prefab[tier]));
+            assert(strcmp(custom.model_prefab[tier], base.model_prefab[tier]) != 0);
+            assert(FileExists(TextFormat(POST_4_4_PORTRAIT_DIR "%s.png", custom.icon_prefab[tier])));
+        }
+        heroes++;
+    }
+    assert(heroes > 0);
+    cJSON_Delete(root);
+    cJSON_Delete(custom_root);
+}
+
 static void TestFxPresetLiveEmitterSizes(void) {
     cJSON *root = JsonLoadFile("data/fx_presets.json");
     assert(root);
@@ -6247,6 +6284,7 @@ int main(void) {
     TestTimelineCapacity();
     TestLegendaryStars();
     TestCatalogStatGrowth();
+    TestCustomHeroesResolveThroughTheirBaseHero();
     TestFxPresetLiveEmitterSizes();
     TestGeneratedFxCurvesAndDragonJet();
     TestPortraitCoverage();

@@ -767,7 +767,7 @@ static void SimUnitsInit(SimUnit *units, int side, int slot, const Character *ch
     memset(u, 0, sizeof(*u));
     if (!ch) return;
     u->ch = ch;
-    u->passives = PassiveManifestFind(ch->id);
+    u->passives = PassiveManifestFind(CharacterDataId(ch));
     u->present = u->alive = true;
     u->side = side;
     u->slot = slot;

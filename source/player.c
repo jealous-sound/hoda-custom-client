@@ -290,7 +290,7 @@ void PlayerLoadRoster(Player *p, const char *catalog_path, const char *player_pa
     PlayerRosterReset(p);
 
     cJSON *player_root = JsonLoadFile(player_path);
-    cJSON *catalog_root = JsonLoadFile(catalog_path);
+    cJSON *catalog_root = CharacterCatalogAddCustomHeroes(JsonLoadFile(catalog_path));
 
     cJSON *entries = cJSON_GetObjectItemCaseSensitive(player_root, "characters");
     cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");

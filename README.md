@@ -31,6 +31,33 @@ Everything else it needs is derived or post-4.4:
 In code, `CACHE_RESOURCE("name")`, `CACHE_BUNDLE_RESOURCE("bundle", "name")` and `APK_RESOURCE("name")` name an
 original object; any other string is a file path.
 
+## Custom heroes
+
+A custom hero is a new hero derived from a shipped one. Its spec lives in `data/custom_heroes/<name>.json`:
+`based_on` names the shipped hero, `character` overrides catalog fields (name, Russian name, `obtainable`),
+`stat_scale` scales power and health, and `look` describes the new model. `python3 tools/build_custom_heroes.py`
+writes the rows to `data/custom_heroes.json`, which the game appends to the hero catalog. A custom hero keeps its
+base hero's ability, passives, ability VFX, audio and XP tables, and has its own name, stats, models and portraits.
+
+```sh
+python3 tools/build_custom_heroes.py
+uv run --offline --with numpy --with Pillow --with UnityPy python tools/bake_custom_heroes.py
+```
+
+The baker starts from the base hero's runtime bake (`look.tiers.<tier>.source`) and writes the local, git-ignored
+assets: `char_pack/<prefab>/<prefab>_tN_rl.glb` with its textures, `extra/portraits/tex.<prefab>_tN_pt.png` in the
+base hero's rarity frame, and `display_scales.json` entries. `look` holds:
+
+- `texture`: `recolor` maps a hue band to a new hue, optionally only on some bones; `gradient` tints by height;
+  `strokes` draws glowing lines on the front of a bone, such as face markings.
+- `halo`: a ring with optional shards on its own bone under `bone`, spinning a set number of turns per clip.
+- `clips`: each runtime clip (`idle` first) comes from a `clip` of the base bake, or of a `source` bake on the same
+  skeleton, with `speed`, `window` and `time_keys`, plus `layers` that rotate or move a bone in the body's frame by
+  keys or waves.
+- `portrait`: the camera and backdrop for the rendered portrait.
+
+`data/custom_heroes/veilwarden.json`, Veilwarden Ithriel from Solas, is the worked example.
+
 ## Commands
 
 ```sh
