@@ -159,3 +159,11 @@ the application review; reports go to the server's `runtime/reports.jsonl`.
 `guild_home_buttons` render the screens with sample data and a pinned clock. `guild_live_home`, `guild_live_chat`,
 `guild_live_war`, `guild_live_duel`, `guild_live_report` and `guild_live_claim` drive them against a running
 backend.
+
+## License
+
+The code in this repository is licensed under the GNU General Public License v3.0 (GPL-3.0-only); see `LICENSE`.
+
+Heroes of Dragon Age is a trademark of Electronic Arts. The original game data, art, audio, fonts and APK that the
+game reads or downloads are © Electronic Arts Inc. and are not covered by this license. This is a non-commercial fan
+project and is not affiliated with or endorsed by Electronic Arts or BioWare.
