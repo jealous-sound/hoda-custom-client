@@ -343,6 +343,43 @@ typedef struct {
 
 typedef enum { PROJ_NONE, PROJ_BALL, PROJ_ARROW, PROJ_SPIRIT, PROJ_DESICCATE } BattleProjLook;
 
+#define BATTLE_LEVEL_UP_MARKER_X -0.4184f
+#define BATTLE_LEVEL_UP_MARKER_Y 1.1561f
+#define BATTLE_LEVEL_UP_MARKER_Z 16.2063f
+#define BATTLE_LEVEL_UP_TALL_FIGURE_TOP_Y 3.0f
+#define BATTLE_LEVEL_UP_CAMERA_SECONDS 0.5f
+#define BATTLE_LEVEL_UP_CAMERA_FOV 37.0f
+#define BATTLE_SQUADS_ALL_SLOTS (-1)
+
+typedef struct {
+    Vector3 position, forward, up;
+} BattleCameraMarker;
+
+static const BattleCameraMarker BATTLE_LEVEL_UP_CAMERA = {
+    {-0.9789f, 3.3772f, 10.3749f},
+    {-0.0979f, -0.23832f, 0.96625f},
+    {0.00498f, 0.97078f, 0.23994f},
+};
+static const BattleCameraMarker BATTLE_LEVEL_UP_CAMERA_TALL = {
+    {-0.9723f, 3.8073f, 9.1267f},
+    {-0.11114f, -0.22498f, 0.96802f},
+    {-0.00275f, 0.9741f, 0.22608f},
+};
+
+typedef struct {
+    Matrix unit, pad, faction, shadow;
+    float fade;
+    bool anim_override;
+} BattleStagedPose;
+
+typedef struct {
+    bool active;
+    int slot;
+    float camera_t;
+    Camera3D camera_from, camera;
+    BattleStagedPose saved;
+} BattleLevelUpStage;
+
 typedef struct {
     BattleMesh meshes[BATTLE_MAX_MESH];
     int mesh_count;
@@ -422,6 +459,7 @@ typedef struct {
     BattleRoster enemy_roster;
     BattleSquads squads;
     bool squads_loaded;
+    BattleLevelUpStage level_up;
 
     Camera3D cam;
     Camera3D cam_base, cam_matchmaking, cam_tactical, cam_transition_from;
@@ -798,7 +836,12 @@ static Camera3D BattleCameraLerp(Camera3D from, Camera3D to, float t) {
 
 static void BattleCameraUpdatePose(Battle *b, float dt) {
     Camera3D pose;
-    if (b->combat_camera) {
+    if (b->level_up.active) {
+        b->level_up.camera_t = fminf(1.0f, b->level_up.camera_t + dt / BATTLE_LEVEL_UP_CAMERA_SECONDS);
+        float t = b->level_up.camera_t;
+        float smooth = t * t * (3.0f - 2.0f * t);
+        pose = BattleCameraLerp(b->level_up.camera_from, b->level_up.camera, smooth);
+    } else if (b->combat_camera) {
         b->combat_cam_t = fminf(1.0f, b->combat_cam_t + dt / 0.5f);
         float t = b->combat_cam_t;
         float smooth = t * t * (3.0f - 2.0f * t);
@@ -3515,6 +3558,7 @@ void BattleExitNode(Battle *b) {
     b->filter_amt = 0.0f;
     b->filter_on = false;
     b->cam_shake = (Vector3){0};
+    b->level_up.active = false;
     BattleAudioCacheClear(b);
     memset(b->unit_audio, 0, sizeof(b->unit_audio));
     if (!b->squads_loaded) return;
@@ -3548,6 +3592,104 @@ void BattleEnterNodeFrom(Battle *b, const Player *player, const char *rosters_pa
 
 void BattleEnterNode(Battle *b, const Player *player, const char *map_id, int step) {
     BattleEnterNodeFrom(b, player, "data/campaign_rosters.json", map_id, step);
+}
+
+static Vector3 BattleLevelUpMarker(void) {
+    return (Vector3){BATTLE_LEVEL_UP_MARKER_X, BATTLE_LEVEL_UP_MARKER_Y, BATTLE_LEVEL_UP_MARKER_Z};
+}
+
+static float BattleLevelUpFeetY(float pad_scale) {
+    return BattleFeetY(pad_scale) + BATTLE_LEVEL_UP_MARKER_Y - BATTLE_MARKER_Y;
+}
+
+static Camera3D BattleLevelUpCamera(const BattleCameraMarker *marker) {
+    float distance = Vector3Distance(marker->position, BattleLevelUpMarker());
+    return (Camera3D){
+        .position = marker->position,
+        .target = Vector3Add(marker->position, Vector3Scale(marker->forward, distance)),
+        .up = marker->up,
+        .fovy = BATTLE_LEVEL_UP_CAMERA_FOV,
+        .projection = CAMERA_PERSPECTIVE,
+    };
+}
+
+static void BattleLevelUpRestoreUnit(Battle *b) {
+    if (!b->level_up.active) return;
+    int slot = b->level_up.slot;
+    const BattleStagedPose *saved = &b->level_up.saved;
+    HomeSquadUnit *unit = &b->squads.units[0][slot];
+    unit->xform = saved->unit;
+    unit->fade = saved->fade;
+    unit->anim_override = saved->anim_override;
+    b->squads.pad_xform[0][slot] = saved->pad;
+    b->squads.fac_xform[0][slot] = saved->faction;
+    b->squads.shadow_xform[0][slot] = saved->shadow;
+}
+
+static bool BattleLevelUpFigureIsTall(const HomeSquadUnit *unit) {
+    if (!unit->active || unit->model.meshCount <= 0) return false;
+    BoundingBox bounds = GetModelBoundingBox(unit->model);
+    Vector3 top = Vector3Transform(bounds.max, HomeSquadUnitDrawXform(unit));
+    return top.y > BATTLE_LEVEL_UP_TALL_FIGURE_TOP_Y;
+}
+
+static const char *BattleLevelUpFx(Rarity rarity) {
+    static const char *const fx[RARITY_MYTHIC + 1] = {
+        "fx_lvlup_t1",
+        "fx_lvlup_t1",
+        "fx_lvlup_t2",
+        "fx_lvlup_t3",
+        "fx_lvlup_t4",
+        "fx_lvlup_t5",
+        "fx_lvlup_t5",
+    };
+    return fx[rarity >= RARITY_COMMON && rarity <= RARITY_MYTHIC ? rarity : RARITY_COMMON];
+}
+
+void BattleLevelUpStageShow(Battle *b, int slot, Rarity rarity) {
+    if (!b->squads_loaded || slot < 0 || slot >= SQUAD_SLOT_COUNT || !b->squads.present[0][slot]) return;
+    if (b->level_up.active && b->level_up.slot == slot) return;
+    BattleLevelUpRestoreUnit(b);
+
+    HomeSquadUnit *unit = &b->squads.units[0][slot];
+    b->level_up.saved = (BattleStagedPose){
+        .unit = unit->xform,
+        .pad = b->squads.pad_xform[0][slot],
+        .faction = b->squads.fac_xform[0][slot],
+        .shadow = b->squads.shadow_xform[0][slot],
+        .fade = unit->fade,
+        .anim_override = unit->anim_override,
+    };
+    b->level_up.active = true;
+    b->level_up.slot = slot;
+    b->level_up.camera_from = b->cam;
+    b->level_up.camera_t = 0.0f;
+
+    float pad_scale = b->squads.pad_scale[0][slot];
+    Vector3 marker = BattleLevelUpMarker();
+    Vector3 feet = {marker.x, BattleLevelUpFeetY(pad_scale), marker.z};
+    SquadPadPlaceAtFeet(
+        feet, pad_scale, &b->squads.pad_xform[0][slot], &b->squads.fac_xform[0][slot], &b->squads.shadow_xform[0][slot]
+    );
+
+    Camera3D camera = BattleLevelUpCamera(&BATTLE_LEVEL_UP_CAMERA);
+    float yaw = atan2f(camera.position.x - feet.x, camera.position.z - feet.z);
+    float ds = b->squads.unit_scale[0][slot];
+    unit->xform = MatrixMultiply(
+        MatrixMultiply(MatrixScale(ds, ds, ds), MatrixRotateY(yaw)), MatrixTranslate(feet.x, feet.y, feet.z)
+    );
+    unit->fade = 1.0f;
+    if (unit->anim_override) unit->last_frame = -1;
+    unit->anim_override = false;
+    HomeSquadUnitPlayMelee(unit);
+
+    b->level_up.camera = BattleLevelUpFigureIsTall(unit) ? BattleLevelUpCamera(&BATTLE_LEVEL_UP_CAMERA_TALL) : camera;
+    BattleFxBurst(b, BattleLevelUpFx(rarity), marker);
+}
+
+void BattleLevelUpStageHide(Battle *b) {
+    BattleLevelUpRestoreUnit(b);
+    b->level_up.active = false;
 }
 
 void BattleUpdate(Battle *b, float dt) {
@@ -3742,8 +3884,9 @@ void BattleDraw(Battle *b) {
     };
     for (int pass = 0; pass < 5; pass++) {
         if (pass == 3) {
-            if (b->squads_loaded) BattleSquadsDraw(&b->squads);
-            if (b->filter_amt > 0.01f && b->squads_loaded) {
+            if (b->squads_loaded)
+                BattleSquadsDraw(&b->squads, b->level_up.active ? b->level_up.slot : BATTLE_SQUADS_ALL_SLOTS);
+            if (b->filter_amt > 0.01f && b->squads_loaded && !b->level_up.active) {
                 Vector3 fwd = Vector3Normalize(Vector3Subtract(b->cam.target, b->cam.position));
                 Vector3 right = Vector3Normalize(Vector3CrossProduct(fwd, b->cam.up));
                 Vector3 up = Vector3CrossProduct(right, fwd);
@@ -3800,7 +3943,7 @@ void BattleDraw(Battle *b) {
             for (int side = 0; side < 2; side++) {
                 for (int s = 0; s < SQUAD_SLOT_COUNT; s++) {
                     struct BattleRing *r = &b->rings[side][s];
-                    if (!r->on || r->pct <= 0.001f) continue;
+                    if (!r->on || r->pct <= 0.001f || b->level_up.active) continue;
                     static const Color RING_COLORS[5] = {
                         {20, 212, 0, 255},
                         {210, 234, 24, 255},

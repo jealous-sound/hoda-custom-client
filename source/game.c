@@ -289,6 +289,14 @@ static void GameSubmitTutorialReward(const char *reward) {
     ServerActionSubmit(fields);
 }
 
+static void GameRefreshSquadCards(Game *g) {
+    const BattleSquadLeveling *leveling = &g->battle_reward.squad_leveling;
+    for (int i = 0; i < leveling->count; i++) {
+        int roster_index = leveling->heroes[i].roster_index;
+        if (roster_index < g->heroes.card_count) HeroesRebuildCard(&g->heroes, &g->player, roster_index);
+    }
+}
+
 static void GameCommitBattleOutcome(Game *g, bool won) {
     if (g->battle_outcome_committed || g->battle_is_intro) return;
 
@@ -310,6 +318,7 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
         );
         g->pvp_revenge_index = -1;
         if (g->pvp_event) MissionsRecordEventBattle(&g->player, &g->battle_play.sim, g->battle_reward.banner_delta);
+        GameRefreshSquadCards(g);
         MissionsSync(&g->player, &g->map);
         ProgressionSave(&g->player);
         GameSubmitBattle(g, won);
@@ -323,6 +332,7 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
         run->pending_animation = won;
         run->pending_from_step = from_step;
         run->pending_to_step = run->current_node_step;
+        GameRefreshSquadCards(g);
         MissionsSync(&g->player, &g->map);
         ProgressionSave(&g->player);
         GameSubmitBattle(g, won);
@@ -333,9 +343,18 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
         &g->player, &g->map, g->battle_map_index, g->battle_node_index, won, BattlePlayCriticalGold(&g->battle_play)
     );
     g->player.campaign_progress.pending_animation = GamePendingCampaignAnimation(&g->map, &g->battle_reward);
+    GameRefreshSquadCards(g);
     MissionsSync(&g->player, &g->map);
     ProgressionSave(&g->player);
     GameSubmitBattle(g, won);
+}
+
+static void GameStageLevelUpHero(Game *g) {
+    const BattleHeroLeveling *hero = BattleResultsFlowLevelUpHero(&g->battle_results);
+    if (hero && hero->roster_index < g->player.roster_count)
+        BattleLevelUpStageShow(&g->battle, hero->slot, g->player.roster[hero->roster_index].rarity);
+    else
+        BattleLevelUpStageHide(&g->battle);
 }
 
 static BattleResultsPresentation GameBattleResultsSnapshot(const Game *g) {
@@ -360,6 +379,7 @@ static BattleResultsPresentation GameBattleResultsSnapshot(const Game *g) {
         .trophy_delta = g->battle_reward.trophy_delta,
         .banner_delta = g->battle_reward.banner_delta,
         .event_payout = g->battle_reward.event_payout,
+        .squad = g->battle_reward.squad_leveling,
     };
 }
 
@@ -1779,6 +1799,7 @@ void GameDraw(Game *g) {
                 }
                 if (!g->battle_outcome_committed && ended) GameCommitBattleOutcome(g, g->battle_play.won);
             }
+            GameStageLevelUpHero(g);
             BattleUpdate(&g->battle, showing_results ? dt : dt * BattlePlayTimeScale(&g->battle_play));
             BattleDraw(&g->battle);
             GameEmitWispFx(g);
