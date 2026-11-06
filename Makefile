@@ -4,7 +4,7 @@ PLATFORM ?= $(HOST_PLATFORM)
 RAYLIB_DIR ?= /opt/homebrew/opt/raylib
 EXTRA_CFLAGS ?=
 RAYLIB_LINK ?= -lraylib
-CONTENT_URL ?= https://pub-71d9bb5f2f2f4381b94db2fd88969215.r2.dev
+CONTENT_URL ?= https://cdn.hodareborn.com
 CONTENT_BUCKET ?= hoda-assets
 CFLAGS  = -Wall -O2 -std=c99 -I$(RAYLIB_DIR)/include -DHOD_CONTENT_URL='"$(CONTENT_URL)"' $(PLATFORM_CFLAGS) $(EXTRA_CFLAGS)
 LDFLAGS = -L$(RAYLIB_DIR)/lib
