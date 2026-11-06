@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import plistlib
 from pathlib import Path
 import struct
 import sys
@@ -92,6 +93,21 @@ class BuildDistTest(unittest.TestCase):
         self.assertIn('HOD_BACKEND_URL="${HOD_BACKEND_URL:-http://example.test:1}"', text)
         build_dist.write_launcher(self.root, "")
         self.assertNotIn("HOD_BACKEND_URL", (self.root / build_dist.LAUNCHER).read_text())
+
+    def test_bundle_environment_carries_the_backend_only_when_one_is_given(self) -> None:
+        info = self.root / build_dist.APP_INFO
+        info.parent.mkdir(parents=True)
+        info.write_bytes(plistlib.dumps({"CFBundleName": build_dist.APP_NAME}))
+        build_dist.write_bundle_environment(self.root, "http://example.test:1")
+        written = plistlib.loads(info.read_bytes())
+        self.assertEqual(written["LSEnvironment"], {"HOD_BACKEND_URL": "http://example.test:1"})
+        self.assertEqual(written["CFBundleName"], build_dist.APP_NAME)
+        build_dist.write_bundle_environment(self.root, "")
+        self.assertNotIn("LSEnvironment", plistlib.loads(info.read_bytes()))
+
+    def test_launcher_runs_the_executable_inside_the_bundle(self) -> None:
+        build_dist.write_launcher(self.root, "")
+        self.assertIn(f'exec "./{build_dist.APP_EXECUTABLE}"', (self.root / build_dist.LAUNCHER).read_text())
 
 
 if __name__ == "__main__":

@@ -1,21 +1,73 @@
-CC      = cc
-CFLAGS  = -Wall -O2 -std=c99 -I/opt/homebrew/opt/raylib/include
-LDFLAGS = -L/opt/homebrew/opt/raylib/lib
-LIBS    = -lraylib -framework Cocoa -framework IOKit -framework OpenGL
-
-TARGET  = game
-SRC     = source/main.c
+APP_NAME = Heroes of Dragon Age
+HOST_PLATFORM := $(if $(filter Darwin,$(shell uname -s)),macos,linux)
+PLATFORM ?= $(HOST_PLATFORM)
+RAYLIB_DIR ?= /opt/homebrew/opt/raylib
+EXTRA_CFLAGS ?=
+RAYLIB_LINK ?= -lraylib
+CFLAGS  = -Wall -O2 -std=c99 -I$(RAYLIB_DIR)/include $(PLATFORM_CFLAGS) $(EXTRA_CFLAGS)
+LDFLAGS = -L$(RAYLIB_DIR)/lib
+SRC     = source/main.c source/platform.c
 DEPS    = $(wildcard source/*.c source/*.h source/vendors/*.c source/vendors/*.h)
 TEST_TARGET = tests/battle_sim_test
 BACKEND_DIR ?= ../hoda-custom-backend
 DIST_DIR ?= ../hoda-custom-dist
 DIST_BACKEND_URL ?=
+APP_ICON = packaging/app_icon.png
+.DEFAULT_GOAL := app
+
+ifeq ($(PLATFORM),macos)
+LIBS    = $(RAYLIB_LINK) -framework Cocoa -framework IOKit -framework OpenGL -framework CoreAudio -framework CoreVideo
+APP_BUNDLE = $(APP_NAME).app
+APP_CONTENTS = $(APP_BUNDLE)/Contents
+APP_EXECUTABLE = $(APP_CONTENTS)/MacOS/$(APP_NAME)
+TARGET  = Heroes\ of\ Dragon\ Age.app/Contents/MacOS/Heroes\ of\ Dragon\ Age
+APP_INFO = packaging/macos/Info.plist
+ICONSET = build/AppIcon.iconset
+ICON_SIZES = 16 32 128 256 512
+
+$(TARGET): $(DEPS) $(APP_INFO) $(APP_ICON) Makefile
+	mkdir -p "$(APP_CONTENTS)/MacOS" "$(APP_CONTENTS)/Resources" $(ICONSET)
+	$(CC) $(CFLAGS) $(SRC) -o "$(APP_EXECUTABLE)" $(LDFLAGS) $(LIBS)
+	cp $(APP_INFO) "$(APP_CONTENTS)/Info.plist"
+	for size in $(ICON_SIZES); do \
+		sips -z $$size $$size $(APP_ICON) --out $(ICONSET)/icon_$${size}x$${size}.png >/dev/null; \
+		sips -z $$((size * 2)) $$((size * 2)) $(APP_ICON) --out $(ICONSET)/icon_$${size}x$${size}@2x.png >/dev/null; \
+	done
+	iconutil -c icns $(ICONSET) -o "$(APP_CONTENTS)/Resources/AppIcon.icns"
+	codesign --force --sign - "$(APP_BUNDLE)"
+endif
+
+ifeq ($(PLATFORM),linux)
+PLATFORM_CFLAGS = -D_DEFAULT_SOURCE
+LIBS    = $(RAYLIB_LINK) -lGL -lm -lpthread -ldl -lrt -lX11
+APP_EXECUTABLE = build/linux/$(APP_NAME)
+TARGET  = build/linux/Heroes\ of\ Dragon\ Age
 
 $(TARGET): $(DEPS) Makefile
-	$(CC) $(CFLAGS) $(SRC) -o $(TARGET) $(LDFLAGS) $(LIBS)
+	mkdir -p build/linux
+	$(CC) $(CFLAGS) $(SRC) -o "$(APP_EXECUTABLE)" $(LDFLAGS) $(LIBS)
+endif
+
+ifeq ($(PLATFORM),windows)
+CC      = x86_64-w64-mingw32-gcc
+WINDRES ?= x86_64-w64-mingw32-windres
+LIBS    = $(RAYLIB_LINK) -lopengl32 -lgdi32 -lwinmm -lws2_32 -lpthread -static -mwindows
+APP_EXECUTABLE = build/windows/$(APP_NAME).exe
+TARGET  = build/windows/Heroes\ of\ Dragon\ Age.exe
+WINDOWS_RESOURCES = build/windows/app_resources.o
+
+$(WINDOWS_RESOURCES): packaging/windows/app.rc packaging/windows/app_icon.ico
+	mkdir -p build/windows
+	$(WINDRES) packaging/windows/app.rc -O coff -o $(WINDOWS_RESOURCES)
+
+$(TARGET): $(DEPS) $(WINDOWS_RESOURCES) Makefile
+	$(CC) $(CFLAGS) $(SRC) $(WINDOWS_RESOURCES) -o "$(APP_EXECUTABLE)" $(LDFLAGS) $(LIBS)
+endif
+
+app: $(TARGET)
 
 $(TEST_TARGET): tests/battle_sim_test.c $(DEPS) Makefile
-	$(CC) $(CFLAGS) tests/battle_sim_test.c -o $(TEST_TARGET) $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) tests/battle_sim_test.c source/platform.c -o $(TEST_TARGET) $(LDFLAGS) $(LIBS)
 
 test: $(TEST_TARGET)
 	python3 client-additional-data/validate_characters.py
@@ -41,7 +93,7 @@ test: $(TEST_TARGET)
 	./$(TEST_TARGET)
 
 run: $(TARGET)
-	./$(TARGET)
+	"./$(APP_EXECUTABLE)"
 
 play:
 	HOD_CLIENT_DIR="$(CURDIR)" "$(BACKEND_DIR)/scripts/play-local.sh"
@@ -50,7 +102,7 @@ dist: $(TARGET)
 	python3 tools/build_dist.py --replace --out "$(DIST_DIR)" --backend-url "$(DIST_BACKEND_URL)"
 
 clean:
-	rm -f $(TARGET) $(TEST_TARGET)
+	rm -rf "$(APP_NAME).app" build $(TEST_TARGET)
 
 format:
 	clang-format -i source/*.c
@@ -58,4 +110,4 @@ format:
 format-check:
 	clang-format --dry-run --Werror source/*.c
 
-.PHONY: run play dist test clean format format-check
+.PHONY: app run play dist test clean format format-check

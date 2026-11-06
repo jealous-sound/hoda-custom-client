@@ -7,8 +7,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <time.h>
-#include <unistd.h>
+
+#include "platform.h"
+
+#define APP_NAME "Heroes of Dragon Age"
 
 #ifndef HOD_CACHE
 #define HOD_CACHE "client-additional-data/"
@@ -20,6 +24,7 @@
 #include "unity_asset.c"
 #include "apk_archive.c"
 #include "resource.c"
+#include "app_bundle.c"
 #include "utils.c"
 #include "backend.c"
 #include "server_actions.c"
@@ -110,6 +115,7 @@ static void RunGame(void) {
 }
 
 int main(void) {
+    AppBundleEnterParentDirectory();
     bool screenshot_mode = EnvFlag("HOD_SHOT");
     if (screenshot_mode) SetTraceLogLevel(LOG_WARNING);
     int win_w = config.game_width, win_h = config.game_height;
@@ -119,7 +125,7 @@ int main(void) {
     unsigned int flags = FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI;
     if (screenshot_mode) flags |= FLAG_WINDOW_HIDDEN | FLAG_WINDOW_UNFOCUSED;
     SetConfigFlags(flags);
-    InitWindow(win_w, win_h, "Heroes of Dragon Age");
+    InitWindow(win_w, win_h, APP_NAME);
     SetExitKey(KEY_NULL);
     InitAudioDevice();
     if (screenshot_mode || EnvFlag("HOD_MUTE")) SetMasterVolume(0.0f);

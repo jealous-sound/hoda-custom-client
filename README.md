@@ -85,9 +85,24 @@ hero list the server rolls from; after changing it or `store_packs.json`, `runes
 `tutorial_rewards.json`, `campaign_maps.json`, `nexus_maps.json`, `pvp_rules.json`, `missions.json` or
 `new_player.json`, run `scripts/sync-client-data.sh` in the backend. Store schedules use UTC dates.
 
-`make dist` builds a playable copy in `../hoda-custom-dist` (override with `DIST_DIR=`): the binary with raylib
-bundled next to it, `data/`, and only the parts of `client-additional-data` the game reads (about 2.1 GB of the
-local cache). Players start it with `play.sh`; `DIST_BACKEND_URL=http://host:port` makes that the default server.
+`make` builds `Heroes of Dragon Age.app`, a macOS app bundle with its icon from `packaging/app_icon.png` and its
+`Info.plist` from `packaging/macos/`. The game runs from the folder that holds the bundle, so it finds `data/` and
+`client-additional-data/` next to it however it is launched.
+
+`make PLATFORM=linux` builds `build/linux/Heroes of Dragon Age`; `make PLATFORM=windows` cross-compiles
+`build/windows/Heroes of Dragon Age.exe` with MinGW-w64 and embeds `packaging/windows/app_icon.ico`. Point
+`RAYLIB_DIR=` at a raylib 5.5 release and set `RAYLIB_LINK=$RAYLIB_DIR/lib/libraylib.a` to link it statically.
+OS-specific calls (sockets, positional reads, atomic file replace, CPU count, UTC time) live in
+`source/platform.c`, a separate translation unit so `<windows.h>` never meets raylib's names.
+
+`.github/workflows/build.yml` builds all three on every push to `master` (or by hand from the Actions tab) and
+attaches a universal macOS app, a Linux x86-64 binary and a Windows x86-64 executable to the run as artifacts. They
+carry no game data: put the binary or app next to `data/` and `client-additional-data/` from `make dist`.
+
+`make dist` builds a playable copy in `../hoda-custom-dist` (override with `DIST_DIR=`): the app bundle with raylib
+in its `Frameworks`, `data/`, and only the parts of `client-additional-data` the game reads (about 2.1 GB of the
+local cache). Players open the app or run `play.sh`; `DIST_BACKEND_URL=http://host:port` makes that the default
+server for both.
 Rebuilding replaces only a folder this target made. Most of the copy is EA's original 4.4.0 game data.
 
 A first launch (no save, or no backend profile) creates a guest account and runs the 5.4.4 tutorial on the

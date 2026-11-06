@@ -154,8 +154,8 @@ typedef struct {
 } ResourceBundleJob;
 
 static int ResourceWorkerCount(int tasks) {
-    long cores = sysconf(_SC_NPROCESSORS_ONLN);
-    int count = cores < RESOURCE_WORKERS_MAX ? (int)cores : RESOURCE_WORKERS_MAX;
+    int cores = PlatformProcessorCount();
+    int count = cores < RESOURCE_WORKERS_MAX ? cores : RESOURCE_WORKERS_MAX;
     return count < tasks ? count : tasks;
 }
 

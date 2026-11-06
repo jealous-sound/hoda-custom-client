@@ -12,7 +12,8 @@
 .agents/skills/hoda-reference/references/
 
 # --- Build artifacts ---
-game
+/Heroes of Dragon Age.app/
+/build/
 sceneview
 sceneview_mainscreen
 *.o

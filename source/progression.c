@@ -1220,7 +1220,7 @@ bool ProgressionSaveToPath(const Player *player, const char *path) {
     int needed = snprintf(temporary, sizeof(temporary), "%s.tmp", path);
     bool ok = needed > 0 && needed < (int)sizeof(temporary) && SaveFileText(temporary, serialized);
     cJSON_free(serialized);
-    if (ok) ok = rename(temporary, path) == 0;
+    if (ok) ok = PlatformReplaceFile(temporary, path);
     if (!ok && needed > 0 && needed < (int)sizeof(temporary)) remove(temporary);
     if (!ok) TraceLog(LOG_WARNING, "Progression: could not save %s", path);
     return ok;
