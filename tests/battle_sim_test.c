@@ -40,6 +40,30 @@ static void TestUnitPoolReusesReleasedUnits(void) {
     assert(unit_pool_count == 0);
 }
 
+static void TestWispIdleDriftsLikeTheOriginalFx(void) {
+    assert(WispDriftProgress(0.0f) == 0.0f);
+    assert(fabsf(WispDriftProgress(0.25f) - 0.15625f) < 1e-5f);
+    assert(fabsf(WispDriftProgress(0.5f) - 0.5f) < 1e-5f);
+    assert(fabsf(WispDriftProgress(1.0f) - 1.0f) < 1e-5f);
+    assert(fabsf(WispDriftProgress(1.75f) - 0.15625f) < 1e-5f);
+
+    Quaternion chest_rest = QuaternionNormalize((Quaternion){0.4669f, 0.5310f, 0.4669f, 0.5310f});
+    Vector3 reach = WispDriftReach(chest_rest);
+    assert(Vector3Distance(reach, (Vector3){0.2f, -0.1856f, 0.1248f}) < 1e-3f);
+
+    HomeSquadUnit wisp = {.active = true, .wisp_fx = "fx_wispchar_t1_pre", .wisp_bone = -1, .wisp_drift_reach = reach};
+    wisp.xform = MatrixMultiply(
+        MatrixMultiply(MatrixScale(2.0f, 2.0f, 2.0f), MatrixRotateY(PI / 2.0f)), MatrixTranslate(10.0f, 0.0f, 0.0f)
+    );
+    Vector3 rest = HomeSquadWispPosition(&wisp);
+    HomeSquadUnitUpdate(&wisp, 1.0f);
+    Vector3 turned_reach =
+        Vector3RotateByQuaternion(reach, QuaternionFromAxisAngle((Vector3){0.0f, 1.0f, 0.0f}, PI / 2.0f));
+    assert(Vector3Distance(Vector3Subtract(HomeSquadWispPosition(&wisp), rest), turned_reach) < 1e-4f);
+    HomeSquadUnitUpdate(&wisp, 1.0f);
+    assert(Vector3Distance(HomeSquadWispPosition(&wisp), rest) < 1e-4f);
+}
+
 static void TestCharacter(
     Character *ch, Ability *ability, const char *id, const char *key, TargetPattern target, int power, int health
 ) {
@@ -6267,6 +6291,7 @@ int main(void) {
     TestAllCampaignMapsAdvance();
     TestEnergyAndStaminaPools();
     TestUnitPoolReusesReleasedUnits();
+    TestWispIdleDriftsLikeTheOriginalFx();
     TestFxKeyoutPreservesSourceTransparency();
     TestCreatureClipFramesStayOnIdleGround();
     puts("battle_sim_test: ok");

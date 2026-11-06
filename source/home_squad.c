@@ -63,11 +63,42 @@ typedef struct {
     int wisp_bone;
     int wisp_loop;
     unsigned wisp_loop_serial;
+    Vector3 wisp_drift_reach;
+    float wisp_drift_time;
 } HomeSquadUnit;
 
 #define HOME_WISP_QUEUE_CAPACITY 16
 #define HOME_WISP_FX_LIFT 0.93f
 #define HOME_WISP_ANCHOR_BONE "default_Chest"
+#define WISP_DRIFT_LEG_SECONDS 1.0f
+#define WISP_DRIFT_CYCLE_SECONDS (2.0f * WISP_DRIFT_LEG_SECONDS)
+static const Vector3 WISP_FX_TRAVEL_LENGTH = {0.2f, 0.1f, 0.2f};
+
+static Vector3 UnityToModelAxes(Vector3 unity) {
+    return (Vector3){-unity.x, unity.y, unity.z};
+}
+
+static Vector3 WispDriftReach(Quaternion fx_rest_rotation) {
+    return Vector3RotateByQuaternion(UnityToModelAxes(WISP_FX_TRAVEL_LENGTH), fx_rest_rotation);
+}
+
+static float WispDriftProgress(float seconds) {
+    float legs = seconds / WISP_DRIFT_LEG_SECONDS;
+    int leg = (int)legs;
+    float t = legs - (float)leg;
+    float eased = t * t * (3.0f - 2.0f * t);
+    return leg % 2 ? 1.0f - eased : eased;
+}
+
+static Vector3 MatrixRotateUnscaled(Matrix m, Vector3 v) {
+    Vector3 turned = {
+        m.m0 * v.x + m.m4 * v.y + m.m8 * v.z,
+        m.m1 * v.x + m.m5 * v.y + m.m9 * v.z,
+        m.m2 * v.x + m.m6 * v.y + m.m10 * v.z,
+    };
+    float scale = Vector3Length((Vector3){m.m0, m.m1, m.m2});
+    return scale > 0.0f ? Vector3Scale(turned, 1.0f / scale) : turned;
+}
 
 typedef struct {
     HomeSquadUnit *unit;
@@ -671,6 +702,8 @@ static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase
     if (unit->wisp_fx)
         for (int bone = 0; bone < unit->model.boneCount; bone++)
             if (!strcmp(unit->model.bones[bone].name, HOME_WISP_ANCHOR_BONE)) unit->wisp_bone = bone;
+    unit->wisp_drift_reach =
+        WispDriftReach(unit->wisp_bone >= 0 ? unit->model.bindPose[unit->wisp_bone].rotation : QuaternionIdentity());
     unit->active = true;
 }
 
@@ -687,6 +720,7 @@ static void HomeSquadUnitLoad(HomeSquadUnit *unit, const char *path, Shader unit
     unit->pose_source = (ModelAnimation){0};
     unit->xform = xform;
     unit->fade = 1.0f;
+    unit->wisp_drift_time = 0.0f;
 }
 
 static void HomeSquadUnitBeginBlend(HomeSquadUnit *unit, float seconds) {
@@ -784,6 +818,7 @@ static void HomeSquadUnitBeginAttackExit(HomeSquadUnit *unit, ModelAnimation cli
 
 static void HomeSquadUnitUpdate(HomeSquadUnit *unit, float dt) {
     if (!unit->active) return;
+    if (unit->wisp_fx) unit->wisp_drift_time = fmodf(unit->wisp_drift_time + dt, WISP_DRIFT_CYCLE_SECONDS);
     HomeSquadUnitBlendTick(unit, dt);
     if (unit->anim_override) return;
     if (unit->melee_playing) {
@@ -805,11 +840,16 @@ static void HomeSquadUnitUpdate(HomeSquadUnit *unit, float dt) {
     HomeSquadUnitShowFrame(unit, unit->idle, ((int)unit->frame_time + unit->phase) % unit->idle.frameCount);
 }
 
-static Vector3 HomeSquadWispPosition(const HomeSquadUnit *unit) {
+static Vector3 HomeSquadWispAnchor(const HomeSquadUnit *unit) {
     Matrix m = unit->xform;
     if (unit->wisp_bone < 0 || unit->idle.frameCount <= 0) return (Vector3){m.m12, m.m13 + HOME_WISP_FX_LIFT, m.m14};
     int frame = unit->last_frame >= 0 ? unit->last_frame % unit->idle.frameCount : 0;
     return Vector3Transform(unit->idle.framePoses[frame][unit->wisp_bone].translation, m);
+}
+
+static Vector3 HomeSquadWispPosition(const HomeSquadUnit *unit) {
+    Vector3 reach = MatrixRotateUnscaled(unit->xform, unit->wisp_drift_reach);
+    return Vector3Add(HomeSquadWispAnchor(unit), Vector3Scale(reach, WispDriftProgress(unit->wisp_drift_time)));
 }
 
 static Matrix HomeSquadUnitDrawXform(const HomeSquadUnit *unit) {
