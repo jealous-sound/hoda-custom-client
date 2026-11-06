@@ -129,5 +129,58 @@ class SpecLoadingTest(unittest.TestCase):
         self.assertEqual([row["id"] for row in document["characters"]], ["UNIT_DERIVED"])
 
 
+class BakeCheckTest(unittest.TestCase):
+    def bake(self, root, value):
+        char_pack, portraits = root / "char_pack", root / "portraits"
+        (char_pack / value["prefab"]).mkdir(parents=True)
+        portraits.mkdir()
+        scales = {}
+        for tier in build_custom_heroes.TIERS:
+            base = build_custom_heroes.tier_base(value["prefab"], tier)
+            (char_pack / value["prefab"] / f"{base}_rl.glb").write_bytes(b"glTF")
+            (portraits / f"tex.{base}_pt.png").write_bytes(b"png")
+            scales[base] = {"scale": 1.0}
+        stamp = build_custom_heroes.bake_stamp_path(value["prefab"], char_pack)
+        stamp.write_text(json.dumps(build_custom_heroes.bake_stamp(value)), encoding="utf-8")
+        return char_pack, portraits, scales
+
+    def problems(self, value, char_pack, portraits, scales):
+        return build_custom_heroes.bake_problems(value, scales, char_pack, portraits)
+
+    def test_a_complete_bake_of_the_current_spec_passes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            char_pack, portraits, scales = self.bake(Path(directory), spec())
+            self.assertEqual(self.problems(spec(), char_pack, portraits, scales), [])
+
+    def test_a_missing_portrait_is_named(self):
+        with tempfile.TemporaryDirectory() as directory:
+            char_pack, portraits, scales = self.bake(Path(directory), spec())
+            (portraits / "tex.em_mw_derived_t3_pt.png").unlink()
+            self.assertEqual(
+                self.problems(spec(), char_pack, portraits, scales), ["missing tex.em_mw_derived_t3_pt.png"]
+            )
+
+    def test_a_missing_display_scale_is_named(self):
+        with tempfile.TemporaryDirectory() as directory:
+            char_pack, portraits, scales = self.bake(Path(directory), spec())
+            del scales["em_mw_derived_t1"]
+            self.assertEqual(
+                self.problems(spec(), char_pack, portraits, scales), ["no display scale for em_mw_derived_t1"]
+            )
+
+    def test_a_spec_edited_after_the_bake_is_stale(self):
+        with tempfile.TemporaryDirectory() as directory:
+            char_pack, portraits, scales = self.bake(Path(directory), spec())
+            edited = spec(stat_scale={"power": 1.1})
+            self.assertEqual(
+                self.problems(edited, char_pack, portraits, scales),
+                ["em_mw_derived_bake.json was not baked from the current spec"],
+            )
+
+    def test_spec_digest_ignores_key_order(self):
+        reordered = dict(reversed(list(spec().items())))
+        self.assertEqual(build_custom_heroes.spec_digest(reordered), build_custom_heroes.spec_digest(spec()))
+
+
 if __name__ == "__main__":
     unittest.main()

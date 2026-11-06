@@ -12,15 +12,22 @@ import numpy as np
 from PIL import Image, ImageFilter
 
 import original_cache
-from build_custom_heroes import ROOT, TIERS, load_specs, shipped_rows, tier_base
+from build_custom_heroes import (
+    CHAR_PACK,
+    DISPLAY_SCALES,
+    PORTRAIT_DIR,
+    TIERS,
+    bake_stamp,
+    bake_stamp_path,
+    load_specs,
+    shipped_rows,
+    tier_base,
+)
 
 CLI_DESCRIPTION = (
     "Bake the runtime models, clips, textures and portraits of the custom heroes in data/custom_heroes/ "
     "from the baked models of the heroes they derive from."
 )
-CHAR_PACK = ROOT / "client-additional-data/char_pack"
-PORTRAIT_DIR = ROOT / "client-additional-data/extra/portraits"
-DISPLAY_SCALES = ROOT / "client-additional-data/anim_tools/display_scales.json"
 
 GLB_HEADER = struct.Struct("<4sII")
 GLB_CHUNK = struct.Struct("<I4s")
@@ -1055,13 +1062,17 @@ def main():
     args = parser.parse_args()
     shipped = shipped_rows()
     scales = json.loads(DISPLAY_SCALES.read_text())
+    baked = []
     for spec in load_specs():
         if args.only and spec["id"] != args.only:
             continue
         template = frame_template(shipped[spec["based_on"]], shipped)
         for tier in TIERS:
             bake_tier(spec, tier, template, scales)
+        baked.append(spec)
     DISPLAY_SCALES.write_text(json.dumps(scales, indent=1) + "\n")
+    for spec in baked:
+        bake_stamp_path(spec["prefab"]).write_text(json.dumps(bake_stamp(spec), indent=1) + "\n")
     return 0
 
 

@@ -46,7 +46,9 @@ uv run --offline --with numpy --with Pillow --with UnityPy python tools/bake_cus
 
 The baker starts from the base hero's runtime bake (`look.tiers.<tier>.source`) and writes the local, git-ignored
 assets: `char_pack/<prefab>/<prefab>_tN_rl.glb` with its textures, `extra/portraits/tex.<prefab>_tN_pt.png` in the
-base hero's rarity frame, and `display_scales.json` entries. `look` holds:
+base hero's rarity frame, `display_scales.json` entries, and `char_pack/<prefab>/<prefab>_bake.json`, the hash of the
+spec it baked. `python3 tools/build_custom_heroes.py --check` (part of `make test`) fails when a bake is missing or was
+made from an older spec. `look` holds:
 
 - `texture`: `recolor` maps a hue band to a new hue, optionally only on some bones; `gradient` tints by height;
   `strokes` draws glowing lines on the front of a bone, such as face markings.

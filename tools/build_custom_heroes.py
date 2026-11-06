@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import copy
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -9,6 +10,10 @@ ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "data/custom_heroes"
 OUTPUT = ROOT / "data/custom_heroes.json"
 CATALOG = ROOT / "client-additional-data/characters.json"
+CHAR_PACK = ROOT / "client-additional-data/char_pack"
+PORTRAIT_DIR = ROOT / "client-additional-data/extra/portraits"
+DISPLAY_SCALES = ROOT / "client-additional-data/anim_tools/display_scales.json"
+BAKE_COMMAND = "uv run --offline --with numpy --with Pillow --with UnityPy python tools/bake_custom_heroes.py"
 CLI_DESCRIPTION = (
     "Build data/custom_heroes.json, the catalog rows of heroes derived from shipped ones, "
     "from the specs in data/custom_heroes/."
@@ -30,6 +35,37 @@ def tier_number(tier):
 
 def tier_base(prefab, tier):
     return f"{prefab}_t{tier_number(tier)}"
+
+
+def spec_digest(spec):
+    return hashlib.sha256(json.dumps(spec, sort_keys=True, ensure_ascii=False).encode("utf-8")).hexdigest()
+
+
+def bake_stamp_path(prefab, char_pack=CHAR_PACK):
+    return char_pack / prefab / f"{prefab}_bake.json"
+
+
+def bake_stamp(spec):
+    return {"id": spec["id"], "spec_digest": spec_digest(spec)}
+
+
+def bake_problems(spec, scales, char_pack=CHAR_PACK, portrait_dir=PORTRAIT_DIR):
+    prefab = spec["prefab"]
+    problems = []
+    for tier in TIERS:
+        base = tier_base(prefab, tier)
+        model = char_pack / prefab / f"{base}_rl.glb"
+        portrait = portrait_dir / f"tex.{base}_pt.png"
+        for path in (model, portrait):
+            if not path.is_file():
+                problems.append(f"missing {path.name}")
+        if base not in scales:
+            problems.append(f"no display scale for {base}")
+    stamp_path = bake_stamp_path(prefab, char_pack)
+    stamp = json.loads(stamp_path.read_text(encoding="utf-8")) if stamp_path.is_file() else None
+    if stamp != bake_stamp(spec):
+        problems.append(f"{stamp_path.name} was not baked from the current spec")
+    return problems
 
 
 def load_specs(spec_dir=SPEC_DIR):
@@ -102,10 +138,16 @@ def main():
     parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    text = render(load_specs(), shipped_rows())
+    specs = load_specs()
+    text = render(specs, shipped_rows())
     if args.check:
         if not OUTPUT.exists() or OUTPUT.read_text(encoding="utf-8") != text:
             print(f"{OUTPUT.relative_to(ROOT)} is stale", file=sys.stderr)
+            return 1
+        scales = json.loads(DISPLAY_SCALES.read_text(encoding="utf-8"))
+        problems = [f"{spec['id']}: {problem}" for spec in specs for problem in bake_problems(spec, scales)]
+        if problems:
+            print("\n".join(problems + [f"bake the custom heroes with: {BAKE_COMMAND}"]), file=sys.stderr)
             return 1
         return 0
     OUTPUT.write_text(text, encoding="utf-8")

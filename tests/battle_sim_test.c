@@ -1904,11 +1904,14 @@ static void TestCatalogStatGrowth(void) {
     cJSON_Delete(root);
 }
 
-static void TestCustomHeroesResolveThroughTheirBaseHero(void) {
+static void TestCustomHeroesInheritTheirBaseHeroData(void) {
+    Battle *battle = calloc(1, sizeof(*battle));
+    assert(battle);
+    BattleAudioManifestLoad(battle, "data/unit_audio.json");
+    PassiveManifestEnsure();
     cJSON *custom_root = JsonLoadFile(CUSTOM_HERO_CATALOG_PATH);
     cJSON *root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
     cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
-    PassiveManifestEnsure();
     int heroes = 0;
     cJSON *hero = NULL;
     cJSON_ArrayForEach(hero, cJSON_GetObjectItemCaseSensitive(custom_root, "characters")) {
@@ -1924,21 +1927,31 @@ static void TestCustomHeroesResolveThroughTheirBaseHero(void) {
         assert(!strcmp(CharacterDataId(&base), base.id));
         assert(!strcmp(CharacterDataId(&custom), base.id));
         assert(!strcmp(custom_ability.key, base_ability.key));
-        assert(ConsumeProfileFor(&custom) == ConsumeProfileFor(&base));
-        assert(PassiveManifestFind(CharacterDataId(&custom)) == PassiveManifestFind(base.id));
+        custom.level = base.level = 1;
         for (int tier = 0; tier < TIER_COUNT; tier++) {
-            char path[512];
-            custom.tier = (Tier)tier;
-            const char *prefab = HomeSquadResolvePrefab(HOD_CACHE "char_pack", &custom, path, sizeof(path));
-            assert(prefab && !strcmp(prefab, custom.model_prefab[tier]));
+            if (!custom.has_tier[tier]) continue;
+            custom.tier = base.tier = (Tier)tier;
             assert(strcmp(custom.model_prefab[tier], base.model_prefab[tier]) != 0);
-            assert(FileExists(TextFormat(POST_4_4_PORTRAIT_DIR "%s.png", custom.icon_prefab[tier])));
+            assert(strcmp(custom.icon_prefab[tier], base.icon_prefab[tier]) != 0);
+            assert(ConsumeProfileFor(&custom) == ConsumeProfileFor(&base));
+
+            SimUnit units[2 * SQUAD_SLOT_COUNT];
+            SimUnitsInit(units, 0, 0, &custom);
+            SimUnitsInit(units, 1, 0, &base);
+            assert(units[0].passives == units[SQUAD_SLOT_COUNT].passives);
+
+            assert(BattleAudioBindUnit(battle, 0, 0, &custom) == BattleAudioBindUnit(battle, 1, 0, &base));
+            assert(!strcmp(battle->unit_audio[0][0].unit, custom.id));
+            assert(!strcmp(battle->unit_audio[0][0].profile, battle->unit_audio[1][0].profile));
+            assert(battle->unit_audio[0][0].attack_capable == battle->unit_audio[1][0].attack_capable);
         }
         heroes++;
     }
     assert(heroes > 0);
     cJSON_Delete(root);
     cJSON_Delete(custom_root);
+    BattleAudioManifestUnload(battle);
+    free(battle);
 }
 
 static void TestFxPresetLiveEmitterSizes(void) {
@@ -6284,7 +6297,7 @@ int main(void) {
     TestTimelineCapacity();
     TestLegendaryStars();
     TestCatalogStatGrowth();
-    TestCustomHeroesResolveThroughTheirBaseHero();
+    TestCustomHeroesInheritTheirBaseHeroData();
     TestFxPresetLiveEmitterSizes();
     TestGeneratedFxCurvesAndDragonJet();
     TestPortraitCoverage();
