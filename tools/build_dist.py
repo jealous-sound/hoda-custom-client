@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import plistlib
 import shutil
 import stat
 import struct
@@ -12,19 +13,27 @@ import sys
 from pathlib import Path
 
 CLI_DESCRIPTION = (
-    "Assemble a playable copy of the game: the binary, its bundled raylib, data/ and only the parts of "
+    "Assemble a playable copy of the game: the app bundle with raylib inside, data/ and only the parts of "
     "client-additional-data the game reads at runtime."
 )
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUT = ROOT.parent / "hoda-custom-dist"
 DIST_MARKER = ".hoda-custom-dist"
-BINARY = "game"
+APP_NAME = "Heroes of Dragon Age"
+APP_BUNDLE = f"{APP_NAME}.app"
+APP_CONTENTS = f"{APP_BUNDLE}/Contents"
+APP_EXECUTABLE = f"{APP_CONTENTS}/MacOS/{APP_NAME}"
+APP_FRAMEWORKS = f"{APP_CONTENTS}/Frameworks"
+APP_INFO = f"{APP_CONTENTS}/Info.plist"
 LAUNCHER = "play.sh"
 ASSETS = "client-additional-data"
 ORIGINAL_GAME = f"{ASSETS}/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row"
+ORIGINAL_APK = f"{ASSETS}/Heroes-of-Dragon-Age-v4-4-0-androidp1.com.apk"
+ORIGINAL_BUNDLES = f"{ORIGINAL_GAME}/files/UnityCache/Shared"
+EXTRA_DIR = f"{ASSETS}/extra"
 SINGLE_FILES = (
-    f"{ASSETS}/Heroes-of-Dragon-Age-v4-4-0-androidp1.com.apk",
+    ORIGINAL_APK,
     f"{ASSETS}/characters.json",
     f"{ASSETS}/player_starter.json",
     f"{ASSETS}/startup_images.txt",
@@ -33,8 +42,8 @@ SINGLE_FILES = (
 )
 WHOLE_TREES = (
     "data",
-    f"{ORIGINAL_GAME}/files/UnityCache/Shared",
-    f"{ASSETS}/extra",
+    ORIGINAL_BUNDLES,
+    EXTRA_DIR,
 )
 MESH_DIR = f"{ASSETS}/meshes"
 MESH_RUNTIME_SUFFIXES = frozenset({".obj", ".ply", ".png", ".glb", ".json", ".bin", ".mp3"})
@@ -44,11 +53,14 @@ GLB_HEADER_BYTES = 12
 GLB_CHUNK_HEADER_BYTES = 8
 RAYLIB_LIBRARY_PREFIX = "libraylib"
 EXECUTABLE_RELATIVE = "@executable_path"
+FRAMEWORKS_RELATIVE = f"{EXECUTABLE_RELATIVE}/../Frameworks"
 LAUNCHER_TEXT = """#!/bin/sh
 cd "$(dirname "$0")" || exit 1
-{backend}exec ./game "$@"
+{backend}exec "./{executable}" "$@"
 """
 EXECUTABLE_BITS = stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH
+WINDOWS_FORBIDDEN_CHARACTERS = frozenset('<>:"\\|?*')
+WINDOWS_TRAILING_CHARACTERS = (".", " ")
 
 
 def glb_image_uris(path: Path) -> list[str]:
@@ -78,12 +90,22 @@ def character_files(root: Path) -> list[str]:
     return found
 
 
+def portable_path(relative: str) -> bool:
+    return not WINDOWS_FORBIDDEN_CHARACTERS.intersection(relative) and not any(
+        part.endswith(WINDOWS_TRAILING_CHARACTERS) for part in relative.split("/")
+    )
+
+
 def mesh_files(root: Path) -> list[str]:
-    return [path for path in tree_files(root, MESH_DIR) if Path(path).suffix in MESH_RUNTIME_SUFFIXES]
+    return [
+        path
+        for path in tree_files(root, MESH_DIR)
+        if Path(path).suffix in MESH_RUNTIME_SUFFIXES and portable_path(path)
+    ]
 
 
-def runtime_files(root: Path) -> list[str]:
-    files = [BINARY]
+def content_files(root: Path) -> list[str]:
+    files = []
     for relative in SINGLE_FILES:
         if not (root / relative).is_file():
             raise SystemExit(f"missing {root / relative}")
@@ -95,37 +117,56 @@ def runtime_files(root: Path) -> list[str]:
     return sorted(set(files))
 
 
-def linked_raylib(binary: Path) -> Path:
+def runtime_files(root: Path) -> list[str]:
+    return sorted(set(tree_files(root, APP_BUNDLE) + content_files(root)))
+
+
+def linked_raylib(binary: Path) -> Path | None:
     listing = subprocess.run(["otool", "-L", str(binary)], check=True, capture_output=True, text=True).stdout
     for line in listing.splitlines()[1:]:
         library = Path(line.strip().split(" (")[0])
         if library.name.startswith(RAYLIB_LIBRARY_PREFIX):
             return library
-    raise SystemExit(f"{binary} does not link raylib")
+    return None
 
 
-def bundle_raylib(out: Path) -> str:
-    binary = out / BINARY
-    library = linked_raylib(binary)
-    if library.parts[0] == EXECUTABLE_RELATIVE:
-        return library.name
-    bundled = out / library.name
+def bundle_raylib(out: Path) -> Path | None:
+    executable = out / APP_EXECUTABLE
+    library = linked_raylib(executable)
+    if library is None or library.parts[0] == EXECUTABLE_RELATIVE:
+        return None
+    bundled = out / APP_FRAMEWORKS / library.name
+    bundled.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(library.resolve(), bundled)
     bundled.chmod(bundled.stat().st_mode | stat.S_IWUSR)
-    relative = f"{EXECUTABLE_RELATIVE}/{library.name}"
+    relative = f"{FRAMEWORKS_RELATIVE}/{library.name}"
     subprocess.run(["install_name_tool", "-id", relative, str(bundled)], check=True, capture_output=True)
     subprocess.run(
-        ["install_name_tool", "-change", str(library), relative, str(binary)], check=True, capture_output=True
+        ["install_name_tool", "-change", str(library), relative, str(executable)], check=True, capture_output=True
     )
-    for signed in (bundled, binary):
-        subprocess.run(["codesign", "--force", "--sign", "-", str(signed)], check=True, capture_output=True)
-    return library.name
+    return bundled
+
+
+def write_bundle_environment(out: Path, backend_url: str) -> None:
+    info_path = out / APP_INFO
+    info = plistlib.loads(info_path.read_bytes())
+    if backend_url:
+        info["LSEnvironment"] = {"HOD_BACKEND_URL": backend_url}
+    else:
+        info.pop("LSEnvironment", None)
+    info_path.write_bytes(plistlib.dumps(info))
+
+
+def sign_bundle(out: Path, bundled_library: Path | None) -> None:
+    signed = [bundled_library] if bundled_library else []
+    for path in signed + [out / APP_BUNDLE]:
+        subprocess.run(["codesign", "--force", "--sign", "-", str(path)], check=True, capture_output=True)
 
 
 def write_launcher(out: Path, backend_url: str) -> None:
     backend = f'export HOD_BACKEND_URL="${{HOD_BACKEND_URL:-{backend_url}}}"\n' if backend_url else ""
     launcher = out / LAUNCHER
-    launcher.write_text(LAUNCHER_TEXT.format(backend=backend))
+    launcher.write_text(LAUNCHER_TEXT.format(backend=backend, executable=APP_EXECUTABLE))
     launcher.chmod(launcher.stat().st_mode | EXECUTABLE_BITS)
 
 
@@ -149,15 +190,16 @@ def place(source: Path, target: Path, link: bool) -> None:
 
 
 def build(root: Path, out: Path, link: bool, replace: bool, backend_url: str) -> tuple[int, int]:
-    if not (root / BINARY).is_file():
-        raise SystemExit(f"{root / BINARY} is missing; run make first")
+    if not (root / APP_EXECUTABLE).is_file():
+        raise SystemExit(f"{root / APP_EXECUTABLE} is missing; run make first")
     files = runtime_files(root)
     prepare_output(out, replace)
     total = 0
     for relative in files:
-        place(root / relative, out / relative, link and relative != BINARY)
+        place(root / relative, out / relative, link and not relative.startswith(f"{APP_BUNDLE}/"))
         total += (root / relative).stat().st_size
-    bundle_raylib(out)
+    write_bundle_environment(out, backend_url)
+    sign_bundle(out, bundle_raylib(out))
     write_launcher(out, backend_url)
     return len(files), total
 
@@ -167,10 +209,12 @@ def main() -> int:
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT, help=f"output folder (default {DEFAULT_OUT})")
     parser.add_argument("--link", action="store_true", help="hard-link assets instead of copying them")
     parser.add_argument("--replace", action="store_true", help="rebuild an existing output folder made by this tool")
-    parser.add_argument("--backend-url", default="", help="HOD_BACKEND_URL that play.sh uses unless one is set")
+    parser.add_argument(
+        "--backend-url", default="", help="HOD_BACKEND_URL for the app, and for play.sh unless one is set"
+    )
     args = parser.parse_args()
     count, size = build(ROOT, args.out.resolve(), args.link, args.replace, args.backend_url)
-    print(f"{args.out}: {count} files, {size / 1e9:.2f} GB; start it with {args.out / LAUNCHER}")
+    print(f"{args.out}: {count} files, {size / 1e9:.2f} GB; open {args.out / APP_BUNDLE} or run {args.out / LAUNCHER}")
     return 0
 
 

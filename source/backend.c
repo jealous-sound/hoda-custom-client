@@ -1,7 +1,4 @@
 #include <errno.h>
-#include <netdb.h>
-#include <sys/socket.h>
-#include <sys/time.h>
 
 #define BACKEND_URL_ENV "HOD_BACKEND_URL"
 #define BACKEND_PLAYER_ENV "HOD_PLAYER_ID"
@@ -85,28 +82,9 @@ bool BackendEnabled(void) {
     return BackendResolve()->enabled;
 }
 
-static int BackendOpenSocket(const BackendState *state) {
-    struct addrinfo hints = {.ai_family = AF_UNSPEC, .ai_socktype = SOCK_STREAM};
-    struct addrinfo *addresses = NULL;
-    if (getaddrinfo(state->host, state->port, &hints, &addresses) != 0) return -1;
-    int fd = -1;
-    struct timeval timeout = {.tv_sec = BACKEND_TIMEOUT_SECONDS};
-    for (struct addrinfo *address = addresses; address; address = address->ai_next) {
-        fd = socket(address->ai_family, address->ai_socktype, address->ai_protocol);
-        if (fd < 0) continue;
-        setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-        setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
-        if (connect(fd, address->ai_addr, address->ai_addrlen) == 0) break;
-        close(fd);
-        fd = -1;
-    }
-    freeaddrinfo(addresses);
-    return fd;
-}
-
-static bool BackendSendAll(int fd, const char *data, size_t length) {
+static bool BackendSendAll(intptr_t connection, const char *data, size_t length) {
     while (length > 0) {
-        ssize_t sent = send(fd, data, length, 0);
+        long sent = PlatformSocketSend(connection, data, length);
         if (sent <= 0) return false;
         data += sent;
         length -= (size_t)sent;
@@ -114,7 +92,7 @@ static bool BackendSendAll(int fd, const char *data, size_t length) {
     return true;
 }
 
-static char *BackendReceiveAll(int fd, size_t *out_length) {
+static char *BackendReceiveAll(intptr_t connection, size_t *out_length) {
     size_t capacity = 16384, length = 0;
     char *buffer = malloc(capacity + 1);
     if (!buffer) return NULL;
@@ -128,7 +106,7 @@ static char *BackendReceiveAll(int fd, size_t *out_length) {
             buffer = grown;
             capacity *= 2;
         }
-        ssize_t received = recv(fd, buffer + length, capacity - length, 0);
+        long received = PlatformSocketReceive(connection, buffer + length, capacity - length);
         if (received < 0) {
             free(buffer);
             return NULL;
@@ -158,8 +136,8 @@ BackendRequest(const char *method, const char *path, const char *body, long long
     BackendState *state = BackendResolve();
     memset(response, 0, sizeof(*response));
     if (!state->enabled) return false;
-    int fd = BackendOpenSocket(state);
-    if (fd < 0) {
+    intptr_t connection = PlatformSocketConnect(state->host, state->port, BACKEND_TIMEOUT_SECONDS);
+    if (connection == PLATFORM_SOCKET_INVALID) {
         TraceLog(LOG_WARNING, "Backend: cannot reach %s:%s", state->host, state->port);
         return false;
     }
@@ -186,11 +164,12 @@ BackendRequest(const char *method, const char *path, const char *body, long long
             snprintf(head + head_length, sizeof(head) - (size_t)head_length, "If-Match: \"%lld\"\r\n", if_match);
     if (head_length > 0 && head_length < (int)sizeof(head))
         head_length += snprintf(head + head_length, sizeof(head) - (size_t)head_length, "\r\n");
-    bool sent = head_length > 0 && head_length < (int)sizeof(head) && BackendSendAll(fd, head, (size_t)head_length) &&
-                (!body || BackendSendAll(fd, body, body_length));
+    bool sent = head_length > 0 && head_length < (int)sizeof(head) &&
+                BackendSendAll(connection, head, (size_t)head_length) &&
+                (!body || BackendSendAll(connection, body, body_length));
     size_t raw_length = 0;
-    char *raw = sent ? BackendReceiveAll(fd, &raw_length) : NULL;
-    close(fd);
+    char *raw = sent ? BackendReceiveAll(connection, &raw_length) : NULL;
+    PlatformSocketClose(connection);
     if (!raw) {
         TraceLog(LOG_WARNING, "Backend: %s %s failed", method, path);
         return false;
@@ -259,7 +238,7 @@ static bool BackendWriteAccount(const BackendState *state, const char *path) {
     int needed = snprintf(temporary, sizeof(temporary), "%s.tmp", path);
     bool ok = text && needed > 0 && needed < (int)sizeof(temporary) && SaveFileText(temporary, text);
     cJSON_free(text);
-    if (ok) ok = rename(temporary, path) == 0;
+    if (ok) ok = PlatformReplaceFile(temporary, path);
     if (!ok) TraceLog(LOG_WARNING, "Backend: could not write account file %s", path);
     return ok;
 }

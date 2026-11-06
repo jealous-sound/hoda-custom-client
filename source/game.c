@@ -806,9 +806,6 @@ static void GameDrawNamePrompt(Game *g, float dt) {
 }
 
 #define STARTUP_IMAGE_MANIFEST HOD_CACHE "startup_images.txt"
-#define GAME_CONNECTION_TITLE_SIZE 30.0f
-#define GAME_CONNECTION_MESSAGE_SIZE 22.0f
-#define GAME_CONNECTION_TEXT_COLOR ((Color){242, 236, 218, 255})
 #define GAME_BUSY_OVERLAY_DELAY_SECONDS 1.0f
 #define GAME_BUSY_DIM_OPACITY 0.7f
 #define GAME_BUSY_SPINNER_HEIGHT 0.2f
@@ -817,24 +814,14 @@ static void GameDrawNamePrompt(Game *g, float dt) {
 #define GAME_BUSY_CORNER_HEIGHT 0.1f
 
 static bool GameDrawConnectionError(Button *retry) {
-    Rectangle popup = MessagePopupDrawFrame();
-    Rectangle content = MessagePopupContent(popup);
-    UiDrawTextCentered(
+    return MessagePopupDrawAlert(
+        GuiTex(GUI_STORE_OVERLAY),
         GuiFont(FNT_COOL),
-        LocGet("CONNECTION_ERROR_TITLE"),
-        UiRect(content, 0.5f, 0.0f, 1.0f, 0.22f),
-        GAME_CONNECTION_TITLE_SIZE,
-        GAME_CONNECTION_TEXT_COLOR
-    );
-    MessagePopupDrawText(
         GuiFont(FNT_MENU),
+        LocGet("CONNECTION_ERROR_TITLE"),
         LocGet("CONNECTION_ERROR_MESSAGE"),
-        UiRect(content, 0.5f, 0.55f, 1.0f, 0.6f),
-        GAME_CONNECTION_MESSAGE_SIZE,
-        GAME_CONNECTION_TEXT_COLOR
+        retry
     );
-    bool pressed = ButtonDraw(retry, MessagePopupOkButton(popup));
-    return pressed || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER);
 }
 
 static bool GameAwaitServerRetry(void) {

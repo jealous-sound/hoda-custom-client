@@ -453,7 +453,7 @@ long long StorePackSecondsLeft(const StorePackDef *pack, int flash_days, int fla
     end.tm_mon = pack->schedule_end / 100 - 1;
     end.tm_mday = pack->schedule_end % 100 + 1;
     end.tm_hour = end.tm_min = end.tm_sec = 0;
-    return (long long)timegm(&end) - now;
+    return (long long)PlatformTimeFromUtc(&end) - now;
 }
 
 static StoreOffer StoreActiveOffer(const StorePackDef *pack, const Player *player) {

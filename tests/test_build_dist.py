@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import plistlib
 from pathlib import Path
 import struct
 import sys
@@ -71,6 +72,17 @@ class BuildDistTest(unittest.TestCase):
             [f"{build_dist.MESH_DIR}/scene/terrain.obj", f"{build_dist.MESH_DIR}/scene/terrain.png"],
         )
 
+    def test_mesh_files_skip_names_windows_cannot_store(self) -> None:
+        meshes = self.root / build_dist.MESH_DIR
+        for name in ("scene/ply_vertexcolor/rock.ply", "scene/ply_vertexcolor/unity_14:grass.ply"):
+            touch(meshes / name)
+        self.assertEqual(build_dist.mesh_files(self.root), [f"{build_dist.MESH_DIR}/scene/ply_vertexcolor/rock.ply"])
+
+    def test_portable_path_rejects_windows_reserved_spelling(self) -> None:
+        self.assertTrue(build_dist.portable_path("data/gear.json"))
+        for unportable in ("data/a:b.json", "data/a?.json", "data/trailing./x.json", "data/space /x.json"):
+            self.assertFalse(build_dist.portable_path(unportable), unportable)
+
     def test_prepare_output_refuses_a_folder_it_did_not_make(self) -> None:
         foreign = self.root / "someone_else"
         touch(foreign / "keep.txt")
@@ -92,6 +104,21 @@ class BuildDistTest(unittest.TestCase):
         self.assertIn('HOD_BACKEND_URL="${HOD_BACKEND_URL:-http://example.test:1}"', text)
         build_dist.write_launcher(self.root, "")
         self.assertNotIn("HOD_BACKEND_URL", (self.root / build_dist.LAUNCHER).read_text())
+
+    def test_bundle_environment_carries_the_backend_only_when_one_is_given(self) -> None:
+        info = self.root / build_dist.APP_INFO
+        info.parent.mkdir(parents=True)
+        info.write_bytes(plistlib.dumps({"CFBundleName": build_dist.APP_NAME}))
+        build_dist.write_bundle_environment(self.root, "http://example.test:1")
+        written = plistlib.loads(info.read_bytes())
+        self.assertEqual(written["LSEnvironment"], {"HOD_BACKEND_URL": "http://example.test:1"})
+        self.assertEqual(written["CFBundleName"], build_dist.APP_NAME)
+        build_dist.write_bundle_environment(self.root, "")
+        self.assertNotIn("LSEnvironment", plistlib.loads(info.read_bytes()))
+
+    def test_launcher_runs_the_executable_inside_the_bundle(self) -> None:
+        build_dist.write_launcher(self.root, "")
+        self.assertIn(f'exec "./{build_dist.APP_EXECUTABLE}"', (self.root / build_dist.LAUNCHER).read_text())
 
 
 if __name__ == "__main__":
