@@ -97,7 +97,8 @@ OS-specific calls (sockets, positional reads, atomic file replace, CPU count, UT
 
 `.github/workflows/build.yml` builds all three on every push to `master` (or by hand from the Actions tab) and
 attaches a universal macOS app, a Linux x86-64 binary and a Windows x86-64 executable to the run as artifacts. They
-carry no game data and download it on first launch.
+carry no game data and download it on first launch. Pushing a tag such as `v0.2.0` runs the same builds and publishes the three packages as a GitHub
+Release named after the tag.
 
 ## Downloaded game data
 
