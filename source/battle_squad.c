@@ -128,6 +128,7 @@ typedef struct {
     Matrix fac_xform[2][SQUAD_SLOT_COUNT];
     Matrix shadow_xform[2][SQUAD_SLOT_COUNT];
     float unit_scale[2][SQUAD_SLOT_COUNT];
+    float pad_scale[2][SQUAD_SLOT_COUNT];
     Shader unit_sh, mult_sh;
 } BattleSquads;
 
@@ -161,6 +162,7 @@ static void BattleSquadsLoad(
             const BattleSpot *spot = side == 0 ? &BATTLE_PLAYER_SPOTS[s] : &BATTLE_ENEMY_SPOTS[s];
             float k = ch->giant ? 2.0f : 1.0f;
             float feet_y = BattleFeetY(k);
+            sq->pad_scale[side][s] = k;
 
             char path[512];
             const char *prefab = HomeSquadResolvePrefab(char_dir, ch, path, sizeof(path));
@@ -210,10 +212,15 @@ static void BattleSquadsUpdate(BattleSquads *sq, float dt) {
         for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HomeSquadUnitUpdate(&sq->units[side][s], dt);
 }
 
-static void BattleSquadsDraw(BattleSquads *sq) {
+static bool BattleSquadsShows(const BattleSquads *sq, int side, int slot, int only_player_slot) {
+    if (!sq->present[side][slot]) return false;
+    return only_player_slot < 0 || (side == 0 && slot == only_player_slot);
+}
+
+static void BattleSquadsDraw(BattleSquads *sq, int only_player_slot) {
     for (int side = 0; side < 2; side++) {
         for (int s = 0; s < SQUAD_SLOT_COUNT; s++) {
-            if (!sq->present[side][s]) continue;
+            if (!BattleSquadsShows(sq, side, s, only_player_slot)) continue;
             SquadPadDraw(
                 &sq->pads,
                 sq->pad_tex[side][s],
@@ -228,7 +235,9 @@ static void BattleSquadsDraw(BattleSquads *sq) {
     rlEnableBackfaceCulling();
     rlSetCullFace(RL_CULL_FACE_BACK);
     for (int side = 0; side < 2; side++)
-        for (int s = 0; s < SQUAD_SLOT_COUNT; s++) HomeSquadUnitDraw(&sq->units[side][s]);
+        for (int s = 0; s < SQUAD_SLOT_COUNT; s++)
+            if (only_player_slot < 0 || BattleSquadsShows(sq, side, s, only_player_slot))
+                HomeSquadUnitDraw(&sq->units[side][s]);
     rlDisableBackfaceCulling();
 
     rlDrawRenderBatchActive();
@@ -237,7 +246,8 @@ static void BattleSquadsDraw(BattleSquads *sq) {
     rlDisableDepthMask();
     for (int side = 0; side < 2; side++)
         for (int s = 0; s < SQUAD_SLOT_COUNT; s++)
-            if (sq->present[side][s]) DrawMesh(sq->shadow_mesh, sq->shadow_mat, sq->shadow_xform[side][s]);
+            if (BattleSquadsShows(sq, side, s, only_player_slot))
+                DrawMesh(sq->shadow_mesh, sq->shadow_mat, sq->shadow_xform[side][s]);
     rlDrawRenderBatchActive();
     EndBlendMode();
     rlEnableDepthMask();

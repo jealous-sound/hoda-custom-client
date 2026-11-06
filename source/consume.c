@@ -361,6 +361,26 @@ ConsumeSeedPreview ConsumePreviewSeed(const Character *target, const Character *
     return preview;
 }
 
+void ConsumeAwardHeroXp(Character *ch, int xp) {
+    if (xp <= 0) return;
+    const ConsumeProfile *profile = ConsumeProfileFor(ch);
+    int cap = ConsumeHeroLevelCap(ch, profile, ch->tier);
+    int xp_cap = ConsumeXpForLevel(profile->level_table, cap);
+    ch->xp = ch->xp > xp_cap - xp ? xp_cap : ch->xp + xp;
+    int level = ConsumeLevelForXp(profile->level_table, ch->xp);
+    if (level > cap) level = cap;
+    if (level > ch->level) ch->level = level;
+}
+
+bool ConsumeHeroAtLevelCap(const Character *ch, int level) {
+    const ConsumeProfile *profile = ConsumeProfileFor(ch);
+    return level >= ConsumeHeroLevelCap(ch, profile, ch->tier);
+}
+
+int ConsumeHeroLevelXp(const Character *ch, int level) {
+    return ConsumeXpForLevel(ConsumeProfileFor(ch)->level_table, level);
+}
+
 bool ConsumeCharacterMaxed(const Character *ch) {
     const ConsumeProfile *profile = ConsumeProfileFor(ch);
     bool hero_maxed = ch->level >= ConsumeHeroLevelCap(ch, profile, ch->tier);

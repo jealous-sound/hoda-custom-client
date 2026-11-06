@@ -60,6 +60,23 @@ void ProgressionInitializePlayerDefaults(Player *p) {
 }
 
 typedef struct {
+    int level, xp, power, health;
+    int band_low, band_high;
+    bool maxed;
+} BattleHeroStats;
+
+typedef struct {
+    int slot;
+    int roster_index;
+    BattleHeroStats pre, post;
+} BattleHeroLeveling;
+
+typedef struct {
+    BattleHeroLeveling heroes[SQUAD_SLOT_COUNT];
+    int count;
+} BattleSquadLeveling;
+
+typedef struct {
     bool resolved;
     bool won;
     bool first_win;
@@ -112,6 +129,7 @@ typedef struct {
     int stamina_post;
     int trophy_delta;
     int banner_delta;
+    BattleSquadLeveling squad_leveling;
 } BattleRewardResult;
 
 static int ProgressionSaturatingAdd(int value, int amount) {
@@ -133,13 +151,52 @@ void CampaignProgressSync(const Campaign *campaign, PlayerCampaignProgress *prog
     progress->node_index = CampaignFrontierForMap(campaign, progress, progress->campaign_index);
 }
 
+static BattleHeroStats BattleHeroStatsOf(const Character *ch) {
+    bool maxed = ConsumeHeroAtLevelCap(ch, ch->level);
+    int band_low = ConsumeHeroLevelXp(ch, ch->level);
+    return (BattleHeroStats){
+        .level = ch->level,
+        .xp = ch->xp,
+        .power = CharacterStatPower(ch),
+        .health = CharacterStatHealth(ch),
+        .band_low = band_low,
+        .band_high = maxed ? band_low : ConsumeHeroLevelXp(ch, ch->level + 1),
+        .maxed = maxed,
+    };
+}
+
+static void BattleSquadLevelingSnapshotPre(BattleSquadLeveling *leveling, const Player *player) {
+    *leveling = (BattleSquadLeveling){0};
+    for (int giant_pass = 0; giant_pass < 2; giant_pass++) {
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+            int roster_index = PlayerSquadUnitAt(player, player->current_squad, slot);
+            if (roster_index < 0 || roster_index >= player->roster_count) continue;
+            const Character *ch = &player->roster[roster_index];
+            if ((int)ch->giant != giant_pass) continue;
+            leveling->heroes[leveling->count++] = (BattleHeroLeveling){
+                .slot = slot,
+                .roster_index = roster_index,
+                .pre = BattleHeroStatsOf(ch),
+                .post = BattleHeroStatsOf(ch),
+            };
+        }
+    }
+}
+
+static void BattleSquadLevelingSnapshotPost(BattleSquadLeveling *leveling, const Player *player) {
+    for (int i = 0; i < leveling->count; i++)
+        leveling->heroes[i].post = BattleHeroStatsOf(&player->roster[leveling->heroes[i].roster_index]);
+}
+
 static void BattleRewardSnapshotPre(BattleRewardResult *result, const Player *player) {
     result->player_level_pre = player->level;
     result->player_xp_pre = player->experience;
     result->energy_max_pre = player->energy_max;
+    BattleSquadLevelingSnapshotPre(&result->squad_leveling, player);
 }
 
 static void BattleRewardSnapshotPost(BattleRewardResult *result, const Player *player) {
+    BattleSquadLevelingSnapshotPost(&result->squad_leveling, player);
     result->player_level_post = player->level;
     result->player_xp_post = player->experience;
     result->player_xp_min_post = player->experience_min;
@@ -165,8 +222,17 @@ static void ProgressionAwardAccountXp(Player *player, int xp) {
         player->experience = player->experience_max;
 }
 
+static void ProgressionAwardSquadXp(Player *player, int xp) {
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        int roster_index = PlayerSquadUnitAt(player, player->current_squad, slot);
+        if (roster_index >= 0 && roster_index < player->roster_count)
+            ConsumeAwardHeroXp(&player->roster[roster_index], xp);
+    }
+}
+
 static void ProgressionAwardBattleXp(Player *player, int xp) {
     int level_pre = player->level;
+    ProgressionAwardSquadXp(player, xp);
     ProgressionAwardAccountXp(player, xp);
     if (player->level == level_pre) return;
     player->energy_max = ProgressionEnergyMaxForLevel(player->level);

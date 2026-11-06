@@ -26,6 +26,7 @@ typedef struct {
 #define DEBUG_WINS_TO_MASTER 3
 #define DEBUG_RESULTS_XP 20
 #define DEBUG_RESULTS_GOLD 140
+#define DEBUG_RESULTS_SETTLE_FRAMES 10
 #define DEBUG_MISSION_SUMMONS 600
 #define DEBUG_MISSION_CONSUMES 60
 #define DEBUG_MISSION_GOLD 45000
@@ -145,7 +146,7 @@ static void DebugPrepareStore(Game *game, DebugShot *shot) {
         "pack_reveal",
         "pack_summary",
     };
-    if (!DebugShotIsAny(shot, names, sizeof(names) / sizeof(names[0]))) return;
+    if (!DebugShotIsAny(shot, names, (int)(sizeof(names) / sizeof(names[0])))) return;
     game->screen = SCREEN_STORE;
     if (!shot->flow_started) {
         StoreOpen(&game->store);
@@ -339,7 +340,18 @@ static void DebugEnterCampaignBattle(Game *game) {
         BattleUiOpenPlateDetails(&game->battle_ui, &game->battle_ui.plates[plate_side][plate_slot]);
 }
 
-static BattleResultsPresentation DebugResultsPresentation(const DebugShot *shot) {
+static BattleSquadLeveling DebugSquadLeveling(const Player *player, int xp) {
+    BattleSquadLeveling leveling;
+    BattleSquadLevelingSnapshotPre(&leveling, player);
+    for (int i = 0; i < leveling.count; i++) {
+        Character hero = player->roster[leveling.heroes[i].roster_index];
+        ConsumeAwardHeroXp(&hero, xp);
+        leveling.heroes[i].post = BattleHeroStatsOf(&hero);
+    }
+    return leveling;
+}
+
+static BattleResultsPresentation DebugResultsPresentation(const DebugShot *shot, const Player *player) {
     bool loss = DebugShotIs(shot, "results_loss");
     BattleResultsPresentation presentation = {
         .victory = !loss,
@@ -349,6 +361,7 @@ static BattleResultsPresentation DebugResultsPresentation(const DebugShot *shot)
         .completions_pre = 1,
         .completions_post = 2,
         .wins_to_master = DEBUG_WINS_TO_MASTER,
+        .squad = DebugSquadLeveling(player, loss ? 0 : DEBUG_RESULTS_XP),
     };
     if (DebugShotIs(shot, "levelup")) {
         presentation.player_level_pre = 1;
@@ -433,13 +446,23 @@ static void DebugPreparePvp(Game *game, DebugShot *shot) {
 
 static void DebugPrepareBattle(Game *game, DebugShot *shot) {
     static const char *const names[] = {
-        "battle", "levelup", "completion", "results", "completion_mastery", "results_repeat", "results_loss"
+        "battle",
+        "levelup",
+        "herolevel",
+        "completion",
+        "results",
+        "completion_mastery",
+        "results_repeat",
+        "results_loss"
     };
-    if (!DebugShotIsAny(shot, names, 7)) return;
+    if (!DebugShotIsAny(shot, names, sizeof(names) / sizeof(names[0]))) return;
     game->screen = SCREEN_BATTLE;
     if (!game->battle.squads_loaded) DebugEnterCampaignBattle(game);
-    if (!shot->flow_started && !DebugShotIs(shot, "battle")) {
-        BattleResultsFlowStart(&game->battle_results, DebugResultsPresentation(shot));
+    bool settled = shot->frames_drawn >= DEBUG_RESULTS_SETTLE_FRAMES;
+    if (!shot->flow_started && !DebugShotIs(shot, "battle") && settled) {
+        BattleResultsFlowStart(&game->battle_results, DebugResultsPresentation(shot, &game->player));
+        while (!DebugShotIs(shot, "herolevel") && game->battle_results.stage == BATTLE_RESULTS_HERO_LEVEL)
+            BattleResultsAdvance(&game->battle_results);
         shot->flow_started = true;
     }
     const char *splash = getenv("HOD_SPLASH");

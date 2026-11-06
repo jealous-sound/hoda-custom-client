@@ -1,6 +1,14 @@
 #define BATTLE_RESULTS_MAX_PRIZES 2
 #define BATTLE_RESULTS_FULL_SIZE_REWARDS 3
 #define BATTLE_RESULTS_MAX_REWARDS (5 + BATTLE_RESULTS_MAX_PRIZES)
+#define BATTLE_RESULTS_CLICK_GUARD_SECONDS 0.22f
+#define HERO_LEVEL_DESIGN_WIDTH 1280.0f
+#define HERO_LEVEL_DESIGN_HEIGHT 720.0f
+#define HERO_LEVEL_XP_EASE_SECONDS 2.0f
+#define HERO_LEVEL_FADE_SECONDS 0.2f
+#define TEXT_ALIGN_START 0.0f
+#define TEXT_ALIGN_CENTER 0.5f
+#define TEXT_ALIGN_END 1.0f
 
 typedef struct {
     bool victory;
@@ -23,11 +31,13 @@ typedef struct {
     int trophy_delta;
     int banner_delta;
     PvpPayout event_payout;
+    BattleSquadLeveling squad;
 } BattleResultsPresentation;
 
 typedef enum {
     BATTLE_RESULTS_OFF,
     BATTLE_RESULTS_PLAYER_LEVEL,
+    BATTLE_RESULTS_HERO_LEVEL,
     BATTLE_RESULTS_NODE_COMPLETION,
     BATTLE_RESULTS_REWARDS,
     BATTLE_RESULTS_DONE,
@@ -42,11 +52,25 @@ typedef enum {
 } BattleResultsAction;
 
 typedef struct {
+    float from, to, duration, time;
+    bool running;
+} HeroLevelEasing;
+
+typedef struct {
+    int hero;
+    int next_hero;
+    float min, max, value;
+    HeroLevelEasing easing;
+    bool crossed_level;
+} HeroLevelScreen;
+
+typedef struct {
     BattleResultsPresentation presentation;
     BattleResultsStage stage;
     float stage_time;
     int reward_sounds_played;
     BattleResultsAction armed_action;
+    HeroLevelScreen hero_level;
 } BattleResultsFlow;
 
 typedef struct {
@@ -105,6 +129,78 @@ static bool BattleResultsHasCompletion(const BattleResultsPresentation *p) {
     return !p->grind && (p->first_win || p->mastered);
 }
 
+static bool HeroLeveled(const BattleHeroLeveling *hero) {
+    return hero->post.level != hero->pre.level;
+}
+
+static int HeroLevelNextFrom(const BattleResultsPresentation *p, int from) {
+    for (int i = from; i < p->squad.count; i++)
+        if (HeroLeveled(&p->squad.heroes[i])) return i;
+    return -1;
+}
+
+static bool BattleResultsHasHeroLevel(const BattleResultsPresentation *p) {
+    return HeroLevelNextFrom(p, 0) >= 0;
+}
+
+static float HeroLevelQuarticEase(float t) {
+    if (t < 0.5f) return 8.0f * t * t * t * t;
+    t -= 1.0f;
+    return 1.0f - 8.0f * t * t * t * t;
+}
+
+static HeroLevelEasing HeroLevelEasingStart(float from, float to) {
+    return (HeroLevelEasing){.from = from, .to = to, .duration = HERO_LEVEL_XP_EASE_SECONDS, .running = true};
+}
+
+static float HeroLevelEasingStep(HeroLevelEasing *easing, float dt) {
+    easing->time += dt;
+    float t = easing->duration > 0.0f ? fminf(easing->time / easing->duration, 1.0f) : 1.0f;
+    if (t >= 1.0f) easing->running = false;
+    return easing->from + (easing->to - easing->from) * HeroLevelQuarticEase(t);
+}
+
+static SoundId HeroLevelSound(int level) {
+    static const struct {
+        int above;
+        SoundId sound;
+    } bands[] = {{30, SND_CONSUME_LEVEL_4}, {20, SND_CONSUME_LEVEL_3}, {10, SND_CONSUME_LEVEL_2}};
+    for (size_t i = 0; i < sizeof(bands) / sizeof(bands[0]); i++)
+        if (level > bands[i].above) return bands[i].sound;
+    return SND_CONSUME_LEVEL_1;
+}
+
+static void HeroLevelScreenShow(HeroLevelScreen *screen, const BattleHeroLeveling *hero, int index) {
+    screen->hero = index;
+    screen->crossed_level = false;
+    screen->min = (float)hero->pre.band_low;
+    screen->max = (float)hero->pre.band_high;
+    screen->value = (float)hero->pre.xp;
+    float target = hero->pre.level < hero->post.level ? screen->max : (float)hero->post.xp;
+    screen->easing = HeroLevelEasingStart(screen->value, target);
+    GuiSoundPlay(HeroLevelSound(hero->post.level));
+}
+
+static void HeroLevelScreenUpdate(HeroLevelScreen *screen, const BattleHeroLeveling *hero, float dt) {
+    if (!screen->easing.running) return;
+    screen->value = HeroLevelEasingStep(&screen->easing, dt);
+    if (screen->easing.running) return;
+    if (hero->pre.level >= hero->post.level || screen->crossed_level) return;
+    screen->crossed_level = true;
+    if (hero->post.maxed) {
+        screen->min = 0.0f;
+        screen->max = screen->value = 1.0f;
+        return;
+    }
+    screen->min = screen->value = (float)hero->post.band_low;
+    screen->max = (float)hero->post.band_high;
+    screen->easing = HeroLevelEasingStart(screen->value, (float)hero->post.xp);
+}
+
+static float HeroLevelBarRatio(float min, float max, float value) {
+    return max > min ? BattleResultsClamp01((value - min) / (max - min)) : 1.0f;
+}
+
 static int BattleResultsRewardCount(const BattleResultsPresentation *p) {
     return (p->gems > 0) + (p->xp > 0) + (p->gold > 0) + (p->trophy_delta != 0) + (p->banner_delta != 0) +
            (p->event_payout.prize_count < BATTLE_RESULTS_MAX_PRIZES ? p->event_payout.prize_count
@@ -147,6 +243,19 @@ static void BattleResultsEnterStage(BattleResultsFlow *flow, BattleResultsStage 
     flow->armed_action = BATTLE_RESULTS_ACTION_NONE;
 
     if (stage == BATTLE_RESULTS_PLAYER_LEVEL || stage == BATTLE_RESULTS_NODE_COMPLETION) GuiSoundPlay(SND_LEVEL_UP);
+    if (stage == BATTLE_RESULTS_HERO_LEVEL) {
+        int first = HeroLevelNextFrom(&flow->presentation, 0);
+        HeroLevelScreenShow(&flow->hero_level, &flow->presentation.squad.heroes[first], first);
+        flow->hero_level.next_hero = HeroLevelNextFrom(&flow->presentation, first + 1);
+    }
+}
+
+static BattleResultsStage BattleResultsStageAfterHeroLevels(const BattleResultsPresentation *p) {
+    return BattleResultsHasCompletion(p) ? BATTLE_RESULTS_NODE_COMPLETION : BATTLE_RESULTS_REWARDS;
+}
+
+static BattleResultsStage BattleResultsStageAfterPlayerLevel(const BattleResultsPresentation *p) {
+    return BattleResultsHasHeroLevel(p) ? BATTLE_RESULTS_HERO_LEVEL : BattleResultsStageAfterHeroLevels(p);
 }
 
 void BattleResultsFlowInitialize(BattleResultsFlow *flow) {
@@ -163,10 +272,13 @@ void BattleResultsFlowStart(BattleResultsFlow *flow, BattleResultsPresentation p
 
     if (presentation.player_level_post > presentation.player_level_pre)
         BattleResultsEnterStage(flow, BATTLE_RESULTS_PLAYER_LEVEL);
-    else if (BattleResultsHasCompletion(&presentation))
-        BattleResultsEnterStage(flow, BATTLE_RESULTS_NODE_COMPLETION);
     else
-        BattleResultsEnterStage(flow, BATTLE_RESULTS_REWARDS);
+        BattleResultsEnterStage(flow, BattleResultsStageAfterPlayerLevel(&presentation));
+}
+
+const BattleHeroLeveling *BattleResultsFlowLevelUpHero(const BattleResultsFlow *flow) {
+    if (flow->stage != BATTLE_RESULTS_HERO_LEVEL) return NULL;
+    return &flow->presentation.squad.heroes[flow->hero_level.hero];
 }
 
 void BattleResultsFlowReset(BattleResultsFlow *flow) {
@@ -201,10 +313,17 @@ Player BattleResultsFlowHudPlayer(const BattleResultsFlow *flow, const Player *p
 
 static void BattleResultsAdvance(BattleResultsFlow *flow) {
     if (flow->stage == BATTLE_RESULTS_PLAYER_LEVEL) {
-        BattleResultsEnterStage(
-            flow,
-            BattleResultsHasCompletion(&flow->presentation) ? BATTLE_RESULTS_NODE_COMPLETION : BATTLE_RESULTS_REWARDS
-        );
+        BattleResultsEnterStage(flow, BattleResultsStageAfterPlayerLevel(&flow->presentation));
+    } else if (flow->stage == BATTLE_RESULTS_HERO_LEVEL) {
+        HeroLevelScreen *screen = &flow->hero_level;
+        if (screen->next_hero < 0) {
+            BattleResultsEnterStage(flow, BattleResultsStageAfterHeroLevels(&flow->presentation));
+            return;
+        }
+        int shown = screen->next_hero;
+        HeroLevelScreenShow(screen, &flow->presentation.squad.heroes[shown], shown);
+        screen->next_hero = HeroLevelNextFrom(&flow->presentation, shown + 1);
+        flow->armed_action = BATTLE_RESULTS_ACTION_NONE;
     } else if (flow->stage == BATTLE_RESULTS_NODE_COMPLETION) {
         BattleResultsEnterStage(flow, BATTLE_RESULTS_REWARDS);
     } else if (flow->stage == BATTLE_RESULTS_REWARDS) {
@@ -217,6 +336,8 @@ BattleResultsAction BattleResultsFlowUpdate(BattleResultsFlow *flow, float dt, b
     if (dt < 0.0f) dt = 0.0f;
     if (dt > 0.1f) dt = 0.1f;
     flow->stage_time += dt;
+    if (flow->stage == BATTLE_RESULTS_HERO_LEVEL)
+        HeroLevelScreenUpdate(&flow->hero_level, &flow->presentation.squad.heroes[flow->hero_level.hero], dt);
 
     if (flow->stage == BATTLE_RESULTS_REWARDS) {
         int reward_count = BattleResultsRewardCount(&flow->presentation);
@@ -255,7 +376,8 @@ BattleResultsAction BattleResultsFlowUpdate(BattleResultsFlow *flow, float dt, b
             action = flow->armed_action;
         flow->armed_action = BATTLE_RESULTS_ACTION_NONE;
     }
-    if (action == BATTLE_RESULTS_ACTION_NONE || flow->stage_time < 0.22f) return BATTLE_RESULTS_ACTION_NONE;
+    if (action == BATTLE_RESULTS_ACTION_NONE || flow->stage_time < BATTLE_RESULTS_CLICK_GUARD_SECONDS)
+        return BATTLE_RESULTS_ACTION_NONE;
 
     if (flow->stage == BATTLE_RESULTS_REWARDS) {
         if (action == BATTLE_RESULTS_ACTION_HEROES || action == BATTLE_RESULTS_ACTION_MAP ||
@@ -381,6 +503,138 @@ static void BattleResultsDrawLevelUp(const BattleResultsFlow *flow) {
         16.0f * scale,
         BattleResultsAlpha((Color){230, 230, 230, 255}, fade),
         false
+    );
+}
+
+static Rectangle HeroLevelRect(float x, float y, float width, float height) {
+    float sx = UiWidth() / HERO_LEVEL_DESIGN_WIDTH, sy = UiHeight() / HERO_LEVEL_DESIGN_HEIGHT;
+    return (Rectangle){x * sx, y * sy, width * sx, height * sy};
+}
+
+static float HeroLevelFontSize(float dynamic_size, float element_height) {
+    return dynamic_size * element_height * UiHeight() / HERO_LEVEL_DESIGN_HEIGHT;
+}
+
+static void BattleResultsDrawTextAligned(
+    Font font, const char *text, Rectangle rect, float size, Color color, float align_x, float align_y
+) {
+    Vector2 measured = MeasureTextEx(font, text, size, 1.0f);
+    Vector2 at = {
+        rect.x + (rect.width - measured.x) * align_x,
+        rect.y + (rect.height - measured.y) * align_y,
+    };
+    DrawTextEx(font, text, at, size, 1.0f, color);
+}
+
+static GuiId HeroLevelRarityHeader(Rarity rarity) {
+    static const GuiId headers[RARITY_MYTHIC + 1] = {
+        GUI_PLAQUE_COMMON,
+        GUI_PLAQUE_COMMON,
+        GUI_PLAQUE_UNCOMMON,
+        GUI_PLAQUE_RARE,
+        GUI_PLAQUE_EPIC,
+        GUI_PLAQUE_LEGENDARY,
+        GUI_PLAQUE_MYTHIC,
+    };
+    return headers[rarity >= RARITY_COMMON && rarity <= RARITY_MYTHIC ? rarity : RARITY_COMMON];
+}
+
+static void HeroLevelDrawStatRow(const char *name, int value, int gain, float y, float fade) {
+    Color text = BattleResultsAlpha((Color){230, 230, 230, 255}, fade);
+    BattleResultsDrawTextAligned(
+        GuiFont(FNT_MENU),
+        name,
+        HeroLevelRect(848.0f, y, 146.0f, 54.0f),
+        HeroLevelFontSize(0.6f, 54.0f),
+        text,
+        TEXT_ALIGN_START,
+        TEXT_ALIGN_CENTER
+    );
+    char amount[48];
+    snprintf(amount, sizeof(amount), "%d (+%d)", value, gain);
+    BattleResultsDrawTextAligned(
+        GuiFont(FNT_MENU),
+        amount,
+        HeroLevelRect(930.0f, y, 271.0f, 54.0f),
+        HeroLevelFontSize(0.5f, 54.0f),
+        text,
+        TEXT_ALIGN_END,
+        TEXT_ALIGN_CENTER
+    );
+}
+
+static void BattleResultsDrawHeroLevel(const BattleResultsFlow *flow, const Heroes *heroes) {
+    const HeroLevelScreen *screen = &flow->hero_level;
+    const BattleHeroLeveling *hero = &flow->presentation.squad.heroes[screen->hero];
+    if (!heroes || hero->roster_index < 0 || hero->roster_index >= heroes->card_count) return;
+    const HeroCard *card = &heroes->cards[hero->roster_index];
+    float fade = BattleResultsClamp01(flow->stage_time / HERO_LEVEL_FADE_SECONDS);
+    Color tint = BattleResultsAlpha(WHITE, fade);
+    Color text = BattleResultsAlpha((Color){230, 230, 230, 255}, fade);
+
+    UiDrawTexture(GuiTex(GUI_LEVEL_UP_TITLE), HeroLevelRect(426.0f, 0.0f, 430.0f, 126.0f), tint);
+    BattleResultsDrawTextAligned(
+        GuiFont(FNT_COOL),
+        LocGet("LEVEL_UP_TITLE"),
+        HeroLevelRect(426.0f, 13.0f, 430.0f, 91.0f),
+        HeroLevelFontSize(0.4f, 91.0f),
+        text,
+        TEXT_ALIGN_CENTER,
+        TEXT_ALIGN_CENTER
+    );
+
+    Rectangle level_badge = HeroLevelRect(604.0f, 98.0f, 73.0f, 73.0f);
+    UiDrawTexture(GuiTex(GUI_HUD_XP), level_badge, tint);
+    char level[16];
+    snprintf(level, sizeof(level), "%d", hero->post.level);
+    BattleResultsDrawTextAligned(
+        GuiFont(FNT_COOL),
+        level,
+        level_badge,
+        HeroLevelFontSize(0.4f, 73.0f),
+        text,
+        TEXT_ALIGN_CENTER,
+        TEXT_ALIGN_CENTER
+    );
+
+    UiDrawTexture(GuiTex(GUI_LEVEL_UP_OVERLAY), HeroLevelRect(735.0f, 202.0f, 513.0f, 389.0f), tint);
+    UiDrawTexture(GuiTex(HeroLevelRarityHeader(card->ch->rarity)), HeroLevelRect(778.0f, 236.0f, 427.0f, 97.0f), tint);
+    BattleResultsDrawTextAligned(
+        GuiFont(FNT_COOL),
+        card->name_ru,
+        HeroLevelRect(778.0f, 236.0f, 427.0f, 51.0f),
+        HeroLevelFontSize(0.365f, 51.0f),
+        text,
+        TEXT_ALIGN_CENTER,
+        TEXT_ALIGN_END
+    );
+    BattleResultsDrawTextAligned(
+        GuiFont(FNT_COOL),
+        card->rarity_ru,
+        HeroLevelRect(778.0f, 286.0f, 427.0f, 47.0f),
+        HeroLevelFontSize(0.325f, 47.0f),
+        BattleResultsAlpha(card->rarity_color, fade),
+        TEXT_ALIGN_CENTER,
+        TEXT_ALIGN_START
+    );
+
+    Rectangle bar = HeroLevelRect(922.0f, 352.0f, 279.0f, 33.0f);
+    bar.width *= HeroLevelBarRatio(screen->min, screen->max, screen->value);
+    UiDrawTexture(GuiTex(GUI_CARD_BAR_FILL), bar, tint);
+
+    const BattleHeroStats *pre = &hero->pre, *post = &hero->post;
+    HeroLevelDrawStatRow(LocGet("UNIT_DETAIL_XP"), post->xp, post->xp - pre->xp, 345.0f, fade);
+    HeroLevelDrawStatRow(LocGet("UNIT_DETAIL_POWER"), post->power, post->power - pre->power, 417.0f, fade);
+    HeroLevelDrawStatRow(LocGet("UNIT_DETAIL_HEALTH"), post->health, post->health - pre->health, 486.0f, fade);
+
+    BattleResultsDrawTextAligned(
+        GuiFont(FNT_MENU),
+        LocGet("TAP_TO_CONTINUE"),
+        HeroLevelRect(0.0f, 662.0f, 1280.0f, 58.0f),
+        HeroLevelFontSize(0.4f, 58.0f),
+        text,
+        TEXT_ALIGN_CENTER,
+        TEXT_ALIGN_CENTER
     );
 }
 
@@ -638,69 +892,106 @@ static void BattleResultsDrawLeftButton(GuiId idle, GuiId active, Rectangle rect
     UiDrawTexture(GuiTex(hot ? active : idle), rect, BattleResultsAlpha(tint, fade));
 }
 
-static void BattleResultsDrawRosterCard(const HeroCard *card, Rectangle cell, float popup_fade) {
-    Color tint = BattleResultsAlpha(WHITE, popup_fade);
-    Rectangle inner = {
-        cell.x + cell.width * 0.05f,
-        cell.y + cell.height * 0.05f,
-        cell.width * 0.90f,
-        cell.height * 0.90f,
-    };
-    UiDrawTexture(card->portrait, inner, tint);
+typedef struct {
+    int roster_index;
+    int level;
+    float xp_ratio;
+    bool show_xp;
+} BattleResultsRosterEntry;
 
-    float badge_size = cell.height * 0.27f;
-    Rectangle badge = {
-        inner.x - cell.width * 0.01f,
-        inner.y + inner.height * 0.72f,
-        badge_size,
-        badge_size,
+static BattleResultsRosterEntry BattleResultsRosterEntryFromLeveling(const BattleHeroLeveling *hero) {
+    const BattleHeroStats *post = &hero->post;
+    return (BattleResultsRosterEntry){
+        .roster_index = hero->roster_index,
+        .level = post->level,
+        .xp_ratio =
+            post->maxed ? 1.0f : HeroLevelBarRatio((float)post->band_low, (float)post->band_high, (float)post->xp),
+        .show_xp = post->maxed || post->xp > post->band_low,
     };
-    UiDrawTexture(GuiTex(GUI_HUD_XP), badge, tint);
-    char level[16];
-    snprintf(level, sizeof(level), "%d", card->level);
-    BattleResultsDrawTextInRect(GuiFont(FNT_COOL), level, badge, badge_size * 0.48f, tint, false);
-
-    if (card->max_level > 0 && card->level >= card->max_level) {
-        Rectangle bar = {
-            inner.x + inner.width * 0.20f,
-            inner.y + inner.height * 0.82f,
-            inner.width * 0.78f,
-            inner.height * 0.10f,
-        };
-        UiDrawTexture(GuiTex(GUI_CARD_BAR_BG), bar, tint);
-        Rectangle fill = {
-            bar.x + bar.width * 0.015f,
-            bar.y + bar.height * 0.20f,
-            bar.width * 0.97f,
-            bar.height * 0.60f,
-        };
-        UiDrawTexture(GuiTex(GUI_CARD_BAR_FILL), fill, tint);
-    }
 }
 
-static void BattleResultsDrawRoster(
-    Rectangle roster, const Player *player, const Heroes *heroes, int squad_index, float popup_fade
-) {
-    if (!player || !heroes || squad_index < 0 || squad_index >= PLAYER_MAX_SQUADS) return;
+static BattleResultsRosterEntry BattleResultsRosterEntryFromCard(const HeroCard *card, int roster_index) {
+    bool maxed = card->max_level > 0 && card->level >= card->max_level;
+    return (BattleResultsRosterEntry){
+        .roster_index = roster_index,
+        .level = card->level,
+        .xp_ratio = maxed ? 1.0f : card->xp_frac,
+        .show_xp = maxed || card->xp_frac > 0.0f,
+    };
+}
 
-    int roster_indices[SQUAD_SLOT_COUNT];
+static void BattleResultsDrawRosterCard(
+    const HeroCard *card, const BattleResultsRosterEntry *entry, Rectangle cell, float popup_fade
+) {
+    Color tint = BattleResultsAlpha(WHITE, popup_fade);
+    Rectangle inner = UiRect(cell, 0.5f, 0.5f, 0.9f, 0.9f);
+    UiDrawTexture(card->portrait, inner, tint);
+
+    Rectangle data = UiRect(inner, 0.5f, 0.975f, 0.98f, 0.2f);
+    float bar_width = data.width * 0.8f;
+    Rectangle bar = UiRect(data, 0.75f, 0.6f, bar_width, bar_width / 7.0f);
+    UiDrawTexture(GuiTex(GUI_CARD_BAR_BG), (Rectangle){bar.x, bar.y, bar.width * 1.02f, bar.height}, tint);
+    if (entry->show_xp) {
+        Rectangle fill = {bar.x, bar.y + bar.height * 0.2f, bar.width * entry->xp_ratio, bar.height * 0.6f};
+        UiDrawTexture(GuiTex(GUI_CARD_BAR_FILL), fill, tint);
+    }
+
+    float badge_size = fminf(data.width, data.height * 1.5f);
+    Rectangle badge = UiRect(data, -0.05f, 0.5f, badge_size, badge_size);
+    UiDrawTexture(GuiTex(GUI_HUD_XP), badge, tint);
+    char level[16];
+    snprintf(level, sizeof(level), "%d", entry->level);
+    BattleResultsDrawTextInRect(GuiFont(FNT_COOL), level, badge, badge_size * 0.48f, tint, false);
+}
+
+static int BattleResultsRosterEntries(
+    const BattleResultsPresentation *p,
+    const Player *player,
+    const Heroes *heroes,
+    int squad_index,
+    BattleResultsRosterEntry entries[SQUAD_SLOT_COUNT]
+) {
     int count = 0;
+    if (p->squad.count > 0) {
+        for (int i = 0; i < p->squad.count; i++)
+            if (p->squad.heroes[i].roster_index < heroes->card_count)
+                entries[count++] = BattleResultsRosterEntryFromLeveling(&p->squad.heroes[i]);
+        return count;
+    }
+    if (!player || squad_index < 0 || squad_index >= PLAYER_MAX_SQUADS) return 0;
     for (int giant_pass = 0; giant_pass < 2; giant_pass++) {
         for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
             int roster_index = PlayerSquadUnitAt(player, squad_index, slot);
             if (roster_index < 0 || roster_index >= player->roster_count || roster_index >= heroes->card_count)
                 continue;
             if ((int)player->roster[roster_index].giant != giant_pass) continue;
-            roster_indices[count++] = roster_index;
+            entries[count++] = BattleResultsRosterEntryFromCard(&heroes->cards[roster_index], roster_index);
         }
     }
+    return count;
+}
+
+static void BattleResultsDrawRoster(
+    Rectangle roster,
+    const BattleResultsPresentation *p,
+    const Player *player,
+    const Heroes *heroes,
+    int squad_index,
+    float popup_fade
+) {
+    if (!heroes) return;
+    BattleResultsRosterEntry entries[SQUAD_SLOT_COUNT];
+    int count = BattleResultsRosterEntries(p, player, heroes, squad_index, entries);
     if (count <= 0) return;
 
     float item = roster.height;
     float x = roster.x + (roster.width - item * (float)count) * 0.5f;
     for (int i = 0; i < count; i++) {
         BattleResultsDrawRosterCard(
-            &heroes->cards[roster_indices[i]], (Rectangle){x + item * (float)i, roster.y, item, item}, popup_fade
+            &heroes->cards[entries[i].roster_index],
+            &entries[i],
+            (Rectangle){x + item * (float)i, roster.y, item, item},
+            popup_fade
         );
     }
 }
@@ -720,13 +1011,14 @@ BattleResultsDrawRewards(const BattleResultsFlow *flow, const Player *player, co
     UiDrawTexture(GuiTex(GUI_RESULTS_BG), header, BattleResultsAlpha(WHITE, popup_fade));
     UiDrawTexture(GuiTex(GUI_RESULTS_ROSTER_BG), roster, BattleResultsAlpha(WHITE, popup_fade));
 
-    BattleResultsDrawTextInRect(
+    BattleResultsDrawTextAligned(
         GuiFont(FNT_COOL),
         "Результаты",
         title,
         29.0f * BattleResultsPopupScale(),
         BattleResultsAlpha(WHITE, popup_fade),
-        false
+        TEXT_ALIGN_CENTER,
+        TEXT_ALIGN_END
     );
     BattleResultsDrawTextInRect(
         GuiFont(FNT_COOL),
@@ -788,7 +1080,7 @@ BattleResultsDrawRewards(const BattleResultsFlow *flow, const Player *player, co
         }
     }
 
-    BattleResultsDrawRoster(roster, player, heroes, squad_index, popup_fade);
+    BattleResultsDrawRoster(roster, p, player, heroes, squad_index, popup_fade);
 
     TutorialAnchorSet(TUTORIAL_ANCHOR_RESULTS_STORE, BattleResultsRewardsStoreRect());
     TutorialAnchorSet(TUTORIAL_ANCHOR_RESULTS_CONTINUE, BattleResultsRewardsContinueRect());
@@ -806,6 +1098,9 @@ void BattleResultsFlowDraw(const BattleResultsFlow *flow, const Player *player, 
     switch (flow->stage) {
         case BATTLE_RESULTS_PLAYER_LEVEL:
             BattleResultsDrawLevelUp(flow);
+            break;
+        case BATTLE_RESULTS_HERO_LEVEL:
+            BattleResultsDrawHeroLevel(flow, heroes);
             break;
         case BATTLE_RESULTS_NODE_COMPLETION:
             BattleResultsDrawNodeCompletion(flow);

@@ -1954,6 +1954,88 @@ static void TestCustomHeroesInheritTheirBaseHeroData(void) {
     free(battle);
 }
 
+static Campaign *TestOneNodeCampaign(int xp) {
+    Campaign *campaign = calloc(1, sizeof(*campaign));
+    assert(campaign);
+    campaign->map_count = 1;
+    campaign->maps[0].node_count = 1;
+    campaign->maps[0].nodes[0].xp = xp;
+    campaign->maps[0].nodes[0].wins_to_master = 3;
+    return campaign;
+}
+
+static Player TestStarterPlayer(void) {
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", "data/new_player.json");
+    assert(player.roster_count > 0);
+    return player;
+}
+
+static void TestBattlesGrantTheirXpToEverySquadHero(void) {
+    enum { NODE_XP = 20, LEVEL_TWO_FLOOR = 11, LEVEL_THREE_FLOOR = 36 };
+    Player player = TestStarterPlayer();
+    Campaign *campaign = TestOneNodeCampaign(NODE_XP);
+    int squad_size = PlayerSquadCount(&player, player.current_squad);
+    assert(squad_size > 0);
+
+    BattleRewardResult loss = CampaignResolveBattle(&player, campaign, 0, 0, false, 0);
+    assert(loss.resolved && loss.squad_leveling.count == squad_size);
+    for (int i = 0; i < loss.squad_leveling.count; i++) {
+        const BattleHeroLeveling *hero = &loss.squad_leveling.heroes[i];
+        assert(hero->post.xp == hero->pre.xp && hero->post.level == hero->pre.level);
+    }
+
+    BattleRewardResult win = CampaignResolveBattle(&player, campaign, 0, 0, true, 0);
+    assert(win.resolved && win.xp_reward == NODE_XP && win.squad_leveling.count == squad_size);
+    for (int i = 0; i < win.squad_leveling.count; i++) {
+        const BattleHeroLeveling *hero = &win.squad_leveling.heroes[i];
+        const Character *ch = &player.roster[hero->roster_index];
+        assert(PlayerSquadUnitAt(&player, player.current_squad, hero->slot) == hero->roster_index);
+        assert(hero->pre.level == 1 && hero->pre.xp == 0);
+        assert(hero->post.xp == NODE_XP && ch->xp == NODE_XP);
+        assert(hero->post.level == 2 && ch->level == 2);
+        assert(hero->post.band_low == LEVEL_TWO_FLOOR && hero->post.band_high == LEVEL_THREE_FLOOR);
+        assert(hero->post.power == CharacterStatPower(ch) && hero->post.power > hero->pre.power);
+        assert(hero->post.health == CharacterStatHealth(ch) && hero->post.health > hero->pre.health);
+    }
+
+    BattleResultsFlow flow;
+    BattleResultsFlowInitialize(&flow);
+    BattleResultsFlowStart(&flow, (BattleResultsPresentation){
+        .victory = true,
+        .first_win = win.first_win,
+        .player_level_pre = win.player_level_pre,
+        .player_level_post = win.player_level_post,
+        .squad = win.squad_leveling,
+    });
+    assert(flow.stage == BATTLE_RESULTS_PLAYER_LEVEL);
+    BattleResultsAdvance(&flow);
+    for (int i = 0; i < squad_size; i++) {
+        const BattleHeroLeveling *shown = BattleResultsFlowLevelUpHero(&flow);
+        assert(flow.stage == BATTLE_RESULTS_HERO_LEVEL && shown == &flow.presentation.squad.heroes[i]);
+        assert(flow.hero_level.value == 0.0f && flow.hero_level.max == LEVEL_TWO_FLOOR);
+        int ease_steps = (int)(HERO_LEVEL_XP_EASE_SECONDS / 0.1f) + 1;
+        for (int step = 0; step < ease_steps; step++) BattleResultsFlowUpdate(&flow, 0.1f, false);
+        assert(flow.hero_level.crossed_level && flow.hero_level.min == LEVEL_TWO_FLOOR);
+        for (int step = 0; step < ease_steps; step++) BattleResultsFlowUpdate(&flow, 0.1f, false);
+        assert(flow.hero_level.value == NODE_XP && flow.hero_level.max == LEVEL_THREE_FLOOR);
+        BattleResultsAdvance(&flow);
+    }
+    assert(flow.stage == BATTLE_RESULTS_NODE_COMPLETION && !BattleResultsFlowLevelUpHero(&flow));
+
+    Character *capped = &player.roster[win.squad_leveling.heroes[0].roster_index];
+    capped->level = capped->stats[capped->tier].max_level;
+    capped->xp = ConsumeHeroLevelXp(capped, capped->level);
+    int capped_xp = capped->xp;
+    BattleRewardResult repeat = CampaignResolveBattle(&player, campaign, 0, 0, true, 0);
+    assert(repeat.squad_leveling.heroes[0].post.maxed);
+    assert(capped->xp == capped_xp && capped->level == capped->stats[capped->tier].max_level);
+
+    free(campaign);
+    PlayerUnloadRoster(&player);
+}
+
 static void TestFxPresetLiveEmitterSizes(void) {
     cJSON *root = JsonLoadFile("data/fx_presets.json");
     assert(root);
@@ -6298,6 +6380,7 @@ int main(void) {
     TestLegendaryStars();
     TestCatalogStatGrowth();
     TestCustomHeroesInheritTheirBaseHeroData();
+    TestBattlesGrantTheirXpToEverySquadHero();
     TestFxPresetLiveEmitterSizes();
     TestGeneratedFxCurvesAndDragonJet();
     TestPortraitCoverage();
