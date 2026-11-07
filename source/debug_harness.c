@@ -1284,10 +1284,40 @@ static void DebugStartExpedition(Game *game, const char *id, const char *const *
         TraceLog(LOG_WARNING, "Debug: cannot start expedition %s", id);
 }
 
+static void DebugRevealExpeditionRewards(Game *game, const DebugShot *shot) {
+    Player *p = &game->player;
+    ExpeditionsView *v = &game->expeditions;
+    bool heroes = DebugShotIs(shot, "expeditions_reveal_hero");
+    v->reward = (ExpeditionReward){.expeditions = 2, .great_successes = 1, .gold = 1240, .gems = 6, .hero_xp = 200};
+    if (heroes) {
+        v->reward.heroes[0] = DebugRosterIndexOf(p, "UNIT_INFERNOGOLEM");
+        v->reward.hero_new[0] = true;
+        v->reward.hero_count = 1;
+    } else {
+        for (int i = 0; i < GearCatalogCount() && v->reward.gear_count < 2; i++)
+            if (GearDefAt(i)->rarity == v->reward.gear_count + 2) v->reward.gear[v->reward.gear_count++] = i;
+        v->reward.runes[0] = RuneDefIndex("rune-power-2");
+        v->reward.rune_new[0] = true;
+        v->reward.rune_count = 1;
+    }
+    v->reveal_pending = true;
+    ExpeditionsRevealRewards(v, &game->store);
+    game->store_return_screen = SCREEN_EXPEDITIONS;
+    if (heroes) {
+        game->store.view = STORE_VIEW_RESULT;
+        game->store.phase_time = STORE_OPEN_COMPLETE;
+        game->store.result_time = 1.0f;
+    } else {
+        DebugAdvanceItemReveal(&game->store);
+    }
+}
+
 static void DebugPrepareExpeditions(Game *game, DebugShot *shot) {
     if (!shot->screen || strncmp(shot->screen, "expeditions", strlen("expeditions")) != 0) return;
+    bool reveal = strncmp(shot->screen, "expeditions_reveal", strlen("expeditions_reveal")) == 0;
     game->screen = DebugShotIs(shot, "expeditions_home")     ? SCREEN_HOME
                    : DebugShotIs(shot, "expeditions_roster") ? SCREEN_HEROES
+                   : reveal                                  ? SCREEN_STORE
                                                              : SCREEN_EXPEDITIONS;
     if (shot->flow_started) return;
     shot->flow_started = true;
@@ -1316,6 +1346,7 @@ static void DebugPrepareExpeditions(Game *game, DebugShot *shot) {
         v->selected = ExpeditionIndexById("deep_roads");
         v->dialog = EXPEDITIONS_DIALOG_RECALL;
     }
+    if (reveal) DebugRevealExpeditionRewards(game, shot);
     if (DebugShotIs(shot, "expeditions_reward")) {
         int def = ExpeditionIndexById("lothering");
         v->reward = ExpeditionClaim(p, &def, 1, ServerNow());

@@ -92,16 +92,19 @@ choosing the cheapest heroes that meet the requirements and the bonus; heroes aw
 badge and cannot join a squad, be consumed, consume, fortify or be fortified until the party comes back. A party
 that meets the bonus trait returns with a Great Success: 50% more gold, gems and hero XP and every drop for sure.
 Rewards are gold, gems, hero XP for the party, gear, runes and heroes; Claim and Collect All pay returned parties,
-and Recall brings a party home early with nothing. Party slots open at levels 3, 8, 15, 25 and 40.
+and Recall brings a party home early with nothing. New heroes, gear and runes are revealed in the store the way packs
+reveal them (the portal and hero card, then the gear and rune cards), and the board then sums up the gold, gems and
+XP. Party slots open at levels 3, 8, 15, 25 and 40.
 
 `data/expeditions.json` holds the expeditions, slot levels and the Great Success bonus; `data/hero_pool.json` carries
 each hero's groups so the server can check traits. Starts and recalls apply locally and are queued as the
 `expedition_start` and `expedition_recall` server actions; `expedition_claim` waits for the server's roll, as the
-Nexus recap does. The location paintings, home button, board backdrop and away badge were generated with the Codex
-CLI and live in `client-additional-data/extra/gui/expeditions/`, so they ship with `make content`; without them the
-screens fall back to plain panels and the stock grey button. `HOD_SHOT_SCREEN=expeditions`, `expeditions_party`,
-`expeditions_recall`, `expeditions_reward`, `expeditions_home` and `expeditions_roster` render the screens with three
-parties out.
+Nexus recap does. The location paintings and the board backdrop were generated with the Codex CLI; the home button
+and the away tag are Codex edits of the original Quest button and in-squad tag, with the new compass glyph composited
+into the original frame. They live in `client-additional-data/extra/gui/expeditions/`, so they ship with
+`make content`; without them the screens fall back to plain panels and the stock grey button. `HOD_SHOT_SCREEN=expeditions`, `expeditions_party`,
+`expeditions_recall`, `expeditions_reward`, `expeditions_home`, `expeditions_roster`, `expeditions_reveal_hero` and
+`expeditions_reveal_items` render the screens with three parties out.
 
 ## Commands
 

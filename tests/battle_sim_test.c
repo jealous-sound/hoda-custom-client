@@ -7116,7 +7116,36 @@ static void TestExpeditionServerActionsNameTheHeroes(void) {
     assert(reward.gold == 900 && reward.gems == 3 && reward.hero_xp == 200);
     assert(reward.hero_count == 1 && reward.heroes[0] == bench.rare && reward.hero_new[0]);
     assert(reward.gear_count == 1 && reward.gear[0] == 0 && reward.rune_count == 1 && reward.runes[0] == 0);
+    assert(reward.rune_new[0] && ExpeditionRewardHasItems(&reward));
+    RuneGrant(&p->runes, 0, 0);
+    RuneGrant(&p->runes, 0, 0);
+    assert(!ExpeditionRewardFromReply(p, reply, 2, 1).rune_new[0]);
+    ExpeditionReward coins = {.gold = 100};
+    assert(!ExpeditionRewardHasItems(&coins));
     cJSON_Delete(reply);
+}
+
+static void TestStoreRevealsExpeditionRewardsHeroesThenGearThenRunes(void) {
+    static Store store;
+    memset(&store, 0, sizeof(store));
+    int heroes[] = {4, 7};
+    int gear[] = {0, 1};
+    bool gear_new[] = {true, true};
+    int runes[] = {RuneDefIndex("rune-power-1")};
+    bool runes_new[] = {false};
+    assert(StoreRevealRewards(&store, heroes, 2, gear, gear_new, 2, runes, runes_new, 1));
+    assert(store.view == STORE_VIEW_OPENING && store.selected_pack < 0);
+    assert(store.result_count == 2 && store.result_roster_indices[1] == 7);
+    assert(StoreFinishRewardStage(&store) == STORE_ACTION_NONE);
+    assert(store.view == STORE_VIEW_ITEM_REVEAL && store.item_kind == STORE_KIND_GEAR && store.item_result_count == 2);
+    assert(StoreFinishRewardStage(&store) == STORE_ACTION_NONE);
+    assert(store.item_kind == STORE_KIND_RUNE && store.item_result_count == 1 && !store.item_results[0].newly_owned);
+    assert(StoreFinishRewardStage(&store) == STORE_ACTION_REWARDS_SHOWN && !store.reward_reveal.active);
+
+    assert(StoreRevealRewards(&store, heroes, 0, gear, gear_new, 0, runes, runes_new, 1));
+    assert(store.view == STORE_VIEW_ITEM_REVEAL && store.item_kind == STORE_KIND_RUNE);
+    assert(StoreFinishRewardStage(&store) == STORE_ACTION_REWARDS_SHOWN);
+    assert(!StoreRevealRewards(&store, heroes, 0, gear, gear_new, 0, runes, runes_new, 0) && !store.reward_reveal.active);
 }
 
 int main(void) {
@@ -7170,6 +7199,7 @@ int main(void) {
     TestExpeditionHeroDropsNeedRosterRoom();
     TestExpeditionsSurviveSaveAndLoad();
     TestExpeditionServerActionsNameTheHeroes();
+    TestStoreRevealsExpeditionRewardsHeroesThenGearThenRunes();
     TestPlayerRemoveFortifyReturnsHeroesForGems();
     TestFortifySlotsTravelThroughSavesAndBattles();
     TestTutorialScriptCoversBothFunnels();

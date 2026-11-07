@@ -1281,7 +1281,9 @@ bool GameHandlePopupBack(Game *g) {
     }
     if (g->screen == SCREEN_NEXUS && NexusHandleBack(&g->nexus)) return true;
     if (g->screen == SCREEN_STORE) {
-        if (StoreHandleBack(&g->store, &g->heroes) == STORE_ACTION_CLOSE) g->screen = SCREEN_HOME;
+        StoreAction back = StoreHandleBack(&g->store, &g->heroes);
+        if (back == STORE_ACTION_CLOSE) g->screen = SCREEN_HOME;
+        if (back == STORE_ACTION_REWARDS_SHOWN) g->screen = g->store_return_screen;
         return true;
     }
     return false;
@@ -1726,7 +1728,7 @@ void GameDraw(Game *g) {
             }
             UiFrameEnd();
 
-            if (store_action == STORE_ACTION_CLOSE) {
+            if (store_action == STORE_ACTION_CLOSE || store_action == STORE_ACTION_REWARDS_SHOWN) {
                 g->screen = g->store_return_screen;
             } else if (store_action == STORE_ACTION_GOTO_MAP) {
                 g->screen = SCREEN_MAP;
@@ -1982,6 +1984,10 @@ void GameDraw(Game *g) {
             ExpeditionsAction pressed = ExpeditionsDraw(&g->expeditions, &g->heroes, &g->player);
             UiFrameEnd();
             if (pressed == EXPEDITIONS_CLOSE) g->screen = SCREEN_HOME;
+            if (pressed != EXPEDITIONS_CLOSE && ExpeditionsRevealRewards(&g->expeditions, &g->store)) {
+                g->store_return_screen = SCREEN_EXPEDITIONS;
+                g->screen = SCREEN_STORE;
+            }
             break;
         }
         case SCREEN_PVP_HUB: {

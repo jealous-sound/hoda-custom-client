@@ -75,6 +75,7 @@ typedef struct {
     ExpeditionReward reward;
     char message[EXPEDITIONS_TEXT_CAPACITY];
     bool claim_waiting;
+    bool reveal_pending;
     int claim_expeditions;
     int claim_great;
     bool scrim_armed;
@@ -706,6 +707,23 @@ static void ExpeditionsDrawParty(
     }
 }
 
+static void ExpeditionsShowReward(ExpeditionsView *v) {
+    v->reveal_pending = ExpeditionRewardHasItems(&v->reward);
+    v->dialog = v->reveal_pending ? EXPEDITIONS_DIALOG_NONE : EXPEDITIONS_DIALOG_REWARD;
+}
+
+bool ExpeditionsRevealRewards(ExpeditionsView *v, Store *store) {
+    if (!v->reveal_pending) return false;
+    v->reveal_pending = false;
+    v->dialog = EXPEDITIONS_DIALOG_REWARD;
+    const ExpeditionReward *r = &v->reward;
+    bool gear_new[EXPEDITION_REWARD_ITEM_CAPACITY];
+    for (int i = 0; i < r->gear_count; i++) gear_new[i] = true;
+    return StoreRevealRewards(
+        store, r->heroes, r->hero_count, r->gear, gear_new, r->gear_count, r->runes, r->rune_new, r->rune_count
+    );
+}
+
 static void ExpeditionsBeginClaim(ExpeditionsView *v, Heroes *heroes, Player *p, const int *defs, int count) {
     long long now = ServerNow();
     ExpeditionClaimCheck check = ExpeditionCheckClaim(p, defs, count, now);
@@ -732,7 +750,7 @@ static void ExpeditionsBeginClaim(ExpeditionsView *v, Heroes *heroes, Player *p,
     v->reward = ExpeditionClaim(p, defs, count, now);
     if (!HeroesSyncRoster(heroes, p)) TraceLog(LOG_WARNING, "Expeditions: granted heroes cannot sync to Heroes");
     ProgressionSave(p);
-    v->dialog = EXPEDITIONS_DIALOG_REWARD;
+    ExpeditionsShowReward(v);
 }
 
 void ExpeditionsTakeClaimReply(ExpeditionsView *v, Heroes *heroes, const Player *p, const cJSON *reply) {
@@ -743,7 +761,7 @@ void ExpeditionsTakeClaimReply(ExpeditionsView *v, Heroes *heroes, const Player 
     }
     if (!HeroesSyncRoster(heroes, p)) TraceLog(LOG_WARNING, "Expeditions: granted heroes cannot sync to Heroes");
     v->reward = ExpeditionRewardFromReply(p, reply, v->claim_expeditions, v->claim_great);
-    v->dialog = EXPEDITIONS_DIALOG_REWARD;
+    ExpeditionsShowReward(v);
 }
 
 static void ExpeditionsRecall(ExpeditionsView *v, Player *p) {

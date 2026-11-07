@@ -844,8 +844,8 @@ static void RosterDrawCard(const HeroCard *card, Rectangle cell, const RosterCar
     }
     Texture2D away_badge = state->away ? ExpeditionTexture(EXPEDITION_AWAY_BADGE_ART) : (Texture2D){0};
     if (away_badge.id) {
-        float size = cell.height * 0.42f;
-        UiDrawTexture(away_badge, UiRect(cell, 0.5f, 0.4f, size, size), WHITE);
+        float size = cell.height * 0.2f;
+        UiDrawTexture(away_badge, UiRect(cell, 0.14f, 0.06f, size, size), WHITE);
     }
 }
 

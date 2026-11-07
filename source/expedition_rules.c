@@ -12,6 +12,7 @@ typedef struct {
     int gear[EXPEDITION_REWARD_ITEM_CAPACITY];
     int gear_count;
     int runes[EXPEDITION_REWARD_ITEM_CAPACITY];
+    bool rune_new[EXPEDITION_REWARD_ITEM_CAPACITY];
     int rune_count;
     int heroes[EXPEDITION_REWARD_ITEM_CAPACITY];
     bool hero_new[EXPEDITION_REWARD_ITEM_CAPACITY];
@@ -245,8 +246,11 @@ static void ExpeditionRollDrop(
     } else if (drop->kind == EXPEDITION_DROP_RUNE) {
         StoreRuneSlot slot = {.min_rarity = drop->min_rarity, .max_rarity = drop->max_rarity};
         int rune = StoreRollRune(&slot, rng);
-        if (rune >= 0 && RuneGrant(&p->runes, rune, now) && reward->rune_count < EXPEDITION_REWARD_ITEM_CAPACITY)
+        bool owned = rune >= 0 && StoreRuneDefOwned(&p->runes, rune);
+        if (rune >= 0 && RuneGrant(&p->runes, rune, now) && reward->rune_count < EXPEDITION_REWARD_ITEM_CAPACITY) {
+            reward->rune_new[reward->rune_count] = !owned;
             reward->runes[reward->rune_count++] = rune;
+        }
     } else {
         const cJSON *definition = ExpeditionRollHeroDefinition(catalog, ExpeditionRollHeroRarity(drop, rng), rng);
         int first = EXPEDITION_NONE;
@@ -309,6 +313,18 @@ cJSON *ExpeditionClaimAction(const int *defs, int count) {
     return fields;
 }
 
+static int ExpeditionRuneCopies(const PlayerRunes *runes, int def) {
+    int copies = 0;
+    for (int i = 0; i < runes->count; i++) copies += runes->items[i].def == def;
+    return copies;
+}
+
+static int ExpeditionRewardRuneCopies(const ExpeditionReward *reward, int def) {
+    int copies = 0;
+    for (int i = 0; i < reward->rune_count; i++) copies += reward->runes[i] == def;
+    return copies;
+}
+
 ExpeditionReward ExpeditionRewardFromReply(const Player *p, const cJSON *reply, int expeditions, int great) {
     ExpeditionReward reward = {.expeditions = expeditions, .great_successes = great};
     const cJSON *result = cJSON_GetObjectItemCaseSensitive(reply, "granted");
@@ -328,5 +344,12 @@ ExpeditionReward ExpeditionRewardFromReply(const Player *p, const cJSON *reply, 
         int rune = cJSON_IsString(item) ? RuneDefIndex(item->valuestring) : -1;
         if (rune >= 0 && reward.rune_count < EXPEDITION_REWARD_ITEM_CAPACITY) reward.runes[reward.rune_count++] = rune;
     }
+    for (int i = 0; i < reward.rune_count; i++)
+        reward.rune_new[i] =
+            ExpeditionRuneCopies(&p->runes, reward.runes[i]) <= ExpeditionRewardRuneCopies(&reward, reward.runes[i]);
     return reward;
+}
+
+bool ExpeditionRewardHasItems(const ExpeditionReward *reward) {
+    return reward->hero_count + reward->gear_count + reward->rune_count > 0;
 }
