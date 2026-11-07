@@ -48,6 +48,7 @@ client-additional-data/anim_tools/*
 client-additional-data/vfx_tools/*
 !client-additional-data/vfx_tools/build_fx_presets.py
 tests/battle_sim_test
+tests/battle_replay_golden
 tests/content_update_test
 .wrangler/
 player_save.dat

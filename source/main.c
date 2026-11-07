@@ -79,6 +79,7 @@
 #include "progression.c"
 #include "mission_progress.c"
 #include "battle_play.c"
+#include "battle_replay.c"
 #include "battle_ui.c"
 #include "battle_results.c"
 #include "goals_tabs.c"
