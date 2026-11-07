@@ -9,6 +9,7 @@ typedef enum {
     HOME_GUILD_LOCKED,
     HOME_GUILD_CHAT,
     HOME_GUILD_CHAT_LOCKED,
+    HOME_EXPEDITIONS,
 } HomeButton;
 
 #define HOME_GUILD_BUTTON_X 13.0f
@@ -27,6 +28,9 @@ typedef struct {
     Button guild_locked;
     Button guild_chat;
     Button guild_chat_locked;
+    Button expeditions;
+    bool expeditions_shown;
+    int expeditions_badge;
 } HomeUI;
 
 void HomeUIInitialize(HomeUI *hui) {
@@ -53,6 +57,20 @@ void HomeUIInitialize(HomeUI *hui) {
     hui->guild_chat_locked = ButtonLoad(GUI_GUILD_CHAT_BUTTON_OFF, GUI_GUILD_CHAT_BUTTON_OFF);
     ButtonSetClickSound(&hui->guild, SND_UI_BIG_BUTTON);
     ButtonSetClickSound(&hui->guild_chat, SND_UI_BIG_BUTTON);
+    Texture2D expeditions = ExpeditionTexture(EXPEDITIONS_HOME_ART);
+    Texture2D expeditions_on = ExpeditionTexture(EXPEDITIONS_HOME_ART_ON);
+    hui->expeditions =
+        expeditions.id && expeditions_on.id
+            ? ButtonFromTextures(expeditions, expeditions_on, LocGet("HODA_EXPEDITIONS_BUTTON"), font, anchor, scale)
+            : ButtonFromTextures(
+                  GuiTex(GUI_BTN_GREY),
+                  GuiTex(GUI_BTN_GREY_ON),
+                  LocGet("HODA_EXPEDITIONS_BUTTON"),
+                  font,
+                  (Vector2){0.5f, 0.5f},
+                  0.2f
+              );
+    hui->expeditions.click = GuiSound(SND_UI_BIG_BUTTON);
 }
 
 static void HomeUIDrawGuildBadge(Rectangle button, int count) {
@@ -91,6 +109,11 @@ HomeButton HomeUIDraw(HomeUI *hui, bool interactive, int heroes_badge, int missi
     Rectangle history = {pad + size + gap, y, size, size};
     if (ButtonDrawEx(&hui->history, history, interactive)) clicked = HOME_HISTORY;
     ButtonDrawBadge(history, missions_badge);
+    if (hui->expeditions_shown) {
+        Rectangle expeditions = {pad + (size + gap) * 2.0f, y, size, size};
+        if (ButtonDrawEx(&hui->expeditions, expeditions, interactive)) clicked = HOME_EXPEDITIONS;
+        ButtonDrawBadge(expeditions, hui->expeditions_badge);
+    }
 
     Rectangle heroes = {(screen_w - size) * 0.5f, y, size, size};
     if (ButtonDrawEx(&hui->heroes, heroes, interactive)) clicked = HOME_HEROES;

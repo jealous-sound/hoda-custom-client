@@ -43,6 +43,7 @@ def build():
                 "initial_tier": tier,
                 "name": character["name"],
                 "faction": character["faction"],
+                "groups": character.get("groups") or [],
                 "giant": bool(character.get("giant")),
                 "max_tier": character["max_tier"],
                 "tier_levels": tier_levels(character),

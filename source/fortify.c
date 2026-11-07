@@ -292,8 +292,8 @@ int FortifyRemoveCost(const Character *parent, int slot) {
 bool FortifyPlacementAllowed(const Player *p, int parent, int slot, int unit) {
     if (parent < 0 || parent >= p->roster_count || unit < 0 || unit >= p->roster_count || unit == parent) return false;
     const Character *ch = &p->roster[parent];
-    return slot >= 0 && slot < FortifySlotsUnlocked(ch) && !PlayerSquadsContain(p, unit) &&
-           !FortifyReplacementBlocked(ch, slot, &p->roster[unit]);
+    return slot >= 0 && slot < FortifySlotsUnlocked(ch) && !PlayerSquadsContain(p, unit) && !PlayerHeroAway(p, unit) &&
+           !PlayerHeroAway(p, parent) && !FortifyReplacementBlocked(ch, slot, &p->roster[unit]);
 }
 
 static bool FortifyPlacementsValid(const Player *p, int parent, const FortifyPlacement *placements, int count) {

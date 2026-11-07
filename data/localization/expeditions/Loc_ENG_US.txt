@@ -1,0 +1,47 @@
+HODA_EXPEDITIONS_BUTTON|Expeditions
+HODA_EXPEDITIONS_TITLE|Expeditions
+HODA_EXPEDITION_ARBOR_WILDS_DESCRIPTION|Search the ancient elven temples hidden in the Arbor Wilds.
+HODA_EXPEDITION_ARBOR_WILDS_NAME|Arbor Wilds Ruins
+HODA_EXPEDITION_AUTO_FILL|Auto-fill
+HODA_EXPEDITION_BONUS|Great Success: {0}
+HODA_EXPEDITION_CLAIM_FAILED|The expedition could not be collected. Try again.
+HODA_EXPEDITION_COLLECT_ALL|Collect All
+HODA_EXPEDITION_COMPLETE_TITLE|Expedition Complete
+HODA_EXPEDITION_DEEP_ROADS_DESCRIPTION|Delve into a lost thaig and recover forgotten dwarven craft.
+HODA_EXPEDITION_DEEP_ROADS_NAME|Into the Deep Roads
+HODA_EXPEDITION_EMPRISE_DU_LION_DESCRIPTION|Break the red lyrium siege of Suledin Keep.
+HODA_EXPEDITION_EMPRISE_DU_LION_NAME|Emprise du Lion Siege
+HODA_EXPEDITION_FADE_RIFT_DESCRIPTION|Close a tear in the Veil and gather the lyrium it leaves behind.
+HODA_EXPEDITION_FADE_RIFT_NAME|Seal a Fade Rift
+HODA_EXPEDITION_GREAT_SUCCESS|Great Success!
+HODA_EXPEDITION_HERO_AWAY_MESSAGE|This hero is away on an expedition.
+HODA_EXPEDITION_HERO_XP|+{0} XP
+HODA_EXPEDITION_HINTERLANDS_DESCRIPTION|Gather elfroot and rare herbs in the hills of the Hinterlands.
+HODA_EXPEDITION_HINTERLANDS_NAME|Hinterlands Herb Run
+HODA_EXPEDITION_LEVEL_LOCK|Level {0}
+HODA_EXPEDITION_LOTHERING_DESCRIPTION|Guard the refugee road through Lothering and keep the farms safe from bandits.
+HODA_EXPEDITION_LOTHERING_NAME|Lothering Patrol
+HODA_EXPEDITION_NEEDS|Needs {0}
+HODA_EXPEDITION_NEXT_SLOT|Another party at level {0}
+HODA_EXPEDITION_NO_SLOT|No free party
+HODA_EXPEDITION_ORLAIS_DESCRIPTION|Play the Game at the Winter Palace for gold, favors and gifts.
+HODA_EXPEDITION_ORLAIS_NAME|Orlesian Masquerade
+HODA_EXPEDITION_PARTY_SIZE|{0} heroes
+HODA_EXPEDITION_PARTY_SIZE_ONE|1 hero
+HODA_EXPEDITION_RARITY_OR_BETTER|{0} or better
+HODA_EXPEDITION_READY|Back home!
+HODA_EXPEDITION_RECALL|Recall
+HODA_EXPEDITION_RECALL_MESSAGE|The heroes come home now and bring nothing back.
+HODA_EXPEDITION_RECALL_TITLE|Recall Party?
+HODA_EXPEDITION_ROSTER_FULL|Your roster is full. Make room for new heroes, then collect.
+HODA_EXPEDITION_SEND|Send
+HODA_EXPEDITION_SLOTS|Parties out: {0}/{1}
+HODA_EXPEDITION_SQUAD_HINT|Heroes in a squad stay home.
+HODA_EXPEDITION_STORM_COAST_DESCRIPTION|Comb the wrecks along the Storm Coast for whatever the sea left behind.
+HODA_EXPEDITION_STORM_COAST_NAME|Storm Coast Salvage
+HODA_EXPEDITION_TEVINTER_DESCRIPTION|Turn agents in Minrathous and bring them home to your cause.
+HODA_EXPEDITION_TEVINTER_NAME|Tevinter Spy Network
+HODA_EXPEDITION_TIME_LEFT|{0} left
+HODA_EXPEDITION_TRAIT_COUNT|{0}x {1}
+HODA_EXPEDITION_WESTERN_APPROACH_DESCRIPTION|Track a dragon across the desert and recruit the survivors you rescue.
+HODA_EXPEDITION_WESTERN_APPROACH_NAME|Western Approach Hunt

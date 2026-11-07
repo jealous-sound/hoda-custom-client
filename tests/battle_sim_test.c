@@ -6885,6 +6885,240 @@ static void TestPvpOpponentFromServerMatchRebuildsTheBot(void) {
     cJSON_Delete(match);
 }
 
+static int ExpeditionTestDef(const char *id) {
+    int def = ExpeditionIndexById(id);
+    assert(def >= 0);
+    return def;
+}
+
+static void TestExpeditionCatalogFollowsTheTable(void) {
+    assert(ExpeditionCatalogLoad(EXPEDITIONS_PATH) && ExpeditionsAvailable());
+    assert(ExpeditionCount() == 10 && ExpeditionUnlockLevel() == 3);
+    assert(ExpeditionSlotsUnlocked(1) == 0 && ExpeditionSlotsUnlocked(3) == 1 && ExpeditionSlotsUnlocked(8) == 2);
+    assert(ExpeditionSlotsUnlocked(40) == EXPEDITION_SLOT_CAPACITY && ExpeditionNextSlotLevel(40) == 0);
+    assert(ExpeditionNextSlotLevel(8) == 15);
+    const ExpeditionDef *patrol = ExpeditionAt(ExpeditionTestDef("lothering"));
+    assert(patrol->minutes == 15 && patrol->party == 1 && ExpeditionDurationSeconds(patrol) == 900);
+    assert(patrol->bonus.kind == EXPEDITION_TRAIT_GROUP && !strcmp(patrol->bonus.group, "Ferelden"));
+    assert(ExpeditionGreatSuccessAmount(120, true) == 180 && ExpeditionGreatSuccessAmount(120, false) == 120);
+    assert(ExpeditionHeroDropLimit(ExpeditionAt(ExpeditionTestDef("tevinter"))) == 1);
+    assert(ExpeditionHeroDropLimit(patrol) == 0);
+    assert(!ExpeditionCatalogLoad("data/missing_expeditions.json") && !ExpeditionsAvailable());
+    assert(ExpeditionCatalogLoad(EXPEDITIONS_PATH));
+}
+
+static void TestExpeditionTraitsMatchRealHeroes(void) {
+    cJSON *root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    static Character hero;
+    static Ability ability;
+    for (int def = 0; def < ExpeditionCount(); def++) {
+        const ExpeditionDef *expedition = ExpeditionAt(def);
+        int requirement_matches[EXPEDITION_REQUIREMENT_CAPACITY] = {0};
+        int bonus_matches = 0;
+        const cJSON *entry = NULL;
+        cJSON_ArrayForEach(entry, (cJSON *)catalog) {
+            if (!StoreHeroDefinitionEligible(entry)) continue;
+            CharacterParse(entry, &hero, &ability);
+            bonus_matches += ExpeditionTraitMatches(&expedition->bonus, &hero);
+            for (int i = 0; i < expedition->requirement_count; i++)
+                requirement_matches[i] += ExpeditionTraitMatches(&expedition->requirements[i], &hero);
+        }
+        assert(bonus_matches >= expedition->bonus.count * 4);
+        for (int i = 0; i < expedition->requirement_count; i++)
+            assert(requirement_matches[i] >= expedition->requirements[i].count);
+        assert(ResourceExists(TextFormat(EXTRA_ASSET_DIR "%s", expedition->art)));
+    }
+    cJSON_Delete(root);
+}
+
+typedef struct {
+    Player player;
+    int dwarf, apprentice, skeleton_mage, red_mage, rare, epic, giant, ferelden;
+} ExpeditionBench;
+
+static ExpeditionBench ExpeditionTestBench(void) {
+    ExpeditionBench bench = {.player = TestStarterPlayer()};
+    cJSON *root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    Player *p = &bench.player;
+    p->level = 30;
+    ConsumeTestAdd(p, catalog, "UNIT_CARTATHUG", &bench.dwarf);
+    ConsumeTestAdd(p, catalog, "UNIT_CIRCLEAPPRENTICE", &bench.apprentice);
+    ConsumeTestAdd(p, catalog, "UNIT_SKELETONMAGE", &bench.skeleton_mage);
+    ConsumeTestAdd(p, catalog, "UNIT_REDIRONMAGE", &bench.red_mage);
+    ConsumeTestAdd(p, catalog, ConsumeTestFirstId(catalog, "Rare", false, true), &bench.rare);
+    ConsumeTestAdd(p, catalog, ConsumeTestFirstId(catalog, "Epic", false, true), &bench.epic);
+    ConsumeTestAdd(p, catalog, "UNIT_OGRE", &bench.giant);
+    ConsumeTestAdd(p, catalog, "UNIT_BLACKSTONEIRREGULAR", &bench.ferelden);
+    cJSON_Delete(root);
+    GearCatalogEnsure();
+    RuneCatalogEnsure();
+    return bench;
+}
+
+static void TestExpeditionPartiesNeedBenchHeroesAndTheirRequirements(void) {
+    ExpeditionBench bench = ExpeditionTestBench();
+    Player *p = &bench.player;
+    int rift = ExpeditionTestDef("fade_rift");
+    int squad_member = PlayerSquadUnitAt(p, p->current_squad, 0);
+    assert(squad_member >= 0 && !ExpeditionHeroAvailable(p, squad_member));
+
+    int commons[] = {bench.dwarf, bench.apprentice, bench.skeleton_mage};
+    assert(!ExpeditionPartyValid(p, rift, commons, 3));
+    int with_rare[] = {bench.dwarf, bench.ferelden, bench.rare};
+    assert(ExpeditionPartyValid(p, rift, with_rare, 3));
+    assert(!ExpeditionPartyGreatSuccess(p, rift, with_rare, 3));
+    int with_squad[] = {squad_member, bench.apprentice, bench.rare};
+    assert(!ExpeditionPartyValid(p, rift, with_squad, 3));
+    int twice[] = {bench.rare, bench.rare, bench.apprentice};
+    assert(!ExpeditionPartyValid(p, rift, twice, 3));
+    assert(!ExpeditionPartyValid(p, rift, with_rare, 2));
+
+    int party[EXPEDITION_PARTY_CAPACITY];
+    assert(ExpeditionAutoFill(p, rift, party) == 3);
+    assert(ExpeditionPartyValid(p, rift, party, 3) && ExpeditionPartyGreatSuccess(p, rift, party, 3));
+
+    assert(ExpeditionStart(p, rift, party, 3, 1000));
+    assert(p->expeditions.count == 1 && p->expeditions.active[0].ends_at == 1000 + 240 * 60);
+    for (int i = 0; i < 3; i++) {
+        assert(PlayerHeroAway(p, party[i]) && !ExpeditionHeroAvailable(p, party[i]));
+        assert(!PlayerSquadPlace(p, 2, 0, party[i]));
+        assert(!PlayerConsumeSeedAllowed(p, bench.giant, party[i]));
+        assert(!PlayerConsumeSeedAllowed(p, party[i], bench.giant));
+        assert(!FortifyPlacementAllowed(p, bench.giant, 0, party[i]));
+    }
+    assert(!ExpeditionStart(p, rift, party, 3, 1000));
+    assert(!ExpeditionCanStart(p, rift));
+
+    p->level = 3;
+    int patrol[] = {bench.ferelden};
+    assert(ExpeditionSlotsUnlocked(p->level) == 1 && !ExpeditionStart(p, ExpeditionTestDef("lothering"), patrol, 1, 1000));
+    p->level = 2;
+    assert(!ExpeditionCanStart(p, ExpeditionTestDef("storm_coast")));
+}
+
+static void TestExpeditionClaimPaysOnceWhenThePartyIsBack(void) {
+    ExpeditionBench bench = ExpeditionTestBench();
+    Player *p = &bench.player;
+    int lothering = ExpeditionTestDef("lothering");
+    int party[] = {bench.ferelden};
+    assert(ExpeditionStart(p, lothering, party, 1, 1000));
+    int gold = p->gold, gear = 0, xp = p->roster[bench.ferelden].xp;
+    for (int i = 0; i < GearCatalogCount(); i++) gear += p->gear.counts[i];
+
+    assert(ExpeditionCheckClaim(p, &lothering, 1, 1000 + 899) == EXPEDITION_CLAIM_NOTHING_READY);
+    ExpeditionReward early = ExpeditionClaim(p, &lothering, 1, 1000 + 899);
+    assert(early.expeditions == 0 && p->expeditions.count == 1 && p->gold == gold);
+    assert(ExpeditionsReadyCount(&p->expeditions, 1000 + 900) == 1);
+
+    ExpeditionReward reward = ExpeditionClaim(p, &lothering, 1, 1000 + 900);
+    assert(reward.expeditions == 1 && reward.great_successes == 1);
+    assert(reward.gold >= 180 && reward.gold <= 270 && p->gold == gold + reward.gold);
+    assert(reward.hero_xp == 60 && p->roster[bench.ferelden].xp == xp + 60);
+    assert(reward.gear_count == 1 && reward.gear[0] >= 0 && GearDefAt(reward.gear[0])->rarity == 1);
+    int gear_after = 0;
+    for (int i = 0; i < GearCatalogCount(); i++) gear_after += p->gear.counts[i];
+    assert(gear_after == gear + 1);
+    assert(p->expeditions.count == 0 && !PlayerHeroAway(p, bench.ferelden));
+    assert(ExpeditionClaim(p, &lothering, 1, 1000 + 900).expeditions == 0 && p->gold == gold + reward.gold);
+
+    int storm = ExpeditionTestDef("storm_coast");
+    int crew[] = {bench.dwarf, bench.red_mage};
+    assert(ExpeditionStart(p, storm, crew, 2, 2000));
+    assert(ExpeditionRecall(p, storm) && !ExpeditionRecall(p, storm));
+    assert(p->expeditions.count == 0 && !PlayerHeroAway(p, bench.dwarf) && p->gold == gold + reward.gold);
+}
+
+static void TestExpeditionHeroDropsNeedRosterRoom(void) {
+    ExpeditionBench bench = ExpeditionTestBench();
+    Player *p = &bench.player;
+    int hunt = ExpeditionTestDef("western_approach");
+    int party[EXPEDITION_PARTY_CAPACITY];
+    assert(ExpeditionAutoFill(p, hunt, party) == 4 && ExpeditionStart(p, hunt, party, 4, 0));
+    int capacity = p->roster_capacity;
+    p->roster_capacity = p->roster_count;
+    assert(ExpeditionCheckClaim(p, &hunt, 1, 1 << 30) == EXPEDITION_CLAIM_ROSTER_FULL);
+    assert(ExpeditionClaim(p, &hunt, 1, 1 << 30).expeditions == 0 && p->expeditions.count == 1);
+    p->roster_capacity = capacity;
+    int roster = p->roster_count;
+    ExpeditionReward reward = ExpeditionClaim(p, &hunt, 1, 1 << 30);
+    assert(reward.expeditions == 1 && reward.hero_count == 1 && p->roster_count == roster + 1);
+    Rarity rarity = p->roster[reward.heroes[0]].rarity;
+    assert(rarity == RARITY_RARE || rarity == RARITY_EPIC);
+}
+
+static void TestExpeditionsSurviveSaveAndLoad(void) {
+    PlayerExpeditions saved = {
+        .count = 2,
+        .active =
+            {
+                {.def = ExpeditionTestDef("deep_roads"), .heroes = {11, 12, 13}, .hero_count = 3, .started_at = 50,
+                 .ends_at = 50 + 240 * 60},
+                {.def = ExpeditionTestDef("lothering"), .heroes = {14}, .hero_count = 1, .started_at = 70,
+                 .ends_at = 970},
+            },
+    };
+    cJSON *json = ExpeditionsSave(&saved);
+    PlayerExpeditions loaded;
+    ExpeditionsLoad(json, &loaded);
+    assert(loaded.count == 2 && memcmp(&loaded.active, &saved.active, sizeof(saved.active)) == 0);
+    assert(ExpeditionsHoldInstance(&loaded, 12) && !ExpeditionsHoldInstance(&loaded, 15));
+
+    cJSON *active = cJSON_GetObjectItemCaseSensitive(json, "active");
+    cJSON *copy = cJSON_Duplicate(cJSON_GetArrayItem(active, 1), true);
+    cJSON_ReplaceItemInObject(copy, "id", cJSON_CreateString("storm_coast"));
+    cJSON_AddItemToArray(active, copy);
+    cJSON *unknown = cJSON_Duplicate(cJSON_GetArrayItem(active, 1), true);
+    cJSON_ReplaceItemInObject(unknown, "id", cJSON_CreateString("no_such_place"));
+    cJSON_AddItemToArray(active, unknown);
+    ExpeditionsLoad(json, &loaded);
+    assert(loaded.count == 2);
+    cJSON_Delete(json);
+}
+
+static void TestExpeditionServerActionsNameTheHeroes(void) {
+    ExpeditionBench bench = ExpeditionTestBench();
+    Player *p = &bench.player;
+    int deep_roads = ExpeditionTestDef("deep_roads");
+    int party[] = {bench.dwarf, bench.apprentice, bench.giant};
+    cJSON *start = ExpeditionStartAction(p, deep_roads, party, 3);
+    assert(!strcmp(JsonStr(start, "action"), "expedition_start") && !strcmp(JsonStr(start, "expedition"), "deep_roads"));
+    const cJSON *heroes = cJSON_GetObjectItemCaseSensitive(start, "heroes");
+    assert(cJSON_GetArraySize(heroes) == 3);
+    assert((uint64_t)cJSON_GetArrayItem(heroes, 2)->valuedouble == p->roster[bench.giant].instance_id);
+    cJSON_Delete(start);
+
+    int defs[] = {deep_roads, ExpeditionTestDef("lothering")};
+    cJSON *claim = ExpeditionClaimAction(defs, 2);
+    const cJSON *ids = cJSON_GetObjectItemCaseSensitive(claim, "expeditions");
+    assert(!strcmp(JsonStr(claim, "action"), "expedition_claim") && cJSON_GetArraySize(ids) == 2);
+    assert(!strcmp(cJSON_GetArrayItem(ids, 1)->valuestring, "lothering"));
+    cJSON_Delete(claim);
+    cJSON *recall = ExpeditionRecallAction(deep_roads);
+    assert(!strcmp(JsonStr(recall, "action"), "expedition_recall") && !strcmp(JsonStr(recall, "expedition"), "deep_roads"));
+    cJSON_Delete(recall);
+
+    char reply_text[512];
+    snprintf(
+        reply_text,
+        sizeof(reply_text),
+        "{\"granted\":{\"gold\":900,\"gems\":3,\"xp\":200,\"granted\":{\"heroes\":[{\"id\":\"%s\",\"instance_id\":%llu}],"
+        "\"gear\":[\"%s\"],\"runes\":[\"%s\"]}}}",
+        p->roster[bench.rare].id,
+        (unsigned long long)p->roster[bench.rare].instance_id,
+        GearDefAt(0)->id,
+        RuneDefAt(0)->id
+    );
+    cJSON *reply = cJSON_Parse(reply_text);
+    ExpeditionReward reward = ExpeditionRewardFromReply(p, reply, 2, 1);
+    assert(reward.expeditions == 2 && reward.great_successes == 1);
+    assert(reward.gold == 900 && reward.gems == 3 && reward.hero_xp == 200);
+    assert(reward.hero_count == 1 && reward.heroes[0] == bench.rare && reward.hero_new[0]);
+    assert(reward.gear_count == 1 && reward.gear[0] == 0 && reward.rune_count == 1 && reward.runes[0] == 0);
+    cJSON_Delete(reply);
+}
+
 int main(void) {
     TestSystemLocalesPickTheirOriginalLocalization();
     TestFontCoversEveryGlyphOfTheLoadedLanguage();
@@ -6929,6 +7163,13 @@ int main(void) {
     TestFortifyMergesTiersLikeThe544Slot();
     TestFortifySlotsUnlockWithConsumeLevel();
     TestPlayerFortifyConsumesTheChildren();
+    TestExpeditionCatalogFollowsTheTable();
+    TestExpeditionTraitsMatchRealHeroes();
+    TestExpeditionPartiesNeedBenchHeroesAndTheirRequirements();
+    TestExpeditionClaimPaysOnceWhenThePartyIsBack();
+    TestExpeditionHeroDropsNeedRosterRoom();
+    TestExpeditionsSurviveSaveAndLoad();
+    TestExpeditionServerActionsNameTheHeroes();
     TestPlayerRemoveFortifyReturnsHeroesForGems();
     TestFortifySlotsTravelThroughSavesAndBattles();
     TestTutorialScriptCoversBothFunnels();

@@ -466,6 +466,11 @@ static void FortifyPlace(FortifyScreen *f, const Player *p, int slot, int index)
 static void FortifyRelease(FortifyScreen *f, const FortifyLayout *l, const Player *p, int index, Vector2 point) {
     if (index == f->parent) return;
     int slot = FortifySlotAt(l, point);
+    bool lands = slot >= 0 || CheckCollisionPointRec(point, l->parent_drop);
+    if (lands && PlayerHeroAway(p, index)) {
+        FortifyShowMessage(f, LocGet("HODA_EXPEDITION_HERO_AWAY_MESSAGE"));
+        return;
+    }
     if (slot < 0) {
         if (CheckCollisionPointRec(point, l->parent_drop)) FortifySelectParent(f, index, false);
         return;
@@ -849,6 +854,7 @@ static void FortifyDrawRosterCard(const HeroCard *card, Rectangle cell, int rost
         .maxed = card->xp_frac >= 1.0f,
         .in_squad = PlayerSquadsContain(c->player, roster_index),
         .in_use = FortifyIsInUse(c->screen, roster_index) || lifted,
+        .away = PlayerHeroAway(c->player, roster_index),
         .selected = roster_index == c->screen->details_index,
         .fortified = FortifyHasChildren(card->ch),
     };
