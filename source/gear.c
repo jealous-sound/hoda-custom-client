@@ -14,8 +14,9 @@
 #define GEAR_NORMAL_SLOT_MAX 3
 #define GEAR_PRESTIGE_MIN_SLOTS 4
 #define GEAR_EMPTY_SLOT 0
-#define GEAR_STRING_CAPACITY 41
-#define GEAR_STRING_TEXT_CAPACITY 512
+#define GEAR_TEXT_KEY_CAPACITY 80
+#define GEAR_AURA_KEY_CAPACITY 8
+#define GEAR_AURA_SEPARATOR " "
 #define GEAR_UI_TEXTURE_PATH "gui/gear/%s.png"
 #define GEAR_TOME_ICON "gui/gear/tex.tomeofascension.png"
 #define GEAR_ICON_CACHE_CAPACITY (GEAR_CATALOG_CAPACITY + 16)
@@ -86,9 +87,10 @@ typedef struct {
 
 typedef struct {
     char id[64];
-    char title_ru[96];
-    char description_ru[384];
-    char aura_ru[512];
+    char title_key[GEAR_TEXT_KEY_CAPACITY];
+    char description_key[GEAR_TEXT_KEY_CAPACITY];
+    char aura_keys[GEAR_AURA_KEY_CAPACITY][GEAR_TEXT_KEY_CAPACITY];
+    int aura_key_count;
     char icon[72];
     int rarity;
     GearCategory categories[GEAR_CATEGORY_CAPACITY];
@@ -101,7 +103,6 @@ typedef struct {
 
 typedef struct {
     char id[32];
-    char name_ru[64];
     bool gems;
     int price;
     int count;
@@ -110,17 +111,10 @@ typedef struct {
 } GearPackDef;
 
 typedef struct {
-    char key[48];
-    char text[GEAR_STRING_TEXT_CAPACITY];
-} GearString;
-
-typedef struct {
     GearDef defs[GEAR_CATALOG_CAPACITY];
     int count;
     GearPackDef packs[GEAR_PACK_CAPACITY];
     int pack_count;
-    GearString strings[GEAR_STRING_CAPACITY];
-    int string_count;
     int rarity_gold_values[GEAR_RARITY_COUNT];
     int prestige_slot_gem_cost;
     bool loaded;
@@ -238,9 +232,14 @@ static void GearEffectParse(GearEffect *effect, const cJSON *row, const char *ge
 
 static void GearDefParse(GearDef *def, const cJSON *row) {
     StrCopy(def->id, sizeof(def->id), JsonStr(row, "id"));
-    StrCopy(def->title_ru, sizeof(def->title_ru), JsonStr(row, "title_ru"));
-    StrCopy(def->description_ru, sizeof(def->description_ru), JsonStr(row, "description_ru"));
-    StrCopy(def->aura_ru, sizeof(def->aura_ru), JsonStr(row, "aura_ru"));
+    StrCopy(def->title_key, sizeof(def->title_key), JsonStr(row, "title_key"));
+    StrCopy(def->description_key, sizeof(def->description_key), JsonStr(row, "description_key"));
+    const cJSON *aura_key = NULL;
+    cJSON_ArrayForEach(aura_key, cJSON_GetObjectItemCaseSensitive((cJSON *)row, "aura_keys")) {
+        if (def->aura_key_count >= GEAR_AURA_KEY_CAPACITY || !cJSON_IsString(aura_key))
+            TraceLog(LOG_FATAL, "Gear: %s has invalid aura keys", def->id);
+        StrCopy(def->aura_keys[def->aura_key_count++], GEAR_TEXT_KEY_CAPACITY, aura_key->valuestring);
+    }
     StrCopy(def->icon, sizeof(def->icon), JsonStr(row, "icon"));
     def->rarity = JsonInt(row, "rarity");
     def->categories_all = cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive((cJSON *)row, "categories_all"));
@@ -284,27 +283,30 @@ void GearCatalogEnsure(void) {
         if (rarity < GEAR_RARITY_COUNT) gear_catalog.rarity_gold_values[rarity++] = row->valueint;
     }
     gear_catalog.prestige_slot_gem_cost = JsonInt(root, "prestige_slot_gem_cost");
-    cJSON_ArrayForEach(row, cJSON_GetObjectItemCaseSensitive(root, "strings")) {
-        if (gear_catalog.string_count >= GEAR_STRING_CAPACITY) TraceLog(LOG_FATAL, "Gear: too many strings");
-        GearString *string = &gear_catalog.strings[gear_catalog.string_count++];
-        StrCopy(string->key, sizeof(string->key), JsonStr(row, "key"));
-        StrCopy(string->text, sizeof(string->text), JsonStr(row, "text"));
-    }
     cJSON_Delete(root);
 }
 
-const char *GearText(const char *key) {
-    GearCatalogEnsure();
-    for (int i = 0; i < gear_catalog.string_count; i++)
-        if (!strcmp(gear_catalog.strings[i].key, key)) return gear_catalog.strings[i].text;
-    TraceLog(LOG_WARNING, "Gear: missing string %s", key);
-    return key;
+const char *GearTitle(const GearDef *def) {
+    return LocGet(def->title_key);
+}
+
+const char *GearDescription(const GearDef *def) {
+    return LocGet(def->description_key);
+}
+
+void GearFormatAura(const GearDef *def, char *dst, int capacity) {
+    int used = 0;
+    dst[0] = '\0';
+    for (int i = 0; i < def->aura_key_count && used < capacity - 1; i++)
+        used += snprintf(
+            dst + used, (size_t)(capacity - used), "%s%s", i ? GEAR_AURA_SEPARATOR : "", LocGet(def->aura_keys[i])
+        );
 }
 
 void GearFormatLimits(const GearDef *def, char *dst, int capacity) {
-    int used = snprintf(dst, (size_t)capacity, "%s", GearText("GEAR_LIMITED_TITLE"));
+    int used = snprintf(dst, (size_t)capacity, "%s", LocGet("HODA_GEAR_LIMITED_TITLE"));
     if (def->category_count == 0) {
-        snprintf(dst + used, (size_t)(capacity - used), "%s", GearText("GEAR_NO_LIMITATIONS"));
+        snprintf(dst + used, (size_t)(capacity - used), "%s", LocGet("HODA_GEAR_NO_LIMITATIONS"));
         return;
     }
     for (int i = 0; i < def->category_count && used < capacity - 1; i++) {
@@ -340,7 +342,6 @@ static void GearLoadPacks(void) {
         GearPackDef *pack = &gear_catalog.packs[gear_catalog.pack_count++];
         const cJSON *offer = cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive((cJSON *)row, "offers"), 0);
         StrCopy(pack->id, sizeof(pack->id), JsonStr(row, "id"));
-        StrCopy(pack->name_ru, sizeof(pack->name_ru), JsonStr(row, "name_ru"));
         pack->gems = !strcmp(JsonStr(offer, "currency"), "gems");
         pack->price = JsonInt(offer, "price");
         pack->count = JsonInt(row, "count");

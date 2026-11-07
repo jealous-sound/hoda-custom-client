@@ -33,11 +33,15 @@ void HomeUIInitialize(HomeUI *hui) {
     Font font = GuiFont(FNT_COOL);
     Vector2 anchor = {0.5f, 0.82f};
     float scale = 0.17f;
-    hui->store = ButtonLoadText(GUI_BTN_STORE, GUI_BTN_STORE_ON, "Магазин", font, anchor, scale);
-    hui->history = ButtonLoadText(GUI_BTN_HISTORY, GUI_BTN_HISTORY_ON, "Цели", font, anchor, scale);
-    hui->heroes = ButtonLoadText(GUI_BTN_HEROES, GUI_BTN_HEROES_ON, "Герои", font, anchor, scale);
-    hui->quests = ButtonLoadText(GUI_BTN_HOMEQUEST, GUI_BTN_HOMEQUEST_ON, "Задание", font, anchor, scale);
-    hui->pvp = ButtonLoadText(GUI_BTN_PVP, GUI_BTN_PVP_ON, "PvP", font, anchor, scale);
+    hui->store =
+        ButtonLoadText(GUI_BTN_STORE, GUI_BTN_STORE_ON, LocGet("BUTTON_MAINSCREEN_STORE"), font, anchor, scale);
+    hui->history =
+        ButtonLoadText(GUI_BTN_HISTORY, GUI_BTN_HISTORY_ON, LocGet("BUTTON_MAINSCREEN_HISTORY"), font, anchor, scale);
+    hui->heroes =
+        ButtonLoadText(GUI_BTN_HEROES, GUI_BTN_HEROES_ON, LocGet("BUTTON_MAINSCREEN_HEROES"), font, anchor, scale);
+    hui->quests =
+        ButtonLoadText(GUI_BTN_HOMEQUEST, GUI_BTN_HOMEQUEST_ON, LocGet("NEXUS_BUTTON_LOC_STRING"), font, anchor, scale);
+    hui->pvp = ButtonLoadText(GUI_BTN_PVP, GUI_BTN_PVP_ON, LocGet("BUTTON_MAINSCREEN_BATTLE"), font, anchor, scale);
     ButtonSetClickSound(&hui->store, SND_UI_BIG_BUTTON);
     ButtonSetClickSound(&hui->history, SND_UI_BIG_BUTTON);
     ButtonSetClickSound(&hui->heroes, SND_UI_BIG_BUTTON);

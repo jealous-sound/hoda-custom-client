@@ -2,6 +2,8 @@
 #define CAMPAIGN_OFFLINE_MASTERY_GEMS 1
 #define CAMPAIGN_ID_PREFIX "PVE_MAP_"
 #define CAMPAIGN_TRAY_ICON_PREFIX "tex.Btn_MapPVE_map_"
+#define CAMPAIGN_HEADER_KEY_FORMAT "%s_header"
+#define CAMPAIGN_NODE_KEY_FORMAT "MAP_%s_NODE_%d_%s"
 #define CAMPAIGN_ENERGY_TEXT_OF_BANNER 0.5f
 #define CAMPAIGN_TRAY_SCROLL_ITEMS 5
 #define CAMPAIGN_TRAY_SCROLL_SPEED 6.0f
@@ -224,7 +226,7 @@ void CampaignNodeMasteryLabel(const CampaignNode *node, int wins, char *out, int
     else if (wins <= 0)
         StrCopy(out, cap, LocGet("PVE_UNLOCKED"));
     else
-        snprintf(out, (size_t)cap, "Закрыто (%d / %d)", wins, node->wins_to_master);
+        LocFormatInt2(out, (size_t)cap, "BUTTON_BATTLERESULTS_MASTERYPROGRESS", wins, node->wins_to_master);
 }
 
 static Rectangle CampaignReadLayoutRect(const cJSON *layout, const char *key, const char *map_id) {
@@ -271,6 +273,10 @@ static Texture2D CampaignLoadMapPrefabTexture(int map_number, const char *name_f
     return LoadSprite(TextFormat("%s%s/%s", CACHE_RESOURCE_PREFIX, prefab, name));
 }
 
+static void CampaignCopyNodeText(char *out, int cap, const char *map_id, int step, const char *field) {
+    StrCopy(out, cap, LocGet(TextFormat(CAMPAIGN_NODE_KEY_FORMAT, map_id, step, field)));
+}
+
 static Texture2D CampaignLoadTrayIcon(const char *map_id) {
     size_t prefix = strlen(CAMPAIGN_ID_PREFIX);
     if (strncmp(map_id, CAMPAIGN_ID_PREFIX, prefix) != 0)
@@ -313,7 +319,7 @@ void CampaignMapsInitialize(Campaign *c, const char *path) {
         m->background = GuiTex(backgrounds[c->map_count]);
         if (m->background.id == 0) TraceLog(LOG_FATAL, "Campaign: %s has no panorama", id);
         StrCopy(m->id, sizeof(m->id), id);
-        StrCopy(m->title, sizeof(m->title), JsonStr(chapter, "chapter"));
+        StrCopy(m->title, sizeof(m->title), LocGet(TextFormat(CAMPAIGN_HEADER_KEY_FORMAT, id)));
 
         m->layout = CampaignReadNodeLayout(cJSON_GetObjectItemCaseSensitive(chapter, "node_layout"), id);
         m->tray_icon = CampaignLoadTrayIcon(id);
@@ -325,9 +331,10 @@ void CampaignMapsInitialize(Campaign *c, const char *path) {
             if (m->node_count >= CAMPAIGN_MAX_NODES)
                 TraceLog(LOG_FATAL, "Campaign: %s has more than %d nodes", id, CAMPAIGN_MAX_NODES);
             CampaignNode *node = &m->nodes[m->node_count];
-            StrCopy(node->name, sizeof(node->name), JsonStr(n, "name"));
-            StrCopy(node->desc, sizeof(node->desc), JsonStr(n, "desc"));
-            StrCopy(node->cta, sizeof(node->cta), JsonStr(n, "cta"));
+            int step = JsonInt(n, "step");
+            CampaignCopyNodeText(node->name, sizeof(node->name), id, step, "NAME");
+            CampaignCopyNodeText(node->desc, sizeof(node->desc), id, step, "DESCRIPTION");
+            CampaignCopyNodeText(node->cta, sizeof(node->cta), id, step, "CTA");
             cJSON *position = cJSON_GetObjectItemCaseSensitive(n, "position");
             cJSON *energy = cJSON_GetObjectItemCaseSensitive(n, "energy_cost");
             if (!cJSON_IsNumber(energy))
@@ -445,12 +452,13 @@ void CampaignInitialize(Campaign *c, const char *maps_path) {
     c->change_map = ButtonLoadText(
         GUI_BTN_MAPS,
         GUI_BTN_MAPS,
-        LocGetOr("PVE_MAP_LABEL", "Карты"),
+        LocGet("PVE_MAP_LABEL"),
         c->font,
         (Vector2){0.5f, CAMPAIGN_TRAY_TOGGLE_LABEL_ANCHOR_Y},
         CAMPAIGN_TRAY_TOGGLE_LABEL_SCALE
     );
-    c->enter_map = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "Войти", c->font, (Vector2){0.5f, 0.5f}, 0.35f);
+    c->enter_map =
+        ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("PVE_MAP_ENTER"), c->font, (Vector2){0.5f, 0.5f}, 0.35f);
     ButtonDisableClickSound(&c->change_map);
 
     CampaignMapsInitialize(c, maps_path);
@@ -572,16 +580,19 @@ static void CampaignDrawWrapped(
     float y = pos.y;
 
     const char *w = text;
+    bool spaced = false;
     while (*w) {
-        const char *e = w;
-        while (*e && *e != ' ') e++;
+        if (*w == ' ' || *w == '\n') {
+            spaced = true;
+            w++;
+            continue;
+        }
+        const char *e = UiBreakUnitEnd(w);
         int wlen = (int)(e - w);
 
         char trial[640];
-        if (line[0])
-            snprintf(trial, sizeof(trial), "%s %.*s", line, wlen, w);
-        else
-            snprintf(trial, sizeof(trial), "%.*s", wlen, w);
+        snprintf(trial, sizeof(trial), "%s%s%.*s", line, line[0] && spaced ? " " : "", wlen, w);
+        spaced = false;
 
         if (line[0] && MeasureTextEx(font, trial, size, spacing).x > max_width) {
             DrawTextEx(font, line, (Vector2){pos.x, y}, size, spacing, tint);
@@ -592,7 +603,6 @@ static void CampaignDrawWrapped(
         }
 
         w = e;
-        while (*w == ' ') w++;
     }
     if (line[0]) DrawTextEx(font, line, (Vector2){pos.x, y}, size, spacing, tint);
 }
@@ -742,7 +752,7 @@ static Rectangle CampaignDrawTrayCallToAction(const Campaign *c, const CampaignM
     Rectangle icon_box = CampaignIguiRect(panel, CAMPAIGN_CTA_ICON);
     UiDrawTexture(c->cta_bg, panel, WHITE);
 
-    const char *title = LocGetOr(TextFormat("%s_header", m->id), m->title);
+    const char *title = m->title;
     float title_size = title_box.height * CAMPAIGN_CTA_TITLE_OF_LABEL;
     float title_w = MeasureTextEx(c->font, title, title_size, 1.0f).x;
     if (title_w > title_box.width) title_size *= title_box.width / title_w;
@@ -782,7 +792,7 @@ static void CampaignDrawAbout(Campaign *c, const PlayerCampaignProgress *pcp, in
 
     Color text = {235, 232, 220, 255};
     Color muted = {196, 192, 182, 255};
-    const char *title = LocGetOr(TextFormat("%s_header", m->id), m->title);
+    const char *title = m->title;
     Rectangle title_box = CampaignAboutRect(CAMPAIGN_ABOUT_TITLE, dx);
     float title_size = CAMPAIGN_ABOUT_TITLE_SIZE;
     float title_w = MeasureTextEx(c->font, title, title_size, 1.0f).x;
@@ -790,14 +800,14 @@ static void CampaignDrawAbout(Campaign *c, const PlayerCampaignProgress *pcp, in
     UiDrawTextCentered(c->font, title, title_box, title_size, text);
     UiDrawTextCentered(
         c->font,
-        LocGetOr("HELPOVERLAY_TAB_ABOUT", "Об игре"),
+        LocGet("HELPOVERLAY_TAB_ABOUT"),
         CampaignAboutRect(CAMPAIGN_ABOUT_TAB_ABOUT_LABEL, dx),
         CAMPAIGN_ABOUT_TAB_SIZE,
         text
     );
     UiDrawTextCentered(
         c->font,
-        LocGetOr("HELPOVERLAY_TAB_HELP", "Помощь"),
+        LocGet("HELPOVERLAY_TAB_HELP"),
         CampaignAboutRect(CAMPAIGN_ABOUT_TAB_HELP_LABEL, dx),
         CAMPAIGN_ABOUT_TAB_SIZE,
         muted

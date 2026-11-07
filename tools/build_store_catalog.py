@@ -7,24 +7,22 @@ from pathlib import Path
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import economy_localization as economy
 import original_cache
 
 CLI_DESCRIPTION = 'Build data/store_packs.json, the single pack catalog, and the store art the 4.4.0 cache lacks.'
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / 'data' / 'store_packs.json'
-LOCALIZATION = ROOT / '.claude' / 'skills' / 'hoda-reference' / 'data' / 'localization' / 'Loc_RUS_RU.json'
-ORIGINAL_LOCALIZATION = (ROOT / 'client-additional-data' / 'Heroes-of-Dragon-Age-v4-4-0-cache-androidp1' /
-                         'com.ea.game.dragonage_row' / 'cache' / 'Localization' / 'Loc_RUS_RU.txt')
 CHARACTERS = ROOT / 'client-additional-data' / 'characters.json'
 FOOTAGE = ROOT / 'client-additional-data' / 'store_research' / 'footage'
 EXTRA_STORE_DIR = ROOT / 'client-additional-data' / 'extra' / 'gui' / 'store'
 ASSET_PACK_IMAGES = Path.home() / 'Downloads' / 'HoDA_game_assets_pack' / 'images'
 
 BALANCE_NOTE = (
-    'Каталог магазина сервер отдавал удалённо, и в дампе его нет. Названия паков взяты из локализации 5.4.4. '
-    'Цены, виденные в записях, сохранены; все остальные цены, шансы, состав, расписание и описания заданы '
-    'как локальный баланс. Лестница самоцветов восстановлена точно из строк локализации.'
+    'The server sent the store catalog remotely and the dump lacks it. Pack names come from the 5.4.4 localization. '
+    'Prices seen in recordings are kept; every other price, odds, contents, schedule and description is local '
+    'balance. The gem ladder is restored exactly from the localization strings.'
 )
 
 FOOTAGE_ASPECT_CORRECTION = 4.0 / 3.0
@@ -92,6 +90,32 @@ RUNE_FAMILIES = ['rune-power', 'rune-health', 'rune-initiative', 'rune-stun']
 
 WEEKLY_FLASH_DAYS = 7
 
+CHANCE_AT = 'HODA_STORE_BULLET_CHANCE_AT'
+GUARANTEED = 'FEATURED_INTERSTITIAL_GUARANTEED'
+TRAINING = 'ROSTER_FILTER_TUTORIAL'
+SPECIAL_OFFER = 'INTERSTITIAL_SQUAD_PACK_5_15_2014_TITLE'
+TEN_FOR_THE_PRICE_OF_NINE = 'gcp_rotating_text_3'
+THIS_WEEK_ONLY = 'HODA_STORE_BULLET_THIS_WEEK_ONLY'
+
+
+def pack_text(loc, fallback_info):
+    name, info, description = (f'{loc}_PACK_{part}' for part in ('NAME', 'INFO', 'DESCRIPTION'))
+    text = {
+        'name_key': name if economy.has_original(name) else economy.project_key(name),
+        'info_key': info if economy.has_original(info) else fallback_info,
+    }
+    if economy.has_original(description):
+        text['description_key'] = description
+    return text
+
+
+def hero_info(count, tier):
+    return f'HODA_STORE_HERO_PACK_INFO_{count}_{MINIMUM[id(tier)].upper()}'
+
+
+def gear_info(count):
+    return f'HODA_STORE_GEAR_PACK_INFO_{count}'
+
 
 def offer(currency, price):
     return {'currency': currency, 'price': price}
@@ -107,8 +131,8 @@ def hero(key, loc, order, category, header, icon, offers, tier, count=1, bullets
     optional = {'guaranteed_rare': rare, 'fixed_heroes': list(fixed), 'pool_tag': pool, 'unique_heroes': unique,
                 'header_tint': header_tint}
     return {
-        'id': key, 'kind': 'hero', 'loc_id': loc, 'category': category, 'order': order, 'header': header,
-        'icon': icon, 'offers': offers, 'bullets': list(bullets), 'info_ru': info, 'schedule': schedule,
+        'id': key, 'kind': 'hero', **pack_text(loc, info or hero_info(count, tier)), 'category': category,
+        'order': order, 'header': header, 'icon': icon, 'offers': offers, 'bullets': list(bullets), 'schedule': schedule,
         'rotation': rotation, 'opened_counter': opened_counter, 'hero_count': count,
         'minimum_rarity': MINIMUM[id(tier)], 'guaranteed_legendary': legendary, 'guaranteed_epic': epic,
         'legendary_pity': pity, 'weights': tier, 'rune_chance_pct': rune_pct, 'rune_min_rarity': rune[0],
@@ -118,23 +142,24 @@ def hero(key, loc, order, category, header, icon, offers, tier, count=1, bullets
     }
 
 
-def rune(key, loc, order, header, icon, offers, slots, bullets, info, schedule=None):
+def rune(key, loc, order, header, icon, offers, slots, bullets, info=None, schedule=None):
     return {
-        'id': key, 'kind': 'rune', 'loc_id': loc, 'category': 'ITEMS', 'order': order, 'header': header, 'icon': icon,
-        'offers': offers, 'bullets': bullets, 'info_ru': info, 'schedule': schedule, 'rotation': None, 'slots': slots,
+        'id': key, 'kind': 'rune', **pack_text(loc, info), 'category': 'ITEMS', 'order': order, 'header': header,
+        'icon': icon, 'offers': offers, 'bullets': bullets, 'schedule': schedule, 'rotation': None, 'slots': slots,
     }
 
 
-def gear(key, loc, order, header, icon, offers, count, rarity, bullets, info, tome_pct=0):
+def gear(key, loc, order, header, icon, offers, count, rarity, bullets, tome_pct=0):
     return {
-        'id': key, 'kind': 'gear', 'loc_id': loc, 'category': 'ITEMS', 'order': order, 'header': header, 'icon': icon,
-        'offers': offers, 'bullets': bullets, 'info_ru': info, 'schedule': None, 'rotation': None, 'count': count,
+        'id': key, 'kind': 'gear', **pack_text(loc, gear_info(count)), 'category': 'ITEMS', 'order': order,
+        'header': header, 'icon': icon, 'offers': offers, 'bullets': bullets, 'schedule': None, 'rotation': None,
+        'count': count,
         'min_rarity': rarity[0], 'max_rarity': rarity[1], 'tome_chance_pct': tome_pct,
     }
 
 
-def bullet(text, rarity=0):
-    return {'text_ru': text, 'rarity': rarity}
+def bullet(key, rarity=0):
+    return {'text_key': key, 'rarity': rarity}
 
 
 def season(start, end):
@@ -154,9 +179,8 @@ TUTORIAL_CONSUME_ICON = 'cache:tex.Store_IconGreyWardenKnight'
 
 def tutorial_consume_pack():
     row = hero('tutorial_consume', 'TUTORIAL_CONSUME', 5, 'UNITS', GOLD, TUTORIAL_CONSUME_ICON,
-               [offer('gold', 0)], RARE_TIER, count=2, bullets=[bullet('Для обучения')],
-               info='Бесплатная пара героев, чтобы научиться поглощению.')
-    row['name_ru'] = 'Набор для обучения'
+               [offer('gold', 0)], RARE_TIER, count=2, bullets=[bullet(TRAINING)],
+               info='HODA_TUTORIAL_CONSUME_PACK_INFO')
     row['tutorial_only'] = True
     return row
 
@@ -164,23 +188,20 @@ def tutorial_consume_pack():
 def hero_packs():
     gold, gems = (lambda p: [offer('gold', p)]), (lambda p: [offer('gems', p)])
     icon = 'cache:tex.Store_Icon'
-    chance = 'Шанс на'
+    chance = CHANCE_AT
     rows = [
         hero('recruit', 'ITEM_BRONZE_IDENTIFIER', 10, 'UNITS', BRONZE, icon + 'BronzePack',
-             gold(350) + [voucher('bronze')], COMMON_TIER, rune_pct=15,
-             info='Дает 1 героя. Как минимум обычный боец; есть шанс на необычного, редкого, эпического или легендарного.'),
+             gold(350) + [voucher('bronze')], COMMON_TIER, rune_pct=15),
         hero('soldier', 'ITEM_SILVER_IDENTIFIER', 20, 'UNITS', SILVER, icon + 'SilverPack',
-             gold(1500) + [voucher('silver')], UNCOMMON_TIER, opened_counter=1, rune_pct=30, rune=(2, 3),
-             info='Дает 1 героя или крупное существо. Как минимум необычный боец; есть шанс на редкого, эпического или легендарного.'),
+             gold(1500) + [voucher('silver')], UNCOMMON_TIER, opened_counter=1, rune_pct=30, rune=(2, 3)),
         hero('champion', 'ITEM_GOLD_IDENTIFIER', 30, 'UNITS', CHAMPION_GOLD, icon + 'GoldPack',
              gems(30) + [voucher('champion')], RARE_TIER, opened_counter=2, pity=4, rune_pct=100, rune=(3, 5),
-             bullets=[bullet('Легендарный не позже 4-го', 5)],
-             info='Дает 1 героя и 1 руну. Как минимум редкий боец; есть шанс на эпического или легендарного.'),
+             bullets=[bullet('HODA_STORE_BULLET_LEGENDARY_BY_FOURTH', 5)]),
         hero('grand_champion', 'GRAND_CHAMPION', 40, 'UNITS', 'cache:tex.Store_HeaderGrandChampionPack',
              icon + 'LegendaryPack', gems(270), BULK_TIER, count=10, opened_counter=3, legendary=2, epic=3,
              rune_pct=100, rune=(3, 5), rune_count=10,
-             bullets=[bullet('10 наборов по цене 9!'), bullet('2 легендарных и 3 эпических гарантировано', 5)],
-             info='10 наборов защитника: 2 легендарных и 3 эпических героя гарантированы.'),
+             bullets=[bullet(TEN_FOR_THE_PRICE_OF_NINE), bullet('HODA_STORE_BULLET_GRAND_CHAMPION', 5)],
+             info='HODA_GRAND_CHAMPION_PACK_INFO'),
         hero('mercenary', 'MERCENARY', 50, 'UNITS', SILVER, icon + 'WarriorPack', gold(5000), UNCOMMON_TIER,
              header_tint=PURPLE_TINT_OVER_SILVER, opened_counter=1, rune_pct=20, rune=(1, 3), bullets=[bullet(chance, 3)]),
         hero('knight', 'KNIGHT', 60, 'UNITS', SILVER, icon + 'GreyWardenKnight', gold(25000), RARE_TIER,
@@ -189,29 +210,28 @@ def hero_packs():
              opened_counter=2, rune_pct=100, rune=(3, 5), gear_pct=20, gear=(2, 4), bullets=[bullet(chance, 5)]),
         hero('elite', 'ELITE', 80, 'UNITS', SILVER, icon + 'GreyWardenFiona', gems(1280), EPIC_TIER, count=10,
              header_tint=PURPLE_TINT_OVER_SILVER, opened_counter=3, legendary=3, rune_pct=100, rune=(4, 5), rune_count=10, gear_pct=50, gear=(3, 5),
-             bullets=[bullet('Гарантировано', 5)]),
+             bullets=[bullet(GUARANTEED, 5)]),
         hero('iron', 'IRON', 90, 'UNITS', GOLD, 'cache:tex.Store_IronPack', [voucher('iron')], RARE_TIER,
-             opened_counter=2, pity=6, rune_pct=50, rune=(2, 4), bullets=[bullet('Гарантировано', 5)]),
+             opened_counter=2, pity=6, rune_pct=50, rune=(2, 4), bullets=[bullet(GUARANTEED, 5)]),
         hero('bloodstone', 'BLOODSTONE', 100, 'UNITS', GOLD, icon + 'BloodstonePack', [voucher('bloodstone')],
-             LEGENDARY_TIER, opened_counter=2, rune_pct=50, rune=(3, 5), bullets=[bullet('Гарантировано', 5)]),
+             LEGENDARY_TIER, opened_counter=2, rune_pct=50, rune=(3, 5), bullets=[bullet(GUARANTEED, 5)]),
         hero('lyrium_vein', 'LYRIUM_MINE', 110, 'UNITS', GREEN, 'gui/store/tex.Voucher_LyriumMine.png',
              [voucher('lyrium_mine')], RARE_TIER, opened_counter=2, rune_pct=40, rune=(3, 4),
              bullets=[bullet(chance, 5)]),
         hero('starter_conversion', 'MINNOW_CONVERSION_V2', 120, 'UNITS', BRONZE, icon + 'SerJory', gems(121),
              RARE_TIER, count=3, opened_counter=2, epic=1, rune_pct=100, rune=(3, 4), rune_count=3,
-             bullets=[bullet('Особое предложение!')]),
+             bullets=[bullet(SPECIAL_OFFER)]),
         hero('starter_beasts', 'STARTER_PACK_BEASTS', 130, 'UNITS', BRONZE, icon + 'Dragonling', gems(275),
              RARE_ONLY_TIER, count=5, opened_counter=2, fixed=BEASTS_STARTER_HEROES, rune_pct=100, rune=(5, 5),
-             rune_count=5,
-             bullets=[bullet('Особое предложение!')]),
+             rune_count=5),
         hero('wisp', 'WISP', 140, 'UNITS', GREEN, icon + 'RuneWIsp', gold(800), RARE_TIER,
-             count=10, epic=1, pool=WISP_POOL, bullets=[bullet('Для обучения')]),
+             count=10, epic=1, pool=WISP_POOL, bullets=[bullet(TRAINING)]),
         hero('divine_wisp', 'DIVINE_WISP', 150, 'UNITS', GREEN, icon + 'DivineWisp', gems(40), RARE_TIER,
-             count=10, legendary=1, epic=2, pool=WISP_POOL, opened_counter=2, bullets=[bullet('Для обучения', 4)]),
+             count=10, legendary=1, epic=2, pool=WISP_POOL, opened_counter=2, bullets=[bullet(TRAINING, 4)]),
         hero('training', 'ITEM_CONSUME_IDENTIFIER', 160, 'UNITS', GREEN, icon + 'RuneWIsp', gold(300), UNCOMMON_ONLY_TIER,
-             count=2, rare=1, bullets=[bullet('Для обучения')]),
+             count=2, rare=1, bullets=[bullet(TRAINING)]),
         hero('free_wisp', 'ITEM_FREE_WISP_PROMO', 170, 'UNITS', GREEN, icon + 'Snowball', [offer('gold', 0)],
-             RARE_ONLY_TIER, count=4, pool=WISP_POOL, unique=True, rune_pct=100, rune=(3, 3), rune_count=4, schedule=season('01-01', '01-07'), bullets=[bullet('Подарок')]),
+             RARE_ONLY_TIER, count=4, pool=WISP_POOL, unique=True, rune_pct=100, rune=(3, 3), rune_count=4, schedule=season('01-01', '01-07'), bullets=[bullet('HODA_STORE_BULLET_GIFT')]),
         hero('booster_blackwhite', 'HERO_BOOSTER_BLACKWHITE', 180, 'UNITS', BLUE, 'cache:tex.Store_BlackWhitePack',
              gems(45), RARE_TIER, opened_counter=2, bullets=[bullet(chance, 4)]),
         hero('booster_redblue', 'HERO_BOOSTER_REDBLUE', 190, 'UNITS', BLUE, 'cache:tex.Store_BlueRedPack', gems(45),
@@ -222,22 +242,24 @@ def hero_packs():
              EPIC_TIER, opened_counter=2, bullets=[bullet(chance, 5)]),
     ]
     seasonal = (
-        ('goat', 'GOAT', 'cache:tex.Voucher_Goat', 'goat', ('04-01', '04-14'), 'Осторожно, козы!'),
-        ('nug', 'NUG', icon + 'GoldenNug', 'nug', ('04-15', '04-30'), 'Осторожно, наги!'),
-        ('dragon', 'DRAGON', icon + 'DragonMalvernis', 'dragon', ('08-01', '08-21'), 'Шанс на дракона'),
-        ('romance', 'ROMANCE', 'gui/store/tex.Voucher_Romance.png', 'romance', ('02-01', '02-20'), 'Отрада сердца'),
-        ('wintersend', 'WINTERSEND', icon + 'WintersEndPack', 'wintersend', ('12-10', '01-15'), 'Украсьте залы'),
-        ('harvest', 'HARVEST', 'gui/store/tex.Voucher_Harvest.png', 'harvest', ('10-01', '10-31'), 'Шанс на'),
+        ('goat', 'GOAT', 'cache:tex.Voucher_Goat', 'goat', ('04-01', '04-14'), None),
+        ('nug', 'NUG', icon + 'GoldenNug', 'nug', ('04-15', '04-30'), 'HODA_STORE_BULLET_NUGS'),
+        ('dragon', 'DRAGON', icon + 'DragonMalvernis', 'dragon', ('08-01', '08-21'), 'HODA_STORE_BULLET_DRAGON_CHANCE'),
+        ('romance', 'ROMANCE', 'gui/store/tex.Voucher_Romance.png', 'romance', ('02-01', '02-20'),
+         'HODA_STORE_BULLET_ROMANCE'),
+        ('wintersend', 'WINTERSEND', icon + 'WintersEndPack', 'wintersend', ('12-10', '01-15'),
+         'HODA_STORE_BULLET_WINTERSEND'),
+        ('harvest', 'HARVEST', 'gui/store/tex.Voucher_Harvest.png', 'harvest', ('10-01', '10-31'), CHANCE_AT),
         ('anniversary', 'ANNIVERSARY', 'gui/store/tex.Voucher_Anniversary.png', 'anniversary', ('12-01', '12-09'),
-         'Шанс на'),
-        ('library', 'LIBRARY', 'gui/store/tex.Voucher_Library.png', 'library', ('09-01', '09-21'), 'Шанс на'),
+         CHANCE_AT),
+        ('library', 'LIBRARY', 'gui/store/tex.Voucher_Library.png', 'library', ('09-01', '09-21'), CHANCE_AT),
     )
     pools = {'goat': GOAT_POOL}
-    for index, (key, loc, art, ticket, dates, text) in enumerate(seasonal):
+    for index, (key, loc, art, ticket, dates, text_key) in enumerate(seasonal):
         pool = pools.get(key)
         rows.append(hero(key, loc, 300 + index * 10, 'UNITS', GREEN, art, [voucher(ticket)],
                          COMMON_TIER if pool else RARE_TIER, pool=pool, opened_counter=2, schedule=season(*dates),
-                         rune_pct=40, rune=(3, 4), bullets=[bullet(text, 4)]))
+                         rune_pct=40, rune=(3, 4), bullets=[bullet(text_key, 4)] if text_key else []))
     rows.append(hero('mac_tir', 'TEMP_MAC_TIR', 380, 'UNITS', GREEN, icon + 'Maryden', gems(75), RARE_TIER,
                      opened_counter=2, schedule=season('06-01', '06-21'), bullets=[bullet(chance, 5)]))
     rows.append(hero('new_release', 'NEW_RELEASE', 390, 'UNITS', GREEN, icon + 'FlashPack', gems(75), RARE_TIER,
@@ -252,14 +274,14 @@ def hero_packs():
     for index, (key, loc, art, price, count, tier, legendary, epic) in enumerate(paid):
         rows.append(hero(key, loc, 400 + index * 10, 'FEATURED', FEATURED, art, gems(price), tier, count=count,
                          opened_counter=3, legendary=legendary, epic=epic, rune_pct=100, rune=(3, 5),
-                         rune_count=count, gear_pct=40, gear=(2, 5), bullets=[bullet('Гарантировано', 5)]))
+                         rune_count=count, gear_pct=40, gear=(2, 5), bullets=[bullet(GUARANTEED, 5)]))
     flash = ('FLASH', 'FLASH_BLACK_FRIDAY', 'FLASH_DRAGON_HUNT', 'FLASH_EXCLUSIVELY', 'FLASH_FINE_DWARVEN_CRAFTS',
              'FLASH_FIREWORKS', 'FLASH_GOOD_COMPANY', 'FLASH_STAR_STRUCK', 'FLASH_STOCKING_STUFFERS',
              'FLASH_UNIVERSITY_SUPPLIES', 'FLASH_VALENTINES_GIFTS')
     for index, loc in enumerate(flash):
         rows.append(hero(loc.lower(), loc, 500 + index, 'FEATURED', FEATURED, icon + 'FlashPack', gems(90), RARE_TIER,
                          count=2, opened_counter=2, epic=1, rotation=weekly(index), rune_pct=100, rune=(3, 4),
-                         rune_count=2, gear_pct=25, gear=(2, 4), bullets=[bullet('Только на этой неделе!', 4)]))
+                         rune_count=2, gear_pct=25, gear=(2, 4), bullets=[bullet(THIS_WEEK_ONLY, 4)]))
     return rows
 
 
@@ -267,71 +289,55 @@ def rune_packs():
     knowledge = ['rune-knowledge']
     return [
         rune('speed_kills', 'SPEED_KILLS_RUNE', 610, GREEN, 'cache:tex.Store_IconSpeedRune', [offer('gems', 13)],
-             [slot(['rune-initiative'], 5, 6), slot(RUNE_FAMILIES[:3], 4, 5), slot(RUNE_FAMILIES[:3], 4, 5)],
-             [bullet('Гарантирована руна скорости!')], 'Руна скорости и две другие руны.'),
+             [slot(['rune-initiative'], 5, 6), slot(RUNE_FAMILIES[:3], 4, 5), slot(RUNE_FAMILIES[:3], 4, 5)], []),
         rune('ancient_lore', 'ANCIENT_LORE_RUNE', 620, GREEN, 'cache:tex.Store_IconXPRune', [offer('gems', 13)],
-             [slot(knowledge, 5, 6), slot(knowledge, 4, 5), slot(knowledge, 4, 5)],
-             [bullet('3 руны знаний')], 'Три руны знаний.'),
+             [slot(knowledge, 5, 6), slot(knowledge, 4, 5), slot(knowledge, 4, 5)], []),
         rune('grab_bag', 'GRAB_BAG_RUNE', 630, GOLD, 'cache:tex.Store_IconRuneWIsp', [offer('gold', 10000)],
-             [slot(knowledge, 3, 5), slot(RUNE_FAMILIES, 3, 5), slot(RUNE_FAMILIES, 3, 5)],
-             [bullet('3 редкие или лучше руны')], 'Три руны редкого качества или выше.'),
+             [slot(knowledge, 3, 5), slot(RUNE_FAMILIES, 3, 5), slot(RUNE_FAMILIES, 3, 5)], []),
         rune('legendary_runes', 'LEGENDARY_RUNE', 640, CHAMPION_GOLD, 'cache:tex.Store_RuneCert', [offer('gems', 120)],
-             [slot([], 5, 5), slot([], 5, 5), slot([], 5, 5)],
-             [bullet('3 легендарные руны', 5)], 'Три легендарные руны.'),
+             [slot([], 5, 5), slot([], 5, 5), slot([], 5, 5)], []),
         rune('prestige_runes', 'PRESTIGE_RUNE', 650, CHAMPION_GOLD, 'cache:tex.Store_IconGoldRune', [offer('gems', 150)],
-             [slot([], 7, 7)], [bullet('1 престижная руна', 5)], 'Одна престижная руна для особой ячейки отряда.'),
+             [slot([], 7, 7)], [bullet('HODA_STORE_BULLET_PRESTIGE_RUNE', 5)], info='HODA_PRESTIGE_RUNE_PACK_INFO'),
     ]
 
 
 def gear_packs():
     return [
         gear('peasant', 'PEASANT_GEAR', 700, BRONZE, 'gui/gear/tex.Ico_Gear_QunariWaraxe.png', [offer('gold', 2000)], 1, (1, 2),
-             [bullet('Шанс на', 2)], '1 предмет снаряжения.'),
+             [bullet(CHANCE_AT, 2)]),
         gear('novice', 'NOVICE_GEAR', 710, GREEN, 'gui/gear/tex.Ico_Gear_QunariWaraxe.png', [offer('gold', 30000)], 1, (1, 3),
-             [bullet('Шанс на', 3)], '1 предмет снаряжения.'),
+             [bullet(CHANCE_AT, 3)]),
         gear('journeyman', 'JOURNEYMAN_GEAR', 720, CHAMPION_GOLD, 'gui/gear/tex.Ico_Gear_TomeOfKoslun.png', [offer('gems', 22)], 2,
-             (2, 3), [bullet('Шанс на', 4)], '2 предмета снаряжения.', tome_pct=2),
+             (2, 3), [bullet(CHANCE_AT, 4)], tome_pct=2),
         gear('merchant', 'MERCHANT_GEAR', 730, CHAMPION_GOLD, 'gui/gear/tex.Ico_Gear_TomeOfRifts.png', [offer('gems', 35)], 3,
-             (2, 4), [bullet('Шанс на', 4)], '3 предмета снаряжения.', tome_pct=5),
+             (2, 4), [bullet(CHANCE_AT, 4)], tome_pct=5),
         gear('masterwork', 'MASTERWORK_GEAR', 740, CHAMPION_GOLD, 'gui/gear/tex.Ico_Gear_BowOfTheRighteous.png', [offer('gems', 55)], 3,
-             (3, 5), [bullet('Гарантировано', 5)], '3 предмета снаряжения.', tome_pct=10),
+             (3, 5), [bullet(GUARANTEED, 5)], tome_pct=10),
         gear('armory', 'ARMORY_GEAR', 750, GOLD, 'gui/gear/tex.Ico_Gear_AxeOfTheDragonHunter.png', [offer('gems', 150)], 5, (4, 6),
-             [bullet('Гарантировано', 5)], '5 предметов снаряжения.', tome_pct=25),
+             [bullet(GUARANTEED, 5)], tome_pct=25),
     ]
 
 
-def pack_info(pack, russian, original):
-    key = f"{pack['loc_id']}_PACK_INFO"
-    text = original.get(key) or pack.pop('info_ru') or russian.get(key)
-    pack.pop('info_ru', None)
-    if text:
-        return text
-    count = pack.get('hero_count', 1)
-    return f'Дает героев: {count}. Как минимум {RARITY_RU[pack["minimum_rarity"]]} боец.'
-
-
-RARITY_RU = {'Common': 'обычный', 'Uncommon': 'необычный', 'Rare': 'редкий', 'Epic': 'эпический',
-             'Legendary': 'легендарный'}
-
-
-def original_localization():
-    rows = ORIGINAL_LOCALIZATION.read_text(encoding='utf-8').splitlines()
-    return dict(row.split('|', 1) for row in rows if '|' in row)
-
-
-def build(russian, original):
+def build():
     packs = [tutorial_consume_pack()] + hero_packs() + rune_packs() + gear_packs()
-    for pack in packs:
-        pack['name_ru'] = russian.get(f"{pack['loc_id']}_PACK_NAME") or pack.get('name_ru') or pack['id']
-        pack['info_ru'] = pack_info(pack, russian, original)
     return {
         'version': 3,
-        'balance_note_ru': BALANCE_NOTE,
+        'balance_note': BALANCE_NOTE,
         'flash_days': WEEKLY_FLASH_DAYS,
         'vouchers': [{'id': key, 'icon': icon} for key, icon in VOUCHERS],
         'gem_skus': GEM_SKUS,
         'packs': packs,
     }
+
+
+def text_keys(catalog):
+    for pack in catalog['packs']:
+        yield from (pack[field] for field in ('name_key', 'info_key', 'description_key') if field in pack)
+        yield from (row['text_key'] for row in pack['bullets'])
+    for sku in catalog['gem_skus']:
+        yield f"{sku['id']}_cost"
+        if 'banner' in sku:
+            yield sku['banner']
 
 
 def validate(catalog):
@@ -355,6 +361,9 @@ def validate(catalog):
                 errors.append(f"{pack['id']}: fixed hero {unit} is not in the catalog")
         if pack['kind'] == 'hero' and sum(pack['weights'].values()) != 10000:
             errors.append(f"{pack['id']}: weights do not total 10000")
+        if not pack['bullets'] and 'description_key' not in pack:
+            errors.append(f"{pack['id']}: needs a description or a bullet")
+    errors += [f'unknown localization key {key}' for key in economy.unknown_keys(text_keys(catalog))]
     return errors
 
 
@@ -375,8 +384,7 @@ def main():
     parser.add_argument('--check', action='store_true', help='fail if the catalog on disk is stale')
     parser.add_argument('--art', action='store_true', help='also rebuild the git-ignored store art')
     args = parser.parse_args()
-    russian = json.loads(LOCALIZATION.read_text(encoding='utf-8'))
-    catalog = build(russian, original_localization())
+    catalog = build()
     errors = validate(catalog)
     if errors:
         print('\n'.join(errors), file=sys.stderr)

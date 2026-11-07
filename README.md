@@ -34,7 +34,8 @@ original object; any other string is a file path.
 ## Custom heroes
 
 A custom hero is a new hero derived from a shipped one. Its spec lives in `data/custom_heroes/<name>.json`:
-`based_on` names the shipped hero, `character` overrides catalog fields (name, Russian name, `obtainable`),
+`based_on` names the shipped hero, `character` overrides catalog fields (name, `obtainable`; the displayed name comes
+from `HODA_UNIT_<ID><tier>` in `data/localization/heroes/`),
 `stat_scale` scales power and health, and `look` describes the new model. `python3 tools/build_custom_heroes.py`
 writes the rows to `data/custom_heroes.json`, which the game appends to the hero catalog. A custom hero keeps its
 base hero's ability, passives, ability VFX, audio and XP tables, and has its own name, stats, models and portraits.
@@ -118,6 +119,28 @@ attaches a universal macOS app, a Linux x86-64 binary and a Windows x86-64 execu
 carry no game data and download it on first launch. Pushing a tag such as `v0.2.0` runs the same builds and publishes the three packages as a GitHub
 Release named after the tag.
 
+## Language and settings
+
+The game starts in the system language (macOS preferred languages, the Windows display language, or `LANGUAGE`,
+`LC_ALL`, `LC_MESSAGES` and `LANG` on Linux) when the original 4.4.0 cache has it: English, French, German, Italian,
+Spanish, Brazilian Portuguese, Dutch, Russian, Japanese, Korean and Simplified or Traditional Chinese. Anything else
+falls back to English, then Russian. `HOD_LANGUAGE=<code>` (`en`, `fr`, `de`, `ja`, `zh-hant`, ...) overrides
+both the system and the saved choice. The gear button in the top bar opens 4.4.0's `GameOptionsPopupV`: Audio
+Settings (music and sound effects on/off), Language (5.4.4's `SelectLanguagePopupV`; picking a language reloads the
+game in it) and Toggle Fullscreen. The choices live in `settings.json` next to the save.
+
+Text comes from the original `Loc_*.txt` tables. Strings the original game lacks live in
+`data/localization/<area>/Loc_*.txt`, one file per language with `HODA_`-prefixed keys; they load after the original
+table and win over it. `python3 tools/validate_localization.py` (part of `make test`) checks that every area has all
+twelve languages with the same keys and placeholders, that every key the C sources look up exists, and that no C
+literal outside the debug harness holds Russian text. `HOD_SHOT_SCREEN=options`, `options_audio` and
+`options_language` render the settings popup.
+
+The game's font, DAmFont, covers Latin, Cyrillic, Japanese and Korean but not every Chinese character; the rest come
+from a system CJK font (Hiragino Sans GB or STHeiti on macOS, Microsoft YaHei or JhengHei on Windows, Noto Sans CJK
+or WenQuanYi on Linux), merged into the same glyph atlas, as the original client fell back to the device font. Lines
+break between CJK characters.
+
 ## Downloaded game data
 
 When no `client-additional-data/` sits next to the game (a CI build, or any copy without `make dist` data), the game
@@ -127,7 +150,7 @@ Windows. Saves and `account.dat` live there too. On every launch it reads `manif
 in at build time; `HOD_CONTENT_URL` overrides it), downloads only the packs it doesn't have yet, checks their SHA-256,
 unpacks them and deletes files that later versions dropped. Interrupted downloads resume. Without a connection it
 starts with the data it already has. `HOD_CONTENT_DIR=<folder>` uses another folder and forces downloading even in a
-checkout. The APK and core packs install first; from then on the download screen is 5.4.4's `LoadingScreenV` (splash, spinner, `loader_message` plate with the original Russian messages, red bar, `МБ из` counter and percentage) and errors use the game's connection and download-error popups. Downloads use libcurl on macOS and Linux (loaded at runtime, so any distro's `libcurl.so.4` works) and
+checkout. The window stays black until the APK and core packs are installed; from then on the download screen is 5.4.4's `LoadingScreenV` (splash, spinner, `loader_message` plate with the original messages in the player's language, red bar, megabyte counter and percentage) and errors use the game's connection and download-error popups. A failure before that art arrives retries every 5 seconds; Escape quits. Downloads use libcurl on macOS and Linux (loaded at runtime, so any distro's `libcurl.so.4` works) and
 WinHTTP on Windows.
 
 `make content` publishes the data from this checkout to the R2 bucket `CONTENT_BUCKET` (default `hoda-assets`)

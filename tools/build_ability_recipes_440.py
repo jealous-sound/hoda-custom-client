@@ -646,7 +646,6 @@ def build(
         for row in json.loads(recipes_path.read_text())["recipes"]
     }
     loc_en = load_pipe_localization(localization_dir / "Loc_ENG_US.txt")
-    loc_ru = load_pipe_localization(localization_dir / "Loc_RUS_RU.txt")
     key_mapping = load_pipe_localization(localization_dir / "Loc_Key_Mapping.txt")
 
     grouped: dict[int, list[dict[str, Any]]] = defaultdict(list)
@@ -680,7 +679,6 @@ def build(
         specialty_set = set(specialties)
         character_id = base_character_id(rows)
         loc_key_en, client_text = resolve_localization(loc_en, key)
-        loc_key_ru, client_text_ru = resolve_localization(loc_ru, key)
         mapping_key = ""
         mapped_ability_id = ""
         reference_key = ""
@@ -696,7 +694,6 @@ def build(
             source = "client_4.4_localization"
             resolution_mode = "parsed_4.4_prose"
             semantic_text = client_text
-            semantic_text_ru = client_text_ru
             mechanics = parsed["mechanics"]
             steps = parsed["steps"]
             ambiguous = list(parsed.get("ambiguous", []))
@@ -706,13 +703,10 @@ def build(
             mapped_loc_key_en, mapped_text = resolve_localization(
                 loc_en, mapped_ability_id
             )
-            _, mapped_text_ru = resolve_localization(loc_ru, mapped_ability_id)
             if mapped_ability_id and mapped_text:
                 mapped_ability_keys.add(key)
                 loc_key_en, client_text = mapped_loc_key_en, mapped_text
-                client_text_ru = mapped_text_ru
                 semantic_text = client_text
-                semantic_text_ru = client_text_ru
                 source = "client_4.4_key_mapping"
                 established = established_recipes.get(mapped_ability_id.upper())
                 if (
@@ -743,7 +737,6 @@ def build(
                 unresolved_ability_keys.add(key)
                 source = "specialty_fallback"
                 resolution_mode = "deterministic_specialty_fallback"
-                semantic_text_ru = ""
                 mechanics, semantic_text, steps, ambiguous = fallback_semantics(
                     key=key,
                     target=target,
@@ -768,14 +761,12 @@ def build(
         definition_ids = [int(row["id"]) for row in rows]
         passive_key = first.get("equipped_rune_description_key", "")
         passive_loc_key_en, passive_text = resolve_localization(loc_en, passive_key)
-        passive_loc_key_ru, passive_text_ru = resolve_localization(loc_ru, passive_key)
         if passive_key:
             passive_keys.add(passive_key)
             if passive_text:
                 localized_passive_keys.add(passive_key)
         weight_key = first.get("target_weight_description_key", "")
         weight_loc_key_en, weight_text = resolve_localization(loc_en, weight_key)
-        weight_loc_key_ru, weight_text_ru = resolve_localization(loc_ru, weight_key)
 
         specialty_signatures = {tuple(row.get("specialty", [])) for row in rows}
         entry: dict[str, Any] = {
@@ -795,9 +786,7 @@ def build(
             "mapped_ability_id": mapped_ability_id,
             "localization_key": loc_key_en,
             "localized_text": client_text,
-            "localized_text_ru": client_text_ru,
             "text": semantic_text,
-            "text_ru": semantic_text_ru,
             "resolution_source": source,
             "resolution_mode": resolution_mode,
             "reference_recipe_key": reference_key,
@@ -811,15 +800,11 @@ def build(
                 "key": passive_key,
                 "localization_key": passive_loc_key_en,
                 "text": passive_text,
-                "localization_key_ru": passive_loc_key_ru,
-                "text_ru": passive_text_ru,
             },
             "target_weight": {
                 "key": weight_key,
                 "localization_key": weight_loc_key_en,
                 "text": weight_text,
-                "localization_key_ru": weight_loc_key_ru,
-                "text_ru": weight_text_ru,
             },
         }
         if len(specialty_signatures) > 1:
@@ -841,7 +826,6 @@ def build(
         "sources": {
             "units": relative(units_path),
             "localization_en": relative(localization_dir / "Loc_ENG_US.txt"),
-            "localization_ru": relative(localization_dir / "Loc_RUS_RU.txt"),
             "localization_key_mapping": relative(
                 localization_dir / "Loc_Key_Mapping.txt"
             ),

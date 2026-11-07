@@ -27,12 +27,14 @@
 #include "app_bundle.c"
 #include "utils.c"
 #include "sha256.c"
+#include "settings.c"
 #include "content_update.c"
 #include "backend.c"
 #include "server_actions.c"
 #include "ui.c"
-#include "assets.c"
 #include "loc.c"
+#include "font_merge.c"
+#include "assets.c"
 #include "loading_screen.c"
 #include "character.c"
 #include "consume.c"
@@ -46,6 +48,7 @@
 #include "tutorial_hooks.c"
 #include "button.c"
 #include "energy_dialog.c"
+#include "options_popup.c"
 #include "hud.c"
 #include "home_ui.c"
 #include "home_squad.c"
@@ -93,9 +96,9 @@
 #include "game.c"
 #include "debug_harness.c"
 
-static void RunGame(void) {
+static bool RunGameSession(void) {
     Game game = {0};
-    if (!GameInitialize(&game)) return;
+    if (!GameInitialize(&game)) return false;
 
     DebugShot shot = DebugShotFromEnvironment();
     float mouse_x = 0.0f, mouse_y = 0.0f;
@@ -113,10 +116,16 @@ static void RunGame(void) {
         bool captured = shot.output && DebugShotCapture(&shot);
         EndDrawing();
 
-        if (captured) break;
+        if (captured || game.restart_requested) break;
     }
 
+    bool restart = game.restart_requested;
     GameDestroy(&game);
+    return restart;
+}
+
+static void RunGame(void) {
+    while (RunGameSession()) {}
 }
 
 static void RunSelectedMode(void) {

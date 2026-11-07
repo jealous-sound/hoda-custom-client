@@ -1,0 +1,6 @@
+HODA_PLAY_MODE_LOCAL|Локальная игра
+HODA_PLAY_MODE_ONLINE|Онлайн-игра
+HODA_PLAY_MODE_LOCAL_HINT|Сохранения на этом компьютере
+HODA_PLAY_MODE_ONLINE_HINT|Сохранения на сервере, гильдии и чат
+HODA_OPTIONS_LANGUAGE|Язык
+HODA_LANGUAGE_SYSTEM|Язык системы

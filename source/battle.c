@@ -2,6 +2,7 @@
 typedef enum { BK_LIGHTMAP, BK_GROUND, BK_CUTOUT, BK_BACKDROP, BK_GRASS, BK_FOG } BattleKind;
 
 #define BATTLE_MAX_MESH 128
+#define BATTLE_AMBIENCE_VOLUME 0.5f
 
 static const char *const BATTLE_VS =
     "#version 330\n"
@@ -730,7 +731,6 @@ void BattleInitialize(Battle *b, const char *mesh_dir) {
     for (int i = 0; i < 100; i++) BattleVfxUpdate(b, 0.05f);
 
     b->ambience = GuiMusic(MUS_BATTLE_AMBIENCE);
-    SetMusicVolume(b->ambience, 0.5f);
     b->music_intro = GuiMusic(MUS_BATTLE_INTRO);
     b->music_loop = GuiMusic(MUS_BATTLE_LOOP);
     b->music_started = false;
@@ -3371,8 +3371,7 @@ static bool BattleSfxPlay(Battle *b, const char *name, float volume) {
     }
     if (volume < 0.0f) volume = 0.0f;
     if (volume > 1.0f) volume = 1.0f;
-    SetSoundVolume(*voice, volume);
-    PlaySound(*voice);
+    AudioPlaySound(*voice, volume);
     return true;
 }
 
@@ -3699,27 +3698,28 @@ void BattleUpdate(Battle *b, float dt) {
     b->filter_amt += (fgoal - b->filter_amt) * fminf(1.0f, 5.0f * dt);
     if (b->squads_loaded) BattleSquadsUpdate(&b->squads, dt);
     if (!IsMusicStreamPlaying(b->ambience)) PlayMusicStream(b->ambience);
+    SetMusicVolume(b->ambience, BATTLE_AMBIENCE_VOLUME * AudioSoundGain());
     UpdateMusicStream(b->ambience);
 
     if (b->combat_music_state == 1) {
         if (IsMusicStreamPlaying(b->combat_intro))
-            UpdateMusicStream(b->combat_intro);
+            AudioUpdateMusic(b->combat_intro, 1.0f);
         else {
             PlayMusicStream(b->combat_loop);
             b->combat_music_state = 2;
         }
     } else if (b->combat_music_state == 2) {
-        UpdateMusicStream(b->combat_loop);
+        AudioUpdateMusic(b->combat_loop, 1.0f);
     } else if (b->combat_music_state == 3) {
-        UpdateMusicStream(b->result_music);
+        AudioUpdateMusic(b->result_music, 1.0f);
     } else if (!b->music_started) {
         PlayMusicStream(b->music_intro);
         b->music_started = true;
     } else if (IsMusicStreamPlaying(b->music_intro)) {
-        UpdateMusicStream(b->music_intro);
+        AudioUpdateMusic(b->music_intro, 1.0f);
     } else {
         if (!IsMusicStreamPlaying(b->music_loop)) PlayMusicStream(b->music_loop);
-        UpdateMusicStream(b->music_loop);
+        AudioUpdateMusic(b->music_loop, 1.0f);
     }
 
     if (!FlycamEnabled()) {

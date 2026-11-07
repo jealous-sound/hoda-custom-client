@@ -15,6 +15,37 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 CATALOG = os.path.join(HERE, "characters.json")
 REFERENCE_DIR = os.path.join(HERE, "..", ".claude", "skills", "hoda-reference", "data")
 UNIT_DATA = os.path.join(HERE, "HoDA_character_info", "UnitData.json")
+ORIGINAL_LOCALIZATION_DIR = os.path.join(
+    HERE, "Heroes-of-Dragon-Age-v4-4-0-cache-androidp1", "com.ea.game.dragonage_row", "cache", "Localization"
+)
+PROJECT_LOCALIZATION_DIR = os.path.join(HERE, "..", "data", "localization")
+LANGUAGE_FILES = (
+    "Loc_ENG_US.txt",
+    "Loc_FRE_FR.txt",
+    "Loc_GER_DE.txt",
+    "Loc_ITA_IT.txt",
+    "Loc_SPA_XM.txt",
+    "Loc_POR_BR.txt",
+    "Loc_DUT_NL.txt",
+    "Loc_RUS_RU.txt",
+    "Loc_JPN_JP.txt",
+    "Loc_KOR_KR.txt",
+    "Loc_CHS_CN.txt",
+    "Loc_CHT_CN.txt",
+)
+RUSSIAN_FILE = "Loc_RUS_RU.txt"
+PROJECT_KEY_PREFIX = "HODA_"
+TIERS = ("I", "II", "III", "IV")
+DESCRIPTION_CAPACITY = 1280
+INFO_CAPACITY = 320
+FACTIONS_CAPACITY = 128
+GROUPS_CAPACITY = 256
+FACTION_KEYS = (
+    (1, "UNIT_DETAIL_FACTION_BLACK"),
+    (2, "UNIT_DETAIL_FACTION_WHITE"),
+    (4, "UNIT_DETAIL_FACTION_RED"),
+    (8, "UNIT_DETAIL_FACTION_BLUE"),
+)
 
 
 def fail(message: str) -> None:
@@ -25,15 +56,84 @@ def localized_faction(source: dict, table: dict[str, str]) -> str:
     if source.get("Giant"):
         return table.get("UNIT_DETAIL_FACTION_GIANT", "")
     parts = []
-    for flag, key in (
-        (1, "UNIT_DETAIL_FACTION_BLACK"),
-        (2, "UNIT_DETAIL_FACTION_WHITE"),
-        (4, "UNIT_DETAIL_FACTION_RED"),
-        (8, "UNIT_DETAIL_FACTION_BLUE"),
-    ):
+    for flag, key in FACTION_KEYS:
         if source.get("Faction", 0) & flag:
             parts.append(table.get(key, ""))
     return ", ".join(parts)
+
+
+def read_pipe_table(path: str) -> dict[str, str]:
+    table: dict[str, str] = {}
+    if not os.path.isfile(path):
+        return table
+    with open(path, encoding="utf-8-sig") as src:
+        for line in src:
+            key, separator, value = line.rstrip("\r\n").partition("|")
+            if separator:
+                table[key.upper()] = value
+    return table
+
+
+def runtime_table(name: str) -> dict[str, str]:
+    table = read_pipe_table(os.path.join(ORIGINAL_LOCALIZATION_DIR, name))
+    if os.path.isdir(PROJECT_LOCALIZATION_DIR):
+        for area in sorted(os.listdir(PROJECT_LOCALIZATION_DIR)):
+            table.update(read_pipe_table(os.path.join(PROJECT_LOCALIZATION_DIR, area, name)))
+    return table
+
+
+def loc_text(table: dict[str, str], key: str) -> str:
+    if not key:
+        return ""
+    return table.get(key.upper()) or table.get(f"{PROJECT_KEY_PREFIX}{key}".upper(), "")
+
+
+def resolved_tier_name(table: dict[str, str], uid: str, tier: str) -> str:
+    return loc_text(table, f"{uid}{tier}") or table.get(uid.upper(), "")
+
+
+def ability_text(table: dict[str, str], key: str) -> str:
+    upper = key.upper()
+    return table.get(f"{upper}_DESCRIPTION") or table.get(upper) or table.get(f"{PROJECT_KEY_PREFIX}{upper}", "")
+
+
+def runtime_faction(row: dict, table: dict[str, str]) -> str:
+    parts = [table.get("UNIT_DETAIL_FACTION_GIANT", "")] if row.get("giant") else []
+    for flag, key in FACTION_KEYS:
+        if (row.get("faction_id") or 0) & flag:
+            parts.append(table.get(key, ""))
+    return ", ".join(parts)
+
+
+def localization_problems(row: dict, language: str, table: dict[str, str]) -> list[str]:
+    uid = row["id"]
+    problems = []
+    for tier in row.get("tiers", {}):
+        if not resolved_tier_name(table, uid, tier):
+            problems.append(f"{language}: tier {tier} name is not localized")
+    ability = ability_text(table, row["ability"]["key"])
+    rune = loc_text(table, row.get("equipped_rune", ""))
+    target = loc_text(table, row.get("target_weight", ""))
+    if not ability:
+        problems.append(f"{language}: ability {row['ability']['key']!r} is not localized")
+    if row.get("equipped_rune") and not rune:
+        problems.append(f"{language}: equipped rune {row['equipped_rune']!r} is not localized")
+    if row.get("target_weight") and not target:
+        problems.append(f"{language}: target weight {row['target_weight']!r} is not localized")
+    titles = [loc_text(table, f"GALLERY_{group}_TITLE") for group in row.get("groups", [])]
+    if not all(titles):
+        problems.append(f"{language}: a group has no localized display name")
+    description = "  ".join(value for value in (ability, rune, target) if value)
+    if len(description.encode()) >= DESCRIPTION_CAPACITY:
+        problems.append(f"{language}: localized description exceeds the runtime buffer")
+    factions = runtime_faction(row, table)
+    groups = ", ".join(titles)
+    info = table.get("UNIT_DETAIL_FACTION_GROUP_LABEL_FORMAT", "").replace("{0}", factions).replace("{1}", groups)
+    if len(factions.encode()) >= FACTIONS_CAPACITY or len(groups.encode()) >= GROUPS_CAPACITY:
+        problems.append(f"{language}: localized faction or group list exceeds the runtime buffer")
+    if len(info.encode()) >= INFO_CAPACITY:
+        problems.append(f"{language}: localized faction and group label exceeds the runtime buffer")
+    return problems
 
 
 with open(CATALOG) as src:
@@ -44,9 +144,8 @@ with open(os.path.join(REFERENCE_DIR, "characters.json")) as src:
     reference_characters = json.load(src)
 with open(os.path.join(REFERENCE_DIR, "localization", "Loc_ENG_US.json")) as src:
     reference_loc_en = json.load(src)
-with open(os.path.join(REFERENCE_DIR, "localization", "Loc_RUS_RU.json")) as src:
-    reference_loc_ru = json.load(src)
 characters = root.get("characters", [])
+runtime_tables = {name: runtime_table(name) for name in LANGUAGE_FILES}
 
 if root.get("version") != 2:
     fail(f"expected schema version 2, got {root.get('version')!r}")
@@ -64,71 +163,57 @@ for row in characters:
     ability = row.get("ability", {})
     for field, value in (
         ("name", row.get("name")),
-        ("name_ru", row.get("name_ru")),
         ("ability.key", ability.get("key")),
         ("ability.text", ability.get("text")),
-        ("ability.text_ru", ability.get("text_ru")),
     ):
         if not value:
             fail(f"{uid}: empty {field}")
-    if not re.search(r"[А-Яа-яЁё]", row["name_ru"]):
-        fail(f"{uid}: Russian name is not localized")
-    if not re.search(r"[А-Яа-яЁё]", ability["text_ru"]):
-        fail(f"{uid}: Russian ability is not localized")
+    if any(field.endswith("_ru") for field in list(row) + list(ability)):
+        fail(f"{uid}: display text must come from the localization tables, not *_ru fields")
     if ability["text"] != normalize_text(ability["text"]):
         fail(f"{uid}: English ability spacing is not normalized")
-    if ability["text_ru"] != normalize_text(ability["text_ru"]):
-        fail(f"{uid}: Russian ability spacing is not normalized")
+    for language, table in runtime_tables.items():
+        problems = localization_problems(row, language, table)
+        if problems:
+            fail(f"{uid}: {problems[0]}")
+    russian = runtime_tables[RUSSIAN_FILE]
+    if not re.search(r"[А-Яа-яЁё]", resolved_tier_name(russian, uid, row["max_tier"])):
+        fail(f"{uid}: Russian name is not localized")
+    if not re.search(r"[А-Яа-яЁё]", ability_text(russian, ability["key"])):
+        fail(f"{uid}: Russian ability is not localized")
     if ability.get("target") not in {"One", "Row", "Column", "All"}:
         fail(f"{uid}: invalid target {ability.get('target')!r}")
 
     groups = source.get("Groups", [])
     expected_groups_en = [reference_loc_en.get(f"GALLERY_{group}_TITLE".upper(), "") for group in groups]
-    expected_groups_ru = [reference_loc_ru.get(f"GALLERY_{group}_TITLE".upper(), "") for group in groups]
     if row.get("groups") != groups:
         fail(f"{uid}: group identifiers differ from UnitData")
-    if row.get("groups_en") != expected_groups_en or row.get("groups_ru") != expected_groups_ru:
+    if row.get("groups_en") != expected_groups_en:
         fail(f"{uid}: localized groups differ from the complete reference localization")
-    if any(not value for value in expected_groups_en + expected_groups_ru):
+    if any(not value for value in expected_groups_en):
         fail(f"{uid}: a group has no localized display name")
     if row.get("faction_en") != localized_faction(source, reference_loc_en):
         fail(f"{uid}: English faction name differs from the complete reference localization")
-    if row.get("faction_ru") != localized_faction(source, reference_loc_ru):
-        fail(f"{uid}: Russian faction name differs from the complete reference localization")
 
     rune_key = source.get("EquippedRuneDescriptionKey", "")
     target_key = source.get("TargetWeightDescriptionKey", "")
     expected_rune_en = reference_loc_en.get(rune_key.upper(), "")
-    expected_rune_ru = reference_loc_ru.get(rune_key.upper(), "")
     expected_target_en = reference_loc_en.get(target_key.upper(), "")
-    expected_target_ru = reference_loc_ru.get(target_key.upper(), "")
     expected_fields = {
         "equipped_rune": rune_key,
         "equipped_rune_text": expected_rune_en,
-        "equipped_rune_text_ru": expected_rune_ru,
         "target_weight": target_key,
         "target_weight_text": expected_target_en,
-        "target_weight_text_ru": expected_target_ru,
     }
     for field, expected in expected_fields.items():
         if row.get(field) != expected:
             fail(f"{uid}: {field} differs from the complete reference localization")
-    if rune_key and (not expected_rune_en or not expected_rune_ru):
-        fail(f"{uid}: equipped rune {rune_key!r} is not fully localized")
-    if target_key and (not expected_target_en or not expected_target_ru):
-        fail(f"{uid}: target weight {target_key!r} is not fully localized")
-
-    description_ru = "  ".join(value for value in (ability["text_ru"], expected_rune_ru, expected_target_ru) if value)
-    if len(description_ru.encode()) >= 1280:
-        fail(f"{uid}: localized description exceeds the runtime buffer")
-    if len(expected_rune_ru.encode()) >= 768:
-        fail(f"{uid}: localized rune text exceeds the runtime buffer")
-    if len(expected_target_ru.encode()) >= 96:
-        fail(f"{uid}: localized targeting text exceeds the runtime buffer")
+    if rune_key and not expected_rune_en:
+        fail(f"{uid}: equipped rune {rune_key!r} has no English reference text")
+    if target_key and not expected_target_en:
+        fail(f"{uid}: target weight {target_key!r} has no English reference text")
     if any(len(group.encode()) >= 24 for group in groups):
         fail(f"{uid}: group identifier exceeds the runtime buffer")
-    if any(len(group.encode()) >= 64 for group in expected_groups_ru):
-        fail(f"{uid}: localized group exceeds the runtime buffer")
 
     expected = infer_ability_mechanics(ability["text"], row.get("specialties", []))
     mechanics = ability.get("mechanics")
@@ -160,7 +245,7 @@ if set(("CURSE_HEALTH", "STUN")) - set(by_id["UNIT_NECROMANCERDORIAN"]["ability"
 if "Chance for second attack" not in by_id["UNIT_THORNTON"]["ability"]["text"]:
     fail("Thornton's missing source description was not recovered")
 envy = by_id["UNIT_ENVYDEMON"]
-if not envy["equipped_rune_text_ru"].startswith("<color=green>"):
+if not loc_text(runtime_tables[RUSSIAN_FILE], envy["equipped_rune"]).startswith("<color=green>"):
     fail("Envy Demon must display its green equipped-rune description")
 if envy["target_weight"] != "AURA_VERY_ELUSIVE":
     fail("Envy Demon must use the very-elusive targeting description")
@@ -259,8 +344,7 @@ for mechanic, ids in required_mechanics.items():
 
 summary = {
     "characters": len(characters),
-    "localized_names_ru": len(characters),
-    "localized_abilities_ru": len(characters),
+    "localized_languages": len(runtime_tables),
     "unique_ability_keys": len({row["ability"]["key"] for row in characters}),
     "mechanics": {name: mechanic_counts[name] for name in MECHANIC_ORDER},
 }

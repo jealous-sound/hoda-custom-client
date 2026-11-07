@@ -1,0 +1,11 @@
+HODA_NEXUS_EVENT_BREACH_OPENS_AGAIN_TITLE|Die Bresche öffnet sich erneut
+HODA_NEXUS_EVENT_WOODLAND_SPIRITS_TITLE|Waldgeister
+HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLACK_FACTION|Die schwarze Gruppierung erhält 150 % Gesundheit & Stärke.
+HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLUE_FACTION|Die blaue Gruppierung erhält 150 % Gesundheit & Stärke.
+HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_RED_FACTION|Die rote Gruppierung erhält 150 % Gesundheit & Stärke.
+HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_WHITE_FACTION|Die weiße Gruppierung erhält 150 % Gesundheit & Stärke.
+HODA_NEXUS_MAP_BATTLE_COUNT|Schlachten: {0}
+HODA_NEXUS_UNLOCK_START|Starten
+HODA_PVP_NO_BATTLES|Noch keine Schlachten. Kämpfe gegen einen anderen Spieler!
+HODA_PVP_NO_FINISHED_EVENTS|Noch keine abgeschlossenen Ereignisse.
+HODA_PVP_YOU|Du

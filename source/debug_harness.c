@@ -804,6 +804,18 @@ static bool DebugPrepareNamePrompt(Game *game, DebugShot *shot) {
     return true;
 }
 
+static bool DebugPrepareOptions(Game *game, DebugShot *shot) {
+    bool audio = DebugShotIs(shot, "options_audio");
+    bool language = DebugShotIs(shot, "options_language");
+    if (!audio && !language && !DebugShotIs(shot, "options")) return false;
+    game->screen = SCREEN_HOME;
+    if (shot->frames_drawn > 0) return true;
+    OptionsPopupOpen(&game->options);
+    if (audio) game->options.page = OPTIONS_PAGE_AUDIO;
+    if (language) OptionsShowLanguages(&game->options);
+    return true;
+}
+
 static const char *const DEBUG_GUILD_MEMBERS[] = {
     "Hawke",
     "Varric",
@@ -1146,6 +1158,7 @@ static void DebugPrepareGuild(Game *game, DebugShot *shot) {
 
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
     if (DebugPrepareTutorial(game, shot) || DebugPrepareNamePrompt(game, shot)) return;
+    if (DebugPrepareOptions(game, shot)) return;
     if (DebugPrepareLiveGuildFlow(game, shot)) return;
     game->screen = shot->consume_opened ? SCREEN_CONSUME : SCREEN_HEROES;
     if (DebugShotIs(shot, "home")) game->screen = SCREEN_HOME;

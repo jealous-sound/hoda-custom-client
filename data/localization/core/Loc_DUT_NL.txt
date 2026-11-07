@@ -1,0 +1,6 @@
+HODA_PLAY_MODE_LOCAL|Lokaal spel
+HODA_PLAY_MODE_ONLINE|Online spel
+HODA_PLAY_MODE_LOCAL_HINT|Voortgang wordt op deze computer opgeslagen
+HODA_PLAY_MODE_ONLINE_HINT|Voortgang op de server, guilds en chat
+HODA_OPTIONS_LANGUAGE|Taal
+HODA_LANGUAGE_SYSTEM|Systeemtaal

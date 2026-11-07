@@ -515,7 +515,7 @@ static void NewsDrawList(News *news, Quests *quests, const Nexus *nexus, bool en
 static void NewsDrawFeed(News *news, Quests *quests, const Nexus *nexus) {
     bool enabled = news->zoom == NEWS_ZOOM_NONE;
     NewsZoomBegin(news);
-    NewsDrawFrame(LocGetOr("NEWSFEED_TITLE", "Новости"));
+    NewsDrawFrame(LocGet("NEWSFEED_TITLE"));
     NewsDrawFeatured(news, quests, nexus, enabled);
     if (news->view == NEWS_VIEW_FEED) NewsDrawList(news, quests, nexus, enabled);
     NewsZoomEnd();
@@ -556,7 +556,7 @@ static NewsAction NewsDrawMessage(News *news, Quests *quests, const Nexus *nexus
 
     NewsAction action = NEWS_NONE;
     if (message->timing == NEWS_TIMING_ACTIVE) {
-        news->link.label = LocGetOr("INTERSTITIAL_BUTTON_GO", "Перейти");
+        news->link.label = LocGet("INTERSTITIAL_BUTTON_GO");
         Rectangle link = NewsDesignRect(NEWS_POPUP_LINK_X, NEWS_POPUP_LINK_Y, NEWS_POPUP_LINK_W, NEWS_POPUP_LINK_H);
         if (ButtonDrawEx(&news->link, link, true)) {
             news->target_event = message->event;
@@ -596,11 +596,7 @@ static void NewsDrawPvpTicker(News *news, Color tint, bool interactive) {
         frame.x + NEWS_TICKER_TEXT_X, frame.y + NEWS_TICKER_TITLE_Y, NEWS_TICKER_TEXT_W, NEWS_TICKER_TITLE_H
     };
     QuestsDrawFit(
-        GuiFont(FNT_COOL),
-        LocGetOr("INTERSTITIAL_TICKER_TODAYS_EVENT", "Событие дня"),
-        title,
-        24.0f,
-        Fade(NEWS_TEXT, tint.a / 255.0f)
+        GuiFont(FNT_COOL), LocGet("INTERSTITIAL_TICKER_TODAYS_EVENT"), title, 24.0f, Fade(NEWS_TEXT, tint.a / 255.0f)
     );
     char time_text[48], timer[160];
     QuestsShortTime(time_text, sizeof(time_text), PvpEventRemaining(now));
@@ -641,11 +637,7 @@ static void NewsDrawTicker(News *news, Quests *quests, const Nexus *nexus, bool 
         frame.x + NEWS_TICKER_TEXT_X, frame.y + NEWS_TICKER_TITLE_Y, NEWS_TICKER_TEXT_W, NEWS_TICKER_TITLE_H
     };
     QuestsDrawFit(
-        GuiFont(FNT_COOL),
-        LocGetOr("INTERSTITIAL_TICKER_TODAYS_EVENT", "Событие дня"),
-        title,
-        24.0f,
-        Fade(NEWS_TEXT, tint.a / 255.0f)
+        GuiFont(FNT_COOL), LocGet("INTERSTITIAL_TICKER_TODAYS_EVENT"), title, 24.0f, Fade(NEWS_TEXT, tint.a / 255.0f)
     );
     char time_text[48], timer[160];
     QuestsShortTime(time_text, sizeof(time_text), message->seconds);

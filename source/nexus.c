@@ -140,7 +140,6 @@ static void NexusGameChangersLoad(Nexus *n, const char *path) {
         if (event < 0) TraceLog(LOG_FATAL, "Nexus: changer for unknown event %s", JsonStr(item, "event"));
         BattleGameChanger *changer = &n->game_changers[event];
         StrCopy(changer->text_key, sizeof(changer->text_key), JsonStr(item, "text_key"));
-        StrCopy(changer->text_ru, sizeof(changer->text_ru), JsonStr(item, "text_ru"));
         cJSON *effect = NULL;
         cJSON_ArrayForEach(effect, cJSON_GetObjectItemCaseSensitive(item, "effects")) {
             if (changer->effect_count == BATTLE_CHANGER_MAX_EFFECTS)
@@ -182,32 +181,17 @@ void NexusInitialize(Nexus *n, const char *maps_path) {
     n->icons.boss_locked_selected = GuiTex(GUI_NODE_BOSS_LOCKED_ON);
 
     n->retreat = ButtonLoadText(
-        GUI_BTN_GREY,
-        GUI_BTN_GREY_ON,
-        LocGetOr("NEXUS_RETREAT_FROM_MAP", "Выйти с карты"),
-        n->font,
-        (Vector2){0.5f, 0.5f},
-        0.3f
+        GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("NEXUS_RETREAT_FROM_MAP"), n->font, (Vector2){0.5f, 0.5f}, 0.3f
     );
     n->enter = ButtonLoadText(
-        GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGetOr("NEXUS_ENTER_NODE", "Войти"), n->font, (Vector2){0.5f, 0.5f}, 0.32f
+        GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("NEXUS_ENTER_NODE"), n->font, (Vector2){0.5f, 0.5f}, 0.32f
     );
     ButtonSetClickSound(&n->retreat, SND_UI_HOME);
     n->quit_stay = ButtonLoadText(
-        GUI_BTN_GOLD,
-        GUI_BTN_GOLD_ON,
-        LocGetOr("NEXUS_QUIT_SCREEN_STAY_BUTTON", "Отмена"),
-        n->font,
-        (Vector2){0.5f, 0.5f},
-        0.32f
+        GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("NEXUS_QUIT_SCREEN_STAY_BUTTON"), n->font, (Vector2){0.5f, 0.5f}, 0.32f
     );
     n->quit_confirm = ButtonLoadText(
-        GUI_BTN_GREY,
-        GUI_BTN_GREY_ON,
-        LocGetOr("NEXUS_QUIT_SCREEN_RETREAT_BUTTON", "Выйти с карты"),
-        n->font,
-        (Vector2){0.5f, 0.5f},
-        0.3f
+        GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("NEXUS_QUIT_SCREEN_RETREAT_BUTTON"), n->font, (Vector2){0.5f, 0.5f}, 0.3f
     );
 
     cJSON *root = JsonLoadFile(maps_path);
@@ -219,7 +203,7 @@ void NexusInitialize(Nexus *n, const char *maps_path) {
             TraceLog(LOG_FATAL, "Nexus: %s has more than %d events", maps_path, NEXUS_MAX_EVENTS);
         NexusEvent *e = &n->events[n->event_count];
         StrCopy(e->id, sizeof(e->id), JsonStr(event_json, "id"));
-        StrCopy(e->name, sizeof(e->name), JsonStr(event_json, "name"));
+        StrCopy(e->name, sizeof(e->name), LocGet(JsonStr(event_json, "name_key")));
         StrCopy(e->kind, sizeof(e->kind), JsonStr(event_json, "kind"));
         StrCopy(e->prefab, sizeof(e->prefab), JsonStr(event_json, "prefab"));
         StrCopy(e->subtitle, sizeof(e->subtitle), JsonStr(event_json, "subtitle"));
@@ -334,7 +318,7 @@ const BattleGameChanger *NexusEventGameChanger(const Nexus *n, int event) {
 }
 
 const char *NexusGameChangerText(const BattleGameChanger *changer) {
-    return changer->text_key[0] ? LocGet(changer->text_key) : changer->text_ru;
+    return LocGet(changer->text_key);
 }
 
 const NexusEvent *NexusEventAt(const Nexus *n, int index) {
@@ -359,18 +343,18 @@ bool NexusRunComplete(const Nexus *n, const PlayerNexusRun *run) {
 
 const char *NexusDifficultyTitle(const NexusDifficulty *d) {
     static const struct {
-        const char *slug, *key, *fallback;
+        const char *slug, *key;
     } titles[] = {
-        {"easy", "Event_Nexus_Easy_Title", "Легко"},
-        {"medium", "Event_Nexus_Medium_Title", "Умеренно"},
-        {"hard", "Event_Nexus_Hard_Title", "Сложно"},
-        {"veryhard", "Event_Nexus_VERYHard_Title", "Очень сложно"},
-        {"insane", "Event_Nexus_Insane_Title", "Безумие"},
-        {"ludicrous", "Event_Nexus_Ludicrous_Title", "Абсурд"},
+        {"easy", "Event_Nexus_Easy_Title"},
+        {"medium", "Event_Nexus_Medium_Title"},
+        {"hard", "Event_Nexus_Hard_Title"},
+        {"veryhard", "Event_Nexus_VERYHard_Title"},
+        {"insane", "Event_Nexus_Insane_Title"},
+        {"ludicrous", "Event_Nexus_Ludicrous_Title"},
     };
     if (!d) return "";
     for (int i = 0; i < (int)(sizeof(titles) / sizeof(titles[0])); i++) {
-        if (strcmp(titles[i].slug, d->difficulty) == 0) return LocGetOr(titles[i].key, titles[i].fallback);
+        if (strcmp(titles[i].slug, d->difficulty) == 0) return LocGet(titles[i].key);
     }
     return d->difficulty;
 }
@@ -631,11 +615,7 @@ static void NexusDrawCompleteBanner(const Nexus *n, float elapsed, float screen_
         (Color){0, 0, 0, (unsigned char)(205.0f * fade)}
     );
     UiDrawTextCentered(
-        n->font,
-        LocGetOr("NEXUS_MAP_COMPLETE", "Завершено"),
-        banner,
-        60.0f,
-        (Color){240, 240, 240, (unsigned char)(255.0f * fade)}
+        n->font, LocGet("NEXUS_MAP_COMPLETE"), banner, 60.0f, (Color){240, 240, 240, (unsigned char)(255.0f * fade)}
     );
 }
 
@@ -698,7 +678,7 @@ static bool NexusDrawQuitDialog(Nexus *n, const PlayerNexusRun *run) {
     Font body = GuiFont(FNT_MENU);
     UiDrawTextCentered(
         n->font,
-        LocGetOr("NEXUS_QUIT_SCREEN_TITLE", "Вы уверены?"),
+        LocGet("NEXUS_QUIT_SCREEN_TITLE"),
         (Rectangle){content.x, content.y, content.width, 48.0f},
         34.0f,
         (Color){235, 232, 220, 255}
@@ -954,7 +934,6 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
             TextFormat("%d", completed),
             TextFormat("%d", d->node_count)
         );
-        if (!label[0]) snprintf(label, sizeof(label), "Пройд. (%d / %d)", completed, d->node_count);
         Vector2 measured = MeasureTextEx(n->font, label, 24.0f, 1.0f);
         DrawTextEx(
             n->font,
@@ -971,18 +950,13 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
         Font body = GuiFont(FNT_MENU);
         float y = lore.y + 190.0f;
         DrawTextEx(
-            body,
-            LocGetOr("NEXUS_MAP_LOOT", "Добыча:"),
-            (Vector2){lore.x + 30.0f, y},
-            20.0f,
-            1.0f,
-            (Color){228, 224, 212, 255}
+            body, LocGet("NEXUS_MAP_LOOT"), (Vector2){lore.x + 30.0f, y}, 20.0f, 1.0f, (Color){228, 224, 212, 255}
         );
         y += 30.0f;
         if (run->escrow_gold == 0 && run->escrow_xp == 0) {
             CampaignDrawWrapped(
                 body,
-                LocGetOr("NEXUS_MAP_NO_LOOT_CTA", "Получайте добычу, побеждая в боях!"),
+                LocGet("NEXUS_MAP_NO_LOOT_CTA"),
                 (Vector2){lore.x + 30.0f, y},
                 17.0f,
                 1.0f,
@@ -1023,14 +997,13 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
         bool playable = n->selected_node == current_step - 1;
         Rectangle enter = {screen_w - 277.0f, screen_h - 76.0f, 270.0f, 67.0f};
         if (n->final_complete) {
-            n->enter.label = LocGetOr("NEXUS_EXIT_MAP", "Выход с карты");
+            n->enter.label = LocGet("NEXUS_EXIT_MAP");
             if (ButtonDrawEx(&n->enter, enter, !UiInputBlocked())) {
                 NexusPlayCompleteSound(n);
                 action = NexusRequestRecap(n, run);
             }
         } else {
-            n->enter.label =
-                run->reset ? LocGetOr("NEXUS_REVIVE_TITLE", "Возродить") : LocGetOr("NEXUS_ENTER_NODE", "Войти");
+            n->enter.label = LocGet(run->reset ? "NEXUS_REVIVE_UI_BUTTON" : "NEXUS_ENTER_NODE");
             if (ButtonDrawEx(&n->enter, enter, interactive) && playable)
                 action = run->reset ? NEXUS_REVIVE : NEXUS_ENTER;
         }

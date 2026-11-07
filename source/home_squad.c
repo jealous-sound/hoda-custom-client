@@ -1064,8 +1064,7 @@ static void HomeSquadPlayUiSound(HomeSquad *squad, int slot) {
         squad->ui_sound[slot] = ResourceLoadSound(squad->ui_sound_ref[slot]);
     }
     if (!IsSoundValid(squad->ui_sound[slot])) return;
-    SetSoundVolume(squad->ui_sound[slot], squad->ui_sound_volume[slot]);
-    PlaySound(squad->ui_sound[slot]);
+    AudioPlaySound(squad->ui_sound[slot], squad->ui_sound_volume[slot]);
 }
 
 static void HomeSquadUnitPlayRandomAttack(HomeSquadUnit *unit) {

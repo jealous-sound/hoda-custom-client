@@ -16,6 +16,9 @@
 #define RUNE_ACTIVATION_FX_LIFT ((Vector3){0.0f, 0.93f, 0.0f})
 #define RUNE_CATALOG_PATH "data/runes.json"
 #define RUNE_RESOURCE_CACHE_PREFIX "cache:"
+#define RUNE_TEXT_KEY_CAPACITY 64
+#define RUNE_VALUE_TEXT_CAPACITY 48
+#define RUNE_VALUE_TEXT_SLOTS 4
 
 typedef enum {
     RUNE_BUFF_POWER,
@@ -50,10 +53,10 @@ typedef enum {
 typedef struct {
     char id[40];
     char family[32];
-    char name_ru[64];
-    char desc_ru[192];
-    char buff_ru[64];
-    char value_ru[24];
+    char name_key[RUNE_TEXT_KEY_CAPACITY];
+    char desc_key[RUNE_TEXT_KEY_CAPACITY];
+    char buff_key[RUNE_TEXT_KEY_CAPACITY];
+    char value_key[RUNE_TEXT_KEY_CAPACITY];
     char icon[96];
     char buff_icon[96];
     char craft_to_id[40];
@@ -158,6 +161,32 @@ int RuneDefIndex(const char *id) {
     return -1;
 }
 
+const char *RuneName(const RuneDef *def) {
+    return LocGet(def->name_key);
+}
+
+const char *RuneDescription(const RuneDef *def) {
+    return LocGet(def->desc_key);
+}
+
+const char *RuneBuffLabel(const RuneDef *def) {
+    return LocGet(def->buff_key);
+}
+
+static void RuneTrimTrailingSpaces(char *text) {
+    for (size_t length = strlen(text); length > 0 && text[length - 1] == ' '; length--) text[length - 1] = '\0';
+}
+
+const char *RuneValueText(const RuneDef *def) {
+    static char texts[RUNE_VALUE_TEXT_SLOTS][RUNE_VALUE_TEXT_CAPACITY];
+    static int next;
+    char *text = texts[next];
+    next = (next + 1) % RUNE_VALUE_TEXT_SLOTS;
+    LocFormatInt(text, RUNE_VALUE_TEXT_CAPACITY, def->value_key, def->value);
+    RuneTrimTrailingSpaces(text);
+    return text;
+}
+
 void RuneCatalogEnsure(void) {
     if (rune_catalog.loaded) return;
     rune_catalog.loaded = true;
@@ -172,10 +201,10 @@ void RuneCatalogEnsure(void) {
         RuneDef *def = &rune_catalog.defs[index++];
         StrCopy(def->id, sizeof(def->id), JsonStr(row, "id"));
         StrCopy(def->family, sizeof(def->family), JsonStr(row, "family"));
-        StrCopy(def->name_ru, sizeof(def->name_ru), JsonStr(row, "name_ru"));
-        StrCopy(def->desc_ru, sizeof(def->desc_ru), JsonStr(row, "desc_ru"));
-        StrCopy(def->buff_ru, sizeof(def->buff_ru), JsonStr(row, "buff_ru"));
-        StrCopy(def->value_ru, sizeof(def->value_ru), JsonStr(row, "value_ru"));
+        StrCopy(def->name_key, sizeof(def->name_key), JsonStr(row, "name_key"));
+        StrCopy(def->desc_key, sizeof(def->desc_key), JsonStr(row, "desc_key"));
+        StrCopy(def->buff_key, sizeof(def->buff_key), JsonStr(row, "buff_key"));
+        StrCopy(def->value_key, sizeof(def->value_key), JsonStr(row, "value_key"));
         StrCopy(def->icon, sizeof(def->icon), JsonStr(row, "icon"));
         StrCopy(def->buff_icon, sizeof(def->buff_icon), JsonStr(row, "buff_icon"));
         StrCopy(def->craft_to_id, sizeof(def->craft_to_id), JsonStr(row, "craft_to"));
@@ -514,7 +543,7 @@ const char *RuneRarityLabel(int rarity) {
         "", "RARITY_COMMON", "RARITY_UNCOMMON", "RARITY_RARE", "RARITY_EPIC", "RARITY_LEGENDARY"
     };
     if (rarity >= 1 && rarity <= 5) return LocGet(keys[rarity]);
-    return rarity == RUNE_PRESTIGE_RARITY ? "Престижный" : "Мифический";
+    return LocGet(rarity == RUNE_PRESTIGE_RARITY ? "HODA_RARITY_PRESTIGE" : "HODA_RARITY_MYTHIC");
 }
 
 Color RuneRarityColor(int rarity) {
@@ -540,7 +569,7 @@ void RuneFormatExpiration(long long seconds, char *dst, int cap) {
     if (seconds < 0) seconds = 0;
     long long days = seconds / NEXUS_SECONDS_PER_DAY;
     if (days > 0)
-        snprintf(dst, cap, "%d дн.", (int)days);
+        StrReplaceToken(dst, (size_t)cap, LocGet(days == 1 ? "DAY" : "DAYS"), "[number]", TextFormat("%d", (int)days));
     else
         RuneFormatClock(seconds, dst, cap);
 }

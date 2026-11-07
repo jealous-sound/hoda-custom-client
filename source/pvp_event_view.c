@@ -493,7 +493,7 @@ static void PvpEventViewDrawLeaderboard(PvpEventView *v, const Player *p, Rectan
             20.0f,
             PVP_EVENT_VIEW_TEXT
         );
-        const char *name = self ? LocGetOr("PVP_YOU", "Вы") : PvpTableEnsure()->bots[entry->bot].name;
+        const char *name = self ? LocGet("HODA_PVP_YOU") : PvpTableEnsure()->bots[entry->bot].name;
         QuestsDrawFit(v->body, name, PvpEventFit(row, 0.265f, 0.5f, 0.45f, 1.0f, 0.0f), 19.0f, PVP_EVENT_VIEW_TEXT);
         PvpEventViewDrawBannerCell(v, row, 0.725f, 0.2f, entry->trophies, PVP_EVENT_VIEW_TEXT);
         if (self) continue;
@@ -512,7 +512,7 @@ static void PvpEventViewDrawLeaderboard(PvpEventView *v, const Player *p, Rectan
         PVP_EVENT_VIEW_DARK
     );
     QuestsDrawFit(
-        v->body, LocGetOr("PVP_YOU", "Вы"), PvpEventFit(mine, 0.25f, 0.5f, 0.4f, 1.0f, 0.0f), 19.0f, PVP_EVENT_VIEW_DARK
+        v->body, LocGet("HODA_PVP_YOU"), PvpEventFit(mine, 0.25f, 0.5f, 0.4f, 1.0f, 0.0f), 19.0f, PVP_EVENT_VIEW_DARK
     );
     PvpEventViewDrawBannerCell(v, mine, 0.71f, 0.25f, p->pvp.event.banners, PVP_EVENT_VIEW_DARK);
 }
@@ -635,7 +635,7 @@ static void PvpEventViewDrawBattlesTab(PvpEventView *v, const PlayerPvp *pvp, Re
     int count = 0;
     for (int i = 0; i < pvp->history_count; i++) count += pvp->history[i].banners > 0;
     if (count == 0) {
-        UiDrawTextCentered(v->body, "Боев пока нет. Сразитесь с другим игроком!", list, 24.0f, PVP_EVENT_VIEW_SOFT);
+        UiDrawTextCentered(v->body, LocGet("HODA_PVP_NO_BATTLES"), list, 24.0f, PVP_EVENT_VIEW_SOFT);
         return;
     }
     float stride = PVP_EVENT_VIEW_BATTLE_ROW_HEIGHT + PVP_EVENT_VIEW_ROW_GAP;

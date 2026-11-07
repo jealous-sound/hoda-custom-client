@@ -81,20 +81,10 @@ void NexusRecapInitialize(NexusRecap *recap) {
     *recap = (NexusRecap){.detail_card = -1};
     Font font = GuiFont(FNT_COOL);
     recap->replay = ButtonLoadText(
-        GUI_BTN_GOLD,
-        GUI_BTN_GOLD_ON,
-        LocGetOr("NEXUS_REWARD_REPLAY_MAP", "Пройти заново"),
-        font,
-        (Vector2){0.5f, 0.5f},
-        0.32f
+        GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("NEXUS_REWARD_REPLAY_MAP"), font, (Vector2){0.5f, 0.5f}, 0.32f
     );
     recap->leave = ButtonLoadText(
-        GUI_BTN_GOLD,
-        GUI_BTN_GOLD_ON,
-        LocGetOr("NEXUS_BUTTON_LOC_STRING", "Задание"),
-        font,
-        (Vector2){0.5f, 0.5f},
-        0.32f
+        GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("NEXUS_BUTTON_LOC_STRING"), font, (Vector2){0.5f, 0.5f}, 0.32f
     );
 }
 
@@ -347,7 +337,7 @@ static void NexusRecapDrawWindow(const NexusRecap *recap) {
     );
     UiDrawTextCentered(
         GuiFont(FNT_COOL),
-        LocGetOr("NEXUS_REWARD_WINDOW_TITLE", "Карта пройдена!"),
+        LocGet("NEXUS_REWARD_WINDOW_TITLE"),
         NexusRecapRect(160.0f, 71.0f, 961.0f, 65.0f),
         29.0f * scale,
         NexusRecapFade(WHITE, fade)
@@ -358,7 +348,7 @@ static NexusRecapAction NexusRecapDrawNavigation(NexusRecap *recap) {
     if (!recap->navigation_visible) return NEXUS_RECAP_NONE;
     UiDrawTextCentered(
         GuiFont(FNT_MENU),
-        LocGetOr("NEXUS_REWARD_WINDOW_INSTRUCTIONS", "Откройте свои награды, нажимая на значки!"),
+        LocGet("NEXUS_REWARD_WINDOW_INSTRUCTIONS"),
         NexusRecapRect(228.0f, 556.0f, 826.0f, 51.0f),
         20.0f * NexusRecapScale(),
         NexusRecapFade((Color){230, 230, 230, 255}, recap->navigation_time / NEXUS_RECAP_NAVIGATION_FADE_TIME)

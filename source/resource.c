@@ -536,6 +536,23 @@ void ResourceUnloadMusic(Music music) {
     }
 }
 
+unsigned char *ResourceLoadFontData(const char *ref, int *data_size) {
+    *data_size = 0;
+    if (ResourceParse(ref).origin == RESOURCE_FILE) return LoadFileData(ref, data_size);
+    unsigned int object_size = 0;
+    unsigned char *object = ResourceLoadObject(ref, UNITY_CLASS_FONT, &object_size);
+    if (!object) return NULL;
+    int size = 0;
+    const unsigned char *data = UnityFontData(object, object_size, &size);
+    unsigned char *copy = data && size > 0 ? MemAlloc((unsigned int)size) : NULL;
+    if (copy) {
+        memcpy(copy, data, (size_t)size);
+        *data_size = size;
+    }
+    MemFree(object);
+    return copy;
+}
+
 Font ResourceLoadFont(const char *ref, int size, int *codepoints, int codepoint_count) {
     unsigned int object_size = 0;
     if (ResourceParse(ref).origin == RESOURCE_FILE) return LoadFontEx(ref, size, codepoints, codepoint_count);

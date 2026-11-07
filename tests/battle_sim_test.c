@@ -2002,13 +2002,16 @@ static void TestBattlesGrantTheirXpToEverySquadHero(void) {
 
     BattleResultsFlow flow;
     BattleResultsFlowInitialize(&flow);
-    BattleResultsFlowStart(&flow, (BattleResultsPresentation){
-        .victory = true,
-        .first_win = win.first_win,
-        .player_level_pre = win.player_level_pre,
-        .player_level_post = win.player_level_post,
-        .squad = win.squad_leveling,
-    });
+    BattleResultsFlowStart(
+        &flow,
+        (BattleResultsPresentation){
+            .victory = true,
+            .first_win = win.first_win,
+            .player_level_pre = win.player_level_pre,
+            .player_level_post = win.player_level_post,
+            .squad = win.squad_leveling,
+        }
+    );
     assert(flow.stage == BATTLE_RESULTS_PLAYER_LEVEL);
     BattleResultsAdvance(&flow);
     for (int i = 0; i < squad_size; i++) {
@@ -2139,6 +2142,58 @@ static void TestPortraitCoverage(void) {
     cJSON_Delete(root);
 }
 
+static const char *TestLocaleFile(const char *locale) {
+    const LocLanguage *language = LocLanguageForLocale(locale);
+    return language ? language->file : NULL;
+}
+
+static void TestSystemLocalesPickTheirOriginalLocalization(void) {
+    assert(!strcmp(TestLocaleFile("en-US"), "Loc_ENG_US.txt"));
+    assert(!strcmp(TestLocaleFile("fr_FR.UTF-8"), "Loc_FRE_FR.txt"));
+    assert(!strcmp(TestLocaleFile("de"), "Loc_GER_DE.txt"));
+    assert(!strcmp(TestLocaleFile("pt-BR"), "Loc_POR_BR.txt"));
+    assert(!strcmp(TestLocaleFile("ru-RU"), "Loc_RUS_RU.txt"));
+    assert(!strcmp(TestLocaleFile("ja-JP"), "Loc_JPN_JP.txt"));
+    assert(!strcmp(TestLocaleFile("zh-Hans-CN"), "Loc_CHS_CN.txt"));
+    assert(!strcmp(TestLocaleFile("zh-Hant-TW"), "Loc_CHT_CN.txt"));
+    assert(!strcmp(TestLocaleFile("zh_TW"), "Loc_CHT_CN.txt"));
+    assert(!strcmp(TestLocaleFile("zh-CN"), "Loc_CHS_CN.txt"));
+    assert(TestLocaleFile("sv-SE") == NULL);
+    assert(TestLocaleFile("english") == NULL);
+}
+
+static void TestFontCoversEveryGlyphOfTheLoadedLanguage(void) {
+    Loc saved = loc;
+    loc = (Loc){0};
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_JPN_JP.txt");
+    static int codepoints[FONT_GLYPH_CAP];
+    int count = FontCodepoints(codepoints, FNT_MENU);
+    assert(count > FONT_DENSE_GLYPHS && count < FONT_GLYPH_CAP);
+    bool found = false;
+    for (int i = 0; i < count; i++) found |= codepoints[i] == 0x30AD;
+    assert(found);
+    LocUnload();
+    loc = saved;
+}
+
+static void TestLocalizationLayersProjectStringsOverTheOriginalTable(void) {
+    Loc saved = loc;
+    loc = (Loc){0};
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_ENG_US.txt");
+    assert(!strcmp(LocGet("OPTIONS_MORE_TITLE"), "More"));
+    assert(!strcmp(LocGet("options_more_title"), "More"));
+    assert(!strcmp(LocGet("HODA_OPTIONS_LANGUAGE"), "Language"));
+    assert(!strcmp(LocGet("HODA_NO_SUCH_KEY"), ""));
+    char text[64];
+    LocFormat1(text, sizeof(text), "OPTIONS_PLAYER_ID", "42");
+    assert(!strcmp(text, "Player ID: 42"));
+    LocUnload();
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_GER_DE.txt");
+    assert(!strcmp(LocGet("HODA_OPTIONS_LANGUAGE"), "Sprache"));
+    LocUnload();
+    loc = saved;
+}
+
 static bool HasNonAscii(const char *text) {
     for (const unsigned char *c = (const unsigned char *)text; *c; c++)
         if (*c >= 0x80) return true;
@@ -2146,8 +2201,17 @@ static bool HasNonAscii(const char *text) {
 }
 
 static bool TestFontIncludesCodepoint(int codepoint) {
-    int codepoints[256];
-    int count = FillRussianFontCodepoints(codepoints);
+    static int codepoints[FONT_GLYPH_CAP];
+    static int count;
+    static const LocEntry *collected_from;
+    static int collected_count;
+    static bool collected;
+    if (!collected || collected_from != loc.entries || collected_count != loc.count) {
+        count = FontCodepoints(codepoints, FNT_MENU);
+        collected = true;
+        collected_from = loc.entries;
+        collected_count = loc.count;
+    }
     for (int i = 0; i < count; i++)
         if (codepoints[i] == codepoint) return true;
     return false;
@@ -2205,7 +2269,40 @@ static void TestRichTextParserFallback(void) {
     assert(TestFontIncludesCodepoint(0x2212));
 }
 
+static void TestCharacterTextResolvesInEveryLanguage(void) {
+    cJSON *root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    for (int language = 0; language < LocLanguageCount(); language++) {
+        char path[LOC_PATH_CAP];
+        LocLanguagePath(LocLanguageAt(language), path, sizeof(path));
+        LocLoad(path);
+        cJSON *entry = NULL;
+        cJSON_ArrayForEach(entry, catalog) {
+            Character ch;
+            Ability ability;
+            CharacterParse(entry, &ch, &ability);
+            for (int tier = 0; tier < TIER_COUNT; tier++)
+                if (ch.has_tier[tier]) assert(CharacterTierName(&ch, (Tier)tier) != ch.name);
+            assert(CharacterAbilityText(&ability) != ability.text);
+            if (ch.equipped_rune[0]) assert(CharacterLocText(ch.equipped_rune)[0]);
+            if (ch.target_weight[0]) assert(CharacterLocText(ch.target_weight)[0]);
+            for (int g = 0; g < ch.group_count; g++) assert(CharacterGroupTitle(ch.groups[g]) != ch.groups[g]);
+            ch.tier = ch.max_tier;
+            ch.level = 1;
+            HeroCard card = {0};
+            HeroCardBuild(&card, &ch);
+            size_t description = strlen(CharacterAbilityText(&ability)) + 2 +
+                                 strlen(CharacterLocText(ch.equipped_rune)) + 2 +
+                                 strlen(CharacterLocText(ch.target_weight));
+            assert(description < sizeof(card.description));
+        }
+        LocUnload();
+    }
+    cJSON_Delete(root);
+}
+
 static void TestCharacterTextCoverage(void) {
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
     cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
     assert(root && JsonInt(root, "version") >= 2);
     cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
@@ -2217,19 +2314,20 @@ static void TestCharacterTextCoverage(void) {
         Character ch;
         Ability ability;
         CharacterParse(entry, &ch, &ability);
-        assert(ch.id[0] && ch.name[0] && ch.name_ru[0] && HasNonAscii(ch.name_ru));
-        assert(ability.key[0] && ability.text[0] && ability.text_ru[0] && HasNonAscii(ability.text_ru));
+        assert(ch.id[0] && ch.name[0] && HasNonAscii(CharacterTierName(&ch, ch.max_tier)));
+        assert(ability.key[0] && ability.text[0] && HasNonAscii(CharacterAbilityText(&ability)));
         assert(ability.mechanics != 0);
         assert(!!(ability.mechanics & ABILITY_ATTACK) != !!(ability.mechanics & ABILITY_ATTACK_NONE));
         ch.tier = TIER_I;
         ch.level = 1;
         HeroCard card = {0};
         HeroCardBuild(&card, &ch);
-        TestRichText(card.info_ru);
-        TestRichText(card.desc_ru);
+        TestRichText(card.info);
+        TestRichText(card.description);
         checked++;
     }
     assert(checked == 676);
+    LocUnload();
 
     Character ch;
     Ability ability;
@@ -3204,6 +3302,31 @@ static void TestCampaignMapRewardSchema(void) {
     cJSON_Delete(maps);
 }
 
+static void TestCampaignAndNexusTextResolves(void) {
+    if (loc.count == 0) LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
+    static const char *const node_fields[] = {"NAME", "DESCRIPTION", "CTA"};
+    cJSON *maps = JsonLoadFile("data/campaign_maps.json");
+    cJSON *chapter = NULL;
+    cJSON_ArrayForEach(chapter, maps) {
+        const char *id = JsonStr(chapter, "id");
+        assert(LocGet(TextFormat(CAMPAIGN_HEADER_KEY_FORMAT, id))[0] != '\0');
+        cJSON *node = NULL;
+        cJSON_ArrayForEach(node, cJSON_GetObjectItemCaseSensitive(chapter, "nodes")) {
+            for (size_t field = 0; field < sizeof(node_fields) / sizeof(node_fields[0]); field++)
+                assert(LocGet(TextFormat(CAMPAIGN_NODE_KEY_FORMAT, id, JsonInt(node, "step"), node_fields[field]))[0]);
+        }
+    }
+    cJSON_Delete(maps);
+    cJSON *events = JsonLoadFile("data/nexus_maps.json");
+    cJSON *event = NULL;
+    cJSON_ArrayForEach(event, events) assert(LocGet(JsonStr(event, "name_key"))[0] != '\0');
+    cJSON_Delete(events);
+    CampaignNode node = {.wins_to_master = 12};
+    char label[64];
+    CampaignNodeMasteryLabel(&node, 11, label, sizeof(label));
+    assert(strcmp(label, "Закрыто (11 / 12)") == 0);
+}
+
 static void TestCampaignProgressionRewards(void) {
     Campaign campaign = TestProgressionCampaign();
     Player player = {0};
@@ -3992,15 +4115,28 @@ static void TestRuneCatalogCraftChains(void) {
     assert(!RuneCanCraft(RuneDefAt(RuneDefIndex("rune-guard-7"))));
     assert(!RuneCanCraft(RuneDefAt(RuneDefIndex("rune-knowledge-Special"))));
     assert(RuneDefAt(RuneDefIndex("rune-health-6-8"))->duration_minutes == 480);
+    Loc saved = loc;
+    loc = (Loc){0};
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
+    assert(!strcmp(RuneName(RuneDefAt(RuneDefIndex("rune-guard-7"))), "Руна охраны"));
+    assert(!strcmp(RuneValueText(RuneDefAt(RuneDefIndex("rune-guard-7"))), "+75 %"));
+    assert(!strcmp(RuneValueText(RuneDefAt(RuneDefIndex("rune-brave-targeting-1"))), "Ур. 1"));
+    assert(!strcmp(RuneValueText(RuneDefAt(RuneDefIndex("rune-dispel-7"))), "Иммунный"));
+    assert(!strcmp(RuneRarityLabel(RUNE_PRESTIGE_RARITY), "Престижный"));
+    char expiration[32];
+    RuneFormatExpiration(3 * NEXUS_SECONDS_PER_DAY + 5, expiration, sizeof(expiration));
+    assert(!strcmp(expiration, "3 дн."));
     for (int i = 0; i < RuneCatalogCount(); i++) {
         const RuneDef *def = RuneDefAt(i);
-        assert(def->name_ru[0] && def->desc_ru[0] && def->buff_ru[0] && def->value_ru[0]);
+        assert(RuneName(def)[0] && RuneDescription(def)[0] && RuneBuffLabel(def)[0] && RuneValueText(def)[0]);
         assert(ResourceExists(TextFormat(
             strncmp(def->icon, RUNE_RESOURCE_CACHE_PREFIX, strlen(RUNE_RESOURCE_CACHE_PREFIX)) ? EXTRA_ASSET_DIR "%s"
                                                                                                : "%s",
             def->icon
         )));
     }
+    LocUnload();
+    loc = saved;
 }
 
 static void TestRuneSlotRulesAndReplacement(void) {
@@ -5005,13 +5141,33 @@ static void TestRichTextReadsHexColors(void) {
     assert(color.r == 255 && color.g == 255 && color.b == 255);
 }
 
-static void TestGearStringsAreNotTruncated(void) {
-    GearCatalogEnsure();
-    const char *message = GearText("GEAR_PRESTIGE_MESSAGE");
-    assert(message[strlen(message) - 1] == '?');
-    assert(strlen(message) < GEAR_VIEW_MESSAGE_CAPACITY);
-    for (int i = 0; i < gear_catalog.string_count; i++)
-        assert(strlen(gear_catalog.strings[i].text) < GEAR_STRING_TEXT_CAPACITY - 1);
+static void TestGearTextFitsItsBuffersInEveryLanguage(void) {
+    Loc saved = loc;
+    char aura[GEAR_VIEW_AURA_CAPACITY];
+    char details[GEAR_VIEW_DETAILS_CAPACITY];
+    char limits[192];
+    for (int language = 0; language < LocLanguageCount(); language++) {
+        loc = (Loc){0};
+        LocLoad(TextFormat("%s/%s", ORIGINAL_LOCALIZATION_DIR, LocLanguageAt(language)->file));
+        const char *message = LocGet("HODA_GEAR_PRESTIGE_MESSAGE");
+        assert(message[0] && strlen(message) < GEAR_VIEW_MESSAGE_CAPACITY);
+        assert(LocGet("HODA_RARITY_MYTHIC")[0] && LocGet("HODA_GEAR_REVEAL_WINDOW_TITLE")[0]);
+        for (int i = 0; i < GearCatalogCount(); i++) {
+            const GearDef *def = GearDefAt(i);
+            GearFormatAura(def, aura, sizeof(aura));
+            assert(GearTitle(def)[0] && GearDescription(def)[0] && aura[0] && strlen(aura) < sizeof(aura) - 1);
+            GearInfoText info = GearViewInfoTextFor(def, limits, sizeof(limits), details, sizeof(details));
+            assert(strlen(info.description) < sizeof(details) - 1);
+        }
+        LocUnload();
+    }
+    loc = (Loc){0};
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
+    const GearDef *hammer = GearDefAt(GearDefIndex("aeducans_hammer"));
+    assert(!strcmp(GearTitle(hammer), "Молот Эдукана"));
+    assert(!strcmp(LocGet("HODA_RARITY_MYTHIC"), "Мифический"));
+    LocUnload();
+    loc = saved;
 }
 
 static void TestGearCatalogIsComplete(void) {
@@ -5019,12 +5175,11 @@ static void TestGearCatalogIsComplete(void) {
     assert(GearCatalogCount() == 266);
     for (int i = 0; i < GearCatalogCount(); i++) {
         const GearDef *def = GearDefAt(i);
-        assert(def->title_ru[0] && def->aura_ru[0] && def->icon[0]);
+        assert(def->title_key[0] && def->description_key[0] && def->aura_key_count > 0 && def->icon[0]);
         assert(def->rarity >= 1 && def->rarity <= GEAR_RARITY_COUNT);
         assert(GearSellValue(def) > 0);
     }
     assert(GearDefIndex("no_such_gear") == -1);
-    assert(strcmp(GearText("GEAR_SELL_BUTTON_TEXT"), "GEAR_SELL_BUTTON_TEXT") != 0);
 }
 
 static void TestConsumeWarnsAboutEquippedGear(void) {
@@ -5033,12 +5188,17 @@ static void TestConsumeWarnsAboutEquippedGear(void) {
     assert(!ConsumeSeedNeedsWarning(&c, &plain));
     geared.gear.defs[0] = 1;
     assert(ConsumeSeedNeedsWarning(&c, &geared));
-    assert(!strcmp(ConsumeSeedWarning(&geared), CONSUME_GEAR_WARNING));
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
+    assert(!strcmp(ConsumeSeedWarning(&geared), "Снаряжение этого героя будет уничтожено. Вы уверены?"));
+    LocUnload();
 }
 
 static void TestGearViewEquipFlow(void) {
     GearTestReset();
     setenv("HOD_NO_SAVE", "1", 1);
+    Loc saved = loc;
+    loc = (Loc){0};
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
     Character roster[1];
     memset(roster, 0, sizeof(roster));
     roster[0].gear_slots = 2;
@@ -5061,7 +5221,7 @@ static void TestGearViewEquipFlow(void) {
     GearViewShow(0, 0);
     gear_view.selected = other;
     GearViewRequestEquip(&p);
-    assert(gear_view.dialog == GEAR_VIEW_DIALOG_EQUIP && strstr(gear_view.message, GearDefAt(cheap)->title_ru));
+    assert(gear_view.dialog == GEAR_VIEW_DIALOG_EQUIP && strstr(gear_view.message, "Молот Кровавых Клинков"));
     GearViewConfirm(&p);
     assert(GearInSlot(&roster[0], 0) == GearDefAt(other) && p.gear.counts[cheap] == 0);
 
@@ -5070,6 +5230,8 @@ static void TestGearViewEquipFlow(void) {
     assert(GearViewFilteredItems(&p, GEAR_FILTER_EQUIPPABLE, false, items) == 0);
     GearViewClose();
     assert(!GearViewIsOpen());
+    LocUnload();
+    loc = saved;
     unsetenv("HOD_NO_SAVE");
 }
 
@@ -5376,13 +5538,14 @@ static void TestNexusGameChangerTableAffectsRealRosters(void) {
         event_index++;
     }
     nexus->event_count = event_index;
+    if (loc.count == 0) LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
     NexusGameChangersLoad(nexus, NEXUS_GAME_CHANGERS_PATH);
     int loaded = 0;
     for (int event = 0; event < nexus->event_count; event++) {
         const BattleGameChanger *changer = NexusEventGameChanger(nexus, event);
         if (!changer) continue;
         loaded++;
-        assert(changer->text_key[0] != '\0' || changer->text_ru[0] != '\0');
+        assert(changer->text_key[0] != '\0' && NexusGameChangerText(changer)[0] != '\0');
         for (int e = 0; e < changer->effect_count; e++)
             assert(changer->effects[e].health_pct > 0 || changer->effects[e].power_pct > 0);
     }
@@ -5823,7 +5986,7 @@ static void TestPvpEventPrizesAreOwnableAndHaveArt(void) {
             assert(reward->prize_count > 0 || reward->gold > 0);
             for (int prize = 0; prize < reward->prize_count; prize++) {
                 const PvpPrize *item = &reward->prizes[prize];
-                assert(item->count > 0 && item->name[0]);
+                assert(item->count > 0 && item->id[0]);
                 if (item->kind == PVP_PRIZE_UNIT) assert(ResourceExists(GuiPortraitRef(item->icon)));
                 if (item->kind == PVP_PRIZE_GEAR) assert(GearDefAt(item->index));
                 if (item->kind == PVP_PRIZE_VOUCHER) {
@@ -6394,6 +6557,9 @@ static void TestPvpOpponentFromServerMatchRebuildsTheBot(void) {
 }
 
 int main(void) {
+    TestSystemLocalesPickTheirOriginalLocalization();
+    TestFontCoversEveryGlyphOfTheLoadedLanguage();
+    TestLocalizationLayersProjectStringsOverTheOriginalTable();
     TestBattleFeetSitOnPadsWhoseBottomsShareOnePlane();
     TestPvpBannerCurvePeaksAtTheLadderMidpoint();
     TestPvpEventResultsKeepNineteenUnclaimedFirst();
@@ -6458,7 +6624,7 @@ int main(void) {
     TestEveryCatalogItemFightsCleanly();
     TestGearSaveRoundTrip();
     TestConsumeWarnsAboutEquippedGear();
-    TestGearStringsAreNotTruncated();
+    TestGearTextFitsItsBuffersInEveryLanguage();
     TestRichTextReadsHexColors();
     TestGearViewEquipFlow();
     TestBoardIgnoresClicksBehindGearAndDetails();
@@ -6556,6 +6722,7 @@ int main(void) {
     TestPortraitCoverage();
     TestRichTextParserFallback();
     TestCharacterTextCoverage();
+    TestCharacterTextResolvesInEveryLanguage();
     TestAbilityMechanicParsing();
     TestExactRecipesMatchDescriptions();
     TestGeneratedRecipeCoverage();
@@ -6583,6 +6750,7 @@ int main(void) {
     TestCriticalGoldCommitOnce();
     TestCampaignNodeCoordinates();
     TestCampaignMapRewardSchema();
+    TestCampaignAndNexusTextResolves();
     TestCampaignProgressionRewards();
     TestProgressionPersistence();
     TestRosterInstancesAndPersistence();

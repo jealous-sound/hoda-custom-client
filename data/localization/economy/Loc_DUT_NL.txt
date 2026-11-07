@@ -1,0 +1,1027 @@
+HODA_STORE_ITEMS_TAB|Voorwerpen
+HODA_STORE_VAULT_TAB|Kluis
+HODA_STORE_COMING_SOON|Binnenkort verwacht!
+HODA_STORE_CONFIRM_GEMS|Wil je {0}
+HODA_STORE_CONFIRM_GEMS_SUFFIX| uitgeven?
+HODA_STORE_PURCHASE_SAVE_FAILED|Kan de aankoop niet opslaan
+HODA_STORE_PACK_UNAVAILABLE|Dit pakket is tijdelijk niet beschikbaar
+HODA_STORE_COUNTER_LIMIT|Aankooplimiet bereikt
+HODA_STORE_ROSTER_ADD_FAILED|Kan de helden niet aan je selectie toevoegen
+HODA_STORE_SERVER_BUSY|De server is bezet. Probeer het opnieuw.
+HODA_STORE_PRICE_CHANGED|De prijs is gewijzigd. Probeer het opnieuw.
+HODA_STORE_PROFILE_CHANGED|Je profiel is op de server gewijzigd
+HODA_STORE_REAL_MONEY_OFFLINE|Aankopen met echt geld zijn niet beschikbaar in deze versie
+HODA_TUTORIAL_CONSUME_PACK_NAME|Trainingspakket
+HODA_GRAND_CHAMPION_PACK_NAME|Groot Kampioenspakket
+HODA_MERCENARY_PACK_NAME|Huurlingenpakket
+HODA_COMMANDER_PACK_NAME|Bevelhebberspakket
+HODA_ELITE_PACK_NAME|Elitepakket
+HODA_LYRIUM_MINE_PACK_NAME|Lyriumader
+HODA_MINNOW_CONVERSION_V2_PACK_NAME|Startpakket
+HODA_HERO_BOOSTER_BLACKWHITE_PACK_NAME|Zwart/wit-heldenbooster
+HODA_HERO_BOOSTER_REDBLUE_PACK_NAME|Rood/blauw-heldenbooster
+HODA_HERO_BOOSTER_GIANT_PACK_NAME|Reuzenheldenbooster
+HODA_HERO_BOOSTER_PRESTIGE_PACK_NAME|Prestige-heldenbooster
+HODA_NUG_PACK_NAME|Nugpakket!
+HODA_DRAGON_PACK_NAME|Drakenpakket!
+HODA_ROMANCE_PACK_NAME|Romantiekpakket!
+HODA_WINTERSEND_PACK_NAME|Midwinterpakket
+HODA_HARVEST_PACK_NAME|Oogstpakket
+HODA_ANNIVERSARY_PACK_NAME|Jubileumpakket
+HODA_LIBRARY_PACK_NAME|Bibliotheekpakket
+HODA_TEMP_MAC_TIR_PACK_NAME|Mac Tir-pakket
+HODA_NEW_RELEASE_PACK_NAME|Nieuwkomerspakket
+HODA_ITEM_ULTIMATE_IDENTIFIER_V2_PACK_NAME|Ultiem pakket
+HODA_SPECIAL_PACK_NAME|Speciaal pakket
+HODA_FLASH_BLACK_FRIDAY_PACK_NAME|Black Friday-actie
+HODA_FLASH_DRAGON_HUNT_PACK_NAME|Drakenjacht
+HODA_FLASH_EXCLUSIVELY_PACK_NAME|Exclusief
+HODA_FLASH_FINE_DWARVEN_CRAFTS_PACK_NAME|Fijn dwergenvakwerk
+HODA_FLASH_FIREWORKS_PACK_NAME|Vuurwerk
+HODA_FLASH_GOOD_COMPANY_PACK_NAME|Goed gezelschap
+HODA_FLASH_STAR_STRUCK_PACK_NAME|Sterren in je ogen
+HODA_FLASH_STOCKING_STUFFERS_PACK_NAME|Schoencadeautjes
+HODA_FLASH_UNIVERSITY_SUPPLIES_PACK_NAME|Universiteitsvoorraad
+HODA_FLASH_VALENTINES_GIFTS_PACK_NAME|Valentijnscadeaus
+HODA_PRESTIGE_RUNE_PACK_NAME|Prestige-runenpakket
+HODA_PEASANT_GEAR_PACK_NAME|Boerenuitrusting
+HODA_NOVICE_GEAR_PACK_NAME|Beginnersuitrusting
+HODA_JOURNEYMAN_GEAR_PACK_NAME|Gezellenuitrusting
+HODA_MERCHANT_GEAR_PACK_NAME|Koopmansuitrusting
+HODA_MASTERWORK_GEAR_PACK_NAME|Meesterwerkuitrusting
+HODA_ARMORY_GEAR_PACK_NAME|Wapenkameruitrusting
+HODA_TUTORIAL_CONSUME_PACK_INFO|Een gratis paar helden om te leren consumeren.
+HODA_GRAND_CHAMPION_PACK_INFO|10 Kampioenspakketten: 2 legendarische en 3 epische helden gegarandeerd.
+HODA_PRESTIGE_RUNE_PACK_INFO|Eén prestigerune voor het speciale teamslot.
+HODA_STORE_HERO_PACK_INFO_1_UNCOMMON|Geeft 1 held. Gegarandeerd bijzonder of beter.
+HODA_STORE_HERO_PACK_INFO_1_RARE|Geeft 1 held. Gegarandeerd zeldzaam of beter.
+HODA_STORE_HERO_PACK_INFO_1_EPIC|Geeft 1 held. Gegarandeerd episch of beter.
+HODA_STORE_HERO_PACK_INFO_2_RARE|Geeft 2 helden. Elk zeldzaam of beter.
+HODA_STORE_HERO_PACK_INFO_3_RARE|Geeft 3 helden. Elk zeldzaam of beter.
+HODA_STORE_HERO_PACK_INFO_5_RARE|Geeft 5 helden. Elk zeldzaam of beter.
+HODA_STORE_HERO_PACK_INFO_5_EPIC|Geeft 5 helden. Elk episch of beter.
+HODA_STORE_HERO_PACK_INFO_10_EPIC|Geeft 10 helden. Elk episch of beter.
+HODA_STORE_GEAR_PACK_INFO_1|Geeft 1 uitrustingsstuk.
+HODA_STORE_GEAR_PACK_INFO_2|Geeft 2 uitrustingsstukken.
+HODA_STORE_GEAR_PACK_INFO_3|Geeft 3 uitrustingsstukken.
+HODA_STORE_GEAR_PACK_INFO_5|Geeft 5 uitrustingsstukken.
+HODA_STORE_BULLET_LEGENDARY_BY_FOURTH|Legendarisch uiterlijk bij 4e pakket
+HODA_STORE_BULLET_GRAND_CHAMPION|2 legendarisch en 3 episch gegarandeerd
+HODA_STORE_BULLET_CHANCE_AT|Kans op
+HODA_STORE_BULLET_GIFT|Cadeau
+HODA_STORE_BULLET_NUGS|Waarschuwing! Bevat nugs!
+HODA_STORE_BULLET_DRAGON_CHANCE|Kans op een draak
+HODA_STORE_BULLET_ROMANCE|Hartenlust
+HODA_STORE_BULLET_WINTERSEND|Versier de hallen
+HODA_STORE_BULLET_THIS_WEEK_ONLY|Alleen deze week!
+HODA_STORE_BULLET_PRESTIGE_RUNE|1 prestigerune
+HODA_RUNE_DISPEL_NAME|Rune van opheffing
+HODA_RUNE_GUARD_NAME|Rune van afweer
+HODA_RUNE_PERCEPTION_NAME|Rune van opmerkzaamheid
+HODA_RUNE_RETALIATION_NAME|Rune van vergelding
+HODA_RUNE_STEALTH_NAME|Rune van stealth
+HODA_RUNE_DISPEL_DESCRIPTION|Helden in je team zijn immuun voor krachtvervloeking.
+HODA_RUNE_GUARD_DESCRIPTION|Helden in je team weerstaan een percentage van de opgelopen schade.
+HODA_RUNE_PERCEPTION_DESCRIPTION|Helden in je team negeren de effecten van stealth.
+HODA_RUNE_RETALIATION_DESCRIPTION|Kaatst een percentage van de schade die elk van je helden oploopt terug naar je vijanden.
+HODA_RUNE_STEALTH_DESCRIPTION|Helden in je team vallen aan zonder treffereffecten te activeren.
+HODA_RUNE_BUFF_DAMAGE_RESIST_PERCENT|Schadeweerstand
+HODA_RUNE_BUFF_DAMAGE_RETALIATION_PERCENT|Vergelding
+HODA_RUNE_BUFF_PERCEPTIVE|Opmerkzaam
+HODA_RUNE_BUFF_POWER_CURSED|Krachtvervl. weers.
+HODA_RUNE_BUFF_STEALTH|Stealthmodus
+HODA_RUNE_VALUE_DAMAGE|-{0}
+HODA_RUNE_VALUE_IMMUNE|Immuun
+HODA_RARITY_PRESTIGE|Prestigieus
+HODA_RUNE_PRESTIGE_UNLOCK|Vrijspelen
+HODA_RUNE_PRESTIGE_MESSAGE|Het prestigeruneslot voor dit team vrijspelen?
+HODA_RUNE_PRESTIGE_REJECT_RUNE_MESSAGE|Alleen prestigerunen kunnen in dit slot worden geplaatst.
+HODA_RUNE_PRESTIGE_REJECT_SLOT_MESSAGE|Deze rune kan alleen in het prestigeruneslot worden geactiveerd.
+HODA_RUNE_PRESTIGE_REJECT_LOCKED_MESSAGE|Speel het prestigeruneslot vrij met gems om deze rune te gebruiken.
+HODA_INVENTORY_SORT|Sorteer
+HODA_GEAR_EQUIP_EMPTY_CONFIRM|Je staat op het punt deze uitrusting te gebruiken. Eenmaal uitgerust kan ze niet meer worden verwijderd, alleen vervangen door een ander uitrustingsstuk. Weet je het zeker?
+HODA_GEAR_EQUIP_FILLED_CONFIRM|Je staat op het punt deze uitrusting te gebruiken. Het volgende eerder uitgeruste voorwerp wordt vernietigd: {0}
+HODA_GEAR_EQUIP_FAIL_CATEGORY_LIMIT_CONFIRM|Deze held kan deze uitrusting niet gebruiken. Controleer de opgegeven beperkingen.
+HODA_GEAR_EQUIP_FAIL_DUPLICATE_CONFIRM|Een held kan niet twee dezelfde voorwerpen gebruiken.
+HODA_GEAR_EQUIP_FAIL_DEFENDER_CONFIRM|Deze held kan deze uitrusting niet gebruiken, omdat een held maar één vaardigheid met schade-absorptie kan hebben.
+HODA_GEAR_EQUIP_FAIL_INVALID_PRESTIGE_GEAR|Alleen legendarische of mythische uitrusting kan in het prestige-uitrustingsslot worden geplaatst.
+HODA_GEAR_SELL_BUTTON_TEXT|Verkopen
+HODA_GEAR_EQUIP_BUTTON_TEXT|Uitrusten
+HODA_GEAR_SELL_MAIN_CONFIRM|Je staat op het punt dit voorwerp te verkopen. Weet je het zeker?
+HODA_GEAR_SELL_RECEIVE_CONFIRM|Je ontvangt:
+HODA_GEAR_PRESTIGE_MESSAGE|Geef je held prestige om een extra uitrustingsslot vrij te spelen. Alleen legendarische of mythische uitrusting kan in dit slot worden geplaatst. Per held betaal je gems om het slot vrij te spelen. Wil je dit slot vrijspelen?
+HODA_GEAR_PRESTIGE_UNLOCK|Vrijspelen
+HODA_GEAR_EMPTY_INVENTORY_MESSAGE|Je hebt geen uitrusting. Kijk in de winkel voor uitrustingspakketten!
+HODA_GEAR_FILTER_ALL_TITLE|Alle uitrusting
+HODA_GEAR_FILTER_EQUIPPABLE_TITLE|Bruikbaar
+HODA_GEAR_NO_LIMITATIONS|Alle helden
+HODA_GEAR_LIMITED_TITLE|<color=grey>Beperkt: </color>
+HODA_GEAR_REVEAL_WINDOW_TITLE|Uitrusting
+HODA_GEAR_SELECT_HERO_HELP|Selecteer een uitrustingsslot (+) bij een held om uit te rusten.
+HODA_GEAR_INVENTORY_FOOTER_TEXT|Tik op uitrusting voor info
+HODA_GEAR_RARITY_COMMON|<color=#d6b48f>Algemeen voorwerp</color>
+HODA_GEAR_RARITY_UNCOMMON|<color=#f2f2f2>Bijzonder voorwerp</color>
+HODA_GEAR_RARITY_RARE|<color=#ffd633>Zeldzaam voorwerp</color>
+HODA_GEAR_RARITY_EPIC|<color=#ff751a>Episch voorwerp</color>
+HODA_GEAR_RARITY_LEGENDARY|<color=#33cc33>Legendarisch voorwerp</color>
+HODA_GEAR_RARITY_MYTHIC|<color=#FF00FF>Mythisch voorwerp</color>
+HODA_GEAR_SHOW_PREVIOUS|Vorige {0}
+HODA_GEAR_SHOW_NEXT|Volgende {0}
+HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|Vul alle uitrustingsslots om het Boek van Verheffing vrij te spelen.
+HODA_EVO_TOME_REQUIRED_MESSAGE|Je hebt een Boek van Verheffing nodig. Je kunt er een kopen in de winkel.
+HODA_EVO_TOME_USE_CONFIRM|Een Boek van Verheffing gebruiken om deze held tot mythische zeldzaamheid te verheffen?
+HODA_EVO_TOME_EXPLAIN_DESC|Mythische helden krijgen <color=#ffa500ff>+5 max. niveau</color> en <color=#ffa500ff>een extra uitrustingsslot</color>!
+HODA_EVO_TOME_COUNT|Boeken: {0}
+HODA_TOME_POPUP_TITLE|Boek van Verheffing
+HODA_RARITY_MYTHIC|Mythisch
+HODA_ROSTER_FILTER_EPIC|Episch
+HODA_ROSTER_FILTER_LEGENDARY|Legendarisch
+HODA_ROSTER_FILTER_MYTHIC|Mythisch
+HODA_AEDUCANS_HAMMER_GEAR_TITLE|Aeducans hamer
+HODA_ALAMARRI_WARSTAFF_GEAR_TITLE|Alamarri-strijdstaf
+HODA_ALCHEMICAL_CONCOCTION_GEAR_TITLE|Alchemistisch brouwsel
+HODA_ANTIQUE_WARDEN_CROSSBOW_GEAR_TITLE|Antieke kruisboog van de Wachters
+HODA_APPRENTICE_COAT_GEAR_TITLE|Leerlingenjas
+HODA_ARDENT_BLOSSOM_GEAR_TITLE|Vurige bloesem
+HODA_ARLATHAN_FOCUSING_CRYSTAL_GEAR_TITLE|Focuskristal van Arlathan
+HODA_ARMADA_CAPTAINS_KNIFE_GEAR_TITLE|Mes van de armadakapitein
+HODA_ARMS_OF_THE_CHAMPION_GEAR_TITLE|Armstukken van de Kampioen
+HODA_ASAARASH_CHANFRON_GEAR_TITLE|Asaarash-hoofdpantser
+HODA_ASAARASH_CRINIERE_GEAR_TITLE|Asaarash-halspantser
+HODA_ASAARASH_FLANCHARD_GEAR_TITLE|Asaarash-flankpantser
+HODA_ASAARASH_PEYTRAL_GEAR_TITLE|Asaarash-borstpantser
+HODA_ASAARASH_SADDLE_GEAR_TITLE|Asaarash-zadel
+HODA_ASSASSINS_RECURVE_GEAR_TITLE|Recurveboog van de sluipmoordenaar
+HODA_AUGURS_WITCHSTAFF_GEAR_TITLE|Heksenstaf van de Augur
+HODA_AXE_OF_THE_DRAGON_HUNTER_GEAR_TITLE|Bijl van de drakenjager
+HODA_BARBARIAN_LORD_MAUL_GEAR_TITLE|Strijdhamer van de barbarenvorst
+HODA_BELT_OF_THE_ARCHITECT_GEAR_TITLE|Riem van de Architect
+HODA_BIANCA_GEAR_TITLE|Bianca
+HODA_BLACKMETAL_TORQUE_GEAR_TITLE|Zwartmetalen halsring
+HODA_BLADE_OF_TUHNA_ALLIED_GEAR_TITLE|Kling van Tuhna (bondgenoot)
+HODA_BLOOD_DRAGON_GREAVES_GEAR_TITLE|Scheenplaten van de Bloeddraak
+HODA_BLOODLINE_GEAR_TITLE|Bloedlijn
+HODA_BOOK_OF_THE_LADY_GEAR_TITLE|Boek van de Vrouwe
+HODA_BOOTS_OF_FAITH_GEAR_TITLE|Laarzen van geloof
+HODA_BOOTS_OF_THE_RIVER_DANE_GEAR_TITLE|Laarzen van de rivier de Dane
+HODA_BOW_OF_CLEANSING_FIRE_GEAR_TITLE|Boog van het reinigende vuur
+HODA_BOW_OF_THE_BERESAAD_GEAR_TITLE|Boog van de Beresaad
+HODA_BOW_OF_THE_RIGHTEOUS_GEAR_TITLE|Boog van de rechtvaardigen
+HODA_BROKEN_GRIFFON_HELM_GEAR_TITLE|Gebroken griffioenhelm
+HODA_BRUTE_HAMMER_GEAR_TITLE|Bruutshamer
+HODA_BULLS_EDGE_GEAR_TITLE|Snede van de Stier
+HODA_CAPTAINS_PLATE_GEAR_TITLE|Harnas van de kapitein
+HODA_CERTAINTY_GEAR_TITLE|Zekerheid
+HODA_CHANTRY_ROBE_GEAR_TITLE|Gewaad van de Fundatie
+HODA_CHANTRY_SHIELD_GEAR_TITLE|Schild van de Fundatie
+HODA_CHESTPIECE_OF_THE_RIVER_DANE_GEAR_TITLE|Borststuk van de rivier de Dane
+HODA_CHESTPLATE_OF_THE_FORTRESS_GEAR_TITLE|Borstplaat van de vesting
+HODA_CHEVALIERS_CUTLASS_GEAR_TITLE|Kortelas van de chevalier
+HODA_CIRCLE_MAGE_STAFF_GEAR_TITLE|Staf van de Kringmagiër
+HODA_COBRA_CROWN_GEAR_TITLE|Cobrakroon
+HODA_COLES_HAT_GEAR_TITLE|Coles hoed
+HODA_COURTIER_FAN_GEAR_TITLE|Hovelingenwaaier
+HODA_CROW_DAGGER_GEAR_TITLE|Kraaiendolk
+HODA_CROW_SHIELD_GEAR_TITLE|Kraaienschild
+HODA_CUIRASS_OF_THE_WINDS_GEAR_TITLE|Kuras van de winden
+HODA_CUTPURSE_SLICER_GEAR_TITLE|Zakkenrollersmes
+HODA_DALISH_RING_GEAR_TITLE|Daalse ring
+HODA_DALISH_ROBES_GEAR_TITLE|Daalse gewaden
+HODA_DALISH_STAFF_GEAR_TITLE|Daalse staf
+HODA_DAWN_RING_GEAR_TITLE|Dageraadring
+HODA_DEFENDER_COAT_GEAR_TITLE|Verdedigersjas
+HODA_DEMONS_ADVOCATE_GEAR_TITLE|Advocaat van de demon
+HODA_DIPLOMATIC_MISSIVES_GEAR_TITLE|Diplomatieke missiven
+HODA_DIRTHAMENS_WISDOM_GEAR_TITLE|Wijsheid van Dirthamen
+HODA_DRAGONS_TESTAMENT_GEAR_TITLE|Testament van de draak
+HODA_DREAMWEAVER_STAFF_GEAR_TITLE|Dromenweversstaf
+HODA_DUSK_RING_GEAR_TITLE|Schemerring
+HODA_DUSTER_BATTLEAXE_GEAR_TITLE|Strijdbijl van de Stoffers
+HODA_DUSTER_GREAVES_GEAR_TITLE|Scheenplaten van de Stoffers
+HODA_DUSTER_LEATHER_ARMOR_GEAR_TITLE|Leren harnas van de Stoffers
+HODA_DUSTER_LEATHER_GAUNTLETS_GEAR_TITLE|Leren handschoenen van de Stoffers
+HODA_DUSTER_LEATHER_PAULDRON_GEAR_TITLE|Leren schouderstuk van de Stoffers
+HODA_DWORKINS_HIGH_EXPLOSIVES_GEAR_TITLE|Dworkins zware explosieven
+HODA_DWORKINS_SAFE_EXPLOSIVES_GEAR_TITLE|Dworkins veilige explosieven
+HODA_EARNEST_REPRISAL_GEAR_TITLE|Oprechte vergelding
+HODA_ELGARNAN_ENASTE_GEAR_TITLE|Elgar'nan Enaste
+HODA_ELUSIVE_ICEBOW_GEAR_TITLE|Ongrijpbare ijsboog
+HODA_ELVEN_PLATE_ARMOR_GEAR_TITLE|Elfen-plaatharnas
+HODA_EMBLAZONED_KIRKWALL_SHIELD_GEAR_TITLE|Versierd Kerkwals schild
+HODA_ENCHANTED_SILVER_ARMOR_GEAR_TITLE|Betoverd zilveren harnas
+HODA_ENCHANTER_FIRE_STAFF_GEAR_TITLE|Vuurstaf van de tovenaar
+HODA_EXPENSIVE_DOG_TREATS_GEAR_TITLE|Dure hondensnoepjes
+HODA_FADE_TOUCHED_LURKER_SCALES_GEAR_TITLE|Vervagingsgeraakte sluiperschubben
+HODA_FADE_TOUCHED_SILVERITE_GEAR_TITLE|Vervagingsgeraakt zilveriet
+HODA_FADE_WALL_GEAR_TITLE|Vervagingsmuur
+HODA_FADESBANE_GEAR_TITLE|Gesel der Vervaging
+HODA_FERAL_WOLF_CHARM_GEAR_TITLE|Amulet van de wilde wolf
+HODA_FERELDAN_CLAYMORE_GEAR_TITLE|Fereldaans slagzwaard
+HODA_FERELDAN_SOLDIER_HELMET_GEAR_TITLE|Fereldaanse soldatenhelm
+HODA_FIRST_ENCHANTERS_ROBES_GEAR_TITLE|Gewaden van de Eerste Tovenaar
+HODA_FLASK_OF_FLAME_GEAR_TITLE|Fles met vuur
+HODA_FLASK_OF_FROST_GEAR_TITLE|Fles met vorst
+HODA_FLASK_OF_LIGHTNING_GEAR_TITLE|Fles met bliksem
+HODA_FLAWLESS_FIRE_CRYSTAL_GEAR_TITLE|Smetteloos vuurkristal
+HODA_FLAWLESS_ICE_CRYSTAL_GEAR_TITLE|Smetteloos ijskristal
+HODA_FLAWLESS_LIGHTNING_CRYSTAL_GEAR_TITLE|Smetteloos bliksemkristal
+HODA_FLAWLESS_NATURE_CRYSTAL_GEAR_TITLE|Smetteloos natuurkristal
+HODA_FLAWLESS_SPIRIT_CRYSTAL_GEAR_TITLE|Smetteloos geestkristal
+HODA_FLEMETHS_GRIMOIRE_GEAR_TITLE|Flemeths grimoire
+HODA_FORGE_MASTERS_HAMMER_GEAR_TITLE|Hamer van de smidsmeester
+HODA_GAMORDAN_STORMRIDER_SCALE_GEAR_TITLE|Schub van een Gamordan Stormrijder
+HODA_GARAHELS_HELM_GEAR_TITLE|Garahels helm
+HODA_GAUNTLETS_OF_THE_NUG_GEAR_TITLE|Handschoenen van de nug
+HODA_GAUNTLETS_OF_THE_SKIES_GEAR_TITLE|Handschoenen van de hemel
+HODA_GIFT_OF_THE_TALONS_GEAR_TITLE|Geschenk van de Klauwen
+HODA_GIRDLE_OF_THE_SKIES_GEAR_TITLE|Gordel van de hemel
+HODA_GLANDIVALIS_GEAR_TITLE|Glandivalis
+HODA_GLOVES_OF_THE_RIVER_DANE_GEAR_TITLE|Handschoenen van de rivier de Dane
+HODA_GRAND_ENCHANTERS_STAFF_GEAR_TITLE|Staf van de Grote Tovenaar
+HODA_GREAT_DRAGON_STAFF_GEAR_TITLE|Grote drakenstaf
+HODA_GREATER_MISTRAL_SCALE_GEAR_TITLE|Schub van een grote mistral
+HODA_GREAVES_OF_THE_BERESAAD_GEAR_TITLE|Scheenplaten van de Beresaad
+HODA_GREAVES_OF_THE_LADY_GEAR_TITLE|Scheenplaten van de Vrouwe
+HODA_GRIFFON_PLATE_GEAR_TITLE|Griffioenharnas
+HODA_GRIFFONRIDER_LEATHERS_GEAR_TITLE|Leren tuig van de griffioenrijder
+HODA_GRIMOIRE_OF_THE_FROZEN_WASTES_GEAR_TITLE|Grimoire van de Bevroren Woestenij
+HODA_HAKKONS_WISDOM_GEAR_TITLE|Hakkons wijsheid
+HODA_HAKKONS_WRATH_GEAR_TITLE|Hakkons toorn
+HODA_HARDENED_GURN_HIDE_GEAR_TITLE|Geharde gurnhuid
+HODA_HAUBERK_OF_THE_LADY_GEAR_TITLE|Maliënkolder van de Vrouwe
+HODA_HEARTWOOD_SHIELD_GEAR_TITLE|Kernhoutschild
+HODA_HELM_OF_JUSTICE_GEAR_TITLE|Helm van gerechtigheid
+HODA_HELM_OF_THE_DRAGON_HUNTER_GEAR_TITLE|Helm van de drakenjager
+HODA_HELM_OF_THE_MOUNTAIN_FATHER_GEAR_TITLE|Helm van de Bergvader
+HODA_HELM_OF_THE_SKIES_GEAR_TITLE|Helm van de hemel
+HODA_HISSERAS_MASK_GEAR_TITLE|Hisseras masker
+HODA_ICE_GIANTS_TUSK_GEAR_TITLE|Slagtand van de IJsreus
+HODA_INQUISITION_LONGSWORD_GEAR_TITLE|Langzwaard van de Inquisitie
+HODA_INQUISITION_SHIELD_GEAR_TITLE|Schild van de Inquisitie
+HODA_INQUISITION_STAFF_GEAR_TITLE|Staf van de Inquisitie
+HODA_INQUISITION_WARMAGE_PAULDRON_GEAR_TITLE|Schouderstuk van de Inquisitie-strijdmagiër
+HODA_ISANAS_SONG_GEAR_TITLE|Isana's lied
+HODA_JAR_OF_BEES_GEAR_TITLE|Pot met bijen
+HODA_JOINING_CHALICE_GEAR_TITLE|Kelk van de Samensmelting
+HODA_KADDIS_OF_THE_LADY_GEAR_TITLE|Kaddis van de Vrouwe
+HODA_KADDIS_OF_THE_MOUNTAINFATHER_GEAR_TITLE|Kaddis van de Bergvader
+HODA_KALTENZAHN_SCALE_GEAR_TITLE|Schub van een Kaltenzahn
+HODA_KEEN_ELFSNAKE_VITAAR_GEAR_TITLE|Scherpe elfenslangvitaar
+HODA_KEEPSAKE_LOCKET_GEAR_TITLE|Aandenkenmedaillon
+HODA_KITTYS_COLLAR_GEAR_TITLE|Kitty's halsband
+HODA_LEGION_HAMMER_GEAR_TITLE|Legioenhamer
+HODA_LEGIONNAIRE_HELMET_GEAR_TITLE|Legioenhelm
+HODA_LEGIONNAIRE_PLATE_GEAR_TITLE|Legioenharnas
+HODA_LEGIONNAIRE_SCOUT_DAGGER_GEAR_TITLE|Dolk van de legioenverkenner
+HODA_LINEAGE_GEAR_TITLE|Afstamming
+HODA_LITANY_OF_ADRALLA_GEAR_TITLE|Litanie van Adralla
+HODA_LOOSE_ENDS_GEAR_TITLE|Losse eindjes
+HODA_LOTHERINGS_LAMENT_GEAR_TITLE|Klaagzang van Lothering
+HODA_LYRIUM_KIT_GEAR_TITLE|Lyriumset
+HODA_LYRIUM_REINFORCED_LONGBOW_GEAR_TITLE|Met lyrium versterkte handboog
+HODA_MAFERATHS_MAUL_GEAR_TITLE|Maferaths strijdhamer
+HODA_MAGEKILLER_GEAR_TITLE|Magiërsdoder
+HODA_MANTLE_OF_THE_HOLD_BEAST_GEAR_TITLE|Mantel van het burchtbeest
+HODA_MARCH_OF_THE_EVERLASTING_GEAR_TITLE|Mars van de eeuwigen
+HODA_MASTERWORK_WITCH_STAFF_GEAR_TITLE|Meesterlijke heksenstaf
+HODA_MAUL_OF_TACITUS_GEAR_TITLE|Strijdhamer van Tacitus
+HODA_MAUL_OF_THE_DRAGON_GEAR_TITLE|Strijdhamer van de draak
+HODA_MERCYS_CREST_GEAR_TITLE|Embleem van genade
+HODA_MEREDITHS_KEY_GEAR_TITLE|Merediths sleutel
+HODA_MORTALITASI_COWL_GEAR_TITLE|Mortalitasi-kap
+HODA_MORTALITASI_STAFF_GEAR_TITLE|Mortalitasi-staf
+HODA_MYTHALS_BLESSING_GEAR_TITLE|Mythals zegen
+HODA_MYTHALS_JUDGMENT_GEAR_TITLE|Mythals oordeel
+HODA_OATHBREAKER_GEAR_TITLE|Eedbreker
+HODA_OF_THINGS_NOT_LOST_GEAR_TITLE|Over wat niet verloren ging
+HODA_ORB_OF_DESTRUCTION_GEAR_TITLE|Bol van vernietiging
+HODA_ORB_OF_FENHAREL_GEAR_TITLE|Bol van Fen'Harel
+HODA_ORLESIAN_HENNIN_GEAR_TITLE|Orlesiaanse hennin
+HODA_ORLESIAN_MASK_GEAR_TITLE|Orlesiaans masker
+HODA_PAULDRON_OF_THE_ARISHOK_GEAR_TITLE|Schouderstuk van de Arishok
+HODA_PHOENIX_TAIL_FEATHER_GEAR_TITLE|Staartveer van een feniks
+HODA_PROWLER_MAIL_GEAR_TITLE|Sluipersmaliën
+HODA_PUZZLE_RING_GEAR_TITLE|Puzzelring
+HODA_QUNARI_HELMET_GEAR_TITLE|Qunari-helm
+HODA_QUNARI_TOWER_SHIELD_GEAR_TITLE|Qunari-torenschild
+HODA_QUNARI_WARAXE_GEAR_TITLE|Qunari-strijdbijl
+HODA_REBOUND_DAGGER_GEAR_TITLE|Terugslagdolk
+HODA_RED_IRON_MAUL_GEAR_TITLE|Strijdhamer van het Rode IJzer
+HODA_RED_JENNY_BACKBITER_GEAR_TITLE|Rugsteker van Rode Jenny
+HODA_RED_LYRIUM_IDOL_GEAR_TITLE|Idool van rood lyrium
+HODA_REDCLIFFE_SHIELD_GEAR_TITLE|Schild van Roodklif
+HODA_REMARKABLE_EMERALD_GEAR_TITLE|Opmerkelijke smaragd
+HODA_RETRIBUTION_ELIXIR_GEAR_TITLE|Elixer der vergelding
+HODA_REVERED_DEFENDER_MAUL_GEAR_TITLE|Strijdhamer van de gerespecteerde verdediger
+HODA_RING_OF_DOUBT_GEAR_TITLE|Ring van twijfel
+HODA_RING_OF_RESILIENCE_GEAR_TITLE|Ring van veerkracht
+HODA_RITUAL_BREAKER_GEAR_TITLE|Ritueelbreker
+HODA_ROBES_OF_THE_ARCHITECT_GEAR_TITLE|Gewaden van de Architect
+HODA_RUBY_RING_GEAR_TITLE|Robijnen ring
+HODA_SAAREBAS_RESTRAINTS_GEAR_TITLE|Boeien van de Saarebas
+HODA_SACRIFICIAL_DAGGER_GEAR_TITLE|Offerdolk
+HODA_SAD_WEAPON_GEAR_TITLE|Treurig wapen
+HODA_SAVAGE_THORN_GEAR_TITLE|Woeste doorn
+HODA_SCOUT_ARMOR_GEAR_TITLE|Verkennersharnas
+HODA_SCOUT_COAT_ARMS_GEAR_TITLE|Mouwen van de verkennersjas
+HODA_SCOUT_HAT_GEAR_TITLE|Verkennershoed
+HODA_SCOUT_QUIVER_GEAR_TITLE|Pijlkoker van de verkenner
+HODA_SEER_STAFF_GEAR_TITLE|Zienersstaf
+HODA_SENIOR_WARDENS_STAFF_GEAR_TITLE|Staf van de senior Wachter
+HODA_SENTINEL_GAUNTLETS_GEAR_TITLE|Handschoenen van de wachtelfen
+HODA_SENTINEL_GREAVES_GEAR_TITLE|Scheenplaten van de wachtelfen
+HODA_SENTINEL_PLATE_PAULDRON_GEAR_TITLE|Schouderplaat van de wachtelfen
+HODA_SENTINEL_STAFF_GEAR_TITLE|Staf van de wachtelfen
+HODA_SER_ALVARDS_SWORD_GEAR_TITLE|Zwaard van ser Alvard
+HODA_SERAS_RAISIN_COOKIES_GEAR_TITLE|Sera's rozijnenkoekjes
+HODA_SERUM_OF_AMBITION_GEAR_TITLE|Serum van ambitie
+HODA_SHIELD_OF_LE_MARQUE_GEAR_TITLE|Schild van Le Marque
+HODA_SIDEREAL_STAFF_GEAR_TITLE|Sterrenstaf
+HODA_SKYWATCHERS_CLEAVER_GEAR_TITLE|Hakmes van de Luchtspieder
+HODA_SMUGGLERS_DAGGER_GEAR_TITLE|Smokkelaarsdolk
+HODA_SOLDIERS_PLATE_GEAR_TITLE|Soldatenharnas
+HODA_SOOTHERS_SAPPHIRE_GEAR_TITLE|Saffier van de trooster
+HODA_SOULWRECKER_STAFF_GEAR_TITLE|Zielenbrekersstaf
+HODA_SPEAR_THROWER_GEAR_TITLE|Speerwerper
+HODA_SPECTRAL_SCALE_GEAR_TITLE|Spectrale schub
+HODA_SPIRIT_MAUL_GEAR_TITLE|Geestenhamer
+HODA_STAFF_OF_AIDAHN_ALLIED_GEAR_TITLE|Staf van Aidahn (bondgenoot)
+HODA_STAFF_OF_CORRUPTION_GEAR_TITLE|Staf van verderf
+HODA_STAFF_OF_FAITH_GEAR_TITLE|Staf van geloof
+HODA_STAFF_OF_SHADOWS_GEAR_TITLE|Staf van schaduwen
+HODA_STONEHAMMER_PLATE_GEAR_TITLE|Steenhamerharnas
+HODA_STROUDS_TARGE_GEAR_TITLE|Strouds rondschild
+HODA_STUDDED_LEATHER_PAULDRON_GEAR_TITLE|Beslagen leren schouderstuk
+HODA_STUFFED_MABARI_GEAR_TITLE|Knuffelmabari
+HODA_SWIFTRUNNERS_SHIELD_GEAR_TITLE|Schild van Snelloper
+HODA_SWORD_OF_CHARRIS_ALLIED_GEAR_TITLE|Zwaard van Charris (bondgenoot)
+HODA_TALON_OF_THE_SKIES_GEAR_TITLE|Klauw van de hemel
+HODA_TEMPLAR_BREASTPLATE_GEAR_TITLE|Tempeliersborstplaat
+HODA_TEMPLAR_COMMANDER_PAULDRON_GEAR_TITLE|Schouderstuk van de Tempeliercommandant
+HODA_TEMPLAR_HELMET_GEAR_TITLE|Tempeliershelm
+HODA_TEMPLAR_LONGSWORD_GEAR_TITLE|Tempelierslangzwaard
+HODA_TEMPLAR_SHIELD_GEAR_TITLE|Tempeliersschild
+HODA_THE_ANCESTORS_GREAVES_GEAR_TITLE|Scheenplaten van de voorvader
+HODA_THE_BIND_THAT_GUIDES_GEAR_TITLE|De band die leidt
+HODA_THE_BLACK_FOXS_JERKIN_GEAR_TITLE|Wambuis van de Zwarte Vos
+HODA_THE_DIVINE_ARMOR_GEAR_TITLE|Harnas van de Goddelijke
+HODA_THE_DIVINE_BOOTS_GEAR_TITLE|Laarzen van de Goddelijke
+HODA_THE_DIVINE_HELMET_GEAR_TITLE|Helm van de Goddelijke
+HODA_THE_ELDERS_GRIMOIRE_GEAR_TITLE|Grimoire van de Oudere
+HODA_THE_EYE_THAT_WEEPS_GEAR_TITLE|Het oog dat weent
+HODA_THE_GOLDEN_PRINCES_HELM_GEAR_TITLE|Helm van de Gouden Prins
+HODA_THE_GOLDEN_PRINCES_PAULDRON_GEAR_TITLE|Schouderstuk van de Gouden Prins
+HODA_THE_GOLDEN_PRINCES_RAIMENT_GEAR_TITLE|Gewaad van de Gouden Prins
+HODA_THE_HAND_THAT_CUTS_GEAR_TITLE|De hand die snijdt
+HODA_THE_LADYS_WRATH_GEAR_TITLE|Toorn van de Vrouwe
+HODA_THE_SKIN_THAT_STALKS_GEAR_TITLE|De huid die besluipt
+HODA_TOME_OF_ARCANE_TECHNIQUE_GEAR_TITLE|Boek der arcane technieken
+HODA_TOME_OF_KOSLUN_GEAR_TITLE|Boek van Koslun
+HODA_TOME_OF_PHYSICAL_TECHNIQUE_GEAR_TITLE|Boek der fysieke technieken
+HODA_TOME_OF_RIFTS_GEAR_TITLE|Boek der scheuren
+HODA_TOME_OF_SKILL_AND_SUNDRY_GEAR_TITLE|Boek van vaardigheden en allerlei
+HODA_TOME_OF_THE_MORTAL_VESSEL_GEAR_TITLE|Boek van het sterfelijk vat
+HODA_VANGUARD_ARMOR_GEAR_TITLE|Voorhoedeharnas
+HODA_VENATORI_BOW_GEAR_TITLE|Venatori-boog
+HODA_VENATORI_GREAVES_GEAR_TITLE|Venatori-scheenplaten
+HODA_VENATORI_HELMET_GEAR_TITLE|Venatori-helm
+HODA_VENATORI_STAFF_BLADE_GEAR_TITLE|Venatori-stafkling
+HODA_VENATORI_TOWER_SHIELD_GEAR_TITLE|Venatori-torenschild
+HODA_VESTMENTS_OF_THE_ARCHMAGE_GEAR_TITLE|Gewaden van de aartsmagiër
+HODA_VESTMENTS_OF_THE_DRAGON_HUNTER_GEAR_TITLE|Gewaden van de drakenjager
+HODA_VIAL_OF_DRAGONS_BLOOD_GEAR_TITLE|Flacon drakenbloed
+HODA_VIGILANCE_GEAR_TITLE|Waakzaamheid
+HODA_VINSOMER_SCALE_GEAR_TITLE|Schub van een vinsomer
+HODA_VIRTUOSITY_GEAR_TITLE|Virtuositeit
+HODA_VITAAR_OF_THE_DRAGON_HUNTER_GEAR_TITLE|Vitaar van de drakenjager
+HODA_VORACITY_GEAR_TITLE|Vraatzucht
+HODA_WALKING_DEATH_GEAR_TITLE|Wandelende dood
+HODA_WARDEN_HELMET_GEAR_TITLE|Wachtershelm
+HODA_WARDEN_TOWER_SHIELD_GEAR_TITLE|Torenschild van de Grijze Wachters
+HODA_WARM_ORB_GEAR_TITLE|Warme bol
+HODA_WEDGE_OF_DESTINY_GEAR_TITLE|Punt van het lot
+HODA_WILHELMS_STAFF_GEAR_TITLE|Wilhelms staf
+HODA_WINTERWEIGHT_GEAR_TITLE|Wintergewicht
+HODA_YAVANALIS_GEAR_TITLE|Yavanalis
+HODA_AEDUCANS_HAMMER_GEAR_DESC|De nalatenschap van Paragoon Aeducan, van generatie op generatie doorgegeven.
+HODA_ALAMARRI_WARSTAFF_GEAR_DESC|Door het uitgekiende gewicht en ontwerp is dit wapen uitstekend om mee te pareren en om dodelijke slagen uit te delen.
+HODA_ALCHEMICAL_CONCOCTION_GEAR_DESC|Het hoofdbestanddeel van dit mysterieuze elixer komt uit het bloed van Grijze Wachters en de duistergebroedsmet daarin. Vandaar dat het zo zeldzaam is.
+HODA_ANTIQUE_WARDEN_CROSSBOW_GEAR_DESC|Ondanks zijn leeftijd is deze kruisboog in uitstekende staat. Je ziet zo dat de meesterverkenner van de Wachters die hem bezat er bijzonder goed voor zorgde.
+HODA_APPRENTICE_COAT_GEAR_DESC|Steviger dan gewaden. Leerlingen die voor de strijd trainen, vinden in deze jas betere bescherming.
+HODA_ARDENT_BLOSSOM_GEAR_DESC|Wat je aan verdediging verliest, win je aan de verpletterende kracht van het lyrium in deze kruidenhelm.
+HODA_ARLATHAN_FOCUSING_CRYSTAL_GEAR_DESC|Goudkleurig barnsteen helpt de geest zich te concentreren, via een oude techniek die alleen de elfen van Arlathan kennen.
+HODA_ARMADA_CAPTAINS_KNIFE_GEAR_DESC|Deze kling, achtergelaten door de Plunderaars van de Ontwakende Zee, ruikt nog altijd naar zout en ingewanden.
+HODA_ARMS_OF_THE_CHAMPION_GEAR_DESC|Pronkstuk van de Mantel van de Kampioen. Alleen wie zeer sluw is, kan de mantel werkelijk benutten.
+HODA_ASAARASH_CHANFRON_GEAR_DESC|Met een beschermd hoofd kan een rijdier zich midden in de strijd blijven concentreren.
+HODA_ASAARASH_CRINIERE_GEAR_DESC|Vult het borst- en hoofdpantser aan door de nek van het dier te beschermen.
+HODA_ASAARASH_FLANCHARD_GEAR_DESC|Biedt extra bescherming voor de flanken van het dier.
+HODA_ASAARASH_PEYTRAL_GEAR_DESC|Dit borstpantser beschermt de borst van het paard en versterkt de bescherming van het dier aanzienlijk tijdens een charge.
+HODA_ASAARASH_SADDLE_GEAR_DESC|Functioneel, al is het niet stijlvol: dit zadel is gemaakt om lange veldslagen in te rijden.
+HODA_ASSASSINS_RECURVE_GEAR_DESC|Gemaakt volgens de wensen van groothertogin Florianne de Chalons.
+HODA_AUGURS_WITCHSTAFF_GEAR_DESC|Staf van de Augur van de Steenbeerburcht. Het geratel van botten roept de geesten aan om raad.
+HODA_AXE_OF_THE_DRAGON_HUNTER_GEAR_DESC|Deze bijl was ooit van de beroemde drakenjager Nephram Pentaghast en ging in het Staaltijdperk verloren bij een weddenschap.
+HODA_BARBARIAN_LORD_MAUL_GEAR_DESC|Een grote steen aan het eind van een stok. Verrassend effectief.
+HODA_BELT_OF_THE_ARCHITECT_GEAR_DESC|De Architect heeft deze riem waarschijnlijk van een ongelukkige magiër afgepakt.
+HODA_BIANCA_GEAR_DESC|De kenmerkende kruisboog van Varric Tethras. Gemaakt door een Carta-ingenieur, geperfectioneerd door de vakvrouw naar wie hij is vernoemd.
+HODA_BLACKMETAL_TORQUE_GEAR_DESC|Eenmaal vastgeklikt, leidt de magie in deze met lyrium doordrenkte metalen vlecht flinke kracht naar het wezen dat hem draagt.
+HODA_BLADE_OF_TUHNA_ALLIED_GEAR_DESC|Deze dolk, gemaakt uit ruw rood lyrium, zuigt het leven uit iedereen om zich heen.
+HODA_BLOOD_DRAGON_GREAVES_GEAR_DESC|Zwaar stalen pantser dat de drager beschermt tegen verzwakkende effecten.
+HODA_BLOODLINE_GEAR_DESC|Malcolm Hawke liet dit na aan zijn dochter Bethany. Hij wist dat zijn bloed de gaven van de Vervaging droeg.
+HODA_BOOK_OF_THE_LADY_GEAR_DESC|Een tekst die bij een heilig Avvaraans altaar werd gevonden, gebonden ter bescherming van de heilige grond.
+HODA_BOOTS_OF_FAITH_GEAR_DESC|Stevige laarzen, een getuigenis van het vertrouwen op Andraste en de Schepper voor bescherming.
+HODA_ARMOR_OF_THE_RIVER_DANE_GEAR_DESC|Na de overwinning in de Slag bij de rivier de Dane als trofee afgenomen van een Orlesiaanse bevelhebber.
+HODA_BOW_OF_CLEANSING_FIRE_GEAR_DESC|Uitgerust met brandende pijlen die door de sterkste verdediging heen branden.
+HODA_BOW_OF_THE_BERESAAD_GEAR_DESC|Met een kracht die voortkomt uit het geloof in de Qun, scheuren pijlen uit deze boog door harnassen heen.
+HODA_BOW_OF_THE_RIGHTEOUS_GEAR_DESC|Met rechtvaardigheid zullen de onwaardigen worden geveld.
+HODA_BROKEN_GRIFFON_HELM_GEAR_DESC|Deze helm is slechts een overblijfsel uit vervlogen tijden, toen de Grijze Wachters machtige griffioenen aanvoerden.
+HODA_BRUTE_HAMMER_GEAR_DESC|Gemaakt om moeiteloos botten te verbrijzelen.
+HODA_BULLS_EDGE_GEAR_DESC|Het gewicht en de balans van deze strijdbijl maken hem tot een geliefd wapen van de IJzeren Stier.
+HODA_CAPTAINS_PLATE_GEAR_DESC|Plaatharnas voor wie de rang van wachtkapitein bereikt.
+HODA_CERTAINTY_GEAR_DESC|Een zwaard van diepste verdorvenheid en overtuiging.
+HODA_CHANTRY_ROBE_GEAR_DESC|Dit gewaad vult novicen van de Fundatie met de levenskracht van de Schepper.
+HODA_CHANTRY_SHIELD_GEAR_DESC|Dit schild draagt het symbool van de Fundatie, als inspiratie voor het geloof.
+HODA_CHESTPLATE_OF_THE_FORTRESS_GEAR_DESC|Krijger Hawke nam deze borstplaat af van het levenloze lichaam van Corypheus. Een trofee om over op te scheppen, op zijn zachtst gezegd.
+HODA_CHEVALIERS_CUTLASS_GEAR_DESC|Het favoriete zwaard van de Orlesiaanse chevaliers.
+HODA_CIRCLE_MAGE_STAFF_GEAR_DESC|Een met magie doordrenkte staf, gehanteerd door wie bedreven is in de kunst.
+HODA_COBRA_CROWN_GEAR_DESC|Deze oude kroon is doordrenkt met de kracht van Archons uit vervlogen tijden.
+HODA_COLES_HAT_GEAR_DESC|Onder de rand van deze hoed kijk je Cole waarschijnlijk niet in de ogen voordat hij je halsslagader doorsnijdt.
+HODA_COURTIER_FAN_GEAR_DESC|De taal van waaiers, beheerst door de grootste spelers van de Grote Wedstrijd, reikt van uitnodigend tot wraakzuchtig.
+HODA_CROW_DAGGER_GEAR_DESC|Een Antivaanse kling, gesmeed door de legendarische sluipmoordenaars van de Kraaien. Misschien.
+HODA_CROW_SHIELD_GEAR_DESC|Lichte houten beukelaar met het symbool van de Antivaanse Kraaien, de elite-sluipmoordenaars van Thedas.
+HODA_CUIRASS_OF_THE_WINDS_GEAR_DESC|Zo mooi en wreed als een storm, gemaakt door een ziener uit Rivain.
+HODA_CUTPURSE_SLICER_GEAR_DESC|Snel en precies.
+HODA_DALISH_RING_GEAR_DESC|Traditionele ring van de Daal, symbool van hun band in leven en dood.
+HODA_DALISH_ROBES_GEAR_DESC|Je kunt niet anders dan de fijne kwaliteit van deze gewaden bewonderen. In elke vezel is nauwgezet werk gestoken.
+HODA_DALISH_STAFF_GEAR_DESC|Deze staven zie je vaak bij de Daal. Ze zijn verrassend taai, waarschijnlijk als eerbetoon aan de belofte van hun volk.
+HODA_DAWN_RING_GEAR_DESC|De eerste van een paar ringen die een verbond tussen dwergen en Tevinter symboliseren. Hij voelt warm aan.
+HODA_DEFENDER_COAT_GEAR_DESC|Versterkte maliën om lichaam en geest te harden.
+HODA_DEMONS_ADVOCATE_GEAR_DESC|Uit deze strijdhamer klinken soms stemmen, voor het menselijk oor bijna niet te verstaan.
+HODA_DIPLOMATIC_MISSIVES_GEAR_DESC|De pagina's van de diplomatie bevatten vele geheimen, zo machtig als elk wapen.
+HODA_DIRTHAMENS_WISDOM_GEAR_DESC|Dit schild heeft op wonderbaarlijke wijze duizend jaar in de Tempel van Dirthamen overleefd, misschien met hulp van de god der geheimen.
+HODA_DRAGONS_TESTAMENT_GEAR_DESC|Een zeldzame verhandeling over de strijdtactieken van draken, auteur onbekend. Naar verluidt geschreven door Frederic van Serault.
+HODA_DREAMWEAVER_STAFF_GEAR_DESC|De vlammen van deze magiërsstaf branden fel. O Dromenwever, jij helpt me de na-a-acht door.
+HODA_DUSK_RING_GEAR_DESC|Deze ring is door dwergen gemaakt uit één smetteloos amethistkristal en voelt zwaar en koel aan.
+HODA_DUSTER_BATTLEAXE_GEAR_DESC|Een thuis voor gerecyclede zwaarden, knotsen en... is dat een stuk van een bezem?
+HODA_DUSTER_GREAVES_GEAR_DESC|Samengeweven uit wat hopelijk echt leer was. Deze scheenplaten ruiken bijzonder schimmelig.
+HODA_DUSTER_LEATHER_ARMOR_GEAR_DESC|Samengeweven uit wat hopelijk echt leer was. Zit daar een stuk van een schoen in verwerkt?
+HODA_DUSTER_LEATHER_GAUNTLETS_GEAR_DESC|Samengeweven uit wat hopelijk echt leer was. Een deel van deze handschoenen is in elk geval uit een damestas geknipt.
+HODA_DUSTER_LEATHER_PAULDRON_GEAR_DESC|Samengeweven uit wat hopelijk echt leer was. Zijn dat stekels of oude tanden?
+HODA_DWORKINS_HIGH_EXPLOSIVES_GEAR_DESC|De niet-helemaal-veiligste explosieven van Dworkin de Gek.
+HODA_DWORKINS_SAFE_EXPLOSIVES_GEAR_DESC|De "veiligste" explosieven van Dworkin de Gek.
+HODA_EARNEST_REPRISAL_STAFF_GEAR_DESC|Vervloekte staf uit het Duistere Emporium.
+HODA_ELGARNAN_ENASTE_GEAR_DESC|Boog van de elfse Alvader, Elgar'nan. Zijn pijlen zijn doordrenkt met de vernietigende kracht van de zon zelf.
+HODA_ELUSIVE_ICEBOW_GEAR_DESC|Uit de greep van deze boog straalt kou, die de hanteerder meer kracht geeft.
+HODA_ELVEN_PLATE_ARMOR_GEAR_DESC|De elfen hebben gevoel voor vorm. De stevige pezen van dit plaatharnas leiden aanvallen af van het lichaam.
+HODA_EMBLAZONED_KIRKWALL_SHIELD_GEAR_DESC|Schild van de befaamde Kerkwalse wacht. Wie achter het wapen staat, is beschut tegen kwade wil.
+HODA_ENCHANTED_SILVER_ARMOR_GEAR_DESC|Dit harnas werd door de Kring voor koning Calenhad gemaakt en zou zowel pijlen als klingen afweren.
+HODA_ENCHANTER_FIRE_STAFF_GEAR_DESC|Vuur kan zuiveren en genezen, net zo goed als vernietigen.
+HODA_EXPENSIVE_DOG_TREATS_GEAR_DESC|Deze snoepjes zijn een zeldzame beloning, alleen voor de meest kieskeurige huisdieren.
+HODA_FADE_TOUCHED_LURKER_SCALES_GEAR_DESC|Een vijand overrompelen is essentieel om de achterafwegen van Thedas te overleven. Met deze sluiperschubben kan een struikrover zich onzichtbaar maken als hij nadert.
+HODA_FADE_TOUCHED_SILVERITE_GEAR_DESC|Zilveriet hardt de drager om zich te weren als hij wordt aangevallen en bouwt bij elke treffer immuniteit op.
+HODA_FADE_WALL_GEAR_DESC|Dit schild is geladen met arcane energie en geeft de hanteerder een vaag gevoel van onthechting.
+HODA_FADESBANE_GEAR_DESC|Gezegende kling van de beste magiërsjagers van de Tempeliers.
+HODA_FERAL_WOLF_CHARM_GEAR_DESC|Chasind-jagers zijn dol op amuletten als deze, die naar verluidt op maanverlichte nachten diep in de Korcari-wildernis worden betoverd door schaars geklede heksen.
+HODA_FERELDAN_CLAYMORE_GEAR_DESC|In opdracht van Loghain Mac Tir gemaakt voor zijn dochter Anora, bij haar verloving met prins Cailan Theirin.
+HODA_FERELDAN_SOLDIER_HELMET_GEAR_DESC|Stalen helm die de levenskracht en concentratie van de drager in de strijd vergroot.
+HODA_FIRST_ENCHANTERS_ROBES_GEAR_DESC|De gewaden van de Eerste Tovenaar zijn minder sierlijk dan je zou verwachten. Deze ruiken sterk naar zwavel.
+HODA_FLASK_OF_FLAME_GEAR_DESC|Als je deze fles in de strijd breekt, hult hij een Tempest in vlammen, wat hem tot razende actie aanzet.
+HODA_FLASK_OF_FROST_GEAR_DESC|Deze fles hult je in een ijzige huid die je verdediging flink verhoogt.
+HODA_FLASK_OF_LIGHTNING_GEAR_DESC|Als je deze fles in de strijd breekt, hult hij een Tempest in bliksem, wat zijn reflexen en snelheid verhoogt.
+HODA_FLAWLESS_FIRE_CRYSTAL_GEAR_DESC|Een perfect vuurkristal, zonder enig gebrek.
+HODA_FLAWLESS_ICE_CRYSTAL_GEAR_DESC|Een perfect ijskristal, zonder enig gebrek.
+HODA_FLAWLESS_LIGHTNING_CRYSTAL_GEAR_DESC|Een perfect bliksemkristal, zonder enig gebrek.
+HODA_FLAWLESS_NATURE_CRYSTAL_GEAR_DESC|Een perfect natuurkristal, zonder enig gebrek.
+HODA_FLAWLESS_SPIRIT_CRYSTAL_GEAR_DESC|Een perfect geestkristal, zonder enig gebrek.
+HODA_FLEMETHS_GRIMOIRE_GEAR_DESC|Een oud maar liefdevol verzorgd boek, gebonden in leer van twijfelachtige herkomst.
+HODA_FORGE_MASTERS_HAMMER_GEAR_DESC|De genlock-smidsmeester hield het sterkste wapen uit de werkplaatsen van het duistergebroed voor zichzelf.
+HODA_GAMORDAN_STORMRIDER_SCALE_GEAR_DESC|Afkomstig van de huid van een gevallen Gamordan Stormrijder. Bij aanraking voel je een tinteling.
+HODA_GARAHELS_HELM_GEAR_DESC|Deze betoverde helm ging verloren tijdens zijn laatste gevecht met Andoral en is nu doordrongen van de geest van zijn meester.
+HODA_GAUNTLETS_OF_THE_NUG_GEAR_DESC|Vreemd genoeg passen deze handschoenen zich op de een of andere manier aan de maat van de drager aan.
+HODA_GAUNTLETS_OF_THE_SKIES_GEAR_DESC|Gezegend door de Vrouwe van de Hemel. Haar kracht stroomt door deze handschoenen.
+HODA_GIFT_OF_THE_TALONS_GEAR_DESC|Deze dolk wordt toegekend aan wie de rang van Klauw bereikt binnen de Antivaanse Kraaien, en is zowel een eer als een contract.
+HODA_GIRDLE_OF_THE_SKIES_GEAR_DESC|Gezegend door de Vrouwe van de Hemel. Deze riem beschermt tegen wilde magie.
+HODA_GLANDIVALIS_GEAR_DESC|Het zwaard van de Bevrijder, badend in het licht van Andraste zelf.
+HODA_GRAND_ENCHANTERS_STAFF_GEAR_DESC|Wie deze staf hanteert, verkrijgt de kennis die erin besloten ligt: ontelbare mysteries van het leven zelf.
+HODA_GREAT_DRAGON_STAFF_GEAR_DESC|De sporen bloed in deze staf kunnen een goed getrainde hanteerder enorme kracht schenken.
+HODA_GREATER_MISTRAL_SCALE_GEAR_DESC|Afkomstig van de huid van een gedode grote mistral. Er vormt zich rijp omheen.
+HODA_GREAVES_OF_THE_BERESAAD_GEAR_DESC|Standaard beenbescherming voor de Beresaad, het leger van de Qunari.
+HODA_GREAVES_OF_THE_LADY_GEAR_DESC|Gezegend door de Vrouwe van de Hemel. Deze scheenplaten maken je snel ter been.
+HODA_GRIFFON_PLATE_GEAR_DESC|Dit borstharnas, gevonden bij de Vesting Adamant, lijkt op een oud harnas van de Wachters.
+HODA_GRIFFONRIDER_LEATHERS_GEAR_DESC|In de tijd dat griffioenen nog door de lucht vlogen, hield dit speciale tuig de Wachters op de rug van de machtige beesten.
+HODA_GRIMOIRE_OF_THE_FROZEN_WASTES_GEAR_DESC|Op deze pagina's staan honderden aangrijpende verhalen over hoe de barbaren van de Bevroren Woestenij overleven in hun ijzige thuisland.
+HODA_HAKKONS_WISDOM_GEAR_DESC|Hakkon zelf schonk deze staf alleen aan de vroomste Augurs.
+HODA_HAKKONS_WRATH_GEAR_DESC|Als scherpe ijsscherven ontketent de hanteerder van deze boog de woede van de winter.
+HODA_HARDENED_GURN_HIDE_GEAR_DESC|De bijna ondoordringbare huid van de gurn maakt hem tot een ontmoedigende prooi voor elke jager in spe.
+HODA_HAUBERK_OF_THE_LADY_GEAR_DESC|Gezegend door de Vrouwe van de Hemel. Beschermt vitale plekken tegen fysieke aanvallen.
+HODA_HEARTWOOD_SHIELD_GEAR_DESC|De Oude scheidt niet graag van zijn hout. Een schild uit het Kronkelwoud is het bloed waard dat ervoor vergoten wordt.
+HODA_HELM_OF_JUSTICE_GEAR_DESC|De bescherming van gerechtigheid overwint verderf en wapent de ziel tegen schenders.
+HODA_HELM_OF_THE_DRAGON_HUNTER_GEAR_DESC|Deze helm draagt het oude symbool van de Inquisitie en beschermt tegen de woestste beesten.
+HODA_HELM_OF_THE_MOUNTAIN_FATHER_GEAR_DESC|Gemaakt van geitenhoorns. Korth de Bergvader schenkt zijn volgelingen zijn bescherming.
+HODA_HELM_OF_THE_SKIES_GEAR_DESC|Gezegend door de Vrouwe van de Hemel, die haar volgelingen beschermt tegen mentale aanvallen.
+HODA_HISSERAS_MASK_GEAR_DESC|Een saarebas is geen kracht om zonder ketenen te laten.
+HODA_ICE_GIANTS_TUSK_GEAR_DESC|Deze slagtand voelt koud aan en zindert nog altijd van de kracht van zijn bevroren voormalige meester.
+HODA_INQUISITION_LONGSWORD_GEAR_DESC|Standaardzwaard, gesmeed uit versterkt staal.
+HODA_INQUISITION_SHIELD_GEAR_DESC|Schild met het wapen van de Inquisitiesoldaat.
+HODA_INQUISITION_STAFF_GEAR_DESC|Standaardstaf, gehanteerd door magiërs in de gelederen van de Inquisitie.
+HODA_INQUISITION_WARMAGE_PAULDRON_GEAR_DESC|Standaardschouderstuk voor magiërs van de Inquisitie.
+HODA_ISANAS_SONG_GEAR_DESC|Deze staf brengt bij aanraking een zacht gezoem voort: een weemoedige melodie, alsof hij denkt aan een verre of vergeten plek.
+HODA_JAR_OF_BEES_GEAR_DESC|Op de een of andere manier zit er een hele bijenkorf in een pot, klaar om naar nietsvermoedende plaaggeesten te worden gegooid.
+HODA_JOINING_CHALICE_GEAR_DESC|Sluit je bij ons aan, broeders en zusters. Sluit je aan in de schaduw, waar wij waakzaam staan.
+HODA_KADDIS_OF_THE_LADY_GEAR_DESC|Gezegend door de Vrouwe van de Hemel. Deze oorlogsverf is al genoeg om je tegen aanvallen te beschermen.
+HODA_KADDIS_OF_THE_MOUNTAINFATHER_GEAR_DESC|Een oud ontwerp waarmee askrijgers de Avvaraanse god Korth aanroepen.
+HODA_KALTENZAHN_SCALE_GEAR_DESC|Afkomstig van de huid van een verslagen Kaltenzahn. Hij voelt ijskoud aan.
+HODA_KEEN_ELFSNAKE_VITAAR_GEAR_DESC|Deze vreemde Qunari-gezichtsverf wordt gemaakt van een dodelijk gif, fataal voor wie niet goed getraind is.
+HODA_KEEPSAKE_LOCKET_GEAR_DESC|Medaillon met een familieportret. Draag het dicht bij je hart.
+HODA_KITTYS_COLLAR_GEAR_DESC|Wie dit amulet draagt, gaat een nogal hachelijk pact aan, of hij dat nu weet of niet.
+HODA_LEGION_HAMMER_GEAR_DESC|Een zware strijdhamer die het Legioen gebruikt in zijn onvermoeibare strijd tegen de Plaag.
+HODA_LEGIONNAIRE_HELMET_GEAR_DESC|Een zware helm, gemaakt voor het Legioen der Doden.
+HODA_LEGIONNAIRE_PLATE_GEAR_DESC|Fijn vervaardigd, maar met opzet onversierd: een tegenstrijdigheid die het Legioen der Doden belichaamt.
+HODA_LEGIONNAIRE_SCOUT_DAGGER_GEAR_DESC|Onze geheimen sterven met ons.
+HODA_LINEAGE_GEAR_DESC|Door zijn sierlijke vorm is deze strijdhamer lastig te hanteren voor wie niet getraind is.
+HODA_LITANY_OF_ADRALLA_GEAR_DESC|Dit perkament, gevonden bij het stoffelijk overschot van Niall, reageert sterk in de buurt van demonen.
+HODA_LOOSE_ENDS_GEAR_DESC|Het efficiënte middel tot een doel, zodat niets onopgelost blijft.
+HODA_LOTHERINGS_LAMENT_GEAR_DESC|De laatste woorden van wie achterbleef.
+HODA_LYRIUM_KIT_GEAR_DESC|De bron van het vermogen van de Tempeliers om magie te blokkeren. Vergeet je dagelijkse dosis niet.
+HODA_LYRIUM_REINFORCED_LONGBOW_GEAR_DESC|Puur lyrium is in deze boog verwerkt en geeft de afgevuurde pijlen extra kracht.
+HODA_MAFERATHS_MAUL_GEAR_DESC|Stenen strijdhamer van de Verrader. Een symbool van onrechtmatig verkregen macht.
+HODA_MAGEKILLER_GEAR_DESC|Favoriete wapen van de beruchte magiërsmoordenaar. Deze kling heeft vele verdorven harten abrupt tot stilstand gebracht.
+HODA_MANTLE_OF_THE_HOLD_BEAST_GEAR_DESC|Als krijgers van de burcht hebben zelfs de machtige burchtbeesten gepantserde bescherming nodig.
+HODA_MARCH_OF_THE_EVERLASTING_GEAR_DESC|Gesmeed in Arlathan, omgevormd in Tevinter, betoverd in Orlais en gehanteerd door de chevaliers tijdens de Verheven Marsen.
+HODA_MASTERWORK_WITCH_STAFF_GEAR_DESC|Staf met een mensenschedel als kroon, omklemd door een eikenhouten klauw.
+HODA_MAUL_OF_TACITUS_GEAR_DESC|Strijdhamer van Tacitus Valerius, bespat en doordrenkt met het bloed van ongelovigen.
+HODA_MAUL_OF_THE_DRAGON_GEAR_DESC|Reusachtige strijdhamer, gemaakt uit de klauw van een hoge draak, die het hardste vlees kan openrijten.
+HODA_MERCYS_CREST_GEAR_DESC|Dit sekte-amulet voedt zich met bloedvergieten en versterkt de geest.
+HODA_MEREDITHS_KEY_GEAR_DESC|Merediths kist met steekpenningen ligt verborgen in de Galg van Kerkwal. De sleutel ervan heeft meer macht dan welk wapen ook.
+HODA_MORTALITASI_COWL_GEAR_DESC|Doordrenkt met de magie van de geheimzinnige Mortalitasi-sekte uit Nevarra.
+HODA_MORTALITASI_STAFF_GEAR_DESC|Deze staf draagt symbolen die vrij vertaald betekenen: "Altijd voorwaarts, altijd doodwaarts."
+HODA_MYTHALS_BLESSING_GEAR_DESC|Wanneer is een beukelaar niet zomaar een beukelaar? Als hij verguld is met het symbool van de god der Wraak.
+HODA_MYTHALS_JUDGMENT_GEAR_DESC|Deze staf, door Elgar'nan aan Mythal gegeven om zijn volk te beschermen en te wreken, is gerechtigheid in levenden lijve.
+HODA_OATHBREAKER_GEAR_DESC|Wanneer een eed aan jezelf zwaarder weegt dan een eed aan een ander, moet er altijd één worden gebroken.
+HODA_OF_THINGS_NOT_LOST_GEAR_DESC|Memoires van een Fereldaanse vluchteling. Het bewijs dat sommige dingen ons niet kunnen worden afgenomen.
+HODA_ORB_OF_DESTRUCTION_GEAR_DESC|Zoveel macht in de palm van je hand. Alleen de elfen konden zoiets verstandig vinden.
+HODA_ORB_OF_FENHAREL_GEAR_DESC|Over dit oude artefact is vrijwel niets bekend. Het straalt een immense, schitterende kracht uit.
+HODA_ORLESIAN_HENNIN_GEAR_DESC|Deze hoed, door Vivienne ontworpen voor haar persoonlijke collectie, is het toppunt van mode in Orlais.
+HODA_ORLESIAN_MASK_GEAR_DESC|Dit masker is duurder dan de meeste harnassen en de ultieme uiting van klasse.
+HODA_PAULDRON_OF_THE_ARISHOK_GEAR_DESC|Gevlochten leren schouderstuk van de Qunari.
+HODA_PHOENIX_TAIL_FEATHER_GEAR_DESC|De onbeschadigde staartveer van een volwassen feniks.
+HODA_PROWLER_MAIL_GEAR_DESC|Licht en geruisloos: dit harnas is ideaal om rond te sluipen.
+HODA_PUZZLE_RING_GEAR_DESC|Deze ring was naar verluidt ooit van de Zwarte Vos. De lagen kunnen uit elkaar worden getrokken om de magie erin te activeren.
+HODA_QUNARI_HELMET_GEAR_DESC|Helm van de Arvaarad. Beschermt Qunari tegen verdwaalde magische projectielen.
+HODA_QUNARI_TOWER_SHIELD_GEAR_DESC|Een groot schild met het embleem en het beproefde vakmanschap van de Qunari. Ook prima om lichtjes mee te beuken.
+HODA_QUNARI_WARAXE_GEAR_DESC|Eenhandig, gesmeed door de Qunari in hun eindeloze oorlog tegen Tevinter.
+HODA_REBOUND_DAGGER_GEAR_DESC|Gehaakte dolk, perfect om een vijand op zijn zwakst open te rijten.
+HODA_RED_IRON_MAUL_GEAR_DESC|Een tweehandig slagwapen, geliefd bij de huurlingen van het Rode IJzer.
+HODA_RED_JENNY_BACKBITER_GEAR_DESC|Gemaakt door en voor de Vrienden van Rode Jenny, om de kleine man kracht te geven.
+HODA_RED_LYRIUM_IDOL_GEAR_DESC|Dit idool, gesmeed door de dwergen van de Oerthaig, was millennia lang verloren.
+HODA_REDCLIFFE_SHIELD_GEAR_DESC|Dit roemrijke schild houdt stand en verdedigt Kasteel Roodklif, de Guerrins en heel Ferelden.
+HODA_REMARKABLE_EMERALD_GEAR_DESC|Een bijzonder mooi geslepen edelsteen met een prachtige groene tint. Een geweldig cadeau of een glanzende versterking.
+HODA_RETRIBUTION_ELIXIR_GEAR_DESC|Gevaarlijk elixer, alleen in te nemen als de strijd te zeer de verkeerde kant op gaat.
+HODA_REVERED_DEFENDER_MAUL_GEAR_DESC|Reusachtige strijdhamer van de Sha-Brytol-verdediger. Gekerfd om zowel te verpletteren als te verscheuren.
+HODA_RING_OF_DOUBT_GEAR_DESC|Een jonge magister, gedwongen tot een gearrangeerd huwelijk, betoverde zijn trouwring met onzichtbaarheid.
+HODA_RING_OF_RESILIENCE_GEAR_DESC|Naarmate het hart van de drager sneller klopt, neemt ook de mysterieuze gloed van de ring toe.
+HODA_RITUAL_BREAKER_GEAR_DESC|Deze sierlijke knots is bijna net zo mooi als het geluid van de botten die ze bij elke slag moeiteloos verbrijzelt.
+HODA_ROBES_OF_THE_ARCHITECT_GEAR_DESC|Anders dan ander duistergebroed, dat woeste, wrede harnassen verkiest, zien de gewaden van de Architect er bijna beschaafd uit.
+HODA_RUBY_RING_GEAR_DESC|Deze ring, beroemd gemaakt door keizerin Celene, betovert elk wapen met vlammen.
+HODA_SAAREBAS_RESTRAINTS_GEAR_DESC|Sterke boeien, die de Saarebas beschermen tegen zichzelf en anderen.
+HODA_SACRIFICIAL_DAGGER_GEAR_DESC|Wapens van vulkanisch aurum doorboren als geen ander. De geestschade van deze dolk maakt het nog erger.
+HODA_SAD_WEAPON_GEAR_DESC|Ook wel Marks Misvormde Knots. De kracht van dit wapen zit hem vooral in de vernedering van een banaan in je gezicht.
+HODA_SAVAGE_THORN_GEAR_DESC|Deze ruwe kling scheurt een vijand open en laat zich flink voelen.
+HODA_SCOUT_ARMOR_GEAR_DESC|Strak, wendbaar, moorddadig. Net als Sera.
+HODA_SCOUT_COAT_ARMS_GEAR_DESC|Een verbetering van het harnas dat verkenners op patrouille dragen.
+HODA_SCOUT_HAT_GEAR_DESC|Een helm van gehard leer, licht genoeg om snel te bewegen in het veld.
+HODA_SCOUT_QUIVER_GEAR_DESC|Ooit afgevraagd waarom vijanden beven bij het zien van deze koker? Misschien boezemt hij angst in.
+HODA_SEER_STAFF_GEAR_DESC|De energie van deze staf wordt gevoed door de pijn van bondgenoten.
+HODA_SENIOR_WARDENS_STAFF_GEAR_DESC|Wie in de rangen van de Wachters is opgeklommen, heeft misschien de grip om al het duivelse te beteugelen dat deze staf kan oproepen.
+HODA_SENTINEL_GAUNTLETS_GEAR_DESC|De handschoenen uit het kenmerkende harnas van de wachtelfen.
+HODA_SENTINEL_GREAVES_GEAR_DESC|De scheenplaten uit het kenmerkende harnas van de wachtelfen.
+HODA_SENTINEL_PLATE_PAULDRON_GEAR_DESC|Het schouderstuk uit het kenmerkende harnas van de wachtelfen.
+HODA_SENTINEL_STAFF_GEAR_DESC|Deze kristallen staf geeft de hanteerder een scherpere waarneming van zowel de levende wereld als de Vervaging.
+HODA_SER_ALVARDS_SWORD_GEAR_DESC|Decennialang vergeten in het Zwartmoeras. Deze kling heeft een uitgesproken geur, en geen prettige.
+HODA_SERAS_RAISIN_COOKIES_GEAR_DESC|Sera houdt niet van rozijnenkoekjes. De smaak ervan drijft haar tot geweld tegen wie er wel van houdt.
+HODA_SERUM_OF_AMBITION_GEAR_DESC|Een instabiel brouwsel dat de vaardigheden versterkt van wie een zwak lichaam maar een stalen overtuiging heeft.
+HODA_SHIELD_OF_LE_MARQUE_GEAR_DESC|Het wapen van het Huis Le Marque, de familie van vluchtelingenleider Fairbanks. Naar de zon op gezegende vleugels.
+HODA_SIDEREAL_STAFF_GEAR_DESC|De staf van Aurelian Titus, een magister van het Tevinteraanse Imperium. Uit elke vezel sijpelt bloedmagie.
+HODA_SKYWATCHERS_CLEAVER_GEAR_DESC|Ceremonieel slagzwaard van de Luchtspieder. Hakt moeiteloos een ledemaat af.
+HODA_SMUGGLERS_DAGGER_GEAR_DESC|Makkelijk te verbergen en snel te hanteren: een favoriete kling van minder favoriete lieden.
+HODA_SOLDIERS_PLATE_GEAR_DESC|Goedkoop maar betrouwbaar. Deze beproefde borstplaat zal je goed van dienst zijn.
+HODA_SOOTHERS_SAPPHIRE_GEAR_DESC|Deze betoverende edelsteen gloeit met een kalmerende energie en schenkt rust aan wie die zoekt.
+HODA_SOULWRECKER_STAFF_GEAR_DESC|Deze staf zindert van felle energie en begint te knetteren zodra je hem vasthoudt.
+HODA_SPEAR_THROWER_GEAR_DESC|Deze gruwelijke boog doorboort met de kracht van sylvanhout alles behalve de dikste harnassen.
+HODA_SPECTRAL_SCALE_GEAR_DESC|Afkomstig van de huid van een verslagen spookdraak. Hij voelt etherisch aan, bijna alsof hij er niet is.
+HODA_SPIRIT_MAUL_GEAR_DESC|De betovering van de Kruispunten in deze strijdhamer bindt de drager aan de Verschrikkelijke Wolf.
+HODA_STAFF_OF_AIDAHN_ALLIED_GEAR_DESC|Deze staf, gemaakt uit ruw rood lyrium, zuigt het leven uit iedereen om zich heen.
+HODA_STAFF_OF_CORRUPTION_GEAR_DESC|Als ze ons verdorven noemen, laten wij dan het verderf zijn.
+HODA_STAFF_OF_FAITH_GEAR_DESC|Door geloof beschermd. Met geloof verheven. Door geloof versterkt.
+HODA_STAFF_OF_SHADOWS_GEAR_DESC|Een duistere staf met een mensenschedel erin uitgesneden.
+HODA_STONEHAMMER_PLATE_GEAR_DESC|Dit harnas, in opdracht van koning Endrin Steenhamer gemaakt, werd betoverd en geschonken aan de winnaar van de Grote Beproeving.
+HODA_STROUDS_TARGE_GEAR_DESC|Versterkt schild van de Grijze Wachter ser Stroud. Laat een glorieuze snor nog meer glanzen.
+HODA_STUDDED_LEATHER_PAULDRON_GEAR_DESC|Versterkt leer biedt stevige bescherming en laat de drager volledig bewegingsvrij.
+HODA_STUFFED_MABARI_GEAR_DESC|Een trouwere metgezel vind je niet!
+HODA_SWIFTRUNNERS_SHIELD_GEAR_DESC|Ooit stond er een wapen op dit schild, maar dat is al lang vervaagd.
+HODA_SWORD_OF_CHARRIS_ALLIED_GEAR_DESC|Dit zwaard, gemaakt uit ruw rood lyrium, zuigt het leven uit iedereen om zich heen.
+HODA_TALON_OF_THE_SKIES_GEAR_DESC|Gezegend door de Vrouwe van de Hemel. Deze kling laat vijanden aarzelen voordat ze hen openrijt.
+HODA_TEMPLAR_BREASTPLATE_GEAR_DESC|Standaardharnas van de Orde der Tempeliers.
+HODA_TEMPLAR_COMMANDER_PAULDRON_GEAR_DESC|Getrapt staal. Gemaakt om de last van de groep te dragen.
+HODA_TEMPLAR_HELMET_GEAR_DESC|Standaardhelm van de Orde der Tempeliers.
+HODA_TEMPLAR_LONGSWORD_GEAR_DESC|Goed vervaardigd standaardlangzwaard van de Orde der Tempeliers.
+HODA_TEMPLAR_SHIELD_GEAR_DESC|Standaardschild voor ridders van de Orde der Tempeliers.
+HODA_THE_ANCESTORS_GREAVES_GEAR_DESC|Relikwie van een oud harnas uit een tijd waarin oorlog draaide om briljante strategie.
+HODA_THE_BIND_THAT_GUIDES_GEAR_DESC|Hoe los je deze riem ook knoopt, na een paar stappen sluit hij zich strak om je middel.
+HODA_THE_BLACK_FOXS_JERKIN_GEAR_DESC|Het laatste verhaal over de Zwarte Vos vertelt hoe hij dit wambuis verloor tijdens zijn zoektocht naar de stad van de elfen van Arlathan.
+HODA_THE_DIVINE_ARMOR_GEAR_DESC|Dit stralende harnas werd gemaakt voor de leider van de Fundatie.
+HODA_THE_ELDERS_GRIMOIRE_GEAR_DESC|Vervloekte grimoire van de Oudere, met de geheimen van rood lyrium en andere demonische riten.
+HODA_THE_EYE_THAT_WEEPS_GEAR_DESC|Op het oppervlak van de edelsteen vormt zich langzaam condens, hoe vaak je hem ook schoonveegt.
+HODA_THE_GOLDEN_PRINCES_HELM_GEAR_DESC|De jonge keizerin Celene was gebiologeerd door de verhalen van de Gouden Prins. Zijn helm was de enige kroon die hij wilde dragen.
+HODA_THE_GOLDEN_PRINCES_PAULDRON_GEAR_DESC|Bijpassend schouderstuk bij het Gewaad van de Gouden Prins. De Leeuw van Orlais vangt het geweld van aanvallen op met zijn schouders.
+HODA_THE_GOLDEN_PRINCES_RAIMENT_GEAR_DESC|Sierlijk harnas van de Gouden Prins, Emile Deveraux, die de harten van het Orlesiaanse volk veroverde.
+HODA_THE_HAND_THAT_CUTS_GEAR_DESC|Deze ring wordt ongewoon warm aan je vinger en klopt mee op het ritme van het hart van de drager.
+HODA_THE_LADYS_WRATH_GEAR_DESC|Gezegend door de Vrouwe van de Hemel. Elke zwaai met deze strijdhamer versterkt de hanteerder.
+HODA_THE_SKIN_THAT_STALKS_GEAR_DESC|Het leer van dit harnas geeft een zwakke, levende warmte af. Het is zwaarder dan het lijkt.
+HODA_TOME_OF_ARCANE_TECHNIQUE_GEAR_DESC|Dit boek, onderzocht door de Keizerlijke Fundatie, biedt inzicht in de Vervaging.
+HODA_TOME_OF_KOSLUN_GEAR_DESC|Een heilig geschrift van de Qunari-overlevering, geschreven door Ashkaari Koslun, de grondlegger van de Qun.
+HODA_TOME_OF_PHYSICAL_TECHNIQUE_GEAR_DESC|Dit manuscript, geschreven door een meester, zie je zelden buiten de meest prestigieuze organisaties.
+HODA_TOME_OF_RIFTS_GEAR_DESC|Deze tekst leert zijn volgelingen hoe ze energie uit de Vervaging putten en zich erin bewegen.
+HODA_TOME_OF_SKILL_AND_SUNDRY_GEAR_DESC|Een omvangrijk vroeg-Fereldaans werk dat veel disciplines probeert te verenigen in één theorie over het denkvermogen.
+HODA_TOME_OF_THE_MORTAL_VESSEL_GEAR_DESC|Angst voor bloedmagie bracht academische ontleding in diskrediet, maar anatomische werken zijn bewaard gebleven.
+HODA_VANGUARD_ARMOR_GEAR_DESC|Voor wie in de frontlinie staat.
+HODA_VENATORI_BOW_GEAR_DESC|Deze boog is doordrenkt met een venijnige bomspreuk, waardoor de pijlen explosieve schade aanrichten.
+HODA_VENATORI_GREAVES_GEAR_DESC|Deze scheenplaten, verstrekt aan Venatori-soldaten, zijn doorweven met de vroegere ketenen van slaven.
+HODA_VENATORI_HELMET_GEAR_DESC|Gesloten helm van de Venatori-soldaat.
+HODA_VENATORI_STAFF_BLADE_GEAR_DESC|Gedreven door vurige overtuigingen gebruiken de Venatori dit wapen om chaos te zaaien onder vijanden.
+HODA_VENATORI_TOWER_SHIELD_GEAR_DESC|Dit schild is doordrenkt met beschermende spreuken en dekt de hanteerder volledig af.
+HODA_VESTMENTS_OF_THE_ARCHMAGE_GEAR_DESC|Gedragen door magiërs die de titel aartsmagiër hebben behaald, een van de hoogste en machtigste rangen van de Kring.
+HODA_VESTMENTS_OF_THE_DRAGON_HUNTER_GEAR_DESC|Dit lichte harnas, gevonden naast het levenloze lichaam van Revenant Gurd, is alleen bestemd voor de meest gevreesde drakendoders.
+HODA_VIAL_OF_DRAGONS_BLOOD_GEAR_DESC|Drakenbloed heeft talloze toepassingen, maar de meesten zoeken het voor zijn magische eigenschappen. Wie het drinkt, kan grote kracht krijgen, als hij het overleeft.
+HODA_VIGILANCE_GEAR_DESC|Eens in de twaalf generaties wordt een werkelijk legendarisch wapen gesmeed. Deze kling, gemaakt uit de botten van een oude draak, zingt van kracht.
+HODA_VINSOMER_SCALE_GEAR_DESC|Afkomstig van de huid van een gedode vinsomer, zinderend van elektriciteit.
+HODA_VIRTUOSITY_GEAR_DESC|De magische effecten van deze luit zijn voor iedereen die hem vasthoudt meteen duidelijk, maar er is maar één persoon die zijn volle potentieel kan benutten.
+HODA_VITAAR_OF_THE_DRAGON_HUNTER_GEAR_DESC|Deze gezichtsverf wordt eigenlijk gemaakt van een dodelijk gif. De unieke fysiologie van de Qunari neutraliseert echter het effect en versterkt hun kracht.
+HODA_VORACITY_GEAR_DESC|Deze staf fluistert tegen zijn hanteerder en roept om steeds meer bloed om zijn honger te stillen.
+HODA_WALKING_DEATH_GEAR_DESC|De tekens van de Mortalitasi zijn onmiskenbaar. Hoe deze dolk in Emprise du Lion terechtkwam, is onbekend, maar de beet van zijn kling is dat niet.
+HODA_WARDEN_HELMET_GEAR_DESC|Gevleugelde helm van de Grijze Wachters.
+HODA_WARDEN_TOWER_SHIELD_GEAR_DESC|Zwaar schild van de Wachtercommandant. Het insigne van de Grijze Wachters weert de woestste aanvallen af.
+HODA_WARM_ORB_GEAR_DESC|Dit snuisterijtje lijkt op het eerste gezicht onschuldig, maar zindert van kracht en gehoorzaamt alleen aan bloed.
+HODA_WEDGE_OF_DESTINY_GEAR_DESC|Dit onheilige huwelijk van drakenschubben en belegen kaas is effectiever dan het lijkt. Zwak tegen vuur, tenzij je zin hebt in fondue.
+HODA_WILHELMS_STAFF_GEAR_DESC|Ooit het wapen van de held van de Fereldaanse Opstand. Ondanks zijn leeftijd is zijn kracht onverminderd.
+HODA_WINTERWEIGHT_GEAR_DESC|Gevonden in de Diepe Wegen, bewaakt door een draak en doordrenkt met magische krachten voor verdediging.
+HODA_YAVANALIS_GEAR_DESC|Staf van "de Bleke Demon", een Daalse Bewaarder die bekendstond om zijn wrede aanvallen op Orlesianen.
+HODA_GEAR_AEDUCANS_HAMMER_AURA_LOC_OVERRIDE|<color=green>+10% bonusschade. +20% energie en +10% schadeweerstand voor dwergen. +10% kans op 2X schade voor reisgezellen. Gedragen door Aeducan: +15% schadeweerstand.</color>
+HODA_GEAR_PLUS4_CRIT_CHANCE_SELF_DESC|<color=green>+4% kans op 2X schade.</color>
+HODA_GEAR_PLUS10_BONUS_DAMAGE_VS_BLUE_FACTION_DESC|<color=green>+10% bonusschade bij blauwe factie.</color>
+HODA_GEAR_DMG_RESIST_PCT_20_VS_WHITE_FACTION_ALAMARRI_WARLORD_EQUIP_DESC|<color=green>Gedragen door Alamarri-krijgsheer: +20% schadeweerstand vs witte factie.</color>
+HODA_GEAR_MINUS5_HEALTH_PERSONAL_DESC|<color=red>-5% energie (zelf).</color>
+HODA_GEAR_PLUS20_BONUS_DAMAGE_VS_BLACK_FACTION_DESC|<color=green>+20% bonusschade bij zwarte factie.</color>
+HODA_GEAR_PLUS8_POWER_PERSONAL_DESC|<color=green>+8% kracht.</color>
+HODA_GEAR_PLUS5_BONUS_DAMAGE_VS_BLIGHT_DESC|<color=green>+5% bonusschade bij Aangetasten.</color>
+HODA_GEAR_PLUS5_DAMAGE_RESIST_PERSONAL_DESC|<color=green>+5% schadeweerstand.</color>
+HODA_GEAR_PLUS11_CRIT_CHANCE_SELF_DESC|<color=green>+11% kans op 2X schade.</color>
+HODA_GEAR_MINUS4_HEALTH_PERSONAL_DESC|<color=red>-4% energie (zelf).</color>
+HODA_GEAR_PLUS10_HEALTH_PERSONAL_DESC|<color=green>+10% energie.</color>
+HODA_GEAR_PLUS8_CRIT_CHANCE_SELF_DESC|<color=green>+8% kans op 2X schade.</color>
+HODA_GEAR_PLUS15CURSEPOWERRESIST_TO_ELVES_DESC|<color=green>+15% weerstand tegen krachtvervloeking voor elfen.</color>
+HODA_GEAR_DAMRESGAIN_SELF_7_ON_SELF_HIT_DESC|<color=green>Krijgt +7% schadeweerstand als held wordt geraakt.</color>
+HODA_GEAR_PERCEPTIVE_SELF_DESC|<color=green>Opmerkzaam: Heft stealth op.</color>
+HODA_GEAR_PLUS6_POWER_SELF_ON_SELF_HIT_DESC|<color=green>+6% kracht als held wordt geraakt.</color>
+HODA_GEAR_PLUS12_BONUS_DAMAGE_VS_WARRIOR_ISABELA_ONLY_DESC|<color=green>Gedragen door Isabela: +12% bonusschade bij krijgers.</color>
+HODA_GEAR_PLUS5_CRIT_CHANCE_SELF_DESC|<color=green>+5% kans op 2X schade.</color>
+HODA_GEAR_QUICK_TARGETING_DESC|<color=orange>Valt veel eerder snelle rondehelden aan.</color>
+HODA_GEAR_PLUS5_POWER_ROGUES_PERSONAL_DESC|<color=green>Gedragen door rover: +5% kracht.</color>
+HODA_GEAR_PLUS5PCT_BONUS_DAMAGE_FOR_ALLIES_DESC|<color=green>+5% bonusschade voor reisgezellen.</color>
+HODA_GEAR_PLUS10_STUN_RESIST_ALLIES_DESC|<color=green>+10% verlammingsweerstand voor reisgezellen.</color>
+HODA_GEAR_ENEMY_POWER_DRAIN_WHEN_SELF_ATTACKED_3_DESC|<color=green>Tapt 3% kracht af bij vijanden als held wordt geraakt.</color>
+HODA_AURA_PLUS25HEALTH_TO_QUNARI|<color=green>+25% energie voor Qunari-reisgezellen.</color>
+HODA_GEAR_ASAARASH_FLANCHARD_AURA_LOC_OVERRIDE|<color=green>+15% weerstand tegen alle effecten. +25% kracht voor Qunari-reisgezellen.</color>
+HODA_GEAR_PLUS5_HEALTH_PERSONAL_DESC|<color=green>+5% energie.</color>
+HODA_GEAR_PLUS5_STUN_RESIST_SELF_DESC|<color=green>+5% verlammingsweerstand.</color>
+HODA_GEAR_DMG_RESIST_PCT_15_PERSONAL_DESC|<color=green>+15% schadeweerstand.</color>
+HODA_GEAR_PLUS5_POWER_ALLIES_DESC|<color=green>+5% kracht voor reisgezellen.</color>
+HODA_GEAR_PLUS10_POWER_DRAIN_RESIST_ALLIES_DESC|<color=green>+10% krachtaftapweerstand voor reisgezellen.</color>
+HODA_GEAR_PLUS12_POWER_PERSONAL_DESC|<color=green>+12% kracht.</color>
+HODA_GEAR_EXPLODE_ENEMIES_3_ON_ENEMY_HIT_DESC|<color=green>Als vijanden worden geraakt, lopen alle vijanden 3% van de toegebrachte schade op.</color>
+HODA_GEAR_PERCEPTIVE_SELF_FLORIANNE_DESC|<color=green>Gedragen door Florianne: Opmerkzaam: Heft stealth op.</color>
+HODA_AUGURS_WITCHSTAFF_GEAR_AURA_LOC_OVERRIDE|<color=green>+4% energie. +6% vervloekingsweerstand voor reisgezellen, dubbel zo veel voor Avvaranen en geesten.</color>
+HODA_GEAR_CRIT_CHANCE_15_PERSONAL_DESC|<color=green>+15% kans op 2X schade.</color>
+HODA_GEAR_EXPLODE_DRAGONS_30_ON_ENEMY_HIT_DESC|<color=green>Brengt bij een aanval 30% van de toegebrachte schade toe bij vijandelijke draken.</color>
+HODA_GEAR_BONUSDMG_SELF_SELFHIT_PLUS5_DESC|<color=green>Krijgt +5% bonusschade als held wordt geraakt.</color>
+HODA_GEAR_PLUS20_POWER_SELF_ON_ENEMY_DEATH_DESC|<color=green>Krijgt 20% kracht als een vijand doodgaat.</color>
+HODA_GEAR_HEALTH_ON_ALLY_DEATH_15_DESC|<color=green>Krijgt 15% energie als een reisgezel doodgaat.</color>
+HODA_GEAR_PLUS15_POWER_PERSONAL_DESC|<color=green>+15% kracht.</color>
+HODA_GEAR_DMG_RESIST_PCT_15_TO_BLIGHT_DESC|<color=green>+15% schadeweerstand voor Aangetasten.</color>
+HODA_GEAR_BIANCA_AURA_LOC_OVERRIDE|<color=green>+15% kans op 2X schade. Bij dood reisgezel krijgen reisgezellen +7% bonusschade.</color> <color=red>-25% vervloekingsweerstand.</color> <color=green>Gedragen door Varric: Stealth: Valt aan zonder treffereffecten te activeren.</color>
+HODA_BLACKMETAL_TORQUE_GEAR_AURA_LOC_OVERRIDE|<color=green>+8% kracht. +10% schadeweerstand. Gedragen door hond: +15% energie en +10% kans op 2X schade.</color>
+HODA_GEAR_BONUSDMG_SELF_PLUS20_DESC|<color=green>+20% bonusschade.</color>
+HODA_GEAR_HEALTH_SELF_ALLYATK_PLUS7_DESC|<color=green>Herstelt +7% als vijanden worden geraakt.</color>
+HODA_GEAR_HEALTH_SELF_MINUS20_DESC|<color=red>-20% energie (zelf).</color>
+HODA_GEAR_HEALTH_SELF_REDLYRIUM_PLUS20_DESC|<color=green>Gedragen door held van rood lyrium: +20% energie.</color>
+HODA_GEAR_PLUS4_POWER_DRAIN_RESIST_SELF_DESC|<color=green>+4% krachtaftapweerstand.</color>
+HODA_GEAR_PLUS3_CRIT_CHANCE_SELF_DESC|<color=green>+3% kans op 2X schade.</color>
+HODA_GEAR_PLUS7_DAMAGE_RESIST_PERSONAL_DESC|<color=green>+7% schadeweerstand.</color>
+HODA_GEAR_PLUS5_POWER_PERSONAL_DESC|<color=green>+5% kracht.</color>
+HODA_GEAR_PLUS5_STUN_RESIST_SELF_AVVAR_DESC|<color=green>Gedragen door Avvaraan: +5% verlammingsweerstand.</color>
+HODA_GEAR_BOOTS_OF_FAITH_AURA_LOC_OVERRIDE|<color=green>+10% kracht en energie. +5% kans op 2X schade voor reisgezellen.</color> <color=orange>Valt eerder de langzaamste vijand aan.</color>
+HODA_GEAR_PLUS10_DAMAGE_RESIST_PERSONAL_DESC|<color=green>+10% schadeweerstand.</color>
+HODA_GEAR_HEALTH_FERELDEN_PLUS5_DESC|<color=green>+5% energie voor Fereldeners.</color>
+HODA_GEAR_PLUS10_POWER_DRAIN_RESIST_SELF_DESC|<color=green>+10% krachtaftapweerstand.</color>
+HODA_GEAR_CURSEPOWERRESIST_SELF_SELFHIT_PLUS5_DESC|<color=green>Krijgt +5% weerstand tegen krachtvervloeking als held wordt geraakt.</color>
+HODA_GEAR_CRIT_CHANCE_SELF_LOGHAIN_EQUIP_PLUS5_DESC|<color=green>Gedragen door Loghain: +5% kans op 2X schade.</color>
+HODA_GEAR_PLUS4_BONUS_DAMAGE_VS_DEFENDERS_HEALERS_DESC|<color=green>+4% bonusschade bij verdedigers en genezers.</color>
+HODA_GEAR_PLUS4_POWER_ROGUES_DESC|<color=green>+4% kracht voor rovers.</color>
+HODA_GEAR_PLUS2PCT_POWER_VS_WARRIORS_DESC|<color=green>+2% schade vs krijgers.</color>
+HODA_GEAR_PLUS10_POWER_PERSONAL_DESC|<color=green>+10% kracht.</color>
+HODA_GEAR_ENEMY_POWER_DRAIN_WHEN_SELF_ATTACKED_2_DESC|<color=green>Tapt 2% kracht af bij vijanden als held wordt geraakt.</color>
+HODA_GEAR_MINUS25_STUN_RESIST_DESC|<color=red>-25% verlammingsweerstand.</color>
+HODA_GEAR_PLUS15_DAMAGE_RESIST_SELF_VS_FLANKERS_DESC|<color=green>+15% schadeweerstand vs flankaanvallers.</color>
+HODA_GEAR_PLUS3_POWER_PERSONAL_DESC|<color=green>+3% kracht.</color>
+HODA_GEAR_PLUS7_BONUS_DAMAGE_SELF_DESC|<color=green>+7% bonusschade.</color>
+HODA_GEAR_EXPLODE_ALL_5_DESC|<color=green>Als een vijand doodgaat, lopen alle vijanden 5% van de toegebrachte schade op.</color>
+HODA_GEAR_PLUS10_DAMAGE_RESIST_PERSONAL_IRONBULL_ONLY|<color=green>Gedragen door de IJzeren Stier: +10% schadeweerstand.</color>
+HODA_GEAR_PLUS6_HEALTH_PERSONAL_DESC|<color=green>+6% energie.</color>
+HODA_GEAR_PLUS7_SLOW_RESIST_ALLIES_DESC|<color=green>+7% vertragingsweerstand voor reisgezellen.</color>
+HODA_GEAR_CERTAINTY_AURA_LOC_OVERRIDE|<color=red>-10% alle weerstanden (zelf).</color> <color=green>+15% kracht. +7% schade vs demonen. Gedragen door Meredith, Samson: krijgt +5% schadeweerstand als reisgezellen worden geraakt.</color>
+HODA_GEAR_PLUS4_HEALTH_ALLIES_DESC|<color=green>+4% energie voor reisgezellen.</color>
+HODA_GEAR_PLUS2_HEALTH_ALLIES_ON_SELF_HIT_BM_DESC|<color=green>Converteert 2% van opgelopen schade naar energie voor reisgezellen.</color>
+HODA_GEAR_STEALTH_SELF_LELIANA_DESC|<color=green>Gedragen door Leliana: Stealth: Valt aan zonder treffereffecten te activeren.</color>
+HODA_GEAR_PLUS10_STUN_RESIST_SELF_DESC|<color=green>+10% verlammingsweerstand.</color>
+HODA_GEAR_POWER_FERELDEN_PLUS5_DESC|<color=green>+5% kracht voor Fereldeners.</color>
+HODA_GEAR_HEALTH_GAIN_WHEN_SELF_HIT_25_DESC|<color=green>Krijgt +25% energie als held wordt geraakt.</color>
+HODA_GEAR_DMGRES_SELF_LOGHAIN_EQUIP_PLUS15_DESC|<color=green>Gedragen door Loghain: +15% schadeweerstand.</color>
+HODA_GEAR_ENEMY_NEG_FLANK_24950_DESC|<color=red>Verkleint de kans dat vijanden flankeren.</color>
+HODA_GEAR_PLUS50_DAMAGE_RESIST_SELF_VS_FLANKERS_DESC|<color=green>+50% schadeweerstand vs flankaanvallers.</color>
+HODA_GEAR_PLUS5_DAMAGE_FOR_FLANKERS_DESC|<color=green>Gedragen door flankaanvaller: +5% bonusschade.</color>
+HODA_GEAR_PLUS3_BONUS_DAMAGE_SELF_DESC|<color=green>+3% bonusschade.</color>
+HODA_GEAR_PLUS5_DAMAGE_RESIST_PERSONAL_CIRCLE_ONLY_DESC|<color=green>Gedragen door lid van de Kring: +5% schadeweerstand.</color>
+HODA_GEAR_PLUS8_POWER_DRAIN_RESIST_SELF_DESC|<color=green>+8% krachtaftapweerstand.</color>
+HODA_GEAR_PLUS5_POWER_TEVINTER_PERSONAL_DESC|<color=green>Gedragen door Tevinteraan: +5% kracht.</color>
+HODA_GEAR_PLUS4_DAMAGE_RESIST_PERSONAL_ARCHON_ONLY_DESC|<color=green>Gedragen door Archon: +4% schadeweerstand.</color>
+HODA_GEAR_PLUS4_DAMAGE_RESIST_SPIRITS_DESC|<color=green>+4% schadeweerstand voor geesten.</color>
+HODA_GEAR_PLUS4_CRIT_CHANCE_SELF_COLE_ONLY_DESC|<color=green>Gedragen door Cole: +4% kans op 2X schade.</color>
+HODA_GEAR_POWER_GAIN_WHEN_ALLY_HIT_5_VAL_FROM_DAM_DESC|<color=green>Converteert 5% van door reisgezellen opgelopen schade naar kracht.</color>
+HODA_GEAR_RETALIATE_ALL_ON_SELF_HIT_5_VAL_FROM_DAM_DESC|<color=green>Kaatst 5% van opgelopen schade terug naar vijanden.</color>
+HODA_GEAR_PLUS7_CRIT_CHANCE_SELF_DESC|<color=green>+7% kans op 2X schade.</color>
+HODA_GEAR_STEALTH_SELF_ZEVRAN_DESC|<color=green>Gedragen door Zevran: Stealth: Valt aan zonder treffereffecten te activeren.</color>
+HODA_GEAR_PLUS12_SLOW_RESIST_SELF_DESC|<color=green>+12% vertragingsweerstand.</color>
+HODA_GEAR_PLUS10_CRIT_CHANCE_SELF_DESC|<color=green>+10% kans op 2X schade.</color>
+HODA_GEAR_PLUS5_BONUS_DAMAGE_SELF_DESC|<color=green>+5% bonusschade.</color>
+HODA_GEAR_PLUS15_SLOW_RESIST_SELF_DESC|<color=green>+15% vertragingsweerstand.</color>
+HODA_GEAR_PLUS4_SLOW_RESIST_SELF_DESC|<color=green>+4% vertragingsweerstand.</color>
+HODA_GEAR_PLUS5_HEALTH_ALLIES_ON_ENEMY_DEATH_DESC|<color=green>Reisgezellen krijgen 5% energie als een vijand doodgaat.</color>
+HODA_GEAR_PLUS2_HEALTH_ELVES_DESC|<color=green>+2% energie voor elfse reisgezellen.</color>
+HODA_GEAR_DMG_RESIST_PCT_5_TO_ELVES_DESC|<color=green>+5% schadeweerstand voor elfen.</color>
+HODA_GEAR_PLUS3_HEALTH_PERSONAL_DESC|<color=green>+3% energie.</color>
+HODA_GEAR_AURA_HEALTH_GAIN_WHEN_SELF_HIT_7_DESC|<color=green>Herstelt 7% als held wordt geraakt.</color>
+HODA_GEAR_PLUS2_HEALTH_SELF_ON_ALLY_HIT_DESC|<color=green>Krijgt 2% energie als een reisgezel wordt geraakt.</color>
+HODA_GEAR_DIPLOMATIC_MISSIVES_AURA_LOC_OVERRIDE|<color=green>+10% kracht en krachtaftapweerstand voor reisgezellen. Gedragen door Josephine: krijgt +10% schadeweerstand als held wordt geraakt.</color> <color=red>-10% kracht voor vijanden.</color>
+HODA_GEAR_AURA_HEALTH_GAIN_WHEN_SELF_HIT_10_DESC|<color=green>Herstelt 10% als held wordt geraakt.</color>
+HODA_GEAR_PLUS6_POWER_DRAGONS_DESC|<color=green>+6% kracht voor drakenreisgezellen.</color>
+HODA_GEAR_POWERGAIN_ALLIES_10_ON_SELF_DEATH_DESC|<color=green>Reisgezellen krijgen 10% kracht als deze held doodgaat.</color>
+HODA_GEAR_PLUS10_CURSE_HEALTH_RESIST_DESC|<color=green>+10% weerstand tegen energievervloeking voor reisgezellen.</color>
+HODA_GEAR_PLUS4_POWER_PERSONAL_DESC|<color=green>+4% kracht.</color>
+HODA_GEAR_PLUS2_POWER_SELF_ON_ALLY_HIT_DESC|<color=green>Krijgt 2% kracht als een reisgezel wordt geraakt.</color>
+HODA_GEAR_DUSTER_BATTLEAXE_AURA_LOC_OVERRIDE|<color=green>+10% kracht. +5% bonusschade voor dwergen. +15% vervloekingsweerstand voor dwergen.</color>
+HODA_GEAR_PLUS10_STUNRESIST_TO_DWARF_DESC|<color=green>+10% verlammingsweerstand voor dwergen.</color>
+HODA_GEAR_HEALTH_ALLIES_PLUS10_DESC|<color=green>+10% energie voor reisgezellen.</color>
+HODA_GEAR_DMG_RESIST_PCT_10_TO_DWARF_DESC|<color=green>+10% schadeweerstand voor dwergen.</color>
+HODA_GEAR_PLUS5HEALTH_DESC|<color=green>+5% energie voor reisgezellen.</color>
+HODA_GEAR_PLUS5POWER_TO_DWARF_DESC|<color=green>+5% kracht voor dwergen.</color>
+HODA_GEAR_SLOW_RESIST_10_TO_DWARVES_DESC|<color=green>+10% vertragingsweerstand voor dwergen.</color>
+HODA_GEAR_POWER_DRAIN_RESIST_10_TO_DWARVES_DESC|<color=green>+10% krachtaftapweerstand voor dwergen.</color>
+HODA_GEAR_DWORKINS_HIGH_EXPLOSIVES_AURA_LOC_OVERRIDE|<color=green>Als vijanden worden geraakt, lopen alle vijanden 6% van de toegebrachte schade op, maar reisgezellen 2%.</color>
+HODA_GEAR_DWORKINS_SAFE_EXPLOSIVES_AURA_LOC_OVERRIDE|<color=green>Als vijanden worden geraakt, lopen alle vijanden 3% van de toegebrachte schade op, maar reisgezellen 1%.</color>
+HODA_GEAR_PLUS8_BONUS_DAMAGE_VS_WHITE_FACTION_DESC|<color=green>+8% bonusschade bij witte factie.</color>
+HODA_GEAR_PLUS12_STUN_RESIST_ALLIES_DESC|<color=green>+12% verlammingsweerstand voor reisgezellen.</color>
+HODA_GEAR_PLUS2_CRIT_CHANCE_SELF_DESC|<color=green>+2% kans op 2X schade.</color>
+HODA_GEAR_PLUS2_DAMAGE_RESIST_PERSONAL_DESC|<color=green>+2% schadeweerstand.</color>
+HODA_GEAR_PLUS8PCT_POWER_VS_POWER_GAINERS_DESC|<color=green>+8% bonusschade bij krachtopbouwers.</color>
+HODA_GEAR_EMBLAZONED_KIRKWALL_SHIELD_AURA_LOC_OVERRIDE|<color=green>Reisgezellen weren de eerste 2000 schade per treffer af. +10% weerstand tegen alle effecten voor de Vrije Marken.</color>
+HODA_GEAR_PLUS1000_RAW_DAMAGE_RESIST_PERSONAL_DESC|<color=green>+1000 schadeweerstand per treffer.</color>
+HODA_GEAR_AURA_PLUS15HEALTH_THEIRIN_ONLY_DESC|<color=green>Gedragen door familie Theirin: +15% energie.</color>
+HODA_GEAR_PLUS3_HEALTH_ALLIES_ON_SELF_HIT_DESC|<color=green>Reisgezellen krijgen 3% energie als held wordt geraakt.</color>
+HODA_EXPENSIVE_DOG_TREAT_GEAR_AURA_LOC_OVERRIDE|<color=green>+5% kracht. +3% energie voor monsters. Gedragen door Cullen en rendiermabari: +10% verlammings- en vertragingsweerstand.</color>
+HODA_GEAR_STEALTH_PERSONAL_DESC|<color=green>Stealth: Valt aan zonder treffereffecten te activeren.</color>
+HODA_GEAR_POWER_SELF_MINUS15_DESC|<color=red>-15% kracht (zelf).</color>
+HODA_GEAR_MINUS10_HEALTH_PERSONAL_DESC|<color=red>-10% energie (zelf).</color>
+HODA_GEAR_FADE_TOUCHED_SILVERITE_AURA_LOC_OVERRIDE|<color=green>Krijgt +5% schadeweerstand als held wordt geraakt. Krijgt bij dood reisgezel +20% energie en kracht.</color>
+HODA_FADESBANE_GEAR_AURA_LOC_OVERRIDE|<color=green>+10% bonusschade bij blauwe factie. Gedragen door Tempelier: extra +5%.</color>
+HODA_GEAR_HEALTH_GAIN_ALL_WHEN_ENEMY_HIT_5_DESC|<color=green>Reisgezellen herstellen 5% als een vijand wordt geraakt.</color>
+HODA_GEAR_BRAVE_TARGETING_SELF_DESC|<color=orange>Valt eerder de sterkste vijand aan.</color>
+HODA_GEAR_BONUSDMG_SELF_FERELDEN_EQUIP_PLUS3_DESC|<color=green>Gedragen door Fereldener: +3% bonusschade.</color>
+HODA_GEAR_PERCEPTIVE_SELF_ANORA_DESC|<color=green>Gedragen door Anora: Opmerkzaam: Heft stealth op.</color>
+HODA_GEAR_PLUS1_DAMAGE_RESIST_PERSONAL_DESC|<color=green>+1% schadeweerstand.</color>
+HODA_GEAR_BONUSDMG_CIRCLE_PLUS3_DESC|<color=green>+3% bonusschade voor de Kring.</color>
+HODA_GEAR_ALLY_GAIN_DAMAGE_RESIST_WHEN_SELF_ATTACKED_10_DESC|<color=green>Reisgezellen krijgen 10% schadeweerstand als held wordt geraakt.</color>
+HODA_GEAR_SELF_GAIN_BONUS_DAMAGE_WHEN_ATTACKING_5_DESC|<color=green>Krijgt +5% bonusschade bij een aanval.</color>
+HODA_GEAR_HEALTH_GAIN_WHEN_SELF_HIT_15_DESC|<color=green>Krijgt +15% energie als held wordt geraakt.</color>
+HODA_GEAR_HEALTH_SELF_PLUS15_DESC|<color=green>+15% energie.</color>
+HODA_GEAR_DMGRESIST_SERA_SELFHIT_PLUS15_DESC|<color=green>Gedragen door Sera: krijgt +15% schadeweerstand als held wordt geraakt.</color>
+HODA_GEAR_DMGRESIST_SELF_SELFHIT_PLUS10_DESC|<color=green>Krijgt +10% schadeweerstand als held wordt geraakt.</color>
+HODA_GEAR_SLOWRESIST_SELF_SELFATTACK_PLUS10_DESC|<color=green>Krijgt +10% vertragingsweerstand bij een aanval.</color>
+HODA_GEAR_PERCEPTIVE_SELF_SERA_DESC|<color=green>Gedragen door Sera: Opmerkzaam: Heft stealth op.</color>
+HODA_GEAR_MINUS25_SLOW_RESIST_DESC|<color=red>-25% vertragingsweerstand.</color>
+HODA_GEAR_FLAWLESS_FIRE_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>+25% kracht en energie voor reisgezellen bij dood reisgezel.</color> <color=red>-35% vervloekingsweerstand.</color> <color=green>Gedragen door Shale: +10% kans op 2X schade.</color>
+HODA_GEAR_FLAWLESS_ICE_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>+10% krachtaftapweerstand voor dwergen en golems (stapelend). Gedragen door Shale: +10% kracht.</color>
+HODA_GEAR_FLAWLESS_LIGHTNING_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>+15% vervloekingsweerstand voor dwergen en golems (stapelend). Gedragen door Shale: +10% schadeweerstand.</color>
+HODA_GEAR_FLAWLESS_NATURE_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>+10% vertragingsweerstand voor dwergen en golems (stapelend). Gedragen door Shale: +10% energie.</color>
+HODA_GEAR_FLAWLESS_SPIRIT_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>+15% verlammingsweerstand voor dwergen en golems (stapelend). Gedragen door Shale: +5% bonusschade.</color>
+HODA_FLEMETHS_GRIMOIRE_GEAR_AURA_LOC_OVERRIDE|<color=green>+8% schadeweerstand. +8% kracht voor afvallige reisgezellen. Gedragen door Heks uit de Wildernis: +2500 schadeweerstand per treffer.</color>
+HODA_GEAR_MINUS5_POWER_ENEMIES_DESC|<color=red>-5% kracht voor vijanden.</color>
+HODA_GEAR_GAMORDAN_STORMRIDER_SCALE_AURA_LOC_OVERRIDE|<color=green>+10% schadeweerstand voor monsters.</color> <color=red>-25% verlammingsweerstand.</color> <color=green>Gedragen door draak: +15% weerstand tegen alle effecten.</color>
+HODA_GEAR_PLUS10_HEALTH_ALLIES_ON_SELF_HIT_DESC|<color=green>Herstelt reisgezellen 10% als held wordt geraakt.</color>
+HODA_GEAR_PLUS10_DAMAGE_FOR_GARAHEL_DESC|<color=green>Gedragen door Garahel: +10% bonusschade.</color>
+HODA_GAUNTLETS_OF_THE_NUG_GEAR_AURA_LOC_OVERRIDE|<color=green>+5% schadeweerstand. +3% vervloekingsweerstand.</color>
+HODA_GEAR_PLUS7_POWER_PERSONAL_DESC|<color=green>+7% kracht.</color>
+HODA_GEAR_EXPLODE_ALL_2_DESC|<color=green>Als een vijand doodgaat, lopen alle vijanden 2% van de toegebrachte schade op.</color>
+HODA_GEAR_FLANK_PERSONAL_DESC|<color=orange>Valt eerder de achterste rij aan.</color>
+HODA_GEAR_PLUS10_DAMAGE_PERSONAL_VS_NOBILITY_DESC|<color=green>+10% bonusschade bij adel.</color>
+HODA_GEAR_GIRDLE_OF_THE_SKIES_AURA_LOC_OVERRIDE|<color=green>+10% vervloekingsweerstand. Converteert 10% van opgelopen schade naar energie en kracht.</color>
+HODA_GEAR_GLANDIVALIS_AURA_LOC_OVERRIDE|<color=green>+15% energie. Elfse reisgezellen krijgen +10% bonusschade en schadeweerstand vs Wachters.</color> <color=red>-10% verlammingsweerstand.</color>
+HODA_GEAR_CRIT_CHANCE_FERELDEN_PLUS5_DESC|<color=green>+5% kans op 2X schade voor Fereldeners.</color>
+HODA_GEAR_PLUS10_SLOW_RESIST_SELF_DESC|<color=green>+10% vertragingsweerstand.</color>
+HODA_GEAR_PLUS5_POWER_SELF_ON_SELF_HIT_DESC|<color=green>Krijgt 5% kracht als held wordt geraakt.</color>
+HODA_GEAR_BONUSDMG_SELF_LOGHAIN_EQUIP_PLUS5_DESC|<color=green>Gedragen door Loghain: +5% bonusschade.</color>
+HODA_GEAR_PLUS5_HEALTH_SELF_ON_ALLY_HIT_DESC|<color=green>Krijgt 5% energie als een reisgezel wordt geraakt.</color>
+HODA_GEAR_PLUS10_POWER_APOSTATES_DESC|<color=green>+10% kracht voor afvallige reisgezellen.</color>
+HODA_GEAR_GREATER_MISTRAL_SCALE_AURA_LOC_OVERRIDE|<color=green>+10% kans op 2X schade voor monsters.</color> <color=red>-25% krachtaftapweerstand.</color> <color=green>Gedragen door draak: Opmerkzaam: Heft stealth op.</color>
+HODA_GEAR_5DRAIN_ALL_ENEMIES_ON_SELF_HIT_DESC|<color=green>Tapt 5% kracht af bij vijanden als held wordt geraakt.</color>
+HODA_GEAR_PLUS10_SLOW_RESIST_ALLIES_DESC|<color=green>+10% vertragingsweerstand voor reisgezellen.</color>
+HODA_GEAR_DMG_RESIST_PCT_15_TO_WARDENS_DESC|<color=green>+15% schadeweerstand voor Wachters.</color>
+HODA_GEAR_DEFENDER_25_DESC|<color=green>+25% Verdediger.</color>
+HODA_GEAR_PLUS10_HEALTH_SELF_ON_ALLY_HIT_DESC|<color=green>Krijgt 10% energie als een reisgezel wordt geraakt.</color>
+HODA_GEAR_GRIFFONRIDER_LEATHERS_AURA_LOC_OVERRIDE|<color=green>+7% bonusschade. Reisgezellen krijgen +15% kracht en energie bij elke dood. Als een vijand doodgaat, lopen alle vijanden 2% van de toegebrachte schade op.</color>
+HODA_GEAR_PERSONAL_STUN_RESIST_25_DESC|<color=green>+25% verlammingsweerstand.</color>
+HODA_GEAR_HAKKONS_WISDOM_AURA_LOC_OVERRIDE|<color=green>Opmerkzaam: Heft stealth op. +10% bonusschade. Krijgt +8% energie als een vijand doodgaat.</color> <color=red>-25% vervloekingsweerstand voor vijanden.</color>
+HODA_GEAR_PLUS8_BONUS_DAMAGE_SELF_DESC|<color=green>+8% bonusschade.</color>
+HODA_GEAR_PLUS5_CRIT_CHANCE_ALLIES_DESC|<color=green>+5% kans op 2X schade voor reisgezellen.</color>
+HODA_GEAR_HEALTH_ON_ENEMY_DEATH_15_DESC|<color=green>Herstelt +15% als een vijand doodgaat.</color>
+HODA_GEAR_PLUS7_HEALTH_PERSONAL_DESC|<color=green>+7% energie.</color>
+HODA_GEAR_POWER_GAIN_ALL_WHEN_ENEMY_HIT_4_SELF_DESC|<color=green>Converteert 4% van door vijanden opgelopen schade naar kracht voor reisgezellen.</color>
+HODA_GEAR_DEFENDER_15_DESC|<color=green>Absorbeert 15% AoE-schade voor reisgezellen.</color>
+HODA_GEAR_PLUS400_RAW_DAMAGE_RESIST_PERSONAL_DESC|<color=green>+400 schadeweerstand per treffer.</color>
+HODA_GEAR_RETALIATE_10_ON_SELF_HIT_VAL_FROM_DAM_DESC|<color=green>Kaatst 10% van opgelopen schade terug naar vijanden.</color>
+HODA_GEAR_CURSE_POWER_RESIST_15_SELF_DESC|<color=green>+15% weerstand tegen krachtvervloeking.</color>
+HODA_GEAR_DMGRESIST_AVVAR_PLUS10_DESC|<color=green>+10% schadeweerstand voor Avvaranen.</color>
+HODA_GEAR_HEALTH_AVVAR_SELFATK_CONVERT4_DESC|<color=green>Gedragen door Avvaraan: converteert 4% van de eigen toegebrachte schade naar energie voor Avvaranen.</color>
+HODA_GEAR_MINUS3_HEALTH_PERSONAL_DESC|<color=red>-3% energie (zelf).</color>
+HODA_GEAR_PLUS15_POWER_DRAIN_RESIST_SELF_DESC|<color=green>+15% krachtaftapweerstand.</color>
+HODA_GEAR_PLUS10PCT_POWER_VS_QUICK_DESC|<color=green>+10% bonusschade bij snelle rondehelden.</color>
+HODA_GEAR_WOUNDED_TARGETING_DESC|<color=orange>Valt eerder de vijand met het laagste % energie aan.</color>
+HODA_GEAR_PLUS10_HEALTH_ICE_GIANT_ONLY_DESC|<color=green>Gedragen door IJsreus: +10% energie.</color>
+HODA_GEAR_PLUS6_POWER_PERSONAL_DESC|<color=green>+6% kracht.</color>
+HODA_GEAR_PLUS4_CRIT_CHANCE_INQUISITION_ONLY_DESC|<color=green>Gedragen door lid van de Inquisitie: +4% kans op 2X schade.</color>
+HODA_GEAR_PLUS2_HEALTH_PERSONAL_DESC|<color=green>+2% energie.</color>
+HODA_GEAR_PLUS2_DAMAGE_RESIST_INQUISITION_DESC|<color=green>+2% schadeweerstand voor Inquisitie-reisgezellen.</color>
+HODA_GEAR_PLUS5PCT_BONUS_DAMAGE_FOR_INQUISITION_DESC|<color=green>+5% bonusschade voor Inquisitie-reisgezellen.</color>
+HODA_GEAR_PLUS3_DAMAGE_RESIST_PERSONAL_DESC|<color=green>+3% schadeweerstand.</color>
+HODA_GEAR_EXPLODE_ALL_SELFATK_CONVERT5_DESC|<color=green>Brengt bij een aanval +5% van de toegebrachte schade toe bij alle vijanden.</color>
+HODA_GEAR_PERCEPTIVE_SELF_BLIGHTED_DESC|<color=green>Gedragen door Aangetaste: Opmerkzaam: Heft stealth op.</color>
+HODA_GEAR_MINUS50SLOWRESIST_TO_ENEMIES_DESC|<color=red>-50% vertragingsweerstand.</color>
+HODA_GEAR_JOINING_CHALICE_AURA_LOC_OVERRIDE|<color=green>+20% kracht en +25% vervloekingsweerstand voor Wachters.</color> <color=red>-20% energie (zelf).</color>
+HODA_GEAR_KADDIS_OF_THE_MOUNTAINFATHER_AURA_LOC_OVERRIDE|<color=green>+5% weerstand tegen alle effecten en schade.</color>
+HODA_GEAR_KALTENZAHN_SCALE_AURA_LOC_OVERRIDE|<color=green>+25% vervloekingsweerstand voor monsters. Monsters weren de eerste 2500 schadepunten af. Gedragen door draak: valt binnen het initiatief eerder als eerste aan.</color>
+HODA_GEAR_STEALTH_SELF_ELUSIVE_DESC|<color=green>Gedragen door ongrijpbare held: Stealth: Valt aan zonder treffereffecten te activeren.</color>
+HODA_KEEPSAKE_LOCKET_GEAR_AURA_LOC_OVERRIDE|<color=green>+5% weerstand tegen energie- en krachtvervloeking. Gedragen door familie Hawke: +6% schadeweerstand.</color>
+HODA_GEAR_PLUS60_HEALTH_ALLIES_ON_SELF_DEATH_DESC|<color=green>Herstelt reisgezellen 60% als held doodgaat.</color>
+HODA_GEAR_POWER_SELF_ON_ALLY_DEATH_10_CAT_PERSONAL_DESC|<color=green>Gedragen door kat: krijgt 10% kracht als een reisgezel doodgaat.</color>
+HODA_GEAR_PLUS10_BONUS_DAMAGE_VS_BLIGHT_DESC|<color=green>+10% bonusschade bij Aangetasten.</color>
+HODA_GEAR_PLUS10_POWER_LEGION_DESC|<color=green>+10% kracht voor het Legioen der Doden.</color>
+HODA_GEAR_HATRED_BLIGHTED_DESC|<color=orange>Valt eerder Aangetasten aan.</color>
+HODA_GEAR_PLUS8_DAMAGE_RESIST_PERSONAL_DESC|<color=green>+8% schadeweerstand.</color>
+HODA_GEAR_PLUS4PCT_BONUS_DAMAGE_LEGION_ONLY_DESC|<color=green>Gedragen door lid van het Legioen der Doden: +4% bonusschade.</color>
+HODA_GEAR_LEGIONNAIRE_PLATE_AURA_LOC_OVERRIDE|<color=green>+12% energie. +8% verlammings- en schadeweerstand. Gedragen door lid van het Legioen der Doden: krijgt +3% schadeweerstand als held wordt geraakt.</color>
+HODA_GEAR_20DAMAGE_ALLIES_ON_SELF_DEATH_DESC|<color=red>Als held doodgaat, verliezen reisgezellen 20% energie.</color>
+HODA_GEAR_MINUS15_HEALTH_PERSONAL_DESC|<color=red>-15% energie (zelf).</color>
+HODA_GEAR_EXPLODE_ALLIES_2_ON_ENEMY_HIT_DESC|<color=red>Als vijanden worden geraakt, lopen alle reisgezellen 2% van de toegebrachte schade op.</color>
+HODA_GEAR_PLUS4_CRIT_CHANCE_SELF_CARVERHAWKE_ONLY_DESC|<color=green>Gedragen door Carver Hawke: +4% kans op 2X schade.</color>
+HODA_GEAR_LITANY_OF_ADRALLA_AURA_LOC_OVERRIDE|<color=green>+25% bonusschade bij demonen en bloedmagiërs voor reisgezellen. +15% vervloekingsweerstand voor reisgezellen.</color>
+HODA_GEAR_PLUS3_POWER_SELF_ON_ALLY_DEATH_DESC|<color=green>Krijgt 3% kracht als een reisgezel doodgaat.</color>
+HODA_GEAR_LYRIUM_KIT_AURA_LOC_OVERRIDE|<color=green>Opmerkzaam: Heft stealth op. +10% schadeweerstand vs magiërs en demonen, dubbel zo veel vs bloedmagiërs.</color> <color=red>-15% kracht voor magiërs en demonen.</color>
+HODA_GEAR_PLUS5PCT_BONUS_DAMAGE_FOR_OUTLAWS_DESC|<color=green>+5% bonusschade voor bandieten.</color>
+HODA_GEAR_PLUS7PCT_BONUS_DAMAGE_VS_CHANTRY_TEVINTER_DESC|<color=green>+7% bonusschade bij Fundatie en Tevinter voor reisgezellen.</color>
+HODA_MAGEKILLER_GEAR_AURA_LOC_OVERRIDE|<color=green>+10% bonusschade bij magiërs, dubbel zo veel bij bloedmagiërs.</color>
+HODA_GEAR_DMG_RESIST_PCT_10_DESC|<color=green>+10% schadeweerstand voor reisgezellen.</color>
+HODA_GEAR_DMGRESIST_ALLIES_PLUS5_DESC|<color=green>+5% schadeweerstand voor reisgezellen.</color>
+HODA_GEAR_PLUS4_POWER_SELF_ON_ALLY_DEATH_DESC|<color=green>Krijgt 4% kracht als een reisgezel doodgaat.</color>
+HODA_GEAR_MINUS8_STUN_RESIST_ENEMIES_DESC|<color=red>-8% verlammingsweerstand voor vijanden.</color>
+HODA_GEAR_HATRED_LARGE_CREATURES_DESC|<color=orange>Valt eerder grote monsters aan.</color>
+HODA_GEAR_PLUS25_PCT_POWER_VS_LARGE_CREATURES_DESC|<color=green>+25% bonusschade bij grote monsters.</color>
+HODA_GEAR_POWER_SELF_ENEMYHIT_CONVERT4_DESC|<color=green>Converteert 4% van door vijanden opgelopen schade naar kracht.</color>
+HODA_GEAR_PLUS10_CURSE_POWER_RESIST_DESC|<color=green>+10% weerstand tegen krachtvervloeking voor reisgezellen.</color>
+HODA_GEAR_HEALTHGAIN_SELF_5_ON_SELF_HIT_DESC|<color=green>Krijgt 5% energie als held wordt geraakt.</color>
+HODA_GEAR_PLUS6_HEALTH_SELF_ELVES_ONLY_DESC|<color=green>Gedragen door elf: +6% energie.</color>
+HODA_GEAR_HEALTH_GAIN_WHEN_SELF_HIT_20_DESC|<color=green>Herstelt 20% als held wordt geraakt.</color>
+HODA_GEAR_DMG_RESIST_PCT_20_VS_TEVINTER_PERSONAL_DESC|<color=green>+20% schadeweerstand vs Tevinter.</color>
+HODA_GEAR_PLUS25PCT_POWER_PERSONAL_FENRIS_ONLY_DESC|<color=green>Gedragen door Fenris: +25% bonusschade.</color>
+HODA_GEAR_MINUS8_POWER_DRAIN_RESIST_ENEMIES_DESC|<color=red>-8% krachtaftapweerstand voor vijanden.</color>
+HODA_ORB_OF_DESTRUCTION_GEAR_AURA_LOC_OVERRIDE|<color=green>+4% kracht voor reisgezellen. +7% bonusschade voor, en tegen, zwarte factie en demonen (stapelend).</color>
+HODA_GEAR_ORB_OF_FENHAREL_AURA_LOC_OVERRIDE|<color=green>+35% energie voor elfen. +25% alle weerstanden voor blauwe factie. Gedragen door Fen’Harel: kaatst 10% van opgelopen schade terug naar vijanden van de zwarte factie als held wordt geraakt.</color>
+HODA_GEAR_ORLESIAN_HENNIN_AURA_LOC_OVERRIDE|<color=green>+10% verlammings-, vertragings- en krachtaftapweerstand. Gedragen door Vivienne: +25% kracht en +20% vervloekingsweerstand.</color>
+HODA_GEAR_PLUS7_STUN_RESIST_SELF_DESC|<color=green>+7% verlammingsweerstand.</color>
+HODA_GEAR_PLUS9_SLOW_RESIST_SELF_DESC|<color=green>+9% vertragingsweerstand.</color>
+HODA_GEAR_PLUS3_POWER_DRAIN_RESIST_SELF_ARISHOK_ONLY_DESC|<color=green>Gedragen door de Arishok: +3% krachtaftapweerstand.</color>
+HODA_GEAR_PLUS1000_RAW_DAMAGE_RESIST_VS_DRAGONS_PERSONAL_DESC|<color=green>Weert 1000 schade van draken af.</color>
+HODA_GEAR_PLUS4_HEALTH_PERSONAL_DESC|<color=green>+4% energie.</color>
+HODA_GEAR_MINUS3_CRIT_CHANCE_ENEMIES_DESC|<color=red>-3% kans op 2X schade voor vijanden.</color>
+HODA_GEAR_PLUS9_CRIT_CHANCE_SELF_DESC|<color=green>+9% kans op 2X schade.</color>
+HODA_GEAR_STEALTH_SELF_CELENE_DESC|<color=green>Gedragen door Celene: Stealth: Valt aan zonder treffereffecten te activeren.</color>
+HODA_GEAR_PLUS3_HEALTH_SELF_ARVAARAD_ONLY_DESC|<color=green>Gedragen door Arvaarad: +3% energie.</color>
+HODA_GEAR_PLUS3_POWER_SELF_ON_SELF_HIT_DESC|<color=green>Krijgt +3% kracht als held wordt geraakt.</color>
+HODA_GEAR_HATRED_TEVINTER_DESC|<color=green>Valt eerder Tevinter aan.</color>
+HODA_GEAR_PLUS10_POWER_DRAIN_RESIST_QUNARI_DESC|<color=green>+10% krachtaftapweerstand voor Qunari.</color>
+HODA_GEAR_HEAL5_ALLIES_WHEN_ALLY_HIT_DESC|<color=green>Reisgezellen krijgen 5% energie als reisgezellen worden geraakt.</color>
+HODA_GEAR_MIUNUS_CRIT_CHANCE_2_SELF_DESC|<color=red>-2% kans op 2X schade (zelf).</color>
+HODA_GEAR_MINUS10_STUN_RESIST_ENEMIES_DESC|<color=red>-10% verlammingsweerstand voor vijanden.</color>
+HODA_GEAR_POWER_COMMON_UNCOMMON_PLUS50_DESC|<color=green>+50% kracht voor algemene en bijzondere reisgezellen.</color>
+HODA_GEAR_PLUS10_HEALTH_RED_LYRIUM_DESC|<color=green>+10% energie voor reisgezellen van rood lyrium.</color>
+HODA_GEAR_MINUS10_POWER_PERSONAL_DESC|<color=red>-10% kracht (zelf).</color>
+HODA_REDCLIFFE_SHIELD_GEAR_AURA_LOC_OVERRIDE|<color=green>+6% energie. +6% verlammingsweerstand voor Fereldaanse reisgezellen. Gedragen door familie Guerrin: +5% kracht.</color>
+HODA_GEAR_PLUS6_HEALTH_DWARVES_DESC|<color=green>+6% energie voor dwergen-reisgezellen.</color>
+HODA_GEAR_PLUS3_POWER_MAGES_DESC|<color=green>+3% kracht voor magiër-reisgezellen.</color>
+HODA_GEAR_PLUS7_BONUS_DAMAGE_VS_RED_FACTION_DESC|<color=green>+7% bonusschade bij rode factie.</color>
+HODA_RING_OF_RESILIENCE_GEAR_AURA_LOC_OVERRIDE|<color=green>+5% verlammings-, vertragings- en krachtaftapweerstand voor reisgezellen.</color>
+HODA_GEAR_PLUS3_DAMAGE_RESIST_ALLIES_DESC|<color=green>+3% schadeweerstand voor reisgezellen.</color>
+HODA_GEAR_ROBES_OF_THE_ARCHITECT_AURA_LOC_OVERRIDE|<color=green>+15% weerstand tegen alle effecten voor Aangetasten. Herstelt +15% en krijgt +5% kracht als held wordt geraakt.</color>
+HODA_GEAR_PLUS5_DAMAGE_RESIST_ORLESIAN_DESC|<color=green>+5% schadeweerstand voor Orlesiaanse reisgezellen.</color>
+HODA_GEAR_MINUS10STUNRESIST_PERSONAL_DESC|<color=red>-10% verlammingsweerstand (zelf).</color>
+HODA_GEAR_PLUS3_POWER_SELF_BLOOD_MAGE_ABILITY_DESC|<color=green>Converteert 3% van opgelopen schade naar kracht.</color>
+HODA_GEAR_CURSEPOWERIMMUNE_SELF_SAAREBAS_DESC|<color=green>Gedragen door Saarebas: immuun voor krachtvervloeking.</color>
+HODA_GEAR_PLUS3_HEALTH_SELF_ON_ALLY_HIT_DESC|<color=green>Krijgt 3% energie als een reisgezel wordt geraakt.</color>
+HODA_GEAR_PLUS3_DAMAGE_FOR_SPIRITS_DESC|<color=green>Gedragen door geest: +3% bonusschade.</color>
+HODA_GEAR_PLUS5_HEALTH_SELF_ON_ENEMY_DEATH_DESC|<color=green>Herstelt 5% als een vijand doodgaat.</color>
+HODA_GEAR_PLUS4_POWER_SELF_ON_SELF_HIT_DESC|<color=green>Krijgt 4% kracht als held wordt geraakt.</color>
+HODA_GEAR_PLUS10PCT_DAMAGE_VS_MYTHIC_FOR_SERA_DESC|<color=green>Gedragen door Sera: +10% bonusschade bij mythische helden.</color>
+HODA_GEAR_PLUS15_DAMAGE_RESIST_SELF_VS_ROGUES_MAGES_DESC|<color=green>+15% schadeweerstand vs rovers en magiërs.</color>
+HODA_GEAR_PLUS8_STUN_RESIST_SELF_DESC|<color=green>+8% verlammingsweerstand.</color>
+HODA_GEAR_PLUS3_POWER_ROGUES_DESC|<color=green>+3% kracht voor rover-reisgezellen.</color>
+HODA_GEAR_STEALTH_SELF_SCOUTHARDING_DESC|<color=green>Gedragen door Verkenner Harding: Stealth: Valt aan zonder treffereffecten te activeren.</color>
+HODA_SENIOR_WARDENS_STAFF_GEAR_AURA_LOC_OVERRIDE|<color=green>+6% kracht voor witte en zwarte factie (stapelend). Gedragen door Janeka: +5% energie.</color>
+HODA_GEAR_PLUS10_BONUS_DAMAGE_SELF_DESC|<color=green>+10% bonusschade.</color>
+HODA_GEAR_CRIT_CHANCE_5_ELVES_ONLY_DESC|<color=green>Gedragen door elf: +5% kans op 2X schade.</color>
+HODA_GEAR_POWER_DRAIN_RESIST_15_ELVES_ONLY_DESC|<color=green>Gedragen door elf: +15% krachtaftapweerstand.</color>
+HODA_GEAR_PLUS7_HEALTH_SELF_ON_ALLY_DEATH_DESC|<color=green>Krijgt 7% energie als een reisgezel doodgaat.</color>
+HODA_GEAR_PLUS5_DAMAGE_RESIST_SELF_VS_BLUE_FACTION_DESC|<color=green>+5% schadeweerstand vs blauwe factie.</color>
+HODA_GEAR_PLUS2_BONUS_DAMAGE_SELF_DESC|<color=green>+2% bonusschade.</color>
+HODA_GEAR_SERAS_RAISIN_COOKIES_RUNE_LOC_OVERRIDE|<color=green>+5% bonusschade bij krachtopbouwers (die dol zijn op rozijnenkoekjes) en valt ze eerder aan.</color>
+HODA_GEAR_SERUM_OF_AMBITION_RUNE_LOC_OVERRIDE|<color=green>+35% energie en kracht voor epische reisgezellen.</color>
+HODA_GEAR_PLUS6_STUN_RESIST_ORLESIAN_DESC|<color=green>+6% verlammingsweerstand voor Orlesiaanse reisgezellen.</color>
+HODA_GEAR_PLUS5_POWER_FAIRBANKS_DESC|<color=green>Gedragen door Fairbanks: +5% kracht.</color>
+HODA_GEAR_BONUSDMG_SELF_SELFATTACK_PLUS10_DESC|<color=green>+10% bonusschade bij een aanval. </color>
+HODA_GEAR_POWER_AURELIANTITUS_CONVERT15_DESC|<color=green>Gedragen door Aurelian Titus: converteert 15% van opgelopen schade naar kracht.</color>
+HODA_GEAR_PLUS4_POWER_ALLIES_DESC|<color=green>+4% kracht voor reisgezellen.</color>
+HODA_GEAR_PLUS5_POWER_HEALERS_DESC|<color=green>+5% kracht voor genezer-reisgezellen.</color>
+HODA_GEAR_PLUS2_POWER_SELF_ON_SELF_HIT_DESC|<color=green>Krijgt +2% kracht als held wordt geraakt.</color>
+HODA_SPEAR_THROWER_GEAR_AURA_LOC_OVERRIDE|<color=green>+5% bonusschade bij niet-geesten. +3% kans op 2X schade.</color>
+HODA_GEAR_SPECTRAL_SCALE_AURA_LOC_OVERRIDE|<color=green>Reisgezellen krijgen 35% energie en kracht bij dood reisgezel.</color> <color=red>-25% vertragingsweerstand.</color> <color=green>Gedragen door draak: +8% kans op 2X schade.</color>
+HODA_GEAR_PLUS15_DAMAGE_RESIST_FENHAREL_DESC|<color=green>+15% schadeweerstand voor Fen'Harel.</color>
+HODA_GEAR_MINUS3_POWER_ENEMIES_DESC|<color=red>-3% kracht voor vijanden.</color>
+HODA_GEAR_AURA_HEALTH_GAIN_ALL_WHEN_ENEMY_HIT_2_DESC|<color=green>Reisgezellen herstellen 2% als een vijand wordt geraakt.</color>
+HODA_GEAR_PLUS3PCT_BONUS_DAMAGE_FOR_ALLIES_DESC|<color=green>+3% bonusschade voor reisgezellen.</color>
+HODA_GEAR_PLUS2_DAMAGE_RESIST_ALLIES_DESC|<color=green>+2% schadeweerstand voor reisgezellen.</color>
+HODA_GEAR_PLUS5_HEALTH_SELF_STROUD_ONLY_DESC|<color=green>Gedragen door Stroud: extra +5% energie.</color>
+HODA_GEAR_PLUS2_DAMAGE_RESIST_ROGUE_DESC|<color=green>+2% schadeweerstand voor rover-reisgezellen.</color>
+HODA_GEAR_PLUS3_HEALTH_WHITE_FACTION_DESC|<color=green>+3% energie voor reisgezellen van de witte factie.</color>
+HODA_GEAR_PLUS5_POWER_CREATURES_PERSONAL_DESC|<color=green>Gedragen door monster: +5% kracht.</color>
+HODA_GEAR_PLUS6_CURSE_HEALTH_RESIST_DESC|<color=green>+6% weerstand tegen energievervloeking voor reisgezellen.</color>
+HODA_GEAR_MINUS10_SLOWRESIST_ENEMIES_DESC|<color=red>-10% vertragingsweerstand voor vijanden.</color>
+HODA_GEAR_TEMPLAR_BREASTPLATE_AURA_LOC_OVERRIDE|<color=green>+10% vervloekings-, verlammings-, vertragings- en krachtaftapweerstand voor reisgezellen.</color>
+HODA_GEAR_PLUS1_DAMAGE_RESIST_ALLIES_DESC|<color=green>+1% schadeweerstand voor reisgezellen.</color>
+HODA_GEAR_PLUS5PCT_POWER_VS_MAGES_DESC|<color=green>+5% bonusschade bij magiërs.</color>
+HODA_GEAR_PLUS2_CRIT_CHANCE_ALLIES_DESC|<color=green>+2% kans op 2X schade voor reisgezellen.</color>
+HODA_GEAR_DEFENDER_10_DESC|<color=green>+10% Verdediger.</color>
+HODA_GEAR_PERSONAL_STUN_IMMUNE_DESC|<color=green>Immuun voor verlamming.</color>
+HODA_GEAR_THE_BLACK_FOXS_JERKIN_AURA_LOC_OVERRIDE|<color=green>+10% weerstand tegen alle effecten. +6% kans op 2X schade.</color> <color=orange>Valt binnen het initiatief eerder als eerste aan.</color>
+HODA_GEAR_THE_DIVINE_ARMOR_AURA_LOC_OVERRIDE|<color=green>10% weerstand tegen alle effecten voor reisgezellen. +10% schadeweerstand. Gedragen door Cassandra: herstelt +10% als held wordt geraakt.</color>
+HODA_GEAR_THE_DIVINE_BOOTS_AURA_LOC_OVERRIDE|<color=green>+15% energie, krachtaftap- en schadeweerstand voor Fundatie. Vertragingsimmuniteit voor de Goddelijken.</color>
+HODA_GEAR_THE_DIVINE_HELMET_AURA_LOC_OVERRIDE|<color=green>Reisgezellen krijgen +8% energie en +2% bonusschade als reisgezellen aanvallen. Gedragen door een Goddelijke: Opmerkzaam: Heft stealth op.</color>
+HODA_GEAR_PLUS7_POWER_RED_LYRIUM_DESC|<color=green>+7% kracht voor reisgezellen van rood lyrium.</color>
+HODA_GEAR_PLUS3_POWER_BLACK_FACTION_DESC|<color=green>+3% kracht voor reisgezellen van de zwarte factie.</color>
+HODA_GEAR_RETALIATE_ENEMY_ALLYDEATH_CONVERT10_DESC|<color=green>Kaatst 10% van opgelopen schade terug naar vijanden als reisgezellen doodgaan.</color>
+HODA_GEAR_POWER_DRAIN_IMMUNE_PERSONAL_DESC|<color=green>Immuun voor krachtaftapping.</color>
+HODA_GEAR_GOLDEN_PRINCES_HELM_AURA_LOC_OVERRIDE|<color=green>Tapt 5% kracht af bij vijanden als held wordt geraakt. +12% vertragingsweerstand voor Orlesianen.</color> <color=red>-10% verlammings- en vertragingsweerstand.</color>
+HODA_GEAR_PLUS7_HEALTH_ALLIES_ON_SELF_HIT_DESC|<color=green>Herstelt reisgezellen 7% als held wordt geraakt.</color>
+HODA_GEAR_PLUS12_STUN_RESIST_ORLESIAN_DESC|<color=green>+12% verlammingsweerstand voor Orlesiaanse reisgezellen.</color>
+HODA_GEAR_DMG_RESIST_2000_DESC|<color=green>Reisgezellen weren 2000 schade af.</color>
+HODA_GEAR_POWER_OUTLAW_RED_LYRIUM_MINUS15_DESC|<color=red>-15% kracht voor bandieten en rood lyrium.</color>
+HODA_GEAR_PLUS20_HEALTH_PERSONAL_DESC|<color=green>+20% energie.</color>
+HODA_GEAR_PLUS20_SLOW_RESIST_ALLIES_DESC|<color=green>+20% vertragingsweerstand voor reisgezellen.</color>
+HODA_GEAR_TOME_OF_KOSLUN_AURA_LOC_OVERRIDE|<color=green>Opmerkzaam: Heft stealth op. +10% bonusschade. +10% schadeweerstand en weerstand tegen alle effecten voor Qunari.</color>
+HODA_GEAR_PLUS8_HEALTH_PERSONAL_DESC|<color=green>+8% energie.</color>
+HODA_GEAR_TOME_OF_SKILL_AND_SUNDRY_AURA_LOC_OVERRIDE|Krijgt +5% weerstand tegen alle effecten en schade als held wordt geraakt.
+HODA_GEAR_PLUS10_POWER_SELF_ON_ALLY_DEATH_DESC|<color=green>Krijgt 10% kracht als een reisgezel doodgaat.</color>
+HODA_VENATORI_HELMET_GEAR_AURA_LOC_OVERRIDE|<color=green>+3% energie en verlammingsweerstand voor Venatori.</color>
+HODA_GEAR_VENATORI_STAFF_BLADE_AURA_LOC_OVERRIDE|<color=green>+5% kracht en energie.</color> <color=red>-10% kracht, verlammings- en vertragingsweerstand voor vijanden.</color>
+HODA_GEAR_DMG_RESIST_1500_DESC|<color=green>Reisgezellen weren de eerste 1500 schade af.</color>
+HODA_GEAR_PERCEPTIVE_SELF_WYNNE_DESC|<color=green>Gedragen door Wynne: Opmerkzaam: Heft stealth op.</color>
+HODA_GEAR_HEALTH_GAIN_ALL_WHEN_ENEMY_HIT_5_SELF_DESC|<color=green>Converteert 5% van door vijanden opgelopen schade naar energie voor reisgezellen.</color>
+HODA_GEAR_VIGILANCE_AURA_LOC_OVERRIDE|<color=green>+10% kracht, energie en weerstand tegen alle effecten. +5% bonusschade.</color>
+HODA_GEAR_VINSOMER_SCALE_AURA_LOC_OVERRIDE|<color=green>Reisgezellen krijgen 4% kracht als reisgezellen aanvallen.</color> <color=red>-25% vervloekingsweerstand. Verkleint de kans dat vijanden flankeren.</color> <color=green>Gedragen door draak: +25% energie.</color>
+HODA_GEAR_VIRTUOSITY_AURA_LOC_OVERRIDE|<color=green>+10% vervloekingsweerstand voor reisgezellen. Gedragen door Zither: +20% energie, kracht en schadeweerstand.</color>
+HODA_GEAR_VITAAR_OF_THE_DRAGON_HUNTER_AURA_LOC_OVERRIDE|<color=green>+15% kracht en kans op 2X schade.</color>
+HODA_GEAR_PLUS4_POWER_BLOODMAGES_DESC|<color=green>+4% kracht voor bloedmagiër-reisgezellen.</color>
+HODA_WALKING_DEATH_GEAR_AURA_LOC_OVERRIDE|<color=green>+10% bonusschade bij rode factie, zwarte factie en verdedigers (stapelend).</color>
+HODA_GEAR_PLUS4_HEALTH_WARDEN_DESC|<color=green>+4% energie voor Wachter-reisgezellen.</color>
+HODA_GEAR_PLUS9_DAMAGE_RESIST_SELF_VS_LARGE_CREATURES_DESC|<color=green>+9% schadeweerstand vs grote monsters.</color>
+HODA_GEAR_PLUS2_HEALTH_ALLY_BLOOD_MAGE_ABILITY_SELF_DESC|<color=green>Converteert 2% van door reisgezellen opgelopen schade naar energie.</color>
+HODA_WEDGE_OF_DESTINY_GEAR_AURA_LOC_OVERRIDE|<color=green>Converteert 4% van opgelopen schade naar energie. Weert de eerste 300 schade per treffer af, want er moet door een hoop kaas heen worden gebeten.</color>
+HODA_WILHELMS_STAFF_GEAR_AURA_LOC_OVERRIDE|<color=green>+5% bonusschade. +5% vervloekingsweerstand.</color>
+HODA_GEAR_WINTERWEIGHT_AURA_LOC_OVERRIDE|<color=green>+15% weerstand tegen schade en alle effecten. +15% Verdediger.</color>
+HODA_GEAR_HEALTH_ON_ENEMY_DEATH_7_ALLIES_DESC|<color=green>Reisgezellen herstellen +7% als een vijand doodgaat.</color>
+HODA_GEAR_MINUS20_SLOW_RESIST_TO_ORLESIAN_DESC|<color=red>-20% vertragingsweerstand voor Orlesianen.</color>

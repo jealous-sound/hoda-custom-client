@@ -210,6 +210,10 @@ static const char *BackendPlayerId(void) {
     return backend_state.player_id;
 }
 
+const char *BackendCurrentPlayerId(void) {
+    return backend_state.enabled && backend_state.account_ready ? backend_state.player_id : NULL;
+}
+
 static bool BackendRequestSession(const BackendState *state, BackendResponse *response) {
     cJSON *request = cJSON_CreateObject();
     cJSON_AddStringToObject(request, "player_id", state->player_id);
@@ -587,6 +591,7 @@ static void *BackendWorkerRun(void *argument) {
 static BackendWorker *BackendWorkerStart(void) {
     BackendWorker *w = &backend_worker;
     if (w->started) return w;
+    w->stopping = false;
     if (pthread_create(&w->thread, NULL, BackendWorkerRun, w) != 0)
         TraceLog(LOG_FATAL, "Backend: could not start the network worker");
     w->started = true;

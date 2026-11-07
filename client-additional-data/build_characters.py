@@ -19,9 +19,6 @@ reference = json.load(open(REFERENCE_CHARACTERS))
 reference_loc_en = json.load(
     open(os.path.join(os.path.dirname(REFERENCE_CHARACTERS), "localization", "Loc_ENG_US.json"))
 )
-reference_loc_ru = json.load(
-    open(os.path.join(os.path.dirname(REFERENCE_CHARACTERS), "localization", "Loc_RUS_RU.json"))
-)
 
 def load_pipe_loc(language):
     path = os.path.join(
@@ -37,7 +34,6 @@ def load_pipe_loc(language):
     return entries
 
 old_loc_en = load_pipe_loc("ENG_US")
-old_loc_ru = load_pipe_loc("RUS_RU")
 
 SPEED   = {0: "Slow", 1: "Normal", 2: "Quick"}
 RARITY  = {1: "Common", 2: "Uncommon", 3: "Rare", 4: "Epic", 5: "Legendary", 6: "Mythic"}
@@ -161,14 +157,12 @@ for uid, u in units.items():
         or ability_loc(old_loc_en, ability_key)
         or v.get("ability_text", "")
     )
-    ability_ru = normalize_text(ref.get("ability_ru") or ability_loc(old_loc_ru, ability_key))
     groups = u.get("Groups", [])
     equipped_rune_key = u.get("EquippedRuneDescriptionKey", "")
     target_weight_key = u.get("TargetWeightDescriptionKey", "")
     characters.append({
         "id":     uid,
         "name":   clean_name(uid, tget(u, "DefaultName", "IV") or ""),
-        "name_ru": normalize_text(ref.get("name_ru")),
         "icon":   as_per_tier(u.get("ThumbImage", "")),
 
         "rarity": RARITY.get(u.get("Rarity"), "Unknown"),
@@ -181,9 +175,7 @@ for uid, u in units.items():
         "faction_id":  fac,
         "groups":      groups,
         "groups_en":   localized_groups(groups, reference_loc_en),
-        "groups_ru":   localized_groups(groups, reference_loc_ru),
         "faction_en":  localized_faction(u, reference_loc_en),
-        "faction_ru":  localized_faction(u, reference_loc_ru),
         "specialties": u.get("Specialties", []),
 
         "gear_slots":        u.get("NumGearSlots", 0),
@@ -193,16 +185,13 @@ for uid, u in units.items():
         "ability": {
             "key":    ability_key,
             "text":   ability_en,
-            "text_ru": ability_ru,
             "target": TARGET.get(u.get("AbilityUnitTarget"), "One"),
             "mechanics": infer_ability_mechanics(ability_en, u.get("Specialties", [])),
         },
         "equipped_rune": equipped_rune_key,
         "equipped_rune_text": reference_loc(reference_loc_en, equipped_rune_key),
-        "equipped_rune_text_ru": reference_loc(reference_loc_ru, equipped_rune_key),
         "target_weight": target_weight_key,
         "target_weight_text": reference_loc(reference_loc_en, target_weight_key),
-        "target_weight_text_ru": reference_loc(reference_loc_ru, target_weight_key),
 
         "models": per_tier_models(uid, u.get("UnitPrefab", "")),
         "vfx":    v.get("shared_vfx_prefabs", []),

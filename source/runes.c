@@ -114,7 +114,7 @@ void RunesInitialize(RunesScreen *r) {
     r->craft_mode = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GOLD, LocGet("RUNE_CRAFT_MODE_BUTTON"), font, anchor, scale);
     r->activate = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("RUNES_ACTIVATE"), font, anchor, scale);
     r->cancel = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("RUNES_CANCEL"), font, anchor, scale);
-    r->sort = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "Сорт.", font, anchor, 0.4f);
+    r->sort = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("HODA_INVENTORY_SORT"), font, anchor, 0.4f);
     r->store = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("BUTTON_MAINSCREEN_STORE"), font, anchor, scale);
     r->craft_one = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("RUNE_CRAFT_BUTTON"), font, anchor, scale);
     r->craft_many =
@@ -122,7 +122,8 @@ void RunesInitialize(RunesScreen *r) {
     r->message_ok = ButtonLoadText(
         GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("RUNE_SINGLE_CONFIRMATION_OK_BUTTON"), font, anchor, scale
     );
-    r->prestige_unlock = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "Разблокировать", font, anchor, 0.27f);
+    r->prestige_unlock =
+        ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("HODA_RUNE_PRESTIGE_UNLOCK"), font, anchor, 0.27f);
     r->dialog_yes = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("CONFIRM_DIALOG_YES"), font, anchor, scale);
     r->dialog_no = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("CONFIRM_DIALOG_NO"), font, anchor, scale);
     r->dialog_ok = ButtonLoadText(
@@ -291,13 +292,13 @@ static void RunesDropAssign(RunesScreen *r, Player *p, int slot, uint64_t uuid, 
         case RUNE_ASSIGN_OK:
             break;
         case RUNE_ASSIGN_NEEDS_PRESTIGE_RUNE:
-            RunesShowMessage(r, "В эту ячейку можно вставить только престижную руну.");
+            RunesShowMessage(r, LocGet("HODA_RUNE_PRESTIGE_REJECT_RUNE_MESSAGE"));
             return;
         case RUNE_ASSIGN_NEEDS_NORMAL_SLOT:
-            RunesShowMessage(r, "Эту руну можно вставить только в престижную ячейку.");
+            RunesShowMessage(r, LocGet("HODA_RUNE_PRESTIGE_REJECT_SLOT_MESSAGE"));
             return;
         case RUNE_ASSIGN_SLOT_LOCKED:
-            RunesShowMessage(r, "Чтобы использовать эту престижную руну, разблокируйте ячейку при помощи самоцветов.");
+            RunesShowMessage(r, LocGet("HODA_RUNE_PRESTIGE_REJECT_LOCKED_MESSAGE"));
             return;
         default:
             return;
@@ -375,7 +376,7 @@ void RunesDrawTile(const RuneDef *def, Rectangle cell, bool selected) {
     RunesDrawIcon(def->buff_icon, (Rectangle){strip.x + strip.width - buff_size, strip.y, buff_size, buff_size}, WHITE);
     UiDrawTextCentered(
         GuiFont(FNT_MENU),
-        def->value_ru,
+        RuneValueText(def),
         (Rectangle){strip.x, strip.y, strip.width - buff_size, strip.height},
         strip.height * 0.72f,
         WHITE
@@ -390,7 +391,7 @@ void RunesDrawCard(const RuneDef *def, const PlayerRune *rune, Rectangle card, l
     Rectangle header = UiRect(card, 0.5f, 0.0f, 1.0f, 0.165f);
     GuiId plaque = def->rarity == RUNE_PRESTIGE_RARITY ? GUI_PLAQUE_PRESTIGE : GUI_PLAQUE_COMMON + rarity - 1;
     UiDrawTexture(GuiTex(plaque), header, WHITE);
-    UiDrawTextCentered(title, def->name_ru, UiRect(header, 0.5f, 0.15f, 0.88f, 0.5f), header.height * 0.34f, WHITE);
+    UiDrawTextCentered(title, RuneName(def), UiRect(header, 0.5f, 0.15f, 0.88f, 0.5f), header.height * 0.34f, WHITE);
     UiDrawTextCentered(
         body,
         RuneRarityLabel(def->rarity),
@@ -404,7 +405,7 @@ void RunesDrawCard(const RuneDef *def, const PlayerRune *rune, Rectangle card, l
     RunesDrawIcon(def->icon, UiRect(main, 0.47f, 0.2f, icon_height * RUNES_ICON_ASPECT, icon_height), WHITE);
     HeroesRichLayout(
         body,
-        def->desc_ru,
+        RuneDescription(def),
         UiRect(main, 0.5f, -0.035f, 0.84f, 0.22f),
         card.height * 0.036f,
         (Color){230, 226, 214, 255},
@@ -416,8 +417,8 @@ void RunesDrawCard(const RuneDef *def, const PlayerRune *rune, Rectangle card, l
     Color label = {196, 192, 180, 255};
     RunesDrawIcon(def->buff_icon, (Rectangle){stats.x, stats.y, row, row}, WHITE);
     Rectangle boost = {stats.x + row * 1.1f, stats.y, stats.width - row * 1.1f, row};
-    UiDrawTextLeftMiddle(body, def->buff_ru, boost, font_size, label);
-    UiDrawTextRight(body, def->value_ru, boost, font_size, WHITE);
+    UiDrawTextLeftMiddle(body, RuneBuffLabel(def), boost, font_size, label);
+    UiDrawTextRight(body, RuneValueText(def), boost, font_size, WHITE);
 
     char text[32];
     RuneFormatClock(def->duration_minutes * RUNE_SECONDS_PER_MINUTE, text, sizeof(text));
@@ -521,7 +522,11 @@ static void RunesDrawSlot(RunesScreen *r, Player *p, int slot, bool input, long 
     bool dragged = r->dragging && r->press_uuid == uuid;
     if (!dragged) RunesDrawIcon(def->icon, icon, WHITE);
     UiDrawTextLeftMiddle(
-        body, def->value_ru, (Rectangle){text.x, text.y + 18.0f, text.width, 36.0f}, 24.0f, (Color){255, 240, 180, 255}
+        body,
+        RuneValueText(def),
+        (Rectangle){text.x, text.y + 18.0f, text.width, 36.0f},
+        24.0f,
+        (Color){255, 240, 180, 255}
     );
     char clock[32];
     long long seconds = RuneIsActivated(rune) ? rune->expire_at - now : def->duration_minutes * RUNE_SECONDS_PER_MINUTE;
@@ -669,7 +674,7 @@ static void RunesDrawActivation(RunesScreen *r, float dt) {
     Rectangle bar = {cx - 237.5f * pulse, 140.0f, 475.0f * pulse, 65.0f * pulse};
     UiDrawTexture(GuiTex(GUI_COMBAT_PREBATTLE_BG), bar, WHITE);
     char text[128];
-    snprintf(text, sizeof(text), "%s %s", def->name_ru, def->value_ru);
+    snprintf(text, sizeof(text), "%s %s", RuneName(def), RuneValueText(def));
     UiDrawTextCentered(GuiFont(FNT_COOL), text, bar, 24.0f * pulse, WHITE);
     float icon = 72.0f * pulse;
     RunesDrawIcon(def->buff_icon, (Rectangle){cx - icon * 0.5f, bar.y + bar.height - 8.0f, icon, icon}, WHITE);
@@ -778,16 +783,12 @@ static void RunesDrawPrestigeUnlock(RunesScreen *r, Player *p) {
         WHITE
     );
     MessagePopupDrawText(
-        GuiFont(FNT_MENU),
-        "Разблокировать престижную ячейку этого отряда?",
-        UiRect(content, 0.5f, 1.0f, 0.95f, 0.5f),
-        24.0f,
-        WHITE
+        GuiFont(FNT_MENU), LocGet("HODA_RUNE_PRESTIGE_MESSAGE"), UiRect(content, 0.5f, 1.0f, 0.95f, 0.5f), 24.0f, WHITE
     );
     Rectangle currency = UiRect(popup, 0.65f, 0.625f, 0.2f, 0.14f);
     UiDrawTextRight(
         GuiFont(FNT_MENU),
-        "Цена:",
+        LocGet("REFRESH_COST"),
         (Rectangle){0.0f, currency.y + currency.height * 0.5f, currency.x - 12.0f, 0.0f},
         22.0f,
         WHITE

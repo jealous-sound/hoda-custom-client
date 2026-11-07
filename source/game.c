@@ -80,6 +80,8 @@ typedef struct {
     EnergyDialog energy_dialog;
     EnergyDialog stamina_dialog;
     bool stamina_dialog_top;
+    OptionsPopup options;
+    bool restart_requested;
 
     PvpHub pvp_hub;
     PvpEventView pvp_event_view;
@@ -1080,8 +1082,8 @@ bool GameInitialize(Game *g) {
     LoadingScreenPresent();
     ResourcePrefetchImages(STARTUP_IMAGE_MANIFEST);
     ResourceRecordImagesBegin();
+    LocLoadPreferred();
     AssetsLoad();
-    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
     LoadingScreenShowMessage();
     LoadingScreenPresent();
     MissionCatalogLoad("data/missions.json");
@@ -1134,6 +1136,8 @@ bool GameInitialize(Game *g) {
     EnergyDialogInitialize(&g->energy_dialog);
     StaminaDialogInitialize(&g->stamina_dialog);
     g->stamina_dialog_top = false;
+    OptionsPopupInitialize(&g->options);
+    g->restart_requested = false;
     g->battle_map_index = 0;
     g->battle_node_index = 0;
     g->battle_squad_index = 0;
@@ -1151,7 +1155,8 @@ bool GameInitialize(Game *g) {
 }
 
 static bool GameResourceDialogOpen(const Game *g) {
-    return EnergyDialogIsOpen(&g->energy_dialog) || EnergyDialogIsOpen(&g->stamina_dialog);
+    return EnergyDialogIsOpen(&g->energy_dialog) || EnergyDialogIsOpen(&g->stamina_dialog) ||
+           OptionsPopupIsOpen(&g->options);
 }
 
 static EnergyDialog *GameTopResourceDialog(Game *g) {
@@ -1164,6 +1169,7 @@ static EnergyDialog *GameTopResourceDialog(Game *g) {
 }
 
 bool GameHandlePopupBack(Game *g) {
+    if (OptionsPopupBack(&g->options)) return true;
     EnergyDialog *top = GameTopResourceDialog(g);
     if (top) {
         EnergyDialogClose(top);
@@ -1404,6 +1410,7 @@ static void GameOpenResourceDialogSilently(Game *g, bool stamina) {
 }
 
 static void GameHandleHudAction(Game *g, HudAction a) {
+    if (a != HUD_NONE && a != HUD_OPTIONS) OptionsPopupClose(&g->options);
     switch (a) {
         case HUD_HOME:
             if (EnergyDialogIsOpen(&g->stamina_dialog)) GuiSoundPlay(SND_UI_POPUP_CLOSE);
@@ -1439,6 +1446,17 @@ static void GameHandleHudAction(Game *g, HudAction a) {
                 g->screen = SCREEN_STORE;
             }
             StoreShowPage(&g->store, a == HUD_GEMS);
+            break;
+        case HUD_OPTIONS:
+            EnergyDialogClose(&g->energy_dialog);
+            EnergyDialogClose(&g->stamina_dialog);
+            if (OptionsPopupIsOpen(&g->options)) {
+                OptionsPopupClose(&g->options);
+                GuiSoundPlay(SND_UI_POPUP_CLOSE);
+            } else {
+                OptionsPopupOpen(&g->options);
+                GuiClickSoundPlay();
+            }
             break;
         case HUD_NONE:
             break;
@@ -2068,6 +2086,13 @@ void GameDraw(Game *g) {
         popup_hud_action = HudDraw(&g->hud, &popup_hud_player, resource_modal, false);
         UiFrameEnd();
     }
+    if (OptionsPopupIsOpen(&g->options)) {
+        UiFrameBegin();
+        if (OptionsPopupDraw(&g->options, BackendCurrentPlayerId()) == OPTIONS_ACTION_RESTART)
+            g->restart_requested = true;
+        popup_hud_action = HudDraw(&g->hud, &g->player, true, g->screen == SCREEN_HOME);
+        UiFrameEnd();
+    }
     if (resource_dialog_action == ENERGY_DIALOG_ACTION_PVP) {
         EnergyDialogClose(&g->energy_dialog);
         EnergyDialogClose(&g->stamina_dialog);
@@ -2116,6 +2141,7 @@ void GameDestroy(Game *g) {
     StoreDestroy(&g->store);
     GalleryDestroy(&g->gallery);
     RuneIconsUnload();
+    GearIconsUnload();
     HeroesDestroy(&g->heroes);
     LocUnload();
     ProgressionSave(&g->player);

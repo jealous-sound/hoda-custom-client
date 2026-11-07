@@ -1,9 +1,5 @@
 #define PLAY_MODE_BUTTON APK_RESOURCE("Btn_CTA_gold")
 #define PLAY_MODE_BUTTON_ACTIVE APK_RESOURCE("Btn_CTA_gold_active")
-#define PLAY_MODE_LOCAL_LABEL "Локальная игра"
-#define PLAY_MODE_ONLINE_LABEL "Онлайн-игра"
-#define PLAY_MODE_LOCAL_HINT "Сохранения на этом компьютере"
-#define PLAY_MODE_ONLINE_HINT "Сохранения на сервере, гильдии и чат"
 #define PLAY_MODE_SCREENSHOT_ENV "HOD_SHOT"
 #define PLAY_MODE_BUTTON_LABEL_SCALE 0.34f
 #define PLAY_MODE_BUTTON_HEIGHT 0.12f
@@ -33,17 +29,18 @@ typedef struct {
 } PlayModeScreen;
 
 static void PlayModeScreenLoad(PlayModeScreen *screen) {
+    LocLoadPreferred();
     screen->splash = LoadingScreenTexture(LOADING_SCREEN_SPLASH);
-    screen->title_font = ContentArtFont(FNT_COOL);
-    screen->menu_font = ContentArtFont(FNT_MENU);
+    screen->title_font = LoadGameFont(FNT_COOL);
+    screen->menu_font = LoadGameFont(FNT_MENU);
     Texture2D idle = LoadingScreenTexture(PLAY_MODE_BUTTON);
     Texture2D active = LoadingScreenTexture(PLAY_MODE_BUTTON_ACTIVE);
     Vector2 centre = {0.5f, 0.5f};
     screen->local = ButtonFromTextures(
-        idle, active, PLAY_MODE_LOCAL_LABEL, screen->title_font, centre, PLAY_MODE_BUTTON_LABEL_SCALE
+        idle, active, LocGet("HODA_PLAY_MODE_LOCAL"), screen->title_font, centre, PLAY_MODE_BUTTON_LABEL_SCALE
     );
     screen->online = ButtonFromTextures(
-        idle, active, PLAY_MODE_ONLINE_LABEL, screen->title_font, centre, PLAY_MODE_BUTTON_LABEL_SCALE
+        idle, active, LocGet("HODA_PLAY_MODE_ONLINE"), screen->title_font, centre, PLAY_MODE_BUTTON_LABEL_SCALE
     );
     ResourceShutdown();
 }
@@ -54,6 +51,7 @@ static void PlayModeScreenUnload(PlayModeScreen *screen) {
         if (textures[i].id) UnloadTexture(textures[i]);
     if (screen->title_font.texture.id) UnloadFont(screen->title_font);
     if (screen->menu_font.texture.id) UnloadFont(screen->menu_font);
+    LocUnload();
     *screen = (PlayModeScreen){0};
 }
 
@@ -84,8 +82,8 @@ static PlayModeChoice PlayModeScreenDraw(PlayModeScreen *screen) {
     Rectangle row = UiRect(root, 0.5f, PLAY_MODE_BUTTONS_Y, width * 2.0f + gap, height);
     Rectangle local = {row.x, row.y, width, height};
     Rectangle online = {row.x + width + gap, row.y, width, height};
-    PlayModeDrawHint(screen, PLAY_MODE_LOCAL_HINT, local);
-    PlayModeDrawHint(screen, PLAY_MODE_ONLINE_HINT, online);
+    PlayModeDrawHint(screen, LocGet("HODA_PLAY_MODE_LOCAL_HINT"), local);
+    PlayModeDrawHint(screen, LocGet("HODA_PLAY_MODE_ONLINE_HINT"), online);
     bool local_chosen = ButtonDraw(&screen->local, local);
     bool online_chosen = ButtonDraw(&screen->online, online);
     if (local_chosen) return PLAY_MODE_LOCAL;

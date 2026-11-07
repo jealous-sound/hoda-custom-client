@@ -158,10 +158,7 @@ BattlePlateBuild(BattlePlate *p, const Character *ch, const SimUnit *setup_unit,
     p->ch = ch;
     p->enemy = enemy;
 
-    char key[96];
-    snprintf(key, sizeof(key), "%s%s", ch->id, TIER_NAMES[ch->tier]);
-    const char *name = LocGet(key);
-    StrCopy(p->name, sizeof(p->name), name[0] ? name : ch->name_ru[0] ? ch->name_ru : ch->name);
+    StrCopy(p->name, sizeof(p->name), CharacterName(ch));
 
     p->level = ch->level;
     p->power = setup_unit->start_power;
@@ -518,11 +515,11 @@ static void BattleUiDrawIntroBanner(const BpIntroEvent *event, float cx, Font co
     char text[128];
     const RuneDef *rune = event->rune_def >= 0 ? RuneDefAt(event->rune_def) : NULL;
     if (event->event_bonus)
-        StrCopy(text, sizeof(text), LocGetOr("NEXUS_EVENT_BONUS", "Бонус (событие)"));
+        StrCopy(text, sizeof(text), LocGet("NEXUS_EVENT_BONUS"));
     else if (event->no_event_bonus)
-        StrCopy(text, sizeof(text), LocGetOr("PVP_EVENT_NO_BONUS", "Без бонуса за событие"));
+        StrCopy(text, sizeof(text), LocGet("PVP_EVENT_NO_BONUS"));
     else if (rune)
-        snprintf(text, sizeof(text), "%s %s", rune->name_ru, rune->value_ru);
+        snprintf(text, sizeof(text), "%s %s", RuneName(rune), RuneValueText(rune));
     else
         BattleUiIntroText(event, text, sizeof(text));
     float fs = 24.0f;
@@ -835,7 +832,7 @@ static bool BattleUiDrawRuneSlots(const Player *player, bool input_ok) {
     return input_ok && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(UiMouse(), area);
 }
 
-static const char VS_LABEL[] = "VS";
+static const char VS_LABEL_KEY[] = "BATTLE_SUMMARY_VS";
 static const Rectangle VS_PLAYER_PLATE = {-398.5f, 20.0f, 321.0f, 61.0f};
 static const Rectangle VS_OPPONENT_PLATE = {78.5f, 20.0f, 321.0f, 61.0f};
 static const Rectangle VS_PLAYER_NAME = {-368.5f, 27.0f, 261.0f, 50.0f};
@@ -874,8 +871,8 @@ static void BattleUiDrawVsHeader(BattleUi *ui, Battle *battle, float cx, bool in
     Rectangle shadow = vs;
     shadow.x += VS_LABEL_SHADOW.x * vs.width;
     shadow.y += VS_LABEL_SHADOW.y * vs.height;
-    UiDrawTextCentered(font, VS_LABEL, shadow, vs_size, VS_LABEL_SHADOW_COLOR);
-    UiDrawTextCentered(font, VS_LABEL, vs, vs_size, off_white);
+    UiDrawTextCentered(font, LocGet(VS_LABEL_KEY), shadow, vs_size, VS_LABEL_SHADOW_COLOR);
+    UiDrawTextCentered(font, LocGet(VS_LABEL_KEY), vs, vs_size, off_white);
 
     if (ButtonDrawEx(&ui->info, BattleUiMatchmakingRect(cx, VS_INFO_BUTTON), input_ok))
         BattleUiSetTactical(ui, battle, !ui->tactical);
