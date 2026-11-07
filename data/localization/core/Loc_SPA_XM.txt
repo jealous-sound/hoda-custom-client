@@ -4,3 +4,5 @@ HODA_PLAY_MODE_LOCAL_HINT|Progreso guardado en este ordenador
 HODA_PLAY_MODE_ONLINE_HINT|Progreso en el servidor, gremios y chat
 HODA_OPTIONS_LANGUAGE|Idioma
 HODA_LANGUAGE_SYSTEM|Idioma del sistema
+HODA_CONTENT_CLIENT_TOO_OLD_TITLE|Actualización necesaria
+HODA_CONTENT_CLIENT_TOO_OLD_MESSAGE|Esta versión de Heroes of Dragon Age es demasiado antigua para los datos actuales del juego. Descarga la versión más reciente para seguir jugando.

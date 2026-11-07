@@ -149,7 +149,10 @@ keeps its data in a per-user folder: `~/Library/Application Support/Heroes of Dr
 Windows. Saves and `account.dat` live there too. On every launch it reads `manifest.json` from `CONTENT_URL` (baked
 in at build time; `HOD_CONTENT_URL` overrides it), downloads only the packs it doesn't have yet, checks their SHA-256,
 unpacks them and deletes files that later versions dropped. Interrupted downloads resume. Without a connection it
-starts with the data it already has. `HOD_CONTENT_DIR=<folder>` uses another folder and forces downloading even in a
+starts with the data it already has, as long as that data has the manifest format this build reads
+(`CONTENT_MANIFEST_FORMAT`, `MANIFEST_FORMAT` in `tools/build_content_packs.py`; bump both whenever the data tables
+change shape). A newer format on the server asks the player to download the latest version; an older one is a
+server error. `HOD_CONTENT_DIR=<folder>` uses another folder and forces downloading even in a
 checkout. The window stays black until the APK and core packs are installed; from then on the download screen is 5.4.4's `LoadingScreenV` (splash, spinner, `loader_message` plate with the original messages in the player's language, red bar, megabyte counter and percentage) and errors use the game's connection and download-error popups. A failure before that art arrives retries every 5 seconds; Escape quits. Downloads use libcurl on macOS and Linux (loaded at runtime, so any distro's `libcurl.so.4` works) and
 WinHTTP on Windows.
 
