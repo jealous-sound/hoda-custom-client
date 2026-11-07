@@ -4,3 +4,5 @@ HODA_PLAY_MODE_LOCAL_HINT|Voortgang wordt op deze computer opgeslagen
 HODA_PLAY_MODE_ONLINE_HINT|Voortgang op de server, guilds en chat
 HODA_OPTIONS_LANGUAGE|Taal
 HODA_LANGUAGE_SYSTEM|Systeemtaal
+HODA_CONTENT_CLIENT_TOO_OLD_TITLE|Update vereist
+HODA_CONTENT_CLIENT_TOO_OLD_MESSAGE|Deze versie van Heroes of Dragon Age is te oud voor de huidige speldata. Download de nieuwste versie om verder te spelen.

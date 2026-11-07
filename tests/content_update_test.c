@@ -259,10 +259,15 @@ static void TestEntryPathsStayInsideTheGameData(void) {
 }
 
 static void TestManifestRejectsUnsafePackFields(void) {
-    cJSON *root = cJSON_Parse(
-        "{\"format\":1,\"version\":\"v\",\"packs\":[{\"name\":\"../x\",\"file\":\"packs/x.zip\","
-        "\"sha256\":\"" TEST_ABC_SHA256 "\",\"size\":3}]}"
+    char text[TEST_PATH_CAP];
+    TestFormat(
+        text,
+        sizeof(text),
+        "{\"format\":%d,\"version\":\"v\",\"packs\":[{\"name\":\"../x\",\"file\":\"packs/x.zip\","
+        "\"sha256\":\"" TEST_ABC_SHA256 "\",\"size\":3}]}",
+        CONTENT_MANIFEST_FORMAT
     );
+    cJSON *root = cJSON_Parse(text);
     ContentManifest manifest;
     assert(!ContentManifestParse(root, &manifest));
     cJSON_Delete(root);
@@ -375,6 +380,33 @@ static void TestNewerManifestFormatAsksForANewClient(void) {
     TestPublishManifest(&site, CONTENT_MANIFEST_FORMAT + 1, "v9", NULL, 0);
     ContentProgress progress = TestRunUpdate(site.url);
     assert(progress.phase == CONTENT_PHASE_FAILED && progress.error == CONTENT_ERROR_CLIENT_TOO_OLD);
+    ContentAlert alert = ContentAlertFor(CONTENT_ERROR_CLIENT_TOO_OLD);
+    assert(alert.quits && strcmp(alert.title_key, "HODA_CONTENT_CLIENT_TOO_OLD_TITLE") == 0);
+}
+
+static void TestOlderManifestFormatIsTheServersFault(void) {
+    TestSite site = TestSiteCreate();
+    TestPublishManifest(&site, CONTENT_MANIFEST_FORMAT - 1, "v0", NULL, 0);
+    ContentProgress progress = TestRunUpdate(site.url);
+    assert(progress.phase == CONTENT_PHASE_FAILED && progress.error == CONTENT_ERROR_SERVER);
+    assert(!ContentAlertFor(CONTENT_ERROR_SERVER).quits);
+}
+
+static void TestInstalledDataOfAnotherFormatIsNotPlayedOffline(void) {
+    TestSite site = TestSiteCreate();
+    ContentPack packs[] = {TestPublishPack(&site, "rules", rules_v1, 2)};
+    TestPublishManifest(&site, CONTENT_MANIFEST_FORMAT, "v1", packs, 1);
+    assert(TestRunUpdate(site.url).phase == CONTENT_PHASE_READY);
+    cJSON *state = ContentStateLoad();
+    cJSON_ReplaceItemInObjectCaseSensitive(state, "format", cJSON_CreateNumber(CONTENT_MANIFEST_FORMAT - 1));
+    assert(ContentStateSave(state));
+    cJSON_Delete(state);
+    char missing[TEST_PATH_CAP];
+    TestFormat(missing, sizeof(missing), "%s/nowhere", site.url);
+    ContentProgress offline = TestRunUpdate(missing);
+    assert(offline.phase == CONTENT_PHASE_FAILED && offline.error == CONTENT_ERROR_OFFLINE);
+    assert(TestRunUpdate(site.url).phase == CONTENT_PHASE_READY);
+    assert(TestRunUpdate(missing).phase == CONTENT_PHASE_READY);
 }
 
 static void TestBuildWithoutContentUrlReportsIt(void) {
@@ -492,6 +524,8 @@ int main(void) {
     TestDamagedPackIsDiscarded();
     TestPackWritingOutsideTheGameDataIsRejected();
     TestNewerManifestFormatAsksForANewClient();
+    TestOlderManifestFormatIsTheServersFault();
+    TestInstalledDataOfAnotherFormatIsNotPlayedOffline();
     TestBuildWithoutContentUrlReportsIt();
     TestInterruptedDownloadResumes();
     TestOversizedPartialDownloadStartsOver();

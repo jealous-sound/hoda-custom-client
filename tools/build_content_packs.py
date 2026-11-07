@@ -25,7 +25,7 @@ CLI_DESCRIPTION = (
 
 ROOT = build_dist.ROOT
 DEFAULT_OUT = ROOT / "build" / "content"
-MANIFEST_FORMAT = 1
+MANIFEST_FORMAT = 2
 MANIFEST_NAME = "manifest.json"
 PACKS_DIR = "packs"
 PACK_SUFFIX = ".zip"
