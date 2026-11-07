@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define PLATFORM_SOCKET_INVALID ((intptr_t)-1)
+#define PLATFORM_HTTP_HEADER_VALUE_CAP 64
 
 typedef enum {
     PLATFORM_DOWNLOAD_OK,
@@ -20,10 +20,23 @@ typedef enum {
 
 typedef bool (*PlatformDownloadProgress)(void *context, long long file_bytes);
 
-intptr_t PlatformSocketConnect(const char *host, const char *port, int timeout_seconds);
-long PlatformSocketSend(intptr_t socket_handle, const char *data, size_t length);
-long PlatformSocketReceive(intptr_t socket_handle, char *buffer, size_t capacity);
-void PlatformSocketClose(intptr_t socket_handle);
+typedef struct {
+    const char *method;
+    const char *url;
+    const char *const *headers;
+    int header_count;
+    const char *body;
+    int timeout_seconds;
+    const char *reply_header;
+} PlatformHttpRequest;
+
+typedef struct {
+    int status;
+    char *body;
+    char reply_header_value[PLATFORM_HTTP_HEADER_VALUE_CAP];
+} PlatformHttpResponse;
+
+bool PlatformHttpSend(const PlatformHttpRequest *request, PlatformHttpResponse *response);
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size);
 bool PlatformReplaceFile(const char *source, const char *target);
 int PlatformProcessorCount(void);

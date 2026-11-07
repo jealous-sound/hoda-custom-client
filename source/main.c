@@ -60,6 +60,7 @@
 #include "heroes.c"
 #include "message_popup.c"
 #include "content_screen.c"
+#include "play_mode_screen.c"
 #include "name_prompt.c"
 #include "runes.c"
 #include "gear_view.c"
@@ -122,7 +123,7 @@ static void RunSelectedMode(void) {
         DebugRunModelLoadTest(getenv("HOD_LOADTEST"));
     } else if (EnvFlag("HOD_NEXUS_SCENE")) {
         DebugRenderNexusScene(getenv("HOD_NEXUS_SCENE"));
-    } else {
+    } else if (PlayModeScreenRun()) {
         RunGame();
     }
 }
