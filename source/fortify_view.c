@@ -24,6 +24,9 @@
 #define FORTIFY_DETAILS_RIGHT_MARGIN 134.0f
 #define FORTIFY_BUTTON_LABEL_SCALE 0.33f
 #define FORTIFY_PATH_COLUMNS FORTIFY_SLOTS_PER_ROW
+#define FORTIFY_POPUP_PANEL_HEIGHT 0.96f
+#define FORTIFY_POPUP_PANEL_WIDTH_PER_CONTENT 1.32f
+#define FORTIFY_POPUP_INSET_Y 0.09f
 
 static const Color FORTIFY_GAIN_COLOR = {0, 255, 16, 255};
 static const Color FORTIFY_LOSS_COLOR = {255, 0, 0, 255};
@@ -95,7 +98,6 @@ static const FortifyAnchor FORTIFY_SLOT_BONUS_ICON = {0.0f, 0.5f, 1.0f, 0.8f, 1.
 static const FortifyAnchor FORTIFY_SLOT_BONUS_AMOUNT = {1.0f, 0.6f, 1.9f, 0.48f, 2.0f};
 static const FortifyAnchor FORTIFY_SLOT_REMOVE = {1.0f, 0.0f, 0.34f, 0.34f, 1.0f};
 
-static const FortifyAnchor FORTIFY_POPUP_MESSAGE = {0.5f, 0.7f, 0.93f, 0.85f, 1.6f};
 static const FortifyAnchor FORTIFY_POPUP_CONTENT = {0.5f, 0.4f, 1.9f, 0.85f, 1.53f};
 static const FortifyAnchor FORTIFY_POPUP_TITLE = {0.0f, -0.25f, 1.0f, 0.15f, 0.0f};
 static const FortifyAnchor FORTIFY_CONFIRM_BODY = {0.5f, -0.28f, 1.9f, 0.35f, 3.58f};
@@ -164,6 +166,10 @@ typedef struct {
     char icon[64];
     Texture2D texture;
 } FortifyPortrait;
+
+typedef struct {
+    Rectangle panel, content;
+} FortifyPopupFrame;
 
 typedef struct {
     Rectangle slots_area, frame, selected, top_row, bottom_row;
@@ -620,15 +626,17 @@ static void FortifyDrawPaths(const FortifyScreen *f, const FortifyLayout *l, boo
     static const GuiId paths[FORTIFY_PATH_COLUMNS] = {
         GUI_FORTIFY_PATH_LONG, GUI_FORTIFY_PATH_MED, GUI_FORTIFY_PATH_SHORT, GUI_FORTIFY_PATH_MED, GUI_FORTIFY_PATH_LONG
     };
-    for (int row = 0; row < 2; row++) {
-        Rectangle container = row == 0 ? l->top_paths : l->bottom_paths;
-        for (int column = 0; column < FORTIFY_PATH_COLUMNS; column++) {
-            Rectangle piece = FortifyFit(container, FORTIFY_PATH_PIECES[column]);
-            bool mirrored = FORTIFY_PATH_MIRRORED[column];
-            FortifyDrawFlipped(GuiTex(paths[column]), piece, mirrored, row == 1, 0.0f, WHITE);
-            int slot = row * FORTIFY_SLOTS_PER_ROW + column;
-            if (parent_selected && f->pending[slot] >= 0)
-                FortifyDrawFlipped(GuiTex(paths[column] + 1), piece, mirrored, row == 1, 0.0f, WHITE);
+    for (int lit = 0; lit < 2; lit++) {
+        for (int row = 0; row < 2; row++) {
+            Rectangle container = row == 0 ? l->top_paths : l->bottom_paths;
+            for (int column = 0; column < FORTIFY_PATH_COLUMNS; column++) {
+                int slot = row * FORTIFY_SLOTS_PER_ROW + column;
+                if (lit && (!parent_selected || f->pending[slot] < 0)) continue;
+                Rectangle piece = FortifyFit(container, FORTIFY_PATH_PIECES[column]);
+                FortifyDrawFlipped(
+                    GuiTex(paths[column] + lit), piece, FORTIFY_PATH_MIRRORED[column], row == 1, 0.0f, WHITE
+                );
+            }
         }
     }
     if (!parent_selected) return;
@@ -888,16 +896,46 @@ static void FortifyDrawActions(FortifyScreen *f, const FortifyLayout *l, const P
         f->dialog = FORTIFY_DIALOG_CONFIRM;
 }
 
-static Rectangle FortifyPopupContainer(void) {
-    return FortifyFit(UiRoot(), FORTIFY_POPUP_MESSAGE);
+static float FortifyAnchorTop(FortifyAnchor anchor) {
+    return (1.0f - anchor.height) * anchor.y;
 }
 
-static void FortifyDrawPopupPanel(Rectangle top, Rectangle bottom) {
+static float FortifyAnchorBottom(FortifyAnchor anchor) {
+    return FortifyAnchorTop(anchor) + anchor.height;
+}
+
+static FortifyPopupFrame FortifyPopupLayout(FortifyAnchor top, FortifyAnchor bottom) {
+    float top_edge = FortifyAnchorTop(top), bottom_edge = FortifyAnchorBottom(bottom);
+    float panel_height = UiHeight() * FORTIFY_POPUP_PANEL_HEIGHT;
+    float inner_height = panel_height * (1.0f - 2.0f * FORTIFY_POPUP_INSET_Y);
+    float content_height = inner_height / (bottom_edge - top_edge);
+    float content_width = content_height * FORTIFY_POPUP_CONTENT.aspect;
+    float panel_width = fminf(content_width * FORTIFY_POPUP_PANEL_WIDTH_PER_CONTENT, UiWidth());
+    Rectangle panel = UiRect(UiRoot(), 0.5f, 0.5f, panel_width, panel_height);
+    float inner_top = panel.y + panel.height * FORTIFY_POPUP_INSET_Y;
+    Rectangle content = {
+        panel.x + (panel.width - content_width) * 0.5f,
+        inner_top - top_edge * content_height,
+        content_width,
+        content_height,
+    };
+    return (FortifyPopupFrame){panel, content};
+}
+
+static void FortifyDrawPopupPanel(Rectangle panel) {
     MessagePopupDrawScrim();
-    Rectangle container = FortifyPopupContainer();
-    float y = fminf(container.y, top.y);
-    float end = fmaxf(container.y + container.height, bottom.y + bottom.height + container.height * 0.03f);
-    UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), (Rectangle){container.x, y, container.width, end - y}, WHITE);
+    UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), panel, WHITE);
+}
+
+static void FortifyBeginPanelClip(Rectangle panel) {
+    float ui = UiScale();
+    float inset = panel.height * FORTIFY_POPUP_INSET_Y * 0.5f;
+    BeginScissorMode(
+        (int)(panel.x * ui),
+        (int)((panel.y + inset) * ui),
+        (int)(panel.width * ui),
+        (int)((panel.height - 2.0f * inset) * ui)
+    );
 }
 
 static void FortifyDrawBreakdown(
@@ -906,8 +944,17 @@ static void FortifyDrawBreakdown(
     if (FortifyBonusTotal(bonus) <= 0) return;
     Font body = GuiFont(FNT_MENU), title = GuiFont(FNT_COOL);
     Rectangle label = FortifyFit(tally, *label_anchor);
-    FortifyDrawTextFit(title, LocGet("FORTIFY_CONFIRM_BONUS"), label, label.height * 0.7f, FORTIFY_TEXT_COLOR);
-    UiDrawTexture(GuiTex(icon), FortifyFit(tally, *icon_anchor), WHITE);
+    Rectangle icon_rect = FortifyFit(tally, *icon_anchor);
+    const char *heading = LocGet("FORTIFY_CONFIRM_BONUS");
+    float size = label.height * 0.7f;
+    float width = MeasureTextEx(title, heading, size, 1.0f).x;
+    if (width > label.width) size *= label.width / width;
+    Rectangle heading_rect = {label.x, icon_rect.y, label.width, icon_rect.height};
+    if (label.x + label.width * 0.5f < icon_rect.x)
+        UiDrawTextRight(title, heading, heading_rect, size, FORTIFY_TEXT_COLOR);
+    else
+        UiDrawTextLeftMiddle(title, heading, heading_rect, size, FORTIFY_TEXT_COLOR);
+    UiDrawTexture(GuiTex(icon), icon_rect, WHITE);
     Rectangle rows = FortifyFit(tally, FORTIFY_CONFIRM_BREAKDOWN);
     static const char *const keys[FORTIFY_BONUS_STEPS] = {
         "FORTIFY_CONFIRM_RARITY", "FORTIFY_CONFIRM_FACTION", "FORTIFY_CONFIRM_TIER"
@@ -940,10 +987,11 @@ static void FortifyDrawTotal(Rectangle row, GuiId icon, int delta) {
 static void FortifyConfirm(FortifyScreen *f, Heroes *h, Player *p);
 
 static void FortifyDrawConfirm(FortifyScreen *f, Heroes *h, Player *p) {
-    Rectangle content = FortifyFit(FortifyPopupContainer(), FORTIFY_POPUP_CONTENT);
+    FortifyPopupFrame frame = FortifyPopupLayout(FORTIFY_POPUP_TITLE, FORTIFY_CONFIRM_BUTTONS);
+    Rectangle content = frame.content;
     Rectangle title = FortifyFit(content, FORTIFY_POPUP_TITLE);
     Rectangle buttons = FortifyFit(content, FORTIFY_CONFIRM_BUTTONS);
-    FortifyDrawPopupPanel(title, buttons);
+    FortifyDrawPopupPanel(frame.panel);
     Font title_font = GuiFont(FNT_COOL), body = GuiFont(FNT_MENU);
     MessagePopupDrawText(title_font, LocGet("FORTIFY_CONFIRM_TITLE"), title, 30.0f, FORTIFY_TEXT_COLOR);
     MessagePopupDrawText(
@@ -1088,10 +1136,11 @@ static void FortifyDrawTalliedStat(Rectangle row, GuiId icon, int stat, int bonu
 
 static void FortifyDrawCelebration(FortifyScreen *f, Heroes *h, const Player *p, float dt) {
     const Character *parent = &p->roster[f->celebrated];
-    Rectangle content = FortifyFit(FortifyPopupContainer(), FORTIFY_POPUP_CONTENT);
+    FortifyPopupFrame frame = FortifyPopupLayout(FORTIFY_POPUP_TITLE, FORTIFY_CELEBRATION_INSTRUCTIONS);
+    Rectangle content = frame.content;
     Rectangle title = FortifyFit(content, FORTIFY_POPUP_TITLE);
     Rectangle instructions = FortifyFit(content, FORTIFY_CELEBRATION_INSTRUCTIONS);
-    FortifyDrawPopupPanel(title, instructions);
+    FortifyDrawPopupPanel(frame.panel);
     f->celebration_time += dt;
     Font title_font = GuiFont(FNT_COOL), body = GuiFont(FNT_MENU);
     char text[256];
@@ -1103,6 +1152,7 @@ static void FortifyDrawCelebration(FortifyScreen *f, Heroes *h, const Player *p,
     float pulse = fabsf(fmodf(f->celebration_time / FORTIFY_BURST_PULSE_SECONDS, 2.0f) - 1.0f);
     float scale = Lerp(FORTIFY_BURST_SMALLEST_SCALE, 1.0f, pulse);
     Rectangle scaled = UiRect(burst, 0.5f, 0.5f, burst.width * scale, burst.height * scale);
+    FortifyBeginPanelClip(frame.panel);
     FortifyDrawFlipped(
         GuiTex(GUI_FORTIFY_STARBURST),
         scaled,
@@ -1111,6 +1161,7 @@ static void FortifyDrawCelebration(FortifyScreen *f, Heroes *h, const Player *p,
         fmodf(f->celebration_time * FORTIFY_BURST_DEGREES_PER_SECOND, 360.0f),
         WHITE
     );
+    EndScissorMode();
     UiDrawTexture(h->cards[f->celebrated].portrait, FortifyFit(unit, FORTIFY_CELEBRATION_PORTRAIT), WHITE);
     Rectangle xp = FortifyFit(unit, FORTIFY_CELEBRATION_XP);
     UiDrawTexture(GuiTex(GUI_FORTIFY_XP_BG), FortifyFit(xp, FORTIFY_PARENT_XP_BACKGROUND), WHITE);
@@ -1168,9 +1219,12 @@ static void FortifyDrawCelebration(FortifyScreen *f, Heroes *h, const Player *p,
     int values[2] = {max_power, max_health};
     for (int i = 0; i < 2; i++) {
         Rectangle row = FortifyFit(max_stats, *anchors[i]);
-        UiDrawTexture(GuiTex(icons[i]), FortifyFit(row, FORTIFY_CELEBRATION_MAX_ICON), WHITE);
+        Rectangle icon = FortifyFit(row, FORTIFY_CELEBRATION_MAX_ICON);
+        UiDrawTexture(GuiTex(icons[i]), icon, WHITE);
         snprintf(text, sizeof(text), "%d", values[i]);
-        UiDrawTextLeftMiddle(title_font, text, row, row.height * 0.45f, WHITE);
+        UiDrawTextLeftMiddle(
+            title_font, text, (Rectangle){row.x, icon.y, row.width, icon.height}, row.height * 0.45f, WHITE
+        );
     }
     MessagePopupDrawText(
         body, LocGet("FORTIFY_CELEBRATION_INSTRUCTIONS"), instructions, 20.0f, FORTIFY_SOFT_TEXT_COLOR
