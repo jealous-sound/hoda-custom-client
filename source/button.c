@@ -1,4 +1,5 @@
 #define BUTTON_BADGE_MAX 99
+#define BUTTON_LABEL_MAX_WIDTH 0.84f
 
 typedef struct {
     Texture2D idle;
@@ -62,6 +63,11 @@ static void ButtonDrawVisual(const Button *button, Rectangle dst, bool selected)
     if (button->label) {
         float size = dst.height * button->label_scale;
         Vector2 measured = MeasureTextEx(button->font, button->label, size, 1.0f);
+        float room = dst.width * BUTTON_LABEL_MAX_WIDTH;
+        if (measured.x > room) {
+            size *= room / measured.x;
+            measured = MeasureTextEx(button->font, button->label, size, 1.0f);
+        }
         Vector2 position = {
             dst.x + dst.width * button->label_anchor.x - measured.x * 0.5f,
             dst.y + dst.height * button->label_anchor.y - measured.y * 0.5f,

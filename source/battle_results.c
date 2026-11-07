@@ -2,6 +2,8 @@
 #define BATTLE_RESULTS_FULL_SIZE_REWARDS 3
 #define BATTLE_RESULTS_MAX_REWARDS (5 + BATTLE_RESULTS_MAX_PRIZES)
 #define BATTLE_RESULTS_CLICK_GUARD_SECONDS 0.22f
+#define BATTLE_RESULTS_ESCAPED_NEWLINE "\\n"
+#define BATTLE_RESULTS_VICTORIES_TOKEN "[numberOfVictories]"
 #define HERO_LEVEL_DESIGN_WIDTH 1280.0f
 #define HERO_LEVEL_DESIGN_HEIGHT 720.0f
 #define HERO_LEVEL_XP_EASE_SECONDS 2.0f
@@ -421,8 +423,9 @@ static void BattleResultsDrawLevelUp(const BattleResultsFlow *flow) {
     BattleResultsDrawScrim(fade);
     UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), panel, BattleResultsAlpha(WHITE, fade));
 
-    char heading[160];
-    snprintf(heading, sizeof(heading), "Поздравляем!\nВы достигли уровня %d", p->player_level_post);
+    char escaped[160], heading[160];
+    LocFormatInt(escaped, sizeof(escaped), "PLAYER_LEVEL_UP_STRING", p->player_level_post);
+    StrReplaceToken(heading, sizeof(heading), escaped, BATTLE_RESULTS_ESCAPED_NEWLINE, "\n");
     BattleResultsDrawTextInRect(
         GuiFont(FNT_COOL),
         heading,
@@ -434,7 +437,7 @@ static void BattleResultsDrawLevelUp(const BattleResultsFlow *flow) {
 
     BattleResultsDrawTextInRect(
         GuiFont(FNT_MENU),
-        "Энергия",
+        LocGet("PLAYER_LEVEL_ENERGY"),
         BattleResultsLevelRect(panel, 100.0f, 164.0f, 115.0f, 64.0f),
         16.0f * scale,
         BattleResultsAlpha(WHITE, fade),
@@ -447,7 +450,7 @@ static void BattleResultsDrawLevelUp(const BattleResultsFlow *flow) {
     );
     BattleResultsDrawTextInRect(
         GuiFont(FNT_MENU),
-        "и вынослив.",
+        LocGet("PLAYER_LEVEL_STAMINA"),
         BattleResultsLevelRect(panel, 261.0f, 164.0f, 92.0f, 64.0f),
         16.0f * scale,
         BattleResultsAlpha(WHITE, fade),
@@ -460,7 +463,7 @@ static void BattleResultsDrawLevelUp(const BattleResultsFlow *flow) {
     );
     BattleResultsDrawTextInRect(
         GuiFont(FNT_MENU),
-        "снова на максимуме!",
+        LocGet("PLAYER_LEVEL_REFRESH"),
         BattleResultsLevelRect(panel, 399.0f, 164.0f, 161.0f, 64.0f),
         16.0f * scale,
         BattleResultsAlpha(WHITE, fade),
@@ -488,7 +491,7 @@ static void BattleResultsDrawLevelUp(const BattleResultsFlow *flow) {
         );
         BattleResultsDrawTextInRect(
             GuiFont(FNT_COOL),
-            "МАКС",
+            LocGet("PLAYER_LEVEL_UP_MAX"),
             BattleResultsLevelRect(panel, 111.0f, 237.0f, 58.0f, 32.0f),
             14.0f * scale,
             BattleResultsAlpha((Color){242, 242, 242, 255}, fade),
@@ -498,7 +501,7 @@ static void BattleResultsDrawLevelUp(const BattleResultsFlow *flow) {
 
     BattleResultsDrawTextInRect(
         GuiFont(FNT_MENU),
-        "Нажмите в любом месте для продолжения",
+        LocGet("PLAYER_LEVEL_UP_TAP"),
         BattleResultsLevelRect(panel, 75.0f, 287.0f, 508.0f, 32.0f),
         16.0f * scale,
         BattleResultsAlpha((Color){230, 230, 230, 255}, fade),
@@ -601,7 +604,7 @@ static void BattleResultsDrawHeroLevel(const BattleResultsFlow *flow, const Hero
     UiDrawTexture(GuiTex(HeroLevelRarityHeader(card->ch->rarity)), HeroLevelRect(778.0f, 236.0f, 427.0f, 97.0f), tint);
     BattleResultsDrawTextAligned(
         GuiFont(FNT_COOL),
-        card->name_ru,
+        card->name,
         HeroLevelRect(778.0f, 236.0f, 427.0f, 51.0f),
         HeroLevelFontSize(0.365f, 51.0f),
         text,
@@ -610,7 +613,7 @@ static void BattleResultsDrawHeroLevel(const BattleResultsFlow *flow, const Hero
     );
     BattleResultsDrawTextAligned(
         GuiFont(FNT_COOL),
-        card->rarity_ru,
+        card->rarity,
         HeroLevelRect(778.0f, 286.0f, 427.0f, 47.0f),
         HeroLevelFontSize(0.325f, 47.0f),
         BattleResultsAlpha(card->rarity_color, fade),
@@ -681,7 +684,7 @@ static void BattleResultsDrawNodeCompletion(const BattleResultsFlow *flow) {
 
     BattleResultsDrawTextInRect(
         GuiFont(FNT_COOL),
-        p->mastered ? "Задание завершено!" : "Задание пройдено!",
+        LocGet(p->mastered ? "PVE_QUEST_MASTERED" : "PVE_QUEST_COMPLETED"),
         BattleResultsCompletionRect(base, 380.0f, 95.0f, 378.0f, 53.0f),
         29.0f * scale,
         (Color){230, 230, 230, 255},
@@ -689,7 +692,7 @@ static void BattleResultsDrawNodeCompletion(const BattleResultsFlow *flow) {
     );
     BattleResultsDrawTextInRect(
         GuiFont(FNT_MENU),
-        "Открыто",
+        LocGet("PVE_UNLOCKED"),
         BattleResultsCompletionRect(base, 270.0f, 462.0f, 152.0f, 37.0f),
         22.0f * scale,
         (Color){230, 230, 230, 255},
@@ -697,7 +700,7 @@ static void BattleResultsDrawNodeCompletion(const BattleResultsFlow *flow) {
     );
     BattleResultsDrawTextInRect(
         GuiFont(FNT_MENU),
-        "1 победа",
+        LocGet("PVE_ONE_VICTORY"),
         BattleResultsCompletionRect(base, 493.0f, 421.0f, 152.0f, 37.0f),
         22.0f * scale,
         (Color){230, 230, 230, 255},
@@ -715,8 +718,9 @@ static void BattleResultsDrawNodeCompletion(const BattleResultsFlow *flow) {
         false
     );
 
-    char victories[48];
-    snprintf(victories, sizeof(victories), "Побед: %d", p->wins_to_master);
+    char wins[16], victories[96];
+    snprintf(wins, sizeof(wins), "%d", p->wins_to_master);
+    StrReplaceToken(victories, sizeof(victories), LocGet("PVE_VICTORIES"), BATTLE_RESULTS_VICTORIES_TOKEN, wins);
     BattleResultsDrawTextInRect(
         GuiFont(FNT_MENU),
         victories,
@@ -738,7 +742,7 @@ static void BattleResultsDrawNodeCompletion(const BattleResultsFlow *flow) {
     );
     BattleResultsDrawTextInRect(
         GuiFont(FNT_MENU),
-        "Нажмите в любом месте для продолжения",
+        LocGet("TAP_TO_CONTINUE"),
         BattleResultsCompletionRect(base, 191.0f, 535.0f, 756.0f, 42.0f),
         17.0f * scale,
         (Color){230, 230, 230, 255},
@@ -866,10 +870,11 @@ BattleResultsDrawCurrencyParticles(Texture2D texture, Vector2 start, Vector2 end
 
 static const char *BattleResultsContinueLabel(const BattleResultsPresentation *p) {
     if (p->pvp) return LocGet("BUTTON_MATCHMAKING_NEXT");
-    if (!p->victory) return "Повторить";
-    if (p->first_win || p->mastered) return "След. задание";
-    if (p->wins_to_master > 0 && p->completions_post > p->wins_to_master) return "Повтор квеста";
-    return "Продолжить";
+    if (!p->victory) return LocGet("BUTTON_BATTLERESULTS_RETRYQUEST");
+    if (p->first_win || p->mastered) return LocGet("BUTTON_BATTLERESULTS_NEXTQUEST");
+    if (p->wins_to_master > 0 && p->completions_post > p->wins_to_master)
+        return LocGet("BUTTON_BATTLERESULTS_REPEATQUEST");
+    return LocGet("BUTTON_BATTLERESULTS_CONTINUEQUEST");
 }
 
 static void BattleResultsDrawContinueButton(Rectangle button, const char *label, float fade) {
@@ -1013,7 +1018,7 @@ BattleResultsDrawRewards(const BattleResultsFlow *flow, const Player *player, co
 
     BattleResultsDrawTextAligned(
         GuiFont(FNT_COOL),
-        "Результаты",
+        LocGet("BATTLERESULTS_TITLE"),
         title,
         29.0f * BattleResultsPopupScale(),
         BattleResultsAlpha(WHITE, popup_fade),
@@ -1022,7 +1027,7 @@ BattleResultsDrawRewards(const BattleResultsFlow *flow, const Player *player, co
     );
     BattleResultsDrawTextInRect(
         GuiFont(FNT_COOL),
-        p->victory ? "Вы победили!" : "Вы проиграли!",
+        LocGet(p->victory ? "BUTTON_BATTLERESULTS_VICTORY" : "BUTTON_BATTLERESULTS_DEFEATED"),
         result_title,
         24.0f * BattleResultsPopupScale(),
         BattleResultsAlpha(p->victory ? WHITE : (Color){205, 53, 43, 255}, popup_fade),

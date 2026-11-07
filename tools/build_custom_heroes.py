@@ -25,7 +25,6 @@ POWER_FIELDS = ("base_power", "max_power", "power_per_level", "max_fortify_power
 HEALTH_FIELDS = ("base_health", "max_health", "health_per_level", "max_fortify_health")
 RUNTIME_ID_CAPACITY = 64
 RUNTIME_NAME_CAPACITY = 64
-RUNTIME_NAME_RU_CAPACITY = 96
 SPEC_FIELDS = {"id", "based_on", "prefab", "character", "stat_scale", "look"}
 
 
@@ -119,7 +118,6 @@ def catalog_row(spec, shipped):
     for field, capacity in (
         ("id", RUNTIME_ID_CAPACITY),
         ("name", RUNTIME_NAME_CAPACITY),
-        ("name_ru", RUNTIME_NAME_RU_CAPACITY),
     ):
         if len(row[field].encode("utf-8")) >= capacity:
             raise SystemExit(f"{spec['id']}: {field} exceeds the runtime buffer")

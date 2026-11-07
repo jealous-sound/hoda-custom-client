@@ -1,0 +1,11 @@
+HODA_NEXUS_EVENT_BREACH_OPENS_AGAIN_TITLE|Брешь открывается вновь
+HODA_NEXUS_EVENT_WOODLAND_SPIRITS_TITLE|Лесные духи
+HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLACK_FACTION|Герои "черной" фракции получают 150 % здоровья и силы.
+HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLUE_FACTION|Герои "синей" фракции получают 150 % здоровья и силы.
+HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_RED_FACTION|Герои "красной" фракции получают 150 % здоровья и силы.
+HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_WHITE_FACTION|Герои "белой" фракции получают 150 % здоровья и силы.
+HODA_NEXUS_MAP_BATTLE_COUNT|Боев: {0}
+HODA_NEXUS_UNLOCK_START|Запустить
+HODA_PVP_NO_BATTLES|Боев пока нет. Сразитесь с другим игроком!
+HODA_PVP_NO_FINISHED_EVENTS|Завершённых событий пока нет.
+HODA_PVP_YOU|Вы

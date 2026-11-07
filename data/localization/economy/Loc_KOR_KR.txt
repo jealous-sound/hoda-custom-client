@@ -1,0 +1,1027 @@
+HODA_STORE_ITEMS_TAB|아이템
+HODA_STORE_VAULT_TAB|보관소
+HODA_STORE_COMING_SOON|곧 공개됩니다!
+HODA_STORE_CONFIRM_GEMS|{0}
+HODA_STORE_CONFIRM_GEMS_SUFFIX| 사용하시겠습니까?
+HODA_STORE_PURCHASE_SAVE_FAILED|구매 내역을 저장할 수 없습니다
+HODA_STORE_PACK_UNAVAILABLE|이 팩은 일시적으로 구매할 수 없습니다
+HODA_STORE_COUNTER_LIMIT|구매 한도에 도달했습니다
+HODA_STORE_ROSTER_ADD_FAILED|영웅을 목록에 추가할 수 없습니다
+HODA_STORE_SERVER_BUSY|서버가 혼잡합니다. 다시 시도해 주세요
+HODA_STORE_PRICE_CHANGED|가격이 변경되었습니다. 다시 시도해 주세요
+HODA_STORE_PROFILE_CHANGED|서버에서 프로필이 변경되었습니다
+HODA_STORE_REAL_MONEY_OFFLINE|이 버전에서는 현금 구매를 이용할 수 없습니다
+HODA_TUTORIAL_CONSUME_PACK_NAME|튜토리얼 팩
+HODA_GRAND_CHAMPION_PACK_NAME|그랜드 챔피언 팩
+HODA_MERCENARY_PACK_NAME|용병 팩
+HODA_COMMANDER_PACK_NAME|지휘관 팩
+HODA_ELITE_PACK_NAME|엘리트 팩
+HODA_LYRIUM_MINE_PACK_NAME|리륨 광맥
+HODA_MINNOW_CONVERSION_V2_PACK_NAME|스타터 팩
+HODA_HERO_BOOSTER_BLACKWHITE_PACK_NAME|검은색/흰색 영웅 부스터
+HODA_HERO_BOOSTER_REDBLUE_PACK_NAME|붉은색/파란색 영웅 부스터
+HODA_HERO_BOOSTER_GIANT_PACK_NAME|자이언트 영웅 부스터
+HODA_HERO_BOOSTER_PRESTIGE_PACK_NAME|프레스티지 영웅 부스터
+HODA_NUG_PACK_NAME|너그 팩!
+HODA_DRAGON_PACK_NAME|드래곤 팩!
+HODA_ROMANCE_PACK_NAME|로맨스 팩!
+HODA_WINTERSEND_PACK_NAME|윈터샌드 팩
+HODA_HARVEST_PACK_NAME|추수 팩
+HODA_ANNIVERSARY_PACK_NAME|기념 팩
+HODA_LIBRARY_PACK_NAME|도서관 팩
+HODA_TEMP_MAC_TIR_PACK_NAME|맥 티르 팩
+HODA_NEW_RELEASE_PACK_NAME|신규 출시 팩
+HODA_ITEM_ULTIMATE_IDENTIFIER_V2_PACK_NAME|얼티메이트 팩
+HODA_SPECIAL_PACK_NAME|스페셜 팩
+HODA_FLASH_BLACK_FRIDAY_PACK_NAME|블랙 프라이데이
+HODA_FLASH_DRAGON_HUNT_PACK_NAME|드래곤 사냥
+HODA_FLASH_EXCLUSIVELY_PACK_NAME|단독 독점
+HODA_FLASH_FINE_DWARVEN_CRAFTS_PACK_NAME|정교한 드워프 공예품
+HODA_FLASH_FIREWORKS_PACK_NAME|불꽃놀이
+HODA_FLASH_GOOD_COMPANY_PACK_NAME|좋은 동료들
+HODA_FLASH_STAR_STRUCK_PACK_NAME|별빛 매혹
+HODA_FLASH_STOCKING_STUFFERS_PACK_NAME|양말 속 선물
+HODA_FLASH_UNIVERSITY_SUPPLIES_PACK_NAME|대학 보급품
+HODA_FLASH_VALENTINES_GIFTS_PACK_NAME|밸런타인 선물
+HODA_PRESTIGE_RUNE_PACK_NAME|프레스티지 룬 팩
+HODA_PEASANT_GEAR_PACK_NAME|농민 장비 팩
+HODA_NOVICE_GEAR_PACK_NAME|초보자 장비 팩
+HODA_JOURNEYMAN_GEAR_PACK_NAME|숙련공 장비 팩
+HODA_MERCHANT_GEAR_PACK_NAME|상인 장비 팩
+HODA_MASTERWORK_GEAR_PACK_NAME|걸작 장비 팩
+HODA_ARMORY_GEAR_PACK_NAME|무기고 장비 팩
+HODA_TUTORIAL_CONSUME_PACK_INFO|소모하는 법을 배울 수 있는 무료 영웅 2명입니다.
+HODA_GRAND_CHAMPION_PACK_INFO|챔피언 팩 10개: 전설 영웅 2명과 에픽 영웅 3명을 보장합니다.
+HODA_PRESTIGE_RUNE_PACK_INFO|특별 분대 슬롯에 사용하는 프레스티지 룬 1개입니다.
+HODA_STORE_HERO_PACK_INFO_1_UNCOMMON|영웅 1명을 제공합니다. 특수 이상 보장.
+HODA_STORE_HERO_PACK_INFO_1_RARE|영웅 1명을 제공합니다. 희귀 이상 보장.
+HODA_STORE_HERO_PACK_INFO_1_EPIC|영웅 1명을 제공합니다. 에픽 이상 보장.
+HODA_STORE_HERO_PACK_INFO_2_RARE|영웅 2명을 제공합니다. 모두 희귀 이상.
+HODA_STORE_HERO_PACK_INFO_3_RARE|영웅 3명을 제공합니다. 모두 희귀 이상.
+HODA_STORE_HERO_PACK_INFO_5_RARE|영웅 5명을 제공합니다. 모두 희귀 이상.
+HODA_STORE_HERO_PACK_INFO_5_EPIC|영웅 5명을 제공합니다. 모두 에픽 이상.
+HODA_STORE_HERO_PACK_INFO_10_EPIC|영웅 10명을 제공합니다. 모두 에픽 이상.
+HODA_STORE_GEAR_PACK_INFO_1|장비 1개를 제공합니다.
+HODA_STORE_GEAR_PACK_INFO_2|장비 2개를 제공합니다.
+HODA_STORE_GEAR_PACK_INFO_3|장비 3개를 제공합니다.
+HODA_STORE_GEAR_PACK_INFO_5|장비 5개를 제공합니다.
+HODA_STORE_BULLET_LEGENDARY_BY_FOURTH|4번째 팩까지 전설 보장
+HODA_STORE_BULLET_GRAND_CHAMPION|전설 2명, 에픽 3명 보장
+HODA_STORE_BULLET_CHANCE_AT|확률
+HODA_STORE_BULLET_GIFT|선물
+HODA_STORE_BULLET_NUGS|경고! 너그 포함!
+HODA_STORE_BULLET_DRAGON_CHANCE|드래곤 획득 확률
+HODA_STORE_BULLET_ROMANCE|마음의 기쁨
+HODA_STORE_BULLET_WINTERSEND|홀을 장식하세요
+HODA_STORE_BULLET_THIS_WEEK_ONLY|이번 주 한정!
+HODA_STORE_BULLET_PRESTIGE_RUNE|프레스티지 룬 1개
+HODA_RUNE_DISPEL_NAME|정화의 룬
+HODA_RUNE_GUARD_NAME|수호의 룬
+HODA_RUNE_PERCEPTION_NAME|간파의 룬
+HODA_RUNE_RETALIATION_NAME|보복의 룬
+HODA_RUNE_STEALTH_NAME|은신의 룬
+HODA_RUNE_DISPEL_DESCRIPTION|분대에 있는 영웅이 힘 저주에 면역이 됩니다.
+HODA_RUNE_GUARD_DESCRIPTION|분대에 있는 영웅이 받는 대미지의 일정 비율에 저항합니다.
+HODA_RUNE_PERCEPTION_DESCRIPTION|분대에 있는 영웅이 은신 효과를 무시합니다.
+HODA_RUNE_RETALIATION_DESCRIPTION|각 영웅이 받는 대미지의 일정 비율을 적에게 되돌립니다.
+HODA_RUNE_STEALTH_DESCRIPTION|분대에 있는 영웅이 타격 시 효과를 일으키지 않고 공격합니다.
+HODA_RUNE_BUFF_DAMAGE_RESIST_PERCENT|대미지 저항
+HODA_RUNE_BUFF_DAMAGE_RETALIATION_PERCENT|보복
+HODA_RUNE_BUFF_PERCEPTIVE|간파
+HODA_RUNE_BUFF_POWER_CURSED|힘 저주 저항
+HODA_RUNE_BUFF_STEALTH|은신
+HODA_RUNE_VALUE_DAMAGE|-{0}
+HODA_RUNE_VALUE_IMMUNE|면역
+HODA_RARITY_PRESTIGE|프레스티지
+HODA_RUNE_PRESTIGE_UNLOCK|해제
+HODA_RUNE_PRESTIGE_MESSAGE|이 분대의 프레스티지 룬 슬롯을 해제하시겠습니까?
+HODA_RUNE_PRESTIGE_REJECT_RUNE_MESSAGE|이 슬롯에는 프레스티지 룬만 적용할 수 있습니다.
+HODA_RUNE_PRESTIGE_REJECT_SLOT_MESSAGE|이 룬은 프레스티지 룬 슬롯에서만 활성화할 수 있습니다.
+HODA_RUNE_PRESTIGE_REJECT_LOCKED_MESSAGE|이 룬을 사용하려면 보석으로 프레스티지 룬 슬롯을 해제하세요.
+HODA_INVENTORY_SORT|정렬
+HODA_GEAR_EQUIP_EMPTY_CONFIRM|이 장비를 장착하려고 합니다. 한 번 장착하면 해제할 수 없고 다른 장비로 교체만 할 수 있습니다. 계속 진행하시겠습니까?
+HODA_GEAR_EQUIP_FILLED_CONFIRM|이 장비를 장착하려고 합니다. 기존에 장착한 다음 아이템은 파괴됩니다: {0}
+HODA_GEAR_EQUIP_FAIL_CATEGORY_LIMIT_CONFIRM|이 영웅에게는 이 장비를 장착할 수 없습니다. 장비 제한 사항을 확인하세요.
+HODA_GEAR_EQUIP_FAIL_DUPLICATE_CONFIRM|한 영웅에게 같은 아이템을 중복으로 장착할 수 없습니다.
+HODA_GEAR_EQUIP_FAIL_DEFENDER_CONFIRM|영웅은 대미지 흡수 능력을 하나만 가질 수 있으므로 이 영웅에게 이 장비를 장착할 수 없습니다.
+HODA_GEAR_EQUIP_FAIL_INVALID_PRESTIGE_GEAR|프레스티지 장비 슬롯에는 전설 또는 신화 장비만 장착할 수 있습니다.
+HODA_GEAR_SELL_BUTTON_TEXT|판매
+HODA_GEAR_EQUIP_BUTTON_TEXT|장착
+HODA_GEAR_SELL_MAIN_CONFIRM|이 아이템을 판매하려고 합니다. 계속 진행하시겠습니까?
+HODA_GEAR_SELL_RECEIVE_CONFIRM|획득:
+HODA_GEAR_PRESTIGE_MESSAGE|영웅을 프레스티지하면 추가 장비 슬롯이 해제됩니다. 이 슬롯에는 전설 또는 신화 장비만 장착할 수 있습니다. 영웅마다 슬롯을 해제하려면 보석이 필요합니다. 이 슬롯을 해제하시겠습니까?
+HODA_GEAR_PRESTIGE_UNLOCK|해제
+HODA_GEAR_EMPTY_INVENTORY_MESSAGE|장비가 없습니다. 상점에서 장비 팩을 확인하세요!
+HODA_GEAR_FILTER_ALL_TITLE|모든 장비
+HODA_GEAR_FILTER_EQUIPPABLE_TITLE|장착 가능
+HODA_GEAR_NO_LIMITATIONS|모든 영웅
+HODA_GEAR_LIMITED_TITLE|<color=grey>제한: </color>
+HODA_GEAR_REVEAL_WINDOW_TITLE|장비
+HODA_GEAR_SELECT_HERO_HELP|장착하려면 영웅의 장비 슬롯(+)을 선택하세요.
+HODA_GEAR_INVENTORY_FOOTER_TEXT|장비를 누르면 상세정보
+HODA_GEAR_RARITY_COMMON|<color=#d6b48f>일반 아이템</color>
+HODA_GEAR_RARITY_UNCOMMON|<color=#f2f2f2>특수 아이템</color>
+HODA_GEAR_RARITY_RARE|<color=#ffd633>희귀 아이템</color>
+HODA_GEAR_RARITY_EPIC|<color=#ff751a>에픽 아이템</color>
+HODA_GEAR_RARITY_LEGENDARY|<color=#33cc33>전설 아이템</color>
+HODA_GEAR_RARITY_MYTHIC|<color=#FF00FF>신화 아이템</color>
+HODA_GEAR_SHOW_PREVIOUS|이전 {0}개
+HODA_GEAR_SHOW_NEXT|다음 {0}개
+HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|승천의 서를 해제하려면 모든 장비 슬롯을 채우세요.
+HODA_EVO_TOME_REQUIRED_MESSAGE|승천의 서가 필요합니다. 상점에서 구매할 수 있습니다.
+HODA_EVO_TOME_USE_CONFIRM|승천의 서를 사용하여 이 영웅을 신화 등급으로 올리시겠습니까?
+HODA_EVO_TOME_EXPLAIN_DESC|신화 영웅은 <color=#ffa500ff>최고 레벨 +5</color>와 <color=#ffa500ff>추가 장비 슬롯</color>을 얻습니다!
+HODA_EVO_TOME_COUNT|승천의 서: {0}
+HODA_TOME_POPUP_TITLE|승천의 서
+HODA_RARITY_MYTHIC|신화
+HODA_ROSTER_FILTER_EPIC|에픽
+HODA_ROSTER_FILTER_LEGENDARY|전설
+HODA_ROSTER_FILTER_MYTHIC|신화
+HODA_AEDUCANS_HAMMER_GEAR_TITLE|아이두칸의 망치
+HODA_ALAMARRI_WARSTAFF_GEAR_TITLE|알마리 전투 지팡이
+HODA_ALCHEMICAL_CONCOCTION_GEAR_TITLE|연금술 혼합물
+HODA_ANTIQUE_WARDEN_CROSSBOW_GEAR_TITLE|고대 워든 석궁
+HODA_APPRENTICE_COAT_GEAR_TITLE|견습생 코트
+HODA_ARDENT_BLOSSOM_GEAR_TITLE|열정의 꽃
+HODA_ARLATHAN_FOCUSING_CRYSTAL_GEAR_TITLE|알라산 집중 수정
+HODA_ARMADA_CAPTAINS_KNIFE_GEAR_TITLE|함대 선장의 칼
+HODA_ARMS_OF_THE_CHAMPION_GEAR_TITLE|챔피언의 완갑
+HODA_ASAARASH_CHANFRON_GEAR_TITLE|아사라쉬 머리 마갑
+HODA_ASAARASH_CRINIERE_GEAR_TITLE|아사라쉬 목 마갑
+HODA_ASAARASH_FLANCHARD_GEAR_TITLE|아사라쉬 옆구리 마갑
+HODA_ASAARASH_PEYTRAL_GEAR_TITLE|아사라쉬 가슴 마갑
+HODA_ASAARASH_SADDLE_GEAR_TITLE|아사라쉬 안장
+HODA_ASSASSINS_RECURVE_GEAR_TITLE|암살자의 리커브 활
+HODA_AUGURS_WITCHSTAFF_GEAR_TITLE|예언자의 마녀 지팡이
+HODA_AXE_OF_THE_DRAGON_HUNTER_GEAR_TITLE|드래곤 사냥꾼의 도끼
+HODA_BARBARIAN_LORD_MAUL_GEAR_TITLE|야만족 군주의 대형 망치
+HODA_BELT_OF_THE_ARCHITECT_GEAR_TITLE|아키텍트의 허리띠
+HODA_BIANCA_GEAR_TITLE|비앙카
+HODA_BLACKMETAL_TORQUE_GEAR_TITLE|흑철 토크
+HODA_BLADE_OF_TUHNA_ALLIED_GEAR_TITLE|투나의 칼날 (동맹)
+HODA_BLOOD_DRAGON_GREAVES_GEAR_TITLE|블러드 드래곤 정강이받이
+HODA_BLOODLINE_GEAR_TITLE|혈통
+HODA_BOOK_OF_THE_LADY_GEAR_TITLE|여인의 서
+HODA_BOOTS_OF_FAITH_GEAR_TITLE|신앙의 장화
+HODA_BOOTS_OF_THE_RIVER_DANE_GEAR_TITLE|데인 강의 장화
+HODA_BOW_OF_CLEANSING_FIRE_GEAR_TITLE|정화의 불꽃 활
+HODA_BOW_OF_THE_BERESAAD_GEAR_TITLE|베레사드의 활
+HODA_BOW_OF_THE_RIGHTEOUS_GEAR_TITLE|의인의 활
+HODA_BROKEN_GRIFFON_HELM_GEAR_TITLE|부서진 그리폰 투구
+HODA_BRUTE_HAMMER_GEAR_TITLE|난폭자의 망치
+HODA_BULLS_EDGE_GEAR_TITLE|불의 칼날
+HODA_CAPTAINS_PLATE_GEAR_TITLE|대장의 판금 갑옷
+HODA_CERTAINTY_GEAR_TITLE|확신
+HODA_CHANTRY_ROBE_GEAR_TITLE|교단 로브
+HODA_CHANTRY_SHIELD_GEAR_TITLE|교단 방패
+HODA_CHESTPIECE_OF_THE_RIVER_DANE_GEAR_TITLE|데인 강의 흉갑
+HODA_CHESTPLATE_OF_THE_FORTRESS_GEAR_TITLE|요새의 흉갑
+HODA_CHEVALIERS_CUTLASS_GEAR_TITLE|슈발리에의 커틀러스
+HODA_CIRCLE_MAGE_STAFF_GEAR_TITLE|서클 마법사 지팡이
+HODA_COBRA_CROWN_GEAR_TITLE|코브라 왕관
+HODA_COLES_HAT_GEAR_TITLE|콜의 모자
+HODA_COURTIER_FAN_GEAR_TITLE|궁정인의 부채
+HODA_CROW_DAGGER_GEAR_TITLE|크로우 단검
+HODA_CROW_SHIELD_GEAR_TITLE|크로우 방패
+HODA_CUIRASS_OF_THE_WINDS_GEAR_TITLE|바람의 흉갑
+HODA_CUTPURSE_SLICER_GEAR_TITLE|소매치기의 칼
+HODA_DALISH_RING_GEAR_TITLE|데일스 반지
+HODA_DALISH_ROBES_GEAR_TITLE|데일스 로브
+HODA_DALISH_STAFF_GEAR_TITLE|데일스 지팡이
+HODA_DAWN_RING_GEAR_TITLE|새벽의 반지
+HODA_DEFENDER_COAT_GEAR_TITLE|방어자의 코트
+HODA_DEMONS_ADVOCATE_GEAR_TITLE|악마의 대변인
+HODA_DIPLOMATIC_MISSIVES_GEAR_TITLE|외교 서신
+HODA_DIRTHAMENS_WISDOM_GEAR_TITLE|디르타멘의 지혜
+HODA_DRAGONS_TESTAMENT_GEAR_TITLE|드래곤의 증언
+HODA_DREAMWEAVER_STAFF_GEAR_TITLE|꿈을 엮는 자의 지팡이
+HODA_DUSK_RING_GEAR_TITLE|황혼의 반지
+HODA_DUSTER_BATTLEAXE_GEAR_TITLE|더스터 전투 도끼
+HODA_DUSTER_GREAVES_GEAR_TITLE|더스터 정강이받이
+HODA_DUSTER_LEATHER_ARMOR_GEAR_TITLE|더스터 가죽 갑옷
+HODA_DUSTER_LEATHER_GAUNTLETS_GEAR_TITLE|더스터 가죽 건틀릿
+HODA_DUSTER_LEATHER_PAULDRON_GEAR_TITLE|더스터 가죽 견갑
+HODA_DWORKINS_HIGH_EXPLOSIVES_GEAR_TITLE|드워킨의 고성능 폭약
+HODA_DWORKINS_SAFE_EXPLOSIVES_GEAR_TITLE|드워킨의 안전한 폭약
+HODA_EARNEST_REPRISAL_GEAR_TITLE|진심 어린 보복
+HODA_ELGARNAN_ENASTE_GEAR_TITLE|엘가난 에나스테
+HODA_ELUSIVE_ICEBOW_GEAR_TITLE|잡히지 않는 얼음 활
+HODA_ELVEN_PLATE_ARMOR_GEAR_TITLE|엘프 판금 갑옷
+HODA_EMBLAZONED_KIRKWALL_SHIELD_GEAR_TITLE|문장이 새겨진 커크윌 방패
+HODA_ENCHANTED_SILVER_ARMOR_GEAR_TITLE|마법이 깃든 은 갑옷
+HODA_ENCHANTER_FIRE_STAFF_GEAR_TITLE|마법사의 화염 지팡이
+HODA_EXPENSIVE_DOG_TREATS_GEAR_TITLE|비싼 개 간식
+HODA_FADE_TOUCHED_LURKER_SCALES_GEAR_TITLE|어둠에 물든 러커 비늘
+HODA_FADE_TOUCHED_SILVERITE_GEAR_TITLE|어둠에 물든 실버라이트
+HODA_FADE_WALL_GEAR_TITLE|어둠의 벽
+HODA_FADESBANE_GEAR_TITLE|어둠의 재앙
+HODA_FERAL_WOLF_CHARM_GEAR_TITLE|야생 늑대 부적
+HODA_FERELDAN_CLAYMORE_GEAR_TITLE|페렐단 클레이모어
+HODA_FERELDAN_SOLDIER_HELMET_GEAR_TITLE|페렐단 병사 투구
+HODA_FIRST_ENCHANTERS_ROBES_GEAR_TITLE|수석 마법사의 로브
+HODA_FLASK_OF_FLAME_GEAR_TITLE|화염 플라스크
+HODA_FLASK_OF_FROST_GEAR_TITLE|냉기 플라스크
+HODA_FLASK_OF_LIGHTNING_GEAR_TITLE|번개 플라스크
+HODA_FLAWLESS_FIRE_CRYSTAL_GEAR_TITLE|완벽한 화염 수정
+HODA_FLAWLESS_ICE_CRYSTAL_GEAR_TITLE|완벽한 얼음 수정
+HODA_FLAWLESS_LIGHTNING_CRYSTAL_GEAR_TITLE|완벽한 번개 수정
+HODA_FLAWLESS_NATURE_CRYSTAL_GEAR_TITLE|완벽한 자연 수정
+HODA_FLAWLESS_SPIRIT_CRYSTAL_GEAR_TITLE|완벽한 영혼 수정
+HODA_FLEMETHS_GRIMOIRE_GEAR_TITLE|플레미스의 마법서
+HODA_FORGE_MASTERS_HAMMER_GEAR_TITLE|대장간 장인의 망치
+HODA_GAMORDAN_STORMRIDER_SCALE_GEAR_TITLE|가모르단 스톰라이더 비늘
+HODA_GARAHELS_HELM_GEAR_TITLE|가라헬의 투구
+HODA_GAUNTLETS_OF_THE_NUG_GEAR_TITLE|너그의 건틀릿
+HODA_GAUNTLETS_OF_THE_SKIES_GEAR_TITLE|하늘의 건틀릿
+HODA_GIFT_OF_THE_TALONS_GEAR_TITLE|발톱의 선물
+HODA_GIRDLE_OF_THE_SKIES_GEAR_TITLE|하늘의 허리띠
+HODA_GLANDIVALIS_GEAR_TITLE|글란디발리스
+HODA_GLOVES_OF_THE_RIVER_DANE_GEAR_TITLE|데인 강의 장갑
+HODA_GRAND_ENCHANTERS_STAFF_GEAR_TITLE|대마법사의 지팡이
+HODA_GREAT_DRAGON_STAFF_GEAR_TITLE|위대한 드래곤 지팡이
+HODA_GREATER_MISTRAL_SCALE_GEAR_TITLE|그레이터 미스트랄 비늘
+HODA_GREAVES_OF_THE_BERESAAD_GEAR_TITLE|베레사드의 정강이받이
+HODA_GREAVES_OF_THE_LADY_GEAR_TITLE|여인의 정강이받이
+HODA_GRIFFON_PLATE_GEAR_TITLE|그리폰 판금 갑옷
+HODA_GRIFFONRIDER_LEATHERS_GEAR_TITLE|그리폰 기수의 가죽 갑옷
+HODA_GRIMOIRE_OF_THE_FROZEN_WASTES_GEAR_TITLE|얼어붙은 황무지의 마법서
+HODA_HAKKONS_WISDOM_GEAR_TITLE|하콘의 지혜
+HODA_HAKKONS_WRATH_GEAR_TITLE|하콘의 분노
+HODA_HARDENED_GURN_HIDE_GEAR_TITLE|단단해진 건 가죽
+HODA_HAUBERK_OF_THE_LADY_GEAR_TITLE|여인의 사슬 갑옷
+HODA_HEARTWOOD_SHIELD_GEAR_TITLE|심재 방패
+HODA_HELM_OF_JUSTICE_GEAR_TITLE|정의의 투구
+HODA_HELM_OF_THE_DRAGON_HUNTER_GEAR_TITLE|드래곤 사냥꾼의 투구
+HODA_HELM_OF_THE_MOUNTAIN_FATHER_GEAR_TITLE|산의 아버지의 투구
+HODA_HELM_OF_THE_SKIES_GEAR_TITLE|하늘의 투구
+HODA_HISSERAS_MASK_GEAR_TITLE|히세라의 가면
+HODA_ICE_GIANTS_TUSK_GEAR_TITLE|얼음 거인의 엄니
+HODA_INQUISITION_LONGSWORD_GEAR_TITLE|인퀴지션 장검
+HODA_INQUISITION_SHIELD_GEAR_TITLE|인퀴지션 방패
+HODA_INQUISITION_STAFF_GEAR_TITLE|인퀴지션 지팡이
+HODA_INQUISITION_WARMAGE_PAULDRON_GEAR_TITLE|인퀴지션 전투법사 견갑
+HODA_ISANAS_SONG_GEAR_TITLE|이사나의 노래
+HODA_JAR_OF_BEES_GEAR_TITLE|벌 항아리
+HODA_JOINING_CHALICE_GEAR_TITLE|입단의 성배
+HODA_KADDIS_OF_THE_LADY_GEAR_TITLE|여인의 카디스
+HODA_KADDIS_OF_THE_MOUNTAINFATHER_GEAR_TITLE|산의 아버지의 카디스
+HODA_KALTENZAHN_SCALE_GEAR_TITLE|칼텐잔 비늘
+HODA_KEEN_ELFSNAKE_VITAAR_GEAR_TITLE|예리한 엘프뱀 비타르
+HODA_KEEPSAKE_LOCKET_GEAR_TITLE|추억의 로켓
+HODA_KITTYS_COLLAR_GEAR_TITLE|키티의 목걸이
+HODA_LEGION_HAMMER_GEAR_TITLE|군단의 망치
+HODA_LEGIONNAIRE_HELMET_GEAR_TITLE|군단병 투구
+HODA_LEGIONNAIRE_PLATE_GEAR_TITLE|군단병 판금 갑옷
+HODA_LEGIONNAIRE_SCOUT_DAGGER_GEAR_TITLE|군단 정찰병 단검
+HODA_LINEAGE_GEAR_TITLE|가문
+HODA_LITANY_OF_ADRALLA_GEAR_TITLE|아드랄라의 기도문
+HODA_LOOSE_ENDS_GEAR_TITLE|뒷마무리
+HODA_LOTHERINGS_LAMENT_GEAR_TITLE|로더링의 비가
+HODA_LYRIUM_KIT_GEAR_TITLE|리륨 키트
+HODA_LYRIUM_REINFORCED_LONGBOW_GEAR_TITLE|리륨 강화 장궁
+HODA_MAFERATHS_MAUL_GEAR_TITLE|마페라스의 대형 망치
+HODA_MAGEKILLER_GEAR_TITLE|마법사 학살자
+HODA_MANTLE_OF_THE_HOLD_BEAST_GEAR_TITLE|거점 야수의 망토
+HODA_MARCH_OF_THE_EVERLASTING_GEAR_TITLE|영원한 행군
+HODA_MASTERWORK_WITCH_STAFF_GEAR_TITLE|걸작 마녀 지팡이
+HODA_MAUL_OF_TACITUS_GEAR_TITLE|타키투스의 대형 망치
+HODA_MAUL_OF_THE_DRAGON_GEAR_TITLE|드래곤의 대형 망치
+HODA_MERCYS_CREST_GEAR_TITLE|자비의 문장
+HODA_MEREDITHS_KEY_GEAR_TITLE|메레디스의 열쇠
+HODA_MORTALITASI_COWL_GEAR_TITLE|모탈리타시 두건
+HODA_MORTALITASI_STAFF_GEAR_TITLE|모탈리타시 지팡이
+HODA_MYTHALS_BLESSING_GEAR_TITLE|미살의 축복
+HODA_MYTHALS_JUDGMENT_GEAR_TITLE|미살의 심판
+HODA_OATHBREAKER_GEAR_TITLE|맹세를 깨는 자
+HODA_OF_THINGS_NOT_LOST_GEAR_TITLE|잃지 않은 것들에 대하여
+HODA_ORB_OF_DESTRUCTION_GEAR_TITLE|파괴의 오브
+HODA_ORB_OF_FENHAREL_GEAR_TITLE|펜'하렐의 오브
+HODA_ORLESIAN_HENNIN_GEAR_TITLE|올레이 에냉 모자
+HODA_ORLESIAN_MASK_GEAR_TITLE|올레이 가면
+HODA_PAULDRON_OF_THE_ARISHOK_GEAR_TITLE|애리쇼크의 견갑
+HODA_PHOENIX_TAIL_FEATHER_GEAR_TITLE|피닉스 꼬리 깃털
+HODA_PROWLER_MAIL_GEAR_TITLE|배회자의 사슬 갑옷
+HODA_PUZZLE_RING_GEAR_TITLE|퍼즐 반지
+HODA_QUNARI_HELMET_GEAR_TITLE|쿠나리 투구
+HODA_QUNARI_TOWER_SHIELD_GEAR_TITLE|쿠나리 대형 방패
+HODA_QUNARI_WARAXE_GEAR_TITLE|쿠나리 전투 도끼
+HODA_REBOUND_DAGGER_GEAR_TITLE|반격의 단검
+HODA_RED_IRON_MAUL_GEAR_TITLE|레드 아이언 대형 망치
+HODA_RED_JENNY_BACKBITER_GEAR_TITLE|붉은 제니의 등찌르개
+HODA_RED_LYRIUM_IDOL_GEAR_TITLE|붉은 리륨 우상
+HODA_REDCLIFFE_SHIELD_GEAR_TITLE|레드클리프 방패
+HODA_REMARKABLE_EMERALD_GEAR_TITLE|놀라운 에메랄드
+HODA_RETRIBUTION_ELIXIR_GEAR_TITLE|응징의 엘릭서
+HODA_REVERED_DEFENDER_MAUL_GEAR_TITLE|존경받는 디펜더의 대형 망치
+HODA_RING_OF_DOUBT_GEAR_TITLE|의심의 반지
+HODA_RING_OF_RESILIENCE_GEAR_TITLE|인내의 반지
+HODA_RITUAL_BREAKER_GEAR_TITLE|의식 파괴자
+HODA_ROBES_OF_THE_ARCHITECT_GEAR_TITLE|아키텍트의 로브
+HODA_RUBY_RING_GEAR_TITLE|루비 반지
+HODA_SAAREBAS_RESTRAINTS_GEAR_TITLE|사레바스 구속구
+HODA_SACRIFICIAL_DAGGER_GEAR_TITLE|제물 단검
+HODA_SAD_WEAPON_GEAR_TITLE|슬픈 무기
+HODA_SAVAGE_THORN_GEAR_TITLE|야만의 가시
+HODA_SCOUT_ARMOR_GEAR_TITLE|정찰병 갑옷
+HODA_SCOUT_COAT_ARMS_GEAR_TITLE|정찰병 코트 소매
+HODA_SCOUT_HAT_GEAR_TITLE|정찰병 모자
+HODA_SCOUT_QUIVER_GEAR_TITLE|정찰병 화살통
+HODA_SEER_STAFF_GEAR_TITLE|선견자의 지팡이
+HODA_SENIOR_WARDENS_STAFF_GEAR_TITLE|선임 워든의 지팡이
+HODA_SENTINEL_GAUNTLETS_GEAR_TITLE|파수병 건틀릿
+HODA_SENTINEL_GREAVES_GEAR_TITLE|파수병 정강이받이
+HODA_SENTINEL_PLATE_PAULDRON_GEAR_TITLE|파수병 판금 견갑
+HODA_SENTINEL_STAFF_GEAR_TITLE|파수병 지팡이
+HODA_SER_ALVARDS_SWORD_GEAR_TITLE|알바드 경의 검
+HODA_SERAS_RAISIN_COOKIES_GEAR_TITLE|세라의 건포도 쿠키
+HODA_SERUM_OF_AMBITION_GEAR_TITLE|야망의 혈청
+HODA_SHIELD_OF_LE_MARQUE_GEAR_TITLE|르 마르크의 방패
+HODA_SIDEREAL_STAFF_GEAR_TITLE|별의 지팡이
+HODA_SKYWATCHERS_CLEAVER_GEAR_TITLE|하늘 감시자의 클리버
+HODA_SMUGGLERS_DAGGER_GEAR_TITLE|밀수꾼의 단검
+HODA_SOLDIERS_PLATE_GEAR_TITLE|병사의 판금 갑옷
+HODA_SOOTHERS_SAPPHIRE_GEAR_TITLE|위안의 사파이어
+HODA_SOULWRECKER_STAFF_GEAR_TITLE|영혼 파괴자의 지팡이
+HODA_SPEAR_THROWER_GEAR_TITLE|창 투척기
+HODA_SPECTRAL_SCALE_GEAR_TITLE|유령 비늘
+HODA_SPIRIT_MAUL_GEAR_TITLE|영혼의 대형 망치
+HODA_STAFF_OF_AIDAHN_ALLIED_GEAR_TITLE|에이단의 지팡이 (동맹)
+HODA_STAFF_OF_CORRUPTION_GEAR_TITLE|타락의 지팡이
+HODA_STAFF_OF_FAITH_GEAR_TITLE|신앙의 지팡이
+HODA_STAFF_OF_SHADOWS_GEAR_TITLE|그림자의 지팡이
+HODA_STONEHAMMER_PLATE_GEAR_TITLE|스톤해머 판금 갑옷
+HODA_STROUDS_TARGE_GEAR_TITLE|스트라우드의 원형 방패
+HODA_STUDDED_LEATHER_PAULDRON_GEAR_TITLE|징 박힌 가죽 견갑
+HODA_STUFFED_MABARI_GEAR_TITLE|마바리 인형
+HODA_SWIFTRUNNERS_SHIELD_GEAR_TITLE|스위프트러너의 방패
+HODA_SWORD_OF_CHARRIS_ALLIED_GEAR_TITLE|채리스의 검 (동맹)
+HODA_TALON_OF_THE_SKIES_GEAR_TITLE|하늘의 발톱
+HODA_TEMPLAR_BREASTPLATE_GEAR_TITLE|기사단 흉갑
+HODA_TEMPLAR_COMMANDER_PAULDRON_GEAR_TITLE|기사단 지휘관 견갑
+HODA_TEMPLAR_HELMET_GEAR_TITLE|기사단 투구
+HODA_TEMPLAR_LONGSWORD_GEAR_TITLE|기사단 장검
+HODA_TEMPLAR_SHIELD_GEAR_TITLE|기사단 방패
+HODA_THE_ANCESTORS_GREAVES_GEAR_TITLE|선조의 정강이받이
+HODA_THE_BIND_THAT_GUIDES_GEAR_TITLE|인도하는 매듭
+HODA_THE_BLACK_FOXS_JERKIN_GEAR_TITLE|검은 여우의 가죽 조끼
+HODA_THE_DIVINE_ARMOR_GEAR_TITLE|디바인의 갑옷
+HODA_THE_DIVINE_BOOTS_GEAR_TITLE|디바인의 장화
+HODA_THE_DIVINE_HELMET_GEAR_TITLE|디바인의 투구
+HODA_THE_ELDERS_GRIMOIRE_GEAR_TITLE|엘더의 마법서
+HODA_THE_EYE_THAT_WEEPS_GEAR_TITLE|눈물 흘리는 눈
+HODA_THE_GOLDEN_PRINCES_HELM_GEAR_TITLE|황금 왕자의 투구
+HODA_THE_GOLDEN_PRINCES_PAULDRON_GEAR_TITLE|황금 왕자의 견갑
+HODA_THE_GOLDEN_PRINCES_RAIMENT_GEAR_TITLE|황금 왕자의 예복
+HODA_THE_HAND_THAT_CUTS_GEAR_TITLE|베어내는 손
+HODA_THE_LADYS_WRATH_GEAR_TITLE|여인의 분노
+HODA_THE_SKIN_THAT_STALKS_GEAR_TITLE|추적하는 가죽
+HODA_TOME_OF_ARCANE_TECHNIQUE_GEAR_TITLE|비전 기술서
+HODA_TOME_OF_KOSLUN_GEAR_TITLE|코슬룬의 서
+HODA_TOME_OF_PHYSICAL_TECHNIQUE_GEAR_TITLE|신체 기술서
+HODA_TOME_OF_RIFTS_GEAR_TITLE|균열의 서
+HODA_TOME_OF_SKILL_AND_SUNDRY_GEAR_TITLE|기술과 잡학의 서
+HODA_TOME_OF_THE_MORTAL_VESSEL_GEAR_TITLE|필멸의 그릇에 관한 서
+HODA_VANGUARD_ARMOR_GEAR_TITLE|선봉대 갑옷
+HODA_VENATORI_BOW_GEAR_TITLE|베나토리 활
+HODA_VENATORI_GREAVES_GEAR_TITLE|베나토리 정강이받이
+HODA_VENATORI_HELMET_GEAR_TITLE|베나토리 투구
+HODA_VENATORI_STAFF_BLADE_GEAR_TITLE|베나토리 칼날 지팡이
+HODA_VENATORI_TOWER_SHIELD_GEAR_TITLE|베나토리 대형 방패
+HODA_VESTMENTS_OF_THE_ARCHMAGE_GEAR_TITLE|대마도사의 예복
+HODA_VESTMENTS_OF_THE_DRAGON_HUNTER_GEAR_TITLE|드래곤 사냥꾼의 예복
+HODA_VIAL_OF_DRAGONS_BLOOD_GEAR_TITLE|드래곤 피 약병
+HODA_VIGILANCE_GEAR_TITLE|경계
+HODA_VINSOMER_SCALE_GEAR_TITLE|빈소머 비늘
+HODA_VIRTUOSITY_GEAR_TITLE|명연주
+HODA_VITAAR_OF_THE_DRAGON_HUNTER_GEAR_TITLE|드래곤 사냥꾼의 비타르
+HODA_VORACITY_GEAR_TITLE|탐식
+HODA_WALKING_DEATH_GEAR_TITLE|걸어다니는 죽음
+HODA_WARDEN_HELMET_GEAR_TITLE|워든 투구
+HODA_WARDEN_TOWER_SHIELD_GEAR_TITLE|워든 대형 방패
+HODA_WARM_ORB_GEAR_TITLE|따뜻한 오브
+HODA_WEDGE_OF_DESTINY_GEAR_TITLE|운명의 한 조각
+HODA_WILHELMS_STAFF_GEAR_TITLE|빌헬름의 지팡이
+HODA_WINTERWEIGHT_GEAR_TITLE|겨울의 무게
+HODA_YAVANALIS_GEAR_TITLE|야바날리스
+HODA_AEDUCANS_HAMMER_GEAR_DESC|대대로 전해 내려온 파라곤 아이두칸의 유산입니다.
+HODA_ALAMARRI_WARSTAFF_GEAR_DESC|절묘한 무게와 설계 덕분에 공격을 쳐내는 데도, 결정타를 날리는 데도 탁월한 무기입니다.
+HODA_ALCHEMICAL_CONCOCTION_GEAR_DESC|이 신비한 엘릭서의 주재료는 그레이 워든의 피와 그 속에 깃든 다크스폰의 오염입니다. 그래서 무척 귀합니다.
+HODA_ANTIQUE_WARDEN_CROSSBOW_GEAR_DESC|오래되었지만 상태는 훌륭합니다. 이전 주인이었던 워든 정찰대장이 각별히 아꼈다는 것을 한눈에 알 수 있습니다.
+HODA_APPRENTICE_COAT_GEAR_DESC|로브보다 튼튼해서, 전투 훈련 중인 견습생에게 더 나은 보호를 제공합니다.
+HODA_ARDENT_BLOSSOM_GEAR_DESC|방어력을 잃는 대신, 이 약초 투구에 스며든 리륨의 강력한 파괴력을 얻습니다.
+HODA_ARLATHAN_FOCUSING_CRYSTAL_GEAR_DESC|알라산의 엘프만이 알던 고대 기법으로, 황금빛 호박이 정신을 집중시킵니다.
+HODA_ARMADA_CAPTAINS_KNIFE_GEAR_DESC|깨어나는 바다의 약탈자들이 남긴 칼날로, 아직도 소금과 내장 냄새가 납니다.
+HODA_ARMS_OF_THE_CHAMPION_GEAR_DESC|챔피언의 갑옷 세트를 대표하는 장비입니다. 뛰어난 지략을 지닌 자만이 그 진가를 끌어낼 수 있습니다.
+HODA_ASAARASH_CHANFRON_GEAR_DESC|얼굴을 보호하면 탈것이 전투 중에도 집중력을 유지할 수 있습니다.
+HODA_ASAARASH_CRINIERE_GEAR_DESC|가슴 마갑과 머리 마갑을 보완하여 동물의 목을 보호합니다.
+HODA_ASAARASH_FLANCHARD_GEAR_DESC|동물의 옆구리를 추가로 보호합니다.
+HODA_ASAARASH_PEYTRAL_GEAR_DESC|말의 가슴을 보호하도록 설계되어, 돌격할 때 방어력을 크게 높여 줍니다.
+HODA_ASAARASH_SADDLE_GEAR_DESC|멋은 없어도 실용적인 안장으로, 긴 전투에 맞게 설계되었습니다.
+HODA_ASSASSINS_RECURVE_GEAR_DESC|플로리앤 드 샬롱 대공비의 요구에 맞춰 제작되었습니다.
+HODA_AUGURS_WITCHSTAFF_GEAR_DESC|스톤 베어 거점 예언자의 지팡이입니다. 덜그럭거리는 뼈 소리가 스피릿에게 인도를 청합니다.
+HODA_AXE_OF_THE_DRAGON_HUNTER_GEAR_DESC|한때 이름난 드래곤 사냥꾼 네프람 펜타가스트의 것이었으나, 강철 시대에 내기로 잃어버린 도끼입니다.
+HODA_BARBARIAN_LORD_MAUL_GEAR_DESC|막대기 끝에 큰 돌을 단 것입니다. 의외로 효과적입니다.
+HODA_BELT_OF_THE_ARCHITECT_GEAR_DESC|아키텍트가 어느 불운한 마법사에게서 건진 허리띠일 것입니다.
+HODA_BIANCA_GEAR_DESC|배릭 테트라스의 상징인 석궁입니다. 카르타 기술자가 만들고, 이름의 주인인 장인이 완성했습니다.
+HODA_BLACKMETAL_TORQUE_GEAR_DESC|채우는 순간, 리륨이 스며든 금속 고리 속 마법이 착용한 크리처에게 큰 힘을 불어넣습니다.
+HODA_BLADE_OF_TUHNA_ALLIED_GEAR_DESC|가공하지 않은 붉은 리륨으로 만든 단검으로, 주변 모든 이의 생명력을 빨아들입니다.
+HODA_BLOOD_DRAGON_GREAVES_GEAR_DESC|착용자를 약화 효과로부터 보호하는 무거운 강철 갑옷입니다.
+HODA_BLOODLINE_GEAR_DESC|딸 베다니에게 남긴 것입니다. 말콤 호크는 자신의 피에 어둠의 재능이 흐른다는 것을 알고 있었습니다.
+HODA_BOOK_OF_THE_LADY_GEAR_DESC|에이바의 신성한 제단에서 발견된 책으로, 성지를 수호하기 위해 엮였습니다.
+HODA_BOOTS_OF_FAITH_GEAR_DESC|튼튼한 장화로, 안드라스테와 메이커의 보호를 믿는 신앙의 증표입니다.
+HODA_ARMOR_OF_THE_RIVER_DANE_GEAR_DESC|데인 강 전투에서 승리하여 올레이 지휘관에게서 전리품으로 빼앗은 것입니다.
+HODA_BOW_OF_CLEANSING_FIRE_GEAR_DESC|불화살을 갖추어 가장 굳건한 방어도 태워 뚫습니다.
+HODA_BOW_OF_THE_BERESAAD_GEAR_DESC|쿤에 대한 믿음에서 나온 힘으로, 이 활에서 쏜 화살은 갑옷도 꿰뚫습니다.
+HODA_BOW_OF_THE_RIGHTEOUS_GEAR_DESC|의로움으로 무가치한 자를 응징하리라.
+HODA_BROKEN_GRIFFON_HELM_GEAR_DESC|그레이 워든이 위대한 그리폰을 거느리던 옛 시절의 유물일 뿐입니다.
+HODA_BRUTE_HAMMER_GEAR_DESC|뼈를 손쉽게 부수도록 만들어졌습니다.
+HODA_BULLS_EDGE_GEAR_DESC|묵직하면서도 균형 잡힌 이 대형 도끼는 아이언 불이 아끼는 무기입니다.
+HODA_CAPTAINS_PLATE_GEAR_DESC|경비대장 계급에 오른 자에게 수여되는 판금 갑옷입니다.
+HODA_CERTAINTY_GEAR_DESC|가장 깊은 타락과 신념이 깃든 검입니다.
+HODA_CHANTRY_ROBE_GEAR_DESC|이 로브는 교단 입문자에게 메이커의 활력을 불어넣습니다.
+HODA_CHANTRY_SHIELD_GEAR_DESC|신앙의 영감이 되도록 교단의 상징이 새겨진 방패입니다.
+HODA_CHESTPLATE_OF_THE_FORTRESS_GEAR_DESC|전사 호크가 코리페우스의 시체에서 빼앗은 흉갑입니다. 자랑할 만한 전리품이라는 말로는 부족하죠.
+HODA_CHEVALIERS_CUTLASS_GEAR_DESC|올레이 슈발리에가 즐겨 쓰는 검입니다.
+HODA_CIRCLE_MAGE_STAFF_GEAR_DESC|마법이 깃든 지팡이로, 마법에 능숙한 자들이 사용합니다.
+HODA_COBRA_CROWN_GEAR_DESC|이 고대 왕관에는 옛 집정관들의 힘이 깃들어 있습니다.
+HODA_COLES_HAT_GEAR_DESC|이 모자 챙 아래에서는 콜이 당신의 목을 베기 전에 그와 눈을 마주칠 일이 거의 없습니다.
+HODA_COURTIER_FAN_GEAR_DESC|그랜드 게임의 최고 고수들이 다루는 부채의 언어는 유혹부터 복수까지 아우릅니다.
+HODA_CROW_DAGGER_GEAR_DESC|전설적인 크로우 암살자들이 만든 안티반 칼날입니다. 아마도요.
+HODA_CROW_SHIELD_GEAR_DESC|테다스의 정예 암살자 안티반 크로의 상징으로 장식된 가벼운 나무 버클러입니다.
+HODA_CUIRASS_OF_THE_WINDS_GEAR_DESC|리바인의 선견자가 만든 흉갑으로, 폭풍처럼 아름답고 잔혹합니다.
+HODA_CUTPURSE_SLICER_GEAR_DESC|빠르고 정확합니다.
+HODA_DALISH_RING_GEAR_DESC|삶과 죽음을 함께하는 유대를 상징하는 데일스의 전통 반지입니다.
+HODA_DALISH_ROBES_GEAR_DESC|이 로브의 훌륭한 품질에 감탄하지 않을 수 없습니다. 실 한 올 한 올에 정성이 깃들어 있습니다.
+HODA_DALISH_STAFF_GEAR_DESC|데일스 사이에서 흔히 볼 수 있는 지팡이입니다. 의외로 튼튼한데, 아마도 그 민족의 맹세를 기리는 것이겠죠.
+HODA_DAWN_RING_GEAR_DESC|드워프와 테빈터의 서약을 상징하는 한 쌍의 반지 중 첫 번째입니다. 만지면 따뜻합니다.
+HODA_DEFENDER_COAT_GEAR_DESC|몸과 정신을 단련하는 강화 사슬 갑옷입니다.
+HODA_DEMONS_ADVOCATE_GEAR_DESC|사람의 귀로는 거의 구별할 수 없지만, 이 대형 망치에서 이따금 목소리가 들려옵니다.
+HODA_DIPLOMATIC_MISSIVES_GEAR_DESC|외교 문서에는 어떤 무기 못지않게 강력한 비밀이 가득합니다.
+HODA_DIRTHAMENS_WISDOM_GEAR_DESC|이 방패는 디르타멘의 신전에서 천 년을 기적적으로 버텨 냈습니다. 어쩌면 비밀의 신이 도왔는지도 모릅니다.
+HODA_DRAGONS_TESTAMENT_GEAR_DESC|드래곤의 전투 전술을 다룬 희귀한 저술로, 저자는 알 수 없습니다. 세롤트의 프레데릭이 썼다는 소문이 있습니다.
+HODA_DREAMWEAVER_STAFF_GEAR_DESC|이 마법 지팡이의 불꽃은 밝게 타오릅니다. 오, 꿈을 엮는 자여, 이 밤을 무사히 넘기게 해 주오.
+HODA_DUSK_RING_GEAR_DESC|흠 없는 자수정 하나로 드워프가 만든 반지로, 묵직하고 만지면 서늘합니다.
+HODA_DUSTER_BATTLEAXE_GEAR_DESC|재활용한 검, 철퇴, 그리고... 저건 빗자루 조각인가요?
+HODA_DUSTER_GREAVES_GEAR_DESC|진짜 가죽이길 바라는 무언가로 엮었습니다. 이 정강이받이는 유독 곰팡내가 납니다.
+HODA_DUSTER_LEATHER_ARMOR_GEAR_DESC|진짜 가죽이길 바라는 무언가로 엮었습니다. 저기 새겨진 건 신발 조각인가요?
+HODA_DUSTER_LEATHER_GAUNTLETS_GEAR_DESC|진짜 가죽이길 바라는 무언가로 엮었습니다. 적어도 일부는 숙녀용 핸드백을 잘라 만들었습니다.
+HODA_DUSTER_LEATHER_PAULDRON_GEAR_DESC|진짜 가죽이길 바라는 무언가로 엮었습니다. 저건 가시일까요, 오래된 이빨일까요?
+HODA_DWORKINS_HIGH_EXPLOSIVES_GEAR_DESC|미치광이 드워킨의 그다지 안전하지는 않은 폭약입니다.
+HODA_DWORKINS_SAFE_EXPLOSIVES_GEAR_DESC|미치광이 드워킨의 "가장 안전한" 폭약입니다.
+HODA_EARNEST_REPRISAL_STAFF_GEAR_DESC|다크 엠포리엄의 저주받은 지팡이입니다.
+HODA_ELGARNAN_ENASTE_GEAR_DESC|엘프의 만물의 아버지 엘가난의 활로, 화살에 태양 자체의 파괴력이 깃들어 있습니다.
+HODA_ELUSIVE_ICEBOW_GEAR_DESC|활의 손잡이에서 냉기가 뿜어져 나와 사용자에게 더 큰 힘을 줍니다.
+HODA_ELVEN_PLATE_ARMOR_GEAR_DESC|엘프는 형태를 다루는 데 능합니다. 이 판금 갑옷의 단단한 골격은 공격을 몸에서 비껴 냅니다.
+HODA_EMBLAZONED_KIRKWALL_SHIELD_GEAR_DESC|이름 높은 커크윌 경비대의 방패입니다. 그 문장 뒤에 선 자는 악의로부터 보호받습니다.
+HODA_ENCHANTED_SILVER_ARMOR_GEAR_DESC|서클이 칼렌하드 왕을 위해 만든 갑옷으로, 화살과 칼날을 모두 막아 낸다고 합니다.
+HODA_ENCHANTER_FIRE_STAFF_GEAR_DESC|불은 파괴를 일으키기도 하지만, 정화하고 치유하기도 합니다.
+HODA_EXPENSIVE_DOG_TREATS_GEAR_DESC|가장 입맛 까다로운 애완동물에게만 주는 귀한 보상입니다.
+HODA_FADE_TOUCHED_LURKER_SCALES_GEAR_DESC|테다스의 뒷길에서 살아남으려면 적의 허를 찌르는 것이 기본입니다. 이 러커 비늘은 산적이 다가갈 때 모습을 감춰 줍니다.
+HODA_FADE_TOUCHED_SILVERITE_GEAR_DESC|실버라이트는 공격받을 때 착용자를 단련하여, 맞을 때마다 내성을 쌓게 합니다.
+HODA_FADE_WALL_GEAR_DESC|비전 에너지로 충전된 방패로, 사용자에게 어렴풋한 단절감을 안겨 줍니다.
+HODA_FADESBANE_GEAR_DESC|기사단 최고 수준의 마법사 사냥꾼에게 주어지는 축복받은 칼날입니다.
+HODA_FERAL_WOLF_CHARM_GEAR_DESC|채신드 사냥꾼들이 즐겨 쓰는 부적입니다. 코카리 황야 깊은 곳에서 헐벗은 마녀들이 달밤에 마법을 걸었다고 합니다.
+HODA_FERELDAN_CLAYMORE_GEAR_DESC|로게인 맥 티르가 딸 아노라와 카일란 테이린 왕자의 약혼을 기념해 주문한 검입니다.
+HODA_FERELDAN_SOLDIER_HELMET_GEAR_DESC|전투에서 착용자의 활력과 집중력을 높이도록 만든 강철 투구입니다.
+HODA_FIRST_ENCHANTERS_ROBES_GEAR_DESC|수석 마법사의 로브는 생각보다 수수합니다. 이 로브에서는 유황 냄새가 진하게 납니다.
+HODA_FLASK_OF_FLAME_GEAR_DESC|전투 중 이 플라스크를 깨면 템페스트가 불길에 휩싸여 광란의 공세를 펼칩니다.
+HODA_FLASK_OF_FROST_GEAR_DESC|이 플라스크는 몸을 얼음 피부로 덮어 방어력을 크게 높여 줍니다.
+HODA_FLASK_OF_LIGHTNING_GEAR_DESC|전투 중 이 플라스크를 깨면 템페스트가 번개에 휩싸여 반사 신경과 속도가 높아집니다.
+HODA_FLAWLESS_FIRE_CRYSTAL_GEAR_DESC|흠 하나 없는 완벽한 화염 수정입니다.
+HODA_FLAWLESS_ICE_CRYSTAL_GEAR_DESC|흠 하나 없는 완벽한 얼음 수정입니다.
+HODA_FLAWLESS_LIGHTNING_CRYSTAL_GEAR_DESC|흠 하나 없는 완벽한 번개 수정입니다.
+HODA_FLAWLESS_NATURE_CRYSTAL_GEAR_DESC|흠 하나 없는 완벽한 자연 수정입니다.
+HODA_FLAWLESS_SPIRIT_CRYSTAL_GEAR_DESC|흠 하나 없는 완벽한 영혼 수정입니다.
+HODA_FLEMETHS_GRIMOIRE_GEAR_DESC|출처가 의심스러운 가죽으로 장정한, 오래되었지만 소중히 다뤄진 책입니다.
+HODA_FORGE_MASTERS_HAMMER_GEAR_DESC|젠로크 대장간 장인은 다크스폰 공학이 만든 가장 강력한 무기를 자신이 차지했습니다.
+HODA_GAMORDAN_STORMRIDER_SCALE_GEAR_DESC|쓰러진 가모르단 스톰라이더의 가죽에서 떼어 낸 비늘입니다. 만지면 찌릿한 느낌이 듭니다.
+HODA_GARAHELS_HELM_GEAR_DESC|안도랄과의 마지막 전투에서 잃어버린 마법 투구로, 이제 주인의 영혼이 깃들어 있습니다.
+HODA_GAUNTLETS_OF_THE_NUG_GEAR_DESC|이상하게도 이 건틀릿은 착용자의 손 크기에 맞춰 저절로 조절됩니다.
+HODA_GAUNTLETS_OF_THE_SKIES_GEAR_DESC|하늘의 여인이 축복한 건틀릿으로, 그녀의 힘이 흐르고 있습니다.
+HODA_GIFT_OF_THE_TALONS_GEAR_DESC|안티반 크로에서 발톱 계급에 오른 자에게 수여되는 단검으로, 명예이자 계약의 증표입니다.
+HODA_GIRDLE_OF_THE_SKIES_GEAR_DESC|하늘의 여인이 축복한 허리띠로, 야생 마법으로부터 보호해 줍니다.
+HODA_GLANDIVALIS_GEAR_DESC|안드라스테의 빛을 받은 해방자의 검입니다.
+HODA_GRAND_ENCHANTERS_STAFF_GEAR_DESC|이 지팡이를 쥔 자는 그 속에 담긴 지식, 곧 생명 자체의 수많은 신비를 얻게 됩니다.
+HODA_GREAT_DRAGON_STAFF_GEAR_DESC|이 지팡이에 스며든 미량의 피는 제대로 훈련된 사용자에게 엄청난 힘을 줍니다.
+HODA_GREATER_MISTRAL_SCALE_GEAR_DESC|처치한 그레이터 미스트랄의 가죽에서 떼어 낸 비늘입니다. 주위에 서리가 맺힙니다.
+HODA_GREAVES_OF_THE_BERESAAD_GEAR_DESC|쿠나리 군대인 베레사드의 표준 다리 보호구입니다.
+HODA_GREAVES_OF_THE_LADY_GEAR_DESC|하늘의 여인이 축복한 정강이받이로, 발걸음을 빠르게 해 줍니다.
+HODA_GRIFFON_PLATE_GEAR_DESC|아다만트 요새 근처에서 발견된 흉갑으로, 고대 워든의 갑옷을 닮았습니다.
+HODA_GRIFFONRIDER_LEATHERS_GEAR_DESC|그리폰이 하늘을 날던 시절, 이 특수 마구 덕분에 워든들은 위대한 짐승의 등에 앉아 있을 수 있었습니다.
+HODA_GRIMOIRE_OF_THE_FROZEN_WASTES_GEAR_DESC|얼어붙은 황무지의 야만족이 얼음 땅에서 살아남는 방법을 담은 끔찍한 이야기 수백 편이 실려 있습니다.
+HODA_HAKKONS_WISDOM_GEAR_DESC|하콘이 가장 독실한 예언자에게만 직접 내린 지팡이입니다.
+HODA_HAKKONS_WRATH_GEAR_DESC|이 활을 쥔 자는 날카로운 얼음 조각처럼 겨울의 분노를 퍼붓습니다.
+HODA_HARDENED_GURN_HIDE_GEAR_DESC|거의 뚫을 수 없는 건의 가죽은 사냥꾼 지망생에게 벅찬 전리품입니다.
+HODA_HAUBERK_OF_THE_LADY_GEAR_DESC|하늘의 여인이 축복한 갑옷으로, 급소를 노리는 물리 공격을 막아 줍니다.
+HODA_HEARTWOOD_SHIELD_GEAR_DESC|올드원은 자신의 나무를 쉽게 내주지 않습니다. 굽이진 숲의 방패는 피를 흘려 얻을 가치가 있습니다.
+HODA_HELM_OF_JUSTICE_GEAR_DESC|정의의 보호는 타락을 이겨 내고, 더럽히는 자들에 맞서 영혼을 단련합니다.
+HODA_HELM_OF_THE_DRAGON_HUNTER_GEAR_DESC|인퀴지션의 고대 상징이 새겨진 투구로, 가장 사나운 짐승으로부터 보호해 줍니다.
+HODA_HELM_OF_THE_MOUNTAIN_FATHER_GEAR_DESC|염소 뿔로 만든 투구로, 산의 아버지 코스가 추종자들에게 보호를 내립니다.
+HODA_HELM_OF_THE_SKIES_GEAR_DESC|하늘의 여인이 축복한 투구로, 추종자들을 정신 공격으로부터 지켜 줍니다.
+HODA_HISSERAS_MASK_GEAR_DESC|사레바스는 사슬 없이 풀어 둘 수 있는 존재가 아닙니다.
+HODA_ICE_GIANTS_TUSK_GEAR_DESC|만지면 차가운 이 엄니에는 얼어붙은 옛 주인의 힘이 아직도 흐릅니다.
+HODA_INQUISITION_LONGSWORD_GEAR_DESC|강화 강철로 단조한 표준 지급 검입니다.
+HODA_INQUISITION_SHIELD_GEAR_DESC|인퀴지션 병사의 문장이 새겨진 방패입니다.
+HODA_INQUISITION_STAFF_GEAR_DESC|인퀴지션에 소속된 마법사들이 사용하는 표준 지급 지팡이입니다.
+HODA_INQUISITION_WARMAGE_PAULDRON_GEAR_DESC|인퀴지션 소속 마법사를 위한 표준 지급 견갑입니다.
+HODA_ISANAS_SONG_GEAR_DESC|이 지팡이를 만지면 희미한 콧노래가 들립니다. 머나먼 곳이나 잊힌 곳을 그리워하는 듯한 애잔한 선율입니다.
+HODA_JAR_OF_BEES_GEAR_DESC|어떻게인지 벌집 하나가 항아리에 담겨 있어, 방심한 해충에게 던질 준비가 되어 있습니다.
+HODA_JOINING_CHALICE_GEAR_DESC|함께하라, 형제자매여. 우리가 경계하며 서 있는 그림자 속으로 함께하라.
+HODA_KADDIS_OF_THE_LADY_GEAR_DESC|하늘의 여인이 축복한 전투 물감으로, 공격으로부터 몸을 지키기에 충분합니다.
+HODA_KADDIS_OF_THE_MOUNTAINFATHER_GEAR_DESC|애쉬 전사들이 에이바의 신 코스를 부를 때 쓰는 고대 문양입니다.
+HODA_KALTENZAHN_SCALE_GEAR_DESC|쓰러뜨린 칼텐잔의 가죽에서 떼어 낸 비늘입니다. 만지면 얼음처럼 차갑습니다.
+HODA_KEEN_ELFSNAKE_VITAAR_GEAR_DESC|이 기묘한 쿠나리 얼굴 물감은 치명적인 독으로 만들어져, 제대로 훈련받지 않은 자에게는 목숨을 앗아 갑니다.
+HODA_KEEPSAKE_LOCKET_GEAR_DESC|가족 초상화가 든 로켓입니다. 가슴 가까이 간직하는 것이 가장 좋습니다.
+HODA_KITTYS_COLLAR_GEAR_DESC|이 목걸이를 착용한 자는 알든 모르든 꽤 위태로운 계약을 맺게 됩니다.
+HODA_LEGION_HAMMER_GEAR_DESC|블라이트에 맞선 군단의 끝없는 싸움에 쓰인 무거운 대형 망치입니다.
+HODA_LEGIONNAIRE_HELMET_GEAR_DESC|망자의 군단을 위해 제작된 무거운 투구입니다.
+HODA_LEGIONNAIRE_PLATE_GEAR_DESC|정교하게 만들었지만 일부러 장식하지 않았습니다. 이 모순이야말로 망자의 군단을 상징합니다.
+HODA_LEGIONNAIRE_SCOUT_DAGGER_GEAR_DESC|우리의 비밀은 우리와 함께 죽는다.
+HODA_LINEAGE_GEAR_DESC|화려하게 장식된 이 대형 망치는 훈련받지 않은 자가 다루기 어렵습니다.
+HODA_LITANY_OF_ADRALLA_GEAR_DESC|니알의 유해에서 발견된 양피지로, 악마 주변에서 강하게 반응합니다.
+HODA_LOOSE_ENDS_GEAR_DESC|아무것도 남기지 않고 깔끔하게 끝맺는 효율적인 수단입니다.
+HODA_LOTHERINGS_LAMENT_GEAR_DESC|남겨진 자들의 마지막 말입니다.
+HODA_LYRIUM_KIT_GEAR_DESC|마법을 막는 기사단 능력의 원천입니다. 매일 복용량을 꼭 지키세요.
+HODA_LYRIUM_REINFORCED_LONGBOW_GEAR_DESC|순수한 리륨을 넣어 만든 활로, 쏘는 화살에 추가적인 힘을 실어 줍니다.
+HODA_MAFERATHS_MAUL_GEAR_DESC|배신자의 돌 대형 망치입니다. 부정하게 얻은 권력의 상징입니다.
+HODA_MAGEKILLER_GEAR_DESC|이름난 마법사 암살자가 애용한 무기입니다. 이 칼날은 수많은 사악한 심장을 단숨에 멈춰 세웠습니다.
+HODA_MANTLE_OF_THE_HOLD_BEAST_GEAR_DESC|거점의 전사로서, 강력한 거점 야수조차 갑옷의 보호가 필요합니다.
+HODA_MARCH_OF_THE_EVERLASTING_GEAR_DESC|알라산에서 벼리고, 테빈터에서 다시 빚고, 올레이에서 마법을 걸어, 숭고한 원정 때 슈발리에가 휘둘렀습니다.
+HODA_MASTERWORK_WITCH_STAFF_GEAR_DESC|참나무 발톱이 사람의 해골을 움켜쥔 지팡이입니다.
+HODA_MAUL_OF_TACITUS_GEAR_DESC|타키투스 발레리우스의 대형 망치로, 이교도의 피가 튀고 스며들어 있습니다.
+HODA_MAUL_OF_THE_DRAGON_GEAR_DESC|하이 드래곤의 발톱으로 만든 거대한 망치로, 가장 단단한 살도 찢어발깁니다.
+HODA_MERCYS_CREST_GEAR_DESC|이 광신도의 부적은 유혈을 먹고 정신을 강화합니다.
+HODA_MEREDITHS_KEY_GEAR_DESC|메레디스의 뇌물 상자는 커크윌 교도소 안에 숨겨져 있습니다. 그 열쇠는 어떤 무기보다도 큰 힘을 지녔습니다.
+HODA_MORTALITASI_COWL_GEAR_DESC|네바라의 비밀스러운 모탈리타시 종파의 마법이 깃들어 있습니다.
+HODA_MORTALITASI_STAFF_GEAR_DESC|이 지팡이에는 대략 "언제나 앞으로, 언제나 죽음을 향해"라는 뜻의 문양이 새겨져 있습니다.
+HODA_MYTHALS_BLESSING_GEAR_DESC|버클러가 그냥 버클러가 아닐 때는 언제일까요? 복수의 신의 상징으로 금박을 입혔을 때입니다.
+HODA_MYTHALS_JUDGMENT_GEAR_DESC|엘가난이 자신의 백성을 지키고 그들의 원수를 갚으라며 미살에게 준 지팡이로, 정의의 화신입니다.
+HODA_OATHBREAKER_GEAR_DESC|자신과의 맹세가 남과의 맹세보다 중할 때, 하나는 반드시 깨져야 합니다.
+HODA_OF_THINGS_NOT_LOST_GEAR_DESC|페렐단 피난민의 회고록입니다. 어떤 것은 결코 빼앗길 수 없다는 증거입니다.
+HODA_ORB_OF_DESTRUCTION_GEAR_DESC|손바닥 안에 이토록 큰 힘이라니. 이런 걸 현명하다고 여길 이들은 엘프뿐이었을 겁니다.
+HODA_ORB_OF_FENHAREL_GEAR_DESC|이 고대 유물에 대해 알려진 것은 거의 없습니다. 엄청나고 찬란한 힘을 내뿜습니다.
+HODA_ORLESIAN_HENNIN_GEAR_DESC|비비엔이 개인 소장용으로 디자인한 모자로, 올레이 유행의 정점을 보여 줍니다.
+HODA_ORLESIAN_MASK_GEAR_DESC|웬만한 갑옷보다 비싼 이 가면은 품격의 궁극적인 표현입니다.
+HODA_PAULDRON_OF_THE_ARISHOK_GEAR_DESC|가죽을 엮어 만든 쿠나리의 견갑입니다.
+HODA_PHOENIX_TAIL_FEATHER_GEAR_DESC|다 자란 피닉스의 온전한 꼬리 깃털입니다.
+HODA_PROWLER_MAIL_GEAR_DESC|가볍고 소리가 나지 않아 몰래 숨어다니기에 이상적인 갑옷입니다.
+HODA_PUZZLE_RING_GEAR_DESC|한때 검은 여우의 것이었다는 소문이 있습니다. 반지의 고리를 분리하면 그 안에 깃든 마법이 발동합니다.
+HODA_QUNARI_HELMET_GEAR_DESC|알바라드의 투구로, 빗나간 마법 공격으로부터 쿠나리를 보호합니다.
+HODA_QUNARI_TOWER_SHIELD_GEAR_DESC|쿠나리의 문장이 새겨지고 검증된 솜씨가 깃든 대형 방패입니다. 가볍게 후려치기에도 좋습니다.
+HODA_QUNARI_WARAXE_GEAR_DESC|테빈터와의 끝없는 전쟁을 위해 쿠나리가 벼린 한손 도끼입니다.
+HODA_REBOUND_DAGGER_GEAR_DESC|갈고리가 달린 단검으로, 적이 가장 약해졌을 때 베어 가르기에 안성맞춤입니다.
+HODA_RED_IRON_MAUL_GEAR_DESC|레드 아이언 용병들이 즐겨 쓰는 양손 근접 무기입니다.
+HODA_RED_JENNY_BACKBITER_GEAR_DESC|붉은 제니의 친구들이 그들 자신을 위해 만든 무기로, 약자에게 힘을 줍니다.
+HODA_RED_LYRIUM_IDOL_GEAR_DESC|원시 타이그의 드워프가 벼린 이 우상은 수천 년 동안 잊혀 있었습니다.
+HODA_REDCLIFFE_SHIELD_GEAR_DESC|이 이름 높은 방패는 레드클리프 성과 게린 가문, 그리고 페렐단 전체를 지키며 전선을 사수합니다.
+HODA_REMARKABLE_EMERALD_GEAR_DESC|아름다운 녹색 빛을 띤, 유난히 잘 연마된 보석입니다. 멋진 선물이나 반짝이는 보강재가 됩니다.
+HODA_RETRIBUTION_ELIXIR_GEAR_DESC|전세가 너무 불리하게 기울었을 때만 마셔야 하는 위험한 엘릭서입니다.
+HODA_REVERED_DEFENDER_MAUL_GEAR_DESC|샤-브라이톨 디펜더의 거대한 망치입니다. 톱니가 있어 부수고 찢을 수 있습니다.
+HODA_RING_OF_DOUBT_GEAR_DESC|정략결혼을 강요당한 젊은 마법사가 결혼반지에 투명화 마법을 걸었습니다.
+HODA_RING_OF_RESILIENCE_GEAR_DESC|착용자의 심장 박동이 빨라질수록 반지의 신비한 빛도 강해집니다.
+HODA_RITUAL_BREAKER_GEAR_DESC|화려한 이 철퇴는 한 번 휘두를 때마다 손쉽게 부서지는 뼈의 소리만큼이나 아름답습니다.
+HODA_ROBES_OF_THE_ARCHITECT_GEAR_DESC|흉포하고 잔인한 갑옷을 즐기는 다른 다크스폰과 달리, 아키텍트의 로브는 거의 문명적으로 보입니다.
+HODA_RUBY_RING_GEAR_DESC|셀린 여제가 착용한 것으로 유명한 반지로, 어떤 무기든 불꽃의 마법을 부여합니다.
+HODA_SAAREBAS_RESTRAINTS_GEAR_DESC|사레바스를 그 자신과 다른 이들로부터 보호하는 튼튼한 속박입니다.
+HODA_SACRIFICIAL_DAGGER_GEAR_DESC|화산 아우룸으로 만든 무기는 무엇보다 잘 꿰뚫습니다. 이 단검의 영혼 대미지는 상황을 더 악화시킵니다.
+HODA_SAD_WEAPON_GEAR_DESC|일명 마크의 망가진 철퇴. 이 무기의 위력은 얼굴에 바나나를 맞는 굴욕감에서 나옵니다.
+HODA_SAVAGE_THORN_GEAR_DESC|이 조잡한 칼날은 적을 찢어발기며 그 존재감을 확실히 각인시킵니다.
+HODA_SCOUT_ARMOR_GEAR_DESC|매끈하고, 날렵하고, 살벌합니다. 딱 세라처럼요.
+HODA_SCOUT_COAT_ARMS_GEAR_DESC|순찰 중인 정찰병이 입는 갑옷의 개량형입니다.
+HODA_SCOUT_HAT_GEAR_DESC|단단한 가죽 투구로, 전장에서 재빠르게 움직일 수 있을 만큼 가볍습니다.
+HODA_SCOUT_QUIVER_GEAR_DESC|왜 화살통을 '퀴버'라고 부르는지 궁금했던 적 있나요? 공포에 떨게 해서일지도 모르죠.
+HODA_SEER_STAFF_GEAR_DESC|이 지팡이의 에너지는 동료의 고통을 연료로 삼습니다.
+HODA_SENIOR_WARDENS_STAFF_GEAR_DESC|워든 계급을 올라선 자라면 이 지팡이가 일으키는 온갖 악행을 붙잡아 둘 힘이 있을지도 모릅니다.
+HODA_SENTINEL_GAUNTLETS_GEAR_DESC|파수병 엘프 특유의 갑옷에 딸린 건틀릿입니다.
+HODA_SENTINEL_GREAVES_GEAR_DESC|파수병 엘프 특유의 갑옷에 딸린 정강이받이입니다.
+HODA_SENTINEL_PLATE_PAULDRON_GEAR_DESC|파수병 엘프 특유의 갑옷에 딸린 견갑입니다.
+HODA_SENTINEL_STAFF_GEAR_DESC|이 수정 지팡이는 사용자에게 살아 있는 세계와 어둠을 꿰뚫어 보는 향상된 감각을 줍니다.
+HODA_SER_ALVARDS_SWORD_GEAR_DESC|수십 년 동안 블랙마쉬에 잊혀 있던 칼날로, 독특한 냄새가 나는데 결코 좋은 냄새는 아닙니다.
+HODA_SERAS_RAISIN_COOKIES_GEAR_DESC|세라는 건포도 쿠키를 싫어합니다. 이 쿠키 맛은 쿠키를 좋아하는 자들에게 폭력을 휘두르게 만듭니다.
+HODA_SERUM_OF_AMBITION_GEAR_DESC|몸은 약하지만 신념이 굳은 자들의 능력을 끌어올리기 위한 불안정한 혼합물입니다.
+HODA_SHIELD_OF_LE_MARQUE_GEAR_DESC|피난민 지도자 페어뱅크스의 혈통인 르 마르크 가문의 문장입니다. 축복받은 날개로 태양을 향해.
+HODA_SIDEREAL_STAFF_GEAR_DESC|테빈터 제국의 마법사 올리언 타이터스의 지팡이입니다. 모든 결에서 피의 마법이 스며 나옵니다.
+HODA_SKYWATCHERS_CLEAVER_GEAR_DESC|하늘 감시자의 의식용 대검으로, 팔다리를 손쉽게 베어 냅니다.
+HODA_SMUGGLERS_DAGGER_GEAR_DESC|숨기기 쉽고 빠르게 뽑을 수 있어, 인정받지 못하는 자들이 즐겨 쓰는 칼날입니다.
+HODA_SOLDIERS_PLATE_GEAR_DESC|저렴하지만 믿음직한, 검증된 흉갑으로 든든하게 지켜 줄 것입니다.
+HODA_SOOTHERS_SAPPHIRE_GEAR_DESC|이 매혹적인 보석은 마음을 달래는 기운으로 빛나며, 평화를 구하는 자에게 안식을 줍니다.
+HODA_SOULWRECKER_STAFF_GEAR_DESC|맹렬한 기운이 넘치는 이 지팡이는 손에 쥐는 순간 탁탁 소리를 내기 시작합니다.
+HODA_SPEAR_THROWER_GEAR_DESC|실반목의 강인함을 지닌 이 섬뜩한 활은 아주 두꺼운 갑옷이 아니면 모두 꿰뚫습니다.
+HODA_SPECTRAL_SCALE_GEAR_DESC|쓰러뜨린 유령 드래곤의 가죽에서 떼어 낸 비늘입니다. 마치 존재하지 않는 것처럼 실체가 느껴지지 않습니다.
+HODA_SPIRIT_MAUL_GEAR_DESC|이 대형 망치에 스며든 교차로의 마법은 사용자를 드레드 울프와 묶어 둡니다.
+HODA_STAFF_OF_AIDAHN_ALLIED_GEAR_DESC|가공하지 않은 붉은 리륨으로 만든 지팡이로, 주변 모든 이의 생명력을 빨아들입니다.
+HODA_STAFF_OF_CORRUPTION_GEAR_DESC|그들이 우리를 타락했다고 부른다면, 우리가 타락 그 자체가 되리라.
+HODA_STAFF_OF_FAITH_GEAR_DESC|신앙으로 보호받고, 신앙으로 승천하며, 신앙으로 강해진다.
+HODA_STAFF_OF_SHADOWS_GEAR_DESC|사람의 해골이 새겨진 어두운 지팡이입니다.
+HODA_STONEHAMMER_PLATE_GEAR_DESC|엔드린 스톤해머 왕의 주문으로 제작되었으며, 마법이 부여되어 그랜드 프로빙의 우승자에게 하사되었습니다.
+HODA_STROUDS_TARGE_GEAR_DESC|그레이 워든 스트라우드 경의 강화 방패입니다. 영광스러운 콧수염의 광채를 더욱 빛내 줍니다.
+HODA_STUDDED_LEATHER_PAULDRON_GEAR_DESC|보강된 가죽이 튼튼하게 보호하면서도 착용자가 자유롭게 움직일 수 있게 해 줍니다.
+HODA_STUFFED_MABARI_GEAR_DESC|이보다 충직한 동료는 찾을 수 없을 거예요!
+HODA_SWIFTRUNNERS_SHIELD_GEAR_DESC|한때 이 방패에는 문장이 있었지만, 오래전에 바래 버렸습니다.
+HODA_SWORD_OF_CHARRIS_ALLIED_GEAR_DESC|가공하지 않은 붉은 리륨으로 만든 검으로, 주변 모든 이의 생명력을 빨아들입니다.
+HODA_TALON_OF_THE_SKIES_GEAR_DESC|하늘의 여인이 축복한 칼날로, 적을 찢어발기기 전에 적을 주춤하게 만듭니다.
+HODA_TEMPLAR_BREASTPLATE_GEAR_DESC|기사단이 착용하는 표준 지급 갑옷입니다.
+HODA_TEMPLAR_COMMANDER_PAULDRON_GEAR_DESC|겹겹이 덧댄 강철입니다. 일행의 짐을 짊어지도록 만들어졌습니다.
+HODA_TEMPLAR_HELMET_GEAR_DESC|기사단이 착용하는 표준 지급 투구입니다.
+HODA_TEMPLAR_LONGSWORD_GEAR_DESC|잘 만들어진 기사단의 표준 지급 장검입니다.
+HODA_TEMPLAR_SHIELD_GEAR_DESC|기사단 기사를 위한 표준 지급 방패입니다.
+HODA_THE_ANCESTORS_GREAVES_GEAR_DESC|뛰어난 전략으로 전쟁을 치르던 시대의 고대 갑옷 세트 유물입니다.
+HODA_THE_BIND_THAT_GUIDES_GEAR_DESC|아무리 느슨하게 묶어도, 몇 걸음만 걸으면 허리에 꼭 맞게 저절로 감깁니다.
+HODA_THE_BLACK_FOXS_JERKIN_GEAR_DESC|검은 여우의 마지막 이야기는 알라산의 엘프 도시를 찾던 중 이 조끼를 잃어버린 사연을 전합니다.
+HODA_THE_DIVINE_ARMOR_GEAR_DESC|이 찬란한 갑옷은 교단의 지도자를 위해 제작되었습니다.
+HODA_THE_ELDERS_GRIMOIRE_GEAR_DESC|붉은 리륨과 여러 악마 의식의 비밀이 담긴 엘더의 저주받은 마법서입니다.
+HODA_THE_EYE_THAT_WEEPS_GEAR_DESC|아무리 닦아 내도 보석 표면에 이슬이 천천히 맺힙니다.
+HODA_THE_GOLDEN_PRINCES_HELM_GEAR_DESC|어린 셀린 여제는 황금 왕자의 이야기에 매료되었습니다. 그가 쓰는 유일한 왕관은 바로 이 투구였습니다.
+HODA_THE_GOLDEN_PRINCES_PAULDRON_GEAR_DESC|황금 왕자의 예복과 짝을 이루는 견갑입니다. 올레이의 사자는 공격을 어깨로 받아 냅니다.
+HODA_THE_GOLDEN_PRINCES_RAIMENT_GEAR_DESC|올레이 평민들의 마음을 사로잡은 황금 왕자 에밀 드베로의 화려한 갑옷입니다.
+HODA_THE_HAND_THAT_CUTS_GEAR_DESC|이 반지를 손가락에 끼우면 유난히 따뜻해지며, 착용자의 심장 박동에 맞춰 고동칩니다.
+HODA_THE_LADYS_WRATH_GEAR_DESC|하늘의 여인이 축복한 대형 망치로, 휘두를 때마다 사용자에게 힘을 줍니다.
+HODA_THE_SKIN_THAT_STALKS_GEAR_DESC|이 갑옷의 가죽에서는 희미하게 살아 있는 온기가 느껴집니다. 보기보다 무겁습니다.
+HODA_TOME_OF_ARCANE_TECHNIQUE_GEAR_DESC|제국 교단이 연구한 서적으로, 어둠에 대한 통찰을 제공합니다.
+HODA_TOME_OF_KOSLUN_GEAR_DESC|쿤의 창시자인 아쉬카리 코슬룬이 쓴 쿠나리 교리의 경전입니다.
+HODA_TOME_OF_PHYSICAL_TECHNIQUE_GEAR_DESC|대가가 쓴 이 필사본은 가장 명망 높은 단체 밖에서는 좀처럼 볼 수 없습니다.
+HODA_TOME_OF_RIFTS_GEAR_DESC|이 책은 수행자들에게 어둠에서 에너지를 끌어오는 법과 그 안에서 움직이는 법을 가르칩니다.
+HODA_TOME_OF_SKILL_AND_SUNDRY_GEAR_DESC|초기 페렐단의 방대한 저술로, 여러 학문을 정신 능력에 관한 하나의 이론으로 통합하려 합니다.
+HODA_TOME_OF_THE_MORTAL_VESSEL_GEAR_DESC|피의 마법에 대한 두려움 때문에 학문적 해부는 금기시되었지만, 해부학 저술은 살아남았습니다.
+HODA_VANGUARD_ARMOR_GEAR_DESC|최전선에 선 자들을 위한 갑옷입니다.
+HODA_VENATORI_BOW_GEAR_DESC|맹렬한 폭발 주문이 깃든 활로, 화살이 폭발 대미지를 입힙니다.
+HODA_VENATORI_GREAVES_GEAR_DESC|베나토리 병사에게 지급되는 정강이받이로, 노예들이 차던 사슬을 엮어 만들었습니다.
+HODA_VENATORI_HELMET_GEAR_DESC|베나토리 병사의 밀폐형 투구입니다.
+HODA_VENATORI_STAFF_BLADE_GEAR_DESC|광신적인 믿음에 고취된 베나토리는 이 무기로 적에게 혼돈을 퍼뜨립니다.
+HODA_VENATORI_TOWER_SHIELD_GEAR_DESC|보호 주문이 깃든 이 방패는 사용자를 완전히 감싸 지켜 줍니다.
+HODA_VESTMENTS_OF_THE_ARCHMAGE_GEAR_DESC|서클에서 가장 높고 강력한 계급 중 하나인 대마도사의 칭호를 얻은 마법사가 입는 예복입니다.
+HODA_VESTMENTS_OF_THE_DRAGON_HUNTER_GEAR_DESC|망령 거드의 시신 옆에서 발견된 경갑으로, 가장 무시무시한 드래곤슬레이어만이 입을 수 있습니다.
+HODA_VIAL_OF_DRAGONS_BLOOD_GEAR_DESC|드래곤의 피는 쓰임새가 많지만, 대부분은 그 마법적 특성 때문에 찾습니다. 마시고 살아남는다면 엄청난 힘을 얻을 수 있습니다.
+HODA_VIGILANCE_GEAR_DESC|수십 세대에 한 번, 진정한 전설의 무기가 벼려집니다. 고대 드래곤의 뼈로 만든 이 칼날은 힘으로 울려 퍼집니다.
+HODA_VINSOMER_SCALE_GEAR_DESC|처치한 빈소머의 가죽에서 떼어 낸 비늘로, 전기가 지직거립니다.
+HODA_VIRTUOSITY_GEAR_DESC|이 류트의 마법 효과는 손에 쥔 누구에게나 분명히 느껴지지만, 그 잠재력을 온전히 끌어낼 수 있는 사람은 단 한 명뿐입니다.
+HODA_VITAAR_OF_THE_DRAGON_HUNTER_GEAR_DESC|이 얼굴 물감은 사실 치명적인 독으로 만들어졌습니다. 하지만 쿠나리의 독특한 체질은 그 효과를 무력화하고 오히려 힘을 북돋웁니다.
+HODA_VORACITY_GEAR_DESC|이 지팡이는 사용자에게 속삭이며, 갈증을 채우기 위해 끝없이 더 많은 피를 갈구합니다.
+HODA_WALKING_DEATH_GEAR_DESC|모탈리타시의 표식은 틀림없습니다. 이 단검이 어떻게 엠프리즈 뒤 리옹에 오게 되었는지는 알 수 없지만, 그 칼날의 아픔은 분명합니다.
+HODA_WARDEN_HELMET_GEAR_DESC|그레이 워든의 날개 달린 투구입니다.
+HODA_WARDEN_TOWER_SHIELD_GEAR_DESC|워든 지휘관의 무거운 방패입니다. 그레이 워든의 휘장이 가장 사나운 공격도 튕겨 냅니다.
+HODA_WARM_ORB_GEAR_DESC|언뜻 보기엔 무해하지만, 이 장신구는 힘으로 웅웅거리며 오직 피에만 응답합니다.
+HODA_WEDGE_OF_DESTINY_GEAR_DESC|드래곤 비늘과 숙성 체다 치즈의 불경한 결합은 보기보다 효과적입니다. 불에 약하니 퐁뒤를 원하는 게 아니라면 조심하세요.
+HODA_WILHELMS_STAFF_GEAR_DESC|한때 페렐단 반란 영웅의 무기였습니다. 오래되었지만 그 위력은 줄지 않았습니다.
+HODA_WINTERWEIGHT_GEAR_DESC|드래곤이 지키던 딥 로드 안에서 발견되었으며, 방어를 위한 마법의 힘이 깃들어 있습니다.
+HODA_YAVANALIS_GEAR_DESC|올레이인을 잔혹하게 공격하기로 악명 높은 데일스 수호자 "창백한 악마"의 지팡이입니다.
+HODA_GEAR_AEDUCANS_HAMMER_AURA_LOC_OVERRIDE|<color=green>추가 대미지 10% 증가. 드워프의 체력 20% 및 대미지 저항 10% 증가. 동료의 2배 대미지 찬스 10% 증가. 아이두칸 장착 시: 대미지 저항 15% 증가.</color>
+HODA_GEAR_PLUS4_CRIT_CHANCE_SELF_DESC|<color=green>2배 대미지 찬스 4% 증가.</color>
+HODA_GEAR_PLUS10_BONUS_DAMAGE_VS_BLUE_FACTION_DESC|<color=green>파란색 세력 상대로 추가 대미지 10% 증가.</color>
+HODA_GEAR_DMG_RESIST_PCT_20_VS_WHITE_FACTION_ALAMARRI_WARLORD_EQUIP_DESC|<color=green>알마리 전쟁 군주 장착 시: 흰색 세력 상대로 대미지 저항 20% 증가.</color>
+HODA_GEAR_MINUS5_HEALTH_PERSONAL_DESC|<color=red>자신의 체력 5% 감소.</color>
+HODA_GEAR_PLUS20_BONUS_DAMAGE_VS_BLACK_FACTION_DESC|<color=green>검은색 세력 상대로 추가 대미지 20% 증가.</color>
+HODA_GEAR_PLUS8_POWER_PERSONAL_DESC|<color=green>힘 8% 증가.</color>
+HODA_GEAR_PLUS5_BONUS_DAMAGE_VS_BLIGHT_DESC|<color=green>블라이트 상대로 추가 대미지 5% 증가.</color>
+HODA_GEAR_PLUS5_DAMAGE_RESIST_PERSONAL_DESC|<color=green>대미지 저항 5% 증가.</color>
+HODA_GEAR_PLUS11_CRIT_CHANCE_SELF_DESC|<color=green>2배 대미지 찬스 11% 증가.</color>
+HODA_GEAR_MINUS4_HEALTH_PERSONAL_DESC|<color=red>자신의 체력 4% 감소.</color>
+HODA_GEAR_PLUS10_HEALTH_PERSONAL_DESC|<color=green>체력 10% 증가.</color>
+HODA_GEAR_PLUS8_CRIT_CHANCE_SELF_DESC|<color=green>2배 대미지 찬스 8% 증가.</color>
+HODA_GEAR_PLUS15CURSEPOWERRESIST_TO_ELVES_DESC|<color=green>엘프의 힘 저주 저항 15% 증가.</color>
+HODA_GEAR_DAMRESGAIN_SELF_7_ON_SELF_HIT_DESC|<color=green>공격받으면 대미지 저항 7% 획득.</color>
+HODA_GEAR_PERCEPTIVE_SELF_DESC|<color=green>간파: 은신 무효화.</color>
+HODA_GEAR_PLUS6_POWER_SELF_ON_SELF_HIT_DESC|<color=green>공격받으면 힘 6% 획득.</color>
+HODA_GEAR_PLUS12_BONUS_DAMAGE_VS_WARRIOR_ISABELA_ONLY_DESC|<color=green>이사벨라 장착 시: 전사 상대로 추가 대미지 12% 증가.</color>
+HODA_GEAR_PLUS5_CRIT_CHANCE_SELF_DESC|<color=green>2배 대미지 찬스 5% 증가.</color>
+HODA_GEAR_QUICK_TARGETING_DESC|<color=orange>빠른 라운드 영웅을 공격할 확률이 훨씬 높습니다.</color>
+HODA_GEAR_PLUS5_POWER_ROGUES_PERSONAL_DESC|<color=green>도적 장착 시: 힘 5% 증가.</color>
+HODA_GEAR_PLUS5PCT_BONUS_DAMAGE_FOR_ALLIES_DESC|<color=green>동료의 추가 대미지 5% 증가.</color>
+HODA_GEAR_PLUS10_STUN_RESIST_ALLIES_DESC|<color=green>동료의 기절 저항 10% 증가.</color>
+HODA_GEAR_ENEMY_POWER_DRAIN_WHEN_SELF_ATTACKED_3_DESC|<color=green>공격받으면 적의 힘 3% 흡수.</color>
+HODA_AURA_PLUS25HEALTH_TO_QUNARI|<color=green>쿠나리 동료의 체력 25% 증가.</color>
+HODA_GEAR_ASAARASH_FLANCHARD_AURA_LOC_OVERRIDE|<color=green>모든 효과 저항 15% 증가. 쿠나리 동료의 힘 25% 증가.</color>
+HODA_GEAR_PLUS5_HEALTH_PERSONAL_DESC|<color=green>체력 5% 증가.</color>
+HODA_GEAR_PLUS5_STUN_RESIST_SELF_DESC|<color=green>기절 저항 5% 증가.</color>
+HODA_GEAR_DMG_RESIST_PCT_15_PERSONAL_DESC|<color=green>대미지 저항 15% 증가.</color>
+HODA_GEAR_PLUS5_POWER_ALLIES_DESC|<color=green>동료의 힘 5% 증가.</color>
+HODA_GEAR_PLUS10_POWER_DRAIN_RESIST_ALLIES_DESC|<color=green>동료의 파워 드레인 저항 10% 증가.</color>
+HODA_GEAR_PLUS12_POWER_PERSONAL_DESC|<color=green>힘 12% 증가.</color>
+HODA_GEAR_EXPLODE_ENEMIES_3_ON_ENEMY_HIT_DESC|<color=green>적이 공격받으면 모든 적이 가해진 대미지의 3%를 받습니다.</color>
+HODA_GEAR_PERCEPTIVE_SELF_FLORIANNE_DESC|<color=green>플로리앤 장착 시: 간파: 은신 무효화.</color>
+HODA_AUGURS_WITCHSTAFF_GEAR_AURA_LOC_OVERRIDE|<color=green>체력 4% 증가. 동료의 저주 저항 6% 증가, 에이바와 스피릿은 2배.</color>
+HODA_GEAR_CRIT_CHANCE_15_PERSONAL_DESC|<color=green>2배 대미지 찬스 15% 증가.</color>
+HODA_GEAR_EXPLODE_DRAGONS_30_ON_ENEMY_HIT_DESC|<color=green>공격 시 가한 대미지의 30%를 적 드래곤에게 입힙니다.</color>
+HODA_GEAR_BONUSDMG_SELF_SELFHIT_PLUS5_DESC|<color=green>공격받으면 추가 대미지 5% 획득.</color>
+HODA_GEAR_PLUS20_POWER_SELF_ON_ENEMY_DEATH_DESC|<color=green>적이 죽으면 힘 20% 획득.</color>
+HODA_GEAR_HEALTH_ON_ALLY_DEATH_15_DESC|<color=green>동료가 죽으면 체력 15% 획득.</color>
+HODA_GEAR_PLUS15_POWER_PERSONAL_DESC|<color=green>힘 15% 증가.</color>
+HODA_GEAR_DMG_RESIST_PCT_15_TO_BLIGHT_DESC|<color=green>블라이트의 대미지 저항 15% 증가.</color>
+HODA_GEAR_BIANCA_AURA_LOC_OVERRIDE|<color=green>2배 대미지 찬스 15% 증가. 동료가 죽으면 동료가 추가 대미지 7% 획득.</color> <color=red>저주 저항 25% 감소.</color> <color=green>배릭 장착 시: 은신: 타격 시 효과를 일으키지 않고 공격.</color>
+HODA_BLACKMETAL_TORQUE_GEAR_AURA_LOC_OVERRIDE|<color=green>힘 8% 증가. 대미지 저항 10% 증가. 개 장착 시: 체력 15% 및 2배 대미지 찬스 10% 증가.</color>
+HODA_GEAR_BONUSDMG_SELF_PLUS20_DESC|<color=green>추가 대미지 20% 증가.</color>
+HODA_GEAR_HEALTH_SELF_ALLYATK_PLUS7_DESC|<color=green>적이 공격받으면 체력 7% 회복.</color>
+HODA_GEAR_HEALTH_SELF_MINUS20_DESC|<color=red>자신의 체력 20% 감소.</color>
+HODA_GEAR_HEALTH_SELF_REDLYRIUM_PLUS20_DESC|<color=green>붉은 리륨 장착 시: 체력 20% 증가.</color>
+HODA_GEAR_PLUS4_POWER_DRAIN_RESIST_SELF_DESC|<color=green>파워 드레인 저항 4% 증가.</color>
+HODA_GEAR_PLUS3_CRIT_CHANCE_SELF_DESC|<color=green>2배 대미지 찬스 3% 증가.</color>
+HODA_GEAR_PLUS7_DAMAGE_RESIST_PERSONAL_DESC|<color=green>대미지 저항 7% 증가.</color>
+HODA_GEAR_PLUS5_POWER_PERSONAL_DESC|<color=green>힘 5% 증가.</color>
+HODA_GEAR_PLUS5_STUN_RESIST_SELF_AVVAR_DESC|<color=green>에이바 장착 시: 기절 저항 5% 증가.</color>
+HODA_GEAR_BOOTS_OF_FAITH_AURA_LOC_OVERRIDE|<color=green>힘과 체력 10% 증가. 동료의 2배 대미지 찬스 5% 증가.</color> <color=orange>가장 느린 적을 공격할 확률이 더 높습니다.</color>
+HODA_GEAR_PLUS10_DAMAGE_RESIST_PERSONAL_DESC|<color=green>대미지 저항 10% 증가.</color>
+HODA_GEAR_HEALTH_FERELDEN_PLUS5_DESC|<color=green>페렐단의 체력 5% 증가.</color>
+HODA_GEAR_PLUS10_POWER_DRAIN_RESIST_SELF_DESC|<color=green>파워 드레인 저항 10% 증가.</color>
+HODA_GEAR_CURSEPOWERRESIST_SELF_SELFHIT_PLUS5_DESC|<color=green>공격받으면 힘 저주 저항 5% 획득.</color>
+HODA_GEAR_CRIT_CHANCE_SELF_LOGHAIN_EQUIP_PLUS5_DESC|<color=green>로게인 장착 시: 2배 대미지 찬스 5% 증가.</color>
+HODA_GEAR_PLUS4_BONUS_DAMAGE_VS_DEFENDERS_HEALERS_DESC|<color=green>방어자 및 치료사 상대로 추가 대미지 4% 증가.</color>
+HODA_GEAR_PLUS4_POWER_ROGUES_DESC|<color=green>도적의 힘 4% 증가.</color>
+HODA_GEAR_PLUS2PCT_POWER_VS_WARRIORS_DESC|<color=green>전사 상대로 대미지 2% 증가.</color>
+HODA_GEAR_PLUS10_POWER_PERSONAL_DESC|<color=green>힘 10% 증가.</color>
+HODA_GEAR_ENEMY_POWER_DRAIN_WHEN_SELF_ATTACKED_2_DESC|<color=green>공격받으면 적의 힘 2% 흡수.</color>
+HODA_GEAR_MINUS25_STUN_RESIST_DESC|<color=red>기절 저항 25% 감소.</color>
+HODA_GEAR_PLUS15_DAMAGE_RESIST_SELF_VS_FLANKERS_DESC|<color=green>측면 공격자 상대로 대미지 저항 15% 증가.</color>
+HODA_GEAR_PLUS3_POWER_PERSONAL_DESC|<color=green>힘 3% 증가.</color>
+HODA_GEAR_PLUS7_BONUS_DAMAGE_SELF_DESC|<color=green>추가 대미지 7% 증가.</color>
+HODA_GEAR_EXPLODE_ALL_5_DESC|<color=green>적이 죽으면 모든 적이 가해진 대미지의 5%를 받습니다.</color>
+HODA_GEAR_PLUS10_DAMAGE_RESIST_PERSONAL_IRONBULL_ONLY|<color=green>아이언 불 장착 시: 대미지 저항 10% 증가.</color>
+HODA_GEAR_PLUS6_HEALTH_PERSONAL_DESC|<color=green>체력 6% 증가.</color>
+HODA_GEAR_PLUS7_SLOW_RESIST_ALLIES_DESC|<color=green>동료의 감속 저항 7% 증가.</color>
+HODA_GEAR_CERTAINTY_AURA_LOC_OVERRIDE|<color=red>자신의 모든 저항 10% 감소.</color> <color=green>힘 15% 증가. 악마 상대로 대미지 7% 증가. 메레디스, 삼손 장착 시: 동료가 공격받으면 대미지 저항 5% 획득.</color>
+HODA_GEAR_PLUS4_HEALTH_ALLIES_DESC|<color=green>동료의 체력 4% 증가.</color>
+HODA_GEAR_PLUS2_HEALTH_ALLIES_ON_SELF_HIT_BM_DESC|<color=green>받은 대미지의 2%를 동료의 체력으로 전환.</color>
+HODA_GEAR_STEALTH_SELF_LELIANA_DESC|<color=green>렐리아나 장착 시: 은신: 타격 시 효과를 일으키지 않고 공격.</color>
+HODA_GEAR_PLUS10_STUN_RESIST_SELF_DESC|<color=green>기절 저항 10% 증가.</color>
+HODA_GEAR_POWER_FERELDEN_PLUS5_DESC|<color=green>페렐단의 힘 5% 증가.</color>
+HODA_GEAR_HEALTH_GAIN_WHEN_SELF_HIT_25_DESC|<color=green>공격받으면 체력 25% 획득.</color>
+HODA_GEAR_DMGRES_SELF_LOGHAIN_EQUIP_PLUS15_DESC|<color=green>로게인 장착 시: 대미지 저항 15% 증가.</color>
+HODA_GEAR_ENEMY_NEG_FLANK_24950_DESC|<color=red>적의 측면 공격 확률 감소.</color>
+HODA_GEAR_PLUS50_DAMAGE_RESIST_SELF_VS_FLANKERS_DESC|<color=green>측면 공격자 상대로 대미지 저항 50% 증가.</color>
+HODA_GEAR_PLUS5_DAMAGE_FOR_FLANKERS_DESC|<color=green>측면 공격자 장착 시: 추가 대미지 5% 증가.</color>
+HODA_GEAR_PLUS3_BONUS_DAMAGE_SELF_DESC|<color=green>추가 대미지 3% 증가.</color>
+HODA_GEAR_PLUS5_DAMAGE_RESIST_PERSONAL_CIRCLE_ONLY_DESC|<color=green>서클 장착 시: 대미지 저항 5% 증가.</color>
+HODA_GEAR_PLUS8_POWER_DRAIN_RESIST_SELF_DESC|<color=green>파워 드레인 저항 8% 증가.</color>
+HODA_GEAR_PLUS5_POWER_TEVINTER_PERSONAL_DESC|<color=green>테빈터 장착 시: 힘 5% 증가.</color>
+HODA_GEAR_PLUS4_DAMAGE_RESIST_PERSONAL_ARCHON_ONLY_DESC|<color=green>집정관 장착 시: 대미지 저항 4% 증가.</color>
+HODA_GEAR_PLUS4_DAMAGE_RESIST_SPIRITS_DESC|<color=green>스피릿의 대미지 저항 4% 증가.</color>
+HODA_GEAR_PLUS4_CRIT_CHANCE_SELF_COLE_ONLY_DESC|<color=green>콜 장착 시: 2배 대미지 찬스 4% 증가.</color>
+HODA_GEAR_POWER_GAIN_WHEN_ALLY_HIT_5_VAL_FROM_DAM_DESC|<color=green>동료가 받은 대미지의 5%를 힘으로 전환.</color>
+HODA_GEAR_RETALIATE_ALL_ON_SELF_HIT_5_VAL_FROM_DAM_DESC|<color=green>받은 대미지의 5%를 적에게 되돌립니다.</color>
+HODA_GEAR_PLUS7_CRIT_CHANCE_SELF_DESC|<color=green>2배 대미지 찬스 7% 증가.</color>
+HODA_GEAR_STEALTH_SELF_ZEVRAN_DESC|<color=green>제브란 장착 시: 은신: 타격 시 효과를 일으키지 않고 공격.</color>
+HODA_GEAR_PLUS12_SLOW_RESIST_SELF_DESC|<color=green>감속 저항 12% 증가.</color>
+HODA_GEAR_PLUS10_CRIT_CHANCE_SELF_DESC|<color=green>2배 대미지 찬스 10% 증가.</color>
+HODA_GEAR_PLUS5_BONUS_DAMAGE_SELF_DESC|<color=green>추가 대미지 5% 증가.</color>
+HODA_GEAR_PLUS15_SLOW_RESIST_SELF_DESC|<color=green>감속 저항 15% 증가.</color>
+HODA_GEAR_PLUS4_SLOW_RESIST_SELF_DESC|<color=green>감속 저항 4% 증가.</color>
+HODA_GEAR_PLUS5_HEALTH_ALLIES_ON_ENEMY_DEATH_DESC|<color=green>적이 죽으면 동료가 체력 5% 획득.</color>
+HODA_GEAR_PLUS2_HEALTH_ELVES_DESC|<color=green>엘프 동료의 체력 2% 증가.</color>
+HODA_GEAR_DMG_RESIST_PCT_5_TO_ELVES_DESC|<color=green>엘프의 대미지 저항 5% 증가.</color>
+HODA_GEAR_PLUS3_HEALTH_PERSONAL_DESC|<color=green>체력 3% 증가.</color>
+HODA_GEAR_AURA_HEALTH_GAIN_WHEN_SELF_HIT_7_DESC|<color=green>공격받으면 체력 7% 회복.</color>
+HODA_GEAR_PLUS2_HEALTH_SELF_ON_ALLY_HIT_DESC|<color=green>동료가 공격받으면 체력 2% 획득.</color>
+HODA_GEAR_DIPLOMATIC_MISSIVES_AURA_LOC_OVERRIDE|<color=green>동료의 힘 및 파워 드레인 저항 10% 증가. 조세핀 장착 시: 공격받으면 대미지 저항 10% 획득.</color> <color=red>적의 힘 10% 감소.</color>
+HODA_GEAR_AURA_HEALTH_GAIN_WHEN_SELF_HIT_10_DESC|<color=green>공격받으면 체력 10% 회복.</color>
+HODA_GEAR_PLUS6_POWER_DRAGONS_DESC|<color=green>드래곤 동료의 힘 6% 증가.</color>
+HODA_GEAR_POWERGAIN_ALLIES_10_ON_SELF_DEATH_DESC|<color=green>이 영웅이 죽으면 동료가 힘 10% 획득.</color>
+HODA_GEAR_PLUS10_CURSE_HEALTH_RESIST_DESC|<color=green>동료의 체력 저주 저항 10% 증가.</color>
+HODA_GEAR_PLUS4_POWER_PERSONAL_DESC|<color=green>힘 4% 증가.</color>
+HODA_GEAR_PLUS2_POWER_SELF_ON_ALLY_HIT_DESC|<color=green>동료가 공격받으면 힘 2% 획득.</color>
+HODA_GEAR_DUSTER_BATTLEAXE_AURA_LOC_OVERRIDE|<color=green>힘 10% 증가. 드워프의 추가 대미지 5% 증가. 드워프의 저주 저항 15% 증가.</color>
+HODA_GEAR_PLUS10_STUNRESIST_TO_DWARF_DESC|<color=green>드워프의 기절 저항 10% 증가.</color>
+HODA_GEAR_HEALTH_ALLIES_PLUS10_DESC|<color=green>동료의 체력 10% 증가.</color>
+HODA_GEAR_DMG_RESIST_PCT_10_TO_DWARF_DESC|<color=green>드워프의 대미지 저항 10% 증가.</color>
+HODA_GEAR_PLUS5HEALTH_DESC|<color=green>동료의 체력 5% 증가.</color>
+HODA_GEAR_PLUS5POWER_TO_DWARF_DESC|<color=green>드워프의 힘 5% 증가.</color>
+HODA_GEAR_SLOW_RESIST_10_TO_DWARVES_DESC|<color=green>드워프의 감속 저항 10% 증가.</color>
+HODA_GEAR_POWER_DRAIN_RESIST_10_TO_DWARVES_DESC|<color=green>드워프의 파워 드레인 저항 10% 증가.</color>
+HODA_GEAR_DWORKINS_HIGH_EXPLOSIVES_AURA_LOC_OVERRIDE|<color=green>적이 공격받으면 모든 적이 가해진 대미지의 6%를 받지만, 동료도 2%를 받습니다.</color>
+HODA_GEAR_DWORKINS_SAFE_EXPLOSIVES_AURA_LOC_OVERRIDE|<color=green>적이 공격받으면 모든 적이 가해진 대미지의 3%를 받지만, 동료도 1%를 받습니다.</color>
+HODA_GEAR_PLUS8_BONUS_DAMAGE_VS_WHITE_FACTION_DESC|<color=green>흰색 세력 상대로 추가 대미지 8% 증가.</color>
+HODA_GEAR_PLUS12_STUN_RESIST_ALLIES_DESC|<color=green>동료의 기절 저항 12% 증가.</color>
+HODA_GEAR_PLUS2_CRIT_CHANCE_SELF_DESC|<color=green>2배 대미지 찬스 2% 증가.</color>
+HODA_GEAR_PLUS2_DAMAGE_RESIST_PERSONAL_DESC|<color=green>대미지 저항 2% 증가.</color>
+HODA_GEAR_PLUS8PCT_POWER_VS_POWER_GAINERS_DESC|<color=green>파워 획득 영웅 상대로 추가 대미지 8% 증가.</color>
+HODA_GEAR_EMBLAZONED_KIRKWALL_SHIELD_AURA_LOC_OVERRIDE|<color=green>동료는 공격 당 처음 2000 대미지에 저항. 프리 마치의 모든 효과 저항 10% 증가.</color>
+HODA_GEAR_PLUS1000_RAW_DAMAGE_RESIST_PERSONAL_DESC|<color=green>공격 당 1000 대미지에 저항.</color>
+HODA_GEAR_AURA_PLUS15HEALTH_THEIRIN_ONLY_DESC|<color=green>테이린 가문 장착 시: 체력 15% 증가.</color>
+HODA_GEAR_PLUS3_HEALTH_ALLIES_ON_SELF_HIT_DESC|<color=green>공격받으면 동료가 체력 3% 획득.</color>
+HODA_EXPENSIVE_DOG_TREAT_GEAR_AURA_LOC_OVERRIDE|<color=green>힘 5% 증가. 크리처의 체력 3% 증가. 컬렌 및 순록 마바리 장착 시: 기절 및 감속 저항 10% 증가.</color>
+HODA_GEAR_STEALTH_PERSONAL_DESC|<color=green>은신: 타격 시 효과를 일으키지 않고 공격.</color>
+HODA_GEAR_POWER_SELF_MINUS15_DESC|<color=red>자신의 힘 15% 감소.</color>
+HODA_GEAR_MINUS10_HEALTH_PERSONAL_DESC|<color=red>자신의 체력 10% 감소.</color>
+HODA_GEAR_FADE_TOUCHED_SILVERITE_AURA_LOC_OVERRIDE|<color=green>공격받으면 대미지 저항 5% 획득. 동료가 죽으면 체력과 힘 20% 획득.</color>
+HODA_FADESBANE_GEAR_AURA_LOC_OVERRIDE|<color=green>파란색 세력 상대로 추가 대미지 10% 증가. 기사단 장착 시: 5% 추가 증가.</color>
+HODA_GEAR_HEALTH_GAIN_ALL_WHEN_ENEMY_HIT_5_DESC|<color=green>적이 공격받으면 동료의 체력 5% 회복.</color>
+HODA_GEAR_BRAVE_TARGETING_SELF_DESC|<color=orange>가장 강한 적을 공격할 확률이 더 높습니다.</color>
+HODA_GEAR_BONUSDMG_SELF_FERELDEN_EQUIP_PLUS3_DESC|<color=green>페렐단 장착 시: 추가 대미지 3% 증가.</color>
+HODA_GEAR_PERCEPTIVE_SELF_ANORA_DESC|<color=green>아노라 장착 시: 간파: 은신 무효화.</color>
+HODA_GEAR_PLUS1_DAMAGE_RESIST_PERSONAL_DESC|<color=green>대미지 저항 1% 증가.</color>
+HODA_GEAR_BONUSDMG_CIRCLE_PLUS3_DESC|<color=green>서클의 추가 대미지 3% 증가.</color>
+HODA_GEAR_ALLY_GAIN_DAMAGE_RESIST_WHEN_SELF_ATTACKED_10_DESC|<color=green>공격받으면 동료가 대미지 저항 10% 획득.</color>
+HODA_GEAR_SELF_GAIN_BONUS_DAMAGE_WHEN_ATTACKING_5_DESC|<color=green>공격 시 추가 대미지 5% 획득.</color>
+HODA_GEAR_HEALTH_GAIN_WHEN_SELF_HIT_15_DESC|<color=green>공격받으면 체력 15% 획득.</color>
+HODA_GEAR_HEALTH_SELF_PLUS15_DESC|<color=green>체력 15% 증가.</color>
+HODA_GEAR_DMGRESIST_SERA_SELFHIT_PLUS15_DESC|<color=green>세라 장착 시: 공격받으면 대미지 저항 15% 획득.</color>
+HODA_GEAR_DMGRESIST_SELF_SELFHIT_PLUS10_DESC|<color=green>공격받으면 대미지 저항 10% 획득.</color>
+HODA_GEAR_SLOWRESIST_SELF_SELFATTACK_PLUS10_DESC|<color=green>공격 시 감속 저항 10% 획득.</color>
+HODA_GEAR_PERCEPTIVE_SELF_SERA_DESC|<color=green>세라 장착 시: 간파: 은신 무효화.</color>
+HODA_GEAR_MINUS25_SLOW_RESIST_DESC|<color=red>감속 저항 25% 감소.</color>
+HODA_GEAR_FLAWLESS_FIRE_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>동료가 죽으면 동료의 힘과 체력 25% 증가.</color> <color=red>저주 저항 35% 감소.</color> <color=green>셰일 장착 시: 2배 대미지 찬스 10% 증가.</color>
+HODA_GEAR_FLAWLESS_ICE_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>드워프와 골렘의 파워 드레인 저항 10% 증가 (중첩 가능). 셰일 장착 시: 힘 10% 증가.</color>
+HODA_GEAR_FLAWLESS_LIGHTNING_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>드워프와 골렘의 저주 저항 15% 증가 (중첩 가능). 셰일 장착 시: 대미지 저항 10% 증가.</color>
+HODA_GEAR_FLAWLESS_NATURE_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>드워프와 골렘의 감속 저항 10% 증가 (중첩 가능). 셰일 장착 시: 체력 10% 증가.</color>
+HODA_GEAR_FLAWLESS_SPIRIT_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>드워프와 골렘의 기절 저항 15% 증가 (중첩 가능). 셰일 장착 시: 추가 대미지 5% 증가.</color>
+HODA_FLEMETHS_GRIMOIRE_GEAR_AURA_LOC_OVERRIDE|<color=green>대미지 저항 8% 증가. 반역자 동료의 힘 8% 증가. 야생의 마녀 장착 시: 공격 당 2,500 대미지에 저항.</color>
+HODA_GEAR_MINUS5_POWER_ENEMIES_DESC|<color=red>적의 힘 5% 감소.</color>
+HODA_GEAR_GAMORDAN_STORMRIDER_SCALE_AURA_LOC_OVERRIDE|<color=green>크리처의 대미지 저항 10% 증가.</color> <color=red>기절 저항 25% 감소.</color> <color=green>드래곤 장착 시: 모든 효과 저항 15% 증가.</color>
+HODA_GEAR_PLUS10_HEALTH_ALLIES_ON_SELF_HIT_DESC|<color=green>공격받으면 동료의 체력 10% 회복.</color>
+HODA_GEAR_PLUS10_DAMAGE_FOR_GARAHEL_DESC|<color=green>가라헬 장착 시: 추가 대미지 10% 증가.</color>
+HODA_GAUNTLETS_OF_THE_NUG_GEAR_AURA_LOC_OVERRIDE|<color=green>대미지 저항 5% 증가. 저주 저항 3% 증가.</color>
+HODA_GEAR_PLUS7_POWER_PERSONAL_DESC|<color=green>힘 7% 증가.</color>
+HODA_GEAR_EXPLODE_ALL_2_DESC|<color=green>적이 죽으면 모든 적이 가해진 대미지의 2%를 받습니다.</color>
+HODA_GEAR_FLANK_PERSONAL_DESC|<color=orange>뒷줄을 공격할 확률이 더 높습니다.</color>
+HODA_GEAR_PLUS10_DAMAGE_PERSONAL_VS_NOBILITY_DESC|<color=green>귀족 상대로 추가 대미지 10% 증가.</color>
+HODA_GEAR_GIRDLE_OF_THE_SKIES_AURA_LOC_OVERRIDE|<color=green>저주 저항 10% 증가. 받은 대미지의 10%를 체력과 힘으로 전환.</color>
+HODA_GEAR_GLANDIVALIS_AURA_LOC_OVERRIDE|<color=green>체력 15% 증가. 엘프 동료는 워든 상대로 추가 대미지 및 대미지 저항 10% 증가.</color> <color=red>기절 저항 10% 감소.</color>
+HODA_GEAR_CRIT_CHANCE_FERELDEN_PLUS5_DESC|<color=green>페렐단의 2배 대미지 찬스 5% 증가.</color>
+HODA_GEAR_PLUS10_SLOW_RESIST_SELF_DESC|<color=green>감속 저항 10% 증가.</color>
+HODA_GEAR_PLUS5_POWER_SELF_ON_SELF_HIT_DESC|<color=green>공격받으면 힘 5% 획득.</color>
+HODA_GEAR_BONUSDMG_SELF_LOGHAIN_EQUIP_PLUS5_DESC|<color=green>로게인 장착 시: 추가 대미지 5% 증가.</color>
+HODA_GEAR_PLUS5_HEALTH_SELF_ON_ALLY_HIT_DESC|<color=green>동료가 공격받으면 체력 5% 획득.</color>
+HODA_GEAR_PLUS10_POWER_APOSTATES_DESC|<color=green>반역자 동료의 힘 10% 증가.</color>
+HODA_GEAR_GREATER_MISTRAL_SCALE_AURA_LOC_OVERRIDE|<color=green>크리처의 2배 대미지 찬스 10% 증가.</color> <color=red>파워 드레인 저항 25% 감소.</color> <color=green>드래곤 장착 시: 간파: 은신 무효화.</color>
+HODA_GEAR_5DRAIN_ALL_ENEMIES_ON_SELF_HIT_DESC|<color=green>공격받으면 적의 힘 5% 흡수.</color>
+HODA_GEAR_PLUS10_SLOW_RESIST_ALLIES_DESC|<color=green>동료의 감속 저항 10% 증가.</color>
+HODA_GEAR_DMG_RESIST_PCT_15_TO_WARDENS_DESC|<color=green>워든의 대미지 저항 15% 증가.</color>
+HODA_GEAR_DEFENDER_25_DESC|<color=green>디펜더 25% 증가.</color>
+HODA_GEAR_PLUS10_HEALTH_SELF_ON_ALLY_HIT_DESC|<color=green>동료가 공격받으면 체력 10% 획득.</color>
+HODA_GEAR_GRIFFONRIDER_LEATHERS_AURA_LOC_OVERRIDE|<color=green>추가 대미지 7% 증가. 영웅이 죽을 때마다 동료가 힘과 체력 15% 획득. 적이 죽으면 모든 적이 가해진 대미지의 2%를 받습니다.</color>
+HODA_GEAR_PERSONAL_STUN_RESIST_25_DESC|<color=green>기절 저항 25% 증가.</color>
+HODA_GEAR_HAKKONS_WISDOM_AURA_LOC_OVERRIDE|<color=green>간파: 은신 무효화. 추가 대미지 10% 증가. 적이 죽으면 체력 8% 획득.</color> <color=red>적의 저주 저항 25% 감소.</color>
+HODA_GEAR_PLUS8_BONUS_DAMAGE_SELF_DESC|<color=green>추가 대미지 8% 증가.</color>
+HODA_GEAR_PLUS5_CRIT_CHANCE_ALLIES_DESC|<color=green>동료의 2배 대미지 찬스 5% 증가.</color>
+HODA_GEAR_HEALTH_ON_ENEMY_DEATH_15_DESC|<color=green>적이 죽으면 체력 15% 회복.</color>
+HODA_GEAR_PLUS7_HEALTH_PERSONAL_DESC|<color=green>체력 7% 증가.</color>
+HODA_GEAR_POWER_GAIN_ALL_WHEN_ENEMY_HIT_4_SELF_DESC|<color=green>적이 받은 대미지의 4%를 동료의 힘으로 전환.</color>
+HODA_GEAR_DEFENDER_15_DESC|<color=green>동료의 AoE 대미지 15% 흡수.</color>
+HODA_GEAR_PLUS400_RAW_DAMAGE_RESIST_PERSONAL_DESC|<color=green>공격 당 400 대미지에 저항.</color>
+HODA_GEAR_RETALIATE_10_ON_SELF_HIT_VAL_FROM_DAM_DESC|<color=green>받은 대미지의 10%를 적에게 되돌립니다.</color>
+HODA_GEAR_CURSE_POWER_RESIST_15_SELF_DESC|<color=green>힘 저주 저항 15% 증가.</color>
+HODA_GEAR_DMGRESIST_AVVAR_PLUS10_DESC|<color=green>에이바의 대미지 저항 10% 증가.</color>
+HODA_GEAR_HEALTH_AVVAR_SELFATK_CONVERT4_DESC|<color=green>에이바 장착 시: 자신이 가한 대미지의 4%를 에이바의 체력으로 전환.</color>
+HODA_GEAR_MINUS3_HEALTH_PERSONAL_DESC|<color=red>자신의 체력 3% 감소.</color>
+HODA_GEAR_PLUS15_POWER_DRAIN_RESIST_SELF_DESC|<color=green>파워 드레인 저항 15% 증가.</color>
+HODA_GEAR_PLUS10PCT_POWER_VS_QUICK_DESC|<color=green>빠른 라운드 영웅 상대로 추가 대미지 10% 증가.</color>
+HODA_GEAR_WOUNDED_TARGETING_DESC|<color=orange>체력 비율이 가장 낮은 적을 공격할 확률이 더 높습니다.</color>
+HODA_GEAR_PLUS10_HEALTH_ICE_GIANT_ONLY_DESC|<color=green>얼음 거인 장착 시: 체력 10% 증가.</color>
+HODA_GEAR_PLUS6_POWER_PERSONAL_DESC|<color=green>힘 6% 증가.</color>
+HODA_GEAR_PLUS4_CRIT_CHANCE_INQUISITION_ONLY_DESC|<color=green>인퀴지션 장착 시: 2배 대미지 찬스 4% 증가.</color>
+HODA_GEAR_PLUS2_HEALTH_PERSONAL_DESC|<color=green>체력 2% 증가.</color>
+HODA_GEAR_PLUS2_DAMAGE_RESIST_INQUISITION_DESC|<color=green>인퀴지션 동료의 대미지 저항 2% 증가.</color>
+HODA_GEAR_PLUS5PCT_BONUS_DAMAGE_FOR_INQUISITION_DESC|<color=green>인퀴지션 동료의 추가 대미지 5% 증가.</color>
+HODA_GEAR_PLUS3_DAMAGE_RESIST_PERSONAL_DESC|<color=green>대미지 저항 3% 증가.</color>
+HODA_GEAR_EXPLODE_ALL_SELFATK_CONVERT5_DESC|<color=green>공격 시 가한 대미지의 5%를 모든 적에게 추가로 입힙니다.</color>
+HODA_GEAR_PERCEPTIVE_SELF_BLIGHTED_DESC|<color=green>블라이트 장착 시: 간파: 은신 무효화.</color>
+HODA_GEAR_MINUS50SLOWRESIST_TO_ENEMIES_DESC|<color=red>감속 저항 50% 감소.</color>
+HODA_GEAR_JOINING_CHALICE_AURA_LOC_OVERRIDE|<color=green>워든의 힘 20% 및 저주 저항 25% 증가.</color> <color=red>자신의 체력 20% 감소.</color>
+HODA_GEAR_KADDIS_OF_THE_MOUNTAINFATHER_AURA_LOC_OVERRIDE|<color=green>모든 효과 및 대미지 저항 5% 증가.</color>
+HODA_GEAR_KALTENZAHN_SCALE_AURA_LOC_OVERRIDE|<color=green>크리처의 저주 저항 25% 증가. 크리처는 처음 2500 대미지에 저항. 드래곤 장착 시: 같은 결단력 내에서 먼저 공격할 확률이 더 높습니다.</color>
+HODA_GEAR_STEALTH_SELF_ELUSIVE_DESC|<color=green>회피형 장착 시: 은신: 타격 시 효과를 일으키지 않고 공격.</color>
+HODA_KEEPSAKE_LOCKET_GEAR_AURA_LOC_OVERRIDE|<color=green>체력 저주 및 힘 저주 저항 5% 증가. 호크 가문 장착 시: 대미지 저항 6% 증가.</color>
+HODA_GEAR_PLUS60_HEALTH_ALLIES_ON_SELF_DEATH_DESC|<color=green>사망 시 동료의 체력 60% 회복.</color>
+HODA_GEAR_POWER_SELF_ON_ALLY_DEATH_10_CAT_PERSONAL_DESC|<color=green>고양이 장착 시: 동료가 죽으면 힘 10% 획득.</color>
+HODA_GEAR_PLUS10_BONUS_DAMAGE_VS_BLIGHT_DESC|<color=green>블라이트 상대로 추가 대미지 10% 증가.</color>
+HODA_GEAR_PLUS10_POWER_LEGION_DESC|<color=green>망자의 군단의 힘 10% 증가.</color>
+HODA_GEAR_HATRED_BLIGHTED_DESC|<color=orange>블라이트를 공격할 확률이 더 높습니다.</color>
+HODA_GEAR_PLUS8_DAMAGE_RESIST_PERSONAL_DESC|<color=green>대미지 저항 8% 증가.</color>
+HODA_GEAR_PLUS4PCT_BONUS_DAMAGE_LEGION_ONLY_DESC|<color=green>망자의 군단 장착 시: 추가 대미지 4% 증가.</color>
+HODA_GEAR_LEGIONNAIRE_PLATE_AURA_LOC_OVERRIDE|<color=green>체력 12% 증가. 기절 및 대미지 저항 8% 증가. 망자의 군단 장착 시: 공격받으면 대미지 저항 3% 획득.</color>
+HODA_GEAR_20DAMAGE_ALLIES_ON_SELF_DEATH_DESC|<color=red>사망 시 동료의 체력 20% 감소.</color>
+HODA_GEAR_MINUS15_HEALTH_PERSONAL_DESC|<color=red>자신의 체력 15% 감소.</color>
+HODA_GEAR_EXPLODE_ALLIES_2_ON_ENEMY_HIT_DESC|<color=red>적이 공격받으면 모든 동료가 가해진 대미지의 2%를 받습니다.</color>
+HODA_GEAR_PLUS4_CRIT_CHANCE_SELF_CARVERHAWKE_ONLY_DESC|<color=green>카버 호크 장착 시: 2배 대미지 찬스 4% 증가.</color>
+HODA_GEAR_LITANY_OF_ADRALLA_AURA_LOC_OVERRIDE|<color=green>악마 및 피의 마법사 상대로 동료의 추가 대미지 25% 증가. 동료의 저주 저항 15% 증가.</color>
+HODA_GEAR_PLUS3_POWER_SELF_ON_ALLY_DEATH_DESC|<color=green>동료가 죽으면 힘 3% 획득.</color>
+HODA_GEAR_LYRIUM_KIT_AURA_LOC_OVERRIDE|<color=green>간파: 은신 무효화. 마법사 및 악마 상대로 대미지 저항 10% 증가, 피의 마법사 상대로는 2배.</color> <color=red>마법사 및 악마의 힘 15% 감소.</color>
+HODA_GEAR_PLUS5PCT_BONUS_DAMAGE_FOR_OUTLAWS_DESC|<color=green>무법자의 추가 대미지 5% 증가.</color>
+HODA_GEAR_PLUS7PCT_BONUS_DAMAGE_VS_CHANTRY_TEVINTER_DESC|<color=green>교단 및 테빈터 상대로 동료의 추가 대미지 7% 증가.</color>
+HODA_MAGEKILLER_GEAR_AURA_LOC_OVERRIDE|<color=green>마법사 상대로 추가 대미지 10% 증가, 피의 마법사 상대로는 2배.</color>
+HODA_GEAR_DMG_RESIST_PCT_10_DESC|<color=green>동료의 대미지 저항 10% 증가.</color>
+HODA_GEAR_DMGRESIST_ALLIES_PLUS5_DESC|<color=green>동료의 대미지 저항 5% 증가.</color>
+HODA_GEAR_PLUS4_POWER_SELF_ON_ALLY_DEATH_DESC|<color=green>동료가 죽으면 힘 4% 획득.</color>
+HODA_GEAR_MINUS8_STUN_RESIST_ENEMIES_DESC|<color=red>적의 기절 저항 8% 감소.</color>
+HODA_GEAR_HATRED_LARGE_CREATURES_DESC|<color=orange>대형 크리처를 공격할 확률이 더 높습니다.</color>
+HODA_GEAR_PLUS25_PCT_POWER_VS_LARGE_CREATURES_DESC|<color=green>대형 크리처 상대로 추가 대미지 25% 증가.</color>
+HODA_GEAR_POWER_SELF_ENEMYHIT_CONVERT4_DESC|<color=green>적이 받은 대미지의 4%를 힘으로 전환.</color>
+HODA_GEAR_PLUS10_CURSE_POWER_RESIST_DESC|<color=green>동료의 힘 저주 저항 10% 증가.</color>
+HODA_GEAR_HEALTHGAIN_SELF_5_ON_SELF_HIT_DESC|<color=green>공격받으면 체력 5% 획득.</color>
+HODA_GEAR_PLUS6_HEALTH_SELF_ELVES_ONLY_DESC|<color=green>엘프 장착 시: 체력 6% 증가.</color>
+HODA_GEAR_HEALTH_GAIN_WHEN_SELF_HIT_20_DESC|<color=green>공격받으면 체력 20% 회복.</color>
+HODA_GEAR_DMG_RESIST_PCT_20_VS_TEVINTER_PERSONAL_DESC|<color=green>테빈터 상대로 대미지 저항 20% 증가.</color>
+HODA_GEAR_PLUS25PCT_POWER_PERSONAL_FENRIS_ONLY_DESC|<color=green>펜리스 장착 시: 추가 대미지 25% 증가.</color>
+HODA_GEAR_MINUS8_POWER_DRAIN_RESIST_ENEMIES_DESC|<color=red>적의 파워 드레인 저항 8% 감소.</color>
+HODA_ORB_OF_DESTRUCTION_GEAR_AURA_LOC_OVERRIDE|<color=green>동료의 힘 4% 증가. 검은색 세력 및 악마 동료의 추가 대미지 7% 증가, 해당 적 상대로도 추가 대미지 7% 증가 (중첩 가능).</color>
+HODA_GEAR_ORB_OF_FENHAREL_AURA_LOC_OVERRIDE|<color=green>엘프의 체력 35% 증가. 파란색 세력의 모든 저항 25% 증가. 펜'하렐 장착 시: 공격받으면 받은 대미지의 10%를 검은색 세력 적에게 되돌립니다.</color>
+HODA_GEAR_ORLESIAN_HENNIN_AURA_LOC_OVERRIDE|<color=green>기절, 감속, 파워 드레인 저항 10% 증가. 비비엔 장착 시: 힘 25% 및 저주 저항 20% 증가.</color>
+HODA_GEAR_PLUS7_STUN_RESIST_SELF_DESC|<color=green>기절 저항 7% 증가.</color>
+HODA_GEAR_PLUS9_SLOW_RESIST_SELF_DESC|<color=green>감속 저항 9% 증가.</color>
+HODA_GEAR_PLUS3_POWER_DRAIN_RESIST_SELF_ARISHOK_ONLY_DESC|<color=green>애리쇼크 장착 시: 파워 드레인 저항 3% 증가.</color>
+HODA_GEAR_PLUS1000_RAW_DAMAGE_RESIST_VS_DRAGONS_PERSONAL_DESC|<color=green>드래곤이 가하는 대미지 중 1000에 저항.</color>
+HODA_GEAR_PLUS4_HEALTH_PERSONAL_DESC|<color=green>체력 4% 증가.</color>
+HODA_GEAR_MINUS3_CRIT_CHANCE_ENEMIES_DESC|<color=red>적의 2배 대미지 찬스 3% 감소.</color>
+HODA_GEAR_PLUS9_CRIT_CHANCE_SELF_DESC|<color=green>2배 대미지 찬스 9% 증가.</color>
+HODA_GEAR_STEALTH_SELF_CELENE_DESC|<color=green>셀린 장착 시: 은신: 타격 시 효과를 일으키지 않고 공격.</color>
+HODA_GEAR_PLUS3_HEALTH_SELF_ARVAARAD_ONLY_DESC|<color=green>알바라드 장착 시: 체력 3% 증가.</color>
+HODA_GEAR_PLUS3_POWER_SELF_ON_SELF_HIT_DESC|<color=green>공격받으면 힘 3% 획득.</color>
+HODA_GEAR_HATRED_TEVINTER_DESC|<color=green>테빈터를 공격할 확률이 더 높습니다.</color>
+HODA_GEAR_PLUS10_POWER_DRAIN_RESIST_QUNARI_DESC|<color=green>쿠나리의 파워 드레인 저항 10% 증가.</color>
+HODA_GEAR_HEAL5_ALLIES_WHEN_ALLY_HIT_DESC|<color=green>동료가 공격받으면 동료가 체력 5% 획득.</color>
+HODA_GEAR_MIUNUS_CRIT_CHANCE_2_SELF_DESC|<color=red>자신의 2배 대미지 찬스 2% 감소.</color>
+HODA_GEAR_MINUS10_STUN_RESIST_ENEMIES_DESC|<color=red>적의 기절 저항 10% 감소.</color>
+HODA_GEAR_POWER_COMMON_UNCOMMON_PLUS50_DESC|<color=green>일반 및 특수 동료의 힘 50% 증가.</color>
+HODA_GEAR_PLUS10_HEALTH_RED_LYRIUM_DESC|<color=green>붉은 리륨 동료의 체력 10% 증가.</color>
+HODA_GEAR_MINUS10_POWER_PERSONAL_DESC|<color=red>자신의 힘 10% 감소.</color>
+HODA_REDCLIFFE_SHIELD_GEAR_AURA_LOC_OVERRIDE|<color=green>체력 6% 증가. 페렐단 동료의 기절 저항 6% 증가. 게린 가문 장착 시: 힘 5% 증가.</color>
+HODA_GEAR_PLUS6_HEALTH_DWARVES_DESC|<color=green>드워프 동료의 체력 6% 증가.</color>
+HODA_GEAR_PLUS3_POWER_MAGES_DESC|<color=green>마법사 동료의 힘 3% 증가.</color>
+HODA_GEAR_PLUS7_BONUS_DAMAGE_VS_RED_FACTION_DESC|<color=green>붉은색 세력 상대로 추가 대미지 7% 증가.</color>
+HODA_RING_OF_RESILIENCE_GEAR_AURA_LOC_OVERRIDE|<color=green>동료의 기절, 감속 및 파워 드레인 저항 5% 증가.</color>
+HODA_GEAR_PLUS3_DAMAGE_RESIST_ALLIES_DESC|<color=green>동료의 대미지 저항 3% 증가.</color>
+HODA_GEAR_ROBES_OF_THE_ARCHITECT_AURA_LOC_OVERRIDE|<color=green>블라이트의 모든 효과 저항 15% 증가. 공격받으면 체력 15% 회복 및 힘 5% 획득.</color>
+HODA_GEAR_PLUS5_DAMAGE_RESIST_ORLESIAN_DESC|<color=green>올레이 동료의 대미지 저항 5% 증가.</color>
+HODA_GEAR_MINUS10STUNRESIST_PERSONAL_DESC|<color=red>자신의 기절 저항 10% 감소.</color>
+HODA_GEAR_PLUS3_POWER_SELF_BLOOD_MAGE_ABILITY_DESC|<color=green>받은 대미지의 3%를 힘으로 전환.</color>
+HODA_GEAR_CURSEPOWERIMMUNE_SELF_SAAREBAS_DESC|<color=green>사레바스 장착 시: 힘 저주 면역.</color>
+HODA_GEAR_PLUS3_HEALTH_SELF_ON_ALLY_HIT_DESC|<color=green>동료가 공격받으면 체력 3% 획득.</color>
+HODA_GEAR_PLUS3_DAMAGE_FOR_SPIRITS_DESC|<color=green>스피릿 장착 시: 추가 대미지 3% 증가.</color>
+HODA_GEAR_PLUS5_HEALTH_SELF_ON_ENEMY_DEATH_DESC|<color=green>적이 죽으면 체력 5% 회복.</color>
+HODA_GEAR_PLUS4_POWER_SELF_ON_SELF_HIT_DESC|<color=green>공격받으면 힘 4% 획득.</color>
+HODA_GEAR_PLUS10PCT_DAMAGE_VS_MYTHIC_FOR_SERA_DESC|<color=green>세라 장착 시: 신화 영웅 상대로 추가 대미지 10% 증가.</color>
+HODA_GEAR_PLUS15_DAMAGE_RESIST_SELF_VS_ROGUES_MAGES_DESC|<color=green>도적 및 마법사 상대로 대미지 저항 15% 증가.</color>
+HODA_GEAR_PLUS8_STUN_RESIST_SELF_DESC|<color=green>기절 저항 8% 증가.</color>
+HODA_GEAR_PLUS3_POWER_ROGUES_DESC|<color=green>도적 동료의 힘 3% 증가.</color>
+HODA_GEAR_STEALTH_SELF_SCOUTHARDING_DESC|<color=green>정찰병 하딩 장착 시: 은신: 타격 시 효과를 일으키지 않고 공격.</color>
+HODA_SENIOR_WARDENS_STAFF_GEAR_AURA_LOC_OVERRIDE|<color=green>흰색 및 검은색 세력의 힘 6% 증가 (중첩 가능). 자네카 장착 시: 체력 5% 증가.</color>
+HODA_GEAR_PLUS10_BONUS_DAMAGE_SELF_DESC|<color=green>추가 대미지 10% 증가.</color>
+HODA_GEAR_CRIT_CHANCE_5_ELVES_ONLY_DESC|<color=green>엘프 장착 시: 2배 대미지 찬스 5% 증가.</color>
+HODA_GEAR_POWER_DRAIN_RESIST_15_ELVES_ONLY_DESC|<color=green>엘프 장착 시: 파워 드레인 저항 15% 증가.</color>
+HODA_GEAR_PLUS7_HEALTH_SELF_ON_ALLY_DEATH_DESC|<color=green>동료가 죽으면 체력 7% 획득.</color>
+HODA_GEAR_PLUS5_DAMAGE_RESIST_SELF_VS_BLUE_FACTION_DESC|<color=green>파란색 세력 상대로 대미지 저항 5% 증가.</color>
+HODA_GEAR_PLUS2_BONUS_DAMAGE_SELF_DESC|<color=green>추가 대미지 2% 증가.</color>
+HODA_GEAR_SERAS_RAISIN_COOKIES_RUNE_LOC_OVERRIDE|<color=green>파워 획득 영웅(건포도 쿠키를 좋아하는 자들) 상대로 추가 대미지 5% 증가 및 공격할 확률 증가.</color>
+HODA_GEAR_SERUM_OF_AMBITION_RUNE_LOC_OVERRIDE|<color=green>에픽 동료의 체력과 힘 35% 증가.</color>
+HODA_GEAR_PLUS6_STUN_RESIST_ORLESIAN_DESC|<color=green>올레이 동료의 기절 저항 6% 증가.</color>
+HODA_GEAR_PLUS5_POWER_FAIRBANKS_DESC|<color=green>페어뱅크스 장착 시: 힘 5% 증가.</color>
+HODA_GEAR_BONUSDMG_SELF_SELFATTACK_PLUS10_DESC|<color=green>공격 시 추가 대미지 10% 획득. </color>
+HODA_GEAR_POWER_AURELIANTITUS_CONVERT15_DESC|<color=green>올리언 타이터스 장착 시: 받은 대미지의 15%를 힘으로 전환.</color>
+HODA_GEAR_PLUS4_POWER_ALLIES_DESC|<color=green>동료의 힘 4% 증가.</color>
+HODA_GEAR_PLUS5_POWER_HEALERS_DESC|<color=green>치료사 동료의 힘 5% 증가.</color>
+HODA_GEAR_PLUS2_POWER_SELF_ON_SELF_HIT_DESC|<color=green>공격받으면 힘 2% 획득.</color>
+HODA_SPEAR_THROWER_GEAR_AURA_LOC_OVERRIDE|<color=green>스피릿이 아닌 적 상대로 추가 대미지 5% 증가. 2배 대미지 찬스 3% 증가.</color>
+HODA_GEAR_SPECTRAL_SCALE_AURA_LOC_OVERRIDE|<color=green>동료가 죽으면 동료가 체력과 힘 35% 획득.</color> <color=red>감속 저항 25% 감소.</color> <color=green>드래곤 장착 시: 2배 대미지 찬스 8% 증가.</color>
+HODA_GEAR_PLUS15_DAMAGE_RESIST_FENHAREL_DESC|<color=green>펜'하렐의 대미지 저항 15% 증가.</color>
+HODA_GEAR_MINUS3_POWER_ENEMIES_DESC|<color=red>적의 힘 3% 감소.</color>
+HODA_GEAR_AURA_HEALTH_GAIN_ALL_WHEN_ENEMY_HIT_2_DESC|<color=green>적이 공격받으면 동료의 체력 2% 회복.</color>
+HODA_GEAR_PLUS3PCT_BONUS_DAMAGE_FOR_ALLIES_DESC|<color=green>동료의 추가 대미지 3% 증가.</color>
+HODA_GEAR_PLUS2_DAMAGE_RESIST_ALLIES_DESC|<color=green>동료의 대미지 저항 2% 증가.</color>
+HODA_GEAR_PLUS5_HEALTH_SELF_STROUD_ONLY_DESC|<color=green>스트라우드 장착 시: 체력 5% 추가 증가.</color>
+HODA_GEAR_PLUS2_DAMAGE_RESIST_ROGUE_DESC|<color=green>도적 동료의 대미지 저항 2% 증가.</color>
+HODA_GEAR_PLUS3_HEALTH_WHITE_FACTION_DESC|<color=green>흰색 세력 동료의 체력 3% 증가.</color>
+HODA_GEAR_PLUS5_POWER_CREATURES_PERSONAL_DESC|<color=green>크리처 장착 시: 힘 5% 증가.</color>
+HODA_GEAR_PLUS6_CURSE_HEALTH_RESIST_DESC|<color=green>동료의 체력 저주 저항 6% 증가.</color>
+HODA_GEAR_MINUS10_SLOWRESIST_ENEMIES_DESC|<color=red>적의 감속 저항 10% 감소.</color>
+HODA_GEAR_TEMPLAR_BREASTPLATE_AURA_LOC_OVERRIDE|<color=green>동료의 저주, 기절, 감속 및 파워 드레인 저항 10% 증가.</color>
+HODA_GEAR_PLUS1_DAMAGE_RESIST_ALLIES_DESC|<color=green>동료의 대미지 저항 1% 증가.</color>
+HODA_GEAR_PLUS5PCT_POWER_VS_MAGES_DESC|<color=green>마법사 상대로 추가 대미지 5% 증가.</color>
+HODA_GEAR_PLUS2_CRIT_CHANCE_ALLIES_DESC|<color=green>동료의 2배 대미지 찬스 2% 증가.</color>
+HODA_GEAR_DEFENDER_10_DESC|<color=green>디펜더 10% 증가.</color>
+HODA_GEAR_PERSONAL_STUN_IMMUNE_DESC|<color=green>기절 면역.</color>
+HODA_GEAR_THE_BLACK_FOXS_JERKIN_AURA_LOC_OVERRIDE|<color=green>모든 효과 저항 10% 증가. 2배 대미지 찬스 6% 증가.</color> <color=orange>같은 결단력 내에서 먼저 공격할 확률이 더 높습니다.</color>
+HODA_GEAR_THE_DIVINE_ARMOR_AURA_LOC_OVERRIDE|<color=green>동료의 모든 효과 저항 10% 증가. 대미지 저항 10% 증가. 카산드라 장착 시: 공격받으면 체력 10% 회복.</color>
+HODA_GEAR_THE_DIVINE_BOOTS_AURA_LOC_OVERRIDE|<color=green>교단의 체력, 파워 드레인 저항 및 대미지 저항 15% 증가. 디바인은 감속 면역.</color>
+HODA_GEAR_THE_DIVINE_HELMET_AURA_LOC_OVERRIDE|<color=green>동료가 공격하면 동료가 체력 8% 및 추가 대미지 2% 획득. 디바인 장착 시: 간파: 은신 무효화.</color>
+HODA_GEAR_PLUS7_POWER_RED_LYRIUM_DESC|<color=green>붉은 리륨 동료의 힘 7% 증가.</color>
+HODA_GEAR_PLUS3_POWER_BLACK_FACTION_DESC|<color=green>검은색 세력 동료의 힘 3% 증가.</color>
+HODA_GEAR_RETALIATE_ENEMY_ALLYDEATH_CONVERT10_DESC|<color=green>동료가 죽으면 받은 대미지의 10%를 적에게 되돌립니다.</color>
+HODA_GEAR_POWER_DRAIN_IMMUNE_PERSONAL_DESC|<color=green>파워 드레인 면역.</color>
+HODA_GEAR_GOLDEN_PRINCES_HELM_AURA_LOC_OVERRIDE|<color=green>공격받으면 적의 힘 5% 흡수. 올레이의 감속 저항 12% 증가.</color> <color=red>기절 및 감속 저항 10% 감소.</color>
+HODA_GEAR_PLUS7_HEALTH_ALLIES_ON_SELF_HIT_DESC|<color=green>공격받으면 동료의 체력 7% 회복.</color>
+HODA_GEAR_PLUS12_STUN_RESIST_ORLESIAN_DESC|<color=green>올레이 동료의 기절 저항 12% 증가.</color>
+HODA_GEAR_DMG_RESIST_2000_DESC|<color=green>동료는 2000 대미지에 저항.</color>
+HODA_GEAR_POWER_OUTLAW_RED_LYRIUM_MINUS15_DESC|<color=red>무법자 및 붉은 리륨의 힘 15% 감소.</color>
+HODA_GEAR_PLUS20_HEALTH_PERSONAL_DESC|<color=green>체력 20% 증가.</color>
+HODA_GEAR_PLUS20_SLOW_RESIST_ALLIES_DESC|<color=green>동료의 감속 저항 20% 증가.</color>
+HODA_GEAR_TOME_OF_KOSLUN_AURA_LOC_OVERRIDE|<color=green>간파: 은신 무효화. 추가 대미지 10% 증가. 쿠나리의 대미지 및 모든 효과 저항 10% 증가.</color>
+HODA_GEAR_PLUS8_HEALTH_PERSONAL_DESC|<color=green>체력 8% 증가.</color>
+HODA_GEAR_TOME_OF_SKILL_AND_SUNDRY_AURA_LOC_OVERRIDE|공격받으면 모든 효과 및 대미지 저항 5% 획득.
+HODA_GEAR_PLUS10_POWER_SELF_ON_ALLY_DEATH_DESC|<color=green>동료가 죽으면 힘 10% 획득.</color>
+HODA_VENATORI_HELMET_GEAR_AURA_LOC_OVERRIDE|<color=green>베나토리의 체력 및 기절 저항 3% 증가.</color>
+HODA_GEAR_VENATORI_STAFF_BLADE_AURA_LOC_OVERRIDE|<color=green>힘과 체력 5% 증가.</color> <color=red>적의 힘, 기절 및 감속 저항 10% 감소.</color>
+HODA_GEAR_DMG_RESIST_1500_DESC|<color=green>동료는 처음 1500 대미지에 저항.</color>
+HODA_GEAR_PERCEPTIVE_SELF_WYNNE_DESC|<color=green>윈 장착 시: 간파: 은신 무효화.</color>
+HODA_GEAR_HEALTH_GAIN_ALL_WHEN_ENEMY_HIT_5_SELF_DESC|<color=green>적이 받은 대미지의 5%를 동료의 체력으로 전환.</color>
+HODA_GEAR_VIGILANCE_AURA_LOC_OVERRIDE|<color=green>힘, 체력 및 모든 효과 저항 10% 증가. 추가 대미지 5% 증가.</color>
+HODA_GEAR_VINSOMER_SCALE_AURA_LOC_OVERRIDE|<color=green>동료가 공격하면 동료가 힘 4% 획득.</color> <color=red>저주 저항 25% 감소. 적의 측면 공격 확률 감소.</color> <color=green>드래곤 장착 시: 체력 25% 증가.</color>
+HODA_GEAR_VIRTUOSITY_AURA_LOC_OVERRIDE|<color=green>동료의 저주 저항 10% 증가. 지터 장착 시: 체력, 힘 및 대미지 저항 20% 증가.</color>
+HODA_GEAR_VITAAR_OF_THE_DRAGON_HUNTER_AURA_LOC_OVERRIDE|<color=green>힘 및 2배 대미지 찬스 15% 증가.</color>
+HODA_GEAR_PLUS4_POWER_BLOODMAGES_DESC|<color=green>피의 마법사 동료의 힘 4% 증가.</color>
+HODA_WALKING_DEATH_GEAR_AURA_LOC_OVERRIDE|<color=green>붉은색 세력, 검은색 세력 및 방어자 상대로 추가 대미지 10% 증가 (중첩 가능).</color>
+HODA_GEAR_PLUS4_HEALTH_WARDEN_DESC|<color=green>워든 동료의 체력 4% 증가.</color>
+HODA_GEAR_PLUS9_DAMAGE_RESIST_SELF_VS_LARGE_CREATURES_DESC|<color=green>대형 크리처 상대로 대미지 저항 9% 증가.</color>
+HODA_GEAR_PLUS2_HEALTH_ALLY_BLOOD_MAGE_ABILITY_SELF_DESC|<color=green>동료가 받은 대미지의 2%를 체력으로 전환.</color>
+HODA_WEDGE_OF_DESTINY_GEAR_AURA_LOC_OVERRIDE|<color=green>받은 대미지의 4%를 체력으로 전환. 공격 당 처음 300 대미지에 저항합니다. 뚫고 지나가야 할 치즈가 아주 많거든요.</color>
+HODA_WILHELMS_STAFF_GEAR_AURA_LOC_OVERRIDE|<color=green>추가 대미지 5% 증가. 저주 저항 5% 증가.</color>
+HODA_GEAR_WINTERWEIGHT_AURA_LOC_OVERRIDE|<color=green>대미지 및 모든 효과 저항 15% 증가. 디펜더 15% 증가.</color>
+HODA_GEAR_HEALTH_ON_ENEMY_DEATH_7_ALLIES_DESC|<color=green>적이 죽으면 동료의 체력 7% 회복.</color>
+HODA_GEAR_MINUS20_SLOW_RESIST_TO_ORLESIAN_DESC|<color=red>올레이의 감속 저항 20% 감소.</color>

@@ -30,7 +30,7 @@
 #define CONSUME_LEVEL_SOUND_COUNT 4
 #define CONSUME_RARITY_EPIC_WARNING RARITY_EPIC
 
-#define CONSUME_GEAR_WARNING "Снаряжение этого героя будет уничтожено. Вы уверены?"
+#define CONSUME_GEAR_WARNING_KEY "HODA_CONSUME_FORTIFY_CONFIRMATION_GEAR_WARNING"
 
 typedef enum {
     CONSUME_LEAVE_NONE,
@@ -137,7 +137,8 @@ void ConsumeInitialize(ConsumeScreen *c, const Player *p) {
     c->target = -1;
     RosterInitialize(&c->roster, p);
     c->consume = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("CONSUME_BUTTON"), font, anchor, scale);
-    c->multiple = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "Поглотить несколько", font, anchor, 0.2f);
+    c->multiple =
+        ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("HODA_CONSUME_MULTIPLE_BUTTON_DESC"), font, anchor, 0.2f);
     c->cancel = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("COMBINE_BUTTON_CANCEL"), font, anchor, scale);
     c->store = ButtonLoad(GUI_CONSUME_SHOP, GUI_CONSUME_SHOP_ON);
     c->info = ButtonLoad(GUI_CONSUME_INFO, GUI_CONSUME_INFO_ON);
@@ -154,9 +155,13 @@ void ConsumeInitialize(ConsumeScreen *c, const Player *p) {
     c->dialog_ok = ButtonLoadText(
         GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("RUNE_SINGLE_CONFIRMATION_OK_BUTTON"), font, anchor, scale
     );
-    c->dialog_identical = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "Одинаковые", font, anchor, 0.27f);
-    c->dialog_rarity = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "Та же редкость", font, anchor, 0.27f);
-    c->dialog_faction = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "Та же фракция", font, anchor, 0.27f);
+    c->dialog_identical = ButtonLoadText(
+        GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("HODA_CONSUME_IDENTICAL_BUTTON_DESC"), font, anchor, 0.27f
+    );
+    c->dialog_rarity =
+        ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("HODA_CONSUME_RARITY_BUTTON_DESC"), font, anchor, 0.27f);
+    c->dialog_faction =
+        ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("HODA_CONSUME_FACTION_BUTTON_DESC"), font, anchor, 0.27f);
 }
 
 static Rectangle ConsumePxSquare(float x, float y, float size) {
@@ -295,7 +300,7 @@ static bool ConsumeSeedNeedsWarning(const ConsumeScreen *c, const Character *ch)
 }
 
 static const char *ConsumeSeedWarning(const Character *ch) {
-    if (GearHasEquipped(ch)) return CONSUME_GEAR_WARNING;
+    if (GearHasEquipped(ch)) return LocGet(CONSUME_GEAR_WARNING_KEY);
     return LocGet(
         ch->rarity == RARITY_EPIC ? "CONSUME_CONFIRMATION_EPIC_WARNING" : "CONSUME_CONFIRMATION_LEGENDARY_WARNING"
     );
@@ -568,11 +573,7 @@ static void ConsumeDrawProgressPanel(
     float fs = ConsumeFontScale();
     UiDrawTexture(GuiTex(GUI_CONSUME_HEADER), RosterPx(691.0f, 29.0f, 924.0f, 187.0f), WHITE);
 
-    char key[96];
-    snprintf(key, sizeof(key), "%s%s", shown->id, TIER_NAMES[shown->tier]);
-    const char *name = LocGet(key);
-    if (!name[0]) name = shown->name_ru[0] ? shown->name_ru : shown->name;
-    UiDrawTextCentered(title, name, RosterPx(785.0f, 18.0f, 700.0f, 62.0f), 32.0f * fs, WHITE);
+    UiDrawTextCentered(title, CharacterName(shown), RosterPx(785.0f, 18.0f, 700.0f, 62.0f), 32.0f * fs, WHITE);
 
     UiDrawTexture(GuiTex(GUI_CONSUME_ICON_XP), ConsumePxSquare(798.0f, 56.0f, 70.0f), WHITE);
     char number[16];
@@ -1009,28 +1010,30 @@ static void ConsumeDrawMultiType(ConsumeScreen *c, const Player *p) {
     MessagePopupDrawScrim();
     UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), popup, WHITE);
     MessagePopupDrawText(
-        body, "Выберите, каких героев поглотить:", UiRect(popup, 0.5f, 0.07f, 0.83f, 0.15f), 20.0f, WHITE
+        body, LocGet("HODA_CONSUME_MULTIPLE_WINDOW_DESC"), UiRect(popup, 0.5f, 0.07f, 0.83f, 0.15f), 20.0f, WHITE
     );
     Rectangle choice = UiRect(popup, 0.5f, 0.5f, 0.8f, 0.6f);
     const struct {
-        const char *text;
+        const char *text_key;
         Button *button;
         ConsumeMultiType type;
         float y;
     } rows[] = {
-        {"Все копии выбранных героев.", &c->dialog_identical, CONSUME_MULTI_IDENTICAL, 0.05f},
-        {"Все герои той же редкости.", &c->dialog_rarity, CONSUME_MULTI_RARITY, 0.45f},
-        {"Все герои той же редкости и фракции.", &c->dialog_faction, CONSUME_MULTI_FACTION, 0.85f},
+        {"HODA_CONSUME_IDENTICAL_DESC", &c->dialog_identical, CONSUME_MULTI_IDENTICAL, 0.05f},
+        {"HODA_CONSUME_RARITY_DESC", &c->dialog_rarity, CONSUME_MULTI_RARITY, 0.45f},
+        {"HODA_CONSUME_FACTION_DESC", &c->dialog_faction, CONSUME_MULTI_FACTION, 0.85f},
     };
     for (int i = 0; i < 3; i++) {
         if (ButtonDraw(rows[i].button, UiRect(choice, 0.0f, rows[i].y, 0.45f, 0.2f)))
             ConsumeMultiSelect(c, p, rows[i].type);
-        MessagePopupDrawText(body, rows[i].text, UiRect(choice, 1.0f, rows[i].y, 0.53f, 0.2f), 17.0f, WHITE);
+        MessagePopupDrawText(
+            body, LocGet(rows[i].text_key), UiRect(choice, 1.0f, rows[i].y, 0.53f, 0.2f), 17.0f, WHITE
+        );
         if (i < 2) UiDrawTexture(GuiTex(GUI_CONSUME_LINE), UiRect(choice, 0.5f, rows[i].y + 0.25f, 1.0f, 0.01f), WHITE);
     }
     MessagePopupDrawText(
         body,
-        "Герои в отрядах не будут поглощены.",
+        LocGet("HODA_CONSUME_MULTIPLE_WINDOW_FOOTNOTE_DESC"),
         UiRect(popup, 0.5f, 0.9f, 0.85f, 0.1f),
         16.0f,
         (Color){200, 196, 184, 255}
@@ -1041,13 +1044,17 @@ static void ConsumeDrawMultiType(ConsumeScreen *c, const Player *p) {
 }
 
 static void ConsumeDrawMultiConfirm(ConsumeScreen *c, Heroes *h, Player *p) {
-    static const char *const titles[] = {"", "Поглотить копии", "Поглотить по редкости", "Поглотить по фракции"};
+    static const char *const title_keys[] = {
+        "", "HODA_CONSUME_IDENTICAL_TITLE", "HODA_CONSUME_RARITY_TITLE", "HODA_CONSUME_FACTION_TITLE"
+    };
     static const float unit_x[CONSUME_MAX_SEEDS] = {0.14f, 0.32f, 0.5f, 0.67f, 0.84f};
     Rectangle popup = ConsumeMultiPopup();
     Font title = GuiFont(FNT_COOL), body = GuiFont(FNT_MENU);
     MessagePopupDrawScrim();
     UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), popup, WHITE);
-    MessagePopupDrawText(title, titles[c->multi_type], UiRect(popup, 0.5f, 0.1f, 0.85f, 0.15f), 24.0f, WHITE);
+    MessagePopupDrawText(
+        title, LocGet(title_keys[c->multi_type]), UiRect(popup, 0.5f, 0.1f, 0.85f, 0.15f), 24.0f, WHITE
+    );
 
     Rectangle units = UiRect(popup, 0.5f, 0.3f, 0.86f, 0.3f);
     for (int s = 0; s < c->seed_count; s++) {
@@ -1061,7 +1068,7 @@ static void ConsumeDrawMultiConfirm(ConsumeScreen *c, Heroes *h, Player *p) {
         UiDrawTextCentered(body, count, label, 18.0f, WHITE);
     }
     char text[CONSUME_MESSAGE_CAP];
-    snprintf(text, sizeof(text), "Будет поглощено героев: %d. Вы уверены?", c->multi_count);
+    LocFormatInt(text, sizeof(text), "HODA_CONSUME_MULTIPLE_CONFIRM", c->multi_count);
     MessagePopupDrawText(body, text, UiRect(popup, 0.5f, 0.54f, 0.85f, 0.16f), 19.0f, WHITE);
 
     Rectangle choice = UiRect(popup, 0.5f, 0.85f, 0.8f, 0.3f);

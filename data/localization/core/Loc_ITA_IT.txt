@@ -1,0 +1,6 @@
+HODA_PLAY_MODE_LOCAL|Partita locale
+HODA_PLAY_MODE_ONLINE|Partita online
+HODA_PLAY_MODE_LOCAL_HINT|Progressi salvati su questo computer
+HODA_PLAY_MODE_ONLINE_HINT|Progressi sul server, gilde e chat
+HODA_OPTIONS_LANGUAGE|Lingua
+HODA_LANGUAGE_SYSTEM|Lingua di sistema

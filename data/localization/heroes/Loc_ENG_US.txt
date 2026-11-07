@@ -1,0 +1,1344 @@
+HODA_ABILITY_HEAL_ALLIES_CRIT_BOOST_ALLIES5_NO_ATTACK|Heals allies the amount of this hero’s power (does not attack). Grants allies +5% crit chance.
+HODA_ATTACK1_DRAINPOWER60_4CRITGAINALLIES|Attacks a single enemy, then drains a large amount of Power from a random target, and allies gain +4% 2X Damage chance.
+HODA_ATTACKALL_25STUN_SECONDATTACK50_CRIT10|Attacks all with 25% chance to stun each. 50% chance to attack again. Grants allies +10% 2X Damage Chance.
+HODA_ATTACKALL_75DRAIN35PWR_50STUNROW_ASSASSINATE15|Attacks all and drains 35% power. 50% chance to stun a row. 15% chance to assassinate a single target.
+HODA_ATTACKCOLUMN_20PWRDRN_SECONDATTACK30STUN_HEAL20ALL|Attacks a column and drains small power. 30% chance to attack again and stun. Heals allies a small amount.
+HODA_ATTACKROW_LEVY20_STUNCOLUMN_CHANCE65_ATTACKALLY_2X_2DMG|Attacks a row enemies with 20% levy, then stuns a column. 65% chance to attack allies twice for 2% damage.
+HODA_ATTACKROW_LEVY30_HEAL25_GAIN50ALL|Attacks a row with 30% Levy and gains 25% health. Grants allies 50% power.
+HODA_ATTACKROW_SECONDATTACK40STRUN_PWRGAIN20ALL|Attacks a row with 40% chance to attack again and stun. Grants allies small power.
+HODA_ATTACKSINGLE6X_20PWRDRN|Attacks and drains 20% Power from random enemies 6 times.
+HODA_ATTACKSINGLE_50STUN_SECONDATTACK40_MARK20|Attacks a single target with 50% chance to stun. 40% chance to attack again. Marks an enemy: Allies target the mark and deal 20% bonus damage.
+HODA_ATTACK_ALL75_ATTACK_SINGLE300_MARK30|Attacks all at 75% power, then attacks a single target at 300% power. Marks an enemy: Allies target the mark and deal +30% damage.
+HODA_ATTACK_ALL_25HEAL50POWERALLIES_20ATTACKTWICE|Attack all enemies, heals and increases Power of allies, with a 20% chance to attack again.
+HODA_ATTACK_ALL_3X_HEAL_ALL20_STUN_25_CURSE_HEALTH50|Attacks all enemies 3x and heals allies a small amount with a medium chance to stun and curse Health.
+HODA_ATTACK_ALL_ALLIESGAIN15POWER20HEALTH_SLOW50|Attacks all enemies with a 50% chance to slow and allies gain a small amount of Health and Power.
+HODA_ATTACK_ALL_CHANCE20_STUN_HEAVYSLOW_CURSEBOTH_POWERDRAIN50|Attacks all with a 20% chance each to stun, heavy slow, curse health and/or power, and drain 50% power.
+HODA_ATTACK_ALL_CHANCE30SINGLELEVY50_HEAL25GAIN25ALL|Attacks all enemies. 30% chance to attack a single target with 50% Levy. Grants allies 25% health and power.
+HODA_ATTACK_ALL_CHANCE75_SLOW_DRAIN35_5BNSDMGALL_GAIN5CRITALL|Attacks all enemies with 75% chance each to slow or drain 35% power. Allies gain +5% bonus damage and 2X damage chance.
+HODA_ATTACK_ALL_CHANCE75_STUN_SLOW_DRAIN35|Attacks all with a 75% chance each to stun, slow, or drain 35% power.
+HODA_ATTACK_ALL_CURSEHEALTH2X_HEAL100ALL|Attacks all enemies and curses health for 2 rounds. Grants allies +100% health.
+HODA_ATTACK_ALL_CURSEPOWER_50|Attacks all enemies with 50% chance to curse power.
+HODA_ATTACK_ALL_CURSEP_DRAIN50_SELFHEAL100_FOLLOWUP25_ROW_STUN|Attacks all, curses power, and drains 50% power, then heals self. 25% chance to attack a row and stun.
+HODA_ATTACK_ALL_CURSE_DRAIN35_GAIN25ALL_HEAL25ALL|Attacks all enemies and curses them, then drains 35% power. Grants allies 25% health and power.
+HODA_ATTACK_ALL_CURSE_FOLLOWUP50_SINGLE_SLOW_ALL_CHANCE25_HEAL50|Attacks and curses all. 50% chance to attack a single target and slow each enemy. 25% chance at 50% heal.
+HODA_ATTACK_ALL_CURSE_HEALTH_CHANCE50_STUN_DRAIN50|Attacks all and curses health, with 50% chance each to stun or drain 50% power.
+HODA_ATTACK_ALL_CURSE_HEALTH_HEALSMALL_ALL|Attacks all, curses Health and heals allies a small amount.
+HODA_ATTACK_ALL_CURSE_POWER_FOLLOWUP40_STUN_HEALALL25|Attacks all and curses power, with 40% chance to attack again and stun. Heals allies 25%.
+HODA_ATTACK_ALL_DRAIN15_HEALSELF50|Attacks all and drains 15% power, then heals self.
+HODA_ATTACK_ALL_DRAIN25_CURSEPOWER|Attacks all enemies, drains 25% power and curses power.
+HODA_ATTACK_ALL_DRAIN30_CURSEPOWER_GAIN20HEAL20SELF|Attacks all, drains 30% power and curses power. Gains +20% health and power.
+HODA_ATTACK_ALL_DRAIN35_STUN50_ALLY5DAMAGE|Attacks all enemies and drains 35% power, with 50% chance to stun. Attacks allies for 5% power.
+HODA_ATTACK_ALL_DRAIN40_ATTACK_SELF5|Attacks all enemies and drains 40% power. Attacks self for 5% damage.
+HODA_ATTACK_ALL_DRAIN50_PLUS10CRITALL_FOLLOWUP_SINGLE150_STUN|Attacks all and drains 50% power. Grants allies +10% 2X damage chance. Attacks a single target at 150% power and stuns.
+HODA_ATTACK_ALL_DRAIN50_STUN35CURSE35_HEAL40GAIN40ALL|Attacks all enemies, drains 50% power, with 35% chance each to stun and/or curse power and health. Grants allies 40% health and power.
+HODA_ATTACK_ALL_DRAIN65_CRIT7|Attacks all enemies and drains 65% power. Allies gain +7% 2X damage chance.
+HODA_ATTACK_ALL_HEAL30ALL_25CHANCE_SELFHEAL50|Attacks all and heals allies 30%, with 25% chance for a large self heal.
+HODA_ATTACK_ALL_LEVY10_HEAVYSLOW_CURSEPOWER|Attacks all with 10% levy, heavily slows and curses power.
+HODA_ATTACK_ALL_LEVY15_DRAIN40_STUN50ALL|Attacks all enemies with 15% Levy, and drains 40% power. 50% chance each to stun all enemies.
+HODA_ATTACK_ALL_LEVY20_CHANCE75_STUN_DRAIN50_ALLY2|Attacks all enemies with 20% Levy. 75% chance to stun and/or drain 50% power. Attacks allies for 2% damage.
+HODA_ATTACK_ALL_LEVY20_MARK30|Attacks all with 20% Levy. Marks a target: Allies target the mark and deal 30% bonus damage.
+HODA_ATTACK_ALL_SLOW50_ALL5CRIT_ASSASSINATE10|Attacks all enemies with a 50% chance to slow, and allies gain +5% 2X Damage chance. 10% chance to assassinate a random target.
+HODA_ATTACK_ALL_SLOW_25CHANCECURSEHEALTH|Attacks all and slows with a small chance to curse health.
+HODA_ATTACK_ALL_SLOW_50CURSE2ROUNDS_ATTACK_ALLIES_3|Attacks all and slows, with 50% chance each to curse health or power for 2 rounds. Attacks allies for 3% power.
+HODA_ATTACK_ALL_SLOW_ALLYPOWERGAIN20|Attacks all enemies and slows. Allies gain 20% power.
+HODA_ATTACK_ALL_SLOW_CURSEPOWER_STUN30|Attacks all enemies, slows and curses power, with 30% chance to stun.
+HODA_ATTACK_ALL_SLOW_FOLLOWUP25_ATTACK_ROW_STUN_CHANCE10_HEAL75|Attacks all and slows. 25% chance to attack a row and stun. 10% chance for 75% heal.
+HODA_ATTACK_ALL_SLOW_STUN25_GAIN20_V2|Attacks all, slows, and gains 20% power with 25% chance to stun each enemy.
+HODA_ATTACK_ALL_SLOW_STUN75_CHANCE25_ATTACK_COLUMN_CURSE|Attacks and slows all enemies with 75% chance to stun. 25% chance to attack a column and curse.
+HODA_ATTACK_ALL_STUN25_FOLLOWUP30LEVY20_MARK15|Attacks all with 25% chance to stun. 30% chance to attack again with 20% Levy. Marks an enemy: allies target the mark and deal +15% damage.
+HODA_ATTACK_ALL_STUN75_FOLLOWUP25_SINGLE200_FOLLOWUP25_ANY10|Attacks all with 75% chance to stun. 25% chance to attack a single target at 200% power. 25% chance each to attack any hero at 10% power, including allies.
+HODA_ATTACK_COLUMN50_CURSEPOWER_HEAVYSLOWROW_CHANCE75_ATTACKALL140|Attacks a column at 50% power and curses power, then heavily slows a row. 75% chance to attack all at 140% power.
+HODA_ATTACK_COLUMN50_CURSESTUNROW_FOLLOWUP_ATTACKONE300_ASSASSINATE20|Attacks a column at 50% power. Curses and stuns a row. Attacks a single target at 300% power. 20% chance to assassinate a single target.
+HODA_ATTACK_COLUMN_2X_CURSE_HEALTH_POWER_DRAIN25|Attacks a column twice, each cursing health and power and draining 25% power.
+HODA_ATTACK_COLUMN_3X_GAIN25POWER|Attacks a column 3 times, gaining 25% power with each hit.
+HODA_ATTACK_COLUMN_CURSEHEALTH_FOLLOWUP50_ATTACK_ROW_SLOW_ASSASSINATE30|Attacks a column and curses health. 50% chance to attack a row and slow. 30% chance to assassinate a single target.
+HODA_ATTACK_COLUMN_CURSEPOWER50_CRIT5GAINALL_ATTACKALLY5|Attacks a column and curses power. Allies gain 5% 2X damage chance. Attacks allies for 5% damage.
+HODA_ATTACK_COLUMN_CURSEPOWER_HEAL50|Attacks a column and curses power. Gains 50% health.
+HODA_ATTACK_COLUMN_CURSE_2ROUNDS_PLUS5CRITALL_PLUS5DMGRESALL_CHANCE50DRAIN30ALL|Attacks a column and curses for 2 rounds. Grants allies +5% 2X damage chance and damage resist. 50% chance to drain 30% power from all enemies.
+HODA_ATTACK_COLUMN_CURSE_POWER_DRAIN15|Attacks a column, drains 15% Power, and curses Power.
+HODA_ATTACK_COLUMN_CURSE_POWER_GAINPOWER35|Attacks a column and curses Power, and allies gain +35% Power.
+HODA_ATTACK_COLUMN_DRAIN25_SLOW50_MARK10|Attacks a column and drains 25% power, with 50% chance to slow. Marks an enemy: allies target the mark and deal +10% damage.
+HODA_ATTACK_COLUMN_DRAIN35_POWER|Attacks a column and drains 35% Power.
+HODA_ATTACK_COLUMN_DRAIN50_ATTACK_SELF5_GAIN25CRIT5ALL|Attacks a column and drains 50% power. Attacks self for 5% power. Grants allies 25% power and +5% 2X damage chance.
+HODA_ATTACK_COLUMN_HEAVYSLOWALL_HEAL50ALL|Attacks a column, then heavily slows all enemies. Grants allies 50% health.
+HODA_ATTACK_COLUMN_LEVY20_GAIN25_ATTACK_ALL_60|Attacks a column of enemies with 20% levy and gains 25% power, then attacks all at 60% power.
+HODA_ATTACK_COLUMN_LEVY35_HEAVYSLOWROW_STUN50ROW_ATTACKSELF5|Attacks a column with 35% levy. Heavily slows a row with 50% chance to stun. Attacks self for 5% damage.
+HODA_ATTACK_COLUMN_LEVY40_SLOW_FOLLOWUP_ROW_STUN50|Attacks a column with 40% Levy and slows, then has 50% chance to attack a row and stun.
+HODA_ATTACK_COLUMN_SLOW50ALL_FOLLOWUP50ROW_DRAIN25|Attacks a column with 50% chance to slow all. 50% chance to attack a row and drain 25% power.
+HODA_ATTACK_COLUMN_SLOW_ALL_SLOW_ALLY|Attacks a column and slows all. Slows allies as well.
+HODA_ATTACK_COLUMN_SLOW_FOLLOWUP_SINGLE200|Attacks a column and slows, then attacks one enemy at 200% power.
+HODA_ATTACK_COLUMN_STUN_ATTACK_ALLIES5|Attacks a column and stuns. Attacks all allies for 5% damage.
+HODA_ATTACK_COLUMN_STUN_FOLLOWUP_DRAIN40_ALLYPOWERGAIN25|Attacks a column and stuns. Attacks again and drains 40% power. Allies gain 25% power.
+HODA_ATTACK_COLUMN_STUN_SLOW50ALL_ATTACK_ALLY5|Attacks a column of enemies and stuns. 50% chance to slow all. Attacks allies for 5% damage.
+HODA_ATTACK_ONE50_DRAIN40ALL_FOLLOWUP_ROW250_CURSEPOWER|Attacks one enemy at 50% power, then drains 40% power from all. Attacks a row at 250% power and curses power.
+HODA_ATTACK_ONE_3X_ASSASSINATE_CHANCE30|Attacks a single target 3 times with a 30% chance to assassinate.
+HODA_ATTACK_ONE_3X_ASSASSINATE_CHANCE7_HEAL50_ALL|Attacks a single enemy then has 3 chances to assassinate. Heals allies a medium amount.
+HODA_ATTACK_ONE_4XFOLLOWUP40_GAIN25ALL_HEAL75SELF|Attacks a single enemy with 40% chance each at up to 4 additional attacks. Grants allies 25% power. Heals self 75%.
+HODA_ATTACK_ONE_4X_FINAL200_CHANCE25_STUNALL|Attacks a single target up to 4 times, with the final attack dealing 200% damage. 25% chance to stun all.
+HODA_ATTACK_ONE_75_DRAIN50_GAIN50_FOLLOWUP75_ATTACK_ALL_LEVY15|Attacks one enemy at 75% power, drains and gains 50% power. 75% chance to attack all with 15% levy.
+HODA_ATTACK_ONE_ATTACK_ALL30_HEAVYSLOW25ALL|Attacks a single enemy, then attacks all at 30% power. 25% chance to heavily slow all.
+HODA_ATTACK_ONE_CHANCE25_FOLLOWUP300_SELFDAMAGE_CHANCE30HEAL50|Attacks one enemy. 25% chance to attack again at 300% power, but also harms self. 30% chance for 50% heal.
+HODA_ATTACK_ONE_COLUMNCURSEHEALTH_ROWCURSEPOWER_CHANCE20_ATTACKALLCURSEHEALTHPOWER|Attacks a single target, curses health of a column, and curses power of a row. 20% chance to attack again and curse health and power of all enemies.
+HODA_ATTACK_ONE_CURSEDRAIN30ALL_STUN35ALL_GAIN45HEAL45ALL|Attacks a single enemy. Curses and drains 30% power on all enemies with 35% chance to stun. Allies gain 45% power and health.
+HODA_ATTACK_ONE_DRAIN40ALL_GAIN20ALL_MARK25|Attacks one enemy, then drains 40% power from all enemies. Grants allies 20% power. Marks a target: Allies target the mark and deal +25% bonus damage.
+HODA_ATTACK_ONE_DRAIN50_GAIN50|Attacks one enemy and drains 50% power, then gains 50% power.
+HODA_ATTACK_ONE_DRAIN60ROW_FOLLOWUP_COLUMN200|Attacks one enemy, then drains 60% power from a row. Attacks a column at 200% power.
+HODA_ATTACK_ONE_DRAIN_GAIN_60_FOLLOWUP_33|Attacks a single hero and drains and gains large Power, 33% chance to attack again.
+HODA_ATTACK_ONE_GAIN15ALL_7X_SLOWALL|Attacks a single enemy up to 7 times and then slows all. Allies gain +15% power with each hit.
+HODA_ATTACK_ONE_GAIN25ALL_HEAL25SELF_ASSASSINATE5|Attacks a single target, and grants allies 25% power. 25% self heal. 5% chance to assassinate.
+HODA_ATTACK_ONE_LEVY20_DRAIN25_GAIN20ALL|Attacks a single enemy with 20% Levy, and drains 25% power. Grants allies 20% power.
+HODA_ATTACK_ONE_LEVY20_FOLLOWUP35_DRAIN50|Attacks a single target with 20% Levy. 35% chance to attack again and drain 50% power.
+HODA_ATTACK_ONE_LEVY25_CURSEHEALTH_FOLLOWUP50_CURSEPOWER|Attacks a single target with 25% Levy, and curses health. 50% chance to attack again and curse power.
+HODA_ATTACK_ONE_LEVY25_DRAIN50ALL_CHANCE50CURSEROW_GAIN50SELF|Attacks one enemy with 25% levy, and drains 50% power from all. 50% chance to curse a row. Gains 50% power.
+HODA_ATTACK_ONE_LEVY25_DRAIN75_FOLLOWUP35_COLUMN_STUN|Attacks one enemy with 25% levy and drains 75% power. 35% chance to attack a column and stun.
+HODA_ATTACK_ONE_LEVY35_CHANCE40_ATTACK_ROW_STUN|Attacks a single enemy with 35% Levy. 40% chance to attack a row and stun.
+HODA_ATTACK_ONE_LEVY35_CURSEHEALTH_ALL_HEAL25GAIN25ALLIES|Attacks one enemy with 35% levy and curses health of all enemies. Grants allies 25% health and power.
+HODA_ATTACK_ONE_LEVY40_FOLLOWUP50_ATTACK_ALL_STUN35|Attacks a single enemy with 40% Levy. 50% chance to attack all. 35% chance to stun all enemies.
+HODA_ATTACK_ONE_LEVY50_STUN_CRIT5ALL_BNSDMG3ALL_ASSASSINATE15|Attacks a single target with +50% Levy, and stuns. Allies gain +5% 2X damage chance and +3% bonus damage. 15% chance to assassinate a single target.
+HODA_ATTACK_ONE_STUN50_CHANCE20HEAL100_ASSASSINATE10|Attacks a single target, with 50% chance to stun. 20% chance at massive self heal. 10% chance to assassinate.
+HODA_ATTACK_ONE_STUN_FOLLOWUP50_DRAIN50_GAIN35ALL_HEAL35ALL|Attacks one enemy and stuns. 50% chance to attack again and drain 50% power. Grants allies +35% power and health.
+HODA_ATTACK_ONE_STUN_FOLLOWUP_ATTACK_ALL_DRAIN40_CHANCE30_DRAIN40ALL_X2ASSASSINATE10|Attacks one enemy and stuns, then attacks all and drains 40% power. 30% chance to drain power again. 10% chance each to assassinate up to 2 targets.
+HODA_ATTACK_ROW50_STUN_FOLLOWUP_ALL150|Attacks a row at 50% power and stuns, then attacks all enemies at 150% power.
+HODA_ATTACK_ROW75_FOLLOWUP_ALL_LEVY15_CURSEPOWER_HEAL30|Attacks a row at 75% power, then attacks all enemies with 15% levy and curses power. Heals allies +30%.
+HODA_ATTACK_ROW_ATTACK_ALLY5_HEAL10ALL_GAIN20ALL|Attacks a row. Attacks allies at 5% power, then heals allies +10% and grants +20% power.
+HODA_ATTACK_ROW_ATTACK_ALL_SLOW_CRIT2_STEALTH|Attacks a row and then attacks all, slows, and increases 2X Damage chance by 2% with each attack.
+HODA_ATTACK_ROW_CURSE50_GAIN20_ALL_CRIT5ALL|Attacks a row with 50% chance each to curse power or health. Grants allies +20% power and +5% 2X damage chance.
+HODA_ATTACK_ROW_CURSEPOWER_DRAIN50_FOLLOWUP25RANDOM50_FOLLOWUP25ALLY50|Attacks a row, curses power and drains 50% power. 25% chance each to hit a random enemy or ally at 50% power.
+HODA_ATTACK_ROW_CURSEPOWER_GAIN35ALL_HEAL35ALL_ATTACKSELF5|Attacks a row and curses power. Grants allies 35% power and health. Attacks self for 5% damage.
+HODA_ATTACK_ROW_CURSE_DRAIN40_SLOWALL_GAIN30ALL|Attacks and curses a row, and drains 40% power. Slows all enemies. Grants allies 30% power.
+HODA_ATTACK_ROW_CURSE_GAIN50_ATTACKCOLUMN_LEVY25_ATTACKSELF_3DMG|Attacks a row and curses, gains 50% power, then attacks a column with 25% levy. Attacks self for 3% damage.
+HODA_ATTACK_ROW_CURSE_POWER_CHANCE35_ATTACK_ALL_LEVY10|Attacks a row and curses power, 35% chance to attack all with 10% levy.
+HODA_ATTACK_ROW_CURSE_POWER_CRIT5_LEVY50|Attacks a row with 50% Levy, curses Power, and gains 5% 2X Damage chance.
+HODA_ATTACK_ROW_CURSE_POWER_HEAL10ALL_CRIT5ALL_STEALTH|Attacks a row and curses power. Allies gain 10% health and 5% 2X damage chance.
+HODA_ATTACK_ROW_DRAIN10SELF_STUN50ALL_GAIN5BNSDMG|Attacks a row, draining 10% self power. 50% chance to stun all. Gain 5% bonus damage.
+HODA_ATTACK_ROW_DRAIN60_STUN35_MARK20|Attacks a row and drains 60% power, with 35% chance to stun. Marks a target: Allies target the mark and deal 20% bonus damage.
+HODA_ATTACK_ROW_FOLLOWUP20_CHANCE25STUNSLOWALL_GAIN5CRIT|Attacks a row. 20% chance to attack again. 25% chance each to stun or slow all enemies. Gains +5% 2X damage chance.
+HODA_ATTACK_ROW_FOLLOWUP_ALL75_DRAIN35|Attacks a row, then attacks all enemies at 75% power and drains 35% power.
+HODA_ATTACK_ROW_FOLLOWUP_ALL_CURSEHEALTH_GAIN25ALL_GAIN5DMGRESALL|Attacks a row, then all enemies, cursing health. Allies gain +25% power and +5% damage resist.
+HODA_ATTACK_ROW_FOLLOWUP_COLUMN_LEVY25_STUN50_SLOW50_ATTACK_ALLY5|Attacks a row with 50% chance each to stun or slow, then attacks a column with 25% levy . Attacks allies for 5% damage.
+HODA_ATTACK_ROW_LEVY10_DRAIN10_GAIN10ALL_PLUS5CRITALL|Attacks a row with 10% Levy and drains 10% power. Grants allies +10% power and +5% 2X damage chance.
+HODA_ATTACK_ROW_LEVY15_SLOW50_CHANCE25_STUN_COLUMN|Attacks a row with 15% Levy and 50% chance to slow. 50% chance to stun a column.
+HODA_ATTACK_ROW_LEVY15_STUN50ALL_ATTACKALLIES5|Attacks a row of enemies with 15% Levy. 50% chance to stun each enemy. Attacks allies for 5% damage.
+HODA_ATTACK_ROW_LEVY20_DRAIN50_CURSEPOWER_GAIN25ALL|Attacks a row with 20% Levy, drains 50% power, and curses power. Allies gain +25% power.
+HODA_ATTACK_ROW_LEVY20_FOLLOWUP35_ATTACK_ALL50|Attacks a row with 20% Levy. 35% chance to attack all at 50% power.
+HODA_ATTACK_ROW_LEVY20_FOLLOWUP50_COLUMN_STUN_FOLLOWUP50_COLUMN_SLOW_GAIN40|Attacks a row with 20% Levy . 50% chance each to attack a column and stun or slow. Gains 40% power.
+HODA_ATTACK_ROW_LEVY20_GAIN25ALL_GAIN3CRITALL|Attacks a row with 20% Levy. Grants allies +25% power and +3% 2X damage chance.
+HODA_ATTACK_ROW_LEVY20_STUN_GAIN20ALL_ATTACK_ALLY5|Attacks a row of enemies with 20% levy and stuns. Grants allies 20% power, then attacks allies for 5% damage.
+HODA_ATTACK_ROW_SLOW75_CURSE75_HEAL20ALL_GAIN20ALL|Attacks a row with 75% chance to slow all enemies and curse health. Grants allies 20% health and power.
+HODA_ATTACK_ROW_SLOWALL_STUN50COLUMN_ATTACK_ALLY5_CHANCE10HEAL80SELF|Attacks a row, and slows all enemies. 50% chance to stun a column. Attacks allies for 5% power. 10% chance of +80% self heal.
+HODA_ATTACK_ROW_SLOW_3CRITALL_FOLLOWUP25_200X_DRAIN60_STEALTH|Attacks a row and slows. Grants allies +3% 2X damage chance. 25% chance to attack again at 200% damage and drain 60% power.
+HODA_ATTACK_ROW_STUN50_ATTACKALL_CURSEPOWER50|Attacks a row of enemies with 50% chance to stun, then attacks all with 50% chance to curse power.
+HODA_ATTACK_ROW_STUN50_HEAL25|Attacks a row with 50% chance to stun. Gains 25% health.
+HODA_ATTACK_ROW_STUN50_HEAL50_ALL_FOLLOWUP50_SINGLE_SLOW|Attacks a row of enemies with a 50% chance to stun. 50% chance to attack a single target and slow. Heals allies a large amount.
+HODA_ATTACK_ROW_STUN75_FOLLOWUP30_SINGLE200_DRAIN40|Attacks a row of enemies with 75% chance to stun each. 30% chance to attack a single target at 200% power and drain 40% power.
+HODA_ATTACK_ROW_STUN_CHANCE25_STUNALL_CRIT10SELF|Attacks a row and stuns. 25% chance to stun all enemies. Gain +10% 2X Damage Chance.
+HODA_ATTACK_ROW_STUN_CHANCE50_GAINPOWER75|Attacks a row with a 50% chance to stun each. Gains large power.
+HODA_ATTACK_ROW_STUN_CURSECOLUMN_FOLLOWUP50ALL_LEVY15|Attacks and stuns a row of enemies, then curses a column. 50% chance to attack all with 15% levy.
+HODA_ATTACK_SINGLE150_DRAIN50_HEAVYSLOWROW_FOLLOWUP_ALL75|Attacks a single enemy at 150% power and drains 50% power. Heavily slows a row, then attacks all at 75% power.
+HODA_ATTACK_SINGLE3X_STUN|Attacks a single enemy three times and stuns.
+HODA_ATTACK_SINGLE6X_GAIN2CRITALL_GAIN2DMGRESALL|Attacks random enemies up to 6 times, granting +2% 2X damage chance and damage resist to allies with each hit.
+HODA_ATTACK_SINGLE_2X_SLOW50_ASSASSINATE25|Attacks a single target twice. 50% chance to slow all. 25% chance to assassinate a single target.
+HODA_ATTACK_SINGLE_3X_HEAL50_STEALTH|Attacks a single target 3x and heals a medium amount.
+HODA_ATTACK_SINGLE_5X_CHANCE25_ATTACK_ALL_STUN_CHANCE25_HEAL200|Attacks a single target up to 5 times. 25% chance to attack all at 200% damage and stun. 25% chance for massive self heal.
+HODA_ATTACK_SINGLE_ASSASSINATE_CHANCE50_POWERGAIN200_CHANCE10|Attacks a single enemy with a 50% chance to attack again and assassinate. 10% chance to gain 200% Power.
+HODA_ATTACK_SINGLE_CHANCE5X_GAIN20_STATUSEFFECT_ATTACKSELF10|Attacks up to 5 random targets, gains +20% power and applies a different status effect with each attack. Attacks self for 10% damage.
+HODA_ATTACK_SINGLE_CURSE75ALL_MARK30|Attacks a single target. 75% chance to curse all enemies. Marks an enemy: Allies target the mark and deal +30% bonus damage.
+HODA_ATTACK_SINGLE_CURSEHEALTH30_HEAVYSLOW25ALL_MARK10|Attacks a single target and curses health. 50% chance to heavily slow all. Marks a target: Allies target the mark and deal 10% bonus damage.
+HODA_ATTACK_SINGLE_CURSEPOWER_HEAVYSLOW50_GAIN50ALL|Attacks a single enemy and curses power, with 50% chance to heavily slow. Grants allies 50% power.
+HODA_ATTACK_SINGLE_DRAIN25_GAIN25ALL_HEAL25ALL|Attacks a single enemy and drains 25% power. Grants allies 25% power and health.
+HODA_ATTACK_SINGLE_EXPLODE50ENEMY10ALLY_SLOWALL|Attacks one enemy with an explosion that damages all enemies for 50% power, and all allies for 10% power. Slows all enemies.
+HODA_ATTACK_SINGLE_LEVY20_GAIN25_ATTACK_ROW_STUN_ASSASSINATE25|Attacks one enemy with 20% levy, gains 25% power, then attacks a row and stuns. 25% chance to assassinate a single target.
+HODA_ATTACK_SINGLE_LEVY25_CURSEPOWER_DRAIN35ALL_GAIN20ALL|Attacks one enemy with 25% Levy and curses power. Drains 35% power from all enemies. Grants allies +20% power.
+HODA_ATTACK_SINGLE_LEVY30_STUN50ALL_FOLLOWUP_ROW200|Attacks a single enemy with 30% levy. 50% chance each to stun all enemies. Attacks a row at 200% power.
+HODA_ATTACK_SINGLE_LEVY30_STUNROW_GAIN20_FOLLOWUP50_ATTACKALL50|Attacks a single enemy with 30% levy, stuns a row, and gains +20% power. 50% chance to attack all at 50% power.
+HODA_ATTACK_SINGLE_LEVY35_HEAL40ALL_2BNSDMGALL_DAMAGE5ALL|Attacks one enemy with 35% Levy. Grants allies +40% health and +2% bonus damage. Attacks allies for 5% damage.
+HODA_ATTACK_SINGLE_LEVY50_HEAL25GAIN25_ALL|Attacks a single enemy with 50% Levy. Grants allies +25% health and power.
+HODA_ATTACK_SINGLE_SLOWALL_DRAIN50ALL_MARK20_ASSASSINATE5_4X|Attacks one enemy. Slows and drains 50% power of all enemies. Marks a target: Allies target the mark and deal 20% bonus damage. 5% chance to assassinate up to four different targets.
+HODA_ATTACK_SINGLE_SLOWROW_ATTACKALL_LEVY10_STUN50|Attacks one enemy and slows a row, then attacks all enemies with 10% levy and 50% chance to stun.
+HODA_ATTACK_SINGLE_STUN_GAIN25_2X_FOLLOWUP40_250X|Attacks two random targets and stuns, gaining +25% power with each attack. 40% chance for a third attack at 250% power.
+HODA_ATTACK_SINGLE_STUN_SLOWALL_GAIN5CRIT|Attacks a single target and stuns, then slows all enemies. Gains +5% 2X damage chance.
+HODA_AURA_20HPPWERBEASTELVESDEMONSSTACK_25DMGRESELVES_PLUS15DMGRESMERRILL|<color=green>+20% Health and Power for Creatures, Elves, and Demons (stacking). +25% damage resist for Elves, additional 15% for Merrill.</color>
+HODA_AURA_20HPPWRALLYDWFNOBSTACK_60HP50CURRESKINGEND_SELFHITALLYGAIN5PWRDRNDMGRES_DTHRET5_MINUS25PWRCURRESPRIBHELEN|<color=green>+20% health and power for allies, Dwarves and Nobility (stacking). +60% power and +50% curse resist for King Endrin. When hit, allies gain +5% power drain and damage resist. On death, reverts 5% of damage taken to enemies.</color> <color=red>-25% power and curse resist to Prince Bhelen Aeducan.</color>
+HODA_AURA_20HP_TO_HAKKONW_PLUS10PCT_DMG_FOR_HAKKONITES_PLUS15HP_TO_RED_FACTION_PLUS35_STUN_SLOW_RESIST_TO_AVVAR|<color=green>+20% Health and Power for Hakkon Wintersbreath. +15% Health and Power for red faction. +10% bonus damage for Jaws of Hakkon. +35% stun and slow resist for Avvar. Stealth: attacks do not trigger on-hit effects.</color>
+HODA_AURA_20PPDRAINCURPRES_TEVBLACKMAGEDEMON_STACK_ENEMYHIT_GAIN5PALL_HASTESELF_MINUS20CURP|<color=green>+20% power, power drain and curse power resist for Tevinter, Black Faction, Mages, and Demons (stacking). On enemy hit, allies gain +5% power. More likely to attack first within initiative.</color> <color=red>-20% curse power resist to enemies.</color>
+HODA_AURA_20P_WHEN_ALLY_HIT_35H_TO_MAGES_MINUS10P_CIRCLES_CHANTRY_POWER_DRAIN_IMMUNE_SELF|<color=green>+35% Health for Mages. Gains small Power when allies are hit. Power drain immunity.</color> <color=red>-10% Power for Circle and Chantry.</color>
+HODA_AURA_25H10DMGRES_WARDENS_DEFENDER50_25BNSDMGALL_VS_BLIGHT_MINUS20STUNSLOWRES_ENEMIES|<color=green>+25% Health and 10% damage resistance for Wardens. 50% Defender. Allies deal +25% damage vs Blighted.</color> <color=red>-20% stun and slow resist to enemies.</color>
+HODA_AURA_25HPBEASTS_25STUNRES10BNSDMGGHAST_BRAVETGT_MINUS10SLOWRES|<color=green>25% Health and Power for Creatures. 25% stun resist and 10% bonus damage for Ghasts.</color> <color=orange>More likely to attack the highest power enemy.</color> <color=red>-10% slow resist to enemies.</color>
+HODA_AURA_25HPFERELDEN_AND_25PWRNOBILITY_AND_20PWRDRNSLOWSTUNRES_WHTFACTION_AND_MINUS10PWR_VS_BLIGHT_AND_TAUNT|<color=green>+25% Health for Ferelden. +25% Power for Nobility. +20% power drain, slow, and stun resist for white faction.</color> <color=red>-10% Power to Blight enemies.</color>
+HODA_AURA_25HPPWR50SLOWCURSERES10DMGRESELVES|<color=green> +25% Health and Power, +50% slow and curse resist, and +10% damage resist for Elves.</color>
+HODA_AURA_25HPPWRALLY_25HPPWRELFWTHERFNG_35STUNRESALLY_25DMGALLYVSFERBST_10ALLYHPONALLYHIT_MINUS35STUNRESENMY|<color=green>+25% Health and Power for allies, additional +25% for Elves and Witherfang. +35% stun resist for allies. +25% bonus damage for allies vs Ferelden and Creatures. Heals allies a small amount when allies are attacked.</color> <color=red>-35% stun resist to enemies.</color>
+HODA_AURA_25HPPWRSEEKTEMPLARS_25DEFENDER_10PWRONHIT_IMMUNITYPWRDRN|<color=green>+25% Health and Power for Seekers and Templars (stacking). 25% Defender. Gains 10% Power when hit. Immune to power drain.</color>
+HODA_AURA_25HP_10CRIT_10BNSDMG_25DMGRES_50DRAINRES_50CURSERES_QUNARI_MINUS10POWER_MINUS25ALLRESISTS|<color=green>+25% Health, Power, and damage resist, +10% 2X damage chance and bonus damage, and +50% power drain and curse resist for Qunari.</color> <color=red>-10% power and -25% stun, slow, drain, and curse resist to enemies.</color>
+HODA_AURA_25POWERHEALTH_TO_WARRIOR_AND_ALLY_DAMAGE_ABSORB_50_AND_SLOW_RESIST_50_AND_DMG_RESIST_PCT_25_PERSONAL_AND_35PWRDRNRES_FOR_NOBILITY|<color=green>+25% Health and Power for Warriors. +50% slow resist for allies. +35% power drain resist for Nobility. +25% damage resist. Absorbs AOE damage for allies if attacked.</color> <color=orange>More likely to attack the back row.</color> 
+HODA_AURA_25PWRORLESIANS_25PWRROGUES_35HEALTHASSFLORIANNE_MINUS20STUNRESENEMY_HATREDFERELDENQUNARI|<color=green>+25% Power for Orlesians and Rogues (stacking). +35% Health for Assassin Florianne.</color> <color=orange>More likely to attack Ferelden and Qunari.</color> <color=red>-20% stun resist to enemies.</color>
+HODA_AURA_30DMGRES5BNSDMGDWF_EXTRA5DACE_GAIN25P5DMGRESALL_ONHIT_STUNIMM_GAIN50PANYDTH_75STUNPDRESDACE_MINUS25PSLOWRES_BLACK|<color=green>+30% damage resist, +5% bonus damage for Dwarves, extra +5% for Dace family. When hit, allies gain +25% power and +5% damage resist. Immune to stun. Gains +50% power on any hero death. +75% stun and power drain resist for Dace family.</color> <color=red>-25% power and slow resist to Black Faction.</color>\n
+HODA_AURA_30HPDRAINCURSEHRESBLACKTEVSTACK_ONHIT_GAIN25P10PDRESALL_35CURPRESBLACK_MINUS35SLOWRESINQWARDEN|<color=green>+30% health, power drain and curse health resist for Black Faction and Tevinter (stacking). When hit, allies gain +25% power and +10% power drain resist. +35% curse power resist for Black Faction.</color> <color=red>-35% slow resist to Inquisition and Wardens.</color>
+HODA_AURA_30HPPWRALLIES_AND_50STUNRESALLIES_AND_MINUS10PWR_ENEMY_AND_PWRDRN15_ENEMY_ONENEMYDEATH|<color=green>+30% Health and Power for allies. +50% stun resist for allies. Drains 15% Power from all enemies on enemy death.</color> <color=red>-10% Power to enemies.</color>
+HODA_AURA_30HPPWRNOBTEV_15HPFELIX_25DMGVSINQ_25HEALALLIESENMYDIE_50SLOWRESTEV_25DMGRESELDER_MIN35SLOWRESENMY|<color=green>+30% Health and Power for Nobility and Tevinter (stacking), additional 15% for Felix Alexius. +25% bonus damage vs Inquisition. Allies gain small Health when an enemy dies. +50% slow resist for Tevinter. +25% damage resist for The Elder One.</color> <color=red>-35% slow resist to enemies.</color>
+HODA_AURA_30HP_STUNIMMUNE_TO_INQUISITION_30HP_RED_FACTION_CRIT_CHANCE_10_ALLIES|<color=green>+30% Health and Power for Inquisition and red faction. Stun immunity for Inquisition. +10% 2X damage chance for allies.</color>
+HODA_AURA_30HWARDAPOBLUE_STACK_50DRAINRESWARD_25BNSDMGALL_VS_TEMPLARS_DEMON_MINUS15P50CURSERES_TEMPLARS|<color=green>+25% Health for Wardens, Mages, and Blue Faction (stacking). +50% power drain resist for Mages. Allies deal 25% Bonus Damage vs Chantry, Templars, and Demons.</color> <color=red>-15% power and -50% curse resist to Templars.</color>
+HODA_AURA_35DMGRES15BNSDMGBST_35CURHPNUG_30HEALSELFHIT_10HEALALLYHIT_MINUS20PWRPWRDRNRES3S_152S_101S|<color=green>+35% damage resist and +15% bonus damage for Creatures. +35% curse health resist for Nugs. Heals 30% when hit, and heals allies 10% when allies are hit.</color> <color=red>-20% Power and drain resist to 3 star, -15% to 2 star, and -10% to 1 star enemies.</color>
+HODA_AURA_35HPALLY25HPFERELDEN_AND_50PWRDRNRESSELFALLY_AND_20DMGRESBONUSDMGALLYVSBLIGHT_AND_GAIN35PWRALLYDEATH_AND_BRAVETARGET|<color=green>+35% Health for allies, +25% for Ferelden (stacking). +100% power drain resist for self, +50% for allies. +20% damage resist and bonus damage for allies vs Blight. Gains 35% Power on ally death.</color> <color=orange>Much more likely to attack highest Power target.</color>
+HODA_AURA_35HPALLY_35HPFER_100STUNRES_50STUNRESALLY_20PWRALLYONHIT_BRAVETARGET|<color=green>+35% Health for allies, additional +35% for Ferelden. +100% stun resist (self), +50% for allies. Allies gain a small amount of Power when this hero is hit.</color> <color=orange>More likely to attack the highest Power target.</color>
+HODA_AURA_35HPCURRESQUN_65HPSTUNRESTRI_GAIN25PH7DMGRESQUN_ONHIT_GAIN100PHONDEATH_MINUS35CURDRNRES|<color=green>+35% health, power, and curse resist for Qunari. +65% health, power and stun resist for Triumvirate. When hit, Qunari allies gain +25% power and health and +7% damage resist. On death, allies gain +100% power and health.</color> <color=red>-35% curse and drain resist.</color>
+HODA_AURA_35HPCURSERESTWARDFERELDEN_STACK_20DMGRESBNSDMGALL_VS_NOBILITY_ALLYHATREDFERELDENNOBILITY_MINUS20PNOBILITY|<color=green>+35% Health, Power, and curse resist for Wardens and Ferelden (stacking). 20% bonus damage and damage resist vs Nobility for allies.</color> <color=orange>Allies more likely to attack Ferelden and Nobility.</color> <color=red>-20% power to Nobility.</color>
+HODA_AURA_35HPPOWWARBM_50HPPOWDRYDEN_CON20DMGTOHPPOWWAR_75POWRESBM_35CURRESALY_10DMGRESALY|<color=green>+35% Health and Power for Wardens and Blood Mages (stacking). +50% Health and Power for Sophia Dryden. When hit, converts 20% of damage received into Health and Power for allies. +75% power drain resist for Blood Mages. +35% curse resist and +10% damage resist for allies.</color>
+HODA_AURA_35HPPWR50STUNSLOWRESALLIES_15HPPWR5CRITORLES_MINUS25PWRFER|<color=green>+35% Health and Power and +50% slow and stun resist for allies. +15% Health and Power and +5% 2X Damage chance for Orlesians.</color> <color=red>-25% Power to Ferelden.</color>
+HODA_AURA_35HPPWRCHANTRY_AND_25BONUSDMG_VS_BLACKFACTION_AND_50PWRJOWAN_AND_ELUSIVE|<color=green>+35% Health and Power for Chantry. +25% damage for allies vs black faction. +50% Power for Apostate Jowan.</color>
+HODA_AURA_35HPSTUNSLOWCURSERESALL_DEFENDER50_GAIN25PWRSELFHIT_25DMGRESALL_VS_DEMONS_BLIGHT_DRAIN10SELFHIT_MINUS15P_DEM_INQ|<color=green>+35% Health, Power, stun, slow, and curse resist for allies. 50% Defender. Gains 25% power when hit. Allies get 25% damage resist vs Demons and Blighted. Drains 10% enemy power when attacked.</color> <color=red>-15% power and power drain resist to Demons and Inquisition.</color>
+HODA_AURA_35HP_SPIRITS_DEMONS_PLUS25HP_FORBIDDEN_ONES_35CURSEHEALTHRESIST_ALLIES_ALLIES_GAIN_HEALTH_WHEN_SELF_ATTACKED_15|<color=green>+35% Health and Power for Demons and Spirits. +25% Health and Power for The Forbidden Ones. +35% curse Health resist for allies. Allies heal a small amount when this hero is hit.</color>
+HODA_AURA_35H_15P_TO_BLIGHTED_FLANK_HATRED_WARDEN_FEAR_MORRIGAN_PLUS35_CURSERESIST_TO_BLIGHT|<color=green>+35% Health, +15% Power, and +35% Curse resist for Blighted.</color> <color=orange>More likely to attack the back row. More likely to attack Wardens. Less likely to attack Morrigan.</color>
+HODA_AURA_35H_ALLIES_25P_BEASTS_SLOW_50RESIST_TO_BEASTS_AND_MAGES_50P_ALLIES_SELF_DEATH|<color=green>+35% Health for allies. +25% Power for Creatures. +50% slow resist for Creatures and Mages. Allies gain 50% Power when this hero dies.</color>
+HODA_AURA_35H_INQUISITION_15P_ALL_15P_MARIUS_CHARTER_DAMAGE10_RESIST_VS_BLOODMAGES_ALL_MINUS10P_NOBILITY|<color=green>+35% Health for Inquisition. +15% Power for allies, double for Marius and Charter. +10% damage resist vs Blood Mages for allies.</color> <color=red>-20% power drain resist for Blood Mages. -10% Power for Nobility enemies.</color>
+HODA_AURA_35H_ROGUES_AND_DEMONS_50P_DRAGON_MALVERNIS_50CURSEHEALTHRESIST_ALLIES_ALLIES_GAIN_POWER_WHEN_SELF_DEATH_50_HATRED_HAWKE_TO_PARTY|<color=green>+35% Health for Demons and Rogues. +50% Power for Dragon Malvernis. +50% curse Health resist for allies. Grants medium Power for allies on death.</color> <color=orange>Allies more likely to attack Hawke.</color>
+HODA_AURA_35POWER_TO_HAKKON_AND_PLUS25POWER_TO_RED_FACTION_AND_PLUS10POWER_TO_HAKKONITES_AND_MINUS15POWER_TO_INQUISITION|<color=green>+35% Power for Hakkon Wintersbreath. +25% Power for red faction, extra 10% for Jaws of Hakkon.</color> <color=red>-15% Power to Inquisition.</color>
+HODA_AURA_35PWRALLY25PWRFERELDEN_AND_50PWRDRNRESSELFALLY_AND_20DMGRESBONUSDMGALLYVSBLIGHT_AND_GAIN35PWRALLYDEATH_AND_BRAVETARGET|<color=green>+35% Power for allies, +25% for Ferelden (stacking). +100% power drain resist for self, +50% for allies. +20% damage resist and bonus damage for allies vs Blight. Gains 35% Power on ally death.</color> <color=orange>Much more likely to attack highest Power target.</color>
+HODA_AURA_35PWRALLY_35PWRFER_100PWRDRNRES_50PWRDRNRESALLY_20ALLYHEALONSELFHIT_BRAVETARGET|<color=green>+35% Power for allies, additional +35% for Ferelden. +100% power drain resist (self), +50% for allies. Allies heal a small amount when this hero is hit.</color> <color=orange>More likely to attack the highest Power target.</color>
+HODA_AURA_40DRTEMP_35SLOWPWRDRNRESTEMP_25BONDMGALLYVSDEMONBLDMGE_35STUNRES_FLANK_HATREDBLDMGE_REDUCEENEMYFLANK|<color=green>+40% damage resist and +50% slow and power drain resist for Templars. +25% bonus damage for allies vs Demons and Blood Mages. +35% stun resist.</color>\n <color=orange>More likely to attack the back row. More likely to attack Blood Mages.</color> <color=red>Reduces enemy chance to flank.</color>
+HODA_AURA_40HPPWR30STUNRES15DMGRLYRIUM_EX10MER_60STUNSLOWRESSELF_MIN10HPPWRVARR|<color=green>+40% Health and Power, +30% stun resist and +15% bonus damage for Red Lyrium, additional +10% for Red Lyrium Meredith. +60% stun and slow resist for self.</color> <color=red>-10% Power to Varric.</color>
+HODA_AURA_40H_BEAST_DEMONS_25PCTP_VS_SPIRITS_PERSONAL_POWER_DRAIN_RESIST_50_DEMONS_15P_WHEN_ALLY_HIT|<color=green>+40% Health for Creatures and Demons. +50% power drain resist for Demons. +25% bonus damage vs Spirits. Gains small Power when allies are hit.</color>
+HODA_AURA_40PALL_40HAPO_15HPWITCH_ALL25PSELFHIT_30DMGRESAPO|<color=green>+40% Power to allies, +40% Health to Apostates, and additional +15% each for Witches. Allies gain +25% Power when this hero is attacked. +30% Damage resistance for Apostates.</color> <color=red>-10% power and -20% stun, slow, and curse resist to enemies.</color>
+HODA_AURA_40PWARD_GAIN25HPALLSELFHIT_GAIN75HPALLSELFDIE_20DMGRESBNSDMGWARD_FLANK_MINUS20CURSERESBLIGHT|<color=green>+40% Power for Wardens. Allies gain 25% health and power when hero is attacked, 75% when hero dies. +20% Bonus damage and damage resist for Wardens.</color> <color=orange>More likely to attack the back row.</color> <color=red>-20% Curse resist to Blighted.</color>
+HODA_AURA_40P_ALL_20P_QUNARI_PLUS60H_RASAAN_CRIT_CHANCE_15_PERSONAL_35PCT_POWER_VS_INQUISITION_PERSONAL_BRAVE_TARGETING|<color=green>+40% Power for allies, additional 20% for Qunari. +60% Health for Rasaan. +15% 2X damage chance for self. +35% bonus damage vs Inquisition.</color> <color=orange>More likely to attack the highest Power target.</color>
+HODA_AURA_50HEALTHBEASTANDAVVAR_50POWERGOATS_35STUNSLOWPOWERDRAINRESGOATS_ALLIES15POWERSELFHIT_MINUS50STUNRESENEMY_TAUNT|<color=green>+50% Health for Creatures and Avvar. +50% Power for Goats. +35% power drain, slow and stun resist for Goats. Allies gain a small amount of Power when this hero is attacked.</color> <color=red>-50% stun resist to enemies.</color>
+HODA_AURA_50HEALTHRL_DMGRES10SELF_DMGRES10ALLIESINQ_HEALSELF10ALLYHIT_HEALSELF50ALLYDEATH_ABSORB50_BIGTAUNT|<color=green>+50% Health for Red Lyrium. +10% damage resist. +10% damage resist for allies vs Inquisition. Heals 10% when allies are hit, 50% when an ally dies. 50% Defender.</color>
+HODA_AURA_50HPALL_20APOWITCH_25BONDMGALL_25DMGRESALL_HEAL25PWR25HIT_PWRDRN3HIT_MINUS20STUNRES|<color=green>+50% health and power for allies, extra 20% for Apostates and Witches of the Wilds (stacking). +25% bonus damage and damage resist for allies. Grants allies 25% health and power when hit. Drains 3% power from enemies when allies are attacked.</color> <color=red>-20% stun resistance to enemies</color>
+HODA_AURA_50HPALL_20APOWITCH_75CURRESALL_30BONDMGVSTEMP_15PWRGAINHIT_MINUS15PWRALISTAIR|<color=green>+50% health and power for allies, extra 20% for Apostates and Witches of the Wilds (stacking). +75% curse resist for allies. Allies deal 30% bonus damage vs Templars. Gains 15% power when hit.</color> <color=red>-15% power to Alistair</color>
+HODA_AURA_50HPALL_20APOWITCH_75STUNSLOWRESALL_25BONDMGVSBEAST_30HEALHIT_MINUS25PWRTEMP|<color=green>+50% health and power for allies, extra 20% for Apostates and Witches of the Wilds (stacking). +75% stun and slow resist for allies. Allies deal 25% bonus damage vs Creatures. Heals allies 30% when hit.</color> <color=red>-25% power to Templars</color>
+HODA_AURA_50HPBLIGHT_25DMGVSWARDFORBLIGHT_25PDRESBLIGHT_35POWERVSLC|<color=green>+50% Health and +25% power drain resist for Blighted. +35% damage vs large creatures. +25% damage vs Grey Wardens for Blighted.</color>
+HODA_AURA_50HPBSTSPRT_50CURRESBST_50STUNSLOWRESALLIES_MINUS20PWRDRNRESENMY|<color=green>+50% Health for Creatures and Spirits, and +50% curse resist for Creatures. +50% stun and slow resist for allies.</color> <color=red>-35% power drain resist to enemies.</color>
+HODA_AURA_50HPPWR10CRITINQBST_40DEF_ONHITALLY40HP100DTH_25DMGCURRESALLY_MINUS20STUNSLOWRES|<color=green>+50% health and power, and +10% 2X damage chance to Inquisition and Creatures. +40% Defender. When hit, allies gain +40% health, +100% on death. +25% damage and curse resist to allies.</color> <color=red>-20% stun and slow resist. </color>
+HODA_AURA_50HPPWRALLY30CURRESDOUBLETHEIRIN_35STUNSLOWRESALLY_15DMGRESALLY_2DMGRESALLYONSELFHIT_2PWRDRNSELFHIT_35DEFEND|<color=green>+50% Health and Power and +30% curse resist for allies, double for Theirin family. +35% stun and slow resist and +15% damage resist for allies. Grants 2% damage resist for allies and drains 2% Power from enemies when hit. 35% Defender.</color>
+HODA_AURA_50HPPWRAPOS_30BONDMGWOWVSWAR_15DMGRESDRAGON_15DMGRESGRTDRGN_ALLY50PWRENEMYDEATH|<color=green>+50% Health and Power for Apostates. +30% bonus damage for Witches of the Wild vs Warriors. +15% damage resist for Dragons, additional +15% for Great Dragon. Allies gain +50% Power on enemy death.</color>
+HODA_AURA_50HPPWRDMN_35DMGALLYVSAVVDWF_ALLY25PWRENMYDTH_ALLY65HPALLYDTH_ALLY75PWRHPSELFDTH|<color=green>+50% Health and Power for Demons. +35% bonus damage for allies vs Avvar and Dwarves. Allies gain +25% Power when an enemy dies and +65% Health when an ally dies. Allies gain +75% Health and Power when this hero dies.</color>
+HODA_AURA_50HPQUNARI_25STUNSLOWCURHRESQUN_20DMGRESTRIUMVIRATE_PLUS20DMGRESSTEN_MINUS10PSTUNRESISABELA|<color=green>+50% Health and Power, +25% stun, slow, and curse health resist for Qunari. +20% damage resist for Triumvirate, extra +20% for Sten, the Arishok.</color> <color=red>-10% Power and stun resistance for Isabela.</color>
+HODA_AURA_50HPTEV_25CURRESALLY_35BONDMGVEN_15DMGRESVAR_10CRITCHANCEVAR_5DMGRESALLYONHIT|<color=green> +50% Health for Tevinter. +25% curse resist for allies. +35% bonus damage for allies vs Venatori. +15% damage resist and +10% 2X Damage chance for Varric. Allies gain +5% damage resist when this hero is hit.</color>
+HODA_AURA_50HP_25ALLRESIST_ALLIES_15BNSDMGALL_VS_BLIGHT_PLUS15HPSELF_ALLATTACK_MINUS15P_ENEMIES|<color=green>+50% Health, Power, and +25% all effect resists for allies. Allies deal 15% bonus damage vs Blighted. Gains 15% health and power when allies are attacked. </color> <color=red>-15% power to enemies.</color>
+HODA_AURA_50H_ALLIES_25H_TO_WARRIORS_AND_BEASTS_POWER_GAIN_WHEN_ALLY_HIT_15_AURA_CURSE_POWER_IMMUNE_SELF_STUNRESIST_50_ALL_DMG_RESIST_PCT_20_PERSONAL|<color=green>+50% Health for allies, additional 25% for Warriors and Creatures. Gains small Power when allies are hit. Curse Power immunity. +50% stun resist for allies. +20% damage resist.</color>
+HODA_AURA_50PAPOINQ_35HALL_25HWITCH_25DMGALLRESISTWITCH_50HPENEMYDEATH_DEFENDER75_MINUS25ALLRESISTS|<color=green>+50% Power to Apostates and Inquisition. +35% Health to allies, extra 25% for Witches. +25% damage and all effect resists for Witches. Gains 50% health and power when enemy dies. 75% Defender.</color> <color=red>-25% all effect resists to enemies.</color>
+HODA_AURA_50P_ALL_PLUS65H_SPIRITS_HEALTH_ON_ALLY_DEATH_30_50DMG_RESIST_PCT_VS_WARRIORS_PERSONAL_35STUN_RESIST_SPIRITS_POWER_DRAIN_RESIST_35_SPIRITS|<color=green>+50% Power for allies. +65% Health for Spirits. Heals a medium amount on enemy death. +35% stun and power drain resist for Spirits. +50% damage resist vs warriors.</color>
+HODA_AURA_50P_INQUISITION_20H_TESSA_25PCT_POWER_VS_MAGES_ALL_25_PERSONAL_POWER_ON_ENEMY_DEATH_40_10PCT_DMG_RESIST_ALLIES_VS_BLACK_FACTION|<color=green>+50% Power for Inquisition. +20% Health for Tessa Forsythia. +50% bonus damage vs Mages, +25% for allies. Gains +40% Power when an enemy dies. +15% damage resist vs Black faction for allies. Stealth: Attacks without triggering on-hit effects.</color>
+HODA_AURA_50_DEFENDER_P_WHEN_SELF_HIT_30_ALLIES_GAIN_POWER_WHEN_SELF_DEATH_75_PLUS50H_15PCT_DMGRESIST_TO_BLIGHT|<color=green>+50% Health and +15% damage resist for Blighted. 50% Defender. Gains +30% Power when hit. Grants +75% Power to allies when killed.</color>
+HODA_AURA_60HP20DMGRESAVVAR_50CURRESPWRDRNRESREDFACX2SELF_35HPPERAVVAR_60DEF_5HEALHIT|<color=green>+60% Health, +20% damage resist for Avvar. +50% curse power and drain resist for red faction, double for self. +35% Health for each Avvar ally. 60% Defender. Heals 5% when attacked.</color>
+HODA_AURA_60HPPWR25BNSDMG50CURRESFER_100HPPWRALLYONSELFDEATH_60DEFENDER_MASTAUNT|<color=green>+60% Health and Power, +25% bonus damage, and +50% curse resist for Ferelden. Allies gain 100% Health and Power when this hero dies. 60% Defender.</color>
+HODA_AURA_60HPPWR40DMGRESCURPWRIMMFER_MINUS50STUNSLOWCURSEPWRDRNRESENMY|<color=green>+60% Health and Power, +40% damage resist and curse Power immunity for Ferelden.</color> <color=red>-50% stun, slow, curse and power drain resist to enemies.</color>
+HODA_AURA_60HPPWRSTUNRESELF_5000DMGRESELF_ALLYHEAL25ONHIT_ALLYPWR100ONDTH_MASSTAUNT_MINUS20PWRENMYPWRDRN|<color=green>+60% Health and Power and stun resist for Elves. Elves resist the first 5,000 damage. Allies heal a moderate amount (25%) when this hero is hit and gain 100% Power when hero dies.</color> <color=red>-20% Power to enemies who power drain.</color>
+HODA_AURA_60HPPWRWARDS_50STUNSLOWCURPDRESWARDSBSTS_15HPPWRALLYONHIT_CURPWRIMMGARAHEL_MINUS20CURPWRRESBLIGHT|<color=green>+60% Health and Power for Wardens. +50% stun, slow, curse and power drain resist for Wardens and Creatures. When hit, converts 15% of damage received into Health and Power for allies. Curse Power immunity for Garahel.</color> <color=red>-20% curse power resist for Blighted.</color>
+HODA_AURA_60HSLOWRESTEV_15BNSDMGNOBILITY_GAIN10ALL_SELFHIT_GAIN15HALL_ENEMYHIT_15DMGRESTEV_5DMGRESBLACK_MINUS25CURSEDRAINRES|<color=green>+60% health and slow resist for Tevinter. +10% bonus damage for Nobility. When hit, allies gain +10% power. On enemy hit, allies gain +15% health. +15% damage resist for Tevinter, extra +5% for Black Faction.</color> <color=red>-25% curse and drain resist to enemies.</color>
+HODA_AURA_60POWERTEVINTER_25BNSDMGFERELDENQUNARI_DRAIN10POWERSELFHIT_75STUNRESALLIES_MINUS10POWERENEMY|<color=green>+60% Power for Tevinter and Nobility. +25% bonus damage vs Ferelden and Qunari for allies. +75% stun resist for allies. Drains a small amount of Power from enemies when this hero is attacked.</color> <color=red>-10% Power to enemies.</color>
+HODA_AURA_60PPDRESTEV_75STUNRESSELF_GAIN15SELFDMGANYHERO_HEAL50ALLANYDEATH_GAIN10CURSERESSELFONHIT_15DMGRESTEVNOBSTACK|<color=green>+60% power, power drain resist for Tevinter. +75% stun resist. Converts +15% of damage received by any hero into power. Allies heal +50% on any hero death. When hit, gains +10% curse resist. +15% damage resist to Tevinter and Nobility (stacking).</color>
+HODA_AURA_65HPPWR20DMGRESDMNELF_35SLOWSTUNRESBLKFCTN_50CURRESELF_ALLYHEAL5ANDENMYPWRDRN2ONENMYHIT_MINUS5CRITENMY|<color=green>+65% Health and Power and +20% damage resist for Demons and Elves (stacking). +35% slow and stun resist for black faction. +50% curse resist for Elves. Allies heal 5% and enemies are drained 2% Power when enemies are hit.</color> <color=red>-5% 2X Damage chance for enemies.</color>
+HODA_AURA_65HPPWRAND15DMGDMN_20HP10PWRSELFHIT_DEFEND50_60PDRESDARKTHEURGE_MINUS35PDRESWHITEFAC|<color=green>+65% Health and Power and +15% bonus damage for Demons. Gains 20% Health and 10% Power when hit. 50% Defender. +60% powerdrain resist for The Dark Theurge.</color> <color=red>-35% powerdrain resist to white faction.</color>
+HODA_AURA_75HPALL_75PWRDRNRESALL_25BONDMGVSNOBILITY_HEAL30PWR20HIT_PWRDRN10HIT|<color=green>+75% health, power, and power drain resist for allies. Allies deal 25% bonus damage vs Nobility. Grants allies 30% health and 20% power when hit. Drains 10% power from enemies when this hero is attacked.</color>
+HODA_AURA_75HPCURPRESELF_ONHITALLY5DMG5DMGRES_25ALLEFFECTRES_50DEF_FEARHUMANELF_MINUS15CURRES|<color=green>+75% Health and +50% curse power resist for Elves. When hit, allies gain +5% bonus damage and damage resist. +25% all effect resists for allies. +50% Defender.</color> <color=orange>Less likely to attack Humans and Elves.</color> <color=red>-15% curse resist.</color>
+HODA_AURA_ALLIES40HPPOW_NOB10HPPOW_50CURSEPOWRES_RES2KPERHIT_ALLIES20POWSELFHIT_100POWONDEATH_2DRNENMONENMHIT_MINUS35ALLRES|<color=green>Allies get: +40% Health and Power (extra +10% for Nobility), +50% curse power resist, and resist 2k damage per hit. When hit, power gains allies 20%, 100% on death. When enemies are hit, power drains enemies 2%.</color> <color=red>-35% stun, slow, power drain, and curse resist to enemies.</color>
+HODA_AURA_ALLY_DAMAGE_ABSORB_50_AND_AURA_PLUS50POWER_TO_WARDENS_AND_POWER_ON_ALLY_DEATH_50_35_PCURSE_WARDENS|<color=green>+50% power to Wardens. +35% Curse Power resist for Wardens. 50% Defender. Gain power on ally death.</color>
+HODA_AURA_BRAVETGT_STUNRES100_AND_PERSONAL_POWER_DRAIN_RESIST_AND_PERSONAL_SLOW100|<color=green>+100% stun, slow, and power drain resist. Much more likely to attack the highest power enemy. Stealth: Attacks without triggering on-hit effects.</color>
+HODA_AURA_CRIT5_ALLIES_5_SELF_AND_PLUS25_POWER_TO_ROGUES_AND_BLIGHTED|<color=green>Stealth: Attacks without triggering on-hit effects. +5% 2X Damage chance for allies, double for self. +25% Power for Rogues and Blighted (stacking).</color>
+HODA_AURA_DEFENDER25_AND_PLUS25HANDP_ALLIES_AND_PLUS40_PDRESIST_ALLIES|<color=green>25% Defender. +25% Health and Power for allies. +40% power drain resist for allies.</color>
+HODA_AURA_DEFENDER25_DMGRES25ALL_HEAL10SELFHITGHAST_PLUS50HEALTHSELFDIEGHAST_MINUS10DRAINRES_REDUCEFLANK|<color=green>25% Defender. 25% damage resist for allies. Ghasts gain 10% health when hero is hit, and 50% health when hero dies.</color> <color=red>-10% drain resist to enemies. Reduces enemy chance to flank.</color>
+HODA_AURA_DEFENDER50_GAIN50HALLDEATH_GAIN20PALLATTACK_PLUS50HPSLOWRESQUN_PLUS50STUNPDRESTRIUM_RASAANSTUNIMMUNE20H|<color=green>50% Defender. Gains +50% Health when ally dies, +20% Power when allies are attacked. +50% Health, Power, slow resist for Qunari. +50% stun, power drain resist for Triumvirate. Stun immunity and +20% Health for Rasaan.</color> 
+HODA_AURA_DEFENDER_AND_BONUS_DAMAGE_VS_BLIGHTED_AND_SLOWIMMUNE_POWERDRAIN_IMMUNE_GREY_WARDENS_35H_WARDENS_HEAL_ALL_SELF_ATTACK_15|<color=green>+35% Health for Wardens. Allies heal a small amount when this hero is hit. 50% Defender. +25% damage vs Blighted. Power drain and slow immunity for Grey Wardens.</color>
+HODA_AURA_DEFENDER_AND_PLUS35HP_PLUS50STUNRES_BEAST_CHANTRY_AND_PLUS10HP_LELIANA_AND_25HAND5DMGRESALLYONHIT|<color=green>Absorbs medium AOE damage for allies if attacked also. +35% Health and Power and +50% stun resist for Chantry and Creatures. +10% Health and Power for Leliana. Allies heal 25% and gain +5% damage resist when this hero is hit.</color>
+HODA_AURA_DMG_RESIST_PCT_20_TO_OUTLAWS|<color=green>Outlaw allies take 20% less damage.</color>
+HODA_AURA_DMG_RESIST_PCT_5_SELF_5_INQUISITION_FLANK_PLUS30HP_INQUISITION_BLUE_FACTION_POWER_GAIN_WHEN_ALLY_HIT_10_VAL_FROM_DAM|<color=green>+30% Health and Power for Inquisition and blue faction. +5% damage resist for allies, extra +5% for Inquisition. Converts 10% of damage to allies into Power. Stealth: Attacks without triggering on-hit effects.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_DRAIN20PENEMY_ONHIT_25BNSDMGVSCARTA15DMGRESCRITALLY_GAIN50HRETALIATE20_ENEMYDEATH_MINUS20EFFRES|<color=green>When hit, drains 20% power from all enemies. +25% bonus damage vs Carta, +15% damage resist and 2X damage chance for allies. On enemy death, gain +50% health, and all enemies take 20% damage dealt.</color>  <color=red>-20% all effect resists.</color>
+HODA_AURA_FLANK_PLUS25DMG_VS_BLIGHTED_CURSE_IMMUNE_35CH_RESIST_WARDENS_35H_ALL_25P_WARDENS|<color=green>+35% Health for allies. +25% Power and +35% Curse Health resist for Wardens. Immune to Curse Health.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_FR_BR_EQUAL_AND_PLUS30H_FOR_SPIRITS_AND_PLUS20DAM_FOR_BLUEFACT_AND_IMM_TO_STUN_SLOW_PD_CURSE_AND_CURSEH_IMM_SPIRITS_AND_ALLIES25P_ONHIT|<color=green>+30% Health for Spirits. +20% bonus damage for blue faction. Immunity to stun, slow, power drain, and curse. Curse Health immunity for Spirits. Allies gain 25% Power when this hero is hit.</color> <color=orange>Equal chance to attack front and back row.</color>
+HODA_AURA_FR_BR_EQU_CHANCE_AND_PLUS20HP_ALL_EXT15_HWKFAM_EXT15_ARCHWK_AND_DEFENDER35_AND_PLUS5DR_FERELDEN_HWKFAM_STACK|<color=green>Equal chance to attack front or back row. +20% Health and Power for allies, extra 15% for the Hawke family, another 10% for Arcane Hawke. 35% Defender. +5% damage resist for Ferelden and Hawke family (stacking).</color>
+HODA_AURA_HANDP25_TO_WARDENS_AND_PLUS35HEALTH_TO_ALISTAIR_AND_PLUS50DAMAGE_VS_NOBILITY_FOR_ALLIES_AND_ONSELFHIT_ALLIES_HEALSMALL_HATRED_NOBLES|<color=green>+25% Health and Power for Grey Wardens. +35% Health for Alistair. +50% damage vs Nobility for allies. When hit, heals all allies a small amount.</color> <color=orange>Allies more likely to attack Nobility heroes.</color>
+HODA_AURA_HASTE_PLUS60HPINQ_CONVERT15P_ENEMYDMG_20DMGRESALL_SLOWIMMUNE_QUICKTGT_MINUS50SLOWRES|<color=green>More likely to attack first. +60% health and power to Inquisition. Converts 15% of damage dealt to enemies into power. +20% damage resist for allies. Immune to slow. </color> <color=orange>More likely to attack the quickest enemy.</color> <color=red>-50% slow resist.</color>
+HODA_AURA_HATRED_AND_PLUS80HEALTH_NOBILITY_AND_HEAL_ALLIES_ONHIT_AND_POWERGAIN_ALLIES_ONDEATH|<color=green>Much more likely to assassinate Nobility. +80% Health for Nobility. When hit, heals allies a large amount. On death, allies gain large Power.</color>
+HODA_AURA_HPDRNSLOWRES60DWF_EXTRA15DACE_ALLYGAINHP50ONALLYDTH_ALLHP25EMYDTH_75CURRES35DMGRESDACE_MINUSSLOWDRNRES35BLCFAC|<color=green>+60% health, power drain and slow resist for Dwarves, extra 15% for Dace family. On ally death, allies gain +50% power and health. On enemy death, allies gain +25% health. +75% curse and +35% damage resist for Dace family.</color> <color=red>-35% slow and drain resist for Black Faction.</color>
+HODA_AURA_MIN15PWR_TO_CIRCCHANT_AND_MIN15PWRDRNRES_TO_ENEM_AND_HPPWR15_TO_SPIRELVESBLUEFACT_AND_ALLIES_GAINPWR_ON_ALLYDEATH75|<color=green>+15% Health and Power for Spirits, Elves and blue faction (stacking). +75% Power for allies on ally death.</color> <color=red>-15% power drain resist to enemies. -15% Power to Circle and Chantry.</color>
+HODA_AURA_MINUS20_POWER_TO_MAGES_AND_PLUS35HEALTH__PLUS50POWER_TO_DARKSPAWN_POWERDRAINRESIST50_TO_DARKSPAWN_AURA_50SLOWRESIST_TO_BLIGHTED_AND_35STUNRESIST|<color=green> +35% health and power to Blighted. +35% power drain, stun, and slow resist to Blighted.</color> <color=red>-20% enemy mage power.</color>
+HODA_AURA_PERCEPTIVE_20HPORLWINTSTACK_10CRIT_EQUALTGT_GAIN5DMGRES3BNSDMGSELF10PWRALL_SELFHIT|<color=green>Perceptive: negates stealth. +20% Health and Power for Orlesian and Wintersend allies (stacking). +10% 2X damage chance. Equal chance to attack front or back row. When hit, gain +5% damage resist and +3% bonus damage, and allies gain +10% power.</color>
+HODA_AURA_PERCEPTIVE_50HPAPODEM_5000DMGRED_10P10DRALLSELFHIT_EXPLODE3_MIN50CRIT_MIN15ALLEFF|<color=green>Perceptive: Negates stealth. +50% Health and Power to Apostates and Demons (stacking). Allies resist the first 5000 damage. When hit, allies gain +10% power and damage resist. When allies attack, all enemies receive 3% of damage dealt.</color> <color=red>-50% 2X damage chance. -25% all effect resists.</color>
+HODA_AURA_PERCEPTIVE_PLUS50HPSLOWRESELF_35SENTINEL_GAIN50ANYDTH_DRAIN5HEALSENTINEL50ONHIT_RETALIATE20ONDTH_MIN25CURRES|<color=green>Perceptive: Negates stealth. +50% Health, Power, and slow resist for Elves, extra +35% for Sentinels. Gains 50% power when any hero dies. When hit, drains 5% power from enemies, and heals Sentinel Elves 50%. On death, reverts 20% of damage received.</color> <color=red>-25% curse resist to Black Faction.</color>
+HODA_AURA_PERCEPTIVE_PLUS50HPSTUNRES30DMGRESALL_RETAL15_GAIN35HEAL35ALL_SELFHIT_2500DMGREDSTUNIMMREAVER_DEFENDER65_MIN25ALLEFF|<color=green>Perceptive: Negates stealth. +50% health, power, stun resist and +30% damage resist for allies. When hit, reverts 15% damage to enemies, and allies gain +35% power and health. Reavers resist 2500 damage per hit, and are immune to stun. +65% Defender.</color> <color=red>-25% all effect resists.</color>
+HODA_AURA_PERSONAL_STUN_IMMUNE_35HEALTH_TO_DEMONS_DMG_RESIST10_DEMONS_HEALTH_GAIN_WHEN_ALLY_HIT_10|<color=green>+35% Health for Demons. +10% damage resistance for Demons. Gains small Health when an ally is attacked. Immune to stun.</color>
+HODA_AURA_PLUS10BNSDMG10DMGRES_ALL_VS_BLIGHT_PLUS40SELF_HEAL15ALL_FRMDMG_RETALIATE5BLACK_MINUS25PDRAINRES|<color=green>+10% bonus damage and damage resist for allies vs Blighted, extra 40% for self. Converts 15% of damage dealt to enemies by self into ally health. When hit, reverts 5% of damage received to enemy Black Faction.</color> <color=red>-25% power drain resist.</color>
+HODA_AURA_PLUS10BNSDMG15DMGRES50PDRESBEAST_50STUNSLOWRESWEREWOLVES_DEFENDER50_3DMGRESSELF_ALLYHIT_STUNIMMUNELADY_MINUS15SLOWDRAIN|<color=green>+10% bonus damage, +15% damage resist, and +50% power drain resist for Creatures. +50% stun and slow resist for Werewolves. +50% Defender. When allies are attacked, gain +3% damage resist. Stun immunity for Lady of the Forest.</color> <color=red>-15% slow and drain resist.</color>
+HODA_AURA_PLUS10BNSDMG30DMGRESALL_VS_QUICK_GAIN20HP_ALLHIT_SLOWIMMUNE_QUICKTARGET_MINUS50SLOWRES|<color=green>+10% bonus damage and +30% damage resist for allies vs Quick enemies. Gains 20% health and power when allies are attacked. Immune to slow.</color> <color=orange>More likely to attack the quickest enemy.</color> <color=red>-50% slow resist.</color>
+HODA_AURA_PLUS10BNSDMGDMGRES50CURRESALL_15CRITSELF_HEAL25ALLENEMYDTH_WOUNDEDTGT_MINUS100STUNRES10PWR|<color=green>+10% bonus damage, +20% damage resist, and +50% curse resist for allies. +15% 2X damage chance. On enemy death, heals allies 25% of damage dealt.</color> <color=orange>More likely to attack enemy with lowest % health.</color> <color=red>-100% stun resist. -10% power.</color>
+HODA_AURA_PLUS10BNSDMGDMGRESALL_5FERELD_STUNIMM_40CURPDRESALL_X2MARIC_WOUNDEDTGT_MIN20PWR50STUNRES|<color=green>+10% bonus damage and damage resist for allies, extra +5% for Ferelden. Immune to stun. +40% curse and power drain resist for allies, double for King Maric.</color> <color=orange>More likely to attack enemy with lowest % health.</color> <color=red>-20% power and -50% stun resist.</color>
+HODA_AURA_PLUS10DMGRESTEMP_DOUBLEREDLYR_PLUS50CURSERESTEMP_PLUS50SLOWRESREDLYR_CONVERT10ALLYDMGSELFPOWER_MINUS25CURSERES|<color=green>+10% Damage resist for Templars, double for Red Lyrium. +50% curse resist for Templars. +50% slow resist for Red Lyrium. Converts 10% of damage taken by allies into power.</color> <color=red>-25% curse resist to enemies.</color>
+HODA_AURA_PLUS10DMGRES_TEMP_CHANT_PLUS50PDRAINCURPWRRESALL_GAIN5ALL_ALLHIT_HATREDMAGE_MINUS10CURSEHPRES_MAGES|<color=green>+10% damage resist for Templars and Chantry (stacking). +50% power drain and curse power resist for allies.  Allies gain 5% power when allies are attacked.</color> <color=orange>More likely to attack mages.</color> <color=red>-10% curse resistance to mages.</color>
+HODA_AURA_PLUS15DMGRES_PLUS50HDWARVESROGUES_DEFENDER50_PLUS75PBROGAN_PLUS50SLOWRESJERRIK|<color=green>+15% damage resist. +50% Health for Dwarves and Rogues. +50% Defender. +75% Power for Brogan Dace. +50% Slow resist to Jerrik Dace.</color>
+HODA_AURA_PLUS15HP_BLT_BLACKF_ST_AND_PGAINALL100_MEDIE_AND_M20ST_SL_PDRES_EN_AND_PLUS50_ST_SL_PDRES_BLT_AND_PLUS10DR_BLIGHT_AND_ALLY_DRFINITE_1500|<color=green>+15% Health and Power for Blight and black faction (stacking). +10% damage resist for Blighted, and allies resist the first 1500 damage per hit. +50% stun, slow, and power drain resist for Blighted. Allies gain 100% Power when this hero dies.</color> <color=red>-20% stun, slow, and power drain resist to enemies.</color>
+HODA_AURA_PLUS15HP_DWARVES_15HP_SHABRYTOL_HEALTH_GAIN_ALL_WHEN_ALLY_HIT_10|<color=green>+15% Health and Power for Dwarves and Sha-Brytol (stacking). Heals allies a small amount when allies are attacked. Stealth: Attacks without triggering on-hit effects.</color>
+HODA_AURA_PLUS15POW_BONUSDAM_DEMONS_AND_SELFIMMUNE_SLOW_STUN_PD_PLUS25_DEMONS_AND_POWGAIN_ALL_ON_ALL_HIT_BM_AND_WOUNDTARGETING|<color=green>Stealth: Attacks without triggering on-hit effects. +15% Power and bonus damage for Demons. Immune to slow, stun, and power drain, 25% each for Demons. Converts 10% of damage received by allies into ally Power.</color> <color=orange>More likely to target enemy with lowest % health.</color>
+HODA_AURA_PLUS15_HP_AND_30STUNSLOWRESIST_TO_ORLESIAN_WHITEFACTION_STACKING_AND_ALLIES_PLUS35_POWER_DAMRES_VS_OUTLAWS_AND_ALLY_HATRED_OUTLAWS|<color=green>+15% Health and Power and +30% stun and slow resist for Orlesians and white faction (stacking). Allies are more likely to attack Outlaws, and get +35% damage resist and bonus damage vs Outlaws.</color>
+HODA_AURA_PLUS20DMGRESBNSDMGBLIGHT_DEFENDER50_IMMSTUNSLOW_GAINDMGRES5SELF5BLIGHTSELFATK_RETALIATE5_DMGRED5000|<color=green>+20% damage resist and bonus damage for Blighted. +50% Defender. Immune to stun and slow. On attack, gains +5% damage resist and grants Blighted allies +5% damage resist. When hit, reverts 5% of damage received to all enemies. Resists 5000 damage per hit.</color>
+HODA_AURA_PLUS20HANDP_WARRIORS_AND_AVELINE_AND_BONUSDAMAGE40_VS_BLIGHT_AND_PLUS25_SLOW_AND_STUN_RESIST_TEMPLARS|<color=green>+20% Health and Power for Warriors, additional 20% for Aveline. +40% bonus damage vs Blighted. +25% stun and slow resist for Templars.</color>
+HODA_AURA_PLUS20HCURHRES_DWARVES_GOLEMS_STACK_DRAINIMMUNE_15DMGRESFLANK_ANTIFLANK|<color=green>+20% Health and curse health resist for Dwarves and Golems (stacking). Immune to power drain. +15% damage resist vs flankers.</color> <color=red>Blocks enemies from flanking the back row.</color>
+HODA_AURA_PLUS20HDWARFINQLEGION_STACK_2500DMGRES_PLUS15DMGRESALL_PLUS15ALLRESDWARF_PLUS5ALLRESLEGION_DEFENDER50_MINUS10PBLACK|<color=green>+20% Health for Dwarves, Inquisition, and Legion of the Dead (stacking). Dwarves resist 2500 damage per hit. +15% Damage resist for allies. +15% all effect resists for Dwarves, extra 5% for Legion of the Dead. +50% Defender.</color> <color=red>-10% power to Black Faction.</color>
+HODA_AURA_PLUS20HEALTHPOWERFORMAGESCIRCLEORLESIANS_AND_PLUS50CURSERESISTALLIES_AND_CURSEIMMUNESELF_AND_MINUS20STUNRESISTENEMIES|<color=green>+20% Health and Power for Mages, Circle and Orlesians (stacking). Immune to Curse. +50% Curse resist for allies.</color> <color=red>-20% stun resist to enemies.</color>
+HODA_AURA_PLUS20HEALTH_AND_PLUS15DMG_FOR_CHANTRY_DIVINES_STACKING_AND_DEFENDER75_AND_PLUS10DMG_AND_DMGRESIST_PER_DIVINE| <color=green>+20% Health and +15% bonus damage for Chantry and the Divines (stacking). 75% Defender. Gains +10% bonus damage and damage resist for each Divine ally.</color>
+HODA_AURA_PLUS20HPALLMAGEBLACKSTACK_15DMGEFFRESBLKMAGESTACK_GAIN10SELF_ANYHIT_PDIMM_DEFENDER25_30BNSDMGALLVTEMP_MINUS35CURSE|<color=green>+20% health and power for allies, Mages and Black Faction (stacking). +15% damage and all effect resists for Black Faction and Mages (stacking). Gains +10% power when any hero is hit. Immune to power drain. +25% Defender. +30% bonus damage vs Templars for allies.</color> <color=red>-35% curse resist.</color>
+HODA_AURA_PLUS20HPCURDRAINRES_WHITEINQADVISOR_STACK_30DMGRESINQ_RETALIATE5ALL_GAIN30HEAL30STUNRES10ALL_ONHIT_MIN20ALLRESBLACK|<color=green>+20% Health, Power, curse and power drain resist for White Faction, Inquisition, and Advisors (stacking). +30% damage resist for Inquisition. When hit, reverts 5% of damage received, and allies gain 30% power, health and 10% stun resist.</color> <color=red>-20% all effect resists to Black Faction.</color>
+HODA_AURA_PLUS20HP_CHANTRY_INQ_STACK_AND_PLUS35_STUN_SLOW_PDRES_CHANTRY_INQ_AND_DRAIN5_ON_SELFHIT|<color=green>+20% Health and Power for Chantry and Inquisition (stacking). +35% stun, slow, and power drain resist for Chantry and Inquisition. When hit, power drains enemies a very small amount.</color>
+HODA_AURA_PLUS20H_40P_ELVES_AND_CHANTRY_ALLIES_GAIN_POWER_WHEN_SELF_ATTACKED_20_25PCT_POWER_VS_TEVINTER_ALL_50_CURSE_RESIST_ELVES|<color=green>+20% Health and +40% Power for Elves and Chantry. +50% Curse resist for Elves. Allies gain 20% Power when this hero is attacked. Allies deal +25% bonus damage vs Tevinter enemies.</color>
+HODA_AURA_PLUS20_HP_FOR_BLIGHT_BLACK_FACTION_AND_PLUS25_CRIT_AND_POWERBOMB100|<color=green>+20% Health and Power for Blighted and black faction (stacking). +25% 2X Damage chance. Allies gain huge power when this hero dies.</color>
+HODA_AURA_PLUS25DMGEFFECTRESALL_CONVERT20HEALTH_GAIN5ALLYATTACK_RETALIATE10_MINUS25EFFRES|<color=green>+25% damage and all effect resists for allies. Converts 20% of damage dealt or received into health. When allies attack, gain +5% power. When hit, reverts 10% of damage received to enemies.</color> <color=red>-25% all effect resists to enemies.</color>
+HODA_AURA_PLUS25DRAINRES_HEALTH_CHARGERS_INQ_PLUS25DMGRES_PLUS10BNSDMG_VS_TEVINTER_ALL_RETALIATE5_TEVINTER_GAIN10HEAL10ALL_ONHIT_MINUS5CRIT|<color=green>+25% power drain resist and health for Bull’s Chargers and Inquisition (stacking). +25% damage resist and bonus damage for allies vs Tevinter. Reverts 5% of damage received to enemy Tevinter. When hit, allies gain +10% health and power.</color> <color=red>-5% 2X damage chance.</color>
+HODA_AURA_PLUS25H10DMGRES3BNSDMGSPIRITBEASTSTACK_50PDSTUNRESALL_GAIN20P5DMGRESALL_ONHIT_HEAL75ALL_ONDEATH_DEF50_MIN35CURSTUNRES|<color=green>+25% health, +10% damage resist, and +3% bonus damage for Spirits and Creatures (stacking). +50% power drain and stun resist for allies. When hit, allies gain +20% power and +5% damage resist. On death, allies heal +75%. +50% Defender.</color> <color=red>-35% curse and stun resist.</color>
+HODA_AURA_PLUS25HANDP_AVVAR_AND_BEASTS_AND_ALLIES_HEAL25_ON_SELF_HIT_AND_STUN_PD_IMMUNE|<color=green>+25% Health and Power for Creatures and Avvar (stacking). Allies gain 25% Health when this hero is attacked. Immune to stun and power drain.</color>
+HODA_AURA_PLUS25HANDP_STUNRES_SLOWRES_PDRES_TO_BLACK_FACTION_AND_ALLIES_GAIN50POWER_ONALLYDEATH_AND_MINUS25PDRESIST_TO_WARDEN_BLIGHT|<color=green>+25% Health, Power, stun resist, slow resist, and power drain resist for black faction. Allies gain medium Power on ally death.</color> <color=red>-25% power drain resist to Wardens and Blighted.</color>
+HODA_AURA_PLUS25HANDP_TO_BLIGHT_AND_PLUS15DAMRES_TO_SLOW_HEROES_AND_POWERGAIN20_ONHIT_BM_ABILITY|<color=green>+25% Health and Power for Blighted. +10% damage resist for black faction. Converts 20% of damage taken to self Power.</color>
+HODA_AURA_PLUS25HEALTHCURSERES_ELVES_SENTINETLS_STACK_PLUS5BNSDMG_SENTINEL_GAIN50HEALTH_ANYDEATH_REDUCEFLANK|<color=green>+25% Health and curse health resist for Elves, double for Sentinels. +5% bonus damage for Sentinels. Gains 50% health when any hero dies.</color> <color=red>Reduces enemy chance to flank.</color>
+HODA_AURA_PLUS25HEALTHPOWERCURSERESIST_TO_SPIRITSDEMONSINQUISITIONBLUEFACTION_AND_HEALTHPOWER50_ON_ALLY_DEATH|<color=green>+25% Health, Power and curse resist for Spirits, Demons, Inquisition and blue faction (stacking). Gains 50% Health and Power when allies die.</color>
+HODA_AURA_PLUS25HEALTH_ELVES_AND_BM_ABILITY15_SELF_TO_ALLIES_AND_FLANK|<color=green>+25% Health and Power for Elves. Converts 15% of damage taken to Power for allies.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS25HEALTH_POWER_TO_INQ_EXTRA15_TO_LELIANA_AND_PLUS35_PDRESIST_CURSEPOWER_RESIST_TO_INQU_AND_DAMRES15_FOR_WHITE_VS_OTHER_FACTIONS|<color=green>+25% Health and Power for Inquisition, extra 15% for Leliana. +35% power drain and curse power resist for Inquisition. White faction allies take 20% less damage from all other factions.</color>
+HODA_AURA_PLUS25HEALTH_TO_ALLIES_AND_PLUS15POWER_TO_ALLIES_AND_PLUS25POWERDRAINRESIST_TO_ALLIES_AND_ALLIESGAIN25POWER_ON_SELF_DEATH|<color=green>+25% Health, +15% Power, and +25% power drain resist for allies. Allies gain a small amount of Power on ally death.</color>
+HODA_AURA_PLUS25HEALTH_TO_WARRIORS_AND_PLUS25DAMAGERESIST_TO_SELF_AND_PLUS15POWERAND15HEALTHSELF_ON_ALLY_HIT_AND_PLUS25POWER_TO_DUKEPROSPER_AND_FLANK|<color=green>+25% Health for Warriors. +25% damage resist. Gains small Health and Power when allies are attacked. +35% Power for Duke Prosper.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS25HP5CRITSPIRITSELVESSTACK_15DMGRESBLUE_HEAL5VALFROMDAMALL|<color=green>+25% Health and Power, and +5% 2X damage chance for Spirits and Elves (stacking). +15% damage resist for Blue Faction. When attacked, converts 10% of damage received into health for allies.</color>
+HODA_AURA_PLUS25HPALLFREEMARCHSTACK_15DMGCURRESHAWKEFAMILY_75STUNSLOWRESSELF_FEARTEMPLAR|<color=green>+25% health and power to allies and Free Marches (stacking). +15% damage and curse resists to Hawke Family. +75% stun and slow resist.</color> <color=orange>Less likely to attack Templars.</color>
+HODA_AURA_PLUS25HPCURSEPWRRES_WARDENS_BLACK_STACKING_PLUS35DMGRES_VS_WARDENS_MAGES_REDUCEENEMYFLANK|<color=green>+25% Health, Power, and Curse power resist to Wardens and Black faction (stacking). 35% Damage resist vs Grey Wardens and Mages.</color> <color=red>Reduces enemy chance to flank.</color>
+HODA_AURA_PLUS25HPDWARVES_15DMGRESALLVSNOBILITY_RETALIATE2ALL|<color=green>+25% Health and Power for Dwarves. 20% damage resist vs Nobility for allies. When hit, drains 2% enemy power, and reverts 2% of damage received to all enemies.</color>
+HODA_AURA_PLUS25HPDWVBLTSTACK_DEFENDER35_50DMGRESLOST_30BNSDMG_VS_BLIGHT_GAIN5PALLYHIT_CURSEPIMMUNE_MINUS20CRIT|<color=green>+25% Health and Power to Dwarves and Blighted (stacking). +35% Defender. +50% damage resist to The Lost. +30% bonus damage vs Blighted. When allies are hit, gains 5% power.  Immune to curse power.</color> <color=red>-20% 2X damage chance to enemies.</color>
+HODA_AURA_PLUS25HPNOBILITY_40STUNSLOWRESALL_RETALIATE5_CURSEPIMM|<color=green>+25% health and power to Nobility. +25% stun and slow resist to allies. When hit, reverts 5% of damage taken to all enemies. Immune to curse health.</color>
+HODA_AURA_PLUS25HPPDRAINRES_WHITEFERELDENMARIC_STACK_20DMGRES10CRITFERELDEN_GAIN25HEAL25_ONHIT_RETALIATE10MINUS20PORLESIANWARDEN|<color=green>+25% health, power, and power drain resist for White Faction, Ferelden, and King Maric (stacking). +20% damage resist and +10% 2X damage chance for Ferelden. When hit, gains +25% power and health, and reverts 10% of damage received to Orlesians and Wardens.</color> <color=red>-20% power for Orlesians and Wardens.</color>
+HODA_AURA_PLUS25HPQUNELFCHARGERSSTACK_20DMGRESIRONBULL_20BNSDMGALL_VSREDLYRIUM_DRAIN5ONHIT|<color=green>+25% Health and Power for Qunari, Elves, and Bull’s Chargers (stacking). +20% damage resist for Iron Bull. Allies deal +25% bonus damage vs Red Lyrium. When hit, drains 5% power from enemies.</color>
+HODA_AURA_PLUS25HPSTUNSLOWRES_DWARF_GOLEM_WARR_STACK_PLUS25DMGCURPRES_DWARF_PLUS25BNSDMG_GOLEM_GAIN30SELF_ONHIT|<color=green>+25% Health, Power, stun, and slow resist to Dwarves, Golems, and Warriors (stacking). +25% damage and curse power resist for Dwarves. +25% bonus damage for Golems. When hit, gains 30% power.</color>
+HODA_AURA_PLUS25HPWARDBLACK_STACK_AND_PLUS35H_DEFS_AND_PLUS35BONDAMALL_VS_DEFS_AND_PLUS25CRES_WARDENS_AND_HEAL75ALL_ALLYDEATH_AND_MINUS35CRES_ENEMIES|<color=green>+25% Health and Power for Wardens and black faction (stacking). +35% Health for Defenders and +35% bonus damage vs Defenders for allies. +25% curse resist for Wardens. Heals allies 75% when an ally dies.</color> <color=red>-35% curse resist to enemies.</color>
+HODA_AURA_PLUS25HP_ALLIES_AND_PLUS1KHP_COMMONS_AND_PLUS25DAM_VS_NOB_ALLIES_AND_PLUS25STUNRES_ALLIES_EXTRA25_CHRISTMAS|<color=green>+25% Health and Power for allies. +1000% Health and Power for Common allies. +25% bonus damage vs Nobility for allies. +25% stun resist for allies. Extra +15% Power and stun immunity for Christmas heroes.</color>
+HODA_AURA_PLUS25HP_AND_PLUS50_STUNRES_FOR_OUTLAWS_ROGUES_STACKING_AND_PLUS100BONUSDAMAGE_VS_QUNARI|<color=green>+25% Health and Power and +50% stun resist for Outlaws and Rogues (stacking). +100% bonus damage vs Qunari.</color>
+HODA_AURA_PLUS25HP_BLUE_FACTION_PLUS35HP_DRACOLISK_PLUS50SLOW_STUN_RESIST_TO_DRAGONS_AND_MAGES_ALLY_DAMAGE_ABSORB_25|<color=green>+25% Health and Power for blue faction. +35% Health and Power for Dracolisks. +50% slow and stun resist for Dragons and Mages. 25% Defender.</color>
+HODA_AURA_PLUS25HP_INQ_BIANCA_AND_PLUS25_STUN_SLOW_PDRESIST_ALLIES_AND_BIANCA_STACK_AND_MINUS15_SLOW_PDRESIST_ENEMIES_AND_PLUS10CRIT_ALLIES_AND_ATTACK_FR|<color=green>+25% Health and Power for Inquisition and Bianca. +25% stun, slow, and power drain resist for allies, double for Bianca. +10% 2X Damage chance for allies.</color> <color=red>-15% slow and power drain resist to enemies.</color> <color=orange>More likely to attack the front row.</color>
+HODA_AURA_PLUS25HP_REDFACT_PLUS10_QUN_AND_DEFENDER50_AND_HP_TO_ALLIES_SELFHIT_AND_IMMUNITYALL_AND_PLUS25RESISTALL_FOR_REDFACT_AND_35DAM_VS_INQ_FOR_ALLIES|<color=green>+25% Health and Power for red faction, extra 10% for Qunari. 50% Defender. When hit, grants allies +20% Health and +30% Power. +25% stun, slow, power drain, and curse resists for red faction, and immunity for self. +35% bonus damage vs Inquisition for allies.</color>
+HODA_AURA_PLUS25HP_REDLYRIUM_AND_POWERGAIN_ALLIES_150_ON_DEATH_AND_PLUS50_CURSEPOWERRESIST_TO_ALLIES|<color=green>+25% Health and Power for Red Lyrium. On death, allies gain huge Power. +50% curse Power resist for allies.</color>
+HODA_AURA_PLUS25HP_RED_FACTION_PLUS35HP_DRACOLISK_PLUS25_DAMAGE_FOR_DRAGON_QUNARI_POWER_GAIN_WHEN_ALLY_HIT_25|<color=green>+25% Health and Power for Red faction. +35% Health and Power for Dracolisks. +25% bonus damage for Dragons and Qunari. Gains small Power when allies are attacked.</color>
+HODA_AURA_PLUS25HP_TO_DEMONS_15HP_ON_ALLY_DEATH_35HP_TO_ALLIES_ON_SELF_DEATH|<color=green>+25% Health and Power for Demons. Gains small Health and Power on ally death. Allies gain medium Health and Power when this hero dies.</color>
+HODA_AURA_PLUS25HP_WHITE_FACTION_PLUS35HP_TO_DRACOLISK_ALLIES_GAIN_HEALTH_WHEN_SELF_ATTACKED_25_TAUNT|<color=green>+25% Health and Power for white faction. +35% Health and Power for Dracolisks. Gains small Health when allies are attacked.</color>
+HODA_AURA_PLUS25HP__BLACK_FACTION_PLUS35HP_DRACOLISK_DMG_RESIST_PCT_15_TO_DRAGONS_AND_BLIGHT_ALLIES_GAIN_30POWER_ON_ENEMY_DEATH|<color=green>+25% Health and Power for Black faction. +35% Health and Power for Dracolisks. +15% damage resist for Dragons and Blighted. Grants medium Power to allies when an enemy dies.</color>
+HODA_AURA_PLUS25H_35P_PLUS20PCT_DMG_FOR_AVVAR_INQ_DMG_RESIST_PCT_10_PERSONAL_10_ALL_ALLIES_HEAL_SELF_ATTACKED_25_GAIN_POWER_SELF_DEATH_50|<color=green>+25% Health and +35% Power for allies. +20% bonus damage for Avvar and Inquisition allies. +10% damage resist for allies, additional +10% for self. Allies heal a small amount when this hero is hit and gain medium Power when this hero dies.</color>
+HODA_AURA_PLUS25H_ALL_ALLIES_GAIN_15POWER_ON_ENEMY_DEATH_HEALTH_ON_ENEMY_DEATH_15_ALL_GAIN_POWER_WHEN_SELF_ATTACKED_15_ALL|<color=green>+25% Health for allies. Allies gain small Health and Power when an enemy is killed. Allies gain small Power when this hero is attacked</color>
+HODA_AURA_PLUS25P5DMGRES_RLTEMPTEOSTACK_60CURPDRESRL_HEAL15ALL_ALLYATK_HEAL30GAIN15ALL_ANYDTH_DEFENDER50|<color=green>+25% power and +5% damage resist for Red Lyrium, Templars and The Elder One (stacking). +60% curse and power drain resist for Red Lyrium. Converts 15% damage dealt by allies into health for allies. On any hero death, allies heal 30% and gain 15% power. +50% Defender.</color>
+HODA_AURA_PLUS25PCT_POWER_VS_BLIGHT_AND_TEVINTER_PERSONAL_AND_AURA_PLUS100STUNRESIST_TO_WARDEN_35HP_WARDENS_MAGES_10POWER_ALL_DMG_25P_ALLY_ENEMY_DEATH|<color=green>+35% Health and Power for Wardens and Mages. Converts 10% of damage to allies as Power. Gains small Power when an enemy or ally dies. Stun immunity for Grey Wardens. +25% bonus damage vs Blighted and Tevinter.</color>
+HODA_AURA_PLUS25PFERELDENWARDEN_STACKING_DEFENDER20_BM_15PWRGAIN_SELF_50PALL_SELFDEATH_SLOWIMMUNE_STUNIMMUNEALISTAIR|<color=green>+25% Power for Ferelden and Grey Wardens (stacking). 20% Defender. Converts 15% of damage received by allies into self Power. Allies gain 50% Power when this hero dies. Immune to slow. Gives stun immunity to Alistair.</color>
+HODA_AURA_PLUS25PSLOWRES10CRITDEMONBEASTSTACK_HEAL15ALL_ALLYATK_GAIN50PALL_ONDEATH_MINUS15CRIT|<color=green>+25% power, slow resist and +10% 2x damage chance for Demons and Creatures (stacking). When allies attack, allies gain +15% health. On death, allies gain +50% power.</color> <color=red>-15% 2x damage chance for enemies.</color>
+HODA_AURA_PLUS25PSTUNRESCHARGERSINQSTACK_GAIN15PLUS5DMGRESALL_ONHIT_MINUS5ALLRESISTS|<color=green>+25% power and stun resist for Bull’s Chargers and Inquisition (stacking). When hit, allies gain +15% power and +5% damage resist.</color> <color=red>-5% all effect resists.</color>
+HODA_AURA_PLUS25_HP_ELVES_INQUISITION_AND_PLUS25_CURSERESIST_ALLIES_AND_PLUS15_CURSERESIST_ELVES_INQUISITION_STACKING|<color=green>+25% Health and Power for Elves and Inquisition. +25% curse resist for allies, extra 15% for Elves and Inquisition (stacking).</color>
+HODA_AURA_PLUS25_HP_FOR_FERELDEN_ORLESIAN_ELVES_CHANTRY_STACKING_AND_HEAL_ALLIES5_ON_ANY_HIT_DEATH_AND_DEFENDER25_AND_PLUS35_ALL_RESISTS_FOR_ALLIES|<color=green>+25% Health and Power for Ferelden, Orlesian, Elves, and Chantry (stacking). Heals allies 5% when an ally or enemy is hit or dies. 25% Defender. +35% stun, slow, power drain, and curse resists for allies.</color>
+HODA_AURA_PLUS25_HP_INQUISITION_OUTLAWS_STACKING_AND_PLUS35_STUNRESIST_ALLIES_AND_PLUS250_HP_PER_COMMON_UNCOMMON|<color=green>+25% Health and Power for Inquisition and Outlaws (stacking). +35% stun resist for allies. Receives +250% Health and Power per each common/uncommon ally.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS30EFFDMGRES_INQ_EXTRA5ADVISOR_GAIN10EFFRES5DMGRESALL_ONHIT_HEAL25GAIN25_FROMDAM_MINUS25EFFRES|<color=green>+30% all effect and damage resists for Inquisition, extra +5% for Advisors. When hit, allies gain +5% damage resist and +10% all effect resists. Converts 25% damage received into power and health for allies.</color> <color=red>-25% all effect resists to enemies.</color>
+HODA_AURA_PLUS30HCHANTRY_PLUS25PSEEKERS_DEFENDER25_15STUNSLOWDMGRESCHANTRY_EXTRA10CASSBYRON_MINUS10DRAINRES|<color=green>+30% Health for Chantry. +25% Power for Seekers. +25% Defender. +15% stun, slow, and damage resist for Chantry allies, extra +10% for Cassandra and Byron.</color> <color=red>-10% power drain resist.</color>
+HODA_AURA_PLUS30HCURHSTUNRESORLCIRCINQSTACK_20BNSDMGALLVSAPOS_25DMGRESORL_GAIN10HEAL10ALLYHIT_HEAL50ALLANYDEATH_MINUS25PSTUNRESAPO|<color=green>+30% health, curse health and stun resist for Orlesians, Circle and Inquisition (stacking). +20% bonus damage vs Apostates for allies. +25% damage resist for Orlesians. On ally hit, gains +10% power and health. On any death, grants allies +50% health.</color> <color=red>-25% power and stun resist for Apostates.</color>
+HODA_AURA_PLUS30HDRAINCURPRES_QUNSAAREBASBENHASSTACK_GAIN2BNSDMG10DMGRESALL_ANYDEATH_STUNIMMUNESAARATH_MINUS35STUNCURRESINQMAGE|<color=green>+30% health, power drain, and curse power resist for Qunari, Saarebas, and Ben-Hassrath (stacking). On any death, allies gain +2% bonus damage and +10% damage resist. Stun immunity for Saarath.</color> <color=red>-35% stun and curse resist to Inquisition and Mages.</color>
+HODA_AURA_PLUS30HEALTH_POWER_TO_INQ_AND_GAIN_HEALTH_POWER_5_ON_ALLYHIT_AND_PLUS25_ALL_RESISTS_AND_SLOW_TARGETING_FOR_ALLIES|<color=green>+30% Health and Power for Inquisition. Gains very small Health and Power when an ally is hit. +25% stun, slow, power drain, and curse resists.</color> <color=orange>Allies more likely to target slowest enemy.</color>\n
+HODA_AURA_PLUS30HP35SLOWSTUNRES_BLIGHT_DWARF_STACK_25DRAINRESALL_GAIN20HEAL20_ANYDEATH_MINUS20PDWARF|<color=green>+30% Health and Power and +35% slow and stun resist for Blighted and Dwarves (stacking). +25% power drain resist for allies. Gains 20% health and power on any death.</color> <color=red>-20% power to Dwarves.</color>
+HODA_AURA_PLUS30HPDCURRES10DMGRES_INQSEEKCHA_STACK_10PSLOWRESALL_ALLYATK_25PHALL_ANYDTH_SLOWIMM_DEF50_MIN15P|<color=green>+30% health, power drain and curse resists, and +10% damage resist for Inquisition, Seekers, and Chantry (stacking). When allies attack, allies gain +10% power and slow resist. Allies gain +25% power and health on any death. Immune to slow. +50% Defender.</color> <color=red>-15% power.</color>
+HODA_AURA_PLUS30HPORLWARR_10DMGRESALL_DEFENDER50_CURSEIMMGASPARD_GAIN20ALL_ONHIT_HEAL50ALL_ONDEATH_FLANK_MIN10PWR|<color=green>+30% health and power to Orlesians and Warriors (stacking). +10% damage resist for allies. +50% Defender. Curse immunity for Gaspard de Chalons. When hit, allies gain +20% power. On death, allies heal +50%.</color> <color=orange>More likely to attack the back row.</color> <color=red>-10% power.</color>
+HODA_AURA_PLUS30HP_AND_PLUS25_STUN_SLOW_RESIST_FOR_WARDENS_FERELDEN_STACKING_AND_PLUS25DAMAGE_VS_BLIGHT|<color=green>+30% Health and Power and +25% stun and slow resist for Wardens and Ferelden (stacking). +25% bonus damage vs Blight.</color>
+HODA_AURA_PLUS30HP_INQ_SPIRITS_15HP_WYNNE_COLE_EVA_40P_VS_BLACK_FACTION_35CURSERESIST_ALLIES_IMMUNITY_WYNNE_COLE_EVANGELINE_MINUS_10DRAIN_RESIST|<color=green>+30% Health and Power for Inquisition and Spirits, additional +15% for Wynne, Cole, and Evangeline. +40% bonus damage vs Black faction. +35% curse resist for allies, immunity to Wynne, Cole, and Evangeline.</color> <color=red>-10% power drain resist to enemies.</color>
+HODA_AURA_PLUS30HP_RED_FACTION_PLUS15CRIT_BEASTS_HEALSELF15_ON_ALLY_HIT|<color=green>+30% Health and Power for red faction. +15% 2X Damage chance for Creatures. Heals a small amount when allies are hit.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS30HP_SPIRITS_DEMONS_MAGES_INQ_STACK_AND_POWERGAIN25_ON_ANYDEATH_AND_DRAIN3POWER_ON_ALLYHIT_AND_ALLYGAINDAMRES1_ON_SELFHIT|<color=green>+30% Health and Power for Spirits, Demons, Mages, and Inquisition (stacking). Gains 25% Power on enemy or ally death. Drains enemy power 3% when allies are hit. Allies gain 1% damage resist when this hero is hit.</color>
+HODA_AURA_PLUS30P5CRITBEASTWEREWOLVESSTACK_HEAL20SELF5BNSDMGALL_SELFHIT_GAIN50WEREWOLVES_SELFDEATH_WWHATREDELVESHUMAN_MINUS15P|<color=green>+30% power and +5% 2X damage chance for Creatures and Werewolves (stacking). When hit, heals 20% and allies gain +5% bonus damage. On death, Werewolves gain +50% power.</color> <color=orange>Werewolves are more likely to attack Humans and Elves.</color> <color=red>-15% power to enemies.</color>
+HODA_AURA_PLUS30PDRAINRESSTACKALL_INQ_PLUS50STUNSLOWRESALL_PLUS10PINQALLATTACK_AND_PLUS35PALL_SELFDEATH|<color=green>+30% Power and power drain resist for allies and Inquisition (stacking). +50% stun and slow resist for allies. Inquisition allies gain +10% power when Inquisition allies attack. Allies gain +35% Power when this hero dies.</color>
+HODA_AURA_PLUS30PSLOWPDRES_RLOUTLAWSTACK_DEFENDER50_20DMGRESRED_HEAL15BNSDMG2DMGRES8ALL_ALLYATK_STUNIMMUNE|<color=green>+30% power and +25% slow and power drain resist for Red Lyrium and Outlaws (stacking). +50% Defender. +20% damage resist for Red Faction. When allies attack, allies gain +15% health, +2% bonus damage, and +8% damage resist. Immune to stun.</color>
+HODA_AURA_PLUS30PSLOWRES10CRIT_RL_BLACK_STACK_GAIN75HEAL75ALL_ALLYDEATH_DRAIN35_ONDEATH_MINUS50SLOWRES_INQ|<color=green>+30% power and slow resist and +10% 2X damage chance for Red Lyrium and Black Faction (stacking). Allies gain +75% power and health on ally death. On death, drains 35% power from enemies.</color> <color=red>-50% slow resist for Inquisition.</color>
+HODA_AURA_PLUS30PSTUNSLOWRESREDDWARFSTACK_CONVERT5PALLY_ALLYATK_GAIN25PSELF30H3BNSDMGALL_ENEMYDEATH_RETALIATE25_ONDEATH|<color=green>+30% power, stun, and slow resist for Red Faction and Dwarves (stacking). Converts 5% of damage dealt to enemies into ally power. On enemy death, gains +25% power, and allies gain +30% health and +3% bonus damage. On death, reverts 25% of damage received to enemies.</color>
+HODA_AURA_PLUS35HDRAINCURPRES_RL_TEMPLAR_STACK_CRIT10ALL_PLUS25DMGRESBNSDMGALL_VS_MAGE_GAIN25HEAL25ALL_ONHIT_MINUS25DRAINRES|<color=green>+35% health, power drain and curse power resist for Red Lyrium and Templars (stacking). +10% 2X damage chance for allies. +25% damage resist and bonus damage vs Mages for allies. When hit, allies gain +25% health and power.</color> <color=red>-25% power drain resist.</color>
+HODA_AURA_PLUS35HEALTHALLIES_PLUS25HEALTHFERELDEN_50SLOWSELF_50SLOWALLIES_ALLIESGAIN50POWERALLYDEATH_ALLIESHEAL50SELFDEATH|<color=green>+35% Health for allies, +25% for Ferelden (stacks). +100% slow resist for self and +50% for allies. Allies gain a large amount of Power on ally death, and heal a large amount when this hero dies.</color>
+HODA_AURA_PLUS35HEALTH_25BONDAM_25CURSERES_CHANTRY_INQUISITION_AND_DEFENDER50_AND_PLUS35BONDAM_VS_MAGES_TEMPLARS|<color=green>+35% Health, +25% bonus damage, and +25% curse resist for Chantry and Inquisition. 50% Defender. +35% bonus damage vs Mages and Templars.</color>
+HODA_AURA_PLUS35HEALTH_POWER_TO_SPIRITS_AND_BM_POWERGAIN5_ALLIES_FOR_ALLIES_AND_PLUS75BONUSDAMAGE_VS_MAGES_AND_STEALTH_AND_ANTIFLANK|<color=green>Stealth: Attacks without triggering on-hit effects. +35% Health and Power for Spirits. Allies convert 5% of damage taken into Power for all allies. +75% bonus damage vs Mages.</color> <color=red>Blocks enemies from flanking the back row.</color>
+HODA_AURA_PLUS35HP10DMGRESDWARFSPIRITSTACK_50PDRESALL_GAIN15HEAL15ALL_ONHIT_GAIN75H7BNSDMGALL_ALLYDEATH_MIN25CURRESALL_50BLIGHT|<color=green>+35% health and power, and +10% damage resist for Dwarves and Spirits (stacking). +50% power drain resist for allies. When hit, allies gain +15% health and power. On ally death, allies gain +75% health and +7% bonus damage.</color> <color=red>-25% curse resist to enemies, double to Blighted.</color>
+HODA_AURA_PLUS35HPCHANTRY_PLUS10DMGRESALL_DEFENDER35_50SLOWDRAINCURSEHRES_SPIRITS_CHANTRY_GAIN20HALL_ONHIT|<color=green>+35% Health and Power for Chantry. +10% damage resist for allies. +35% Defender. +50% slow, power drain, and curse health resist for Spirits and Chantry. Allies gain 20% health when this hero is hit.</color>
+HODA_AURA_PLUS35HPDEMON_25HPFORBIDDEN_50STUNSLOWRESDEMON_CURHIMMFORBIDDEN_CONV15HALL_RETALIATE5_MIN15CRIT|<color=green>+35% health and power to Demons, extra +25% for The Forbidden Ones. +50% stun and slow resist for Demons. Curse health immunity for The Forbidden Ones. When hit, converts +20% damage received into health for allies, and reverts +5% to enemies.</color> <color=red>-15% 2X damage chance.</color>
+HODA_AURA_PLUS35HPDRESALL_EXTRA15AVVARSPIRIT_MINUS15CURSLOWRESENEMY_ONHIT_CONVERT15PSELF_ALLYDMG_HEAL50DMGRES15_ALLYDEATH|<color=green>+35% health and power drain resist for allies, extra +15% for Avvar and Spirits. When hit, reduces enemy curse and slow resist by 15%. Converts +15% of damage taken by allies into power. On ally death, heals +50% and gains +15% damage resist.</color> <color=red>-35% curse resist.</color>
+HODA_AURA_PLUS35HPNOBILITY_CHANTRY_25STUNSLOWRES_CHANTRY_DEFENDER50_50BNSDMGVSDRAGONS_ALL_MINUS5PWR|<color=green>+35% Health and Power for Nobility and Chantry. +25% stun and slow resist to Chantry. +50% Defender. Allies deal +50% bonus damage vs Dragons.</color> <color=red>-5% power to enemies.</color>
+HODA_AURA_PLUS35HPPWRORLNOB_50DEF_ONHIT20PWR_10CRITNOB_EMYDEATHALLYHP30_STUNSLOWCURPWRRES40ORL_MIN10PWREMY|<color=green>+35% Health and Power to Orlesian and Nobility (stacking). +50% Defender. +10% 2X damage chance for Nobility. When hit, Nobility allies gain +20% power. On enemy death, allies gain +30% Health. +40% stun, slow, and curse power resist to Orlesian.</color> <color=red>-10% power to enemies.</color>				
+HODA_AURA_PLUS35HPSTUNRESALL_DOUBLEDRAGON_GAIN25HEAL25DRAGON_ONHIT_DEFENDER25_HEAL40_ALLYDEATH_BRAVETARGETING|<color=green>+35% health, power, and stun resist to allies, double for Dragons and Ferelden. When attacked, grants Dragon allies +25% health and power. +25% Defender. Heals 40% on ally death.</color> <color=orange>More likely to attack the strongest enemy.</color>
+HODA_AURA_PLUS35HP_ALLIES_EXTRA_PLUS10_APOSTATES_AND_PLUS50PDRESIST_FOR_APOSTATES_AND_HEALS25_ON_ENEMY_DEATH|<color=green>+35% Health and Power for allies, extra +10% for Apostates. +50% power drain resist for Apostates. Heals a small amount when an enemy dies.</color>
+HODA_AURA_PLUS35HP_AND_CURSERES_SEEK_CHANT_AND_ALLIESGAINHP_MED_ONANYDEATH_AND_STUN_CURSEHLTH_IMM_AND_ALLY_FACTDAM35_AND_NEG_STUN_SLOWRES_ENEM65|<color=green>+35% Health, Power, and curse resist for Seekers/Chantry. Allies gain 50% Health and Power on any death. Immune to stun and curse Health. 35% bonus damage for allies vs opposing faction (stacking).</color> <color=red>-65% stun and slow resist to enemies.</color>
+HODA_AURA_PLUS35HP_BEAST_MAGES_STACKING_CONVERT50DAM_TO_HEALTH_FOR_ALLIES_QUICK_TARGETING|<color=green>Stealth: Attacks without triggering on-hit effects. +35% Health and Power for Creatures and Mages (stacking). Converts 50% of damage taken into Health for allies.</color> <color=orange>More likely to attack the quickest enemy.</color>
+HODA_AURA_PLUS35HP_INQUISITION_AND_PLUS35CURSEPOWERRES_AND_PDRES_FOR_INQUISITION_AND_BRAVE_TARGETING_AND_MINUS15POWER_DEMONS_BLOODMAGES|<color=green>+35% Health, Power, curse Power resist, and power drain resist for Inquisition.</color> <color=orange>More likely to attack the highest power target.</color> <color=red>-15% Power to Demon and Blood Mage enemies.</color> 
+HODA_AURA_PLUS35HP_TEV_AND_PLUS100SLOWRES_TEV_AND_PGAIN50_ENEMYDEATH_AND_PLUS35BD_ALLIES_VS_VENA_AND_STUN_PD_IMM_AND_MINS25PDRES_CURSERES_ENEM|<color=green>+35% Health and Power for Tevinter. +100% slow resist for Tevinter. Medium power gain on enemy death. +35% bonus damage vs Venatori for allies. Immune to stun and power drain.</color> <color=red>-25% power drain and curse resists to enemies.</color> 
+HODA_AURA_PLUS35HP_TO_DEMONS_PLUS15PCT_POWER_VS_INQUISITION_AND_SPIRITS_PERSONAL_HP_ON_ENEMY_DEATH_25_CURSE_IMMUNE_FORBIDDEN|<color=green>+35% Health and Power for Demons. +15% bonus damage vs Inquisition and Spirits. Gains 40% Health and Power on enemy death. Curse Power immunity for The Forbidden Ones.</color>
+HODA_AURA_PLUS35HSTUNSLOWRESDWARFOUTLAWSTACK_GAIN15HEAL15ALL_ANYDEATH_DRAIN15_ENEMYDEATH_75PDCURRES5BNSDMGCARTA_MINUS35STUNRES|<color=green>+35% health, stun, and slow resist for Dwarves and Outlaws (stacking). On any death, allies gain +15% power and health. On enemy death, drains 15% power from all enemies. +75% power drain and curse resist and +5% bonus damage for Carta. </color> <color=red>-35% stun resist.</color>
+HODA_AURA_PLUS35H_ALL_25H_FERELDEN_POWER_GAIN_WHEN_ALLY_HIT_10_PERSONAL_STUN_RESIST_50_ALL_STUNRESIST_50|<color=green>+35% Health for allies, additional 25% Health for Ferelden. +100% stun resist, +50% stun resist for allies.</color> <color=orange>More likely to attack the quickest enemy.</color>
+HODA_AURA_PLUS35H_AND_15BONDAM_TEMP_AND_POWER25_HEALTH25_ALLYDEATH_AND_PLUS50STUNRES_TEMP_AND_RL_HATR_AND_MINUS10POWER_EN_AND_MINUS5POWER_RL|<color=green>+35% Health and +15% bonus damage for Templars. +50% stun resist for Templars. Gains 25% Health and Power when an ally dies.</color> <color=red>-10% Power to enemies, extra -5% to Red Lyrium.</color> <color=orange>More likely to attack Red Lyrium.</color>
+HODA_AURA_PLUS35PALL25PFERELDEN_100SLOWRESSELF_50SLOWRESALL_BRAVETGT|<color=green>+35% Power for allies, additional 25% Power for Ferelden. +100% slow resist, +50% slow resist for allies.</color> <color=orange>More likely to attack the most powerful enemy.</color>
+HODA_AURA_PLUS35PHALL_PLUS7BNSDMG35PDRESSKYCULT_DRAIN2P_ONHIT_CURSEIMMSKYHORROR_HEAL25ALLGAIN35SKYCULT_ONDEATH_MINUS10CRIT|<color=green>+35% Power and Health for allies. +7% bonus damage and +35% power drain resistance for Sky Cult allies. When hit, drains 2% enemy power. Curse immunity for Sky Horror. On death, heals allies +25%, and grants Sky Cult allies +35% power.</color> <color=red>-10% 2X Damage chance for enemies.</color>
+HODA_AURA_PLUS35POWBEASTS_PLUS10HPINVISNUG_PLUS25DMGNUG_ALLIES35POWONSELFHIT_STEALTH|<color=green>Stealth: Attacks without triggering on-hit effects. +35% Power for Creatures. +10% Health for Invisible Nugs. +25% bonus damage for Nugs. When hit, allies gain +35% Power.</color>
+HODA_AURA_PLUS35POWERALLIES_PLUS25POWERFERELDEN_50SLOWSELF_50SLOWALLIES_ALLIESGAIN50POWERALLYDEATH_ALLIESHEAL50SELFDEATH|<color=green>+35% Power for allies, +25% for Ferelden (stacks). +100% slow resist for self and +50% for allies. Allies gain a large amount of Power on ally death, and heal a large amount when this hero dies.</color>
+HODA_AURA_PLUS35POWERBEASTS_AND_GAINS35POWERONSELFHIT_AND_PLUS100SLOWRESISTBEAST|<color=green>+35% Power for Creatures. Gains a medium amount of Power when attacked. +100% slow resist for Creatures. Stealth: Attacks without triggering on-hit effects.</color>
+HODA_AURA_PLUS35POWER_TO_CREATURESANDBLIGHTED_AND_PLUS60STUNANDSLOWRESIST_TO_CREATURESANDBLIGHTED_AND_HEALSELF50_ON_ALLY_DEATH_AND_FLANK|<color=green>+35% Power for Creatures and Blighted. +60% stun and slow resist for Creatures and Blighted. Heals a medium amount when an ally dies.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS35POWER_TO_CREATURES_AND_PLUS25POWERDRAINRESIST_TO_ALLIES|<color=green>+35% Power for Creatures. +25% power drain resist for allies.</color>
+HODA_AURA_PLUS35POWER_TO_DEMONS_SLOW_RESIST_100_TO_DEMONSMINUS35STUN_SLOW_DRAIN_RESIST_TO_ENEMIES_WOUNDED_TARGETING|<color=green>+35% Power and +100% slow resist for Demons.</color> <color=red>-35% Stun, slow, and power drain resist to enemies.</color> <color=orange>More likely to attack the lowest Health target.</color>
+HODA_AURA_PLUS35POWER_TO_HAKKON_AND_PLUS20_ALLRESIST_TO_OUTLAWS_PLUS10EXTRA_TO_HAKKONITES_ALLIES_GAIN_20POWER_ONHIT_AND_DEFENDER25|<color=green>+35% Power for Hakkon Wintersbreath. +20% slow, stun, and power drain resist for Outlaws, extra 10% for Jaws of Hakkon. When hit, grants allies 20% power. 25% Defender.</color>
+HODA_AURA_PLUS35PPDRESDWARFOUTLAWSTACK_75STUNSLOW25DMGRESCARTA_CONVERT5PCARTA_CARTAHIT_GAIN10PCURRESALL_ALLYATK_MINUS35CURRES|<color=green>+35% power and power drain resist for Dwarves and Outlaws (stacking). +75% slow, stun, and +25% damage resist for Carta. Converts 5% damage taken by Carta allies into power for Carta allies. When allies attack, allies gain +10% power and curse resist.</color> <color=red>-35% curse resist.</color>
+HODA_AURA_PLUS35PREDFACTION_25HPDRAKE_GAIN50HEAL50DRAGON_SELFDEATH|<color=green>+35% Power for Red faction. +25% Health and Power for Drake. +50% Health and Power for Dragons when this unit dies.</color>
+HODA_AURA_PLUS35P_TEVINTER_75HP__ALLIES_WHEN_SELF_DEATH_35STUN_SLOW_RESIST_TEVINTER_10HP_SELF_WHEN_ALLY_HIT|<color=green>+35% Power for Tevinter. +35% stun and slow resist for Tevinter. Gains small Health and Power when allies are hit. Allies gain massive Health and Power when this hero dies.</color>
+HODA_AURA_PLUS40HP25SLOWPDRESALL_EXTRA10REDLYRIUM_50HPRLMEREDITH_GAIN20HEAL20ALLSELFHIT_DEFENDER75_STUNIMM_MINUS20CRIT|<color=green>+40% Health and Power, and +25% slow and power drain resist to allies, extra +10% for Red Lyrium. +50% Health and Power for Red Lyrium Meredith. When hit, allies gain +20% health and power. +75% Defender. Immune to stun.</color><color=red>-20% 2X damage chance.</color>
+HODA_AURA_PLUS40HPCHARGERSINQSTACK_DEFENDER25_35CURSEPRESALL_GAIN50PSELF_HEAL15ALL_ONHIT_25BNSDMGBEAST_ALL_10BNSDMGDRAGON_ALL|<color=green>+40% Health and Power for Bull’s Chargers and Inquisition (stacking). 25% Defender. +35% curse power resist for allies. Gains 50% power and heals allies 15% when attacked. +25% bonus damage vs Creatures for allies, extra +10% vs Dragons.</color>
+HODA_AURA_PLUS40HPELF_GAIN15PSELFDMGRES3ALLALLYATK_HEAL10ALLALLYHIT_SLOWIMMSELFZATH_CURSEIMM_QUICKTGT|<color=green>+40% Health and Power for Elves. When allies attack, gains +15% power, and grants allies +3% damage resist. When allies are hit, heals allies 10%. Slow immunity for self and Keeper Zathrian. Immune to curse.</color> <color=orange>More likely to attack quick round heroes.</color>
+HODA_AURA_PLUS40HPELVESSPIRITS_HEAL5GAIN5VALFROMDAMALL_DRAIN50ONDEATH_MINUS10STUNSLOWRESCRIT|<color=green>+40% Health and Power for Elves and Spirits. When attacked, converts 5% of damage received into health and power for allies. On death, drains 50% power from enemies.</color> <color=red>-15% stun and slow resist, and 2X damage chance.</color>
+HODA_AURA_PLUS40HPSLOWRES_BEAST_RED_STACK_PLUS5STUNSLOWDMGRESALL_ONHIT_2KDMGRED25BNSDMGVSBLUE_SELF_RED_MINUS15ALLEFFECTRES_BLUE|<color=green>40% Health, Power, and slow resist for Creatures and Red Faction (stacking). When hit, allies gain +5% stun, slow, and damage resist. Red Faction and self resist 2000 damage and deal 25% bonus damage vs Blue Faction.</color> <color=red>-15% all effect resists to Blue Faction.</color>
+HODA_AURA_PLUS40HP_DWARVES_25HP_SHABRYTOL_SLOWRES100_DWARVES_25BNSDMGALL_VS_INQ_BLIGHT_DEFENDER50|<color=green>+40% Health and Power for Dwarves, additional +25% for Sha-Brytol. +60% Slow and Curse resist for Dwarves. +25% damage vs Inquisition and Blighted for allies. 50% Defender.</color> <color=red>-20% slow resistance to enemies.</color>
+HODA_AURA_PLUS40HP_GOLEM_PLUS20HP_SHALE_35STUNSLOWDRAINRES_GOLEM_GAIN20ALL_ONHIT_GAIN100ALL_ONDEATH_MINUS35EFFRES10P_MAGE_BLIGHT|<color=green>+40% Health and Power to Golems, extra +20% for Shale. +35% stun, slow, and power drain resists for Golems. When hit, allies gain +20% power, and +100% on death.</color> <color=red>-35% all effect resists to Mages and Blighted. -10% Power to Mages and Blighted.</color>
+HODA_AURA_PLUS40H_AND_PLUS25BD_ELVES_ROGUES_AND_ALLIES_GAIN35H_ON_SELF_HIT_AND_PLUS100BD_VS_NOBILITY_AND_PLUS35SLOWRES_ALLIES_DOUBLE_SELF_AND_FEAR_GIANTS|<color=green>+40% Health and +25% bonus damage for Elves and Rogues. Converts 35% of damage taken into Health for allies. +100% bonus damage vs nobility. +35% slow resist for allies, double for self.</color> <color=orange>Less likely to attack large creatures.</color>
+HODA_AURA_PLUS40H_FOR_ELVES_AND_PLUS40P_FOR_WHITEFACT_AND_AARON_AND_STEALTH_ROGUES_AND_SLOWTAR_AND_SLOWIMM_ALLIES_AND_PLUS15DAM_QUICK|<color=green>+40% Health for Elves. +40% Power for white faction and Ser Aaron (stacking). +15% bonus damage for Quick round allies. Slow immunity for allies.</color> <color=orange>More likely to stun the slowest enemy.</color>
+HODA_AURA_PLUS40H_PLUS15P_PLUS25CURSEHRES_WARDENS_PETS_AND_PLUS10HPCURSERES_ANDERS_AND_CON5DMGTOHALL_STEALTH|<color=green>Stealth: attacks without triggering on-hit effects. +40% Health, +15% Power, and +25% curse health resist for Wardens and Pets, extra +10% for Anders. Converts 5% of damage received by allies into ally Health.</color>
+HODA_AURA_PLUS40PCURPMAGE_50HSTUNSLOWRES25DMGRESVEN_GAIN10STUNSLOWRESALL_ONHIT_GAIN25PHSELF_ENEMYDEATH_MINUS35STUNSLOWRES|<color=green>+40% power and curse power resist for Mages. +50% health, stun and slow resist, and +25% damage resist for Venatori. When hit, allies gain +10% stun and slow resist. On enemy death, gains +25% power and health.</color> <color=red>-35% stun and slow resist.</color>
+HODA_AURA_PLUS40P_ALL_15P_HAWKE_FAMILY_CURSEHIMMUNITY_TO_FERELDEN_HEALTH_GAIN_WHEN_ALLY_HIT10__DMG_RESIST_TO_NOBILITY_FERELDEN15_CURSEHRESIST_MINUS25_ALL|<color=green>+40% Power for allies, additional +15% for Hawke family. Curse Health immunity for Ferelden. Heals a small amount when allies are hit. +10% damage resist for Mages and Nobility.</color> <color=red>-25% curse Health resist for enemies.</color>
+HODA_AURA_PLUS40P_INQUISITION_QUNARI_POWER_GAIN_WHEN_ALLY_HIT_5_VAL_FROM_DAM_MINUS15_P_ORLESIAN_MINUS25_RESISTS_TO_ENEMIES|<color=green>+40% Power for Inquisition and Qunari. Converts 5% of damage to allies into Power.</color> <color=red>-15% Power to Orlesians. -25% stun, slow, power drain, and curse resist for enemies.</color>
+HODA_AURA_PLUS40P_MAGES_EX10_BM_PLUS10CRIT_ALL_EX5_MAGES_AND_PLUS20ALLYDAM_TO_SELF_POWER_AND_PD_IMM_AND_PLUS25PDRES_AND_CPRES_MAGES_APO_STACK|<color=green>+40% Power for Mages, extra 10% for Blood Mages. +10% crit chance for allies, extra 5% for Mages. +25% power drain resist and curse Power resist for Mages and Apostates (stacking). Converts 20% of damage taken by allies into self Power. Immune to power drain.</color>
+HODA_AURA_PLUS50H15DMGRES_DEMSKYCULTSTACK_DEFENDER60_HEAL10BNSDMG2ALLYHIT_RETALIATE10_STUNIMMUNE|<color=green>50% Health and 15% damage resist for Demons and Sky Cult allies (stacking). +60% Defender. Gains +10% health and +2% bonus damage when allies are attacked. When hit, reverts 10% of damage received to enemies. Immune to stun.</color>
+HODA_AURA_PLUS50H25CURREST5CRITELFWEREWOLF_GAIN5DMGRESALLDRAIN10_ONHIT_FEARELVES_MINUS10CRIT|<color=green>+50% health, +25% curse resist and +5% 2X damage chance to Elves and Werewolves. When hit, allies gain +5% damage resist, and drains 10% enemy power.</color> <color=orange>Less likely to attack Elves.</color> <color=red>-10% 2X damage chance.</color>
+HODA_AURA_PLUS50H25DMGRES50CURHRES10CRIT5BNSDMG_DWARF_DEFENDER50_HEAL10ALL_VALFROMDAM|<color=green>+50% Health, +25% damage resist, +50% curse health resist, +10% 2X damage chance, and +5% bonus damage for Dwarves. +50% Defender. Converts 10% of damage received to health for allies.</color>
+HODA_AURA_PLUS50H25PDWARVES_GAIN25P_ONHIT_PLUS50BNSDMG_VSBLIGHT_PLUS50CURPRES_LEGION|<color=green>+50% Health and +25% Power for Dwarves. Gains 25% Power when hit. +50% bonus damage vs Blighted enemies. +25% stun resist for allies. +50% curse power resist for Legion of the Dead.</color>
+HODA_AURA_PLUS50H3BNSDMGDWARF_DEFENDER35_DMGRES25_STUNIMMUNE_DRAIN5HEAL15ALL_ONHIT_HEAL75ALL_ONDEATH_PDRAINIMMCARIDIN_MINUS50CRIT|<color=green>+50% health and +3% bonus damage for Dwarves. +35% Defender. +25% damage resist. Immune to stun. When hit, drains 5% enemy power, and heals allies 15%. On death, heals allies 75%. Power drain immunity for Paragon Caridin.</color> <color=red>-50% 2X damage chance.</color>
+HODA_AURA_PLUS50HALL_60PADVISOR_20BNSDMG100SLOWRES_DWARF_INQ_25DMGRESALL_VS_MAGE_VEN_STACK_GAIN25HALL_ONHIT_MINUS25SLOWRES|<color=green>+50% Health for allies. +60% Power for Advisors. +20% bonus damage and +100% slow resist for Dwarves and Inquisition. +25% damage resist vs Mages and Venatori for allies (stacking). When hit, allies gain 25% health.</color> <color=red>-25% slow resist to enemies.</color>
+HODA_AURA_PLUS50HALL_RETALIATE4ALL_DRAIN25HEAL75ONDEATH_MINUS10PDRAINRES|<color=green>+50% Health to allies. When hit, reverts 4% of damage received to all enemies. On death, drains 25% power from enemies and heals allies 75%.</color> <color=red>-10% power drain resist.</color>
+HODA_AURA_PLUS50HCURPPDRESVEN_20DMGRESMAGE_GAIN50HEAL50ALL_ALLYDEATH_RETALIATE15_ONDEATH_MINUS25PDRES_FLANK|<color=green>+50% health, curse power, and power drain resist for Venatori. +20% damage resist for Mages. Allies gain +50% power and health on ally death. On death, reverts 15% of damage taken.</color> <color=red>-25% power drain resist.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS50HCURRES_ELFWARR_20DMGRES_5BNSDMG10STUNSLOWRESALL_ONHIT_GAIN25HEAL25ALL_ALLYDEATH_MINUS25SLOWRES|<color=green>+50% health and curse resist for Elves and Warriors. +20% damage resist. When hit, allies gain +5% bonus damage and +10% stun and slow resist. On ally death, allies gain +25% health and power.</color> <color=red>-25% slow resist for enemies.</color>
+HODA_AURA_PLUS50HCURSERESDRAGON_EX10KALTENZAHN_10BNSDMGFROMDRAGONLINGS_HEAL20ALLYHIT_GAIN5DMGRESDRAGONATK_EQUALTGT|<color=green>+50% health and curse resist for Dragons, extra +10% for Kaltenzahn brood. Gains +10% bonus damage for each dragonling in the party. When allies are hit, heals allies 20%. Dragons gain +5% damage resist when Dragon allies attack.</color> <color=orange>Equal chance to attack front or back row.</color>
+HODA_AURA_PLUS50HEALTHANDPOWERANDPOWERDRAINRESIST_TO_ELVES_AND_SELF_GAIN_15POWER_ON_ALLY_HIT_AND_MINUS_10POWER_TO_ENEMIES_AND_MINUS_15STUNRESIST_TO_ENEMIES|<color=green>+50% Health and Power for Elves. +50% power drain resist for Elves. Gains a small amount of Power when allies are attacked.</color> <color=red>-10% Power to enemies. -15% stun resist to enemies.</color>
+HODA_AURA_PLUS50HEALTHWARRIOR25POWERALLIES_AND_PLUS15POWERREINDEER_AND_PLUS30STUNSLOWRESALLIES30REINDEER_AND_HEALSELF15ONALLYHIT_AND_TAUNT|<color=green>+50% Health for Warriors. +25% Power for allies, additional 15% for Reindeer Mabari. +30% stun and slow resist for allies, additional 30% for Reindeer Mabari. Heals a small amount when allies are attacked.</color>
+HODA_AURA_PLUS50HEALTHWINTERSEND_AND_PLUS35POWERBEASTWHITE_AND_ALLYGAIN15POWERONSELFHIT_AND_PLUS35POWERDRAINRESALLIESWINTERSEND|<color=green>+50% Health for Wintersend Cullen. +35% Power for Creatures and White Faction (stacking). Allies gain a small amount of Power when this hero is attacked. +35% power drain resist for allies, additional +35% for Wintersend Cullen.</color>
+HODA_AURA_PLUS50HEALTH_40STUNRESIST_40SLOWRESIST_TO_ORLESIAN_AND_PLUS60POWER_VS_TALLIS_HAWKE_AND_PLUS35POWER_TO_PROSPER|<color=green>+50% Health and +40% stun and slow resist for Orlesians. +60% bonus damage vs Tallis and Hawke. +35% Power for Duke Prosper.</color>
+HODA_AURA_PLUS50HEALTH_AND_PDIMMUNITY_FOR_QUNARI_AND_PLUS50DAMAGE_REDBLUEFACTION_VS_WHITEBLACKFACTION_AND_ALLY_HEAL40_WHEN_SELF_ATTACK|<color=green>+50% Health for Qunari. Power drain immunity for Qunari. +50% bonus damage for red and blue faction vs white and black faction. When attacked, heals allies a medium amount.</color>
+HODA_AURA_PLUS50HEALTH_ELVES_ORLESIAN_STACKING_PWGAIN25_ALLIES_ON_ENEMY_DEATH_AND_PLUS25_STUN_SLOW_PDRESIST_ORLESIAN_ELVES_STACKING|<color=green>+50% Health and +25% stun, slow, and power drain resist for Orlesian and Elves (all stacking). Allies gain 25% power on enemy death.</color>
+HODA_AURA_PLUS50HEALTH_ELVES_OUTLAWS_STACKING_PWGAIN25_ALLIES_ON_ENEMY_DEATH_AND_PLUS25_STUN_SLOW_PDRESIST_OUTLAWS_ELVES_STACKING|<color=green>+50% Health and +25% stun, slow, and power drain resist for Outlaws and Elves (all stacking). Allies gain small Power on enemy death.</color>
+HODA_AURA_PLUS50HEALTH_ELVES_PLUS50POWER_INQ_PLUS35BONDAM_SEEKERS_AND_DEFENDER50_AND_PLUS75CURSEPOWERRES_ELVES_AND_ALLIES_HEAL75_ON_ENEMYDEATH|<color=green>+50% Health for Elves, +50% Power for Inquisition, and +35% bonus damage for Seekers. 50% Defender. +75% curse Power resist for Elves. Allies heal 75% when an enemy dies.</color>
+HODA_AURA_PLUS50HEALTH_PLUS25POWER_FOR_SPIRITS_AND_HEAL50_POWERGAIN_20_ON_ALLY_DEATH_AND_PLUS25DMG_VS_DEMONS_50_VS_NIGHTMARE|<color=green>+50% Health and +25% Power for Spirits. Heals a medium amount and gains small Power on ally death. +25% bonus damage vs Demons, extra 50% vs Nightmare.</color>
+HODA_AURA_PLUS50HEALTH_POWER_TO_INQ_ELVES_FLEMETH_AND_STUN_IMMUNITY_AND_PLUS50STUNRES_ALLIES_AND_PLUS50CURSHEALTHRES_ALLIES_AND_DEFENDER25|<color=green>+50% Health and Power for Inquisition, Elves, and Flemeth. Immune to stun. +50% stun and curse health resist for allies. 25% Defender.</color>
+HODA_AURA_PLUS50HP10CRITALL_10BNSDMGDMGRES75STUNSLOWRESSELF_GAIN10HPALLYATK_BRAVETGT_MINUS25ALLEFFRES|<color=green>+50% Health and Power and +10% 2X damage chance for allies. +10% bonus damage and damage resist. +75% stun and slow resists. Gains +10% health and power when allies attack.</color> <color=orange>More likely to attack the strongest enemy.</color> <color=red>-25% all effect resists.</color>
+HODA_AURA_PLUS50HP10DMGRESWARD_60STUNCURRESWARDWARR_15PSELF_ALLYHIT_10SLOWDMGRESALL_ALLYDTH_HEAL30ALL_ENMYDTH_MINUS25ALLEFFRES|<color=green>+50% health, power, and +10% damage resist for Wardens. +60% stun and curse resist for Wardens and Warriors. Gains +15% power when allies are hit. Allies gain +10% slow and damage resist on ally death, and +30% health on enemy death.</color> <color=red>-25% all effect resists.</color>
+HODA_AURA_PLUS50HP15EFFRESWEREWOLVES_GAIN25HEAL25ALL_ONHIT_HEAL50_ONDEATH_CURSEIMMUNELADY_MINUS25EFFRES|<color=green>+50% health and power and +15% all effect resists to Werewolves. When hit, allies gain 25% health and power. On death, allies gain +50% health. Curse immunity for Lady of the Forest.</color> <color=red>-25% all effect resists.</color>
+HODA_AURA_PLUS50HP20DMGRES50SLOWRESALL_15CRITSELF_CONV15HALLPSELF_EXPLODE5_MINUS10P|<color=green>+50% Health, Power, +20% damage resist, and +50% slow resist for allies. +15% 2X damage chance. On attack, converts 15% of damage dealt into health for allies and power for self. On enemy death, all enemies take 5% of damage received.</color> <color=red>-10% power.</color>
+HODA_AURA_PLUS50HP30STUNSLOW10DMGRESRL_CURSEIMMSAMSON_GAIN10EFFRES_ONHIT_GAIN50HEAL100ALL_ONDEATH_MIN25EFFRES10CRIT|<color=green>+50% health and power, +30% stun and slow resist, and +10% damage resist to Red Lyrium. Curse immunity for Samson. When hit, allies gain +10% all effect resists. On death, allies gain +100% health and +50% power.</color> <color=red>-25% all effect resists and -10% 2X damage chance.</color>
+HODA_AURA_PLUS50HP40SLOWRES15DMGRESALL_GAIN15HEAL15DMGRES4ALL_ALLYATK_HEAL100BNSDMG10ALL_ONDEATH_MIN10P5CRIT35SLOWRES|<color=green>+50% health and power, +40% slow resist, and +15% damage resist for allies. When allies attack, allies gain +15% health and power, and +4% damage resist. On death, allies heal +100% and gain +10% bonus damage.</color> <color=red>-10% power, -5% 2X damage chance, and -35% slow resist.</color>
+HODA_AURA_PLUS50HPALL_25DMGRESVSQUICK_DOUBLESELF_RETALIATE5EXPLODE5_DEFENDER50_MINUS15P50SLOWQUICK|<color=green>+50% Health and Power for allies. Gives allies 25% damage resist vs quick round heroes, double for self. When allies are hit or attack, all enemies take 5% damage dealt or received. +50% Defender.</color> <color=red>-15% power and -50% slow resist to quick round heroes.</color>
+HODA_AURA_PLUS50HPALL_75CURSTUNRESORLESIAN_25DMG75ALLEFFRES15CRITDUKEPROSPER_EXPLODE3ALLYTATK_MINUS25STUNPDRES|<color=green>+50% health and power for allies. +75% curse and stun resist for Orlesian. +25% damage resist, +75% all effect resists, and +15% 2X damage chance for Duke Prosper. When allies attack, all enemies take 3% of damage dealt.</color> <color=red>-25% stun and power drain resist.</color>
+HODA_AURA_PLUS50HPALL_75STUNRESINQ_PDIMMSELF_GAIN15PSELF15H10CURRESALL_ALLYATK_DRAIN15ANYDTH_MIN20CRITALLEFFRES|<color=green>+50% health and power for allies. +75% stun resist for Inquisition. Immune to power drain. When allies attack, gains +15% power, and allies gain +15% health and +10% curse resist. On any death, drains 15% power from all enemies.</color> <color=red>-20% 2X damage chance and all effect resists.</color>
+HODA_AURA_PLUS50HPBEASTSPIRIT_10CRIT5BNSDMGALL_RETALIATE10_HEAL30ALL_ONHIT_BNSDMG50VSWARR_GAIN25ALL_ALLYDTH_ANTIFLANK|<color=green>+50% health and power to Creatures and Spirits. +10% 2X damage chance and +5% bonus damage for allies. When hit, reverts 10% of damage received, and heals allies +30%. +50% bonus damage vs Warriors. On ally death, grants allies +25% power.</color> <color=red>Reduces enemy chance to flank.</color>
+HODA_AURA_PLUS50HPBEASTWEREWOLVES_10HPWITHERFANG_DEFENDER50_GAIN25P10DMGRES5RETALIATE_ONHIT_HEAL100WEREWOLVES_ONDEATH_FLANK|<color=green>+50% health and power for Creatures and Werewolves, +10% extra for Witherfang. +50% Defender. When hit, allies gain +25% power and +10% damage resist, and reverts 5% of damage received to enemies. On death, Werewolves heal 100%.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS50HPBEAST_20ALLRESBEASTWEREWOLFSTACK_RETALIATE10_GAIN15HPBEASTFROMDAM_ONHIT_ANTIFLANK|<color=green>+50% health and power for Creatures. +20% all effect resists for Creatures and Werewolves (stacking). When hit, reverts 10% of damage received to enemies, and converts 15% of damage received into health and power for Creatures.</color> <color=red>Reduces enemy chance to flank.</color>
+HODA_AURA_PLUS50HPCURHRES15DMGRESAVVAR_RETALIATE10_HEAL20ALLONHIT_HEAL25GAIN25P10DMGRESALL_ALLYDTH_MINUS35CURRES|<color=green>+50% health, power, curse health resist and +15% damage resist for Avvar. When hit, reverts 10% damage taken to enemies, and allies gain +20% health. On ally death, allies gain +25% health and power and +10% damage resist.</color> <color=red>-35% curse resist to enemies.</color>
+HODA_AURA_PLUS50HPCURHRES25DMGRESALL_CONV15HALL_ANYDMG_HEAL75GAIN25ALL_ONDEATH_DEFENDER50_MINUS50CURHRES|<color=green>+50% health, power, curse health resist and 25% damage resist for allies. Converts 15% of damage dealt or received by allies into ally health. On death, allies gain +75% health and +25% power. +50% Defender.</color> <color=red>-50% curse health resist.</color>
+HODA_AURA_PLUS50HPCURRES20DMGRESNOBORL_CONVERT5PHALL_ALLDMG_MIN25EFFRES|<color=green>+50% health, power, and curse resist for allies. +20% damage resist for Orlesians and Nobility. Converts 5% damage dealt or received by allies into power and health for allies.</color> <color=red>-25% all effect resists.</color>
+HODA_AURA_PLUS50HPDSTUNRESALL_25HPALL_SELFHIT_DMG5000ALL_DRAIN15_ANYDTH_PDIMM_MIN25STUNPDRES|<color=green>+50% health, power drain and stun resists for allies. When hit, allies gain +25% health and power. Allies resist the first 5000 points of damage. On any death, drains 15% enemy power. Power drain immunity.</color> <color=red>-25% stun and power drain resists.</color>
+HODA_AURA_PLUS50HPMAGE_5DMGRES_MAGEELFCIRORLSTACK_HEAL15ALLGAIN10SELF_ALLYATK_DRAIN2ONHIT_DEFENDER35_MINUS25SLOWCURRES|<color=green>+50% health and power to Mages. +5% damage resist for Mages, Elves, Circle, and Orlesians (stacking). When allies attack, heals allies +15% and gains +10% power. When hit, drains 2% enemy power. +35% Defender.</color> <color=red>-25% slow and curse resist.</color>
+HODA_AURA_PLUS50HPPDRESWARDNOB_DMGRES25WHITE_HEAL15GAIN15STUNCURPALL_ALLYATK_GAIN50HEAL50ALL_ONDEATH_MIN10P20STUNBLACK|<color=green>+50% health, power, and power drain resist for Wardens and Nobility. +25% damage resist for White Faction. When allies attack, allies gain +15% health, stun, and curse power resist. On death, allies gain +50% power and health.</color> <color=red>-10% power and -20% stun resist to Black Faction.</color>
+HODA_AURA_PLUS50HPPDSTUNRESWARD_GAIN10PCURPHRESALL_ALLYATK_BNSDMG20ALLVSBLIGHTLCSTACK_RETALIATE20ONDTH_MIN25STUNPDRES|<color=green>+50% health, power, power drain, and stun resist for Wardens. When allies attack, allies gain +10% power and curse resist. Allies deal +20% bonus damage vs Blighted and Large Creatures (stacking). On death, reverts 20% of damage taken.</color> <color=red>-25% stun and power drain resist.</color>
+HODA_AURA_PLUS50HPREAVERS_25HPDRAGONS_2500DMGRED_50SLOWSTUNRESREAVERS_GAIN30ALLONHIT_GAIN100ALLONDEATH_30DMGRESDRAGONLING|<color=green>Perceptive: Negates stealth. +50% health and power for Reavers, +25% for Dragons (stacking). Resists 2500 damage. +50% slow and stun resist for Reavers. When hit, allies gain 30% power, 100% on death. +30% damage resist for dragonlings.</color>
+HODA_AURA_PLUS50HPSTUNCURPRESAVVAR_HEAL20GAIN8DMGRESALL_ALLYATK_GAIN50HPALL_ALLYDTH_35BNSDMGAVVAR_VS_DEMON_MINUS35CURRES|<color=green>+50% health, power, stun and curse power resist for Avvar. When allies attack, allies gain +20% health and +8% damage resist. On ally death, allies gain +50% power and health. +35% bonus damage vs Demons for Avvar.</color> <color=red>-35% curse resist to enemies.</color>
+HODA_AURA_PLUS50HPSTUNPDRES10DMGRESAVVAR_HEAL50ALL_ALLYDTH_GAIN15PALL_ENMYDTH_CONV8PALL_ALLYATK_25DMG_GOAT_AND_VSGOAT_MINUS25PD|<color=green>+50% health, power, stun, power drain and +10% damage resist for Avvar. Allies gain +50% health on ally death, and +15% power on enemy death. Converts 8% damage dealt by allies into power for allies. +25% bonus damage for, and against, goats.</color> <color=red>-25% power drain resist to enemies.</color>
+HODA_AURA_PLUS50HPSTUNRES_REDHAKKON_20DMGRES_HAKKONITE_GAIN10SLOWSTUNDMGRESALL_ONHIT_EXPLODE15ALL_STUNIMMUNE|<color=green>+50% health, power, and stun resist for Red Faction and Hakkon Wintersbreath. +20% damage resist for Jaws of Hakkon. When hit, allies gain +10% stun, slow and damage resist. On enemy death, all enemies take 15% of damage dealt. Immune to stun.</color>
+HODA_AURA_PLUS50HPSTUNSLOWCURRESALL_EX10VEN_DEFENDER50_GAIN25VENDRAIN25ALL_ONHIT_25DMGRESALLVSINQ_MIN25PPDRESINQ|<color=green>+50% health, power, stun, slow, and curse resist for allies, extra +10% for Venatori. 50% Defender. When hit, Venatori allies gain 25% power, and drains 20% enemy power. +25% damage resist for allies vs Inquisition.</color> <color=red>-25% power and power drain resist to Inquisition.</color>
+HODA_AURA_PLUS50HPSTUNSLOWRESAVVARINQ_GAIN10P2BNSDMGALL_ALLYATK_GAIN15HPALLEXPLODE15_ENEMYDTH_MINUS25SLOWRES|<color=green>+50% health, power, slow and stun resist for Avvar and Inquisition. When allies attack, allies gain +10% power and +2% bonus damage. On enemy death, allies gain +15% power and health, and all enemies take 15% of damage dealt.</color> <color=red>-25% slow resist to enemies.</color>
+HODA_AURA_PLUS50HP_DEMONS_AND50P_RED_LYRIUM_25P_LUCIUS_25P_ENEMY_DEATH_25_35PCT_DAMAGE_POWER_GAINERS_WOUNDED_TARGETING|<color=green>+50% Health for Demons . +50% Power for Demons and Red Lyrium. +25% Power for Lucius Corin. Heals a small amount on enemy death. +35% bonus damage vs Power gainers.</color> <color=orange>More likely to attack the lowest Health target.</color>
+HODA_AURA_PLUS50HP_DWARF_PLUS15CURSERES_DWARF_GOLEM_STACK_40DMGRES_VSMAGE_MINUS10POWER|<color=green>+50% Health and Power to Dwarves. +15% curse resist for Dwarves and Golems (stacking). +40% damage resist vs Mages.</color> <color=red>-10% power to enemies.</color>
+HODA_AURA_PLUS50HP_ELVES_PLUS50STUNRESALL_PLUS10DMGRES_BLUE_HAWKEL_MINUS20CURSERES|<color=green>+50% Health and Power for Elves. +50% stun resist for allies. +10% damage resist for blue faction and Hawke (stacking).</color> <color=red>-20% curse resist to enemies.</color>
+HODA_AURA_PLUS50HP_SPIRITS_AND_DEMONS_20DMG_RESIST_DEMONS_PERS_STUN_IMMUNE_P_ON_ENEMY_DEATH_65|<color=green>+50% Health and Power for Demons and Spirits. +20% damage resist for Demons. Gains massive Power when an enemy dies. Immune to stun.</color>
+HODA_AURA_PLUS50HP__DWARF_AND_NOBILITY_POWER_GAIN_WHEN_ALLY_HIT_25_PLUS25PCT_DMG_VS_INQUISITION_REDLYRIUM|<color=green>+50% Health and Power for Nobility and Rogues. +15% bonus damage vs Blighted and Red Lyrium for allies. Gains small Power when allies are attacked.</color>
+HODA_AURA_PLUS50HSTUNSLOWRESDRAGON_EX10MISTRAL_20DMGRESFROMDRAGONLINGS_GAIN3EFFRESDRAGONHIT_MIN25STUNSLOWRES|<color=green>+50% health, stun, and slow resist for Dragons, extra +10% for Mistral brood. Gains +20% damage resist for each dragonling in the party. Dragon allies gain +3% all effect resists when Dragon allies are attacked.</color> <color=red>-25% stun and slow resist.</color> 
+HODA_AURA_PLUS50HWARDINQ_DEFENDER50_DMGRES3ALLYHIT_RETALIATE10SELFHIT_GAIN25HANYDTH|<color=green>+50% Health for Wardens and Inquisition. +50% Defender. Gains +3% damage resist when allies are hit. When hit, reverts 10% of damage received to enemies. Gain 25% health on any hero death.</color>
+HODA_AURA_PLUS50H_FOR_WARR_AND_PLUS25BONDAM_VS_DEFS_FOR_ALLIES_AND_POWER75_ALLYDEATH_AND_PLUS50CPRRES_AND_MINUS25_SLOWRES_ENEMIES|<color=green>+50% Health for Warriors. +25% bonus damage vs Defenders for allies. Gains 75% Power when an ally dies. +50% curse power resist.</color> <color=red>-25% slow resist to enemies.</color>
+HODA_AURA_PLUS50P100DRAINRES_RL_GAIN20_ALLYHIT_HATREDMAGE|<color=green>+50% Power and +100% power drain resistance to Red Lyrium. Gains 20% power when allies are attacked. </color> <color=orange>More likely to attack Mages.</color>
+HODA_AURA_PLUS50P100STUNRES_DWARVES_PLUS50H_INQ_25BNSDMGALL_VS_REDLYR_25DMGRESVSMAGE_MINUS25CURPRES|<color=green>+50% Power and +100% stun resist for Dwarves. +50% Health for Inquisition. +25% bonus damage vs Red lyrium for allies. +25% damage resist vs Mages.</color> <color=red>-25% curse power resist.</color>
+HODA_AURA_PLUS50P25CURSEDRAINRESTEMPLAR_15BNSDMGVSSEEKER_RETALIATE5MAGES_HEAL20TEMPLAR_ONHIT_MINUS15PMAGEDEMONWARR|<color=green>+50% power and +25% curse and power drain resist to Templars. +15% bonus damage vs Seekers. When attacked, reverts 5% of damage received to enemy Mages, and heals Templar allies 20%.</color> <color=red>-15% Power to Mages, Demons, and Warriors.</color>
+HODA_AURA_PLUS50P35CURPRES_DWARVES_PLUS50DRAINRES_GOLEM_PLUS5CRITALL_GAIN50HEAL25ALL_ALLYDEATH|<color=green>+50% power and +35% curse power resist for Dwarves. +50% power drain resist for Golems. +5% 2X damage chance for allies. Allies gain 50% power and 25% health on ally death.</color>
+HODA_AURA_PLUS50PALL_PLUS50HBLUEBEASTSTACK_PLUS25DMGRESSELFBLUEVSRED_PLUS65STUNDRAINRESBEAST_SLOWIMMUNE_PLUS20BNSDMGALL_VS_GIANT|<color=green>+50% Power to allies. +50% Health to Blue Faction and Creatures (stacking). +25% damage resist for self and Blue Faction vs Red Faction. Immune to slow. +65% stun and power drain resist to Creatures. Allies deal 20% bonus damage vs Giants.</color>
+HODA_AURA_PLUS50PBEASTSPIRIT_15CRITBNSDMGSELF_GAIN15STUN5ALL_ONHIT_RETALIATE20_ONDEATH_FLANK_MINUS25STUN|<color=green>+50% power to Creatures and Spirits. +15% 2X damage chance and bonus damage. When hit, allies gain +15% power and +5% stun resist. On death, reverts 20% of damage received to all enemies.</color> <color=orange>More likely to attack the back row.</color> <color=red>-25% stun resist.</color>
+HODA_AURA_PLUS50PCURRESALL_STUNIMM_DEFENDER75_EXPLODE3ALLYATK_DMGRES4ALL_ALLYATK_MINUS25STUNCURRES_FEARELVES|<color=green>+50% power and curse resist for allies. Immune to stun. +75% Defender. When allies attack, all enemies take 3% of damage dealt, and allies gain +4% damage resist.</color> <color=red>-25% stun and curse resist.</color> <color=orange>Less likely to attack Elves.</color>
+HODA_AURA_PLUS50PCURSTUNRES25DMGRES_INQCHACIR_15HSTUNRES2BNSDMGALL_ALLYATK_CURPIMM_HASTE_MIN25ALL|<color=green>+50% power, curse and stun resists, and +25% damage resist for Inquisition, Chantry, and Circle. When allies attack, allies gain +15% health and stun resist, and +2% bonus damage. Immune to curse power.</color> <color=orange>More likely to attack first within initiative.</color> <color=red>-25% all effect resists.</color>
+HODA_AURA_PLUS50PDRAINSTUNRESDRAGON_EX10GAMORDAN_10CRITFROMDRAGONLINGS_DEFENDER50_RETALIATE15_MIN25DRAINCURSERES|<color=green>+50% power, power drain, and stun resist for Dragons, extra +10% for Gamordan Stormrider brood. Gains +10% 2X damage chance for each dragonling in the party. +50% Defender. Reverts 15% of damage received to enemies.</color> <color=red>-25% power drain and curse resist.</color> 
+HODA_AURA_PLUS50PDWARFWARD_PLUS10SLOWSTUNRES_ONHIT_PLUS20PH_ONHIT_PLUS50PH_ONDEATH_PLUS15DMGRESDWARFWARRSTACK|<color=green>+50% Power for Wardens and Dwarves. When attacked, gains +10% slow and stun resist, +20% power, and +20% health. On any death, gain +50% health and power. +15% damage resist for Dwarves and Warriors (stacking).</color>
+HODA_AURA_PLUS50PDWARVESDEMONS_20DMGRESALL_DEFENDER65_20ALLEFFECTRESDWARVES_DRAIN5ONHIT_BRAVETARGETING_MINUS20POWER|<color=green>+50% Power to Dwarves and Demons. +20% damage resist for allies. +65% Defender. +20% all status effect resists for Dwarves. When hit, drains 5% power from enemies.</color> <color=orange>More likely to attack the strongest enemy.</color> <color=red>-20% power to enemies.</color>
+HODA_AURA_PLUS50PHCURRESALL_15PHXMAS_SLOWIMMXMAS_HEAL40ALL_ONHIT_RETALIATE10_GAIN4DMGRESALL_ALLYATK_ANTIFLANK|<color=green>+50% Health, power, and curse resist for allies. +15% health, power, and slow immunity for Wintersend allies. When hit, allies gain +40% health, and reverts 10% of damage received to enemies. Allies gain +4% damage resist when allies attack.</color> <color=red>Reduces enemy chance to flank.</color>
+HODA_AURA_PLUS50PHCURRESVENWARR_CONVERT7PHALL_EXPLODEALL6HIT20DEATH_MINUS35STUNRESINQ_FLANK|<color=green>+50% power, health, and curse resist for Venatori and Warriors. Converts 7% of damage taken by allies into power and health for allies. When enemies are hit, all enemies take 6% of damage dealt, and 20% on death.</color> <color=red>-35% stun resist for Inquisition.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS50POWER_TO_DEMONS_15H_ALLIES_BLOODMAGE_10_ALLIES_HIT|<color=green>+15% Health for allies. +50% Power for Demons. Gains a small amount of Power when allies are attacked.</color>
+HODA_AURA_PLUS50PPDCURPRESSPIWAR_20DMGRES3500DMGREDALL_GAIN20ALLMIN10PDRESENEMY_ONHIT_15DMGRESSELF_ALLYDEATH_STUNIMMUNE_MIN10STUN|<color=green>+50% power, power drain, and power curse resist for Spirits and Wardens. +20% damage resist for allies. Allies resist the first 3500 damage. When hit, allies gain +20% power and reduces enemy power drain resist by 10%. Gains +15% damage resist on ally death. Immune to stun.</color> <color=red>-10% stun resist.</color>
+HODA_AURA_PLUS50PPDRAINDMGRES15CRIT_INQ_CHANT_DRAIN5_ONHIT_WOUNDEDTGT|<color=green>+50% power drain resist, +50% Power, +20% damage resist, and +15% 2X damage chance for Inquisition and Chantry. When attacked, drains 5% enemy power.</color> <color=orange>More likely to attack enemy with lowest % health.</color>
+HODA_AURA_PLUS50PPDSLOWRESVEN_DRAIN3ALLYHIT_DRAIN15ALLYDEATH_DRAIN2ALLYATK_MINUS15PDRES|<color=green>+50% power, power drain, and slow resist for Venatori. Drains 3% enemy power when allies are hit, 15% on ally death. When allies attack, drains 2% enemy power.</color> <color=red>-15% power drain resist.</color>
+HODA_AURA_PLUS50PSLOWDRAINRESDRAGON_EX10VINSOMER_25PDRESFROMDRAGONLINGS_GAIN10PALLYATK_DRAIN3ONHIT_FLANK|<color=green>+50% power, slow, and power drain resist for Dragons, extra +10% for Vinsomer brood. Gains +25% power drain resist for each dragonling in the party. When allies attack, allies gain +10% power. When hit, drains 3% enemy power.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS50PSLOWPDRESVEN_GAIN20P10DMGRESALLY_ONHIT_HEAL35CURRES10ALLY_ANYDEATH_DEFENDER50_STUNIMMUNE_MINUS35SLOWRESINQ|<color=green>+50% power, slow and power drain resistance for Venatori. When hit, allies gain +20% power and +10% damage resist. On any death, allies heal 35% and gain +10% curse resist. +50% Defender. Immune to stun.</color> <color=red>-35% slow resist for Inquisition.</color>
+HODA_AURA_PLUS50PSTUNPDRES_FERWARROUT_CONV6PHALL_SLOWIMM_MIN25SLOWRESCRIT|<color=green>+50% power, stun and power drain resist for Ferelden, Warriors, and Outlaws. Converts 6% of damage dealt by allies into power and health for allies. Immune to slow.</color> <color=red>-25% slow resist and 2x damage chance for enemies.</color>
+HODA_AURA_PLUS50PSTUNRES5BNSDMGQUN_25DMGEFFRESARIQUN_GAIN15HEAL15ALL_ANYDEATH_RETALIATE5ALL_MINUS25PDRES|<color=green>+50% power and stun resist, and +5% bonus damage for Qunari. +25% damage and all effect resists for Ariqun. Allies gain +15% health and power on any death. Reverts 5% of damage received by allies to enemies.</color> <color=red>-25% power drain resist for enemies.</color>
+HODA_AURA_PLUS50P_APOSTATES_INQUISITION_35PCT_POWER_VS_TEMPLARS_PERSONAL_20P_ON_ENEMY_DEATH_MINUS15_POWER_TO_FLEMETH|<color=green>+50% Power for Apostates and Inquisition. +35% bonus damage vs Templars. Gains +20% Power on enemy death.</color> <color=red>-15% Power to Flemeth.</color>
+HODA_AURA_PLUS50P_OUTLAWS_ROGUES_PLUS35BNSDMGALL_VS_QUNARI_STUNIMMUNESELF_PLUS10DR_OUTLAWS_MINUS50STUN_TO_QUNARI_FLANK|<color=green>+50% Power for Outlaws and Rogues. +35% bonus damage vs Qunari for allies. Immune to stun. +20% damage resist for Outlaws.</color> <color=red>-50% stun resist to Qunari.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS50P_TO_TEVINTER_BLOOD_MAGES_AND_FLANK_AND_POWER_DRAIN_IMMUNE_POWER_ALLY_HIT_5|<color=green>+50% Power for Tevinter and Blood Mages. Converts 5% of damage received by allies into self Power. Immune to power drain.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS50P_TRIUMVIRATE_PLUS50HQUN_PLUS25CURDMGRESQUN_GAIN50PSELFDEATHALL_GAIN25HENEMYDEATHALL|<color=green>+50% Power to Triumvirate. +50% Health to Qunari. +25% curse and damage resist for Qunari. Allies gain +50% Power when this hero dies, and heal +25% on enemy death.</color> <color=orange>More likely to attack the highest Power enemy.</color>
+HODA_AURA_PLUS50_BONUS_DAM_VS_APOSTATES_AND_PLUS65_HEALTH_TO_ORLESIANS_AND_PLUS30_PDRESIST_TO_CHANTRY|<color=green>+50% bonus damage vs Apostates. +65% Health for Orlesians. +30% power drain resist for Chantry.</color>
+HODA_AURA_PLUS60H20ALLEFFECTRESDWARF_60SLOWSTUNDRAINRESSELF_DEFENDER50_HEAL75ALL_ALLYDEATH_MINUS20CRIT|<color=green>+60% Health and +20% all effect resists to Dwarves. 60% slow, stun, and power drain resist for self. +50% Defender. Allies gain +75% health on ally death.</color> <color=red>-20% 2X damage chance.</color>
+HODA_AURA_PLUS60H50STUNPDRES25DMGRES_NOB_FERELD_30HPLOGHAIN_HEAL30ALL_ENMYDTH_RETALIATE5ALL_MIN50SLOWRES|<color=green>+60% health, +50% stun and power drain resist, and +25% damage resist for Nobility and Ferelden. +30% health and power for Loghain. Allies gain 30% health on enemy death. Reverts 5% of damage received by allies to enemies.</color> <color=red>-50% slow resist.</color>
+HODA_AURA_PLUS60HALL_60PSTUNCURSERESAEDUCAN_MINUS5PDRESENEMY_ONHIT_GAIN7HEAL7ALLVALFROMDAM_GAIN15HEAL15ALL_ENEMYDEATH_ANTIFLANK|<color=green>+60% health for allies. +60% power, stun, and curse resist for Aeducans. When hit, enemies lose 5% power drain resist. Converts 7% damage received by allies into ally power and health. On enemy death, allies gain +15% power and health.</color> <color=red>Blocks enemies from flanking the back row.</color>
+HODA_AURA_PLUS60HCURH_RL_PLUS5DRAINDMGRESALL_ONHIT_PLUS75PHALL_ONDEATH_MINUS35STUNRES_MINUS15CRIT|<color=green>+60% health and curse health resist for Red Lyrium. When hit, allies gain +5% power drain and damage resist. On death, allies gain +75% power and health.</color> <color=red>-35% stun resist and -15% 2x damage chance.</color>
+HODA_AURA_PLUS60HCURPRES_FERNOB_HEAL30DMGRES10ALL_SELFHIT_GAIN25HEAL25ALL_ANYDTH_BNSDMG25ALL_VSOUT_MIN15P35STUNRES|<color=green>+60% health and curse power resist for Ferelden and Nobility. When hit, allies gain +30% health and +10% damage resist. Allies gain +25% power and health on any hero death and deal +25% bonus damage against Outlaws.</color> <color=red>-15% power and -35% stun resist to enemies.</color>
+HODA_AURA_PLUS60HCURRES30DMGRESBLIGHTTEV_ONHIT_HEAL25GAIN25CURRES10BLIGHTTEV_SLOWIMMURTHEMIEL_MINUS15CRIT10CURSE|<color=green>+60% health and curse resist, and +30% damage resist for Blighted and Tevinter. When hit, Blighted and Tevinter allies gain +25% health and power, and +10% curse resist. Slow immunity for Archdemon Urthemiel.</color> <color=red>-15% 2X damage chance and -10% curse resist to enemies.</color>
+HODA_AURA_PLUS60HCURSTUNRES_RLQUN_25DMGRESWARR_GAIN15PSTUNALL_ALLYATK_GAIN50P20DMGRESALL_SELFDTH_NEGFLANK|<color=green>+50% health, curse, and stun resist for Red Lyrium and Qunari. +25% damage resist for Warriors. When allies attack, allies gain +15% power and stun resist. On death, allies gain +50% power and +20% damage resist.</color> <color=red>Reduces enemy chance to flank.</color>
+HODA_AURA_PLUS60HEALTH_AND_PLUS50_PDRESIST_FOR_NOBILITY_FERELDEN_AND_POWERGAIN25_ON_HIT_AND_PLUS150DAMAGE_VS_VENATORI_AND_MINUS20POWER_BLACK_RED_FACTIONS|<color=green>+60% Health and +50% power drain resist for Nobility and Ferelden. Gains small Power when hit. +150% bonus damage vs Venatori.</color> <color=red>-20% Power to black/red faction enemies.</color>
+HODA_AURA_PLUS60HEALTH_ELVES_AND_PLUS35STUNRES_ALLIES_EXTRA20_ELVES_AND_PLUS30DMG_VS_FERELDEN|<color=green>+60% Health for Elves. +35% stun resist for allies, extra 20% for Elves. +30% bonus damage vs Ferelden.</color>
+HODA_AURA_PLUS60HP10CRITALL_25DMGRES_RETALIATE5_DRAIN2ALL_ONHIT_HEAL25GAIN5BNSDMG_ALLYDEATH_ANTIFLANK|<color=green>+60% Health, Power, and +10% 2X damage chance for allies. 25% damage resist. When hit, retaliates for 5% damage and drains 2% power from all enemies. When allies die, heals 25% and gains 5% bonus damage.</color> <color=red>Blocks enemies from flanking the back row.</color>
+HODA_AURA_PLUS60HP15CRITBLIGHT_25BNSDMGDMGRESBLIGHTVSWHITE_DEFENDER50_GAIN5ALL_ENEMYHIT_STUNIMMURTHEMIEL_MIN35RESISTS_WHITE|<color=green>+60% health, power and +15% 2X damage chance to Blighted. +25% bonus damage and damage resist for Blighted vs White Faction. +50% Defender. When enemies are attacked, allies gain 5% power. Stun immunity for Archdemon Urthemiel.</color> <color=red>-35% all effect resists to White Faction.</color>
+HODA_AURA_PLUS60HP35EFFECTRES_HAWKEFAMILY_25DMGRES_FREEMARCHES_RETALIATE5ALL_HEAL100GAIN100HAWKEFAMILY_ONDEATH|<color=green>+60% Health and Power, and +35% all effect resists to Hawke Family. +25% damage resist to Free Marches. When hit, reverts 5% of damage received to enemies. On death, Hawke Family gains 100% health and power.</color>
+HODA_AURA_PLUS60HP35EFFRES_BLIGHTRLVEN_35BNSDMGSELF_VSWARDINQ_DRAIN5RETALIATE15_SELFHIT_GAIN25HEAL25ALL_ALLYDTH_MINUS35PDRES|<color=green>+60% health, power and +35% all effect resists for Blighted, Red Lyrium, and Venatori. +35% bonus damage vs Wardens and Inquisition. When hit drains 5% enemy power and reverts 15% of damage taken. Allies gain +25% power and health on ally death.</color> <color=red>-35% power drain resist for enemies.</color>
+HODA_AURA_PLUS60HP40STUNSLOW35DMGRESWARD_CONV15HALLANYDMG_GAIN25P15STUNRESALLANYDTH_ANTIFLANK_MIN50STUNSLOWRES|<color=green>+60% health, power, +40% stun, slow, and +35% damage resist for Wardens. Converts 15% of all damage dealt into health for allies. On any death, allies gain +25% power and +15% stun resist.</color> <color=red>Reduces enemy chance to flank. -50% stun and slow resist.</color>
+HODA_AURA_PLUS60HPALL_DEFENDER25_GAIN30ALL_ONHIT_RETALIATE10ALL_MINUS10DRAINRES_ONHIT_MINUS15HPALLIES_ONDEATH|<color=green>+60% Health and Power to allies. 25% Defender. When hit, reverts 10% of damage received to enemies, and allies gain 30% power.</color> <color=red>When hit, reduces enemy power drain resist by -10%. On death, allies suffer 15% health loss and power drain.</color>
+HODA_AURA_PLUS60HPBLIGHT_25STUNSLOWCURPRESBLIGHTSPIDERSTACK_2000DMGRESALLSELFSTACK_MINUS15PPDRES25STUNCURHRES|<color=green>+60% health and power for Blighted. +25% stun, slow, and curse power resist for Blighted and Spiders (stacking). Allies resist the first 2000 damage per hit, double for self.</color> <color=red>-15% power and drain resist, and -20% stun and curse health resist to enemies.</color> 
+HODA_AURA_PLUS60HPINQ_15BNSDMG_GAIN10SELFHEAL10ALL_ONHIT_RETALIATE35_ONDEATH_CURSEPIMMUNE_MINUS50STUNRES|<color=green>+60% health and power to Inquisition. +15% bonus damage. When hit, gains +10% power and grants allies +10% health. On death, reverts 35% of damage received to enemies. Immune to power curse.</color> <color=red>-50% stun resist.</color>
+HODA_AURA_PLUS60HPINQ_DRAIN5ALL_GAIN20SELF_ONHIT_CRIT10ALL_25BNSDMG_VS_NOBILITY_HATREDNOBILITY_MINUS15PNOBILITY|<color=green>+60% health and power to Inquisition. When hit, drains 5% power from all enemies, and gains +20% power. +10% 2X damage chance for allies. +25% bonus damage vs Nobility.</color> <color=orange>More likely to attack Nobility.</color> <color=red>-15% power to Nobility.</color>
+HODA_AURA_PLUS60HPINQ_EXPLODE20ENEMYDEATH_40DMGRES_STUNIMMUNE_MINUS10CRIT|<color=green>+60% health and power to Inquisition. On enemy death, all enemies take 20% of damage dealt. +40% damage resist. Immune to stun.</color> <color=red>-10% 2X damage chance.</color>
+HODA_AURA_PLUS60HPPWR5CRIT35RESORL_25DMGRESALLY_2500DMGRESSELF_25MINPWRANTIFLANKEMY|<color=green>+60% health and power, +5% 2X damage chance, and +35% all effect resists to Orlesian. +25% damage resist to allies. Resists the first 2500 damage per hit.</color> <color=red>-25% power to enemies. Blocks enemies from flanking the back row.</color>
+HODA_AURA_PLUS60HPSTUNPDRESAVVAR_40BNSDMGVSWHITE_REDSELF_CONVERT7HPALL_ALLYATK_GAIN50HEAL50SELF_ALLYDTH_MINUS50STUNSLOWRES|<color=green>+60% health, power, stun and power drain resist for Avvar. +40% bonus damage vs White Faction for Red Faction and self. Converts 7% of damage dealt by allies into health and power for allies. Gains +50% power and health on ally death.</color> <color=red>-50% stun and slow resist to enemies.</color>
+HODA_AURA_PLUS60HP_FOR_WITCHES_AND_PLUS35_STUN_SLOW_RESIST_FOR_APOSTATES_AND_PLUS25DAMRES_VS_WARRIORS_AND_POWERGAIN130_ON_ALLYDEATH|<color=green>+60% Health and Power for the witches of the wilds. +35% stun and slow resist for Apostates. +25% damage resist vs Warriors. Gains very large Power on ally death.</color>
+HODA_AURA_PLUS60HP_TEMPLARS_PLUS65CPRES_PDIMM_FOR_TEMPLARS_AND_DEFENDER25_AND_FLANK_AND_MINUS5POWER_35SLOWRES_ENEMIES|<color=green>+60% Health and Power for Templars. +65% curse Power resist and power drain immunity for Templars. 25% Defender.</color> <color=red>-5% Power and -35% slow resist to enemies.</color>
+HODA_AURA_PLUS60HP_TEVINTER_AND_POWERGAIN_ALLIES_50_ON_SELF_HIT_AND_DEATH_AND_IMMUNE_STUN_SLOW_AND_PLUS40_ALL_RESISTS|<color=green>+60% Health and Power for Tevinter. Allies gain medium power when this banner is attacked and when it’s killed. Immune to stun and slow. +40% stun, slow, curse, and power drain resist for Tevinter.</color>
+HODA_AURA_PLUS60HP_WARDENS_AND_ONHIT_HEAL25_POWER25_ALLIES_AND_PLUS40ALLRESISTS_AND_MINUS10POWER_ENEMIES_MINUS5_HEALERS|<color=green>+60% Health and Power for Wardens. When hit, heals and power gains allies 25%. +40% stun, slow, power drain, and curse resists for Wardens.</color> <color=red>-10% Power to enemies, extra -5% to enemy healers.</color>
+HODA_AURA_PLUS60HSLOWCURS15DMGRESTEVVEN_CONVERT5HPALLYDMG_STUNIMMTEO_MINUS25ALLEFFRES|<color=green>+60% health, slow, curse and +15% damage resist for Tevinter and Venatori. Converts 5% of damage received by allies into power and health for allies. Stun immunity for The Elder One.</color> <color=red>-25% all effects resists.</color>
+HODA_AURA_PLUS60HSTUNPDRESALLIES_30DMGRESNOB_CONVERT8PHALL_ALLYATK_GAIN35HP7DMGRESALL_ANYDEATH_DEFENDER65_MINUS35STUNRES|<color=green>+60% health, stun, and power drain resist for allies. +30% damage resist for Nobility. Converts 8% of damage dealt to enemies into power and health for allies. On any death, allies gain +35% health, power, and +7% damage resist. 65% Defender.</color> <color=red>-35% stun resist.</color>
+HODA_AURA_PLUS60HSTUNPDRESREDLYRIUMVEN_CONVERT15HALLY_ALLYHIT_HEAL35GAIN35DMGRES10ALLY_ALLYDEATH_DEFENDER75|<color=green>+60% health, stun and power drain resist, and 25% damage resist for Venatori and Red Lyrium. Converts 15% damage taken by allies into health for allies. On ally death, allies gain +35% health, power, and 10% damage resist. +75% Defender.</color>
+HODA_AURA_PLUS60HSTUNRES30DMGRES_ELFFREEMARCH_GAIN25P10CURRESALL_ONHIT_GAIN5PPDRES_ALLYATTACK_MINUS15PCURRES_DOUBLETEV|<color=green>+60% health and stun resist, and +30% damage resist for Elves and Free Marches. When hit, allies gain +25% power and +10% curse resist. When allies attack, allies gain +5% power and power drain resist.</color> <color=red>-15% power and curse resist to enemies, double for Tevinter.</color>
+HODA_AURA_PLUS60HSTUNRESMAGEDEMONSTACK_30DMGRESBLACK_CONVERT30P_ANYHIT_GAIN10CURRES_ALLYATK_PDIMMUNE_25BNSDMGVSWHITEALL|<color=green>+60% health and stun resist for Mages and Demons. +30% damage resist for Black Faction. Converts 10% damage received by any hero to power. When allies attack, allies gain +10% curse resist. Immune to power drain. +25% bonus damage vs White Faction for allies.</color>
+HODA_AURA_PLUS60HSTUNSLOWRESTEV_HEAL25BNSDMG5ALL_ONHIT_DMGCURSERES25GEREON_GAIN75HEAL75TEV_ONDEATH_MIN15PWR|<color=green>+60% health, stun, and slow resist for Tevinter. When hit, allies gain +25% health and +5% bonus damage. +50% power, +25% damage and curse resist for Gereon Alexius. On death, Tevinter allies gain +75% power and health.</color> <color=red>-15% power to enemies.</color>
+HODA_AURA_PLUS60H_ALLIES_15H_COLE_WYNNE_RHYS_35STUN_DRAIN_RESIST_ALLIES_POWER_GAIN_ALLY_HIT_15_DEFENDER35_BRAVE_TARGETING|<color=green>+60% Health for allies, additional 15% for Wynne, Cole, and Rhys. +35% stun and power drain resist for allies. Gains 15% Power when allies are hit. 35% Defender.</color> <color=orange>More likely to attack the highest Power enemy.</color>
+HODA_AURA_PLUS60H_RL_GAIN50SELF_GAIN15HEAL15ALL_ONHIT_PLUS50STUNCURSERES30DMGRES_RL_STUNIMMUNESELF|<color=green>+60% health for Red Lyrium. When hit, gains +50% power and allies gain +15% power and health. +50% stun and curse resist and +30% damage resist for Red Lyrium. Immune to stun.</color>
+HODA_AURA_PLUS60PDRAINCURPRES25DMGRESBLIGHT_CONVERT10PBLIGHT_DEFENDER25_GAIN15STUNSLOWRESALL_ONHIT_MINUS25ALLRESIST|<color=green>+60% power, drain and curse power resist, and +25% damage resist for Blighted. Converts 10% damage dealt by Blighted allies into power for Blighted allies. 25% Defender. When hit, allies gain +15% stun and slow resist.</color> <color=red>-25% all effect resists to enemies.</color>
+HODA_AURA_PLUS60PPDSLOWWARDNOB_50H15DMGRESCRITFREEMARCH_CONVERT7PALL_ALLYATK_MIN25SLOWPDRES_FLANK|<color=green>+60% power, power drain and slow resist for Wardens and Nobility. +50% health, +15% damage resist and 2X damage chance for Free Marches. Converts 7% of damage dealt by allies into power for allies.</color> <color=red>-25% slow and power drain resist.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS60PSPIRITELVES_35HBLUE_5DMGRESALL_ONHIT_RETALIATE20ONDEATH_FLANK|<color=green>+60% power for Spirits and Elves. +35% health for Blue Faction. When hit, allies gain +5% damage resist. On death, reverts 20% of damage received to enemies.</color> <color=orange>More likely to attack the back row.</color>
+HODA_AURA_PLUS60PSTUNRESALL_25DMGRES10CRIT_ELFROGUE_GAIN5PSLOWRESALL_ALLYATTACK_RETALIATE15_ONDEATH_MINUS35STUNRES|<color=green>+60% power and stun resist for allies. +25% damage resist and +10% 2X damage chance for Elves and Rogues. When allies attack, allies gain +5% power and slow resist. On death, reverts 15% of damage received.</color> <color=red>-35% stun resist to enemies.</color>
+HODA_AURA_PLUS65H15DMGRES25CURRESQUN_GAIN25PALL_ONHIT_10BNSDMGBENHAS_CONVERT15PSELF_ALLYATK_DEFENDER65_MINUS35STUNSLOWRES|<color=green>+65% health, +15% damage resist and +25% curse resist for Qunari. When hit, allies gain +25% power. +10% bonus damage for Ben-Hassrath. Converts 15% of damage dealt by allies into power and health. +65% Defender.</color> <color=red>-35% stun and slow resist for enemies.</color>
+HODA_AURA_PLUS65HP20DR_BLACK_EXTRA25HP5DR_TEO_DEFENDER50_PLUS50STUNDRAINRES_BLIGHT_RL_MINUS35ALLEFFRES|<color=green>+65% health, power and +20% damage resist for Black Faction, extra 25% health, power, and 5% damage resist for The Elder One. +50% Defender. +50% stun and power drain resist for Blighted and Red Lyrium.</color> <color=red>-35% all effect resists.</color>
+HODA_AURA_PLUS65HPELVES_50PDRESELVES_GAIN25_ALLHIT_RETALIATE15_STUNIMMUNE_SLOWIMMUNE_50CURSERES_MINUS10P15STUNRES|<color=green>+65% Health and Power for Elves. +50% power drain resist for Elves. Gains 25% Power when allies are attacked. When hit, reverts 15% of damage received. Immune to stun and slow. +50% curse resist.</color> <color=red>-10% Power to enemies. -15% stun resist to enemies.</color>
+HODA_AURA_PLUS65P25DMGEFFRESQUN_10BNSDMG15CRITARVAARAD_GAIN10CURPRES3BNSDMGQUN_ONHIT_PDIMMVIDDASALA_MINUS15P|<color=green>+65% power, +25% damage and all resists for Qunari. +10% bonus damage and +15% 2X damage chance for arvaarad. When hit, Qunari allies gain +10% curse power resist and +3% bonus damage. Power drain immunity for Viddasala.</color> <color=red>-15% power to enemies.</color>
+HODA_AURA_PLUS65PCURSLOWRES15BNSDMGAVVDEM_35DMGRES_CONV15PSELF_ALLYATK_HEAL75BNSDMG5ALL_ANYDEATH_CURPIMM_MINUS35STUNSLOW|<color=green>+65% power, curse, slow resist and +15% bonus damage for Avvar and Demons. +35% damage resist. Converts 15% of damage dealt by allies to power. On any hero death, allies gain +75% health and +5% bonus damage. Immune to curse power.</color> <color=red>-35% stun and slow resist for enemies.</color>
+HODA_AURA_PLUS70HPELVESAPOSTATE_DRAIN3ALLHIT_GAIN30HEAL30ONHIT_RETALIATE15_35STUNSLOWDRAINRESAPOSTATE_CURSEIMMUNE_MINUS25ALLRESISTS|<color=green>+70% Health and Power for Elves and Apostates. When allies are hit, drains 3% power from enemies. When hit, gains 30% power and health, and reverts 15% of damage received. +35% stun, slow, and drain resist for Apostates. Immune to curse.</color> <color=red>-25% all effect resists.</color>
+HODA_AURA_PLUS70HP_ELVESWARDENS_PLUS50SLOWSTUNRES_ELVES_20DMGRESBNSDMG_WARDENS_CURSEHEALTHIMMUNEISSEYA|<color=green>+70% Health and Power for Elves and Wardens. +50% slow and stun resist for Elves. +20% damage resist and bonus damage for Wardens. Curse Health immunity for Isseya.</color>
+HODA_AURA_PLUS75HEALTH30POWER_AVVAROUTLAW_AND_PLUS50PWRDRNRES_AVVAROUTLAW_AND_ALLYGAINPWRSELFHIT_AND_HEALENEMYDEATH_AND_GAINSPWRENEMYDEATH|<color=green>+75% Health, +30% Power, and +50% power drain resist for Avvar and Outlaws. Allies gain a very small amount of Power when this hero is attacked. Heals and gains a medium amount of Power on enemy death.</color>
+HODA_AURA_PLUS75HEALTH_AND_PLUS25POWER_FOR_SPIRITS_AND_HEALS_MEDIUM_POWERGAINS_SMALL_ON_ALL_DEATHS_AND_PLUS25DMG_VS_DEMONS_75DMG_VS_NIGHTMARE|<color=green>+75% Health and +25% Power for Spirits. Heals a medium amount and gains small Power on enemy or ally death. +25% bonus damage vs Demons, extra 50% vs Nightmare.</color>
+HODA_AURA_PLUS75HPALL_25BNSDMGALL_VS_STEALTH_40DMGRES_VS_STEALTH_DRAIN5HEAL10_ONHIT_DEFENDER50_STUNIMMUNE_HATREDSTEALTH|<color=green>Perceptive: Negates stealth. +75% health and power to allies. +25% bonus damage for allies vs heroes with stealth. +40% damage resist vs heroes with stealth. When hit, drains 5% power from all enemies and heals allies 10%. +50% Defender. Immune to stun.</color> <color=orange>More likely to attack heroes with stealth.</color>
+HODA_AURA_PLUS75PSTUNRES_RL_STUNIMMUNESELF_GAIN20SELF_ALLHIT_PLUS20DR_RL_EXTRA5_TEMP_TEO_GAIN10STUNALL_ONHIT_MINUS60CURRES_INQ|<color=green>+75% power and stun resist for Red Lyrium. Immune to stun. Gains +20% power when allies are hit. +20% damage resist for Red Lyrium, extra +5% for Templars and The Elder One. When hit, allies gain +10% stun resist.</color> <color=red>-60% curse resist for Inquisition.</color>
+HODA_AURA_PLUS_25HP_ALLIES_15H_50DRAIN_RESIST_CHRISTMAS|<color=green>+25% Health and Power for allies. +15% Health and +50% power drain resist for Christmas heroes.</color>
+HODA_AURA_POWERGAIN_ON_SELFHIT50_AND_PLUS25POWER_VS_BEASTS_AND_STUNRESIST100_AND_PLUS50STUNRESIST_AND_PLUS50PDRESIST_TO_OUTLAW_AND_HEALTH_ON_ENEMYDEATH_25|<color=green>Gains medium Power when attacked. +25% damage vs Creatures. +100% stun resist. +50% stun and power drain resist for Outlaws. Allies gain a small amount of power when this hero is attacked.</color>
+HODA_AURA_POWER_GAIN_WHEN_ALLY_HIT_AND_AURA_PLUS50POWER_TO_TEMPLAR_AND_HATRED_MAGE|<color=green> Gains power when allies are attacked. +50% Power to Templars.</color><color=orange> More likely to attack Mages.</color>
+HODA_AURA_SLOW_IMMUNE_REAVERS_AND_35HANDP_ALLIES_AND_DRAGONS_AND_2500_RAW_DMG_RESIST|<color=green>+35% Health and Power for allies, double for Dragons. Slow immunity for Reavers. Resists the first 2500 damage per hit.</color>
+HODA_AURA_STEALTH_10BNSDMG25DMGRES_FERNOB_40P15CRIT_OUTLAW_STUNIMMLOGHAIN_MIN20DRAINRES|<color=green>Stealth: attacks do not trigger on-hit effects. +10% bonus damage and +25% damage resist for Ferelden and Nobility. +40% power and 15% 2x damage chance for Outlaws. Stun immunity for Loghain.</color> <color=red>-20% power drain resist to enemies.</color>
+HODA_AURA_STEALTH_15HPPWRBST_10HPPWRFEN_10SLWRESBLKFAC_15DMGVSNUGS|<color=green>Stealth: Attacks without triggering on-hit effects. +15% Health and Power for Creatures, additional +10% for Fennecs. +10% slow resist for black faction. +15% bonus damage vs Nugs.</color>
+HODA_AURA_STEALTH_40HPWHTFAC_50CURHPRESXENON_ONHIT15PWRALLIESANDXENON_40STUNSLOWRESWHTFAC|<color=green>Stealth: Attacks without triggering on-hit effects. +40% Health for white faction. +50% curse health resist for Xenon. Allies and Xenon gain +15% Power when this hero is hit (stacking). +40% stun and slow resist for white faction.</color>
+HODA_AURA_STEALTH_50HQUN_35SLOWRESQUN_15BNSDMGQUN_PLUS10CRITQUN_MINUS15SLOWRESENEMIES|<color=green>Stealth: attacks without triggering on-hit effects. +50% Health, +35% slow resist, +15% bonus damage, and +10% 2X damage chance for Qunari.</color> <color=red>-15% slow resist for enemies.</color>
+HODA_AURA_STEALTH_AND_PLUS50POWER_TO_QUNARI_AND_PLUS5CRITCHANCE_ALLIES_10_SELF_AND_HEAL25_ON_ENEMYDEATH|<color=green>Stealth: Attacks without triggering on-hit effects. +50% Power for Qunari. +5% 2X Damage chance for allies, extra 10% for self. Heals a small amount on enemy death.</color>
+HODA_AURA_STEALTH_PLUS35HPCURHRES_WARD_LEGION_PLUS35STUNDRAINRESALL_FLANK_MINUS20CURSERESBLIGHT|<color=green>Stealth. +35% Health, Power, and curse health resist for Wardens and Legion of the Dead (stacking). +35% stun and power drain resist for allies.</color> <color=orange>More likely to attack the back row.</color> <color=red>-20% curse resist to Blighted.</color>
+HODA_AURA_STEALTH_PLUS50HDWARFDEMON_PLUS10CRITALL_PLUS10STUNSLOWRESALL_ONHIT_GAIN10_ONDEATH_HATREDPOWERDRAIN_MINUS35CURSERES|<color=green>Stealth: Attacks without triggering on-hit effects. +50% Health to Dwarves and Demons. +10% 2X damage chance for allies. When hit, allies gain +10% stun and slow resist. On death, allies gain +50% power.</color> <color=orange>More likely to attack power drainers.</color> <color=red>-35% curse resist.</color>
+HODA_AURA_STEALTH_PLUS50HPSLOWRES_CHA_EXPLODE15_5BNSDMG15DMGRES_WHITE_75HPALL_SELFDTH_STUNIMMDIVINE|<color=green>Stealth: Attacks without triggering on-hit effects. +50% health, power, and slow resist for Chantry. On enemy death, enemies take 15% of damage dealt. +5% bonus damage and +15% damage resist for White Faction. On death, allies gain +75% health and power. Stun immunity for the Divines.</color>
+HODA_AURA_STEALTH_PLUS50HSTUNRES5BONUSDMGVEN_2BNSDMG_ALLYHIT_GAIN5P7DMGRESALL_ANYDEATH_SLOWIMMUNE_MINUS35PDRESINQ|<color=green>Stealth: attacks without triggering on-hit effects. +50% health, stun resist, and +5% bonus damage for Venatori. When allies are hit, gains +2% bonus damage. On any death, allies gain +15% power and +7% damage resist. Immune to slow.</color> <color=red>-35% power drain resist for Inquisition.</color>
+HODA_AURA_STEALTH_PLUS60HPDSLOWRESNOBORL_CONV5PALLYATK_75PSTUNIMMLEOPOLD_FLANK_MINUS35SLOWRES|<color=green>Stealth: Attacks without triggering on-hit effects. +60% health, power drain, and slow resist for Orlesians and Nobility. Converts 5% of damage dealt by allies into power. +75% power and stun immunity for Leopold.</color> <color=orange>More likely to attack the back row.</color> <color=red>-35% slow resist.</color>
+HODA_CONSUME_FACTION_BUTTON_DESC|Same Faction
+HODA_CONSUME_FACTION_DESC|All heroes of the same rarity and faction.
+HODA_CONSUME_FACTION_TITLE|Consume by Faction
+HODA_CONSUME_FORTIFY_CONFIRMATION_GEAR_WARNING|This hero's gear will be destroyed. Are you sure?
+HODA_CONSUME_IDENTICAL_BUTTON_DESC|Identical
+HODA_CONSUME_IDENTICAL_DESC|All copies of the selected heroes.
+HODA_CONSUME_IDENTICAL_TITLE|Consume Copies
+HODA_CONSUME_MULTIPLE_BUTTON_DESC|Consume Multiple
+HODA_CONSUME_MULTIPLE_CONFIRM|{0} heroes will be consumed. Are you sure?
+HODA_CONSUME_MULTIPLE_WINDOW_DESC|Choose which heroes to consume:
+HODA_CONSUME_MULTIPLE_WINDOW_FOOTNOTE_DESC|Heroes in squads will not be consumed.
+HODA_CONSUME_RARITY_BUTTON_DESC|Same Rarity
+HODA_CONSUME_RARITY_DESC|All heroes of the same rarity.
+HODA_CONSUME_RARITY_TITLE|Consume by Rarity
+HODA_CURSEPOWERALL_NOATTACK|Targets all enemies and curses Power (does not attack).
+HODA_DAMAGE_3X_INCREASE_POWER|Attacks up to 3 times, each a single target, increasing Power with each attack.
+HODA_DAMAGE_ALL_20CHANCE_FOLLOWUP_3XDAMAGE|Attacks all with a 20% chance to attack again for 3x damage.
+HODA_DAMAGE_ALL_40CHANCE_STUN_SLOW|Attacks all enemies with a medium chance to slow or stun.
+HODA_DAMAGE_ALL_AND_CURSE_POWER_DRAINPOWER15|Attacks all, curses Power, and drains small Power.
+HODA_DAMAGE_ALL_AND_SLOW_AND_CURSE_POWER_HEALTH_ALL|Attacks and slows all enemies and curses Health and Power.
+HODA_DAMAGE_ALL_CURSEHEALTH_STUN20|Attacks all enemies and curses Health with a small chance to stun each.
+HODA_DAMAGE_ALL_CURSEPOWER40|Attacks all enemies with a medium chance to curse Power.
+HODA_DAMAGE_ALL_CURSEPOWER_CHANCE_HEAL_20|Attacks all enemies and curses Power with a small chance to heal a large amount.
+HODA_DAMAGE_ALL_CURSEPOWER_HEAL50_ALL|Attacks all enemies and curses Power, and heals allies a large amount.
+HODA_DAMAGE_ALL_CURSEPOWER_HEAL_ALL_CRIT10_ALL|Attacks all, curses Power, heals allies a small amount and increases 2X damage chance for allies +10%.
+HODA_DAMAGE_ALL_CURSEPOWER_SLOWDRAIN50_ALLYGAIN35|Attacks all and curses power, with 50% chance to slow and drain 50% power. Grants allies 35% power.
+HODA_DAMAGE_ALL_CURSE_HEALTH|Attacks all enemies and curses Health.
+HODA_DAMAGE_ALL_CURSE_HEALTH_POWERDRAIN20|Attacks all enemies, curses Health and drains small Power.
+HODA_DAMAGE_ALL_DAMAGE_SINGLE_DRAINPOWER_HEAL_ALLIES_25|Attacks all enemies, then attacks a single random enemy and drains a large amount of Power. Heals allies a small amount.
+HODA_DAMAGE_ALL_DRAIN5CRIT_CURSECHANCE50_2ROUNDS|Attacks all enemies and drains 5% 2X Damage chance, with a 50% chance to curse Health and Power for 2 rounds.
+HODA_DAMAGE_ALL_DRAINPOWER35|Attacks all enemies and drains medium Power.
+HODA_DAMAGE_ALL_DRAINPOWER_25_AND_SLOW_50_FOLLOWUP_SINGLE_FOLLOWUP_MARK|Attacks all, drains small power, with a 50% chance to slow each, then attacks a single target. Marks an enemy: Allies target the mark and deal +30% damage.
+HODA_DAMAGE_ALL_DRAINPOWER_65|Attacks all and drains 65% Power.
+HODA_DAMAGE_ALL_GAINPOWER_ADD15CRITCHANCE|Attacks all enemies, gains a small amount of Power and gains 15% crit chance.
+HODA_DAMAGE_ALL_HEAL_25_ALL_POWERGAIN_30_ALL_CRIT_05_ALL|Attacks all enemies and heals allies a small amount, and allies gain a moderate amount of Power and +5% 2X Damage chance.
+HODA_DAMAGE_ALL_HEAL_ALL_TWICE|Attacks all enemies and heals a medium amount.
+HODA_DAMAGE_ALL_SLOW_2ROUNDS_HEAL50_ALL|Attacks and heavily slows all enemies and heals allies a moderate amount.
+HODA_DAMAGE_ALL_SLOW_CHANCE60|Attacks all enemies with 60% chance to slow each.
+HODA_DAMAGE_ALL_SLOW_GAINHP30_ALL|Attacks all enemies, slows, and grants +30% Health and Power to allies.
+HODA_DAMAGE_ALL_STUN25|Attacks all with a 25% chance to stun.
+HODA_DAMAGE_ALL_STUN25_SLOW25|Attacks all enemies with a 25% chance to stun and slow each.
+HODA_DAMAGE_ALL_STUN_ALL_25_ASSASSINATE5|Attacks all with a 25% chance to stun each. 5% chance to assassinate a random target.
+HODA_DAMAGE_ALL_STUN_ROW_GAIN_POWER_ALL|Attacks all enemies, stuns a row, and allies gain a small amount of Power.
+HODA_DAMAGE_COLUMN_ADD10CRITCHANCE_ALLIES|Attacks a column of enemies and allies gain +10% 2X Damage chance.
+HODA_DAMAGE_COLUMN_ADD10CRITCHANCE_STEALTH|Attacks a column of enemies and gains 10% 2X Damage chance.
+HODA_DAMAGE_COLUMN_ALLIES_GAIN_MEDIUM_POWER_HEALTH|Attacks a column. Grants allies 50% health and power.
+HODA_DAMAGE_COLUMN_CURSE_ALLYGAINHEAL25_40CHANCESELFGAIN75|Attacks a column and curses. Grants allies +25% power and health. 40% chance to gain +75% power.
+HODA_DAMAGE_COLUMN_DRAIN15_GAIN35|Attacks a column, drains small Power, and gains medium Power.
+HODA_DAMAGE_COLUMN_DRAINPOWER25|Attacks a column and drains small Power.
+HODA_DAMAGE_COLUMN_GAIN_POWER_ATTACK_GAIN_AGAIN_CHANCE35|Attacks a column and gains small Power. 35% chance to attack and gain Power again.
+HODA_DAMAGE_COLUMN_HEAVYSLOW_HEALALL_POWERGAIN|Attacks a column and heavily slows, gains +50% Power, and heals all allies a large amount.
+HODA_DAMAGE_COLUMN_LEVY20_CURSEPOWERALL_HEAL50ALL|Attacks a column with 20% Levy, and curses power of all enemies. Heals allies 50%.
+HODA_DAMAGE_COLUMN_SLOW_ALL_GAIN_HEALTH_SELF|Attacks a column, slows all enemies, and heals for a medium amount.
+HODA_DAMAGE_COLUMN_STUNCHANCE75_GAINPOWER25|Attacks a column with a 75% chance to stun each. Gains small Power.
+HODA_DAMAGE_COLUMN_STUN_CHANCE35_POWERGAIN25_ALL|Attacks a column with a 35% chance to stun each. Allies gain 35% Power.
+HODA_DAMAGE_INIT_50_ROW_DRAIN_HEAL25|Attacks a row, drains 50% power, and slows. Heals 25%.
+HODA_DAMAGE_ONE_10CRITGAIN_FOLLOWUP_40MARK_25PWRGAINALLIES|Attacks a single target, gains 10% 2X Damage chance, and grants allies 25% power. Marks an enemy: Allies target the mark and deal +40% damage.
+HODA_DAMAGE_ONE_10X_HEAL5_CRIT2_SMALL_CHANCE_NEG_AILMENT|Attacks random enemies up to 10 times, healing a very small amount and increasing 2X damage chance by 2% with each hit. Each attack has a chance to afflict a status ailment.
+HODA_DAMAGE_ONE_15CRITCHANCEALLIES_40LEVY|Attacks a single target with 40% Levy, and increases allies 2X Damage chance by 15%.
+HODA_DAMAGE_ONE_2X_15PGAINALL_30MARK|Attacks the same target twice and grants allies small Power. Marks an enemy: Allies target the mark and deal +30% damage.
+HODA_DAMAGE_ONE_3X_DRAIN_GAIN_30|Attacks a single hero 3 times, drains medium Power, and gains medium Power.
+HODA_DAMAGE_ONE_3X_FOLLOWUP_MARK_5|Attacks a single target 3 times. Marks an enemy: Allies target the mark and deal +5% damage.
+HODA_DAMAGE_ONE_65HEALALL_35POWERDRAINALL|Attacks a single target, drains 35% Power from all enemies, and heals allies 65%.
+HODA_DAMAGE_ONE_DRAIN20_CHANCE20_POWER200|Attacks a single target and drains 20% power. 20% chance for second attack at double power.
+HODA_DAMAGE_ONE_GAIN_POWER_BIG_ATTACK2X_AND_3X_HALFPOWER_AND_HEAL_ALL|Attacks a single enemy and gains massive Power. 50% chances to attack a 2nd and 3rd time at half power and heal allies a small amount with each.
+HODA_DAMAGE_ONE_LEVY35_GAIN50_HEAL50|Attacks one enemy with 35% levy. Gains 50% power and heals 50%.
+HODA_DAMAGE_ONE_LEVY_15PCT_ALLYGAIN_15PCT|Attacks a single target with 15% Levy. Grants allies 15% power.
+HODA_DAMAGE_ONE_LEVY_30PCT_DRAINPOWER_25PCT|Attacks a single enemy with 30% Levy and drains 25% Power.
+HODA_DAMAGE_ONE_ROW_COLUMN_ALL_PLUS50CRIT|Attacks one, then a row, then a column, then all enemies, then gains 50% 2X Damage chance, then glances longingly at allies for approval.
+HODA_DAMAGE_ONE_STUN_ATTACK_ROW25POWER|Attacks a single enemy and stuns, then attacks a row at 25% Power.
+HODA_DAMAGE_ONE_X8_LEVY05_ALLYGAIN_25PCT|Attacks a single target with 5% Levy, up to 8 times. Grants allies 25% power.
+HODA_DAMAGE_RANDOM_SINGLE_2X_POWERDRAIN_EACH|Attacks 2 random enemies, power draining each a medium amount.
+HODA_DAMAGE_ROW_2X_CURSEPOWER_GAIN40|Attacks a row twice, 50% chance to curse Power, and gains medium Power.
+HODA_DAMAGE_ROW_3X_AND_DRAINPOWER50|Attacks a row of enemies three times, then drains 50% power.
+HODA_DAMAGE_ROW_3X_DRAINPOWER_SLOW_CHANCE40|Attacks a row 3 times with a 40% chance to slow each, then drains huge Power.
+HODA_DAMAGE_ROW_ALLIES_GAIN_HEALTH_AND_POWER_20|Attacks a row and allies gain small Health and Power.
+HODA_DAMAGE_ROW_ATTACK2X_35PCTCHANCE|Attacks a row of enemies with a 35% chance to attack again.
+HODA_DAMAGE_ROW_CURSEHEALTH_SLOW50|Attacks row of enemies and curses Health with a 50% chance to slow each.
+HODA_DAMAGE_ROW_CURSEPOWER_STUN60|Attack row and curse Power with a high chance to stun.
+HODA_DAMAGE_ROW_DRAIN25_STUN25_ASSASSINATE_SINGLE_PCT10|Attacks a row and drains small Power with a 25% chance to stun each. Very small chance to assassinate.
+HODA_DAMAGE_ROW_DRAIN_MEDIUM_POWER_CHANCE25_STUN|Attacks a row and drains medium Power, small chance to stun.
+HODA_DAMAGE_ROW_HEAL35_FOLLOWUP40_HEAL_ALLIES25|Attacks a row of enemies and heals all allies a moderate amount. Chance for 2nd attack and heal.
+HODA_DAMAGE_ROW_HEAL50_SELF|Attacks a row and heals a medium amount.
+HODA_DAMAGE_ROW_SLOW_ALL_LEVY_25PCT|Attacks a row with 25% Levy and slows all enemies.
+HODA_DAMAGE_ROW_SLOW_CURSEHEALTH|Attacks a row, slows and curses Health.
+HODA_DAMAGE_ROW_STUN50_POWERGAIN20_ALL|Attacks a row with 50% chance to stun, and grants allies 20% power.
+HODA_DAMAGE_ROW_STUN50_SLOW50_HEAL_LARGE|Attacks a row of enemies with 50% chances to stun and/or slow each. Heals a large amount.
+HODA_DAMAGE_ROW_STUN_50|Attacks a row of enemies with a 50% chance to stun.
+HODA_DAMAGE_ROW_TWICE_CHANCE_ASSASSINATE_ROW_5_STEALTH|Attacks a row of enemies twice with a very small chance to assassinate each.
+HODA_DAMAGE_ROW_TWICE_GAINPOWER25_ALL|Attacks a row twice and grants small Power to allies.
+HODA_DAMAGE_SINGLE_2X_50CHANCE_THIRD_ATTACK_300POWER|Attacks a single enemy twice. 50% chance to attack again at 300% Power.
+HODA_DAMAGE_SINGLE_3X|Attacks a single target 3 times.
+HODA_DAMAGE_SINGLE_ATTACK3_50CHANCE_ATTACK1AT3XPOWER|Attacks a single enemy 3 times with a 50% chance to attack a 4th time at 3x Power.
+HODA_DAMAGE_SINGLE_HEAL_ALLIES40|Attacks a single enemy and heals all allies a medium amount.
+HODA_DAMAGE_SINGLE_STUN50_4XFOLLOWUPCHANCE25|Attacks a single enemy with a 50% chance to stun. 25% chance each at up to 4 extra attacks at double damage.
+HODA_DAMAGE_SINGLE_STUN75_GAINPOWER|Attacks a single enemy with 75% chance to stun, and gains medium Power.
+HODA_DAMAGE_STUN35_COLUMN|Attacks a column with a 35% chance to stun each.
+HODA_GALLERY_CARTA_TITLE|Carta
+HODA_GALLERY_EXCLUSIVE_TITLE|Exclusive
+HODA_GALLERY_FREEMARCHES_TITLE|Free Marches
+HODA_GALLERY_HUMAN_TITLE|Humans
+HODA_GALLERY_LEGIONOFTHEDEAD_TITLE|Legion of the Dead
+HODA_GALLERY_NUG_TITLE|Nugs
+HODA_GALLERY_WEREWOLVES_TITLE|Werewolves
+HODA_GALLERY_WISP_TITLE|Wisp
+HODA_GEAR_AURA_HEALTH_GAIN_ALL_WHEN_ENEMY_HIT_2_DESC|<color=green>Allies heal 2% when an enemy is hit.</color>
+HODA_GEAR_BONUSDMG_SELF_SELFHIT_PLUS5_DESC|<color=green>Gain +5% bonus damage when hit.</color>
+HODA_GEAR_DAMRESGAIN_SELF_7_ON_SELF_HIT_DESC|<color=green>Gain +7% damage resist when hit.</color>
+HODA_GEAR_DMG_RESIST_1500_DESC|<color=green>Allies resist the first 1500 damage.</color>
+HODA_GEAR_DMG_RESIST_PCT_10_DESC|<color=green>+10% damage resist for allies.</color>
+HODA_GEAR_DMG_RESIST_PCT_15_TO_BLIGHT_DESC|<color=green>+15% damage resist for Blighted.</color>
+HODA_GEAR_EMBLAZONED_KIRKWALL_SHIELD_AURA_LOC_OVERRIDE|<color=green>Allies resist the first 2000 damage per hit. +10% all effect resists for Free Marches.</color>
+HODA_GEAR_FADE_TOUCHED_SILVERITE_AURA_LOC_OVERRIDE|<color=green>When hit, gain +5% damage resist. On ally death, gain +20% health and power.</color>
+HODA_GEAR_GRIFFONRIDER_LEATHERS_AURA_LOC_OVERRIDE|<color=green>+7% bonus damage. Allies gain +15% power and health on any death. On enemy death, all enemies take 2% of damage dealt.</color>
+HODA_GEAR_LITANY_OF_ADRALLA_AURA_LOC_OVERRIDE|<color=green>+25% bonus damage vs Demons and Blood Mages for allies. +15% curse resist for allies.</color>
+HODA_GRANT_ALLIES_100POWER_NO_ATTACK|Grants all allies the amount of this hero’s Power (does not attack).
+HODA_GUILD_BUSY_MESSAGE|The server is busy. Please try again.
+HODA_GUILD_OFFLINE_MESSAGE|Guilds and chat are only available while connected to the server.
+HODA_GUILD_PROFILE_CHANGED_MESSAGE|Your profile changed on the server. Please try again.
+HODA_HEAL200SELF_HEAL25ALLIES|Heals 200% each round. Heals allies 25%.
+HODA_HEALS_AND_POWERGAINS_ALLIES_15_AND_CURSES_ENEMIES_2_ROUNDS_NO_ATTACK|Heals and power gains allies 15%. Curses all enemies for 2 rounds (does not attack).
+HODA_HEALTHPOWER_CURSED_DEBUFF|Cursed!
+HODA_HEROES_SORT_BUTTON|Sort
+HODA_NOATTACK_HEAL100ALL_GAIN100ALL|Grants allies health and power equal to the amount of her power (does not attack).
+HODA_NOATTACK_HEAL75ALL_GAIN50ALL_STUN50ROW_SLOW50COL|Heals allies 75% and grants allies 50% power (does not attack). 50% chance to stun a row and/or slow a column.
+HODA_NOATTACK_HEALALL50_GAINALL100_STUNROW50_SLOWROW50_CURSEPWRROW50|Grants allies 100% power and 50% health (does not attack). 50% chance each to stun, slow, or curse power of a row of enemies.
+HODA_NOATTACK_HEALALL_GAIN35ALL|Heals allies and grants +35% power (does not attack).
+HODA_POWER_DRAIN_ALL50_ASSASSINATE_CHANCE10|Drains medium Power from all enemies (does not attack). Small chance to assassinate.
+HODA_SLOWS_ALL_CURSE_POWER_BACKROW_STUN_COLUMN|Slows all enemies and targets the back row and curses Power, then has a very high chance to stun a column (does not attack).
+HODA_SLOWS_ROW_HEAVY_POWERGAIN_ALLIES_50|Heavily slows a row, more likely the back row, and allies gain 50% power (does not attack).
+HODA_SLOW_ALL_DRAIN25_ALLIES_CRIT7_NO_ATTACK|Slows all enemies, drains small Power, and allies gain 7% 2X Damage chance (does not attack).
+HODA_STUN_SINGLE_DRAIN_ALL25_CRITGAIN10_ALLIES_NO_ATTACK|Stuns a single enemy, drains 25% power from all enemies, and allies gain 10% crit chance (does not attack).
+HODA_UNIT_ALPHAGOATI|Alpha Goat I
+HODA_UNIT_ALPHAGOATII|Alpha Goat II
+HODA_UNIT_ALPHAGOATIII|Alpha Goat III
+HODA_UNIT_ALPHAGOATIV|Alpha Goat IV
+HODA_UNIT_ANORAMACTIRI|Anora Mac Tir I
+HODA_UNIT_ANORAMACTIRII|Anora Mac Tir II
+HODA_UNIT_ANORAMACTIRIII|Anora Mac Tir III
+HODA_UNIT_ANORAMACTIRIV|Anora Mac Tir IV
+HODA_UNIT_ARCANEGARRETTHAWKEI|Arcane Garrett Hawke I
+HODA_UNIT_ARCANEGARRETTHAWKEII|Arcane Garrett Hawke II
+HODA_UNIT_ARCANEGARRETTHAWKEIII|Arcane Garrett Hawke III
+HODA_UNIT_ARCANEGARRETTHAWKEIV|Arcane Garrett Hawke IV
+HODA_UNIT_ARCANEMARIANHAWKEI|Arcane Marian Hawke I
+HODA_UNIT_ARCANEMARIANHAWKEII|Arcane Marian Hawke II
+HODA_UNIT_ARCANEMARIANHAWKEIII|Arcane Marian Hawke III
+HODA_UNIT_ARCANEMARIANHAWKEIV|Arcane Marian Hawke IV
+HODA_UNIT_ARCHIVISTI|Archivist I
+HODA_UNIT_ARCHIVISTII|Archivist II
+HODA_UNIT_ARCHIVISTIII|Archivist III
+HODA_UNIT_ARCHIVISTIV|Archivist IV
+HODA_UNIT_ARCHONRADONISI|Archon Radonis I
+HODA_UNIT_ARCHONRADONISII|Archon Radonis II
+HODA_UNIT_ARCHONRADONISIII|Archon Radonis III
+HODA_UNIT_ARCHONRADONISIV|Archon Radonis IV
+HODA_UNIT_ARLTEAGANGUERRINI|Arl Teagan Guerrin I
+HODA_UNIT_ARLTEAGANGUERRINII|Arl Teagan Guerrin II
+HODA_UNIT_ARLTEAGANGUERRINIII|Arl Teagan Guerrin III
+HODA_UNIT_ARLTEAGANGUERRINIV|Arl Teagan Guerrin IV
+HODA_UNIT_ASHA'BELLANARI|Asha'Bellanar I
+HODA_UNIT_ASHA'BELLANARII|Asha'Bellanar II
+HODA_UNIT_ASHA'BELLANARIII|Asha'Bellanar III
+HODA_UNIT_ASHA'BELLANARIV|Asha'Bellanar IV
+HODA_UNIT_AUGUSTRAMI|August Ram I
+HODA_UNIT_AUGUSTRAMII|August Ram II
+HODA_UNIT_AUGUSTRAMIII|August Ram III
+HODA_UNIT_AUGUSTRAMIV|August Ram IV
+HODA_UNIT_AUTUMNI|Autumn I
+HODA_UNIT_AUTUMNII|Autumn II
+HODA_UNIT_AUTUMNIII|Autumn III
+HODA_UNIT_AUTUMNIV|Autumn IV
+HODA_UNIT_AVERNUSI|Avernus I
+HODA_UNIT_AVERNUSII|Avernus II
+HODA_UNIT_AVERNUSIII|Avernus III
+HODA_UNIT_AVERNUSIV|Avernus IV
+HODA_UNIT_AVVARWARNUGI|Avvar War Nug I
+HODA_UNIT_AVVARWARNUGII|Avvar War Nug II
+HODA_UNIT_AVVARWARNUGIII|Avvar War Nug III
+HODA_UNIT_AVVARWARNUGIV|Avvar War Nug IV
+HODA_UNIT_BATTLEMASTERGARRETTHAWKEI|Battlemaster Garrett Hawke I
+HODA_UNIT_BATTLEMASTERGARRETTHAWKEII|Battlemaster Garrett Hawke II
+HODA_UNIT_BATTLEMASTERGARRETTHAWKEIII|Battlemaster Garrett Hawke III
+HODA_UNIT_BATTLEMASTERGARRETTHAWKEIV|Battlemaster Garrett Hawke IV
+HODA_UNIT_BATTLEMASTERMARIANHAWKEI|Battlemaster Marian Hawke I
+HODA_UNIT_BATTLEMASTERMARIANHAWKEII|Battlemaster Marian Hawke II
+HODA_UNIT_BATTLEMASTERMARIANHAWKEIII|Battlemaster Marian Hawke III
+HODA_UNIT_BATTLEMASTERMARIANHAWKEIV|Battlemaster Marian Hawke IV
+HODA_UNIT_BEASTOFTELLARISWAMPSI|Beast of Tellari Swamps I
+HODA_UNIT_BEASTOFTELLARISWAMPSII|Beast of Tellari Swamps II
+HODA_UNIT_BEASTOFTELLARISWAMPSIII|Beast of Tellari Swamps III
+HODA_UNIT_BEASTOFTELLARISWAMPSIV|Beast of Tellari Swamps IV
+HODA_UNIT_BETHANYHAWKEI|Bethany Hawke I
+HODA_UNIT_BETHANYHAWKEII|Bethany Hawke II
+HODA_UNIT_BETHANYHAWKEIII|Bethany Hawke III
+HODA_UNIT_BETHANYHAWKEIV|Bethany Hawke IV
+HODA_UNIT_BLIGHTEDFENNECI|Blighted Fennec I
+HODA_UNIT_BLIGHTEDFENNECII|Blighted Fennec II
+HODA_UNIT_BLIGHTEDFENNECIII|Blighted Fennec III
+HODA_UNIT_BLIGHTEDFENNECIV|Blighted Fennec IV
+HODA_UNIT_BLIGHTEDHALLAI|Blighted Halla I
+HODA_UNIT_BLIGHTEDHALLAII|Blighted Halla II
+HODA_UNIT_BLIGHTEDHALLAIII|Blighted Halla III
+HODA_UNIT_BLIGHTEDHALLAIV|Blighted Halla IV
+HODA_UNIT_BLIGHTEDOGHRENI|Blighted Oghren I
+HODA_UNIT_BLIGHTEDOGHRENII|Blighted Oghren II
+HODA_UNIT_BLIGHTEDOGHRENIII|Blighted Oghren III
+HODA_UNIT_BLIGHTEDOGHRENIV|Blighted Oghren IV
+HODA_UNIT_BLIGHTEDSHADOWWOLFI|Blighted Shadow Wolf I
+HODA_UNIT_BLIGHTEDSHADOWWOLFII|Blighted Shadow Wolf II
+HODA_UNIT_BLIGHTEDSHADOWWOLFIII|Blighted Shadow Wolf III
+HODA_UNIT_BLIGHTEDSHADOWWOLFIV|Blighted Shadow Wolf IV
+HODA_UNIT_BLIGHTEDZEVRANI|Blighted Zevran I
+HODA_UNIT_BLIGHTEDZEVRANII|Blighted Zevran II
+HODA_UNIT_BLIGHTEDZEVRANIII|Blighted Zevran III
+HODA_UNIT_BLIGHTEDZEVRANIV|Blighted Zevran IV
+HODA_UNIT_BROTHERGENITIVII|Brother Genitivi I
+HODA_UNIT_BROTHERGENITIVIII|Brother Genitivi II
+HODA_UNIT_BROTHERGENITIVIIII|Brother Genitivi III
+HODA_UNIT_BROTHERGENITIVIIV|Brother Genitivi IV
+HODA_UNIT_BULFAI|Bulfa I
+HODA_UNIT_BULFAII|Bulfa II
+HODA_UNIT_BULFAIII|Bulfa III
+HODA_UNIT_BULFAIV|Bulfa IV
+HODA_UNIT_CARESSI|Caress I
+HODA_UNIT_CARESSII|Caress II
+HODA_UNIT_CARESSIII|Caress III
+HODA_UNIT_CARESSIV|Caress IV
+HODA_UNIT_CARVERHAWKEI|Carver Hawke I
+HODA_UNIT_CARVERHAWKEII|Carver Hawke II
+HODA_UNIT_CARVERHAWKEIII|Carver Hawke III
+HODA_UNIT_CARVERHAWKEIV|Carver Hawke IV
+HODA_UNIT_CASSIANI|Cassian I
+HODA_UNIT_CASSIANII|Cassian II
+HODA_UNIT_CASSIANIII|Cassian III
+HODA_UNIT_CASSIANIV|Cassian IV
+HODA_UNIT_CHARTERI|Charter I
+HODA_UNIT_CHARTERII|Charter II
+HODA_UNIT_CHARTERIII|Charter III
+HODA_UNIT_CHARTERIV|Charter IV
+HODA_UNIT_CHAUNCEYI|Chauncey I
+HODA_UNIT_CHAUNCEYII|Chauncey II
+HODA_UNIT_CHAUNCEYIII|Chauncey III
+HODA_UNIT_CHAUNCEYIV|Chauncey IV
+HODA_UNIT_DAILANI|Dailan I
+HODA_UNIT_DAILANII|Dailan II
+HODA_UNIT_DAILANIII|Dailan III
+HODA_UNIT_DAILANIV|Dailan IV
+HODA_UNIT_DALISHBANNERI|Dalish Banner I
+HODA_UNIT_DALISHBANNERII|Dalish Banner II
+HODA_UNIT_DALISHBANNERIII|Dalish Banner III
+HODA_UNIT_DALISHBANNERIV|Dalish Banner IV
+HODA_UNIT_DANYLAI|Danyla I
+HODA_UNIT_DANYLAII|Danyla II
+HODA_UNIT_DANYLAIII|Danyla III
+HODA_UNIT_DANYLAIV|Danyla IV
+HODA_UNIT_DIVINECASSANDRAI|Divine Cassandra I
+HODA_UNIT_DIVINECASSANDRAII|Divine Cassandra II
+HODA_UNIT_DIVINECASSANDRAIII|Divine Cassandra III
+HODA_UNIT_DIVINECASSANDRAIV|Divine Cassandra IV
+HODA_UNIT_DIVINEGUARDI|Divine Guard I
+HODA_UNIT_DIVINEGUARDII|Divine Guard II
+HODA_UNIT_DIVINEGUARDIII|Divine Guard III
+HODA_UNIT_DIVINEGUARDIV|Divine Guard IV
+HODA_UNIT_DRAGONMALVERNISI|Dragon Malvernis I
+HODA_UNIT_DRAGONMALVERNISII|Dragon Malvernis II
+HODA_UNIT_DRAGONMALVERNISIII|Dragon Malvernis III
+HODA_UNIT_DRAGONMALVERNISIV|Dragon Malvernis IV
+HODA_UNIT_DRUFFALOI|Druffalo I
+HODA_UNIT_DRUFFALOII|Druffalo II
+HODA_UNIT_DRUFFALOIII|Druffalo III
+HODA_UNIT_DRUFFALOIV|Druffalo IV
+HODA_UNIT_DUKEANTOINEOFWYCOMEI|Duke Antoine of Wycome I
+HODA_UNIT_DUKEANTOINEOFWYCOMEII|Duke Antoine of Wycome II
+HODA_UNIT_DUKEANTOINEOFWYCOMEIII|Duke Antoine of Wycome III
+HODA_UNIT_DUKEANTOINEOFWYCOMEIV|Duke Antoine of Wycome IV
+HODA_UNIT_DUKECYRILI|Duke Cyril I
+HODA_UNIT_DUKECYRILII|Duke Cyril II
+HODA_UNIT_DUKECYRILIII|Duke Cyril III
+HODA_UNIT_DUKECYRILIV|Duke Cyril IV
+HODA_UNIT_DUKEREMACHEDELYDESI|Duke Remache de Lydes I
+HODA_UNIT_DUKEREMACHEDELYDESII|Duke Remache de Lydes II
+HODA_UNIT_DUKEREMACHEDELYDESIII|Duke Remache de Lydes III
+HODA_UNIT_DUKEREMACHEDELYDESIV|Duke Remache de Lydes IV
+HODA_UNIT_EMERALDGRAVESNUGI|Emerald Graves Nug I
+HODA_UNIT_EMERALDGRAVESNUGII|Emerald Graves Nug II
+HODA_UNIT_EMERALDGRAVESNUGIII|Emerald Graves Nug III
+HODA_UNIT_EMERALDGRAVESNUGIV|Emerald Graves Nug IV
+HODA_UNIT_ENVYDEMONI|Envy Demon I
+HODA_UNIT_ENVYDEMONII|Envy Demon II
+HODA_UNIT_ENVYDEMONIII|Envy Demon III
+HODA_UNIT_ENVYDEMONIV|Envy Demon IV
+HODA_UNIT_EVANGELINEI|Evangeline I
+HODA_UNIT_EVANGELINEII|Evangeline II
+HODA_UNIT_EVANGELINEIII|Evangeline III
+HODA_UNIT_EVANGELINEIV|Evangeline IV
+HODA_UNIT_FADE-TOUCHEDLURKERI|Fade-Touched Lurker I
+HODA_UNIT_FADE-TOUCHEDLURKERII|Fade-Touched Lurker II
+HODA_UNIT_FADE-TOUCHEDLURKERIII|Fade-Touched Lurker III
+HODA_UNIT_FADE-TOUCHEDLURKERIV|Fade-Touched Lurker IV
+HODA_UNIT_FAIRBANKSI|Fairbanks I
+HODA_UNIT_FAIRBANKSII|Fairbanks II
+HODA_UNIT_FAIRBANKSIII|Fairbanks III
+HODA_UNIT_FAIRBANKSIV|Fairbanks IV
+HODA_UNIT_FERELDENBANNERI|Ferelden Banner I
+HODA_UNIT_FERELDENBANNERII|Ferelden Banner II
+HODA_UNIT_FERELDENBANNERIII|Ferelden Banner III
+HODA_UNIT_FERELDENBANNERIV|Ferelden Banner IV
+HODA_UNIT_FORESTSPIRITI|Forest Spirit I
+HODA_UNIT_FORESTSPIRITII|Forest Spirit II
+HODA_UNIT_FORESTSPIRITIII|Forest Spirit III
+HODA_UNIT_FORESTSPIRITIV|Forest Spirit IV
+HODA_UNIT_FORGEMASTERI|Forge Master I
+HODA_UNIT_FORGEMASTERII|Forge Master II
+HODA_UNIT_FORGEMASTERIII|Forge Master III
+HODA_UNIT_FORGEMASTERIV|Forge Master IV
+HODA_UNIT_GALLOWSGUARDIANI|Gallows Guardian I
+HODA_UNIT_GALLOWSGUARDIANII|Gallows Guardian II
+HODA_UNIT_GALLOWSGUARDIANIII|Gallows Guardian III
+HODA_UNIT_GALLOWSGUARDIANIV|Gallows Guardian IV
+HODA_UNIT_GAMORDANSTORMRIDERDRAGONLINGI|Gamordan Stormrider Dragonling I
+HODA_UNIT_GAMORDANSTORMRIDERDRAGONLINGII|Gamordan Stormrider Dragonling II
+HODA_UNIT_GAMORDANSTORMRIDERDRAGONLINGIII|Gamordan Stormrider Dragonling III
+HODA_UNIT_GAMORDANSTORMRIDERDRAGONLINGIV|Gamordan Stormrider Dragonling IV
+HODA_UNIT_GARAHELI|Garahel I
+HODA_UNIT_GARAHELII|Garahel II
+HODA_UNIT_GARAHELIII|Garahel III
+HODA_UNIT_GARAHELIV|Garahel IV
+HODA_UNIT_GATEKEEPERI|Gatekeeper I
+HODA_UNIT_GATEKEEPERII|Gatekeeper II
+HODA_UNIT_GATEKEEPERIII|Gatekeeper III
+HODA_UNIT_GATEKEEPERIV|Gatekeeper IV
+HODA_UNIT_GEREONALEXIUSI|Gereon Alexius I
+HODA_UNIT_GEREONALEXIUSII|Gereon Alexius II
+HODA_UNIT_GEREONALEXIUSIII|Gereon Alexius III
+HODA_UNIT_GEREONALEXIUSIV|Gereon Alexius IV
+HODA_UNIT_GHOSTOFTHESPIREI|Ghost of the Spire I
+HODA_UNIT_GHOSTOFTHESPIREII|Ghost of the Spire II
+HODA_UNIT_GHOSTOFTHESPIREIII|Ghost of the Spire III
+HODA_UNIT_GHOSTOFTHESPIREIV|Ghost of the Spire IV
+HODA_UNIT_GIBBERINGHORRORI|Gibbering Horror I
+HODA_UNIT_GIBBERINGHORRORII|Gibbering Horror II
+HODA_UNIT_GIBBERINGHORRORIII|Gibbering Horror III
+HODA_UNIT_GIBBERINGHORRORIV|Gibbering Horror IV
+HODA_UNIT_GRANDENCHANTERVIVIENNEI|Grand Enchanter Vivienne I
+HODA_UNIT_GRANDENCHANTERVIVIENNEII|Grand Enchanter Vivienne II
+HODA_UNIT_GRANDENCHANTERVIVIENNEIII|Grand Enchanter Vivienne III
+HODA_UNIT_GRANDENCHANTERVIVIENNEIV|Grand Enchanter Vivienne IV
+HODA_UNIT_GREATDRAGONI|Great Dragon I
+HODA_UNIT_GREATDRAGONII|Great Dragon II
+HODA_UNIT_GREATDRAGONIII|Great Dragon III
+HODA_UNIT_GREATDRAGONIV|Great Dragon IV
+HODA_UNIT_GREATERFROSTBACKELKI|Greater Frostback Elk I
+HODA_UNIT_GREATERFROSTBACKELKII|Greater Frostback Elk II
+HODA_UNIT_GREATERFROSTBACKELKIII|Greater Frostback Elk III
+HODA_UNIT_GREATERFROSTBACKELKIV|Greater Frostback Elk IV
+HODA_UNIT_GREATERMISTRALDRAGONLINGI|Greater Mistral Dragonling I
+HODA_UNIT_GREATERMISTRALDRAGONLINGII|Greater Mistral Dragonling II
+HODA_UNIT_GREATERMISTRALDRAGONLINGIII|Greater Mistral Dragonling III
+HODA_UNIT_GREATERMISTRALDRAGONLINGIV|Greater Mistral Dragonling IV
+HODA_UNIT_GREATERRAGEDEMONI|Greater Rage Demon I
+HODA_UNIT_GREATERRAGEDEMONII|Greater Rage Demon II
+HODA_UNIT_GREATERRAGEDEMONIII|Greater Rage Demon III
+HODA_UNIT_GREATERRAGEDEMONIV|Greater Rage Demon IV
+HODA_UNIT_GREYWARDENBANNERI|Grey Warden Banner I
+HODA_UNIT_GREYWARDENBANNERII|Grey Warden Banner II
+HODA_UNIT_GREYWARDENBANNERIII|Grey Warden Banner III
+HODA_UNIT_GREYWARDENBANNERIV|Grey Warden Banner IV
+HODA_UNIT_GREYWARDENLOGHAINI|Grey Warden Loghain I
+HODA_UNIT_GREYWARDENLOGHAINII|Grey Warden Loghain II
+HODA_UNIT_GREYWARDENLOGHAINIII|Grey Warden Loghain III
+HODA_UNIT_GREYWARDENLOGHAINIV|Grey Warden Loghain IV
+HODA_UNIT_GUARDIANOFMYTHALI|Guardian of Mythal I
+HODA_UNIT_GUARDIANOFMYTHALII|Guardian of Mythal II
+HODA_UNIT_GUARDIANOFMYTHALIII|Guardian of Mythal III
+HODA_UNIT_GUARDIANOFMYTHALIV|Guardian of Mythal IV
+HODA_UNIT_GURNI|Gurn I
+HODA_UNIT_GURNII|Gurn II
+HODA_UNIT_GURNIII|Gurn III
+HODA_UNIT_GURNIV|Gurn IV
+HODA_UNIT_HAKKONITESPELLBINDERI|Hakkonite Spellbinder I
+HODA_UNIT_HAKKONITESPELLBINDERII|Hakkonite Spellbinder II
+HODA_UNIT_HAKKONITESPELLBINDERIII|Hakkonite Spellbinder III
+HODA_UNIT_HAKKONITESPELLBINDERIV|Hakkonite Spellbinder IV
+HODA_UNIT_HEROOFRIVERDANEI|Hero of River Dane I
+HODA_UNIT_HEROOFRIVERDANEII|Hero of River Dane II
+HODA_UNIT_HEROOFRIVERDANEIII|Hero of River Dane III
+HODA_UNIT_HEROOFRIVERDANEIV|Hero of River Dane IV
+HODA_UNIT_HISSERAI|Hissera I
+HODA_UNIT_HISSERAII|Hissera II
+HODA_UNIT_HISSERAIII|Hissera III
+HODA_UNIT_HISSERAIV|Hissera IV
+HODA_UNIT_HIVERNALI|Hivernal I
+HODA_UNIT_HIVERNALII|Hivernal II
+HODA_UNIT_HIVERNALIII|Hivernal III
+HODA_UNIT_HIVERNALIV|Hivernal IV
+HODA_UNIT_HUNTERHORNSHRIKEI|Hunterhorn Shrike I
+HODA_UNIT_HUNTERHORNSHRIKEII|Hunterhorn Shrike II
+HODA_UNIT_HUNTERHORNSHRIKEIII|Hunterhorn Shrike III
+HODA_UNIT_HUNTERHORNSHRIKEIV|Hunterhorn Shrike IV
+HODA_UNIT_HUNTERSHADEDRACOLISKI|Hunter Shade Dracolisk I
+HODA_UNIT_HUNTERSHADEDRACOLISKII|Hunter Shade Dracolisk II
+HODA_UNIT_HUNTERSHADEDRACOLISKIII|Hunter Shade Dracolisk III
+HODA_UNIT_HUNTERSHADEDRACOLISKIV|Hunter Shade Dracolisk IV
+HODA_UNIT_HURLOCKVANGUARDI|Hurlock Vanguard I
+HODA_UNIT_HURLOCKVANGUARDII|Hurlock Vanguard II
+HODA_UNIT_HURLOCKVANGUARDIII|Hurlock Vanguard III
+HODA_UNIT_HURLOCKVANGUARDIV|Hurlock Vanguard IV
+HODA_UNIT_ICEGIANTI|Ice Giant I
+HODA_UNIT_ICEGIANTII|Ice Giant II
+HODA_UNIT_ICEGIANTIII|Ice Giant III
+HODA_UNIT_ICEGIANTIV|Ice Giant IV
+HODA_UNIT_IMSHAELI|Imshael I
+HODA_UNIT_IMSHAELII|Imshael II
+HODA_UNIT_IMSHAELIII|Imshael III
+HODA_UNIT_IMSHAELIV|Imshael IV
+HODA_UNIT_INQUISITORAMERIDANI|Inquisitor Ameridan I
+HODA_UNIT_INQUISITORAMERIDANII|Inquisitor Ameridan II
+HODA_UNIT_INQUISITORAMERIDANIII|Inquisitor Ameridan III
+HODA_UNIT_INQUISITORAMERIDANIV|Inquisitor Ameridan IV
+HODA_UNIT_INVISIBLENUGI|Invisible Nug I
+HODA_UNIT_INVISIBLENUGII|Invisible Nug II
+HODA_UNIT_INVISIBLENUGIII|Invisible Nug III
+HODA_UNIT_INVISIBLENUGIV|Invisible Nug IV
+HODA_UNIT_ISSEYAI|Isseya I
+HODA_UNIT_ISSEYAII|Isseya II
+HODA_UNIT_ISSEYAIII|Isseya III
+HODA_UNIT_ISSEYAIV|Isseya IV
+HODA_UNIT_JANEKAI|Janeka I
+HODA_UNIT_JANEKAII|Janeka II
+HODA_UNIT_JANEKAIII|Janeka III
+HODA_UNIT_JANEKAIV|Janeka IV
+HODA_UNIT_KALTENZAHNDRAGONLINGI|Kaltenzahn Dragonling I
+HODA_UNIT_KALTENZAHNDRAGONLINGII|Kaltenzahn Dragonling II
+HODA_UNIT_KALTENZAHNDRAGONLINGIII|Kaltenzahn Dragonling III
+HODA_UNIT_KALTENZAHNDRAGONLINGIV|Kaltenzahn Dragonling IV
+HODA_UNIT_KALTENZAHNI|Kaltenzahn I
+HODA_UNIT_KALTENZAHNII|Kaltenzahn II
+HODA_UNIT_KALTENZAHNIII|Kaltenzahn III
+HODA_UNIT_KALTENZAHNIV|Kaltenzahn IV
+HODA_UNIT_KEEPERDESHANNAI|Keeper Deshanna I
+HODA_UNIT_KEEPERDESHANNAII|Keeper Deshanna II
+HODA_UNIT_KEEPERDESHANNAIII|Keeper Deshanna III
+HODA_UNIT_KEEPERDESHANNAIV|Keeper Deshanna IV
+HODA_UNIT_KEEPERZATHRIANI|Keeper Zathrian I
+HODA_UNIT_KEEPERZATHRIANII|Keeper Zathrian II
+HODA_UNIT_KEEPERZATHRIANIII|Keeper Zathrian III
+HODA_UNIT_KEEPERZATHRIANIV|Keeper Zathrian IV
+HODA_UNIT_KINGCALENHADI|King Calenhad I
+HODA_UNIT_KINGCALENHADII|King Calenhad II
+HODA_UNIT_KINGCALENHADIII|King Calenhad III
+HODA_UNIT_KINGCALENHADIV|King Calenhad IV
+HODA_UNIT_KITTYI|Kitty I
+HODA_UNIT_KITTYII|Kitty II
+HODA_UNIT_KITTYIII|Kitty III
+HODA_UNIT_KITTYIV|Kitty IV
+HODA_UNIT_KNIGHT-CAPTAINDENAMI|Knight-Captain Denam I
+HODA_UNIT_KNIGHT-CAPTAINDENAMII|Knight-Captain Denam II
+HODA_UNIT_KNIGHT-CAPTAINDENAMIII|Knight-Captain Denam III
+HODA_UNIT_KNIGHT-CAPTAINDENAMIV|Knight-Captain Denam IV
+HODA_UNIT_LADYSEEKERCASSANDRAI|Lady Seeker Cassandra I
+HODA_UNIT_LADYSEEKERCASSANDRAII|Lady Seeker Cassandra II
+HODA_UNIT_LADYSEEKERCASSANDRAIII|Lady Seeker Cassandra III
+HODA_UNIT_LADYSEEKERCASSANDRAIV|Lady Seeker Cassandra IV
+HODA_UNIT_LANAYAI|Lanaya I
+HODA_UNIT_LANAYAII|Lanaya II
+HODA_UNIT_LANAYAIII|Lanaya III
+HODA_UNIT_LANAYAIV|Lanaya IV
+HODA_UNIT_LARIUSI|Larius I
+HODA_UNIT_LARIUSII|Larius II
+HODA_UNIT_LARIUSIII|Larius III
+HODA_UNIT_LARIUSIV|Larius IV
+HODA_UNIT_LEANDRAAMELLI|Leandra Amell I
+HODA_UNIT_LEANDRAAMELLII|Leandra Amell II
+HODA_UNIT_LEANDRAAMELLIII|Leandra Amell III
+HODA_UNIT_LEANDRAAMELLIV|Leandra Amell IV
+HODA_UNIT_LIBRARIANI|Librarian I
+HODA_UNIT_LIBRARIANII|Librarian II
+HODA_UNIT_LIBRARIANIII|Librarian III
+HODA_UNIT_LIBRARIANIV|Librarian IV
+HODA_UNIT_LURKERI|Lurker I
+HODA_UNIT_LURKERII|Lurker II
+HODA_UNIT_LURKERIII|Lurker III
+HODA_UNIT_LURKERIV|Lurker IV
+HODA_UNIT_MAFERATHI|Maferath I
+HODA_UNIT_MAFERATHII|Maferath II
+HODA_UNIT_MAFERATHIII|Maferath III
+HODA_UNIT_MAFERATHIV|Maferath IV
+HODA_UNIT_MAGISTERDORIANI|Magister Dorian I
+HODA_UNIT_MAGISTERDORIANII|Magister Dorian II
+HODA_UNIT_MAGISTERDORIANIII|Magister Dorian III
+HODA_UNIT_MAGISTERDORIANIV|Magister Dorian IV
+HODA_UNIT_MALVERNISI|Malvernis I
+HODA_UNIT_MALVERNISII|Malvernis II
+HODA_UNIT_MALVERNISIII|Malvernis III
+HODA_UNIT_MALVERNISIV|Malvernis IV
+HODA_UNIT_MARIUSI|Marius I
+HODA_UNIT_MARIUSII|Marius II
+HODA_UNIT_MARIUSIII|Marius III
+HODA_UNIT_MARIUSIV|Marius IV
+HODA_UNIT_MOTHERGISELLEI|Mother Giselle I
+HODA_UNIT_MOTHERGISELLEII|Mother Giselle II
+HODA_UNIT_MOTHERGISELLEIII|Mother Giselle III
+HODA_UNIT_MOTHERGISELLEIV|Mother Giselle IV
+HODA_UNIT_MOUNTAINDRACOLISKI|Mountain Dracolisk I
+HODA_UNIT_MOUNTAINDRACOLISKII|Mountain Dracolisk II
+HODA_UNIT_MOUNTAINDRACOLISKIII|Mountain Dracolisk III
+HODA_UNIT_MOUNTAINDRACOLISKIV|Mountain Dracolisk IV
+HODA_UNIT_MYTHICBLACKWISPIV|Mythic Black Wisp IV
+HODA_UNIT_MYTHICBLUEBLACKWISPIV|Mythic Blue Black Wisp IV
+HODA_UNIT_MYTHICBLUEREDWISPIV|Mythic Blue Red Wisp IV
+HODA_UNIT_MYTHICBLUEWISPIV|Mythic Blue Wisp IV
+HODA_UNIT_MYTHICGIANTWISPIV|Mythic Giant Wisp IV
+HODA_UNIT_MYTHICPRESTIGEWISPIV|Mythic Prestige Wisp IV
+HODA_UNIT_MYTHICREDBLACKWISPIV|Mythic Red Black Wisp IV
+HODA_UNIT_MYTHICREDWISPIV|Mythic Red Wisp IV
+HODA_UNIT_MYTHICWHITEBLACKWISPIV|Mythic White Black Wisp IV
+HODA_UNIT_MYTHICWHITEBLUEWISPIV|Mythic White Blue Wisp IV
+HODA_UNIT_MYTHICWHITEREDWISPIV|Mythic White Red Wisp IV
+HODA_UNIT_MYTHICWHITEWISPIV|Mythic White Wisp IV
+HODA_UNIT_NAISHEI|Naishe I
+HODA_UNIT_NAISHEII|Naishe II
+HODA_UNIT_NAISHEIII|Naishe III
+HODA_UNIT_NAISHEIV|Naishe IV
+HODA_UNIT_NIGHTMAREI|Nightmare I
+HODA_UNIT_NIGHTMAREII|Nightmare II
+HODA_UNIT_NIGHTMAREIII|Nightmare III
+HODA_UNIT_NIGHTMAREIV|Nightmare IV
+HODA_UNIT_OGREALPHAI|Ogre Alpha I
+HODA_UNIT_OGREALPHAII|Ogre Alpha II
+HODA_UNIT_OGREALPHAIII|Ogre Alpha III
+HODA_UNIT_OGREALPHAIV|Ogre Alpha IV
+HODA_UNIT_ORLESIANBANNERI|Orlesian Banner I
+HODA_UNIT_ORLESIANBANNERII|Orlesian Banner II
+HODA_UNIT_ORLESIANBANNERIII|Orlesian Banner III
+HODA_UNIT_ORLESIANBANNERIV|Orlesian Banner IV
+HODA_UNIT_PARVOLLENBANNERI|Par Vollen Banner I
+HODA_UNIT_PARVOLLENBANNERII|Par Vollen Banner II
+HODA_UNIT_PARVOLLENBANNERIII|Par Vollen Banner III
+HODA_UNIT_PARVOLLENBANNERIV|Par Vollen Banner IV
+HODA_UNIT_PHANTASMALSHADOWI|Phantasmal Shadow I
+HODA_UNIT_PHANTASMALSHADOWII|Phantasmal Shadow II
+HODA_UNIT_PHANTASMALSHADOWIII|Phantasmal Shadow III
+HODA_UNIT_PHANTASMALSHADOWIV|Phantasmal Shadow IV
+HODA_UNIT_PHANTASMALWARRIORI|Phantasmal Warrior I
+HODA_UNIT_PHANTASMALWARRIORII|Phantasmal Warrior II
+HODA_UNIT_PHANTASMALWARRIORIII|Phantasmal Warrior III
+HODA_UNIT_PHANTASMALWARRIORIV|Phantasmal Warrior IV
+HODA_UNIT_PIOTINAEDUCANI|Piotin Aeducan I
+HODA_UNIT_PIOTINAEDUCANII|Piotin Aeducan II
+HODA_UNIT_PIOTINAEDUCANIII|Piotin Aeducan III
+HODA_UNIT_PIOTINAEDUCANIV|Piotin Aeducan IV
+HODA_UNIT_POSSESSEDOGRECOMMANDERI|Possessed Ogre Commander I
+HODA_UNIT_POSSESSEDOGRECOMMANDERII|Possessed Ogre Commander II
+HODA_UNIT_POSSESSEDOGRECOMMANDERIII|Possessed Ogre Commander III
+HODA_UNIT_POSSESSEDOGRECOMMANDERIV|Possessed Ogre Commander IV
+HODA_UNIT_PRIMAL-TRAINEDLONGMADRACOLISKI|Primal-Trained Longma I
+HODA_UNIT_PRIMAL-TRAINEDLONGMADRACOLISKII|Primal-Trained Longma II
+HODA_UNIT_PRIMAL-TRAINEDLONGMADRACOLISKIII|Primal-Trained Longma III
+HODA_UNIT_PRIMAL-TRAINEDLONGMADRACOLISKIV|Primal-Trained Longma IV
+HODA_UNIT_PROFANEI|Profane I
+HODA_UNIT_PROFANEII|Profane II
+HODA_UNIT_PROFANEIII|Profane III
+HODA_UNIT_PROFANEIV|Profane IV
+HODA_UNIT_QUEENANORATHEIRINI|Queen Anora Theirin I
+HODA_UNIT_QUEENANORATHEIRINII|Queen Anora Theirin II
+HODA_UNIT_QUEENANORATHEIRINIII|Queen Anora Theirin III
+HODA_UNIT_QUEENANORATHEIRINIV|Queen Anora Theirin IV
+HODA_UNIT_QUEENOFTHEEASTERNSEASI|Queen of the Eastern Seas I
+HODA_UNIT_QUEENOFTHEEASTERNSEASII|Queen of the Eastern Seas II
+HODA_UNIT_QUEENOFTHEEASTERNSEASIII|Queen of the Eastern Seas III
+HODA_UNIT_QUEENOFTHEEASTERNSEASIV|Queen of the Eastern Seas IV
+HODA_UNIT_QUNARIDEFENDERI|Qunari Defender I
+HODA_UNIT_QUNARIDEFENDERII|Qunari Defender II
+HODA_UNIT_QUNARIDEFENDERIII|Qunari Defender III
+HODA_UNIT_QUNARIDEFENDERIV|Qunari Defender IV
+HODA_UNIT_RABIDWEREWOLFI|Rabid Werewolf I
+HODA_UNIT_RABIDWEREWOLFII|Rabid Werewolf II
+HODA_UNIT_RABIDWEREWOLFIII|Rabid Werewolf III
+HODA_UNIT_RABIDWEREWOLFIV|Rabid Werewolf IV
+HODA_UNIT_REDLYRIUMBARTRANDI|Red Lyrium Bartrand I
+HODA_UNIT_REDLYRIUMBARTRANDII|Red Lyrium Bartrand II
+HODA_UNIT_REDLYRIUMBARTRANDIII|Red Lyrium Bartrand III
+HODA_UNIT_REDLYRIUMBARTRANDIV|Red Lyrium Bartrand IV
+HODA_UNIT_REDLYRIUMBLACKWALLI|Red Lyrium Blackwall I
+HODA_UNIT_REDLYRIUMBLACKWALLII|Red Lyrium Blackwall II
+HODA_UNIT_REDLYRIUMBLACKWALLIII|Red Lyrium Blackwall III
+HODA_UNIT_REDLYRIUMBLACKWALLIV|Red Lyrium Blackwall IV
+HODA_UNIT_REDLYRIUMNUGI|Red Lyrium Nug I
+HODA_UNIT_REDLYRIUMNUGII|Red Lyrium Nug II
+HODA_UNIT_REDLYRIUMNUGIII|Red Lyrium Nug III
+HODA_UNIT_REDLYRIUMNUGIV|Red Lyrium Nug IV
+HODA_UNIT_REINDEERMABARII|Reindeer Mabari I
+HODA_UNIT_REINDEERMABARIII|Reindeer Mabari II
+HODA_UNIT_REINDEERMABARIIII|Reindeer Mabari III
+HODA_UNIT_REINDEERMABARIIV|Reindeer Mabari IV
+HODA_UNIT_REVENANTGURDI|Revenant Gurd I
+HODA_UNIT_REVENANTGURDII|Revenant Gurd II
+HODA_UNIT_REVENANTGURDIII|Revenant Gurd III
+HODA_UNIT_REVENANTGURDIV|Revenant Gurd IV
+HODA_UNIT_RHYSI|Rhys I
+HODA_UNIT_RHYSII|Rhys II
+HODA_UNIT_RHYSIII|Rhys III
+HODA_UNIT_RHYSIV|Rhys IV
+HODA_UNIT_RITTSI|Ritts I
+HODA_UNIT_RITTSII|Ritts II
+HODA_UNIT_RITTSIII|Ritts III
+HODA_UNIT_RITTSIV|Ritts IV
+HODA_UNIT_RUNICGOLEMI|Runic Golem I
+HODA_UNIT_RUNICGOLEMII|Runic Golem II
+HODA_UNIT_RUNICGOLEMIII|Runic Golem III
+HODA_UNIT_RUNICGOLEMIV|Runic Golem IV
+HODA_UNIT_SABOTEURGARRETTHAWKEI|Saboteur Garrett Hawke I
+HODA_UNIT_SABOTEURGARRETTHAWKEII|Saboteur Garrett Hawke II
+HODA_UNIT_SABOTEURGARRETTHAWKEIII|Saboteur Garrett Hawke III
+HODA_UNIT_SABOTEURGARRETTHAWKEIV|Saboteur Garrett Hawke IV
+HODA_UNIT_SABOTEURMARIANHAWKEI|Saboteur Marian Hawke I
+HODA_UNIT_SABOTEURMARIANHAWKEII|Saboteur Marian Hawke II
+HODA_UNIT_SABOTEURMARIANHAWKEIII|Saboteur Marian Hawke III
+HODA_UNIT_SABOTEURMARIANHAWKEIV|Saboteur Marian Hawke IV
+HODA_UNIT_SERAARONHAWTHORNEI|Ser Aaron Hawthorne I
+HODA_UNIT_SERAARONHAWTHORNEII|Ser Aaron Hawthorne II
+HODA_UNIT_SERAARONHAWTHORNEIII|Ser Aaron Hawthorne III
+HODA_UNIT_SERAARONHAWTHORNEIV|Ser Aaron Hawthorne IV
+HODA_UNIT_SERWESLEYVALLENI|Ser Wesley Vallen I
+HODA_UNIT_SERWESLEYVALLENII|Ser Wesley Vallen II
+HODA_UNIT_SERWESLEYVALLENIII|Ser Wesley Vallen III
+HODA_UNIT_SERWESLEYVALLENIV|Ser Wesley Vallen IV
+HODA_UNIT_SHA-BRYTOLSTALKERI|Sha-Brytol Stalker I
+HODA_UNIT_SHA-BRYTOLSTALKERII|Sha-Brytol Stalker II
+HODA_UNIT_SHA-BRYTOLSTALKERIII|Sha-Brytol Stalker III
+HODA_UNIT_SHA-BRYTOLSTALKERIV|Sha-Brytol Stalker IV
+HODA_UNIT_SHADOWNUGI|Shadow Nug I
+HODA_UNIT_SHADOWNUGII|Shadow Nug II
+HODA_UNIT_SHADOWNUGIII|Shadow Nug III
+HODA_UNIT_SHADOWNUGIV|Shadow Nug IV
+HODA_UNIT_SHADOWWEREWOLFI|Shadow Werewolf I
+HODA_UNIT_SHADOWWEREWOLFII|Shadow Werewolf II
+HODA_UNIT_SHADOWWEREWOLFIII|Shadow Werewolf III
+HODA_UNIT_SHADOWWEREWOLFIV|Shadow Werewolf IV
+HODA_UNIT_SHAPESHIFTERMORRIGANII|Shapeshifter Morrigan
+HODA_UNIT_SHAPESHIFTERMORRIGANIIII|Shapeshifter Morrigan II
+HODA_UNIT_SHAPESHIFTERMORRIGANIIIIII|Shapeshifter Morrigan III
+HODA_UNIT_SHAPESHIFTERMORRIGANIVIV|Shapeshifter Morrigan IV
+HODA_UNIT_SHARPTAILDRACOLISKI|Sharp-tail Dracolisk I
+HODA_UNIT_SHARPTAILDRACOLISKII|Sharp-tail Dracolisk II
+HODA_UNIT_SHARPTAILDRACOLISKIII|Sharp-tail Dracolisk III
+HODA_UNIT_SHARPTAILDRACOLISKIV|Sharp-tail Dracolisk IV
+HODA_UNIT_SHIANNII|Shianni I
+HODA_UNIT_SHIANNIII|Shianni II
+HODA_UNIT_SHIANNIIII|Shianni III
+HODA_UNIT_SHIANNIIV|Shianni IV
+HODA_UNIT_SIGRIDGULDSDOTTENI|Sigrid Guldsdotten I
+HODA_UNIT_SIGRIDGULDSDOTTENII|Sigrid Guldsdotten II
+HODA_UNIT_SIGRIDGULDSDOTTENIII|Sigrid Guldsdotten III
+HODA_UNIT_SIGRIDGULDSDOTTENIV|Sigrid Guldsdotten IV
+HODA_UNIT_SISTERNIGHTINGALEI|Sister Nightingale I
+HODA_UNIT_SISTERNIGHTINGALEII|Sister Nightingale II
+HODA_UNIT_SISTERNIGHTINGALEIII|Sister Nightingale III
+HODA_UNIT_SISTERNIGHTINGALEIV|Sister Nightingale IV
+HODA_UNIT_SKYCULTISTI|Sky Cultist I
+HODA_UNIT_SKYCULTISTII|Sky Cultist II
+HODA_UNIT_SKYCULTISTIII|Sky Cultist III
+HODA_UNIT_SKYCULTISTIV|Sky Cultist IV
+HODA_UNIT_SPIRITARCHERI|Spirit Archer I
+HODA_UNIT_SPIRITARCHERII|Spirit Archer II
+HODA_UNIT_SPIRITARCHERIII|Spirit Archer III
+HODA_UNIT_SPIRITARCHERIV|Spirit Archer IV
+HODA_UNIT_SPIRITCHAMPIONI|Spirit Champion I
+HODA_UNIT_SPIRITCHAMPIONII|Spirit Champion II
+HODA_UNIT_SPIRITCHAMPIONIII|Spirit Champion III
+HODA_UNIT_SPIRITCHAMPIONIV|Spirit Champion IV
+HODA_UNIT_SPIRITOFSHARTANI|Spirit of Shartan I
+HODA_UNIT_SPIRITOFSHARTANII|Spirit of Shartan II
+HODA_UNIT_SPIRITOFSHARTANIII|Spirit of Shartan III
+HODA_UNIT_SPIRITOFSHARTANIV|Spirit of Shartan IV
+HODA_UNIT_SPIRITSPELLBINDERI|Spirit Spellbinder I
+HODA_UNIT_SPIRITSPELLBINDERII|Spirit Spellbinder II
+HODA_UNIT_SPIRITSPELLBINDERIII|Spirit Spellbinder III
+HODA_UNIT_SPIRITSPELLBINDERIV|Spirit Spellbinder IV
+HODA_UNIT_STONEJAWI|Stonejaw I
+HODA_UNIT_STONEJAWII|Stonejaw II
+HODA_UNIT_STONEJAWIII|Stonejaw III
+HODA_UNIT_STONEJAWIV|Stonejaw IV
+HODA_UNIT_STORVACKERI|Storvacker I
+HODA_UNIT_STORVACKERII|Storvacker II
+HODA_UNIT_STORVACKERIII|Storvacker III
+HODA_UNIT_STORVACKERIV|Storvacker IV
+HODA_UNIT_SUNDERMOUNTVARTERRALI|Sundermount Varterral I
+HODA_UNIT_SUNDERMOUNTVARTERRALII|Sundermount Varterral II
+HODA_UNIT_SUNDERMOUNTVARTERRALIII|Sundermount Varterral III
+HODA_UNIT_SUNDERMOUNTVARTERRALIV|Sundermount Varterral IV
+HODA_UNIT_SUNSHINEI|Sunshine I
+HODA_UNIT_SUNSHINEII|Sunshine II
+HODA_UNIT_SUNSHINEIII|Sunshine III
+HODA_UNIT_SUNSHINEIV|Sunshine IV
+HODA_UNIT_TEMPESTSERAII|Tempest Sera, Frost Elixir
+HODA_UNIT_TEMPESTSERAIIII|Tempest Sera, Frost Elixir II
+HODA_UNIT_TEMPESTSERAIIIIII|Tempest Sera, Lightning Elixir III
+HODA_UNIT_TEMPESTSERAIVIV|Tempest Sera, Fire Elixir IV
+HODA_UNIT_TEMPLARBANNERI|Templar Banner I
+HODA_UNIT_TEMPLARBANNERII|Templar Banner II
+HODA_UNIT_TEMPLARBANNERIII|Templar Banner III
+HODA_UNIT_TEMPLARBANNERIV|Templar Banner IV
+HODA_UNIT_TESSAFORSYTHIAI|Tessa Forsythia I
+HODA_UNIT_TESSAFORSYTHIAII|Tessa Forsythia II
+HODA_UNIT_TESSAFORSYTHIAIII|Tessa Forsythia III
+HODA_UNIT_TESSAFORSYTHIAIV|Tessa Forsythia IV
+HODA_UNIT_TEVINTERBANNERI|Tevinter Banner I
+HODA_UNIT_TEVINTERBANNERII|Tevinter Banner II
+HODA_UNIT_TEVINTERBANNERIII|Tevinter Banner III
+HODA_UNIT_TEVINTERBANNERIV|Tevinter Banner IV
+HODA_UNIT_THADDEUSGIGANTUSCRUMBUMI|Thaddeus Gigantus Crumbum I
+HODA_UNIT_THADDEUSGIGANTUSCRUMBUMII|Thaddeus Gigantus Crumbum II
+HODA_UNIT_THADDEUSGIGANTUSCRUMBUMIII|Thaddeus Gigantus Crumbum III
+HODA_UNIT_THADDEUSGIGANTUSCRUMBUMIV|Thaddeus Gigantus Crumbum IV
+HODA_UNIT_THEAUGURI|The Augur I
+HODA_UNIT_THEAUGURII|The Augur II
+HODA_UNIT_THEAUGURIII|The Augur III
+HODA_UNIT_THEAUGURIV|The Augur IV
+HODA_UNIT_THEDARKTHEURGEI|The Dark Theurge I
+HODA_UNIT_THEDARKTHEURGEII|The Dark Theurge II
+HODA_UNIT_THEDARKTHEURGEIII|The Dark Theurge III
+HODA_UNIT_THEDARKTHEURGEIV|The Dark Theurge IV
+HODA_UNIT_THEDOWAGERI|The Dowager I
+HODA_UNIT_THEDOWAGERII|The Dowager II
+HODA_UNIT_THEDOWAGERIII|The Dowager III
+HODA_UNIT_THEDOWAGERIV|The Dowager IV
+HODA_UNIT_THEFORMLESSONEI|The Formless One I
+HODA_UNIT_THEFORMLESSONEII|The Formless One II
+HODA_UNIT_THEFORMLESSONEIII|The Formless One III
+HODA_UNIT_THEFORMLESSONEIV|The Formless One IV
+HODA_UNIT_THEHIGHESTONEI|The Highest One I
+HODA_UNIT_THEHIGHESTONEII|The Highest One II
+HODA_UNIT_THEHIGHESTONEIII|The Highest One III
+HODA_UNIT_THEHIGHESTONEIV|The Highest One IV
+HODA_UNIT_THEMADHERMITI|The Mad Hermit I
+HODA_UNIT_THEMADHERMITII|The Mad Hermit II
+HODA_UNIT_THEMADHERMITIII|The Mad Hermit III
+HODA_UNIT_THEMADHERMITIV|The Mad Hermit IV
+HODA_UNIT_THOMRAINIERI|Thom Rainier I
+HODA_UNIT_THOMRAINIERII|Thom Rainier II
+HODA_UNIT_THOMRAINIERIII|Thom Rainier III
+HODA_UNIT_THOMRAINIERIV|Thom Rainier IV
+HODA_UNIT_TITANHEARTGUARDIANI|Titan Heart Guardian I
+HODA_UNIT_TITANHEARTGUARDIANII|Titan Heart Guardian II
+HODA_UNIT_TITANHEARTGUARDIANIII|Titan Heart Guardian III
+HODA_UNIT_TITANHEARTGUARDIANIV|Titan Heart Guardian IV
+HODA_UNIT_TORPORI|Torpor I
+HODA_UNIT_TORPORII|Torpor II
+HODA_UNIT_TORPORIII|Torpor III
+HODA_UNIT_TORPORIV|Torpor IV
+HODA_UNIT_TRANQUILMADDOXI|Tranquil Maddox I
+HODA_UNIT_TRANQUILMADDOXII|Tranquil Maddox II
+HODA_UNIT_TRANQUILMADDOXIII|Tranquil Maddox III
+HODA_UNIT_TRANQUILMADDOXIV|Tranquil Maddox IV
+HODA_UNIT_VAEAI|Vaea I
+HODA_UNIT_VAEAII|Vaea II
+HODA_UNIT_VAEAIII|Vaea III
+HODA_UNIT_VAEAIV|Vaea IV
+HODA_UNIT_VEILWARDENI|Veilwarden Ithriel I
+HODA_UNIT_VEILWARDENII|Veilwarden Ithriel II
+HODA_UNIT_VEILWARDENIII|Veilwarden Ithriel III
+HODA_UNIT_VEILWARDENIV|Veilwarden Ithriel IV
+HODA_UNIT_VENATORIZEALOTI|Venatori Zealot I
+HODA_UNIT_VENATORIZEALOTII|Venatori Zealot II
+HODA_UNIT_VENATORIZEALOTIII|Venatori Zealot III
+HODA_UNIT_VENATORIZEALOTIV|Venatori Zealot IV
+HODA_UNIT_VINSOMERDRAGONLINGI|Vinsomer Dragonling I
+HODA_UNIT_VINSOMERDRAGONLINGII|Vinsomer Dragonling II
+HODA_UNIT_VINSOMERDRAGONLINGIII|Vinsomer Dragonling III
+HODA_UNIT_VINSOMERDRAGONLINGIV|Vinsomer Dragonling IV
+HODA_UNIT_VISCOUNTVARRICI|Viscount Varric I
+HODA_UNIT_VISCOUNTVARRICII|Viscount Varric II
+HODA_UNIT_VISCOUNTVARRICIII|Viscount Varric III
+HODA_UNIT_VISCOUNTVARRICIV|Viscount Varric IV
+HODA_UNIT_WARDEN-COMMANDERSOPHIAI|Warden-Commander Sophia I
+HODA_UNIT_WARDEN-COMMANDERSOPHIAII|Warden-Commander Sophia II
+HODA_UNIT_WARDEN-COMMANDERSOPHIAIII|Warden-Commander Sophia III
+HODA_UNIT_WARDEN-COMMANDERSOPHIAIV|Warden-Commander Sophia IV
+HODA_UNIT_WEREWOLFALPHAI|Werewolf Alpha I
+HODA_UNIT_WEREWOLFALPHAII|Werewolf Alpha II
+HODA_UNIT_WEREWOLFALPHAIII|Werewolf Alpha III
+HODA_UNIT_WEREWOLFALPHAIV|Werewolf Alpha IV
+HODA_UNIT_WILDHARTI|Wild Hart I
+HODA_UNIT_WILDHARTII|Wild Hart II
+HODA_UNIT_WILDHARTIII|Wild Hart III
+HODA_UNIT_WILDHARTIV|Wild Hart IV
+HODA_UNIT_WILDSYLVANI|Wild Sylvan I
+HODA_UNIT_WILDSYLVANII|Wild Sylvan II
+HODA_UNIT_WILDSYLVANIII|Wild Sylvan III
+HODA_UNIT_WILDSYLVANIV|Wild Sylvan IV
+HODA_UNIT_WINTERSENDCULLENI|Wintersend Cullen I
+HODA_UNIT_WINTERSENDCULLENII|Wintersend Cullen II
+HODA_UNIT_WINTERSENDCULLENIII|Wintersend Cullen III
+HODA_UNIT_WINTERSENDCULLENIV|Wintersend Cullen IV
+HODA_UNIT_WINTERSENDHARLEQUINI|Wintersend Harlequin I
+HODA_UNIT_WINTERSENDHARLEQUINII|Wintersend Harlequin II
+HODA_UNIT_WINTERSENDHARLEQUINIII|Wintersend Harlequin III
+HODA_UNIT_WINTERSENDHARLEQUINIV|Wintersend Harlequin IV
+HODA_UNIT_WINTERSENDNUGGALOPEI|Wintersend Nuggalope I
+HODA_UNIT_WINTERSENDNUGGALOPEII|Wintersend Nuggalope II
+HODA_UNIT_WINTERSENDNUGGALOPEIII|Wintersend Nuggalope III
+HODA_UNIT_WINTERSENDNUGGALOPEIV|Wintersend Nuggalope IV
+HODA_UNIT_WINTERSENDVIVIENNEI|Wintersend Vivienne I
+HODA_UNIT_WINTERSENDVIVIENNEII|Wintersend Vivienne II
+HODA_UNIT_WINTERSENDVIVIENNEIII|Wintersend Vivienne III
+HODA_UNIT_WINTERSENDVIVIENNEIV|Wintersend Vivienne IV
+HODA_UNIT_WRYMEI|Wryme I
+HODA_UNIT_WRYMEII|Wryme II
+HODA_UNIT_WRYMEIII|Wryme III
+HODA_UNIT_WRYMEIV|Wryme IV
+HODA_UNIT_XENONTHEANTIQUARIANI|Xenon the Antiquarian I
+HODA_UNIT_XENONTHEANTIQUARIANII|Xenon the Antiquarian II
+HODA_UNIT_XENONTHEANTIQUARIANIII|Xenon the Antiquarian III
+HODA_UNIT_XENONTHEANTIQUARIANIV|Xenon the Antiquarian IV

@@ -31,6 +31,8 @@
 #define PLATFORM_HTTP_PARTIAL_CONTENT 206
 #define PLATFORM_HTTP_RANGE_NOT_SATISFIABLE 416
 #define PLATFORM_APP_DATA_ENV "APPDATA"
+#define PLATFORM_WINDOWS_DIR_ENV "WINDIR"
+#define PLATFORM_WINDOWS_DIR_DEFAULT "C:\\Windows"
 
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size) {
     HANDLE handle = (HANDLE)_get_osfhandle(_fileno(file));
@@ -316,6 +318,35 @@ bool PlatformMakeDirectory(const char *path) {
     return _mkdir(path) == 0 || errno == EEXIST;
 }
 
+static const char *const platform_fallback_fonts[] = {
+    "msyh.ttc",
+    "msyh.ttf",
+    "simhei.ttf",
+    "msjh.ttc",
+    "msjh.ttf",
+    "simsun.ttc",
+    "mingliu.ttc",
+    "malgun.ttf",
+    "meiryo.ttc",
+};
+
+int PlatformFallbackFonts(char paths[][PLATFORM_FONT_PATH_CAP], int capacity) {
+    const char *windows = getenv(PLATFORM_WINDOWS_DIR_ENV);
+    if (!windows || !windows[0]) windows = PLATFORM_WINDOWS_DIR_DEFAULT;
+    int count = 0;
+    for (size_t i = 0; i < sizeof(platform_fallback_fonts) / sizeof(platform_fallback_fonts[0]) && count < capacity;
+         i++)
+        snprintf(paths[count++], PLATFORM_FONT_PATH_CAP, "%s\\Fonts\\%s", windows, platform_fallback_fonts[i]);
+    return count;
+}
+
+bool PlatformPreferredLanguage(char *out, size_t capacity) {
+    wchar_t name[LOCALE_NAME_MAX_LENGTH];
+    LCID interface_language = MAKELCID(GetUserDefaultUILanguage(), SORT_DEFAULT);
+    if (!LCIDToLocaleName(interface_language, name, LOCALE_NAME_MAX_LENGTH, 0)) return false;
+    return WideCharToMultiByte(CP_UTF8, 0, name, -1, out, (int)capacity, NULL, NULL) > 0;
+}
+
 #else
 #include <ctype.h>
 #include <curl/curl.h>
@@ -335,6 +366,7 @@ bool PlatformMakeDirectory(const char *path) {
 #define PLATFORM_HTTP_GET "GET"
 
 #ifdef __APPLE__
+#include <CoreFoundation/CoreFoundation.h>
 #define PLATFORM_USER_DATA_SUFFIX "Library/Application Support"
 static const char *const platform_curl_libraries[] = {"/usr/lib/libcurl.4.dylib", "libcurl.4.dylib"};
 #else
@@ -593,6 +625,61 @@ bool PlatformUserDataDirectory(const char *app_name, char *out, size_t capacity)
 bool PlatformMakeDirectory(const char *path) {
     return mkdir(path, PLATFORM_DIRECTORY_MODE) == 0 || errno == EEXIST;
 }
+
+#ifdef __APPLE__
+static const char *const platform_fallback_fonts[] = {
+    "/System/Library/Fonts/Hiragino Sans GB.ttc",
+    "/System/Library/Fonts/STHeiti Medium.ttc",
+    "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+    "/Library/Fonts/Arial Unicode.ttf",
+    "/System/Library/Fonts/Supplemental/Songti.ttc",
+    "/System/Library/Fonts/AppleSDGothicNeo.ttc",
+};
+#else
+static const char *const platform_fallback_fonts[] = {
+    "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc",
+    "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc",
+    "/usr/share/fonts/truetype/wqy/wqy-microhei.ttc",
+    "/usr/share/fonts/wenquanyi/wqy-microhei/wqy-microhei.ttc",
+    "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+    "/usr/share/fonts/truetype/droid/DroidSansFallbackFull.ttf",
+    "/usr/share/fonts/truetype/arphic/uming.ttc",
+};
+#endif
+
+int PlatformFallbackFonts(char paths[][PLATFORM_FONT_PATH_CAP], int capacity) {
+    int count = 0;
+    for (size_t i = 0; i < sizeof(platform_fallback_fonts) / sizeof(platform_fallback_fonts[0]) && count < capacity;
+         i++)
+        snprintf(paths[count++], PLATFORM_FONT_PATH_CAP, "%s", platform_fallback_fonts[i]);
+    return count;
+}
+
+#ifdef __APPLE__
+bool PlatformPreferredLanguage(char *out, size_t capacity) {
+    CFArrayRef languages = CFLocaleCopyPreferredLanguages();
+    if (!languages) return false;
+    bool found =
+        CFArrayGetCount(languages) > 0 &&
+        CFStringGetCString(CFArrayGetValueAtIndex(languages, 0), out, (CFIndex)capacity, kCFStringEncodingUTF8);
+    CFRelease(languages);
+    return found;
+}
+#else
+static const char *const platform_language_variables[] = {"LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"};
+
+bool PlatformPreferredLanguage(char *out, size_t capacity) {
+    for (size_t i = 0; i < sizeof(platform_language_variables) / sizeof(platform_language_variables[0]); i++) {
+        const char *value = getenv(platform_language_variables[i]);
+        if (!value || !value[0] || !strcmp(value, "C") || !strcmp(value, "POSIX")) continue;
+        int length = snprintf(out, capacity, "%s", value);
+        return length > 0 && (size_t)length < capacity;
+    }
+    return false;
+}
+#endif
 
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size) {
     return pread(fileno(file), out, size, (off_t)offset) == (ssize_t)size;

@@ -8,15 +8,17 @@ ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "data/nexus_game_changers.json"
 NEXUS_MAPS = ROOT / "data/nexus_maps.json"
 CHARACTERS = ROOT / "client-additional-data/characters.json"
-LOCALIZATION = (
+LOCALIZATION_FILE = "Loc_ENG_US.txt"
+LOCALIZATIONS = (
     ROOT
     / "client-additional-data/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization"
-    / "Loc_RUS_RU.txt"
+    / LOCALIZATION_FILE,
+    *sorted((ROOT / "data/localization").glob(f"*/{LOCALIZATION_FILE}")),
 )
 CLI_DESCRIPTION = "Build the Nexus game changer table from original keys and archived event rules."
 
-FACTION_BONUS_RU = 'Герои "{}" фракции получают 150 % здоровья и силы.'
 FACTION_BONUS_PCT = 150
+FACTION_BONUS_KEY = "HODA_NEXUS_GAME_CHANGER_PLUS{0}HEALTH_PLUS{0}POWER_TO_{1}_FACTION"
 
 
 def group(*names, health=0, power=0):
@@ -32,12 +34,12 @@ def faction(name, health=0, power=0):
 
 
 def original(key, *effects):
-    return {"text_key": key, "text_ru": "", "effects": list(effects)}
+    return {"text_key": key, "effects": list(effects)}
 
 
-def faction_day(name, name_ru):
+def faction_day(name):
     effect = faction(name, health=FACTION_BONUS_PCT, power=FACTION_BONUS_PCT)
-    return {"text_key": "", "text_ru": FACTION_BONUS_RU.format(name_ru), "effects": [effect]}
+    return {"text_key": FACTION_BONUS_KEY.format(FACTION_BONUS_PCT, name.upper()), "effects": [effect]}
 
 
 GAME_CHANGERS = {
@@ -49,7 +51,7 @@ GAME_CHANGERS = {
     "MaskedMayhem": original(
         "NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_MAGES", group("Mage", health=150, power=150)
     ),
-    "Tallis": faction_day("White", "белой"),
+    "Tallis": faction_day("White"),
     "WinterWardenland": original("NEXUS_GAME_CHANGER_PLUS200POWER_TO_WARDENS", group("Warden", power=200)),
     "ADreamMadeReality": original(
         "NEXUS_GAME_CHANGER_PLUS250HEALTH_AND_PLUS350POWER_TO_QUNARI", group("Qunari", health=250, power=350)
@@ -81,16 +83,19 @@ GAME_CHANGERS = {
     "WesternApproachRedLyrium": original(
         "game_changer_35pctpower_and_health_to_inquisition", group("Inquisition", health=35, power=35)
     ),
-    "DailyMonday": faction_day("White", "белой"),
-    "DailyTuesday": faction_day("Red", "красной"),
-    "DailyWednesday": faction_day("Blue", "синей"),
-    "DailyThursday": faction_day("Black", "черной"),
+    "DailyMonday": faction_day("White"),
+    "DailyTuesday": faction_day("Red"),
+    "DailyWednesday": faction_day("Blue"),
+    "DailyThursday": faction_day("Black"),
 }
 
 
 def localization_keys():
-    with LOCALIZATION.open(encoding="utf-8", errors="replace") as file:
-        return {line.partition("|")[0].lower() for line in file if "|" in line}
+    keys = set()
+    for path in LOCALIZATIONS:
+        with path.open(encoding="utf-8", errors="replace") as file:
+            keys |= {line.partition("|")[0].lower() for line in file if "|" in line}
+    return keys
 
 
 def build():
@@ -107,7 +112,7 @@ def build():
         changer = GAME_CHANGERS.get(event_id)
         if changer is None:
             continue
-        if changer["text_key"] and changer["text_key"].lower() not in known_keys:
+        if changer["text_key"].lower() not in known_keys:
             raise ValueError(f"{event_id}: missing text {changer['text_key']}")
         for effect in changer["effects"]:
             missing = (set(effect["groups"]) - known_groups) | (set(effect["units"]) - known_units)

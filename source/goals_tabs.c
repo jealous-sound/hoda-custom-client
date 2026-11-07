@@ -62,19 +62,16 @@ void GoalsTabsInitialize(GoalsTabs *t) {
     t->body = GuiFont(FNT_MENU);
     Vector2 centre = {0.5f, 0.5f};
     t->tabs[GOALS_TAB_TROPHIES] = ButtonLoad(GUI_GOALS_TAB_FEATURED, GUI_GOALS_TAB_FEATURED_ON);
-    t->tabs[GOALS_TAB_MISSIONS] = ButtonLoadText(
-        GUI_GOALS_TAB, GUI_GOALS_TAB_ON, LocGetOr("LEADERBOARD_MISSIONS_BUTTON", "Достижения"), t->font, centre, 0.36f
-    );
-    t->tabs[GOALS_TAB_EVENTS] = ButtonLoadText(
-        GUI_GOALS_TAB, GUI_GOALS_TAB_ON, LocGetOr("LEADERBOARD_MYEVENTS_BUTTON", "Мои события"), t->font, centre, 0.36f
-    );
-    t->tabs[GOALS_TAB_BATTLES] = ButtonLoadText(
-        GUI_GOALS_TAB, GUI_GOALS_TAB_ON, LocGetOr("LEADERBOARD_MYBATTLES_BUTTON", "Бои"), t->font, centre, 0.36f
-    );
+    t->tabs[GOALS_TAB_MISSIONS] =
+        ButtonLoadText(GUI_GOALS_TAB, GUI_GOALS_TAB_ON, LocGet("LEADERBOARD_MISSIONS_BUTTON"), t->font, centre, 0.36f);
+    t->tabs[GOALS_TAB_EVENTS] =
+        ButtonLoadText(GUI_GOALS_TAB, GUI_GOALS_TAB_ON, LocGet("LEADERBOARD_MYEVENTS_BUTTON"), t->font, centre, 0.36f);
+    t->tabs[GOALS_TAB_BATTLES] =
+        ButtonLoadText(GUI_GOALS_TAB, GUI_GOALS_TAB_ON, LocGet("LEADERBOARD_MYBATTLES_BUTTON"), t->font, centre, 0.36f);
     for (int tab = 0; tab < GOALS_TAB_COUNT; tab++) ButtonSetClickSound(&t->tabs[tab], SND_UI_TAB);
     t->fight = ButtonLoad(GUI_PVP_BUTTON_SHORT, GUI_PVP_BUTTON_SHORT_ON);
     t->claim = ButtonLoadText(
-        GUI_MISSION_CLAIM, GUI_MISSION_CLAIM_ON, LocGetOr("LEADERBOARD_MISSIONS_CLAIM", "Получ."), t->font, centre, 0.5f
+        GUI_MISSION_CLAIM, GUI_MISSION_CLAIM_ON, LocGet("LEADERBOARD_MISSIONS_CLAIM"), t->font, centre, 0.5f
     );
     ButtonSetClickSound(&t->claim, SND_MISSION_COLLECT);
 }
@@ -172,21 +169,21 @@ static void GoalsDrawRankCells(
 static void GoalsDrawRankHeader(const GoalsTabs *t, Rectangle row) {
     UiDrawTextCentered(
         t->body,
-        LocGetOr("LEADERBOARD_RANK", "Ранг"),
+        LocGet("LEADERBOARD_RANK"),
         (Rectangle){row.x, row.y, GOALS_RANK_COLUMN_WIDTH, row.height},
         19.0f,
         GOALS_TEXT_DIM
     );
     UiDrawTextLeftMiddle(
         t->body,
-        LocGetOr("LEADERBOARD_NAME", "Имя"),
+        LocGet("LEADERBOARD_NAME"),
         (Rectangle){row.x + GOALS_RANK_COLUMN_WIDTH + GOALS_NAME_INSET, row.y, 240.0f, row.height},
         19.0f,
         GOALS_TEXT_DIM
     );
     UiDrawTextRight(
         t->body,
-        LocGetOr("LEADERBOARD_TROPHIES", "Трофеи"),
+        LocGet("LEADERBOARD_TROPHIES"),
         (Rectangle){row.x, row.y, row.width - GOALS_BUTTON_WIDTH - 16.0f, row.height},
         19.0f,
         GOALS_TEXT_DIM
@@ -199,13 +196,7 @@ GoalsAction GoalsDrawTrophies(GoalsTabs *t, GoalsScroll *scroll, const Player *p
     Rectangle mine = {content.x, header.y + header.height, content.width, GOALS_PLAYER_ROW_HEIGHT};
     UiDrawTexture(GuiTex(GUI_GOALS_PLAYER_ROW), mine, WHITE);
     GoalsDrawRankCells(
-        t,
-        mine,
-        t->player_rank,
-        LocGetOr("PVP_YOU", "Вы"),
-        p->pvp.trophies,
-        GOALS_BUTTON_WIDTH + 16.0f,
-        GOALS_PLAYER_TEXT
+        t, mine, t->player_rank, LocGet("HODA_PVP_YOU"), p->pvp.trophies, GOALS_BUTTON_WIDTH + 16.0f, GOALS_PLAYER_TEXT
     );
 
     float top = mine.y + mine.height + GOALS_LIST_TOP_INSET;
@@ -223,7 +214,7 @@ GoalsAction GoalsDrawTrophies(GoalsTabs *t, GoalsScroll *scroll, const Player *p
         const PvpRankEntry *entry = &t->ranks[i];
         bool self = entry->bot == PVP_RANK_PLAYER;
         DrawRectangleRec(row, GOALS_ROW_TINT);
-        const char *name = self ? LocGetOr("PVP_YOU", "Вы") : PvpTableEnsure()->bots[entry->bot].name;
+        const char *name = self ? LocGet("HODA_PVP_YOU") : PvpTableEnsure()->bots[entry->bot].name;
         GoalsDrawRankCells(t, row, i + 1, name, entry->trophies, GOALS_BUTTON_WIDTH + 16.0f, GOALS_TEXT);
         if (self) continue;
         Rectangle button = {
@@ -299,7 +290,7 @@ GoalsAction GoalsDrawBattles(
     GoalsTabs *t, GoalsScroll *scroll, const PlayerPvp *pvp, Rectangle content, bool interactive, long long now
 ) {
     if (pvp->history_count == 0) {
-        GoalsDrawEmpty(t, "Боев пока нет. Сразитесь с другим игроком!", content);
+        GoalsDrawEmpty(t, LocGet("HODA_PVP_NO_BATTLES"), content);
         return GOALS_NONE;
     }
     float stride = GOALS_BATTLE_ROW_HEIGHT + GOALS_ROW_GAP;
@@ -346,7 +337,7 @@ static void GoalsDrawEventRow(const GoalsTabs *t, const PlayerPvpEventResult *re
     LocFormat2(rank, sizeof(rank), "PVP_EVENT_RANKING", TextFormat("%d", result->rank), "");
     UiDrawTextLeftMiddle(
         t->body,
-        TextFormat("%s   %s %d", rank, LocGetOr("PVP_EVENT_BANNERS", "Знамена"), result->banners),
+        TextFormat("%s   %s %d", rank, LocGet("PVP_EVENT_BANNERS"), result->banners),
         (Rectangle){x, row.y + 44.0f, width, 26.0f},
         18.0f,
         GOALS_TEXT_DIM
@@ -379,7 +370,7 @@ static void GoalsDrawGuildEventRow(const GoalsTabs *t, const GoalsGuildAward *aw
     LocFormatArgs(rank, sizeof(rank), "GUILD_EVENT_RANKING", args, 1);
     UiDrawTextLeftMiddle(
         t->body,
-        TextFormat("%s   %s %d", rank, LocGetOr("PVP_EVENT_BANNERS", "Знамена"), award->banners),
+        TextFormat("%s   %s %d", rank, LocGet("PVP_EVENT_BANNERS"), award->banners),
         (Rectangle){x, row.y + 44.0f, width, 26.0f},
         18.0f,
         GOALS_TEXT_DIM
@@ -405,7 +396,7 @@ GoalsAction GoalsDrawEvents(
 ) {
     int guild_rows = award && award->shown ? 1 : 0;
     if (pvp->event_result_count + guild_rows == 0) {
-        GoalsDrawEmpty(t, "Завершённых событий пока нет.", content);
+        GoalsDrawEmpty(t, LocGet("HODA_PVP_NO_FINISHED_EVENTS"), content);
         return GOALS_NONE;
     }
     float stride = GOALS_BATTLE_ROW_HEIGHT + GOALS_ROW_GAP;
@@ -423,7 +414,7 @@ GoalsAction GoalsDrawEvents(
             GOALS_BUTTON_HEIGHT,
         };
         if (award->claimed) {
-            UiDrawTextCentered(t->body, LocGetOr("PVP_EVENT_DONE", "готово"), button, 20.0f, GOALS_TEXT_DIM);
+            UiDrawTextCentered(t->body, LocGet("PVP_EVENT_DONE"), button, 20.0f, GOALS_TEXT_DIM);
         } else if (award->pending) {
             UiDrawTextCentered(t->body, "...", button, 20.0f, GOALS_TEXT_DIM);
         } else if (ButtonDrawEx(&t->claim, button, interactive && visible && !scroll->drag_scrolled)) {
@@ -442,7 +433,7 @@ GoalsAction GoalsDrawEvents(
             GOALS_BUTTON_HEIGHT,
         };
         if (pvp->event_results[i].claimed) {
-            UiDrawTextCentered(t->body, LocGetOr("PVP_EVENT_DONE", "готово"), button, 20.0f, GOALS_TEXT_DIM);
+            UiDrawTextCentered(t->body, LocGet("PVP_EVENT_DONE"), button, 20.0f, GOALS_TEXT_DIM);
         } else if (ButtonDrawEx(&t->claim, button, interactive && visible && !scroll->drag_scrolled)) {
             t->selected = i;
             action = GOALS_CLAIM_EVENT;

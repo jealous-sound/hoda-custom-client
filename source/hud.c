@@ -215,13 +215,15 @@ static Rectangle HudActionRect(HudAction action, const HudLayout *layout) {
             return layout->gold_slot;
         case HUD_GEMS:
             return layout->gems_slot;
+        case HUD_OPTIONS:
+            return layout->options;
         default:
             return (Rectangle){0};
     }
 }
 
 static HudAction HudActionAt(Vector2 point, const HudLayout *layout) {
-    static const HudAction order[] = {HUD_STAMINA, HUD_ENERGY, HUD_GOLD, HUD_GEMS};
+    static const HudAction order[] = {HUD_STAMINA, HUD_ENERGY, HUD_GOLD, HUD_GEMS, HUD_OPTIONS};
     for (int i = 0; i < (int)(sizeof(order) / sizeof(order[0])); i++) {
         if (CheckCollisionPointRec(point, HudActionRect(order[i], layout))) return order[i];
     }

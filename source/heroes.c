@@ -26,12 +26,12 @@ typedef struct {
     Texture2D portrait;
     Texture2D coin;
     Texture2D init_icon;
-    const char *name_ru;
-    const char *rarity_ru;
-    const char *speed_ru;
+    const char *name;
+    const char *rarity;
+    const char *speed;
     Color rarity_color;
-    char info_ru[320];
-    char desc_ru[1280];
+    char info[320];
+    char description[1280];
     int level, max_level;
     int power, health, crit;
     float xp_frac;
@@ -156,10 +156,7 @@ static void HeroCardBuild(HeroCard *card, const Character *ch) {
     card->ch = ch;
     card->coin = GuiTex(ch->giant || ch->faction == FACTION_ALL ? GUI_COIN_LARGE : GUI_COIN_LARGE + (int)ch->faction);
 
-    char key[96];
-    snprintf(key, sizeof(key), "%s%s", ch->id, TIER_NAMES[ch->tier]);
-    card->name_ru = LocGet(key);
-    if (!card->name_ru[0]) card->name_ru = ch->name_ru[0] ? ch->name_ru : ch->name;
+    card->name = CharacterName(ch);
 
     static const char *const rarity_keys[] = {
         "", "RARITY_COMMON", "RARITY_UNCOMMON", "RARITY_RARE", "RARITY_EPIC", "RARITY_LEGENDARY", "RARITY_MYTHIC"
@@ -173,10 +170,10 @@ static void HeroCardBuild(HeroCard *card, const Character *ch) {
         {182, 252, 240, 255},
         {255, 0, 255, 255},
     };
-    card->rarity_ru = ch->rarity == RARITY_MYTHIC ? GearText("RARITY_MYTHIC") : LocGet(rarity_keys[ch->rarity]);
+    card->rarity = ch->rarity == RARITY_MYTHIC ? LocGet("HODA_RARITY_MYTHIC") : LocGet(rarity_keys[ch->rarity]);
     card->rarity_color = rarity_colors[ch->rarity];
 
-    card->speed_ru = LocGet(
+    card->speed = LocGet(
         ch->speed == SPEED_QUICK  ? "INITIATIVE_FAST"
         : ch->speed == SPEED_SLOW ? "INITIATIVE_SLOW"
                                   : "INITIATIVE_MEDIUM"
@@ -199,34 +196,17 @@ static void HeroCardBuild(HeroCard *card, const Character *ch) {
             HeroesAppendList(factions, sizeof(factions), LocGet("UNIT_DETAIL_FACTION_BLUE"));
 
         char groups[256] = "";
-        for (int g = 0; g < ch->group_count; g++) {
-            const char *title = ch->group_names_ru[g];
-            if (!title[0]) {
-                char gkey[64];
-                snprintf(gkey, sizeof(gkey), "GALLERY_%s_TITLE", ch->groups[g]);
-                for (char *c = gkey; *c; c++) *c = (char)toupper(*c);
-                title = LocGet(gkey);
-            }
-            HeroesAppendList(groups, sizeof(groups), title[0] ? title : ch->groups[g]);
-        }
-        LocFormat2(card->info_ru, sizeof(card->info_ru), "UNIT_DETAIL_FACTION_GROUP_LABEL_FORMAT", factions, groups);
+        for (int g = 0; g < ch->group_count; g++)
+            HeroesAppendList(groups, sizeof(groups), CharacterGroupTitle(ch->groups[g]));
+        LocFormat2(card->info, sizeof(card->info), "UNIT_DETAIL_FACTION_GROUP_LABEL_FORMAT", factions, groups);
     }
 
     {
-        const char *ability = ch->ability->text_ru;
-        if (!ability[0]) ability = LocGetAbility(ch->ability->key);
-        if (!ability[0]) ability = ch->ability->text;
-        StrCopy(card->desc_ru, sizeof(card->desc_ru), ability);
-        if (ch->equipped_rune[0]) {
-            const char *rune = ch->equipped_rune_text_ru;
-            if (!rune[0]) rune = LocGet(ch->equipped_rune);
-            HeroesAppendSentence(card->desc_ru, sizeof(card->desc_ru), rune);
-        }
-        if (ch->target_weight[0]) {
-            const char *target = ch->target_weight_text_ru;
-            if (!target[0]) target = LocGet(ch->target_weight);
-            HeroesAppendSentence(card->desc_ru, sizeof(card->desc_ru), target);
-        }
+        StrCopy(card->description, sizeof(card->description), CharacterAbilityText(ch->ability));
+        if (ch->equipped_rune[0])
+            HeroesAppendSentence(card->description, sizeof(card->description), CharacterLocText(ch->equipped_rune));
+        if (ch->target_weight[0])
+            HeroesAppendSentence(card->description, sizeof(card->description), CharacterLocText(ch->target_weight));
     }
 
     const TierStats *stats = &ch->stats[ch->tier];
@@ -331,7 +311,9 @@ static void RosterInitialize(Roster *r, const Player *p) {
     Font font = GuiFont(FNT_COOL);
     Vector2 anchor = {0.5f, 0.5f};
     r->category = ButtonLoadText(GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", font, anchor, 0.42f);
-    r->sort = ButtonLoadText(GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "Сорт.", font, anchor, 0.34f);
+    r->sort = ButtonLoadText(
+        GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, LocGet("HODA_HEROES_SORT_BUTTON"), font, anchor, 0.34f
+    );
     RosterRefreshOrder(r, p);
 }
 
@@ -400,14 +382,22 @@ void HeroesInitialize(Heroes *h, const Player *p) {
     float scale = 0.35f;
     Vector2 icon_anchor = {0.5f, 0.72f};
     float icon_scale = 0.15f;
-    h->gray = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "Задание", font, anchor, scale);
-    h->gold = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "PvP", font, anchor, scale);
-    h->gear = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, GearText("GEAR_REVEAL_WINDOW_TITLE"), font, anchor, 0.25f);
-    h->train = ButtonLoadText(GUI_BTN_TRAIN, GUI_BTN_TRAIN_ON, "Поглотить", font, icon_anchor, icon_scale);
-    h->fortify = ButtonLoadText(GUI_BTN_FORTIFY, GUI_BTN_FORTIFY_ON, "Поддержка", font, icon_anchor, icon_scale);
-    h->runes = ButtonLoadText(GUI_BTN_RUNES, GUI_BTN_RUNES_ON, "Руны", font, icon_anchor, icon_scale);
-    h->gallery = ButtonLoadText(GUI_BTN_GALLERY, GUI_BTN_GALLERY_ON, "Галерея", font, icon_anchor, icon_scale);
-    h->squad = ButtonLoadText(GUI_BTN_SQUAD, GUI_BTN_SQUAD_ON, "Отряд", font, icon_anchor, icon_scale);
+    h->gray = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("NEXUS_BUTTON_LOC_STRING"), font, anchor, scale);
+    h->gold = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("BUTTON_MAINSCREEN_BATTLE"), font, anchor, scale);
+    h->gear =
+        ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("HODA_GEAR_REVEAL_WINDOW_TITLE"), font, anchor, 0.25f);
+    h->train =
+        ButtonLoadText(GUI_BTN_TRAIN, GUI_BTN_TRAIN_ON, LocGet("TRAIN_BUTTON_LABEL"), font, icon_anchor, icon_scale);
+    h->fortify = ButtonLoadText(
+        GUI_BTN_FORTIFY, GUI_BTN_FORTIFY_ON, LocGet("FORTIFY_BUTTON_LABEL"), font, icon_anchor, icon_scale
+    );
+    h->runes =
+        ButtonLoadText(GUI_BTN_RUNES, GUI_BTN_RUNES_ON, LocGet("RUNES_BUTTON_LABEL"), font, icon_anchor, icon_scale);
+    h->gallery = ButtonLoadText(
+        GUI_BTN_GALLERY, GUI_BTN_GALLERY_ON, LocGet("BUTTON_MAINSCREEN_GALLERY"), font, icon_anchor, icon_scale
+    );
+    h->squad =
+        ButtonLoadText(GUI_BTN_SQUAD, GUI_BTN_SQUAD_ON, LocGet("SQUAD_BUTTON_LABEL"), font, icon_anchor, icon_scale);
     ButtonSetClickSound(&h->train, SND_UI_BIG_BUTTON);
     ButtonSetClickSound(&h->fortify, SND_UI_BIG_BUTTON);
     ButtonSetClickSound(&h->runes, SND_UI_BIG_BUTTON);
@@ -578,9 +568,9 @@ static HeroesRichToken HeroesRichNextToken(const char *text, Color base) {
         token.bytes = 1;
         return token;
     }
-    while (text[token.bytes] && text[token.bytes] != ' ' && text[token.bytes] != '\n' &&
-           !(text[token.bytes] == '\\' && text[token.bytes + 1] == 'n') && text[token.bytes] != '<')
-        token.bytes++;
+    const char *end = UiBreakUnitEnd(text);
+    const char *tag = memchr(text, '<', (size_t)(end - text));
+    token.bytes = (int)((tag ? tag : end) - text);
     if (token.bytes == 0) token.bytes = 1;
     return token;
 }
@@ -681,15 +671,13 @@ static void HeroesDrawDetailsAt(HeroCard *card, Rectangle bounds) {
 
     {
         float fs = 24.0f;
-        Vector2 tsz = MeasureTextEx(title_font, card->name_ru, fs, 1.0f);
-        DrawTextEx(
-            title_font, card->name_ru, (Vector2){head.x + (w - tsz.x) * 0.5f, head.y + 26.0f}, fs, 1.0f, off_white
-        );
+        Vector2 tsz = MeasureTextEx(title_font, card->name, fs, 1.0f);
+        DrawTextEx(title_font, card->name, (Vector2){head.x + (w - tsz.x) * 0.5f, head.y + 26.0f}, fs, 1.0f, off_white);
         fs = 18.0f;
-        tsz = MeasureTextEx(title_font, card->rarity_ru, fs, 1.0f);
+        tsz = MeasureTextEx(title_font, card->rarity, fs, 1.0f);
         DrawTextEx(
             title_font,
-            card->rarity_ru,
+            card->rarity,
             (Vector2){head.x + (w - tsz.x) * 0.5f, head.y + 53.0f},
             fs,
             1.0f,
@@ -761,7 +749,7 @@ static void HeroesDrawDetailsAt(HeroCard *card, Rectangle bounds) {
             {GuiTex(GUI_DETAILS_POWER), power, 43, 247, 127},
             {GuiTex(GUI_DETAILS_HEALTH), health, 260, 466, 127},
             {GuiTex(GUI_DETAILS_CRIT), crit, 43, 247, 181},
-            {card->init_icon, card->speed_ru, 260, 466, 181},
+            {card->init_icon, card->speed, 260, 466, 181},
         };
 
         for (int i = 0; i < 4; i++) {
@@ -783,17 +771,17 @@ static void HeroesDrawDetailsAt(HeroCard *card, Rectangle bounds) {
 
     {
         Rectangle text_area = {body.x + 50.0f * sx, body.y + 246.0f * sy, 410.0f * sx, 216.0f * sy};
-        float used = HeroesDrawRich(body_font, card->info_ru, text_area, 17.0f, off_white);
+        float used = HeroesDrawRich(body_font, card->info, text_area, 17.0f, off_white);
         Rectangle desc_area = {text_area.x, text_area.y + used + 4.0f, text_area.width, text_area.height - used};
         if (card->desc_fs <= 0.0f) {
             float fs = 17.0f;
             while (fs > 10.0f &&
-                   HeroesRichLayout(body_font, card->desc_ru, desc_area, fs, off_white, false) > desc_area.height) {
+                   HeroesRichLayout(body_font, card->description, desc_area, fs, off_white, false) > desc_area.height) {
                 fs -= 0.5f;
             }
             card->desc_fs = fs;
         }
-        HeroesDrawRich(body_font, card->desc_ru, desc_area, card->desc_fs, off_white);
+        HeroesDrawRich(body_font, card->description, desc_area, card->desc_fs, off_white);
     }
 }
 
@@ -1056,7 +1044,7 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
         float y = UiHeight() - h->gray.idle.height - 12.0f;
 
         Rectangle inventory = {HEROES_GEAR_BUTTON_X, y, x - HEROES_GEAR_BUTTON_X - gap, (float)h->gray.idle.height};
-        h->gear.label = gear_open ? LocGet("BUTTON_STORE_HERO_TAB") : GearText("GEAR_REVEAL_WINDOW_TITLE");
+        h->gear.label = gear_open ? LocGet("BUTTON_STORE_HERO_TAB") : LocGet("HODA_GEAR_REVEAL_WINDOW_TITLE");
         if (ButtonDrawEx(&h->gear, inventory, gear_open ? GearViewAcceptsInput() : buttons_active)) {
             if (gear_open)
                 GearViewClose();

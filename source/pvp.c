@@ -34,7 +34,6 @@ typedef enum {
 typedef struct {
     PvpPrizeKind kind;
     char id[48];
-    char name[96];
     char icon[72];
     int count;
     int index;
@@ -228,7 +227,6 @@ static PvpPrizeKind PvpPrizeKindParse(const char *kind) {
 static PvpPrize PvpPrizeParse(const cJSON *json) {
     PvpPrize prize = {.kind = PvpPrizeKindParse(JsonStr(json, "kind")), .count = JsonInt(json, "count")};
     StrCopy(prize.id, sizeof(prize.id), JsonStr(json, "id"));
-    StrCopy(prize.name, sizeof(prize.name), JsonStr(json, "name"));
     StrCopy(prize.icon, sizeof(prize.icon), JsonStr(json, "icon"));
     prize.index = prize.kind == PVP_PRIZE_GEAR ? GearDefIndex(prize.id) : JsonInt(json, "index");
     if (prize.index < 0) TraceLog(LOG_FATAL, "Pvp: unknown prize %s", prize.id);

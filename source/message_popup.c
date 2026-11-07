@@ -42,6 +42,7 @@ MessagePopupDrawLine(Font font, const char *line, Rectangle rect, float y, float
 static int
 MessagePopupWrap(Font font, const char *text, float width, float size, char lines[][MESSAGE_POPUP_TEXT_CAP], int cap) {
     int count = 0, used = 0;
+    bool spaced = false;
     char line[MESSAGE_POPUP_TEXT_CAP] = "";
     for (const char *c = text;;) {
         bool hard_break = c[0] == '\n' || (c[0] == '\\' && c[1] == 'n');
@@ -49,21 +50,27 @@ MessagePopupWrap(Font font, const char *text, float width, float size, char line
             if (count < cap) StrCopy(lines[count++], MESSAGE_POPUP_TEXT_CAP, line);
             line[0] = '\0';
             used = 0;
+            spaced = false;
             if (c[0] == '\0') break;
             c += c[0] == '\n' ? 1 : 2;
             continue;
         }
-        const char *end = c;
-        while (*end && *end != ' ' && *end != '\n' && !(end[0] == '\\' && end[1] == 'n')) end++;
+        if (c[0] == ' ') {
+            spaced = true;
+            c++;
+            continue;
+        }
+        const char *end = UiBreakUnitEnd(c);
         char candidate[MESSAGE_POPUP_TEXT_CAP];
-        snprintf(candidate, sizeof(candidate), "%s%s%.*s", line, used ? " " : "", (int)(end - c), c);
+        snprintf(candidate, sizeof(candidate), "%s%s%.*s", line, used && spaced ? " " : "", (int)(end - c), c);
         if (used && MessagePopupRichWidth(font, candidate, size) > width) {
             if (count < cap) StrCopy(lines[count++], MESSAGE_POPUP_TEXT_CAP, line);
             snprintf(candidate, sizeof(candidate), "%.*s", (int)(end - c), c);
         }
         StrCopy(line, sizeof(line), candidate);
         used = 1;
-        c = *end == ' ' ? end + 1 : end;
+        spaced = false;
+        c = end;
     }
     return count;
 }

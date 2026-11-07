@@ -1,0 +1,1027 @@
+HODA_STORE_ITEMS_TAB|Objets
+HODA_STORE_VAULT_TAB|Coffre
+HODA_STORE_COMING_SOON|Bientôt disponible !
+HODA_STORE_CONFIRM_GEMS|Dépenser {0}
+HODA_STORE_CONFIRM_GEMS_SUFFIX| ?
+HODA_STORE_PURCHASE_SAVE_FAILED|Impossible d'enregistrer l'achat
+HODA_STORE_PACK_UNAVAILABLE|Ce pack est temporairement indisponible
+HODA_STORE_COUNTER_LIMIT|Limite d'achat atteinte
+HODA_STORE_ROSTER_ADD_FAILED|Impossible d'ajouter les héros à votre tableau de service
+HODA_STORE_SERVER_BUSY|Le serveur est occupé, veuillez réessayer
+HODA_STORE_PRICE_CHANGED|Le prix a changé, veuillez réessayer
+HODA_STORE_PROFILE_CHANGED|Votre profil a été modifié sur le serveur
+HODA_STORE_REAL_MONEY_OFFLINE|Les achats en argent réel ne sont pas disponibles dans cette version
+HODA_TUTORIAL_CONSUME_PACK_NAME|Pack d'entraînement
+HODA_GRAND_CHAMPION_PACK_NAME|Pack de grand héraut
+HODA_MERCENARY_PACK_NAME|Pack de mercenaire
+HODA_COMMANDER_PACK_NAME|Pack de commandant
+HODA_ELITE_PACK_NAME|Pack d'élite
+HODA_LYRIUM_MINE_PACK_NAME|Filon de lyrium
+HODA_MINNOW_CONVERSION_V2_PACK_NAME|Pack de départ
+HODA_HERO_BOOSTER_BLACKWHITE_PACK_NAME|Booster de héros noirs/blancs
+HODA_HERO_BOOSTER_REDBLUE_PACK_NAME|Booster de héros rouges/bleus
+HODA_HERO_BOOSTER_GIANT_PACK_NAME|Booster de héros géants
+HODA_HERO_BOOSTER_PRESTIGE_PACK_NAME|Booster de héros de prestige
+HODA_NUG_PACK_NAME|Pack de cochards !
+HODA_DRAGON_PACK_NAME|Pack de dragons !
+HODA_ROMANCE_PACK_NAME|Pack romance !
+HODA_WINTERSEND_PACK_NAME|Pack de l'Hivernale
+HODA_HARVEST_PACK_NAME|Pack des moissons
+HODA_ANNIVERSARY_PACK_NAME|Pack d'anniversaire
+HODA_LIBRARY_PACK_NAME|Pack de la bibliothèque
+HODA_TEMP_MAC_TIR_PACK_NAME|Pack Mac Tir
+HODA_NEW_RELEASE_PACK_NAME|Pack des nouveautés
+HODA_ITEM_ULTIMATE_IDENTIFIER_V2_PACK_NAME|Pack ultime
+HODA_SPECIAL_PACK_NAME|Pack spécial
+HODA_FLASH_BLACK_FRIDAY_PACK_NAME|Vendredi noir
+HODA_FLASH_DRAGON_HUNT_PACK_NAME|Chasse au dragon
+HODA_FLASH_EXCLUSIVELY_PACK_NAME|En exclusivité
+HODA_FLASH_FINE_DWARVEN_CRAFTS_PACK_NAME|Fin artisanat nain
+HODA_FLASH_FIREWORKS_PACK_NAME|Feu d'artifice
+HODA_FLASH_GOOD_COMPANY_PACK_NAME|Bonne compagnie
+HODA_FLASH_STAR_STRUCK_PACK_NAME|Des étoiles plein les yeux
+HODA_FLASH_STOCKING_STUFFERS_PACK_NAME|Petits cadeaux
+HODA_FLASH_UNIVERSITY_SUPPLIES_PACK_NAME|Fournitures universitaires
+HODA_FLASH_VALENTINES_GIFTS_PACK_NAME|Cadeaux de la Saint-Valentin
+HODA_PRESTIGE_RUNE_PACK_NAME|Pack de runes de prestige
+HODA_PEASANT_GEAR_PACK_NAME|Pack d'équipement de paysan
+HODA_NOVICE_GEAR_PACK_NAME|Pack d'équipement de novice
+HODA_JOURNEYMAN_GEAR_PACK_NAME|Pack d'équipement de compagnon
+HODA_MERCHANT_GEAR_PACK_NAME|Pack d'équipement de marchand
+HODA_MASTERWORK_GEAR_PACK_NAME|Pack d'équipement de maître
+HODA_ARMORY_GEAR_PACK_NAME|Pack d'équipement de l'armurerie
+HODA_TUTORIAL_CONSUME_PACK_INFO|Deux héros gratuits pour apprendre l'absorption.
+HODA_GRAND_CHAMPION_PACK_INFO|10 packs de héraut : 2 héros légendaires et 3 héros épiques garantis.
+HODA_PRESTIGE_RUNE_PACK_INFO|Une rune de prestige pour l'emplacement spécial de l'équipe.
+HODA_STORE_HERO_PACK_INFO_1_UNCOMMON|Donne 1 héros. Singulier ou supérieur garanti.
+HODA_STORE_HERO_PACK_INFO_1_RARE|Donne 1 héros. Rare ou supérieur garanti.
+HODA_STORE_HERO_PACK_INFO_1_EPIC|Donne 1 héros. Épique ou supérieur garanti.
+HODA_STORE_HERO_PACK_INFO_2_RARE|Donne 2 héros, tous rares ou supérieurs.
+HODA_STORE_HERO_PACK_INFO_3_RARE|Donne 3 héros, tous rares ou supérieurs.
+HODA_STORE_HERO_PACK_INFO_5_RARE|Donne 5 héros, tous rares ou supérieurs.
+HODA_STORE_HERO_PACK_INFO_5_EPIC|Donne 5 héros, tous épiques ou supérieurs.
+HODA_STORE_HERO_PACK_INFO_10_EPIC|Donne 10 héros, tous épiques ou supérieurs.
+HODA_STORE_GEAR_PACK_INFO_1|Donne 1 pièce d'équipement.
+HODA_STORE_GEAR_PACK_INFO_2|Donne 2 pièces d'équipement.
+HODA_STORE_GEAR_PACK_INFO_3|Donne 3 pièces d'équipement.
+HODA_STORE_GEAR_PACK_INFO_5|Donne 5 pièces d'équipement.
+HODA_STORE_BULLET_LEGENDARY_BY_FOURTH|Légendaire d'ici le 4e pack
+HODA_STORE_BULLET_GRAND_CHAMPION|2 légendaires et 3 épiques garantis
+HODA_STORE_BULLET_CHANCE_AT|Possib. de
+HODA_STORE_BULLET_GIFT|Cadeau
+HODA_STORE_BULLET_NUGS|Attention ! Contient des cochards !
+HODA_STORE_BULLET_DRAGON_CHANCE|Possib. de dragon
+HODA_STORE_BULLET_ROMANCE|Coup de cœur
+HODA_STORE_BULLET_WINTERSEND|Vive le vent d'hiver
+HODA_STORE_BULLET_THIS_WEEK_ONLY|Cette semaine seulement !
+HODA_STORE_BULLET_PRESTIGE_RUNE|1 rune de prestige
+HODA_RUNE_DISPEL_NAME|Rune de dissipation
+HODA_RUNE_GUARD_NAME|Rune de garde
+HODA_RUNE_PERCEPTION_NAME|Rune de perception
+HODA_RUNE_RETALIATION_NAME|Rune de représailles
+HODA_RUNE_STEALTH_NAME|Rune de furtivité
+HODA_RUNE_DISPEL_DESCRIPTION|Les héros de votre équipe sont immunisés contre la malédiction de Puissance.
+HODA_RUNE_GUARD_DESCRIPTION|Les héros de votre équipe résistent à un pourcentage des dégâts reçus.
+HODA_RUNE_PERCEPTION_DESCRIPTION|Les héros de votre équipe ignorent les effets de la furtivité.
+HODA_RUNE_RETALIATION_DESCRIPTION|Renvoie à vos ennemis un pourcentage des dégâts reçus par chacun de vos héros.
+HODA_RUNE_STEALTH_DESCRIPTION|Les héros de votre équipe attaquent sans déclencher d'effets à l'impact.
+HODA_RUNE_BUFF_DAMAGE_RESIST_PERCENT|Résis. dégâts
+HODA_RUNE_BUFF_DAMAGE_RETALIATION_PERCENT|Représailles
+HODA_RUNE_BUFF_PERCEPTIVE|Perception
+HODA_RUNE_BUFF_POWER_CURSED|Résis. malédiction Puiss.
+HODA_RUNE_BUFF_STEALTH|Furtivité
+HODA_RUNE_VALUE_DAMAGE|-{0}
+HODA_RUNE_VALUE_IMMUNE|Immunisé
+HODA_RARITY_PRESTIGE|De prestige
+HODA_RUNE_PRESTIGE_UNLOCK|Déverrouiller
+HODA_RUNE_PRESTIGE_MESSAGE|Déverrouiller l'emplacement de rune de prestige de cette équipe ?
+HODA_RUNE_PRESTIGE_REJECT_RUNE_MESSAGE|Seules les runes de prestige peuvent être placées dans cet emplacement.
+HODA_RUNE_PRESTIGE_REJECT_SLOT_MESSAGE|Cette rune ne peut être activée que dans l'emplacement de rune de prestige.
+HODA_RUNE_PRESTIGE_REJECT_LOCKED_MESSAGE|Déverrouillez l'emplacement de rune de prestige avec des gemmes pour utiliser cette rune.
+HODA_INVENTORY_SORT|Trier
+HODA_GEAR_EQUIP_EMPTY_CONFIRM|Vous êtes sur le point d'équiper cet objet. Une fois équipé, il ne pourra plus être retiré, seulement remplacé par un autre objet. Êtes-vous sûr ?
+HODA_GEAR_EQUIP_FILLED_CONFIRM|Vous êtes sur le point d'équiper cet objet. L'objet suivant, déjà équipé, sera détruit : {0}
+HODA_GEAR_EQUIP_FAIL_CATEGORY_LIMIT_CONFIRM|Ce héros ne peut pas porter cet équipement. Vérifiez les restrictions indiquées.
+HODA_GEAR_EQUIP_FAIL_DUPLICATE_CONFIRM|Un héros ne peut pas porter deux objets identiques.
+HODA_GEAR_EQUIP_FAIL_DEFENDER_CONFIRM|Ce héros ne peut pas porter cet équipement : un héros ne peut avoir qu'une seule capacité d'absorption des dégâts.
+HODA_GEAR_EQUIP_FAIL_INVALID_PRESTIGE_GEAR|Seul un équipement légendaire ou mythique peut être placé dans l'emplacement d'équipement de prestige.
+HODA_GEAR_SELL_BUTTON_TEXT|Vendre
+HODA_GEAR_EQUIP_BUTTON_TEXT|Équiper
+HODA_GEAR_SELL_MAIN_CONFIRM|Vous êtes sur le point de vendre cet objet. Êtes-vous sûr ?
+HODA_GEAR_SELL_RECEIVE_CONFIRM|Vous recevrez :
+HODA_GEAR_PRESTIGE_MESSAGE|Faites passer votre héros au prestige pour déverrouiller un emplacement d'équipement supplémentaire. Seul un équipement légendaire ou mythique peut y être placé. Le déverrouillage de cet emplacement coûte des gemmes pour chaque héros. Voulez-vous déverrouiller cet emplacement ?
+HODA_GEAR_PRESTIGE_UNLOCK|Déverrouiller
+HODA_GEAR_EMPTY_INVENTORY_MESSAGE|Vous n'avez aucun équipement. Trouvez des packs d'équipement à la boutique !
+HODA_GEAR_FILTER_ALL_TITLE|Tout l'équipement
+HODA_GEAR_FILTER_EQUIPPABLE_TITLE|Équipable
+HODA_GEAR_NO_LIMITATIONS|Tous les héros
+HODA_GEAR_LIMITED_TITLE|<color=grey>Réservé à : </color>
+HODA_GEAR_REVEAL_WINDOW_TITLE|Équipement
+HODA_GEAR_SELECT_HERO_HELP|Sélectionnez un emplacement d'équipement (+) sur un héros pour l'équiper.
+HODA_GEAR_INVENTORY_FOOTER_TEXT|Touchez un objet pour plus d'infos
+HODA_GEAR_RARITY_COMMON|<color=#d6b48f>Objet ordinaire</color>
+HODA_GEAR_RARITY_UNCOMMON|<color=#f2f2f2>Objet singulier</color>
+HODA_GEAR_RARITY_RARE|<color=#ffd633>Objet rare</color>
+HODA_GEAR_RARITY_EPIC|<color=#ff751a>Objet épique</color>
+HODA_GEAR_RARITY_LEGENDARY|<color=#33cc33>Objet légendaire</color>
+HODA_GEAR_RARITY_MYTHIC|<color=#FF00FF>Objet mythique</color>
+HODA_GEAR_SHOW_PREVIOUS|{0} précédents
+HODA_GEAR_SHOW_NEXT|{0} suivants
+HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|Remplissez tous les emplacements d'équipement pour débloquer le tome d'ascension.
+HODA_EVO_TOME_REQUIRED_MESSAGE|Il vous faut un tome d'ascension. Vous pouvez en acheter un à la boutique.
+HODA_EVO_TOME_USE_CONFIRM|Utiliser un tome d'ascension pour élever ce héros à la rareté mythique ?
+HODA_EVO_TOME_EXPLAIN_DESC|Les héros mythiques obtiennent <color=#ffa500ff>+5 niveaux max.</color> et <color=#ffa500ff>un emplacement d'équipement supplémentaire</color> !
+HODA_EVO_TOME_COUNT|Tomes : {0}
+HODA_TOME_POPUP_TITLE|Tome d'ascension
+HODA_RARITY_MYTHIC|Mythique
+HODA_ROSTER_FILTER_EPIC|Épique
+HODA_ROSTER_FILTER_LEGENDARY|Légendaire
+HODA_ROSTER_FILTER_MYTHIC|Mythique
+HODA_AEDUCANS_HAMMER_GEAR_TITLE|Marteau d'Aeducan
+HODA_ALAMARRI_WARSTAFF_GEAR_TITLE|Bâton de guerre alamarri
+HODA_ALCHEMICAL_CONCOCTION_GEAR_TITLE|Mixture alchimique
+HODA_ANTIQUE_WARDEN_CROSSBOW_GEAR_TITLE|Arbalète ancienne des Gardes
+HODA_APPRENTICE_COAT_GEAR_TITLE|Manteau d'apprenti
+HODA_ARDENT_BLOSSOM_GEAR_TITLE|Fleur ardente
+HODA_ARLATHAN_FOCUSING_CRYSTAL_GEAR_TITLE|Cristal de concentration d'Arlathann
+HODA_ARMADA_CAPTAINS_KNIFE_GEAR_TITLE|Couteau de capitaine de l'Armada
+HODA_ARMS_OF_THE_CHAMPION_GEAR_TITLE|Brassards du Champion
+HODA_ASAARASH_CHANFRON_GEAR_TITLE|Chanfrein asaarash
+HODA_ASAARASH_CRINIERE_GEAR_TITLE|Crinière asaarash
+HODA_ASAARASH_FLANCHARD_GEAR_TITLE|Flançois asaarash
+HODA_ASAARASH_PEYTRAL_GEAR_TITLE|Poitrail asaarash
+HODA_ASAARASH_SADDLE_GEAR_TITLE|Selle asaarash
+HODA_ASSASSINS_RECURVE_GEAR_TITLE|Arc recourbé de l'assassin
+HODA_AUGURS_WITCHSTAFF_GEAR_TITLE|Bâton de sorcier de l'augure
+HODA_AXE_OF_THE_DRAGON_HUNTER_GEAR_TITLE|Hache du chasseur de dragons
+HODA_BARBARIAN_LORD_MAUL_GEAR_TITLE|Maillet du seigneur barbare
+HODA_BELT_OF_THE_ARCHITECT_GEAR_TITLE|Ceinture de l'Architecte
+HODA_BIANCA_GEAR_TITLE|Bianca
+HODA_BLACKMETAL_TORQUE_GEAR_TITLE|Torque de métal noir
+HODA_BLADE_OF_TUHNA_ALLIED_GEAR_TITLE|Lame de Tuhna alliée
+HODA_BLOOD_DRAGON_GREAVES_GEAR_TITLE|Jambières du dragon de sang
+HODA_BLOODLINE_GEAR_TITLE|Lignée
+HODA_BOOK_OF_THE_LADY_GEAR_TITLE|Livre de la Dame
+HODA_BOOTS_OF_FAITH_GEAR_TITLE|Bottes de la foi
+HODA_BOOTS_OF_THE_RIVER_DANE_GEAR_TITLE|Bottes de la rivière Dane
+HODA_BOW_OF_CLEANSING_FIRE_GEAR_TITLE|Arc du feu purificateur
+HODA_BOW_OF_THE_BERESAAD_GEAR_TITLE|Arc des Beresaad
+HODA_BOW_OF_THE_RIGHTEOUS_GEAR_TITLE|Arc des justes
+HODA_BROKEN_GRIFFON_HELM_GEAR_TITLE|Heaume au griffon brisé
+HODA_BRUTE_HAMMER_GEAR_TITLE|Marteau de brute
+HODA_BULLS_EDGE_GEAR_TITLE|Tranchant du Taureau
+HODA_CAPTAINS_PLATE_GEAR_TITLE|Harnois de capitaine
+HODA_CERTAINTY_GEAR_TITLE|Certitude
+HODA_CHANTRY_ROBE_GEAR_TITLE|Robe de la Chantrie
+HODA_CHANTRY_SHIELD_GEAR_TITLE|Bouclier de la Chantrie
+HODA_CHESTPIECE_OF_THE_RIVER_DANE_GEAR_TITLE|Plastron de la rivière Dane
+HODA_CHESTPLATE_OF_THE_FORTRESS_GEAR_TITLE|Cuirasse de la forteresse
+HODA_CHEVALIERS_CUTLASS_GEAR_TITLE|Coutelas de chevalier
+HODA_CIRCLE_MAGE_STAFF_GEAR_TITLE|Bâton de mage du Cercle
+HODA_COBRA_CROWN_GEAR_TITLE|Couronne du cobra
+HODA_COLES_HAT_GEAR_TITLE|Chapeau de Cole
+HODA_COURTIER_FAN_GEAR_TITLE|Éventail de courtisan
+HODA_CROW_DAGGER_GEAR_TITLE|Dague des Corbeaux
+HODA_CROW_SHIELD_GEAR_TITLE|Bouclier des Corbeaux
+HODA_CUIRASS_OF_THE_WINDS_GEAR_TITLE|Cuirasse des vents
+HODA_CUTPURSE_SLICER_GEAR_TITLE|Lame de coupe-bourse
+HODA_DALISH_RING_GEAR_TITLE|Anneau dalatien
+HODA_DALISH_ROBES_GEAR_TITLE|Robe dalatienne
+HODA_DALISH_STAFF_GEAR_TITLE|Bâton dalatien
+HODA_DAWN_RING_GEAR_TITLE|Anneau de l'aube
+HODA_DEFENDER_COAT_GEAR_TITLE|Manteau du défenseur
+HODA_DEMONS_ADVOCATE_GEAR_TITLE|Avocat du démon
+HODA_DIPLOMATIC_MISSIVES_GEAR_TITLE|Missives diplomatiques
+HODA_DIRTHAMENS_WISDOM_GEAR_TITLE|Sagesse de Dirthamen
+HODA_DRAGONS_TESTAMENT_GEAR_TITLE|Testament du dragon
+HODA_DREAMWEAVER_STAFF_GEAR_TITLE|Bâton du tisseur de rêves
+HODA_DUSK_RING_GEAR_TITLE|Anneau du crépuscule
+HODA_DUSTER_BATTLEAXE_GEAR_TITLE|Hache de guerre de gâchiard
+HODA_DUSTER_GREAVES_GEAR_TITLE|Jambières de gâchiard
+HODA_DUSTER_LEATHER_ARMOR_GEAR_TITLE|Armure de cuir de gâchiard
+HODA_DUSTER_LEATHER_GAUNTLETS_GEAR_TITLE|Gantelets de cuir de gâchiard
+HODA_DUSTER_LEATHER_PAULDRON_GEAR_TITLE|Épaulière de cuir de gâchiard
+HODA_DWORKINS_HIGH_EXPLOSIVES_GEAR_TITLE|Explosifs puissants de Dworkin
+HODA_DWORKINS_SAFE_EXPLOSIVES_GEAR_TITLE|Explosifs sûrs de Dworkin
+HODA_EARNEST_REPRISAL_GEAR_TITLE|Représailles zélées
+HODA_ELGARNAN_ENASTE_GEAR_TITLE|Enaste d'Elgar'nan
+HODA_ELUSIVE_ICEBOW_GEAR_TITLE|Arc de glace insaisissable
+HODA_ELVEN_PLATE_ARMOR_GEAR_TITLE|Armure de plates elfique
+HODA_EMBLAZONED_KIRKWALL_SHIELD_GEAR_TITLE|Bouclier blasonné de Kirkwall
+HODA_ENCHANTED_SILVER_ARMOR_GEAR_TITLE|Armure d'argent enchantée
+HODA_ENCHANTER_FIRE_STAFF_GEAR_TITLE|Bâton de feu d'enchanteur
+HODA_EXPENSIVE_DOG_TREATS_GEAR_TITLE|Friandises de luxe pour chien
+HODA_FADE_TOUCHED_LURKER_SCALES_GEAR_TITLE|Écailles de rôdeur touchées par l'Immatériel
+HODA_FADE_TOUCHED_SILVERITE_GEAR_TITLE|Argentite touchée par l'Immatériel
+HODA_FADE_WALL_GEAR_TITLE|Mur de l'Immatériel
+HODA_FADESBANE_GEAR_TITLE|Fléau de l'Immatériel
+HODA_FERAL_WOLF_CHARM_GEAR_TITLE|Talisman du loup sauvage
+HODA_FERELDAN_CLAYMORE_GEAR_TITLE|Claymore féreldienne
+HODA_FERELDAN_SOLDIER_HELMET_GEAR_TITLE|Casque de soldat féreldien
+HODA_FIRST_ENCHANTERS_ROBES_GEAR_TITLE|Robe du Premier enchanteur
+HODA_FLASK_OF_FLAME_GEAR_TITLE|Flacon de flammes
+HODA_FLASK_OF_FROST_GEAR_TITLE|Flacon de givre
+HODA_FLASK_OF_LIGHTNING_GEAR_TITLE|Flacon de foudre
+HODA_FLAWLESS_FIRE_CRYSTAL_GEAR_TITLE|Cristal de feu sans défaut
+HODA_FLAWLESS_ICE_CRYSTAL_GEAR_TITLE|Cristal de glace sans défaut
+HODA_FLAWLESS_LIGHTNING_CRYSTAL_GEAR_TITLE|Cristal de foudre sans défaut
+HODA_FLAWLESS_NATURE_CRYSTAL_GEAR_TITLE|Cristal de nature sans défaut
+HODA_FLAWLESS_SPIRIT_CRYSTAL_GEAR_TITLE|Cristal d'esprit sans défaut
+HODA_FLEMETHS_GRIMOIRE_GEAR_TITLE|Grimoire de Flémeth
+HODA_FORGE_MASTERS_HAMMER_GEAR_TITLE|Marteau du maître de forge
+HODA_GAMORDAN_STORMRIDER_SCALE_GEAR_TITLE|Écaille d'orageur gamordan
+HODA_GARAHELS_HELM_GEAR_TITLE|Heaume de Garahel
+HODA_GAUNTLETS_OF_THE_NUG_GEAR_TITLE|Gantelets du cochard
+HODA_GAUNTLETS_OF_THE_SKIES_GEAR_TITLE|Gantelets des cieux
+HODA_GIFT_OF_THE_TALONS_GEAR_TITLE|Présent des Serres
+HODA_GIRDLE_OF_THE_SKIES_GEAR_TITLE|Ceinturon des cieux
+HODA_GLANDIVALIS_GEAR_TITLE|Glandivalis
+HODA_GLOVES_OF_THE_RIVER_DANE_GEAR_TITLE|Gants de la rivière Dane
+HODA_GRAND_ENCHANTERS_STAFF_GEAR_TITLE|Bâton du Grand enchanteur
+HODA_GREAT_DRAGON_STAFF_GEAR_TITLE|Bâton du grand dragon
+HODA_GREATER_MISTRAL_SCALE_GEAR_TITLE|Écaille de mistral majeur
+HODA_GREAVES_OF_THE_BERESAAD_GEAR_TITLE|Jambières des Beresaad
+HODA_GREAVES_OF_THE_LADY_GEAR_TITLE|Jambières de la Dame
+HODA_GRIFFON_PLATE_GEAR_TITLE|Harnois du griffon
+HODA_GRIFFONRIDER_LEATHERS_GEAR_TITLE|Cuirs de chevaucheur de griffon
+HODA_GRIMOIRE_OF_THE_FROZEN_WASTES_GEAR_TITLE|Grimoire des Terres gelées
+HODA_HAKKONS_WISDOM_GEAR_TITLE|Sagesse d'Hakkon
+HODA_HAKKONS_WRATH_GEAR_TITLE|Courroux d'Hakkon
+HODA_HARDENED_GURN_HIDE_GEAR_TITLE|Peau de gurn durcie
+HODA_HAUBERK_OF_THE_LADY_GEAR_TITLE|Haubert de la Dame
+HODA_HEARTWOOD_SHIELD_GEAR_TITLE|Bouclier de bois de cœur
+HODA_HELM_OF_JUSTICE_GEAR_TITLE|Heaume de la justice
+HODA_HELM_OF_THE_DRAGON_HUNTER_GEAR_TITLE|Heaume du chasseur de dragons
+HODA_HELM_OF_THE_MOUNTAIN_FATHER_GEAR_TITLE|Heaume du Père des montagnes
+HODA_HELM_OF_THE_SKIES_GEAR_TITLE|Heaume des cieux
+HODA_HISSERAS_MASK_GEAR_TITLE|Masque d'Hissera
+HODA_ICE_GIANTS_TUSK_GEAR_TITLE|Défense du géant de glace
+HODA_INQUISITION_LONGSWORD_GEAR_TITLE|Épée longue de l'Inquisition
+HODA_INQUISITION_SHIELD_GEAR_TITLE|Bouclier de l'Inquisition
+HODA_INQUISITION_STAFF_GEAR_TITLE|Bâton de l'Inquisition
+HODA_INQUISITION_WARMAGE_PAULDRON_GEAR_TITLE|Épaulière de mage de guerre de l'Inquisition
+HODA_ISANAS_SONG_GEAR_TITLE|Chant d'Isana
+HODA_JAR_OF_BEES_GEAR_TITLE|Bocal d'abeilles
+HODA_JOINING_CHALICE_GEAR_TITLE|Calice de l'Union
+HODA_KADDIS_OF_THE_LADY_GEAR_TITLE|Kaddis de la Dame
+HODA_KADDIS_OF_THE_MOUNTAINFATHER_GEAR_TITLE|Kaddis du Père des montagnes
+HODA_KALTENZAHN_SCALE_GEAR_TITLE|Écaille de kaltenzahn
+HODA_KEEN_ELFSNAKE_VITAAR_GEAR_TITLE|Vitaar affûté de serpent elfique
+HODA_KEEPSAKE_LOCKET_GEAR_TITLE|Médaillon souvenir
+HODA_KITTYS_COLLAR_GEAR_TITLE|Collier de Kitty
+HODA_LEGION_HAMMER_GEAR_TITLE|Marteau de la Légion
+HODA_LEGIONNAIRE_HELMET_GEAR_TITLE|Casque de légionnaire
+HODA_LEGIONNAIRE_PLATE_GEAR_TITLE|Harnois de légionnaire
+HODA_LEGIONNAIRE_SCOUT_DAGGER_GEAR_TITLE|Dague d'éclaireuse de la Légion
+HODA_LINEAGE_GEAR_TITLE|Lignage
+HODA_LITANY_OF_ADRALLA_GEAR_TITLE|Litanie d'Adralla
+HODA_LOOSE_ENDS_GEAR_TITLE|Affaires en suspens
+HODA_LOTHERINGS_LAMENT_GEAR_TITLE|Complainte de Lothering
+HODA_LYRIUM_KIT_GEAR_TITLE|Trousse de lyrium
+HODA_LYRIUM_REINFORCED_LONGBOW_GEAR_TITLE|Arc long renforcé au lyrium
+HODA_MAFERATHS_MAUL_GEAR_TITLE|Maillet de Maferath
+HODA_MAGEKILLER_GEAR_TITLE|Tueur de mages
+HODA_MANTLE_OF_THE_HOLD_BEAST_GEAR_TITLE|Mante de la bête de clan
+HODA_MARCH_OF_THE_EVERLASTING_GEAR_TITLE|Marche de l'Éternel
+HODA_MASTERWORK_WITCH_STAFF_GEAR_TITLE|Bâton de sorcière de maître
+HODA_MAUL_OF_TACITUS_GEAR_TITLE|Maillet de Tacitus
+HODA_MAUL_OF_THE_DRAGON_GEAR_TITLE|Maillet du dragon
+HODA_MERCYS_CREST_GEAR_TITLE|Blason de la miséricorde
+HODA_MEREDITHS_KEY_GEAR_TITLE|Clé de Mérédith
+HODA_MORTALITASI_COWL_GEAR_TITLE|Capuche de mortalitasi
+HODA_MORTALITASI_STAFF_GEAR_TITLE|Bâton de mortalitasi
+HODA_MYTHALS_BLESSING_GEAR_TITLE|Bénédiction de Mythal
+HODA_MYTHALS_JUDGMENT_GEAR_TITLE|Jugement de Mythal
+HODA_OATHBREAKER_GEAR_TITLE|Briseur de serment
+HODA_OF_THINGS_NOT_LOST_GEAR_TITLE|De ce qui n'est pas perdu
+HODA_ORB_OF_DESTRUCTION_GEAR_TITLE|Orbe de destruction
+HODA_ORB_OF_FENHAREL_GEAR_TITLE|Orbe de Fen'Harel
+HODA_ORLESIAN_HENNIN_GEAR_TITLE|Hennin orlésien
+HODA_ORLESIAN_MASK_GEAR_TITLE|Masque orlésien
+HODA_PAULDRON_OF_THE_ARISHOK_GEAR_TITLE|Épaulière de l'Arishak
+HODA_PHOENIX_TAIL_FEATHER_GEAR_TITLE|Plume de queue de phénix
+HODA_PROWLER_MAIL_GEAR_TITLE|Mailles du rôdeur
+HODA_PUZZLE_RING_GEAR_TITLE|Anneau-énigme
+HODA_QUNARI_HELMET_GEAR_TITLE|Casque qunari
+HODA_QUNARI_TOWER_SHIELD_GEAR_TITLE|Pavois qunari
+HODA_QUNARI_WARAXE_GEAR_TITLE|Hache de guerre qunari
+HODA_REBOUND_DAGGER_GEAR_TITLE|Dague de riposte
+HODA_RED_IRON_MAUL_GEAR_TITLE|Maillet de Rougelame
+HODA_RED_JENNY_BACKBITER_GEAR_TITLE|Traîtresse des amis de Jenny
+HODA_RED_LYRIUM_IDOL_GEAR_TITLE|Idole de lyrium rouge
+HODA_REDCLIFFE_SHIELD_GEAR_TITLE|Bouclier de Golefalois
+HODA_REMARKABLE_EMERALD_GEAR_TITLE|Émeraude remarquable
+HODA_RETRIBUTION_ELIXIR_GEAR_TITLE|Élixir de châtiment
+HODA_REVERED_DEFENDER_MAUL_GEAR_TITLE|Maillet du défenseur vénéré
+HODA_RING_OF_DOUBT_GEAR_TITLE|Anneau du doute
+HODA_RING_OF_RESILIENCE_GEAR_TITLE|Anneau de résilience
+HODA_RITUAL_BREAKER_GEAR_TITLE|Brise-rituel
+HODA_ROBES_OF_THE_ARCHITECT_GEAR_TITLE|Robe de l'Architecte
+HODA_RUBY_RING_GEAR_TITLE|Anneau de rubis
+HODA_SAAREBAS_RESTRAINTS_GEAR_TITLE|Entraves de saarebas
+HODA_SACRIFICIAL_DAGGER_GEAR_TITLE|Dague sacrificielle
+HODA_SAD_WEAPON_GEAR_TITLE|Arme triste
+HODA_SAVAGE_THORN_GEAR_TITLE|Épine sauvage
+HODA_SCOUT_ARMOR_GEAR_TITLE|Armure d'éclaireur
+HODA_SCOUT_COAT_ARMS_GEAR_TITLE|Manches de manteau d'éclaireur
+HODA_SCOUT_HAT_GEAR_TITLE|Chapeau d'éclaireur
+HODA_SCOUT_QUIVER_GEAR_TITLE|Carquois d'éclaireur
+HODA_SEER_STAFF_GEAR_TITLE|Bâton de voyant
+HODA_SENIOR_WARDENS_STAFF_GEAR_TITLE|Bâton du Garde aîné
+HODA_SENTINEL_GAUNTLETS_GEAR_TITLE|Gantelets de sentinelle
+HODA_SENTINEL_GREAVES_GEAR_TITLE|Jambières de sentinelle
+HODA_SENTINEL_PLATE_PAULDRON_GEAR_TITLE|Épaulière de plates de sentinelle
+HODA_SENTINEL_STAFF_GEAR_TITLE|Bâton de sentinelle
+HODA_SER_ALVARDS_SWORD_GEAR_TITLE|Épée de ser Alvard
+HODA_SERAS_RAISIN_COOKIES_GEAR_TITLE|Biscuits aux raisins de Sera
+HODA_SERUM_OF_AMBITION_GEAR_TITLE|Sérum d'ambition
+HODA_SHIELD_OF_LE_MARQUE_GEAR_TITLE|Bouclier des Le Marque
+HODA_SIDEREAL_STAFF_GEAR_TITLE|Bâton sidéral
+HODA_SKYWATCHERS_CLEAVER_GEAR_TITLE|Couperet du guetteur du ciel
+HODA_SMUGGLERS_DAGGER_GEAR_TITLE|Dague de contrebandier
+HODA_SOLDIERS_PLATE_GEAR_TITLE|Harnois de soldat
+HODA_SOOTHERS_SAPPHIRE_GEAR_TITLE|Saphir apaisant
+HODA_SOULWRECKER_STAFF_GEAR_TITLE|Bâton brise-âme
+HODA_SPEAR_THROWER_GEAR_TITLE|Propulseur
+HODA_SPECTRAL_SCALE_GEAR_TITLE|Écaille spectrale
+HODA_SPIRIT_MAUL_GEAR_TITLE|Maillet des esprits
+HODA_STAFF_OF_AIDAHN_ALLIED_GEAR_TITLE|Bâton d'Aidahn allié
+HODA_STAFF_OF_CORRUPTION_GEAR_TITLE|Bâton de corruption
+HODA_STAFF_OF_FAITH_GEAR_TITLE|Bâton de la foi
+HODA_STAFF_OF_SHADOWS_GEAR_TITLE|Bâton des ombres
+HODA_STONEHAMMER_PLATE_GEAR_TITLE|Harnois de Marteau-de-Pierre
+HODA_STROUDS_TARGE_GEAR_TITLE|Targe de Stroud
+HODA_STUDDED_LEATHER_PAULDRON_GEAR_TITLE|Épaulière de cuir clouté
+HODA_STUFFED_MABARI_GEAR_TITLE|Mabari en peluche
+HODA_SWIFTRUNNERS_SHIELD_GEAR_TITLE|Bouclier de Garol
+HODA_SWORD_OF_CHARRIS_ALLIED_GEAR_TITLE|Épée de Charris alliée
+HODA_TALON_OF_THE_SKIES_GEAR_TITLE|Serre des cieux
+HODA_TEMPLAR_BREASTPLATE_GEAR_TITLE|Plastron de templier
+HODA_TEMPLAR_COMMANDER_PAULDRON_GEAR_TITLE|Épaulière de commandant templier
+HODA_TEMPLAR_HELMET_GEAR_TITLE|Casque de templier
+HODA_TEMPLAR_LONGSWORD_GEAR_TITLE|Épée longue de templier
+HODA_TEMPLAR_SHIELD_GEAR_TITLE|Bouclier de templier
+HODA_THE_ANCESTORS_GREAVES_GEAR_TITLE|Jambières de l'ancêtre
+HODA_THE_BIND_THAT_GUIDES_GEAR_TITLE|Le lien qui guide
+HODA_THE_BLACK_FOXS_JERKIN_GEAR_TITLE|Pourpoint du Renard noir
+HODA_THE_DIVINE_ARMOR_GEAR_TITLE|Armure de la Divine
+HODA_THE_DIVINE_BOOTS_GEAR_TITLE|Bottes de la Divine
+HODA_THE_DIVINE_HELMET_GEAR_TITLE|Casque de la Divine
+HODA_THE_ELDERS_GRIMOIRE_GEAR_TITLE|Grimoire de l'Ancien
+HODA_THE_EYE_THAT_WEEPS_GEAR_TITLE|L'œil qui pleure
+HODA_THE_GOLDEN_PRINCES_HELM_GEAR_TITLE|Heaume du Prince doré
+HODA_THE_GOLDEN_PRINCES_PAULDRON_GEAR_TITLE|Épaulière du Prince doré
+HODA_THE_GOLDEN_PRINCES_RAIMENT_GEAR_TITLE|Atours du Prince doré
+HODA_THE_HAND_THAT_CUTS_GEAR_TITLE|La main qui tranche
+HODA_THE_LADYS_WRATH_GEAR_TITLE|Courroux de la Dame
+HODA_THE_SKIN_THAT_STALKS_GEAR_TITLE|La peau qui traque
+HODA_TOME_OF_ARCANE_TECHNIQUE_GEAR_TITLE|Tome de technique arcanique
+HODA_TOME_OF_KOSLUN_GEAR_TITLE|Tome de Koslun
+HODA_TOME_OF_PHYSICAL_TECHNIQUE_GEAR_TITLE|Tome de technique physique
+HODA_TOME_OF_RIFTS_GEAR_TITLE|Tome des failles
+HODA_TOME_OF_SKILL_AND_SUNDRY_GEAR_TITLE|Tome de talents divers
+HODA_TOME_OF_THE_MORTAL_VESSEL_GEAR_TITLE|Tome du réceptacle mortel
+HODA_VANGUARD_ARMOR_GEAR_TITLE|Armure d'avant-garde
+HODA_VENATORI_BOW_GEAR_TITLE|Arc venatori
+HODA_VENATORI_GREAVES_GEAR_TITLE|Jambières venatori
+HODA_VENATORI_HELMET_GEAR_TITLE|Casque venatori
+HODA_VENATORI_STAFF_BLADE_GEAR_TITLE|Bâton-lame venatori
+HODA_VENATORI_TOWER_SHIELD_GEAR_TITLE|Pavois venatori
+HODA_VESTMENTS_OF_THE_ARCHMAGE_GEAR_TITLE|Habits de l'archimage
+HODA_VESTMENTS_OF_THE_DRAGON_HUNTER_GEAR_TITLE|Habits du chasseur de dragons
+HODA_VIAL_OF_DRAGONS_BLOOD_GEAR_TITLE|Fiole de sang de dragon
+HODA_VIGILANCE_GEAR_TITLE|Vigilance
+HODA_VINSOMER_SCALE_GEAR_TITLE|Écaille de vinsomer
+HODA_VIRTUOSITY_GEAR_TITLE|Virtuosité
+HODA_VITAAR_OF_THE_DRAGON_HUNTER_GEAR_TITLE|Vitaar du chasseur de dragons
+HODA_VORACITY_GEAR_TITLE|Voracité
+HODA_WALKING_DEATH_GEAR_TITLE|Mort ambulante
+HODA_WARDEN_HELMET_GEAR_TITLE|Casque de Garde des ombres
+HODA_WARDEN_TOWER_SHIELD_GEAR_TITLE|Pavois de Garde des ombres
+HODA_WARM_ORB_GEAR_TITLE|Orbe tiède
+HODA_WEDGE_OF_DESTINY_GEAR_TITLE|Part du destin
+HODA_WILHELMS_STAFF_GEAR_TITLE|Bâton de Wilhelm
+HODA_WINTERWEIGHT_GEAR_TITLE|Fardeau de l'hiver
+HODA_YAVANALIS_GEAR_TITLE|Yavanalis
+HODA_AEDUCANS_HAMMER_GEAR_DESC|L'héritage du Haut Aeducan, transmis de génération en génération.
+HODA_ALAMARRI_WARSTAFF_GEAR_DESC|Son poids judicieux et sa conception en font une arme excellente pour parer, comme pour porter le coup de grâce.
+HODA_ALCHEMICAL_CONCOCTION_GEAR_DESC|Le principal ingrédient de cet élixir mystérieux provient du sang des Gardes des ombres et de la souillure des engeances qu'il renferme, d'où sa rareté.
+HODA_ANTIQUE_WARDEN_CROSSBOW_GEAR_DESC|Malgré son âge, cette arbalète est en excellent état. Le maître éclaireur des Gardes qui la possédait autrefois en a visiblement pris grand soin.
+HODA_APPRENTICE_COAT_GEAR_DESC|Plus solide qu'une robe, ce manteau offre une meilleure protection aux apprentis qui se préparent au combat.
+HODA_ARDENT_BLOSSOM_GEAR_DESC|Ce que vous perdez en défense, vous le gagnez grâce à la puissance destructrice du lyrium infusé dans ce casque végétal.
+HODA_ARLATHAN_FOCUSING_CRYSTAL_GEAR_DESC|Grâce à une technique ancienne que seuls connaissaient les elfes d'Arlathann, cet ambre doré aide l'esprit à se concentrer.
+HODA_ARMADA_CAPTAINS_KNIFE_GEAR_DESC|Vestige des pillards de la Mer d'écume, cette lame sent encore le sel et les entrailles.
+HODA_ARMS_OF_THE_CHAMPION_GEAR_DESC|Pièce maîtresse du manteau du Champion. Seuls les plus rusés peuvent en tirer pleinement parti.
+HODA_ASAARASH_CHANFRON_GEAR_DESC|Une monture dont la tête est protégée reste concentrée au cœur de la bataille.
+HODA_ASAARASH_CRINIERE_GEAR_DESC|Complète le poitrail et le chanfrein en protégeant l'encolure de l'animal.
+HODA_ASAARASH_FLANCHARD_GEAR_DESC|Offre une protection supplémentaire aux flancs de l'animal.
+HODA_ASAARASH_PEYTRAL_GEAR_DESC|Conçu pour couvrir le poitrail du cheval, il renforce nettement la protection de l'animal pendant la charge.
+HODA_ASAARASH_SADDLE_GEAR_DESC|Pratique, à défaut d'être élégante, cette selle est conçue pour les longues batailles.
+HODA_ASSASSINS_RECURVE_GEAR_DESC|Fabriqué selon les exigences de la grande-duchesse Florianne de Chalons.
+HODA_AUGURS_WITCHSTAFF_GEAR_DESC|Bâton de l'augure de Rochours. Le cliquetis de ses os appelle les esprits pour qu'ils le guident.
+HODA_AXE_OF_THE_DRAGON_HUNTER_GEAR_DESC|Cette hache, qui appartenait au célèbre chasseur de dragons Nephram Pentaghast, fut perdue lors d'un pari pendant l'Ère de l'acier.
+HODA_BARBARIAN_LORD_MAUL_GEAR_DESC|Un gros rocher au bout d'un bâton. Étonnamment efficace.
+HODA_BELT_OF_THE_ARCHITECT_GEAR_DESC|L'Architecte a sans doute récupéré cette ceinture sur un mage malchanceux.
+HODA_BIANCA_GEAR_DESC|L'arbalète fétiche de Varric Tethras. Fabriquée par un ingénieur du Carta, perfectionnée par l'artisane dont elle porte le nom.
+HODA_BLACKMETAL_TORQUE_GEAR_DESC|Une fois fermée, la magie de cette tresse de métal imprégnée de lyrium confère une grande force à la créature qui la porte.
+HODA_BLADE_OF_TUHNA_ALLIED_GEAR_DESC|Taillée dans du lyrium rouge brut, cette dague draine la vie de tous ceux qui l'entourent.
+HODA_BLOOD_DRAGON_GREAVES_GEAR_DESC|Lourde armure d'acier qui protège son porteur des effets débilitants.
+HODA_BLOODLINE_GEAR_DESC|En la léguant à sa fille Bethany, Malcolm Hawke savait que son sang portait les dons de l'Immatériel.
+HODA_BOOK_OF_THE_LADY_GEAR_DESC|Un texte trouvé sur un autel alvar sacré, lié à la protection de la terre sainte.
+HODA_BOOTS_OF_FAITH_GEAR_DESC|Des bottes robustes, témoignage d'une foi en Andrasté et au Créateur pour se protéger.
+HODA_ARMOR_OF_THE_RIVER_DANE_GEAR_DESC|Arrachée en guise de trophée à un commandant orlésien lors de la victoire de la bataille de la rivière Dane.
+HODA_BOW_OF_CLEANSING_FIRE_GEAR_DESC|Doté de flèches enflammées capables de percer les défenses les plus solides.
+HODA_BOW_OF_THE_BERESAAD_GEAR_DESC|Portées par la force de la foi dans le Qun, les flèches tirées par cet arc transpercent les armures.
+HODA_BOW_OF_THE_RIGHTEOUS_GEAR_DESC|Par la droiture, les indignes seront terrassés.
+HODA_BROKEN_GRIFFON_HELM_GEAR_DESC|Ce heaume n'est qu'une relique d'un temps révolu, quand les Gardes des ombres commandaient de puissants griffons.
+HODA_BRUTE_HAMMER_GEAR_DESC|Conçu pour broyer les os sans effort.
+HODA_BULLS_EDGE_GEAR_DESC|Le poids et l'équilibre de cette grande hache en font l'arme favorite d'Iron Bull.
+HODA_CAPTAINS_PLATE_GEAR_DESC|Armure de plates remise à ceux qui atteignent le rang de capitaine de la garde.
+HODA_CERTAINTY_GEAR_DESC|Une épée de corruption et de conviction absolues.
+HODA_CHANTRY_ROBE_GEAR_DESC|Cette robe emplit les novices de la Chantrie de la vitalité du Créateur.
+HODA_CHANTRY_SHIELD_GEAR_DESC|Ce bouclier porte le symbole de la Chantrie, pour inspirer la foi.
+HODA_CHESTPLATE_OF_THE_FORTRESS_GEAR_DESC|Le guerrier Hawke a récupéré cette cuirasse sur le corps sans vie de Corypheus. Un trophée dont on peut se vanter, c'est le moins qu'on puisse dire.
+HODA_CHEVALIERS_CUTLASS_GEAR_DESC|L'épée favorite des chevaliers orlésiens.
+HODA_CIRCLE_MAGE_STAFF_GEAR_DESC|Un bâton imprégné de magie, manié par ceux qui maîtrisent cet art.
+HODA_COBRA_CROWN_GEAR_DESC|Cette couronne antique renferme le pouvoir des archontes d'autrefois.
+HODA_COLES_HAT_GEAR_DESC|Sous le bord de ce chapeau, vous n'aurez guère l'occasion de croiser le regard de Cole avant qu'il vous tranche la gorge.
+HODA_COURTIER_FAN_GEAR_DESC|Maîtrisé par les plus grands joueurs du Noble jeu, le langage de l'éventail va de l'invitation à la vengeance.
+HODA_CROW_DAGGER_GEAR_DESC|Une lame antivane forgée par les légendaires assassins des Corbeaux. Peut-être.
+HODA_CROW_SHIELD_GEAR_DESC|Rondache de bois léger ornée du symbole des Corbeaux antivans, assassins d'élite de Thédas.
+HODA_CUIRASS_OF_THE_WINDS_GEAR_DESC|Aussi belle et cruelle qu'une tempête, forgée par une voyante rivaine.
+HODA_CUTPURSE_SLICER_GEAR_DESC|Rapide et précise.
+HODA_DALISH_RING_GEAR_DESC|Anneau traditionnel des Dalatiens, symbole de leur lien dans la vie comme dans la mort.
+HODA_DALISH_ROBES_GEAR_DESC|Difficile de ne pas admirer la qualité de cette robe. Chacune de ses fibres a été travaillée avec un soin minutieux.
+HODA_DALISH_STAFF_GEAR_DESC|Ces bâtons sont courants chez les Dalatiens. Leur solidité étonnante rend sans doute hommage à la promesse de leur peuple.
+HODA_DAWN_RING_GEAR_DESC|Le premier d'une paire d'anneaux symbolisant un pacte entre les nains et Tévinter. Il est chaud au toucher.
+HODA_DEFENDER_COAT_GEAR_DESC|Des mailles renforcées pour endurcir le corps et l'esprit.
+HODA_DEMONS_ADVOCATE_GEAR_DESC|Des voix presque imperceptibles à l'oreille humaine s'échappent parfois de ce maillet.
+HODA_DIPLOMATIC_MISSIVES_GEAR_DESC|Les pages de la diplomatie renferment bien des secrets, aussi puissants que n'importe quelle arme.
+HODA_DIRTHAMENS_WISDOM_GEAR_DESC|Ce bouclier a miraculeusement survécu mille ans dans le temple de Dirthamen, peut-être grâce au dieu des Secrets.
+HODA_DRAGONS_TESTAMENT_GEAR_DESC|Un ouvrage rare sur les tactiques de combat des dragons, d'auteur inconnu. On dit qu'il aurait été écrit par Frédéric de Serault.
+HODA_DREAMWEAVER_STAFF_GEAR_DESC|Les flammes de ce bâton de mage brillent avec éclat. Ô tisseur de rêves, guide-moi jusqu'au bout de la nuiii-iiit.
+HODA_DUSK_RING_GEAR_DESC|Taillé par des nains dans un unique cristal d'améthyste sans défaut, cet anneau est lourd et frais au toucher.
+HODA_DUSTER_BATTLEAXE_GEAR_DESC|Faite d'épées et de masses recyclées, et... c'est un morceau de balai, là ?
+HODA_DUSTER_GREAVES_GEAR_DESC|Assemblées avec ce que vous espérez être du vrai cuir. Ces jambières sentent particulièrement le moisi.
+HODA_DUSTER_LEATHER_ARMOR_GEAR_DESC|Assemblée avec ce que vous espérez être du vrai cuir. C'est un morceau de chaussure gravé dessus ?
+HODA_DUSTER_LEATHER_GAUNTLETS_GEAR_DESC|Assemblés avec ce que vous espérez être du vrai cuir. Une partie de ces gantelets a au moins été taillée dans un sac à main de dame.
+HODA_DUSTER_LEATHER_PAULDRON_GEAR_DESC|Assemblée avec ce que vous espérez être du vrai cuir. Ce sont des pointes ou de vieilles dents ?
+HODA_DWORKINS_HIGH_EXPLOSIVES_GEAR_DESC|Les explosifs pas tout à fait les plus sûrs de Dworkin le Fou.
+HODA_DWORKINS_SAFE_EXPLOSIVES_GEAR_DESC|Les explosifs "les plus sûrs" de Dworkin le Fou.
+HODA_EARNEST_REPRISAL_STAFF_GEAR_DESC|Bâton maudit du Sombre Emporium.
+HODA_ELGARNAN_ENASTE_GEAR_DESC|L'arc d'Elgar'nan, Père de tous les elfes. Ses flèches sont imprégnées de la puissance destructrice du soleil lui-même.
+HODA_ELUSIVE_ICEBOW_GEAR_DESC|Un froid intense émane de la poignée de cet arc et confère à son porteur une puissance accrue.
+HODA_ELVEN_PLATE_ARMOR_GEAR_DESC|Les elfes ont le sens des formes. Les nervures fermes de cette armure de plates détournent les coups du corps.
+HODA_EMBLAZONED_KIRKWALL_SHIELD_GEAR_DESC|Bouclier de la célèbre garde de Kirkwall. Ceux qui s'abritent derrière son blason sont protégés de toute malveillance.
+HODA_ENCHANTED_SILVER_ARMOR_GEAR_DESC|Forgée par le Cercle pour le roi Calenhad, cette armure repousserait aussi bien les flèches que les lames.
+HODA_ENCHANTER_FIRE_STAFF_GEAR_DESC|Le feu peut purifier et guérir, tout autant que détruire.
+HODA_EXPENSIVE_DOG_TREATS_GEAR_DESC|Une récompense rare, réservée aux compagnons à quatre pattes les plus exigeants.
+HODA_FADE_TOUCHED_LURKER_SCALES_GEAR_DESC|Prendre l'ennemi par surprise est essentiel pour survivre sur les routes isolées de Thédas. Ces écailles de rôdeur permettent à un brigand de se dissimuler à l'approche.
+HODA_FADE_TOUCHED_SILVERITE_GEAR_DESC|L'argentite pousse son porteur à se protéger lorsqu'il est attaqué, renforçant son immunité à chaque coup.
+HODA_FADE_WALL_GEAR_DESC|Ce bouclier est chargé d'énergie arcanique et donne à son porteur une vague impression de détachement.
+HODA_FADESBANE_GEAR_DESC|Lame bénie des plus redoutables chasseurs de mages templiers.
+HODA_FERAL_WOLF_CHARM_GEAR_DESC|Les chasseurs chasinds apprécient ce genre de talisman, qui serait enchanté les nuits de pleine lune par des sorcières légèrement vêtues au cœur des terres sauvages de Korcari.
+HODA_FERELDAN_CLAYMORE_GEAR_DESC|Commandée par Loghain Mac Tir pour sa fille Anora, à l'occasion de ses fiançailles avec le prince Cailan Theirin.
+HODA_FERELDAN_SOLDIER_HELMET_GEAR_DESC|Casque d'acier conçu pour renforcer la vitalité et la concentration de son porteur au combat.
+HODA_FIRST_ENCHANTERS_ROBES_GEAR_DESC|La robe du Premier enchanteur est moins ornée qu'on pourrait le croire. Celle-ci empeste le soufre.
+HODA_FLASK_OF_FLAME_GEAR_DESC|Brisé au combat, ce flacon enveloppe son utilisateur de flammes et le plonge dans une frénésie d'action.
+HODA_FLASK_OF_FROST_GEAR_DESC|Ce flacon vous recouvre d'une peau de glace qui augmente nettement votre défense.
+HODA_FLASK_OF_LIGHTNING_GEAR_DESC|Brisé au combat, ce flacon enveloppe son utilisateur d'éclairs et lui confère des réflexes et une vitesse accrus.
+HODA_FLAWLESS_FIRE_CRYSTAL_GEAR_DESC|Un cristal de feu parfait, sans le moindre défaut.
+HODA_FLAWLESS_ICE_CRYSTAL_GEAR_DESC|Un cristal de glace parfait, sans le moindre défaut.
+HODA_FLAWLESS_LIGHTNING_CRYSTAL_GEAR_DESC|Un cristal de foudre parfait, sans le moindre défaut.
+HODA_FLAWLESS_NATURE_CRYSTAL_GEAR_DESC|Un cristal de nature parfait, sans le moindre défaut.
+HODA_FLAWLESS_SPIRIT_CRYSTAL_GEAR_DESC|Un cristal d'esprit parfait, sans le moindre défaut.
+HODA_FLEMETHS_GRIMOIRE_GEAR_DESC|Un livre ancien mais soigneusement entretenu, relié d'un cuir d'origine douteuse.
+HODA_FORGE_MASTERS_HAMMER_GEAR_DESC|Le maître de forge genlock a gardé pour lui l'arme la plus puissante jamais conçue par les engeances.
+HODA_GAMORDAN_STORMRIDER_SCALE_GEAR_DESC|Prélevée sur la peau d'un orageur gamordan abattu. Elle picote quand on la touche.
+HODA_GARAHELS_HELM_GEAR_DESC|Perdu lors de son ultime combat contre Andoral, ce heaume enchanté est désormais imprégné de l'esprit de son maître.
+HODA_GAUNTLETS_OF_THE_NUG_GEAR_DESC|Curieusement, ces gantelets s'ajustent d'eux-mêmes à la taille de leur porteur.
+HODA_GAUNTLETS_OF_THE_SKIES_GEAR_DESC|Bénis par la Dame des cieux, ces gantelets sont parcourus par son pouvoir.
+HODA_GIFT_OF_THE_TALONS_GEAR_DESC|Remise à ceux qui atteignent le rang de Serre chez les Corbeaux antivans, cette dague est à la fois un honneur et un contrat.
+HODA_GIRDLE_OF_THE_SKIES_GEAR_DESC|Béni par la Dame des cieux, ce ceinturon protège de la magie sauvage.
+HODA_GLANDIVALIS_GEAR_DESC|L'épée du Libérateur, baignée de la lumière d'Andrasté elle-même.
+HODA_GRAND_ENCHANTERS_STAFF_GEAR_DESC|Le porteur de ce bâton acquiert le savoir qu'il renferme, ainsi que d'innombrables mystères de la vie elle-même.
+HODA_GREAT_DRAGON_STAFF_GEAR_DESC|Les traces de sang infusées dans ce bâton peuvent conférer une force prodigieuse à un porteur bien entraîné.
+HODA_GREATER_MISTRAL_SCALE_GEAR_DESC|Prélevée sur la peau d'un mistral majeur abattu. Le givre se forme tout autour.
+HODA_GREAVES_OF_THE_BERESAAD_GEAR_DESC|Protection des jambes réglementaire des Beresaad, l'armée des Qunari.
+HODA_GREAVES_OF_THE_LADY_GEAR_DESC|Bénies par la Dame des cieux, ces jambières donnent le pied léger.
+HODA_GRIFFON_PLATE_GEAR_DESC|Trouvée près de la forteresse d'Adamant, cette cuirasse ressemble à une ancienne armure des Gardes.
+HODA_GRIFFONRIDER_LEATHERS_GEAR_DESC|À l'époque où les griffons parcouraient les cieux, ce harnais spécial maintenait les Gardes sur le dos de ces puissantes bêtes.
+HODA_GRIMOIRE_OF_THE_FROZEN_WASTES_GEAR_DESC|Ces pages renferment des centaines de récits terrifiants racontant comment les barbares des Terres gelées survivent dans leur patrie glacée.
+HODA_HAKKONS_WISDOM_GEAR_DESC|Hakkon en personne ne confiait ce bâton qu'aux plus dévoués de ses augures.
+HODA_HAKKONS_WRATH_GEAR_DESC|Tels des éclats de glace acérés, la fureur de l'hiver se déchaîne entre les mains du porteur de cet arc.
+HODA_HARDENED_GURN_HIDE_GEAR_DESC|La peau presque impénétrable du gurn en fait un trophée redoutable pour tout chasseur en herbe.
+HODA_HAUBERK_OF_THE_LADY_GEAR_DESC|Béni par la Dame des cieux, il protège les points vitaux des attaques physiques.
+HODA_HEARTWOOD_SHIELD_GEAR_DESC|L'Ancien ne cède pas son bois facilement. Un bouclier du Bois sinueux vaut bien le sang versé pour l'obtenir.
+HODA_HELM_OF_JUSTICE_GEAR_DESC|La protection de la justice triomphe de la corruption et endurcit l'âme face aux profanateurs.
+HODA_HELM_OF_THE_DRAGON_HUNTER_GEAR_DESC|Frappé de l'ancien symbole de l'Inquisition, ce heaume protège des bêtes les plus féroces.
+HODA_HELM_OF_THE_MOUNTAIN_FATHER_GEAR_DESC|Façonné à partir de cornes de chèvre, il porte la protection que Korth, le Père des montagnes, accorde à ses fidèles.
+HODA_HELM_OF_THE_SKIES_GEAR_DESC|Béni par la Dame des cieux, il protège ses fidèles des attaques mentales.
+HODA_HISSERAS_MASK_GEAR_DESC|Un saarebas n'est pas une force que l'on laisse sans entraves.
+HODA_ICE_GIANTS_TUSK_GEAR_DESC|Froide au toucher, cette défense vibre encore du pouvoir de son ancien maître gelé.
+HODA_INQUISITION_LONGSWORD_GEAR_DESC|Épée réglementaire forgée dans un acier renforcé.
+HODA_INQUISITION_SHIELD_GEAR_DESC|Bouclier blasonné du soldat de l'Inquisition.
+HODA_INQUISITION_STAFF_GEAR_DESC|Bâton réglementaire, manié par les mages dans les rangs de l'Inquisition.
+HODA_INQUISITION_WARMAGE_PAULDRON_GEAR_DESC|Épaulière réglementaire des mages de l'Inquisition.
+HODA_ISANAS_SONG_GEAR_DESC|Ce bâton émet un léger bourdonnement quand on le touche : un air mélancolique, comme s'il songeait à un lieu lointain ou oublié.
+HODA_JAR_OF_BEES_GEAR_DESC|On ne sait comment, une ruche entière a été enfermée dans un bocal, prête à être lancée sur des nuisibles qui ne se doutent de rien.
+HODA_JOINING_CHALICE_GEAR_DESC|Joignez-vous à nous, frères et sœurs. Joignez-vous à nous dans l'ombre, où nous montons la garde.
+HODA_KADDIS_OF_THE_LADY_GEAR_DESC|Béni par la Dame des cieux, ce maquillage de guerre suffit à protéger des attaques.
+HODA_KADDIS_OF_THE_MOUNTAINFATHER_GEAR_DESC|Un motif ancien qu'utilisent les guerriers cendrés pour invoquer Korth, le dieu des Alvars.
+HODA_KALTENZAHN_SCALE_GEAR_DESC|Prélevée sur la peau d'un kaltenzahn vaincu. Elle est glacée au toucher.
+HODA_KEEN_ELFSNAKE_VITAAR_GEAR_DESC|Cette étrange peinture faciale qunari est faite d'un poison mortel pour quiconque n'y est pas préparé.
+HODA_KEEPSAKE_LOCKET_GEAR_DESC|Médaillon contenant un portrait de famille. À garder près du cœur.
+HODA_KITTYS_COLLAR_GEAR_DESC|Le porteur de cette amulette accepte un pacte plutôt périlleux, qu'il le sache ou non.
+HODA_LEGION_HAMMER_GEAR_DESC|Un lourd maillet employé par la Légion dans sa lutte sans relâche contre l'Enclin.
+HODA_LEGIONNAIRE_HELMET_GEAR_DESC|Un casque lourd, forgé pour la Légion des morts.
+HODA_LEGIONNAIRE_PLATE_GEAR_DESC|Finement ouvragé, mais volontairement dépourvu d'ornements : une contradiction qui incarne la Légion des morts.
+HODA_LEGIONNAIRE_SCOUT_DAGGER_GEAR_DESC|Nos secrets meurent avec nous.
+HODA_LINEAGE_GEAR_DESC|Les riches ornements de ce maillet le rendent difficile à manier pour qui n'est pas entraîné.
+HODA_LITANY_OF_ADRALLA_GEAR_DESC|Trouvé sur la dépouille de Niall, ce parchemin réagit fortement en présence de démons.
+HODA_LOOSE_ENDS_GEAR_DESC|Un moyen efficace d'en finir, pour que rien ne reste en suspens.
+HODA_LOTHERINGS_LAMENT_GEAR_DESC|Les dernières paroles de ceux qu'on a laissés derrière soi.
+HODA_LYRIUM_KIT_GEAR_DESC|La source du pouvoir des templiers pour bloquer la magie. Veillez à respecter la dose quotidienne.
+HODA_LYRIUM_REINFORCED_LONGBOW_GEAR_DESC|Du lyrium pur parcourt la structure de cet arc et renforce la puissance des flèches qu'il tire.
+HODA_MAFERATHS_MAUL_GEAR_DESC|Maillet de pierre du Traître. Un symbole de pouvoir mal acquis.
+HODA_MAGEKILLER_GEAR_DESC|L'arme de prédilection du célèbre assassin de mages. Cette lame a brusquement arrêté bien des cœurs impurs.
+HODA_MANTLE_OF_THE_HOLD_BEAST_GEAR_DESC|Les puissantes bêtes de clan sont elles aussi des guerrières du clan : elles ont donc besoin d'une armure pour se protéger.
+HODA_MARCH_OF_THE_EVERLASTING_GEAR_DESC|Forgée à Arlathann, refaçonnée à Tévinter, enchantée en Orlaïs et maniée par les chevaliers lors des Marches exaltées.
+HODA_MASTERWORK_WITCH_STAFF_GEAR_DESC|Bâton couronné d'un crâne humain serré dans une griffe de chêne.
+HODA_MAUL_OF_TACITUS_GEAR_DESC|Maillet de Tacitus Valerius, éclaboussé et imprégné du sang des infidèles.
+HODA_MAUL_OF_THE_DRAGON_GEAR_DESC|Maillet géant façonné à partir de la griffe d'un dragon-sire, capable de lacérer les chairs les plus coriaces.
+HODA_MERCYS_CREST_GEAR_DESC|Cette amulette de cultiste se nourrit du sang versé pour renforcer l'esprit.
+HODA_MEREDITHS_KEY_GEAR_DESC|Le coffre à pots-de-vin de Mérédith est caché dans la Potence de Kirkwall, et sa clé recèle plus de pouvoir qu'aucune arme ne pourrait jamais en avoir.
+HODA_MORTALITASI_COWL_GEAR_DESC|Imprégnée de la magie de la secte secrète des mortalitasi du Névarra.
+HODA_MORTALITASI_STAFF_GEAR_DESC|Ce bâton porte des symboles que l'on pourrait traduire par "Toujours en avant, toujours vers la mort."
+HODA_MYTHALS_BLESSING_GEAR_DESC|Quand une rondache n'est-elle pas qu'une simple rondache ? Quand elle est dorée du symbole de la divinité de la Vengeance.
+HODA_MYTHALS_JUDGMENT_GEAR_DESC|Offert à Mythal par Elgar'nan pour protéger et venger son peuple, ce bâton est la justice incarnée.
+HODA_OATHBREAKER_GEAR_DESC|Quand un serment envers soi-même l'emporte sur un serment envers autrui, l'un des deux doit forcément être rompu.
+HODA_OF_THINGS_NOT_LOST_GEAR_DESC|Les mémoires d'une réfugiée féreldienne. La preuve que certaines choses ne peuvent nous être enlevées.
+HODA_ORB_OF_DESTRUCTION_GEAR_DESC|Un tel pouvoir dans le creux de la main. Seuls les elfes pouvaient trouver cela raisonnable.
+HODA_ORB_OF_FENHAREL_GEAR_DESC|On ne sait presque rien de cet artefact ancien. Il rayonne d'un pouvoir immense et éclatant.
+HODA_ORLESIAN_HENNIN_GEAR_DESC|Créé par Vivienne pour sa collection personnelle, ce chapeau est le summum exquis de la mode en Orlaïs.
+HODA_ORLESIAN_MASK_GEAR_DESC|Plus cher que la plupart des armures, ce masque est l'expression ultime de la distinction.
+HODA_PAULDRON_OF_THE_ARISHOK_GEAR_DESC|Épaulière de cuir tressé des Qunari.
+HODA_PHOENIX_TAIL_FEATHER_GEAR_DESC|La plume de queue intacte d'un phénix adulte.
+HODA_PROWLER_MAIL_GEAR_DESC|Légère et silencieuse, cette armure est idéale pour se faufiler.
+HODA_PUZZLE_RING_GEAR_DESC|On dit qu'il aurait appartenu au Renard noir. Les anneaux qui le composent peuvent être séparés pour activer la magie qu'il renferme.
+HODA_QUNARI_HELMET_GEAR_DESC|Casque de l'arvaarad, il protège les Qunari des projectiles magiques égarés.
+HODA_QUNARI_TOWER_SHIELD_GEAR_DESC|Un grand bouclier frappé de l'emblème des Qunari et fidèle à leur savoir-faire éprouvé. Parfait aussi pour donner de petits coups.
+HODA_QUNARI_WARAXE_GEAR_DESC|Arme à une main forgée par les Qunari dans leur guerre sans fin contre Tévinter.
+HODA_REBOUND_DAGGER_GEAR_DESC|Dague crochue, parfaite pour éventrer un ennemi au moment où il est le plus faible.
+HODA_RED_IRON_MAUL_GEAR_DESC|Une arme de corps à corps à deux mains, prisée par les mercenaires de Rougelame.
+HODA_RED_JENNY_BACKBITER_GEAR_DESC|Fabriquée par et pour les amis de Jenny, elle donne du pouvoir aux petites gens.
+HODA_RED_LYRIUM_IDOL_GEAR_DESC|Forgée par les nains du Thaig antique, cette idole fut perdue pendant des millénaires.
+HODA_REDCLIFFE_SHIELD_GEAR_DESC|Ce bouclier renommé tient la ligne pour défendre le château de Golefalois, les Guerrin et tout Férelden.
+HODA_REMARKABLE_EMERALD_GEAR_DESC|Une gemme d'un magnifique vert, particulièrement bien taillée. Elle fait un superbe cadeau ou un renfort éclatant.
+HODA_RETRIBUTION_ELIXIR_GEAR_DESC|Un élixir dangereux à ne prendre que lorsque le sort de la bataille vous est trop défavorable.
+HODA_REVERED_DEFENDER_MAUL_GEAR_DESC|Maillet géant du défenseur sha-brytol. Cranté pour broyer comme pour déchirer.
+HODA_RING_OF_DOUBT_GEAR_DESC|Contraint à un mariage arrangé, un jeune magister a enchanté son alliance pour la rendre invisible.
+HODA_RING_OF_RESILIENCE_GEAR_DESC|Plus le cœur de son porteur bat vite, plus l'anneau luit d'un éclat mystérieux.
+HODA_RITUAL_BREAKER_GEAR_DESC|Cette masse ornée est presque aussi belle que le bruit des os qu'elle brise si facilement à chaque coup.
+HODA_ROBES_OF_THE_ARCHITECT_GEAR_DESC|Contrairement aux autres engeances, qui préfèrent les armures sauvages et cruelles, l'Architecte porte une robe presque civilisée.
+HODA_RUBY_RING_GEAR_DESC|Célèbre pour avoir été porté par l'impératrice Célène, cet anneau enflamme n'importe quelle arme.
+HODA_SAAREBAS_RESTRAINTS_GEAR_DESC|Des liens solides qui protègent les saarebas d'eux-mêmes et des autres.
+HODA_SACRIFICIAL_DAGGER_GEAR_DESC|Les armes d'aurum volcanique transpercent comme nulle autre. Les dégâts spirituels de cette dague aggravent encore les choses.
+HODA_SAD_WEAPON_GEAR_DESC|Alias la Masse mutilée de Mark. Sa puissance tient surtout à l'humiliation de se prendre une banane en pleine figure.
+HODA_SAVAGE_THORN_GEAR_DESC|Cette lame grossière déchire l'ennemi et lui fait bien sentir sa présence.
+HODA_SCOUT_ARMOR_GEAR_DESC|Élégante, agile, meurtrière. Tout comme Sera.
+HODA_SCOUT_COAT_ARMS_GEAR_DESC|Une amélioration de l'armure portée par les éclaireurs en patrouille.
+HODA_SCOUT_HAT_GEAR_DESC|Casque de cuir durci, assez léger pour se déplacer vite sur le terrain.
+HODA_SCOUT_QUIVER_GEAR_DESC|Pourquoi "carquois" ? Car quoi ? Car il inspire la peur, peut-être.
+HODA_SEER_STAFF_GEAR_DESC|L'énergie de ce bâton se nourrit de la douleur des alliés.
+HODA_SENIOR_WARDENS_STAFF_GEAR_DESC|Ceux qui ont gravi les échelons des Gardes ont peut-être la poigne nécessaire pour contenir toute la malice que ce bâton peut déchaîner.
+HODA_SENTINEL_GAUNTLETS_GEAR_DESC|Les gantelets de l'armure caractéristique des elfes sentinelles.
+HODA_SENTINEL_GREAVES_GEAR_DESC|Les jambières de l'armure caractéristique des elfes sentinelles.
+HODA_SENTINEL_PLATE_PAULDRON_GEAR_DESC|L'épaulière de l'armure caractéristique des elfes sentinelles.
+HODA_SENTINEL_STAFF_GEAR_DESC|Ce bâton cristallin aiguise la perception qu'a son porteur du monde des vivants comme de l'Immatériel.
+HODA_SER_ALVARDS_SWORD_GEAR_DESC|Oubliée pendant des décennies à Noirmarais, cette lame dégage une odeur bien particulière, et peu agréable.
+HODA_SERAS_RAISIN_COOKIES_GEAR_DESC|Sera n'aime pas les biscuits aux raisins. Leur goût la pousse à s'en prendre violemment à ceux qui les apprécient.
+HODA_SERUM_OF_AMBITION_GEAR_DESC|Une mixture instable destinée à renforcer les capacités de ceux dont le corps est faible mais la volonté inébranlable.
+HODA_SHIELD_OF_LE_MARQUE_GEAR_DESC|L'emblème de la maison Le Marque, la lignée de Fairbanks, chef des réfugiés. Vers le soleil, sur des ailes bénies.
+HODA_SIDEREAL_STAFF_GEAR_DESC|Le bâton d'Aurélien Titus, magister de l'Empire tévintide. La magie du sang suinte de chacune de ses fibres.
+HODA_SKYWATCHERS_CLEAVER_GEAR_DESC|Espadon de cérémonie du guetteur du ciel : il tranche un membre sans effort.
+HODA_SMUGGLERS_DAGGER_GEAR_DESC|Facile à cacher et rapide à dégainer, la lame préférée des moins favorisés.
+HODA_SOLDIERS_PLATE_GEAR_DESC|Bon marché mais fiable, cette cuirasse qui a fait ses preuves vous servira bien.
+HODA_SOOTHERS_SAPPHIRE_GEAR_DESC|Cette gemme envoûtante rayonne d'une énergie apaisante et offre la paix à ceux qui la cherchent.
+HODA_SOULWRECKER_STAFF_GEAR_DESC|Débordant d'une énergie farouche, ce bâton se met à crépiter dès qu'on le tient.
+HODA_SPEAR_THROWER_GEAR_DESC|Cet arc macabre en bois sylvestre est assez robuste pour percer toutes les armures, sauf les plus épaisses.
+HODA_SPECTRAL_SCALE_GEAR_DESC|Prélevée sur la peau d'un dragon spectral vaincu. Elle semble éthérée, presque comme si elle n'était pas là.
+HODA_SPIRIT_MAUL_GEAR_DESC|L'enchantement de la Croisée infusé dans ce maillet lie son porteur au Loup implacable.
+HODA_STAFF_OF_AIDAHN_ALLIED_GEAR_DESC|Taillé dans du lyrium rouge brut, ce bâton draine la vie de tous ceux qui l'entourent.
+HODA_STAFF_OF_CORRUPTION_GEAR_DESC|S'ils nous disent corrompus, soyons la corruption.
+HODA_STAFF_OF_FAITH_GEAR_DESC|Par la foi, protégé. Avec la foi, élevé. Grâce à la foi, renforcé.
+HODA_STAFF_OF_SHADOWS_GEAR_DESC|Un bâton sombre, dans lequel est sculpté un crâne humain.
+HODA_STONEHAMMER_PLATE_GEAR_DESC|Commandée par le roi Endrin Marteau-de-Pierre, cette armure fut enchantée puis offerte au vainqueur de la Grande Épreuve.
+HODA_STROUDS_TARGE_GEAR_DESC|Bouclier renforcé du Garde des ombres ser Stroud. Rehausse l'éclat d'une glorieuse moustache.
+HODA_STUDDED_LEATHER_PAULDRON_GEAR_DESC|Le cuir renforcé offre une protection solide tout en laissant une totale liberté de mouvement.
+HODA_STUFFED_MABARI_GEAR_DESC|Vous ne trouverez pas de compagnon plus dévoué !
+HODA_SWIFTRUNNERS_SHIELD_GEAR_DESC|Ce bouclier portait autrefois des armoiries, mais elles se sont effacées depuis longtemps.
+HODA_SWORD_OF_CHARRIS_ALLIED_GEAR_DESC|Taillée dans du lyrium rouge brut, cette épée draine la vie de tous ceux qui l'entourent.
+HODA_TALON_OF_THE_SKIES_GEAR_DESC|Bénie par la Dame des cieux, cette lame fait hésiter l'ennemi avant de le déchirer.
+HODA_TEMPLAR_BREASTPLATE_GEAR_DESC|Armure réglementaire de l'ordre des templiers.
+HODA_TEMPLAR_COMMANDER_PAULDRON_GEAR_DESC|De l'acier en cascade. Conçue pour porter le fardeau du groupe.
+HODA_TEMPLAR_HELMET_GEAR_DESC|Casque réglementaire de l'ordre des templiers.
+HODA_TEMPLAR_LONGSWORD_GEAR_DESC|Épée longue réglementaire et bien forgée de l'ordre des templiers.
+HODA_TEMPLAR_SHIELD_GEAR_DESC|Bouclier réglementaire des chevaliers de l'ordre des templiers.
+HODA_THE_ANCESTORS_GREAVES_GEAR_DESC|Vestige d'une armure antique et d'une époque où la guerre reposait sur des stratégies brillantes.
+HODA_THE_BIND_THAT_GUIDES_GEAR_DESC|Si lâchement que l'on noue cette ceinture, elle se resserre d'elle-même autour de la taille après quelques pas.
+HODA_THE_BLACK_FOXS_JERKIN_GEAR_DESC|Le dernier récit du Renard noir raconte comment il perdit ce pourpoint en cherchant la cité des elfes d'Arlathann.
+HODA_THE_DIVINE_ARMOR_GEAR_DESC|Cette armure éclatante a été forgée pour le chef de la Chantrie.
+HODA_THE_ELDERS_GRIMOIRE_GEAR_DESC|Grimoire maudit de l'Ancien, qui renferme les secrets du lyrium rouge et d'autres rites démoniaques.
+HODA_THE_EYE_THAT_WEEPS_GEAR_DESC|De la condensation se forme lentement à la surface de la gemme, peu importe combien de fois on l'essuie.
+HODA_THE_GOLDEN_PRINCES_HELM_GEAR_DESC|La jeune impératrice Célène était captivée par les récits du Prince doré, dont le heaume était la seule couronne qu'il acceptait de porter.
+HODA_THE_GOLDEN_PRINCES_PAULDRON_GEAR_DESC|L'épaulière assortie aux atours du Prince doré. Le Lion d'Orlaïs encaisse le plus gros des attaques.
+HODA_THE_GOLDEN_PRINCES_RAIMENT_GEAR_DESC|L'armure ornée du Prince doré, Émile Deveraux, qui avait conquis le cœur du peuple orlésien.
+HODA_THE_HAND_THAT_CUTS_GEAR_DESC|Cet anneau devient étrangement chaud quand on le glisse au doigt, et pulse au rythme du cœur de son porteur.
+HODA_THE_LADYS_WRATH_GEAR_DESC|Béni par la Dame des cieux, chaque coup de ce maillet renforce son porteur.
+HODA_THE_SKIN_THAT_STALKS_GEAR_DESC|Le cuir de cette armure dégage une légère chaleur vivante. Elle est plus lourde qu'elle n'en a l'air.
+HODA_TOME_OF_ARCANE_TECHNIQUE_GEAR_DESC|Fruit des recherches de la Chantrie impériale, ce tome offre un éclairage sur l'Immatériel.
+HODA_TOME_OF_KOSLUN_GEAR_DESC|Une écriture sacrée de la tradition qunari, rédigée par l'Ashkaari Koslun, fondateur du Qun.
+HODA_TOME_OF_PHYSICAL_TECHNIQUE_GEAR_DESC|Rédigé par un maître, ce manuscrit se voit rarement hors des organisations les plus prestigieuses.
+HODA_TOME_OF_RIFTS_GEAR_DESC|Ce texte enseigne à ses disciples comment puiser de l'énergie dans l'Immatériel et s'y déplacer.
+HODA_TOME_OF_SKILL_AND_SUNDRY_GEAR_DESC|Un ouvrage foisonnant des débuts de Férelden, qui tente de réunir de nombreuses disciplines en une seule théorie des capacités mentales.
+HODA_TOME_OF_THE_MORTAL_VESSEL_GEAR_DESC|La peur de la magie du sang a jeté l'opprobre sur la dissection savante, mais certains ouvrages d'anatomie ont été préservés.
+HODA_VANGUARD_ARMOR_GEAR_DESC|Pour ceux qui se battent en première ligne.
+HODA_VENATORI_BOW_GEAR_DESC|Cet arc est imprégné d'un virulent sort de bombe qui fait exploser ses flèches à l'impact.
+HODA_VENATORI_GREAVES_GEAR_DESC|Remises aux soldats venatori, ces jambières sont tissées avec les anciennes chaînes d'esclaves.
+HODA_VENATORI_HELMET_GEAR_DESC|Casque fermé du soldat venatori.
+HODA_VENATORI_STAFF_BLADE_GEAR_DESC|Animés par leurs croyances fanatiques, les Venatori utilisent cette arme pour semer le chaos chez leurs ennemis.
+HODA_VENATORI_TOWER_SHIELD_GEAR_DESC|Imprégné de sorts de protection, ce bouclier couvre entièrement son porteur.
+HODA_VESTMENTS_OF_THE_ARCHMAGE_GEAR_DESC|Porté par les mages qui ont obtenu le titre d'archimage, l'un des rangs les plus élevés et les plus puissants du Cercle.
+HODA_VESTMENTS_OF_THE_DRAGON_HUNTER_GEAR_DESC|Trouvée à côté du corps sans vie du revenant Gurd, cette armure légère est réservée aux plus redoutables pourfendeurs de dragons.
+HODA_VIAL_OF_DRAGONS_BLOOD_GEAR_DESC|Le sang de dragon a de nombreux usages, mais la plupart le recherchent pour ses propriétés magiques. Le boire peut conférer un grand pouvoir, si l'on y survit.
+HODA_VIGILANCE_GEAR_DESC|Une fois toutes les douze générations, une arme véritablement légendaire est forgée. Cette lame, façonnée dans les os d'un dragon ancien, vibre de puissance.
+HODA_VINSOMER_SCALE_GEAR_DESC|Prélevée sur la peau d'un vinsomer abattu, elle grésille d'électricité.
+HODA_VIRTUOSITY_GEAR_DESC|Les effets magiques de ce luth sont évidents pour quiconque le tient, mais une seule personne peut en exploiter tout le potentiel.
+HODA_VITAAR_OF_THE_DRAGON_HUNTER_GEAR_DESC|Cette peinture faciale est en réalité faite d'un poison mortel. Mais la physiologie unique des Qunari en neutralise l'effet et décuple leur force.
+HODA_VORACITY_GEAR_DESC|Ce bâton murmure à son porteur et réclame toujours plus de sang pour assouvir sa soif.
+HODA_WALKING_DEATH_GEAR_DESC|Les marques des mortalitasi sont reconnaissables entre toutes. Nul ne sait comment cette dague est arrivée dans l'Emprise du Lion, mais la morsure de sa lame, elle, n'a rien de mystérieux.
+HODA_WARDEN_HELMET_GEAR_DESC|Heaume ailé des Gardes des ombres.
+HODA_WARDEN_TOWER_SHIELD_GEAR_DESC|Lourd bouclier du Commandeur-Garde. L'insigne des Gardes des ombres détourne les attaques les plus féroces.
+HODA_WARM_ORB_GEAR_DESC|Inoffensif au premier abord, ce bibelot vibre de pouvoir et ne répond qu'au sang.
+HODA_WEDGE_OF_DESTINY_GEAR_DESC|Ce mariage contre nature d'écailles de dragon et de cheddar affiné est plus efficace qu'il n'y paraît. Craint le feu, à moins d'avoir envie d'une fondue.
+HODA_WILHELMS_STAFF_GEAR_DESC|Jadis l'arme du héros de la rébellion féreldienne. Malgré son âge, sa puissance reste intacte.
+HODA_WINTERWEIGHT_GEAR_DESC|Trouvée dans les Tréfonds, gardée par un dragon et imprégnée de pouvoirs magiques défensifs.
+HODA_YAVANALIS_GEAR_DESC|Bâton du "Démon pâle", un archiviste dalatien connu pour ses attaques sanglantes contre les Orlésiens.
+HODA_GEAR_AEDUCANS_HAMMER_AURA_LOC_OVERRIDE|<color=green>Dégâts +10 %. Nains : Santé +20 % et résistance aux dégâts +10 %. Alliés : probabilité de dégâts doubles +10 %. Porté par un Aeducan : résistance aux dégâts +15 %.</color>
+HODA_GEAR_PLUS4_CRIT_CHANCE_SELF_DESC|<color=green>Probabilité de dégâts doubles +4 %.</color>
+HODA_GEAR_PLUS10_BONUS_DAMAGE_VS_BLUE_FACTION_DESC|<color=green>Dégâts +10 % contre la faction bleue.</color>
+HODA_GEAR_DMG_RESIST_PCT_20_VS_WHITE_FACTION_ALAMARRI_WARLORD_EQUIP_DESC|<color=green>Porté par le seigneur de guerre alamarri : résistance aux dégâts de la faction blanche +20 %.</color>
+HODA_GEAR_MINUS5_HEALTH_PERSONAL_DESC|<color=red>Santé -5 % (ce héros).</color>
+HODA_GEAR_PLUS20_BONUS_DAMAGE_VS_BLACK_FACTION_DESC|<color=green>Dégâts +20 % contre la faction noire.</color>
+HODA_GEAR_PLUS8_POWER_PERSONAL_DESC|<color=green>Puissance +8 %.</color>
+HODA_GEAR_PLUS5_BONUS_DAMAGE_VS_BLIGHT_DESC|<color=green>Dégâts +5 % contre les viciés.</color>
+HODA_GEAR_PLUS5_DAMAGE_RESIST_PERSONAL_DESC|<color=green>Résistance aux dégâts +5 %.</color>
+HODA_GEAR_PLUS11_CRIT_CHANCE_SELF_DESC|<color=green>Probabilité de dégâts doubles +11 %.</color>
+HODA_GEAR_MINUS4_HEALTH_PERSONAL_DESC|<color=red>Santé -4 % (ce héros).</color>
+HODA_GEAR_PLUS10_HEALTH_PERSONAL_DESC|<color=green>Santé +10 %.</color>
+HODA_GEAR_PLUS8_CRIT_CHANCE_SELF_DESC|<color=green>Probabilité de dégâts doubles +8 %.</color>
+HODA_GEAR_PLUS15CURSEPOWERRESIST_TO_ELVES_DESC|<color=green>Elfes : résistance à la malédiction de Puissance +15 %.</color>
+HODA_GEAR_DAMRESGAIN_SELF_7_ON_SELF_HIT_DESC|<color=green>Résistance aux dégâts +7 % si touché.</color>
+HODA_GEAR_PERCEPTIVE_SELF_DESC|<color=green>Perception : annule la furtivité.</color>
+HODA_GEAR_PLUS6_POWER_SELF_ON_SELF_HIT_DESC|<color=green>Puissance +6 % si touché.</color>
+HODA_GEAR_PLUS12_BONUS_DAMAGE_VS_WARRIOR_ISABELA_ONLY_DESC|<color=green>Porté par Isabela : dégâts +12 % contre les guerriers.</color>
+HODA_GEAR_PLUS5_CRIT_CHANCE_SELF_DESC|<color=green>Probabilité de dégâts doubles +5 %.</color>
+HODA_GEAR_QUICK_TARGETING_DESC|<color=orange>Beaucoup plus de chances d'attaquer les héros rapides.</color>
+HODA_GEAR_PLUS5_POWER_ROGUES_PERSONAL_DESC|<color=green>Porté par un voleur : Puissance +5 %.</color>
+HODA_GEAR_PLUS5PCT_BONUS_DAMAGE_FOR_ALLIES_DESC|<color=green>Alliés : dégâts +5 %.</color>
+HODA_GEAR_PLUS10_STUN_RESIST_ALLIES_DESC|<color=green>Alliés : résistance à l'assommement +10 %.</color>
+HODA_GEAR_ENEMY_POWER_DRAIN_WHEN_SELF_ATTACKED_3_DESC|<color=green>Si touché, draine 3 % de la Puissance des ennemis.</color>
+HODA_AURA_PLUS25HEALTH_TO_QUNARI|<color=green>Alliés qunari : Santé +25 %.</color>
+HODA_GEAR_ASAARASH_FLANCHARD_AURA_LOC_OVERRIDE|<color=green>Résistance à tous les effets +15 %. Alliés qunari : Puissance +25 %.</color>
+HODA_GEAR_PLUS5_HEALTH_PERSONAL_DESC|<color=green>Santé +5 %.</color>
+HODA_GEAR_PLUS5_STUN_RESIST_SELF_DESC|<color=green>Résistance à l'assommement +5 %.</color>
+HODA_GEAR_DMG_RESIST_PCT_15_PERSONAL_DESC|<color=green>Résistance aux dégâts +15 %.</color>
+HODA_GEAR_PLUS5_POWER_ALLIES_DESC|<color=green>Alliés : Puissance +5 %.</color>
+HODA_GEAR_PLUS10_POWER_DRAIN_RESIST_ALLIES_DESC|<color=green>Alliés : résistance au drain de Puissance +10 %.</color>
+HODA_GEAR_PLUS12_POWER_PERSONAL_DESC|<color=green>Puissance +12 %.</color>
+HODA_GEAR_EXPLODE_ENEMIES_3_ON_ENEMY_HIT_DESC|<color=green>Quand un ennemi est touché, tous les ennemis subissent 3 % des dégâts infligés.</color>
+HODA_GEAR_PERCEPTIVE_SELF_FLORIANNE_DESC|<color=green>Porté par Florianne : Perception (annule la furtivité).</color>
+HODA_AUGURS_WITCHSTAFF_GEAR_AURA_LOC_OVERRIDE|<color=green>Santé +4 %. Alliés : résistance aux malédictions +6 % (doublée pour les Alvars et les esprits).</color>
+HODA_GEAR_CRIT_CHANCE_15_PERSONAL_DESC|<color=green>Probabilité de dégâts doubles +15 %.</color>
+HODA_GEAR_EXPLODE_DRAGONS_30_ON_ENEMY_HIT_DESC|<color=green>En attaquant, inflige aussi 30 % des dégâts infligés aux dragons ennemis.</color>
+HODA_GEAR_BONUSDMG_SELF_SELFHIT_PLUS5_DESC|<color=green>Dégâts +5 % si touché.</color>
+HODA_GEAR_PLUS20_POWER_SELF_ON_ENEMY_DEATH_DESC|<color=green>Puissance +20 % quand un ennemi meurt.</color>
+HODA_GEAR_HEALTH_ON_ALLY_DEATH_15_DESC|<color=green>Santé +15 % quand un allié meurt.</color>
+HODA_GEAR_PLUS15_POWER_PERSONAL_DESC|<color=green>Puissance +15 %.</color>
+HODA_GEAR_DMG_RESIST_PCT_15_TO_BLIGHT_DESC|<color=green>Viciés : résistance aux dégâts +15 %.</color>
+HODA_GEAR_BIANCA_AURA_LOC_OVERRIDE|<color=green>Probabilité de dégâts doubles +15 %. Alliés : dégâts +7 % quand un allié meurt.</color> <color=red>Résistance aux malédictions -25 %.</color> <color=green>Porté par Varric : Furtivité (attaque sans déclencher d'effets à l'impact).</color>
+HODA_BLACKMETAL_TORQUE_GEAR_AURA_LOC_OVERRIDE|<color=green>Puissance +8 %. Résistance aux dégâts +10 %. Porté par un chien : Santé +15 % et probabilité de dégâts doubles +10 %.</color>
+HODA_GEAR_BONUSDMG_SELF_PLUS20_DESC|<color=green>Dégâts +20 %.</color>
+HODA_GEAR_HEALTH_SELF_ALLYATK_PLUS7_DESC|<color=green>Récupère 7 % de Santé quand un ennemi est touché.</color>
+HODA_GEAR_HEALTH_SELF_MINUS20_DESC|<color=red>Santé -20 % (ce héros).</color>
+HODA_GEAR_HEALTH_SELF_REDLYRIUM_PLUS20_DESC|<color=green>Porté par un héros de lyrium rouge : Santé +20 %.</color>
+HODA_GEAR_PLUS4_POWER_DRAIN_RESIST_SELF_DESC|<color=green>Résistance au drain de Puissance +4 %.</color>
+HODA_GEAR_PLUS3_CRIT_CHANCE_SELF_DESC|<color=green>Probabilité de dégâts doubles +3 %.</color>
+HODA_GEAR_PLUS7_DAMAGE_RESIST_PERSONAL_DESC|<color=green>Résistance aux dégâts +7 %.</color>
+HODA_GEAR_PLUS5_POWER_PERSONAL_DESC|<color=green>Puissance +5 %.</color>
+HODA_GEAR_PLUS5_STUN_RESIST_SELF_AVVAR_DESC|<color=green>Porté par un Alvar : résistance à l'assommement +5 %.</color>
+HODA_GEAR_BOOTS_OF_FAITH_AURA_LOC_OVERRIDE|<color=green>Puissance et Santé +10 %. Alliés : probabilité de dégâts doubles +5 %.</color> <color=orange>Plus de chances d'attaquer l'ennemi le plus lent.</color>
+HODA_GEAR_PLUS10_DAMAGE_RESIST_PERSONAL_DESC|<color=green>Résistance aux dégâts +10 %.</color>
+HODA_GEAR_HEALTH_FERELDEN_PLUS5_DESC|<color=green>Férelden : Santé +5 %.</color>
+HODA_GEAR_PLUS10_POWER_DRAIN_RESIST_SELF_DESC|<color=green>Résistance au drain de Puissance +10 %.</color>
+HODA_GEAR_CURSEPOWERRESIST_SELF_SELFHIT_PLUS5_DESC|<color=green>Résistance à la malédiction de Puissance +5 % si touché.</color>
+HODA_GEAR_CRIT_CHANCE_SELF_LOGHAIN_EQUIP_PLUS5_DESC|<color=green>Porté par Loghain : probabilité de dégâts doubles +5 %.</color>
+HODA_GEAR_PLUS4_BONUS_DAMAGE_VS_DEFENDERS_HEALERS_DESC|<color=green>Dégâts +4 % contre les défenseurs et les guérisseurs.</color>
+HODA_GEAR_PLUS4_POWER_ROGUES_DESC|<color=green>Voleurs : Puissance +4 %.</color>
+HODA_GEAR_PLUS2PCT_POWER_VS_WARRIORS_DESC|<color=green>Dégâts +2 % contre les guerriers.</color>
+HODA_GEAR_PLUS10_POWER_PERSONAL_DESC|<color=green>Puissance +10 %.</color>
+HODA_GEAR_ENEMY_POWER_DRAIN_WHEN_SELF_ATTACKED_2_DESC|<color=green>Si touché, draine 2 % de la Puissance des ennemis.</color>
+HODA_GEAR_MINUS25_STUN_RESIST_DESC|<color=red>Résistance à l'assommement -25 %.</color>
+HODA_GEAR_PLUS15_DAMAGE_RESIST_SELF_VS_FLANKERS_DESC|<color=green>Résistance aux dégâts des héros qui attaquent à revers +15 %.</color>
+HODA_GEAR_PLUS3_POWER_PERSONAL_DESC|<color=green>Puissance +3 %.</color>
+HODA_GEAR_PLUS7_BONUS_DAMAGE_SELF_DESC|<color=green>Dégâts +7 %.</color>
+HODA_GEAR_EXPLODE_ALL_5_DESC|<color=green>Quand un ennemi meurt, tous les ennemis subissent 5 % des dégâts infligés.</color>
+HODA_GEAR_PLUS10_DAMAGE_RESIST_PERSONAL_IRONBULL_ONLY|<color=green>Porté par Iron Bull : résistance aux dégâts +10 %.</color>
+HODA_GEAR_PLUS6_HEALTH_PERSONAL_DESC|<color=green>Santé +6 %.</color>
+HODA_GEAR_PLUS7_SLOW_RESIST_ALLIES_DESC|<color=green>Alliés : résistance au ralentissement +7 %.</color>
+HODA_GEAR_CERTAINTY_AURA_LOC_OVERRIDE|<color=red>Toutes les résistances -10 % (ce héros).</color> <color=green>Puissance +15 %. Dégâts +7 % contre les démons. Porté par Mérédith ou Samson : résistance aux dégâts +5 % quand un allié est touché.</color>
+HODA_GEAR_PLUS4_HEALTH_ALLIES_DESC|<color=green>Alliés : Santé +4 %.</color>
+HODA_GEAR_PLUS2_HEALTH_ALLIES_ON_SELF_HIT_BM_DESC|<color=green>Convertit 2 % des dégâts subis en Santé pour les alliés.</color>
+HODA_GEAR_STEALTH_SELF_LELIANA_DESC|<color=green>Porté par Léliana : Furtivité (attaque sans déclencher d'effets à l'impact).</color>
+HODA_GEAR_PLUS10_STUN_RESIST_SELF_DESC|<color=green>Résistance à l'assommement +10 %.</color>
+HODA_GEAR_POWER_FERELDEN_PLUS5_DESC|<color=green>Férelden : Puissance +5 %.</color>
+HODA_GEAR_HEALTH_GAIN_WHEN_SELF_HIT_25_DESC|<color=green>Santé +25 % si touché.</color>
+HODA_GEAR_DMGRES_SELF_LOGHAIN_EQUIP_PLUS15_DESC|<color=green>Porté par Loghain : résistance aux dégâts +15 %.</color>
+HODA_GEAR_ENEMY_NEG_FLANK_24950_DESC|<color=red>Réduit les chances des ennemis d'attaquer à revers.</color>
+HODA_GEAR_PLUS50_DAMAGE_RESIST_SELF_VS_FLANKERS_DESC|<color=green>Résistance aux dégâts des héros qui attaquent à revers +50 %.</color>
+HODA_GEAR_PLUS5_DAMAGE_FOR_FLANKERS_DESC|<color=green>Porté par un héros qui attaque à revers : dégâts +5 %.</color>
+HODA_GEAR_PLUS3_BONUS_DAMAGE_SELF_DESC|<color=green>Dégâts +3 %.</color>
+HODA_GEAR_PLUS5_DAMAGE_RESIST_PERSONAL_CIRCLE_ONLY_DESC|<color=green>Porté par un héros du Cercle : résistance aux dégâts +5 %.</color>
+HODA_GEAR_PLUS8_POWER_DRAIN_RESIST_SELF_DESC|<color=green>Résistance au drain de Puissance +8 %.</color>
+HODA_GEAR_PLUS5_POWER_TEVINTER_PERSONAL_DESC|<color=green>Porté par un héros tévintide : Puissance +5 %.</color>
+HODA_GEAR_PLUS4_DAMAGE_RESIST_PERSONAL_ARCHON_ONLY_DESC|<color=green>Porté par un archonte : résistance aux dégâts +4 %.</color>
+HODA_GEAR_PLUS4_DAMAGE_RESIST_SPIRITS_DESC|<color=green>Esprits : résistance aux dégâts +4 %.</color>
+HODA_GEAR_PLUS4_CRIT_CHANCE_SELF_COLE_ONLY_DESC|<color=green>Porté par Cole : probabilité de dégâts doubles +4 %.</color>
+HODA_GEAR_POWER_GAIN_WHEN_ALLY_HIT_5_VAL_FROM_DAM_DESC|<color=green>Convertit 5 % des dégâts reçus par les alliés en Puissance.</color>
+HODA_GEAR_RETALIATE_ALL_ON_SELF_HIT_5_VAL_FROM_DAM_DESC|<color=green>Renvoie 5 % des dégâts reçus aux ennemis.</color>
+HODA_GEAR_PLUS7_CRIT_CHANCE_SELF_DESC|<color=green>Probabilité de dégâts doubles +7 %.</color>
+HODA_GEAR_STEALTH_SELF_ZEVRAN_DESC|<color=green>Porté par Zévran : Furtivité (attaque sans déclencher d'effets à l'impact).</color>
+HODA_GEAR_PLUS12_SLOW_RESIST_SELF_DESC|<color=green>Résistance au ralentissement +12 %.</color>
+HODA_GEAR_PLUS10_CRIT_CHANCE_SELF_DESC|<color=green>Probabilité de dégâts doubles +10 %.</color>
+HODA_GEAR_PLUS5_BONUS_DAMAGE_SELF_DESC|<color=green>Dégâts +5 %.</color>
+HODA_GEAR_PLUS15_SLOW_RESIST_SELF_DESC|<color=green>Résistance au ralentissement +15 %.</color>
+HODA_GEAR_PLUS4_SLOW_RESIST_SELF_DESC|<color=green>Résistance au ralentissement +4 %.</color>
+HODA_GEAR_PLUS5_HEALTH_ALLIES_ON_ENEMY_DEATH_DESC|<color=green>Alliés : Santé +5 % quand un ennemi meurt.</color>
+HODA_GEAR_PLUS2_HEALTH_ELVES_DESC|<color=green>Alliés elfes : Santé +2 %.</color>
+HODA_GEAR_DMG_RESIST_PCT_5_TO_ELVES_DESC|<color=green>Elfes : résistance aux dégâts +5 %.</color>
+HODA_GEAR_PLUS3_HEALTH_PERSONAL_DESC|<color=green>Santé +3 %.</color>
+HODA_GEAR_AURA_HEALTH_GAIN_WHEN_SELF_HIT_7_DESC|<color=green>Récupère 7 % de Santé si touché.</color>
+HODA_GEAR_PLUS2_HEALTH_SELF_ON_ALLY_HIT_DESC|<color=green>Santé +2 % quand un allié est touché.</color>
+HODA_GEAR_DIPLOMATIC_MISSIVES_AURA_LOC_OVERRIDE|<color=green>Alliés : Puissance et résistance au drain de Puissance +10 %. Porté par Joséphine : résistance aux dégâts +10 % si touché.</color> <color=red>Ennemis : Puissance -10 %.</color>
+HODA_GEAR_AURA_HEALTH_GAIN_WHEN_SELF_HIT_10_DESC|<color=green>Récupère 10 % de Santé si touché.</color>
+HODA_GEAR_PLUS6_POWER_DRAGONS_DESC|<color=green>Alliés dragons : Puissance +6 %.</color>
+HODA_GEAR_POWERGAIN_ALLIES_10_ON_SELF_DEATH_DESC|<color=green>Alliés : Puissance +10 % quand ce héros meurt.</color>
+HODA_GEAR_PLUS10_CURSE_HEALTH_RESIST_DESC|<color=green>Alliés : résistance à la malédiction de Santé +10 %.</color>
+HODA_GEAR_PLUS4_POWER_PERSONAL_DESC|<color=green>Puissance +4 %.</color>
+HODA_GEAR_PLUS2_POWER_SELF_ON_ALLY_HIT_DESC|<color=green>Puissance +2 % quand un allié est touché.</color>
+HODA_GEAR_DUSTER_BATTLEAXE_AURA_LOC_OVERRIDE|<color=green>Puissance +10 %. Nains : dégâts +5 % et résistance aux malédictions +15 %.</color>
+HODA_GEAR_PLUS10_STUNRESIST_TO_DWARF_DESC|<color=green>Nains : résistance à l'assommement +10 %.</color>
+HODA_GEAR_HEALTH_ALLIES_PLUS10_DESC|<color=green>Alliés : Santé +10 %.</color>
+HODA_GEAR_DMG_RESIST_PCT_10_TO_DWARF_DESC|<color=green>Nains : résistance aux dégâts +10 %.</color>
+HODA_GEAR_PLUS5HEALTH_DESC|<color=green>Alliés : Santé +5 %.</color>
+HODA_GEAR_PLUS5POWER_TO_DWARF_DESC|<color=green>Nains : Puissance +5 %.</color>
+HODA_GEAR_SLOW_RESIST_10_TO_DWARVES_DESC|<color=green>Nains : résistance au ralentissement +10 %.</color>
+HODA_GEAR_POWER_DRAIN_RESIST_10_TO_DWARVES_DESC|<color=green>Nains : résistance au drain de Puissance +10 %.</color>
+HODA_GEAR_DWORKINS_HIGH_EXPLOSIVES_AURA_LOC_OVERRIDE|<color=green>Quand un ennemi est touché, tous les ennemis subissent 6 % des dégâts infligés, mais les alliés en subissent 2 %.</color>
+HODA_GEAR_DWORKINS_SAFE_EXPLOSIVES_AURA_LOC_OVERRIDE|<color=green>Quand un ennemi est touché, tous les ennemis subissent 3 % des dégâts infligés, mais les alliés en subissent 1 %.</color>
+HODA_GEAR_PLUS8_BONUS_DAMAGE_VS_WHITE_FACTION_DESC|<color=green>Dégâts +8 % contre la faction blanche.</color>
+HODA_GEAR_PLUS12_STUN_RESIST_ALLIES_DESC|<color=green>Alliés : résistance à l'assommement +12 %.</color>
+HODA_GEAR_PLUS2_CRIT_CHANCE_SELF_DESC|<color=green>Probabilité de dégâts doubles +2 %.</color>
+HODA_GEAR_PLUS2_DAMAGE_RESIST_PERSONAL_DESC|<color=green>Résistance aux dégâts +2 %.</color>
+HODA_GEAR_PLUS8PCT_POWER_VS_POWER_GAINERS_DESC|<color=green>Dégâts +8 % contre les héros qui gagnent en Puissance.</color>
+HODA_GEAR_EMBLAZONED_KIRKWALL_SHIELD_AURA_LOC_OVERRIDE|<color=green>Alliés : résistance aux 2 000 premiers points de dégâts par coup. Marches libres : résistance à tous les effets +10 %.</color>
+HODA_GEAR_PLUS1000_RAW_DAMAGE_RESIST_PERSONAL_DESC|<color=green>Résistance à 1 000 points de dégâts par coup.</color>
+HODA_GEAR_AURA_PLUS15HEALTH_THEIRIN_ONLY_DESC|<color=green>Porté par un Theirin : Santé +15 %.</color>
+HODA_GEAR_PLUS3_HEALTH_ALLIES_ON_SELF_HIT_DESC|<color=green>Alliés : Santé +3 % si ce héros est touché.</color>
+HODA_EXPENSIVE_DOG_TREAT_GEAR_AURA_LOC_OVERRIDE|<color=green>Puissance +5 %. Créatures : Santé +3 %. Porté par Cullen ou le mabari renne : résistance à l'assommement et au ralentissement +10 %.</color>
+HODA_GEAR_STEALTH_PERSONAL_DESC|<color=green>Furtivité : attaque sans déclencher d'effets à l'impact.</color>
+HODA_GEAR_POWER_SELF_MINUS15_DESC|<color=red>Puissance -15 % (ce héros).</color>
+HODA_GEAR_MINUS10_HEALTH_PERSONAL_DESC|<color=red>Santé -10 % (ce héros).</color>
+HODA_GEAR_FADE_TOUCHED_SILVERITE_AURA_LOC_OVERRIDE|<color=green>Résistance aux dégâts +5 % si touché. Santé et Puissance +20 % quand un allié meurt.</color>
+HODA_FADESBANE_GEAR_AURA_LOC_OVERRIDE|<color=green>Dégâts +10 % contre la faction bleue. Porté par un templier : +5 % supplémentaires.</color>
+HODA_GEAR_HEALTH_GAIN_ALL_WHEN_ENEMY_HIT_5_DESC|<color=green>Les alliés récupèrent 5 % de Santé quand un ennemi est touché.</color>
+HODA_GEAR_BRAVE_TARGETING_SELF_DESC|<color=orange>Plus de chances d'attaquer l'ennemi le plus fort.</color>
+HODA_GEAR_BONUSDMG_SELF_FERELDEN_EQUIP_PLUS3_DESC|<color=green>Porté par un héros de Férelden : dégâts +3 %.</color>
+HODA_GEAR_PERCEPTIVE_SELF_ANORA_DESC|<color=green>Porté par Anora : Perception (annule la furtivité).</color>
+HODA_GEAR_PLUS1_DAMAGE_RESIST_PERSONAL_DESC|<color=green>Résistance aux dégâts +1 %.</color>
+HODA_GEAR_BONUSDMG_CIRCLE_PLUS3_DESC|<color=green>Cercle : dégâts +3 %.</color>
+HODA_GEAR_ALLY_GAIN_DAMAGE_RESIST_WHEN_SELF_ATTACKED_10_DESC|<color=green>Alliés : résistance aux dégâts +10 % si ce héros est touché.</color>
+HODA_GEAR_SELF_GAIN_BONUS_DAMAGE_WHEN_ATTACKING_5_DESC|<color=green>Dégâts +5 % en attaquant.</color>
+HODA_GEAR_HEALTH_GAIN_WHEN_SELF_HIT_15_DESC|<color=green>Santé +15 % si touché.</color>
+HODA_GEAR_HEALTH_SELF_PLUS15_DESC|<color=green>Santé +15 %.</color>
+HODA_GEAR_DMGRESIST_SERA_SELFHIT_PLUS15_DESC|<color=green>Porté par Sera : résistance aux dégâts +15 % si touché.</color>
+HODA_GEAR_DMGRESIST_SELF_SELFHIT_PLUS10_DESC|<color=green>Résistance aux dégâts +10 % si touché.</color>
+HODA_GEAR_SLOWRESIST_SELF_SELFATTACK_PLUS10_DESC|<color=green>Résistance au ralentissement +10 % en attaquant.</color>
+HODA_GEAR_PERCEPTIVE_SELF_SERA_DESC|<color=green>Porté par Sera : Perception (annule la furtivité).</color>
+HODA_GEAR_MINUS25_SLOW_RESIST_DESC|<color=red>Résistance au ralentissement -25 %.</color>
+HODA_GEAR_FLAWLESS_FIRE_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>Alliés : Puissance et Santé +25 % quand un allié meurt.</color> <color=red>Résistance aux malédictions -35 %.</color> <color=green>Porté par Shale : probabilité de dégâts doubles +10 %.</color>
+HODA_GEAR_FLAWLESS_ICE_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>Nains et golems : résistance au drain de Puissance +10 % (cumulatif). Porté par Shale : Puissance +10 %.</color>
+HODA_GEAR_FLAWLESS_LIGHTNING_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>Nains et golems : résistance aux malédictions +15 % (cumulatif). Porté par Shale : résistance aux dégâts +10 %.</color>
+HODA_GEAR_FLAWLESS_NATURE_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>Nains et golems : résistance au ralentissement +10 % (cumulatif). Porté par Shale : Santé +10 %.</color>
+HODA_GEAR_FLAWLESS_SPIRIT_CRYSTAL_AURA_LOC_OVERRIDE|<color=green>Nains et golems : résistance à l'assommement +15 % (cumulatif). Porté par Shale : dégâts +5 %.</color>
+HODA_FLEMETHS_GRIMOIRE_GEAR_AURA_LOC_OVERRIDE|<color=green>Résistance aux dégâts +8 %. Alliés apostats : Puissance +8 %. Porté par la sorcière des terres sauvages : résistance à 2 500 points de dégâts par coup.</color>
+HODA_GEAR_MINUS5_POWER_ENEMIES_DESC|<color=red>Ennemis : Puissance -5 %.</color>
+HODA_GEAR_GAMORDAN_STORMRIDER_SCALE_AURA_LOC_OVERRIDE|<color=green>Créatures : résistance aux dégâts +10 %.</color> <color=red>Résistance à l'assommement -25 %.</color> <color=green>Porté par un dragon : résistance à tous les effets +15 %.</color>
+HODA_GEAR_PLUS10_HEALTH_ALLIES_ON_SELF_HIT_DESC|<color=green>Si touché, soigne les alliés de 10 %.</color>
+HODA_GEAR_PLUS10_DAMAGE_FOR_GARAHEL_DESC|<color=green>Porté par Garahel : dégâts +10 %.</color>
+HODA_GAUNTLETS_OF_THE_NUG_GEAR_AURA_LOC_OVERRIDE|<color=green>Résistance aux dégâts +5 %. Résistance aux malédictions +3 %.</color>
+HODA_GEAR_PLUS7_POWER_PERSONAL_DESC|<color=green>Puissance +7 %.</color>
+HODA_GEAR_EXPLODE_ALL_2_DESC|<color=green>Quand un ennemi meurt, tous les ennemis subissent 2 % des dégâts infligés.</color>
+HODA_GEAR_FLANK_PERSONAL_DESC|<color=orange>Plus de chances d'attaquer les combattants arrière.</color>
+HODA_GEAR_PLUS10_DAMAGE_PERSONAL_VS_NOBILITY_DESC|<color=green>Dégâts +10 % contre les nobles.</color>
+HODA_GEAR_GIRDLE_OF_THE_SKIES_AURA_LOC_OVERRIDE|<color=green>Résistance aux malédictions +10 %. Convertit 10 % des dégâts reçus en Santé et en Puissance.</color>
+HODA_GEAR_GLANDIVALIS_AURA_LOC_OVERRIDE|<color=green>Santé +15 %. Alliés elfes : dégâts et résistance aux dégâts +10 % contre les Gardes des ombres.</color> <color=red>Résistance à l'assommement -10 %.</color>
+HODA_GEAR_CRIT_CHANCE_FERELDEN_PLUS5_DESC|<color=green>Férelden : probabilité de dégâts doubles +5 %.</color>
+HODA_GEAR_PLUS10_SLOW_RESIST_SELF_DESC|<color=green>Résistance au ralentissement +10 %.</color>
+HODA_GEAR_PLUS5_POWER_SELF_ON_SELF_HIT_DESC|<color=green>Puissance +5 % si touché.</color>
+HODA_GEAR_BONUSDMG_SELF_LOGHAIN_EQUIP_PLUS5_DESC|<color=green>Porté par Loghain : dégâts +5 %.</color>
+HODA_GEAR_PLUS5_HEALTH_SELF_ON_ALLY_HIT_DESC|<color=green>Santé +5 % quand un allié est touché.</color>
+HODA_GEAR_PLUS10_POWER_APOSTATES_DESC|<color=green>Alliés apostats : Puissance +10 %.</color>
+HODA_GEAR_GREATER_MISTRAL_SCALE_AURA_LOC_OVERRIDE|<color=green>Créatures : probabilité de dégâts doubles +10 %.</color> <color=red>Résistance au drain de Puissance -25 %.</color> <color=green>Porté par un dragon : Perception (annule la furtivité).</color>
+HODA_GEAR_5DRAIN_ALL_ENEMIES_ON_SELF_HIT_DESC|<color=green>Si touché, draine 5 % de la Puissance des ennemis.</color>
+HODA_GEAR_PLUS10_SLOW_RESIST_ALLIES_DESC|<color=green>Alliés : résistance au ralentissement +10 %.</color>
+HODA_GEAR_DMG_RESIST_PCT_15_TO_WARDENS_DESC|<color=green>Gardes des ombres : résistance aux dégâts +15 %.</color>
+HODA_GEAR_DEFENDER_25_DESC|<color=green>Défense +25 %.</color>
+HODA_GEAR_PLUS10_HEALTH_SELF_ON_ALLY_HIT_DESC|<color=green>Santé +10 % quand un allié est touché.</color>
+HODA_GEAR_GRIFFONRIDER_LEATHERS_AURA_LOC_OVERRIDE|<color=green>Dégâts +7 %. Alliés : Puissance et Santé +15 % quand un héros meurt. Quand un ennemi meurt, tous les ennemis subissent 2 % des dégâts infligés.</color>
+HODA_GEAR_PERSONAL_STUN_RESIST_25_DESC|<color=green>Résistance à l'assommement +25 %.</color>
+HODA_GEAR_HAKKONS_WISDOM_AURA_LOC_OVERRIDE|<color=green>Perception : annule la furtivité. Dégâts +10 %. Santé +8 % quand un ennemi meurt.</color> <color=red>Ennemis : résistance aux malédictions -25 %.</color>
+HODA_GEAR_PLUS8_BONUS_DAMAGE_SELF_DESC|<color=green>Dégâts +8 %.</color>
+HODA_GEAR_PLUS5_CRIT_CHANCE_ALLIES_DESC|<color=green>Alliés : probabilité de dégâts doubles +5 %.</color>
+HODA_GEAR_HEALTH_ON_ENEMY_DEATH_15_DESC|<color=green>Récupère 15 % de Santé quand un ennemi meurt.</color>
+HODA_GEAR_PLUS7_HEALTH_PERSONAL_DESC|<color=green>Santé +7 %.</color>
+HODA_GEAR_POWER_GAIN_ALL_WHEN_ENEMY_HIT_4_SELF_DESC|<color=green>Convertit 4 % des dégâts subis par les ennemis en Puissance pour les alliés.</color>
+HODA_GEAR_DEFENDER_15_DESC|<color=green>Absorbe 15 % des dégâts de zone des alliés.</color>
+HODA_GEAR_PLUS400_RAW_DAMAGE_RESIST_PERSONAL_DESC|<color=green>Résistance à 400 points de dégâts par coup.</color>
+HODA_GEAR_RETALIATE_10_ON_SELF_HIT_VAL_FROM_DAM_DESC|<color=green>Renvoie 10 % des dégâts reçus aux ennemis.</color>
+HODA_GEAR_CURSE_POWER_RESIST_15_SELF_DESC|<color=green>Résistance à la malédiction de Puissance +15 %.</color>
+HODA_GEAR_DMGRESIST_AVVAR_PLUS10_DESC|<color=green>Alvars : résistance aux dégâts +10 %.</color>
+HODA_GEAR_HEALTH_AVVAR_SELFATK_CONVERT4_DESC|<color=green>Porté par un Alvar : convertit 4 % des dégâts infligés par ce héros en Santé pour les Alvars.</color>
+HODA_GEAR_MINUS3_HEALTH_PERSONAL_DESC|<color=red>Santé -3 % (ce héros).</color>
+HODA_GEAR_PLUS15_POWER_DRAIN_RESIST_SELF_DESC|<color=green>Résistance au drain de Puissance +15 %.</color>
+HODA_GEAR_PLUS10PCT_POWER_VS_QUICK_DESC|<color=green>Dégâts +10 % contre les héros rapides.</color>
+HODA_GEAR_WOUNDED_TARGETING_DESC|<color=orange>Plus de chances d'attaquer l'ennemi au pourcentage de Santé le plus faible.</color>
+HODA_GEAR_PLUS10_HEALTH_ICE_GIANT_ONLY_DESC|<color=green>Porté par un géant de glace : Santé +10 %.</color>
+HODA_GEAR_PLUS6_POWER_PERSONAL_DESC|<color=green>Puissance +6 %.</color>
+HODA_GEAR_PLUS4_CRIT_CHANCE_INQUISITION_ONLY_DESC|<color=green>Porté par un héros de l'Inquisition : probabilité de dégâts doubles +4 %.</color>
+HODA_GEAR_PLUS2_HEALTH_PERSONAL_DESC|<color=green>Santé +2 %.</color>
+HODA_GEAR_PLUS2_DAMAGE_RESIST_INQUISITION_DESC|<color=green>Alliés de l'Inquisition : résistance aux dégâts +2 %.</color>
+HODA_GEAR_PLUS5PCT_BONUS_DAMAGE_FOR_INQUISITION_DESC|<color=green>Alliés de l'Inquisition : dégâts +5 %.</color>
+HODA_GEAR_PLUS3_DAMAGE_RESIST_PERSONAL_DESC|<color=green>Résistance aux dégâts +3 %.</color>
+HODA_GEAR_EXPLODE_ALL_SELFATK_CONVERT5_DESC|<color=green>En attaquant, inflige aussi 5 % des dégâts infligés à tous les ennemis.</color>
+HODA_GEAR_PERCEPTIVE_SELF_BLIGHTED_DESC|<color=green>Porté par un vicié : Perception (annule la furtivité).</color>
+HODA_GEAR_MINUS50SLOWRESIST_TO_ENEMIES_DESC|<color=red>Résistance au ralentissement -50 %.</color>
+HODA_GEAR_JOINING_CHALICE_AURA_LOC_OVERRIDE|<color=green>Gardes des ombres : Puissance +20 % et résistance aux malédictions +25 %.</color> <color=red>Santé -20 % (ce héros).</color>
+HODA_GEAR_KADDIS_OF_THE_MOUNTAINFATHER_AURA_LOC_OVERRIDE|<color=green>Résistance à tous les effets et aux dégâts +5 %.</color>
+HODA_GEAR_KALTENZAHN_SCALE_AURA_LOC_OVERRIDE|<color=green>Créatures : résistance aux malédictions +25 % et aux 2 500 premiers points de dégâts. Porté par un dragon : plus de chances d'attaquer en premier à initiative égale.</color>
+HODA_GEAR_STEALTH_SELF_ELUSIVE_DESC|<color=green>Porté par un héros insaisissable : Furtivité (attaque sans déclencher d'effets à l'impact).</color>
+HODA_KEEPSAKE_LOCKET_GEAR_AURA_LOC_OVERRIDE|<color=green>Résistance à la malédiction de Santé et de Puissance +5 %. Porté par un Hawke : résistance aux dégâts +6 %.</color>
+HODA_GEAR_PLUS60_HEALTH_ALLIES_ON_SELF_DEATH_DESC|<color=green>À sa mort, soigne les alliés de 60 %.</color>
+HODA_GEAR_POWER_SELF_ON_ALLY_DEATH_10_CAT_PERSONAL_DESC|<color=green>Porté par un chat : Puissance +10 % quand un allié meurt.</color>
+HODA_GEAR_PLUS10_BONUS_DAMAGE_VS_BLIGHT_DESC|<color=green>Dégâts +10 % contre les viciés.</color>
+HODA_GEAR_PLUS10_POWER_LEGION_DESC|<color=green>Légion des morts : Puissance +10 %.</color>
+HODA_GEAR_HATRED_BLIGHTED_DESC|<color=orange>Plus de chances d'attaquer les viciés.</color>
+HODA_GEAR_PLUS8_DAMAGE_RESIST_PERSONAL_DESC|<color=green>Résistance aux dégâts +8 %.</color>
+HODA_GEAR_PLUS4PCT_BONUS_DAMAGE_LEGION_ONLY_DESC|<color=green>Porté par un héros de la Légion des morts : dégâts +4 %.</color>
+HODA_GEAR_LEGIONNAIRE_PLATE_AURA_LOC_OVERRIDE|<color=green>Santé +12 %. Résistance à l'assommement et aux dégâts +8 %. Porté par un héros de la Légion des morts : résistance aux dégâts +3 % si touché.</color>
+HODA_GEAR_20DAMAGE_ALLIES_ON_SELF_DEATH_DESC|<color=red>À sa mort, les alliés perdent 20 % de Santé.</color>
+HODA_GEAR_MINUS15_HEALTH_PERSONAL_DESC|<color=red>Santé -15 % (ce héros).</color>
+HODA_GEAR_EXPLODE_ALLIES_2_ON_ENEMY_HIT_DESC|<color=red>Quand un ennemi est touché, tous les alliés subissent 2 % des dégâts infligés.</color>
+HODA_GEAR_PLUS4_CRIT_CHANCE_SELF_CARVERHAWKE_ONLY_DESC|<color=green>Porté par Carver Hawke : probabilité de dégâts doubles +4 %.</color>
+HODA_GEAR_LITANY_OF_ADRALLA_AURA_LOC_OVERRIDE|<color=green>Alliés : dégâts +25 % contre les démons et les mages du sang, et résistance aux malédictions +15 %.</color>
+HODA_GEAR_PLUS3_POWER_SELF_ON_ALLY_DEATH_DESC|<color=green>Puissance +3 % quand un allié meurt.</color>
+HODA_GEAR_LYRIUM_KIT_AURA_LOC_OVERRIDE|<color=green>Perception : annule la furtivité. Résistance aux dégâts des mages et des démons +10 % (doublée contre les mages du sang).</color> <color=red>Mages et démons : Puissance -15 %.</color>
+HODA_GEAR_PLUS5PCT_BONUS_DAMAGE_FOR_OUTLAWS_DESC|<color=green>Hors-la-loi : dégâts +5 %.</color>
+HODA_GEAR_PLUS7PCT_BONUS_DAMAGE_VS_CHANTRY_TEVINTER_DESC|<color=green>Alliés : dégâts +7 % contre la Chantrie et Tévinter.</color>
+HODA_MAGEKILLER_GEAR_AURA_LOC_OVERRIDE|<color=green>Dégâts +10 % contre les mages (doublés contre les mages du sang).</color>
+HODA_GEAR_DMG_RESIST_PCT_10_DESC|<color=green>Alliés : résistance aux dégâts +10 %.</color>
+HODA_GEAR_DMGRESIST_ALLIES_PLUS5_DESC|<color=green>Alliés : résistance aux dégâts +5 %.</color>
+HODA_GEAR_PLUS4_POWER_SELF_ON_ALLY_DEATH_DESC|<color=green>Puissance +4 % quand un allié meurt.</color>
+HODA_GEAR_MINUS8_STUN_RESIST_ENEMIES_DESC|<color=red>Ennemis : résistance à l'assommement -8 %.</color>
+HODA_GEAR_HATRED_LARGE_CREATURES_DESC|<color=orange>Plus de chances d'attaquer les créatures imposantes.</color>
+HODA_GEAR_PLUS25_PCT_POWER_VS_LARGE_CREATURES_DESC|<color=green>Dégâts +25 % contre les créatures imposantes.</color>
+HODA_GEAR_POWER_SELF_ENEMYHIT_CONVERT4_DESC|<color=green>Convertit 4 % des dégâts subis par les ennemis en Puissance.</color>
+HODA_GEAR_PLUS10_CURSE_POWER_RESIST_DESC|<color=green>Alliés : résistance à la malédiction de Puissance +10 %.</color>
+HODA_GEAR_HEALTHGAIN_SELF_5_ON_SELF_HIT_DESC|<color=green>Santé +5 % si touché.</color>
+HODA_GEAR_PLUS6_HEALTH_SELF_ELVES_ONLY_DESC|<color=green>Porté par un elfe : Santé +6 %.</color>
+HODA_GEAR_HEALTH_GAIN_WHEN_SELF_HIT_20_DESC|<color=green>Si touché, récupère 20 % de Santé.</color>
+HODA_GEAR_DMG_RESIST_PCT_20_VS_TEVINTER_PERSONAL_DESC|<color=green>Résistance aux dégâts des héros tévintides +20 %.</color>
+HODA_GEAR_PLUS25PCT_POWER_PERSONAL_FENRIS_ONLY_DESC|<color=green>Porté par Fenris : dégâts +25 %.</color>
+HODA_GEAR_MINUS8_POWER_DRAIN_RESIST_ENEMIES_DESC|<color=red>Ennemis : résistance au drain de Puissance -8 %.</color>
+HODA_ORB_OF_DESTRUCTION_GEAR_AURA_LOC_OVERRIDE|<color=green>Alliés : Puissance +4 %. Dégâts +7 % pour la faction noire et les alliés démons, et contre eux (cumulatif).</color>
+HODA_GEAR_ORB_OF_FENHAREL_AURA_LOC_OVERRIDE|<color=green>Elfes : Santé +35 %. Faction bleue : toutes les résistances +25 %. Porté par Fen'Harel : si touché, renvoie 10 % des dégâts reçus aux ennemis de la faction noire.</color>
+HODA_GEAR_ORLESIAN_HENNIN_AURA_LOC_OVERRIDE|<color=green>Résistance à l'assommement, au ralentissement et au drain de Puissance +10 %. Porté par Vivienne : Puissance +25 % et résistance aux malédictions +20 %.</color>
+HODA_GEAR_PLUS7_STUN_RESIST_SELF_DESC|<color=green>Résistance à l'assommement +7 %.</color>
+HODA_GEAR_PLUS9_SLOW_RESIST_SELF_DESC|<color=green>Résistance au ralentissement +9 %.</color>
+HODA_GEAR_PLUS3_POWER_DRAIN_RESIST_SELF_ARISHOK_ONLY_DESC|<color=green>Porté par l'Arishak : résistance au drain de Puissance +3 %.</color>
+HODA_GEAR_PLUS1000_RAW_DAMAGE_RESIST_VS_DRAGONS_PERSONAL_DESC|<color=green>Résistance à 1 000 points de dégâts infligés par les dragons.</color>
+HODA_GEAR_PLUS4_HEALTH_PERSONAL_DESC|<color=green>Santé +4 %.</color>
+HODA_GEAR_MINUS3_CRIT_CHANCE_ENEMIES_DESC|<color=red>Ennemis : probabilité de dégâts doubles -3 %.</color>
+HODA_GEAR_PLUS9_CRIT_CHANCE_SELF_DESC|<color=green>Probabilité de dégâts doubles +9 %.</color>
+HODA_GEAR_STEALTH_SELF_CELENE_DESC|<color=green>Porté par Célène : Furtivité (attaque sans déclencher d'effets à l'impact).</color>
+HODA_GEAR_PLUS3_HEALTH_SELF_ARVAARAD_ONLY_DESC|<color=green>Porté par l'arvaarad : Santé +3 %.</color>
+HODA_GEAR_PLUS3_POWER_SELF_ON_SELF_HIT_DESC|<color=green>Puissance +3 % si touché.</color>
+HODA_GEAR_HATRED_TEVINTER_DESC|<color=green>Plus de chances d'attaquer les héros tévintides.</color>
+HODA_GEAR_PLUS10_POWER_DRAIN_RESIST_QUNARI_DESC|<color=green>Qunari : résistance au drain de Puissance +10 %.</color>
+HODA_GEAR_HEAL5_ALLIES_WHEN_ALLY_HIT_DESC|<color=green>Alliés : Santé +5 % quand un allié est touché.</color>
+HODA_GEAR_MIUNUS_CRIT_CHANCE_2_SELF_DESC|<color=red>Probabilité de dégâts doubles -2 % (ce héros).</color>
+HODA_GEAR_MINUS10_STUN_RESIST_ENEMIES_DESC|<color=red>Ennemis : résistance à l'assommement -10 %.</color>
+HODA_GEAR_POWER_COMMON_UNCOMMON_PLUS50_DESC|<color=green>Alliés ordinaires et singuliers : Puissance +50 %.</color>
+HODA_GEAR_PLUS10_HEALTH_RED_LYRIUM_DESC|<color=green>Alliés de lyrium rouge : Santé +10 %.</color>
+HODA_GEAR_MINUS10_POWER_PERSONAL_DESC|<color=red>Puissance -10 % (ce héros).</color>
+HODA_REDCLIFFE_SHIELD_GEAR_AURA_LOC_OVERRIDE|<color=green>Santé +6 %. Alliés féreldiens : résistance à l'assommement +6 %. Porté par un Guerrin : Puissance +5 %.</color>
+HODA_GEAR_PLUS6_HEALTH_DWARVES_DESC|<color=green>Alliés nains : Santé +6 %.</color>
+HODA_GEAR_PLUS3_POWER_MAGES_DESC|<color=green>Alliés mages : Puissance +3 %.</color>
+HODA_GEAR_PLUS7_BONUS_DAMAGE_VS_RED_FACTION_DESC|<color=green>Dégâts +7 % contre la faction rouge.</color>
+HODA_RING_OF_RESILIENCE_GEAR_AURA_LOC_OVERRIDE|<color=green>Alliés : résistance à l'assommement, au ralentissement et au drain de Puissance +5 %.</color>
+HODA_GEAR_PLUS3_DAMAGE_RESIST_ALLIES_DESC|<color=green>Alliés : résistance aux dégâts +3 %.</color>
+HODA_GEAR_ROBES_OF_THE_ARCHITECT_AURA_LOC_OVERRIDE|<color=green>Viciés : résistance à tous les effets +15 %. Si touché : récupère 15 % de Santé et Puissance +5 %.</color>
+HODA_GEAR_PLUS5_DAMAGE_RESIST_ORLESIAN_DESC|<color=green>Alliés orlésiens : résistance aux dégâts +5 %.</color>
+HODA_GEAR_MINUS10STUNRESIST_PERSONAL_DESC|<color=red>Résistance à l'assommement -10 % (ce héros).</color>
+HODA_GEAR_PLUS3_POWER_SELF_BLOOD_MAGE_ABILITY_DESC|<color=green>Convertit 3 % des dégâts subis en Puissance.</color>
+HODA_GEAR_CURSEPOWERIMMUNE_SELF_SAAREBAS_DESC|<color=green>Porté par un saarebas : immunité contre la malédiction de Puissance.</color>
+HODA_GEAR_PLUS3_HEALTH_SELF_ON_ALLY_HIT_DESC|<color=green>Santé +3 % quand un allié est touché.</color>
+HODA_GEAR_PLUS3_DAMAGE_FOR_SPIRITS_DESC|<color=green>Porté par un esprit : dégâts +3 %.</color>
+HODA_GEAR_PLUS5_HEALTH_SELF_ON_ENEMY_DEATH_DESC|<color=green>Récupère 5 % de Santé quand un ennemi meurt.</color>
+HODA_GEAR_PLUS4_POWER_SELF_ON_SELF_HIT_DESC|<color=green>Puissance +4 % si touché.</color>
+HODA_GEAR_PLUS10PCT_DAMAGE_VS_MYTHIC_FOR_SERA_DESC|<color=green>Porté par Sera : dégâts +10 % contre les héros mythiques.</color>
+HODA_GEAR_PLUS15_DAMAGE_RESIST_SELF_VS_ROGUES_MAGES_DESC|<color=green>Résistance aux dégâts des voleurs et des mages +15 %.</color>
+HODA_GEAR_PLUS8_STUN_RESIST_SELF_DESC|<color=green>Résistance à l'assommement +8 %.</color>
+HODA_GEAR_PLUS3_POWER_ROGUES_DESC|<color=green>Alliés voleurs : Puissance +3 %.</color>
+HODA_GEAR_STEALTH_SELF_SCOUTHARDING_DESC|<color=green>Porté par l'éclaireuse Harding : Furtivité (attaque sans déclencher d'effets à l'impact).</color>
+HODA_SENIOR_WARDENS_STAFF_GEAR_AURA_LOC_OVERRIDE|<color=green>Faction blanche et faction noire : Puissance +6 % (cumulatif). Porté par Janeka : Santé +5 %.</color>
+HODA_GEAR_PLUS10_BONUS_DAMAGE_SELF_DESC|<color=green>Dégâts +10 %.</color>
+HODA_GEAR_CRIT_CHANCE_5_ELVES_ONLY_DESC|<color=green>Porté par un elfe : probabilité de dégâts doubles +5 %.</color>
+HODA_GEAR_POWER_DRAIN_RESIST_15_ELVES_ONLY_DESC|<color=green>Porté par un elfe : résistance au drain de Puissance +15 %.</color>
+HODA_GEAR_PLUS7_HEALTH_SELF_ON_ALLY_DEATH_DESC|<color=green>Santé +7 % quand un allié meurt.</color>
+HODA_GEAR_PLUS5_DAMAGE_RESIST_SELF_VS_BLUE_FACTION_DESC|<color=green>Résistance aux dégâts de la faction bleue +5 %.</color>
+HODA_GEAR_PLUS2_BONUS_DAMAGE_SELF_DESC|<color=green>Dégâts +2 %.</color>
+HODA_GEAR_SERAS_RAISIN_COOKIES_RUNE_LOC_OVERRIDE|<color=green>Dégâts +5 % contre les héros qui gagnent en Puissance (ils adorent les biscuits aux raisins), et plus de chances de les attaquer.</color>
+HODA_GEAR_SERUM_OF_AMBITION_RUNE_LOC_OVERRIDE|<color=green>Alliés épiques : Santé et Puissance +35 %.</color>
+HODA_GEAR_PLUS6_STUN_RESIST_ORLESIAN_DESC|<color=green>Alliés orlésiens : résistance à l'assommement +6 %.</color>
+HODA_GEAR_PLUS5_POWER_FAIRBANKS_DESC|<color=green>Porté par Fairbanks : Puissance +5 %.</color>
+HODA_GEAR_BONUSDMG_SELF_SELFATTACK_PLUS10_DESC|<color=green>Dégâts +10 % en attaquant. </color>
+HODA_GEAR_POWER_AURELIANTITUS_CONVERT15_DESC|<color=green>Porté par Aurélien Titus : convertit 15 % des dégâts reçus en Puissance.</color>
+HODA_GEAR_PLUS4_POWER_ALLIES_DESC|<color=green>Alliés : Puissance +4 %.</color>
+HODA_GEAR_PLUS5_POWER_HEALERS_DESC|<color=green>Alliés guérisseurs : Puissance +5 %.</color>
+HODA_GEAR_PLUS2_POWER_SELF_ON_SELF_HIT_DESC|<color=green>Puissance +2 % si touché.</color>
+HODA_SPEAR_THROWER_GEAR_AURA_LOC_OVERRIDE|<color=green>Dégâts +5 % contre tous les héros sauf les esprits. Probabilité de dégâts doubles +3 %.</color>
+HODA_GEAR_SPECTRAL_SCALE_AURA_LOC_OVERRIDE|<color=green>Alliés : Santé et Puissance +35 % quand un allié meurt.</color> <color=red>Résistance au ralentissement -25 %.</color> <color=green>Porté par un dragon : probabilité de dégâts doubles +8 %.</color>
+HODA_GEAR_PLUS15_DAMAGE_RESIST_FENHAREL_DESC|<color=green>Fen'Harel : résistance aux dégâts +15 %.</color>
+HODA_GEAR_MINUS3_POWER_ENEMIES_DESC|<color=red>Ennemis : Puissance -3 %.</color>
+HODA_GEAR_AURA_HEALTH_GAIN_ALL_WHEN_ENEMY_HIT_2_DESC|<color=green>Les alliés récupèrent 2 % de Santé quand un ennemi est touché.</color>
+HODA_GEAR_PLUS3PCT_BONUS_DAMAGE_FOR_ALLIES_DESC|<color=green>Alliés : dégâts +3 %.</color>
+HODA_GEAR_PLUS2_DAMAGE_RESIST_ALLIES_DESC|<color=green>Alliés : résistance aux dégâts +2 %.</color>
+HODA_GEAR_PLUS5_HEALTH_SELF_STROUD_ONLY_DESC|<color=green>Porté par Stroud : Santé +5 % supplémentaires.</color>
+HODA_GEAR_PLUS2_DAMAGE_RESIST_ROGUE_DESC|<color=green>Alliés voleurs : résistance aux dégâts +2 %.</color>
+HODA_GEAR_PLUS3_HEALTH_WHITE_FACTION_DESC|<color=green>Alliés de la faction blanche : Santé +3 %.</color>
+HODA_GEAR_PLUS5_POWER_CREATURES_PERSONAL_DESC|<color=green>Porté par une créature : Puissance +5 %.</color>
+HODA_GEAR_PLUS6_CURSE_HEALTH_RESIST_DESC|<color=green>Alliés : résistance à la malédiction de Santé +6 %.</color>
+HODA_GEAR_MINUS10_SLOWRESIST_ENEMIES_DESC|<color=red>Ennemis : résistance au ralentissement -10 %.</color>
+HODA_GEAR_TEMPLAR_BREASTPLATE_AURA_LOC_OVERRIDE|<color=green>Alliés : résistance aux malédictions, à l'assommement, au ralentissement et au drain de Puissance +10 %.</color>
+HODA_GEAR_PLUS1_DAMAGE_RESIST_ALLIES_DESC|<color=green>Alliés : résistance aux dégâts +1 %.</color>
+HODA_GEAR_PLUS5PCT_POWER_VS_MAGES_DESC|<color=green>Dégâts +5 % contre les mages.</color>
+HODA_GEAR_PLUS2_CRIT_CHANCE_ALLIES_DESC|<color=green>Alliés : probabilité de dégâts doubles +2 %.</color>
+HODA_GEAR_DEFENDER_10_DESC|<color=green>Défense +10 %.</color>
+HODA_GEAR_PERSONAL_STUN_IMMUNE_DESC|<color=green>Immunisé contre l'assommement.</color>
+HODA_GEAR_THE_BLACK_FOXS_JERKIN_AURA_LOC_OVERRIDE|<color=green>Résistance à tous les effets +10 %. Probabilité de dégâts doubles +6 %.</color> <color=orange>Plus de chances d'attaquer en premier à initiative égale.</color>
+HODA_GEAR_THE_DIVINE_ARMOR_AURA_LOC_OVERRIDE|<color=green>Alliés : résistance à tous les effets +10 %. Résistance aux dégâts +10 %. Porté par Cassandra : récupère 10 % de Santé si touché.</color>
+HODA_GEAR_THE_DIVINE_BOOTS_AURA_LOC_OVERRIDE|<color=green>Chantrie : Santé, résistance au drain de Puissance et résistance aux dégâts +15 %. Divines : immunité contre le ralentissement.</color>
+HODA_GEAR_THE_DIVINE_HELMET_AURA_LOC_OVERRIDE|<color=green>Alliés : Santé +8 % et dégâts +2 % quand un allié attaque. Porté par une Divine : Perception (annule la furtivité).</color>
+HODA_GEAR_PLUS7_POWER_RED_LYRIUM_DESC|<color=green>Alliés de lyrium rouge : Puissance +7 %.</color>
+HODA_GEAR_PLUS3_POWER_BLACK_FACTION_DESC|<color=green>Alliés de la faction noire : Puissance +3 %.</color>
+HODA_GEAR_RETALIATE_ENEMY_ALLYDEATH_CONVERT10_DESC|<color=green>Quand un allié meurt, renvoie 10 % des dégâts reçus aux ennemis.</color>
+HODA_GEAR_POWER_DRAIN_IMMUNE_PERSONAL_DESC|<color=green>Immunisé contre le drain de Puissance.</color>
+HODA_GEAR_GOLDEN_PRINCES_HELM_AURA_LOC_OVERRIDE|<color=green>Si touché, draine 5 % de la Puissance des ennemis. Orlésiens : résistance au ralentissement +12 %.</color> <color=red>Résistance à l'assommement et au ralentissement -10 %.</color>
+HODA_GEAR_PLUS7_HEALTH_ALLIES_ON_SELF_HIT_DESC|<color=green>Si touché, soigne les alliés de 7 %.</color>
+HODA_GEAR_PLUS12_STUN_RESIST_ORLESIAN_DESC|<color=green>Alliés orlésiens : résistance à l'assommement +12 %.</color>
+HODA_GEAR_DMG_RESIST_2000_DESC|<color=green>Alliés : résistance à 2 000 points de dégâts.</color>
+HODA_GEAR_POWER_OUTLAW_RED_LYRIUM_MINUS15_DESC|<color=red>Hors-la-loi et héros de lyrium rouge : Puissance -15 %.</color>
+HODA_GEAR_PLUS20_HEALTH_PERSONAL_DESC|<color=green>Santé +20 %.</color>
+HODA_GEAR_PLUS20_SLOW_RESIST_ALLIES_DESC|<color=green>Alliés : résistance au ralentissement +20 %.</color>
+HODA_GEAR_TOME_OF_KOSLUN_AURA_LOC_OVERRIDE|<color=green>Perception : annule la furtivité. Dégâts +10 %. Qunari : résistance aux dégâts et à tous les effets +10 %.</color>
+HODA_GEAR_PLUS8_HEALTH_PERSONAL_DESC|<color=green>Santé +8 %.</color>
+HODA_GEAR_TOME_OF_SKILL_AND_SUNDRY_AURA_LOC_OVERRIDE|Résistance à tous les effets et aux dégâts +5 % si touché.
+HODA_GEAR_PLUS10_POWER_SELF_ON_ALLY_DEATH_DESC|<color=green>Puissance +10 % quand un allié meurt.</color>
+HODA_VENATORI_HELMET_GEAR_AURA_LOC_OVERRIDE|<color=green>Venatori : Santé et résistance à l'assommement +3 %.</color>
+HODA_GEAR_VENATORI_STAFF_BLADE_AURA_LOC_OVERRIDE|<color=green>Puissance et Santé +5 %.</color> <color=red>Ennemis : résistance au drain de Puissance, à l'assommement et au ralentissement -10 %.</color>
+HODA_GEAR_DMG_RESIST_1500_DESC|<color=green>Alliés : résistance aux 1 500 premiers points de dégâts.</color>
+HODA_GEAR_PERCEPTIVE_SELF_WYNNE_DESC|<color=green>Porté par Wynne : Perception (annule la furtivité).</color>
+HODA_GEAR_HEALTH_GAIN_ALL_WHEN_ENEMY_HIT_5_SELF_DESC|<color=green>Convertit 5 % des dégâts subis par les ennemis en Santé pour les alliés.</color>
+HODA_GEAR_VIGILANCE_AURA_LOC_OVERRIDE|<color=green>Puissance, Santé et résistance à tous les effets +10 %. Dégâts +5 %.</color>
+HODA_GEAR_VINSOMER_SCALE_AURA_LOC_OVERRIDE|<color=green>Alliés : Puissance +4 % quand un allié attaque.</color> <color=red>Résistance aux malédictions -25 %. Réduit les chances des ennemis d'attaquer à revers.</color> <color=green>Porté par un dragon : Santé +25 %.</color>
+HODA_GEAR_VIRTUOSITY_AURA_LOC_OVERRIDE|<color=green>Alliés : résistance aux malédictions +10 %. Porté par Zither : Santé, Puissance et résistance aux dégâts +20 %.</color>
+HODA_GEAR_VITAAR_OF_THE_DRAGON_HUNTER_AURA_LOC_OVERRIDE|<color=green>Puissance et probabilité de dégâts doubles +15 %.</color>
+HODA_GEAR_PLUS4_POWER_BLOODMAGES_DESC|<color=green>Alliés mages du sang : Puissance +4 %.</color>
+HODA_WALKING_DEATH_GEAR_AURA_LOC_OVERRIDE|<color=green>Dégâts +10 % contre la faction rouge, la faction noire et les défenseurs (cumulatif).</color>
+HODA_GEAR_PLUS4_HEALTH_WARDEN_DESC|<color=green>Alliés Gardes des ombres : Santé +4 %.</color>
+HODA_GEAR_PLUS9_DAMAGE_RESIST_SELF_VS_LARGE_CREATURES_DESC|<color=green>Résistance aux dégâts des créatures imposantes +9 %.</color>
+HODA_GEAR_PLUS2_HEALTH_ALLY_BLOOD_MAGE_ABILITY_SELF_DESC|<color=green>Convertit 2 % des dégâts subis par les alliés en Santé.</color>
+HODA_WEDGE_OF_DESTINY_GEAR_AURA_LOC_OVERRIDE|<color=green>Convertit 4 % des dégâts subis en Santé. Résiste aux 300 premiers points de dégâts par coup : il y a beaucoup de fromage à traverser.</color>
+HODA_WILHELMS_STAFF_GEAR_AURA_LOC_OVERRIDE|<color=green>Dégâts +5 %. Résistance aux malédictions +5 %.</color>
+HODA_GEAR_WINTERWEIGHT_AURA_LOC_OVERRIDE|<color=green>Résistance aux dégâts et à tous les effets +15 %. Défense +15 %.</color>
+HODA_GEAR_HEALTH_ON_ENEMY_DEATH_7_ALLIES_DESC|<color=green>Les alliés récupèrent 7 % de Santé quand un ennemi meurt.</color>
+HODA_GEAR_MINUS20_SLOW_RESIST_TO_ORLESIAN_DESC|<color=red>Orlésiens : résistance au ralentissement -20 %.</color>

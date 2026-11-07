@@ -8,6 +8,8 @@
 #define GALLERY_SPIN_DRAG_THRESHOLD 8.0f
 #define GALLERY_NAME_CAP 192
 #define GALLERY_LINE_CAP 128
+#define GALLERY_NO_BREAK_SPACE "\xc2\xa0"
+#define GALLERY_FIRST_MULTIBYTE 0x80
 #define GALLERY_LORE_FONT_SIZE 17.0f
 #define GALLERY_LABEL_FONT_SIZE 18.0f
 #define GALLERY_TITLE_FONT_SIZE 34.0f
@@ -123,16 +125,21 @@ void GalleryDestroy(Gallery *g) {
     GalleryCatalogUnload(&g->catalog);
 }
 
+static int GalleryNameLengthWithoutTier(const char *name, Tier tier) {
+    int length = (int)strlen(name);
+    int numeral = (int)strlen(TIER_NAMES[tier]);
+    int end = length - numeral;
+    if (end <= 0 || strcmp(name + end, TIER_NAMES[tier]) != 0) return length;
+    if (name[end - 1] == ' ') return end - 1;
+    int separator = (int)strlen(GALLERY_NO_BREAK_SPACE);
+    if (end > separator && !strncmp(name + end - separator, GALLERY_NO_BREAK_SPACE, (size_t)separator))
+        return end - separator;
+    return (unsigned char)name[end - 1] >= GALLERY_FIRST_MULTIBYTE ? end : length;
+}
+
 static void GalleryUnitDisplayName(char *out, int capacity, const Character *unit, Tier tier) {
-    char key[96];
-    snprintf(key, sizeof(key), "%s%s", unit->id, TIER_NAMES[tier]);
-    const char *name = LocGetOr(key, unit->name_ru[0] ? unit->name_ru : unit->name);
-    int end = (int)strlen(name);
-    while (end > 0 && (name[end - 1] == 'I' || name[end - 1] == 'V')) end--;
-    if (end == (int)strlen(name) || end == 0 || name[end - 1] != ' ')
-        end = (int)strlen(name);
-    else
-        end--;
+    const char *name = CharacterTierName(unit, tier);
+    int end = GalleryNameLengthWithoutTier(name, tier);
     int written = 0;
     for (int i = 0; i < end && written < capacity - 4; i++) {
         if (name[i] == '-') {
@@ -259,7 +266,7 @@ static void GalleryDrawCenteredWrapped(Font font, const char *text, Rectangle r,
     while (*cursor && line_count < 4) {
         const char *word_end = cursor;
         while (*word_end == ' ') word_end++;
-        while (*word_end && *word_end != ' ') word_end++;
+        word_end = UiBreakUnitEnd(word_end);
         int length = (int)(word_end - cursor);
         if (line_length + length >= GALLERY_LINE_CAP) break;
         char candidate[GALLERY_LINE_CAP];
@@ -454,7 +461,7 @@ static void GalleryDrawNavigator(Gallery *g, const Player *p, bool input) {
 
     UiDrawTexture(GuiTex(GUI_GALLERY_CATEGORY), GalleryRect(213.0f, 182.0f, 193.0f, 45.0f), WHITE);
     GallerySubcategoryTitleKey(key, sizeof(key), &g->catalog, &g->selection);
-    GalleryDrawFittedTitle(font, LocGet(key), GalleryRect(236.0f, 180.0f, 148.0f, 49.0f));
+    GalleryDrawFittedTitle(font, CharacterLocText(key), GalleryRect(236.0f, 180.0f, 148.0f, 49.0f));
     if (GalleryArrow(
             g,
             GALLERY_CONTROL_SUBCATEGORY_LEFT,

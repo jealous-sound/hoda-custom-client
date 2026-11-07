@@ -151,7 +151,6 @@ GUILD_PRIZE_LINE = re.compile(
     r"(\d+)(?:st|nd|rd|th)(?: - (\d+)(?:st|nd|rd|th))? Place( or below)? = (.+)"
 )
 GUILD_PRIZE_ARTICLES = {"a": 1, "an": 1}
-TOME_NAME_KEY = "TOME_POPUP_TITLE"
 
 EVENTS = {
     "duration_seconds": 259200,
@@ -271,10 +270,8 @@ class PrizeCatalog:
         self.characters = characters
         gear = json.loads(GEAR.read_text(encoding="utf-8"))
         self.gear = {normalized(item["id"]): item for item in gear["items"]}
-        self.tome_name = next(row["text"] for row in gear["strings"] if row["key"] == TOME_NAME_KEY)
         store = json.loads(STORE_PACKS.read_text(encoding="utf-8"))
         self.vouchers = {row["id"]: (index, row["icon"]) for index, row in enumerate(store["vouchers"])}
-        self.pack_names = {row["id"]: row["name_ru"] for row in store["packs"]}
 
     def resolve(self, name, count):
         key = PRIZE_NAME_ALIASES.get(name.lower(), name)
@@ -284,15 +281,14 @@ class PrizeCatalog:
         for candidate in (lookup, normalized(re.sub(r"^the ", "", key, flags=re.I))):
             if candidate in self.gear:
                 item = self.gear[candidate]
-                return {"kind": "gear", "id": item["id"], "count": count, "name": item["title_ru"], "icon": ""}
+                return {"kind": "gear", "id": item["id"], "count": count, "icon": ""}
         singular = name.lower().rstrip("s")
         if singular == TOME_PRIZE:
-            return {"kind": "tome", "id": "tome", "count": count, "name": self.tome_name, "icon": ""}
+            return {"kind": "tome", "id": "tome", "count": count, "icon": ""}
         if singular in VOUCHER_PACKS:
             pack = VOUCHER_PACKS[singular]
             index, icon = self.vouchers[pack]
-            name_ru = self.pack_names.get(pack, name)
-            return {"kind": "voucher", "id": pack, "count": count, "name": name_ru, "icon": icon, "index": index}
+            return {"kind": "voucher", "id": pack, "count": count, "icon": icon, "index": index}
         raise ValueError(f"unmapped PvP prize {name!r}")
 
     def unit(self, character, count):
@@ -300,7 +296,6 @@ class PrizeCatalog:
             "kind": "unit",
             "id": character["id"],
             "count": count,
-            "name": character["name_ru"],
             "icon": character["icon"]["I"],
         }
 

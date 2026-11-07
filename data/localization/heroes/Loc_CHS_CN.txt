@@ -1,0 +1,1344 @@
+HODA_ABILITY_HEAL_ALLIES_CRIT_BOOST_ALLIES5_NO_ATTACK|治疗友军，治疗量为该英雄的力量值（不可攻击）。为友军增加5%暴击率。
+HODA_ATTACK1_DRAINPOWER60_4CRITGAINALLIES|攻击单个敌人，然后吸取随机目标大量力量，同时友军的2倍伤害几率增加4%。
+HODA_ATTACKALL_25STUN_SECONDATTACK50_CRIT10|攻击所有敌人，并有25%几率将每个敌人击晕。有50%几率再次发动攻击。为友军增加10%的2倍伤害几率。
+HODA_ATTACKALL_75DRAIN35PWR_50STUNROW_ASSASSINATE15|攻击所有敌人并吸取35%力量。有50%几率击晕横排敌人。有15%几率暗杀单个目标。
+HODA_ATTACKCOLUMN_20PWRDRN_SECONDATTACK30STUN_HEAL20ALL|攻击竖排敌人并吸取少量力量。有30%几率再次发动攻击并造成击晕。少量治疗友军。
+HODA_ATTACKROW_LEVY20_STUNCOLUMN_CHANCE65_ATTACKALLY_2X_2DMG|攻击横排敌人，附带20%征收，然后击晕竖排敌人。有65%几率攻击友军两次，每次造成2%伤害。
+HODA_ATTACKROW_LEVY30_HEAL25_GAIN50ALL|攻击横排敌人，附带30%征收，并获得25%生命值。为友军赋予50%力量。
+HODA_ATTACKROW_SECONDATTACK40STRUN_PWRGAIN20ALL|攻击横排敌人，有40%几率再次发动攻击并造成击晕。为友军赋予少量力量。
+HODA_ATTACKSINGLE6X_20PWRDRN|攻击随机敌人6次，并吸取20%力量。
+HODA_ATTACKSINGLE_50STUN_SECONDATTACK40_MARK20|攻击单个目标，有50%几率造成击晕。有40%几率再次发动攻击。标记一个敌人：友军会以标记为目标，并造成额外20%伤害。
+HODA_ATTACK_ALL75_ATTACK_SINGLE300_MARK30|以75%力量攻击所有敌人，然后以300%力量攻击单个目标。标记一个敌人：友军会以标记为目标，并造成额外30%伤害。
+HODA_ATTACK_ALL_25HEAL50POWERALLIES_20ATTACKTWICE|攻击所有敌人，治疗友军并增加其力量，同时有20%几率再次发动攻击。
+HODA_ATTACK_ALL_3X_HEAL_ALL20_STUN_25_CURSE_HEALTH50|攻击所有敌人3次，并少量治疗友军，同时有中等几率造成击晕并诅咒生命值。
+HODA_ATTACK_ALL_ALLIESGAIN15POWER20HEALTH_SLOW50|攻击所有敌人，有50%几率将其减速，同时友军获得少量生命值和力量。
+HODA_ATTACK_ALL_CHANCE20_STUN_HEAVYSLOW_CURSEBOTH_POWERDRAIN50|攻击所有敌人，每个敌人有20%几率分别被击晕、大幅减速、诅咒生命值和/或诅咒力量，并吸取50%力量。
+HODA_ATTACK_ALL_CHANCE30SINGLELEVY50_HEAL25GAIN25ALL|攻击所有敌人。有30%几率攻击单个目标，附带50%征收。为友军赋予25%生命值和力量。
+HODA_ATTACK_ALL_CHANCE75_SLOW_DRAIN35_5BNSDMGALL_GAIN5CRITALL|攻击所有敌人，每个敌人有75%几率被减速或被吸取35%力量。友军获得5%额外伤害和2倍伤害几率。
+HODA_ATTACK_ALL_CHANCE75_STUN_SLOW_DRAIN35|攻击所有敌人，每个敌人有75%几率被击晕、减速或被吸取35%力量。
+HODA_ATTACK_ALL_CURSEHEALTH2X_HEAL100ALL|攻击所有敌人并诅咒生命值，持续2回合。为友军赋予100%生命值。
+HODA_ATTACK_ALL_CURSEPOWER_50|攻击所有敌人，有50%几率诅咒力量。
+HODA_ATTACK_ALL_CURSEP_DRAIN50_SELFHEAL100_FOLLOWUP25_ROW_STUN|攻击所有敌人，诅咒力量并吸取50%力量，然后自我疗伤。有25%几率攻击横排敌人并造成击晕。
+HODA_ATTACK_ALL_CURSE_DRAIN35_GAIN25ALL_HEAL25ALL|攻击并诅咒所有敌人，然后吸取35%力量。为友军赋予25%生命值和力量。
+HODA_ATTACK_ALL_CURSE_FOLLOWUP50_SINGLE_SLOW_ALL_CHANCE25_HEAL50|攻击并诅咒所有敌人。有50%几率攻击单个目标并使每个敌人减速。有25%几率恢复50%生命值。
+HODA_ATTACK_ALL_CURSE_HEALTH_CHANCE50_STUN_DRAIN50|攻击所有敌人并诅咒生命值，每个敌人有50%几率被击晕或被吸取50%力量。
+HODA_ATTACK_ALL_CURSE_HEALTH_HEALSMALL_ALL|攻击所有敌人，诅咒生命值并少量治疗友军。
+HODA_ATTACK_ALL_CURSE_POWER_FOLLOWUP40_STUN_HEALALL25|攻击所有敌人并诅咒力量，有40%几率再次发动攻击并造成击晕。治疗友军25%。
+HODA_ATTACK_ALL_DRAIN15_HEALSELF50|攻击所有敌人并吸取15%力量，然后自我疗伤。
+HODA_ATTACK_ALL_DRAIN25_CURSEPOWER|攻击所有敌人，吸取25%力量并诅咒力量。
+HODA_ATTACK_ALL_DRAIN30_CURSEPOWER_GAIN20HEAL20SELF|攻击所有敌人，吸取30%力量并诅咒力量。获得20%生命值和力量。
+HODA_ATTACK_ALL_DRAIN35_STUN50_ALLY5DAMAGE|攻击所有敌人并吸取35%力量，有50%几率造成击晕。对友军造成5%力量的伤害。
+HODA_ATTACK_ALL_DRAIN40_ATTACK_SELF5|攻击所有敌人并吸取40%力量。对自己造成5%伤害。
+HODA_ATTACK_ALL_DRAIN50_PLUS10CRITALL_FOLLOWUP_SINGLE150_STUN|攻击所有敌人并吸取50%力量。为友军增加10%的2倍伤害几率。以150%力量攻击单个目标并造成击晕。
+HODA_ATTACK_ALL_DRAIN50_STUN35CURSE35_HEAL40GAIN40ALL|攻击所有敌人，吸取50%力量，每个敌人有35%几率被击晕和/或被诅咒力量和生命值。为友军赋予40%生命值和力量。
+HODA_ATTACK_ALL_DRAIN65_CRIT7|攻击所有敌人并吸取65%力量。友军的2倍伤害几率增加7%。
+HODA_ATTACK_ALL_HEAL30ALL_25CHANCE_SELFHEAL50|攻击所有敌人并治疗友军30%，有25%几率大量自我疗伤。
+HODA_ATTACK_ALL_LEVY10_HEAVYSLOW_CURSEPOWER|攻击所有敌人，附带10%征收，大幅减速并诅咒力量。
+HODA_ATTACK_ALL_LEVY15_DRAIN40_STUN50ALL|攻击所有敌人，附带15%征收，并吸取40%力量。每个敌人有50%几率被击晕。
+HODA_ATTACK_ALL_LEVY20_CHANCE75_STUN_DRAIN50_ALLY2|攻击所有敌人，附带20%征收。有75%几率造成击晕和/或吸取50%力量。对友军造成2%伤害。
+HODA_ATTACK_ALL_LEVY20_MARK30|攻击所有敌人，附带20%征收。标记一个目标：友军会以标记为目标，并造成额外30%伤害。
+HODA_ATTACK_ALL_SLOW50_ALL5CRIT_ASSASSINATE10|攻击所有敌人，有50%几率将其减速，同时友军的2倍伤害几率增加5%。有10%几率暗杀一个随机目标。
+HODA_ATTACK_ALL_SLOW_25CHANCECURSEHEALTH|攻击所有敌人并使其减速，有很小几率诅咒生命值。
+HODA_ATTACK_ALL_SLOW_50CURSE2ROUNDS_ATTACK_ALLIES_3|攻击所有敌人并使其减速，每个敌人有50%几率被诅咒生命值或力量，持续2回合。对友军造成3%力量的伤害。
+HODA_ATTACK_ALL_SLOW_ALLYPOWERGAIN20|攻击所有敌人并使其减速。友军获得20%力量。
+HODA_ATTACK_ALL_SLOW_CURSEPOWER_STUN30|攻击所有敌人，使其减速并诅咒力量，有30%几率造成击晕。
+HODA_ATTACK_ALL_SLOW_FOLLOWUP25_ATTACK_ROW_STUN_CHANCE10_HEAL75|攻击所有敌人并使其减速。有25%几率攻击横排敌人并造成击晕。有10%几率恢复75%生命值。
+HODA_ATTACK_ALL_SLOW_STUN25_GAIN20_V2|攻击所有敌人并使其减速，获得20%力量，每个敌人有25%几率被击晕。
+HODA_ATTACK_ALL_SLOW_STUN75_CHANCE25_ATTACK_COLUMN_CURSE|攻击所有敌人并使其减速，有75%几率造成击晕。有25%几率攻击竖排敌人并造成诅咒。
+HODA_ATTACK_ALL_STUN25_FOLLOWUP30LEVY20_MARK15|攻击所有敌人，有25%几率造成击晕。有30%几率再次发动攻击，附带20%征收。标记一个敌人：友军会以标记为目标，并造成额外15%伤害。
+HODA_ATTACK_ALL_STUN75_FOLLOWUP25_SINGLE200_FOLLOWUP25_ANY10|攻击所有敌人，有75%几率造成击晕。有25%几率以200%力量攻击单个目标。有25%几率以10%力量攻击任意英雄，包括友军。
+HODA_ATTACK_COLUMN50_CURSEPOWER_HEAVYSLOWROW_CHANCE75_ATTACKALL140|以50%力量攻击竖排敌人并诅咒力量，然后大幅减速横排敌人。有75%几率以140%力量攻击所有敌人。
+HODA_ATTACK_COLUMN50_CURSESTUNROW_FOLLOWUP_ATTACKONE300_ASSASSINATE20|以50%力量攻击竖排敌人。诅咒并击晕横排敌人。以300%力量攻击单个目标。有20%几率暗杀单个目标。
+HODA_ATTACK_COLUMN_2X_CURSE_HEALTH_POWER_DRAIN25|攻击竖排敌人两次，每次都诅咒生命值和力量并吸取25%力量。
+HODA_ATTACK_COLUMN_3X_GAIN25POWER|攻击竖排敌人3次，每次命中获得25%力量。
+HODA_ATTACK_COLUMN_CURSEHEALTH_FOLLOWUP50_ATTACK_ROW_SLOW_ASSASSINATE30|攻击竖排敌人并诅咒生命值。有50%几率攻击横排敌人并使其减速。有30%几率暗杀单个目标。
+HODA_ATTACK_COLUMN_CURSEPOWER50_CRIT5GAINALL_ATTACKALLY5|攻击竖排敌人并诅咒力量。友军的2倍伤害几率增加5%。对友军造成5%伤害。
+HODA_ATTACK_COLUMN_CURSEPOWER_HEAL50|攻击竖排敌人并诅咒力量。获得50%生命值。
+HODA_ATTACK_COLUMN_CURSE_2ROUNDS_PLUS5CRITALL_PLUS5DMGRESALL_CHANCE50DRAIN30ALL|攻击竖排敌人并诅咒，持续2回合。为友军增加5%的2倍伤害几率和伤害抗性。有50%几率吸取所有敌人30%的力量。
+HODA_ATTACK_COLUMN_CURSE_POWER_DRAIN15|攻击竖排敌人，吸取15%力量并诅咒力量。
+HODA_ATTACK_COLUMN_CURSE_POWER_GAINPOWER35|攻击竖排敌人并诅咒力量，同时友军获得35%力量。
+HODA_ATTACK_COLUMN_DRAIN25_SLOW50_MARK10|攻击竖排敌人并吸取25%力量，有50%几率造成减速。标记一个敌人：友军会以标记为目标，并造成额外10%伤害。
+HODA_ATTACK_COLUMN_DRAIN35_POWER|攻击竖排敌人并吸取35%力量。
+HODA_ATTACK_COLUMN_DRAIN50_ATTACK_SELF5_GAIN25CRIT5ALL|攻击竖排敌人并吸取50%力量。对自己造成5%力量的伤害。为友军赋予25%力量，并增加5%的2倍伤害几率。
+HODA_ATTACK_COLUMN_HEAVYSLOWALL_HEAL50ALL|攻击竖排敌人，然后大幅减速所有敌人。为友军赋予50%生命值。
+HODA_ATTACK_COLUMN_LEVY20_GAIN25_ATTACK_ALL_60|攻击竖排敌人，附带20%征收，并获得25%力量，然后以60%力量攻击所有敌人。
+HODA_ATTACK_COLUMN_LEVY35_HEAVYSLOWROW_STUN50ROW_ATTACKSELF5|攻击竖排敌人，附带35%征收。大幅减速横排敌人，有50%几率造成击晕。对自己造成5%伤害。
+HODA_ATTACK_COLUMN_LEVY40_SLOW_FOLLOWUP_ROW_STUN50|攻击竖排敌人，附带40%征收并使其减速，然后有50%几率攻击横排敌人并造成击晕。
+HODA_ATTACK_COLUMN_SLOW50ALL_FOLLOWUP50ROW_DRAIN25|攻击竖排敌人，有50%几率将所有敌人减速。有50%几率攻击横排敌人并吸取25%力量。
+HODA_ATTACK_COLUMN_SLOW_ALL_SLOW_ALLY|攻击竖排敌人并使所有人减速。友军也会被减速。
+HODA_ATTACK_COLUMN_SLOW_FOLLOWUP_SINGLE200|攻击竖排敌人并使其减速，然后以200%力量攻击一个敌人。
+HODA_ATTACK_COLUMN_STUN_ATTACK_ALLIES5|攻击竖排敌人并造成击晕。对所有友军造成5%伤害。
+HODA_ATTACK_COLUMN_STUN_FOLLOWUP_DRAIN40_ALLYPOWERGAIN25|攻击竖排敌人并造成击晕。再次攻击并吸取40%力量。友军获得25%力量。
+HODA_ATTACK_COLUMN_STUN_SLOW50ALL_ATTACK_ALLY5|攻击竖排敌人并造成击晕。有50%几率将所有敌人减速。对友军造成5%伤害。
+HODA_ATTACK_ONE50_DRAIN40ALL_FOLLOWUP_ROW250_CURSEPOWER|以50%力量攻击一个敌人，然后吸取所有敌人40%的力量。以250%力量攻击横排敌人并诅咒力量。
+HODA_ATTACK_ONE_3X_ASSASSINATE_CHANCE30|攻击单个目标3次，有30%几率暗杀。
+HODA_ATTACK_ONE_3X_ASSASSINATE_CHANCE7_HEAL50_ALL|攻击单个敌人，然后有3次暗杀机会。中等程度治疗友军。
+HODA_ATTACK_ONE_4XFOLLOWUP40_GAIN25ALL_HEAL75SELF|攻击单个敌人，之后最多有4次额外攻击，每次有40%几率发动。为友军赋予25%力量。自我疗伤75%。
+HODA_ATTACK_ONE_4X_FINAL200_CHANCE25_STUNALL|攻击单个目标最多4次，最后一次攻击造成200%伤害。有25%几率击晕所有敌人。
+HODA_ATTACK_ONE_75_DRAIN50_GAIN50_FOLLOWUP75_ATTACK_ALL_LEVY15|以75%力量攻击一个敌人，吸取并获得50%力量。有75%几率攻击所有敌人，附带15%征收。
+HODA_ATTACK_ONE_ATTACK_ALL30_HEAVYSLOW25ALL|攻击单个敌人，然后以30%力量攻击所有敌人。有25%几率大幅减速所有敌人。
+HODA_ATTACK_ONE_CHANCE25_FOLLOWUP300_SELFDAMAGE_CHANCE30HEAL50|攻击一个敌人。有25%几率以300%力量再次发动攻击，但同时会伤害自己。有30%几率恢复50%生命值。
+HODA_ATTACK_ONE_COLUMNCURSEHEALTH_ROWCURSEPOWER_CHANCE20_ATTACKALLCURSEHEALTHPOWER|攻击单个目标，诅咒竖排敌人的生命值，并诅咒横排敌人的力量。有20%几率再次发动攻击，并诅咒所有敌人的生命值和力量。
+HODA_ATTACK_ONE_CURSEDRAIN30ALL_STUN35ALL_GAIN45HEAL45ALL|攻击单个敌人。诅咒所有敌人并吸取其30%力量，有35%几率造成击晕。友军获得45%力量和生命值。
+HODA_ATTACK_ONE_DRAIN40ALL_GAIN20ALL_MARK25|攻击一个敌人，然后吸取所有敌人40%的力量。为友军赋予20%力量。标记一个目标：友军会以标记为目标，并造成额外25%伤害。
+HODA_ATTACK_ONE_DRAIN50_GAIN50|攻击一个敌人并吸取50%力量，然后获得50%力量。
+HODA_ATTACK_ONE_DRAIN60ROW_FOLLOWUP_COLUMN200|攻击一个敌人，然后吸取横排敌人60%的力量。以200%力量攻击竖排敌人。
+HODA_ATTACK_ONE_DRAIN_GAIN_60_FOLLOWUP_33|攻击单个英雄，吸取并获得大量力量，有33%几率再次发动攻击。
+HODA_ATTACK_ONE_GAIN15ALL_7X_SLOWALL|攻击单个敌人最多7次，然后使所有敌人减速。每次命中，友军获得15%力量。
+HODA_ATTACK_ONE_GAIN25ALL_HEAL25SELF_ASSASSINATE5|攻击单个目标，并为友军赋予25%力量。自我疗伤25%。有5%几率暗杀。
+HODA_ATTACK_ONE_LEVY20_DRAIN25_GAIN20ALL|攻击单个敌人，附带20%征收，并吸取25%力量。为友军赋予20%力量。
+HODA_ATTACK_ONE_LEVY20_FOLLOWUP35_DRAIN50|攻击单个目标，附带20%征收。有35%几率再次发动攻击并吸取50%力量。
+HODA_ATTACK_ONE_LEVY25_CURSEHEALTH_FOLLOWUP50_CURSEPOWER|攻击单个目标，附带25%征收，并诅咒生命值。有50%几率再次发动攻击并诅咒力量。
+HODA_ATTACK_ONE_LEVY25_DRAIN50ALL_CHANCE50CURSEROW_GAIN50SELF|攻击一个敌人，附带25%征收，并吸取所有敌人50%的力量。有50%几率诅咒横排敌人。获得50%力量。
+HODA_ATTACK_ONE_LEVY25_DRAIN75_FOLLOWUP35_COLUMN_STUN|攻击一个敌人，附带25%征收，并吸取75%力量。有35%几率攻击竖排敌人并造成击晕。
+HODA_ATTACK_ONE_LEVY35_CHANCE40_ATTACK_ROW_STUN|攻击单个敌人，附带35%征收。有40%几率攻击横排敌人并造成击晕。
+HODA_ATTACK_ONE_LEVY35_CURSEHEALTH_ALL_HEAL25GAIN25ALLIES|攻击一个敌人，附带35%征收，并诅咒所有敌人的生命值。为友军赋予25%生命值和力量。
+HODA_ATTACK_ONE_LEVY40_FOLLOWUP50_ATTACK_ALL_STUN35|攻击单个敌人，附带40%征收。有50%几率攻击所有敌人。有35%几率击晕所有敌人。
+HODA_ATTACK_ONE_LEVY50_STUN_CRIT5ALL_BNSDMG3ALL_ASSASSINATE15|攻击单个目标，附带50%征收，并造成击晕。友军获得5%的2倍伤害几率和3%额外伤害。有15%几率暗杀单个目标。
+HODA_ATTACK_ONE_STUN50_CHANCE20HEAL100_ASSASSINATE10|攻击单个目标，有50%几率造成击晕。有20%几率大量自我疗伤。有10%几率暗杀。
+HODA_ATTACK_ONE_STUN_FOLLOWUP50_DRAIN50_GAIN35ALL_HEAL35ALL|攻击一个敌人并造成击晕。有50%几率再次发动攻击并吸取50%力量。为友军赋予35%力量和生命值。
+HODA_ATTACK_ONE_STUN_FOLLOWUP_ATTACK_ALL_DRAIN40_CHANCE30_DRAIN40ALL_X2ASSASSINATE10|攻击一个敌人并造成击晕，然后攻击所有敌人并吸取40%力量。有30%几率再次吸取力量。最多对2个目标各有10%几率暗杀。
+HODA_ATTACK_ROW50_STUN_FOLLOWUP_ALL150|以50%力量攻击横排敌人并造成击晕，然后以150%力量攻击所有敌人。
+HODA_ATTACK_ROW75_FOLLOWUP_ALL_LEVY15_CURSEPOWER_HEAL30|以75%力量攻击横排敌人，然后攻击所有敌人，附带15%征收并诅咒力量。治疗友军30%。
+HODA_ATTACK_ROW_ATTACK_ALLY5_HEAL10ALL_GAIN20ALL|攻击横排敌人。以5%力量攻击友军，然后治疗友军10%并赋予20%力量。
+HODA_ATTACK_ROW_ATTACK_ALL_SLOW_CRIT2_STEALTH|攻击横排敌人，然后攻击所有敌人并使其减速，每次攻击使2倍伤害几率增加2%。
+HODA_ATTACK_ROW_CURSE50_GAIN20_ALL_CRIT5ALL|攻击横排敌人，每个敌人有50%几率被诅咒力量或生命值。为友军赋予20%力量，并增加5%的2倍伤害几率。
+HODA_ATTACK_ROW_CURSEPOWER_DRAIN50_FOLLOWUP25RANDOM50_FOLLOWUP25ALLY50|攻击横排敌人，诅咒力量并吸取50%力量。各有25%几率以50%力量攻击一个随机敌人或友军。
+HODA_ATTACK_ROW_CURSEPOWER_GAIN35ALL_HEAL35ALL_ATTACKSELF5|攻击横排敌人并诅咒力量。为友军赋予35%力量和生命值。对自己造成5%伤害。
+HODA_ATTACK_ROW_CURSE_DRAIN40_SLOWALL_GAIN30ALL|攻击并诅咒横排敌人，并吸取40%力量。使所有敌人减速。为友军赋予30%力量。
+HODA_ATTACK_ROW_CURSE_GAIN50_ATTACKCOLUMN_LEVY25_ATTACKSELF_3DMG|攻击横排敌人并诅咒，获得50%力量，然后攻击竖排敌人，附带25%征收。对自己造成3%伤害。
+HODA_ATTACK_ROW_CURSE_POWER_CHANCE35_ATTACK_ALL_LEVY10|攻击横排敌人并诅咒力量，有35%几率攻击所有敌人，附带10%征收。
+HODA_ATTACK_ROW_CURSE_POWER_CRIT5_LEVY50|攻击横排敌人，附带50%征收，诅咒力量，并获得5%的2倍伤害几率。
+HODA_ATTACK_ROW_CURSE_POWER_HEAL10ALL_CRIT5ALL_STEALTH|攻击横排敌人并诅咒力量。友军获得10%生命值和5%的2倍伤害几率。
+HODA_ATTACK_ROW_DRAIN10SELF_STUN50ALL_GAIN5BNSDMG|攻击横排敌人，吸取自身10%力量。有50%几率击晕所有敌人。获得5%额外伤害。
+HODA_ATTACK_ROW_DRAIN60_STUN35_MARK20|攻击横排敌人并吸取60%力量，有35%几率造成击晕。标记一个目标：友军会以标记为目标，并造成额外20%伤害。
+HODA_ATTACK_ROW_FOLLOWUP20_CHANCE25STUNSLOWALL_GAIN5CRIT|攻击横排敌人。有20%几率再次发动攻击。每个敌人有25%几率被击晕或减速。获得5%的2倍伤害几率。
+HODA_ATTACK_ROW_FOLLOWUP_ALL75_DRAIN35|攻击横排敌人，然后以75%力量攻击所有敌人并吸取35%力量。
+HODA_ATTACK_ROW_FOLLOWUP_ALL_CURSEHEALTH_GAIN25ALL_GAIN5DMGRESALL|攻击横排敌人，然后攻击所有敌人，并诅咒生命值。友军获得25%力量和5%伤害抗性。
+HODA_ATTACK_ROW_FOLLOWUP_COLUMN_LEVY25_STUN50_SLOW50_ATTACK_ALLY5|攻击横排敌人，每个敌人有50%几率被击晕或减速，然后攻击竖排敌人，附带25%征收。对友军造成5%伤害。
+HODA_ATTACK_ROW_LEVY10_DRAIN10_GAIN10ALL_PLUS5CRITALL|攻击横排敌人，附带10%征收，并吸取10%力量。为友军赋予10%力量，并增加5%的2倍伤害几率。
+HODA_ATTACK_ROW_LEVY15_SLOW50_CHANCE25_STUN_COLUMN|攻击横排敌人，附带15%征收，有50%几率造成减速。有50%几率击晕竖排敌人。
+HODA_ATTACK_ROW_LEVY15_STUN50ALL_ATTACKALLIES5|攻击横排敌人，附带15%征收。每个敌人有50%几率被击晕。对友军造成5%伤害。
+HODA_ATTACK_ROW_LEVY20_DRAIN50_CURSEPOWER_GAIN25ALL|攻击横排敌人，附带20%征收，吸取50%力量并诅咒力量。友军获得25%力量。
+HODA_ATTACK_ROW_LEVY20_FOLLOWUP35_ATTACK_ALL50|攻击横排敌人，附带20%征收。有35%几率以50%力量攻击所有敌人。
+HODA_ATTACK_ROW_LEVY20_FOLLOWUP50_COLUMN_STUN_FOLLOWUP50_COLUMN_SLOW_GAIN40|攻击横排敌人，附带20%征收。各有50%几率攻击竖排敌人并造成击晕或减速。获得40%力量。
+HODA_ATTACK_ROW_LEVY20_GAIN25ALL_GAIN3CRITALL|攻击横排敌人，附带20%征收。为友军赋予25%力量，并增加3%的2倍伤害几率。
+HODA_ATTACK_ROW_LEVY20_STUN_GAIN20ALL_ATTACK_ALLY5|攻击横排敌人，附带20%征收，并造成击晕。为友军赋予20%力量，然后对友军造成5%伤害。
+HODA_ATTACK_ROW_SLOW75_CURSE75_HEAL20ALL_GAIN20ALL|攻击横排敌人，有75%几率使所有敌人减速并被诅咒生命值。为友军赋予20%生命值和力量。
+HODA_ATTACK_ROW_SLOWALL_STUN50COLUMN_ATTACK_ALLY5_CHANCE10HEAL80SELF|攻击横排敌人，并使所有敌人减速。有50%几率击晕竖排敌人。对友军造成5%力量的伤害。有10%几率自我疗伤80%。
+HODA_ATTACK_ROW_SLOW_3CRITALL_FOLLOWUP25_200X_DRAIN60_STEALTH|攻击横排敌人并使其减速。友军的2倍伤害几率增加3%。有25%几率以200%伤害再次发动攻击并吸取60%力量。
+HODA_ATTACK_ROW_STUN50_ATTACKALL_CURSEPOWER50|攻击横排敌人，有50%几率造成击晕，然后攻击所有敌人，有50%几率诅咒力量。
+HODA_ATTACK_ROW_STUN50_HEAL25|攻击横排敌人，有50%几率造成击晕。获得25%生命值。
+HODA_ATTACK_ROW_STUN50_HEAL50_ALL_FOLLOWUP50_SINGLE_SLOW|攻击横排敌人，有50%几率造成击晕。有50%几率攻击单个目标并使其减速。大量治疗友军。
+HODA_ATTACK_ROW_STUN75_FOLLOWUP30_SINGLE200_DRAIN40|攻击横排敌人，每个敌人有75%几率被击晕。有30%几率以200%力量攻击单个目标并吸取40%力量。
+HODA_ATTACK_ROW_STUN_CHANCE25_STUNALL_CRIT10SELF|攻击横排敌人并造成击晕。有25%几率击晕所有敌人。获得10%的2倍伤害几率。
+HODA_ATTACK_ROW_STUN_CHANCE50_GAINPOWER75|攻击横排敌人，每个敌人有50%几率被击晕。获得大量力量。
+HODA_ATTACK_ROW_STUN_CURSECOLUMN_FOLLOWUP50ALL_LEVY15|攻击并击晕横排敌人，然后诅咒竖排敌人。有50%几率攻击所有敌人，附带15%征收。
+HODA_ATTACK_SINGLE150_DRAIN50_HEAVYSLOWROW_FOLLOWUP_ALL75|以150%力量攻击单个敌人并吸取50%力量。大幅减速横排敌人，然后以75%力量攻击所有敌人。
+HODA_ATTACK_SINGLE3X_STUN|攻击单个敌人三次并造成击晕。
+HODA_ATTACK_SINGLE6X_GAIN2CRITALL_GAIN2DMGRESALL|攻击随机敌人最多6次，每次命中为友军增加2%的2倍伤害几率和伤害抗性。
+HODA_ATTACK_SINGLE_2X_SLOW50_ASSASSINATE25|攻击单个目标两次。有50%几率将所有敌人减速。有25%几率暗杀单个目标。
+HODA_ATTACK_SINGLE_3X_HEAL50_STEALTH|攻击单个目标3次，并中等程度治疗。
+HODA_ATTACK_SINGLE_5X_CHANCE25_ATTACK_ALL_STUN_CHANCE25_HEAL200|攻击单个目标最多5次。有25%几率以200%伤害攻击所有敌人并造成击晕。有25%几率大量自我疗伤。
+HODA_ATTACK_SINGLE_ASSASSINATE_CHANCE50_POWERGAIN200_CHANCE10|攻击单个敌人，有50%几率再次发动攻击并暗杀。有10%几率获得200%力量。
+HODA_ATTACK_SINGLE_CHANCE5X_GAIN20_STATUSEFFECT_ATTACKSELF10|攻击最多5个随机目标，获得20%力量，每次攻击附加一种不同的状态效果。对自己造成10%伤害。
+HODA_ATTACK_SINGLE_CURSE75ALL_MARK30|攻击单个目标。有75%几率诅咒所有敌人。标记一个敌人：友军会以标记为目标，并造成额外30%伤害。
+HODA_ATTACK_SINGLE_CURSEHEALTH30_HEAVYSLOW25ALL_MARK10|攻击单个目标并诅咒生命值。有50%几率大幅减速所有敌人。标记一个目标：友军会以标记为目标，并造成额外10%伤害。
+HODA_ATTACK_SINGLE_CURSEPOWER_HEAVYSLOW50_GAIN50ALL|攻击单个敌人并诅咒力量，有50%几率造成大幅减速。为友军赋予50%力量。
+HODA_ATTACK_SINGLE_DRAIN25_GAIN25ALL_HEAL25ALL|攻击单个敌人并吸取25%力量。为友军赋予25%力量和生命值。
+HODA_ATTACK_SINGLE_EXPLODE50ENEMY10ALLY_SLOWALL|攻击一个敌人并引发爆炸，对所有敌人造成50%力量的伤害，对所有友军造成10%力量的伤害。使所有敌人减速。
+HODA_ATTACK_SINGLE_LEVY20_GAIN25_ATTACK_ROW_STUN_ASSASSINATE25|攻击一个敌人，附带20%征收，获得25%力量，然后攻击横排敌人并造成击晕。有25%几率暗杀单个目标。
+HODA_ATTACK_SINGLE_LEVY25_CURSEPOWER_DRAIN35ALL_GAIN20ALL|攻击一个敌人，附带25%征收，并诅咒力量。吸取所有敌人35%的力量。为友军赋予20%力量。
+HODA_ATTACK_SINGLE_LEVY30_STUN50ALL_FOLLOWUP_ROW200|攻击单个敌人，附带30%征收。每个敌人有50%几率被击晕。以200%力量攻击横排敌人。
+HODA_ATTACK_SINGLE_LEVY30_STUNROW_GAIN20_FOLLOWUP50_ATTACKALL50|攻击单个敌人，附带30%征收，击晕横排敌人，并获得20%力量。有50%几率以50%力量攻击所有敌人。
+HODA_ATTACK_SINGLE_LEVY35_HEAL40ALL_2BNSDMGALL_DAMAGE5ALL|攻击一个敌人，附带35%征收。为友军赋予40%生命值和2%额外伤害。对友军造成5%伤害。
+HODA_ATTACK_SINGLE_LEVY50_HEAL25GAIN25_ALL|攻击单个敌人，附带50%征收。为友军赋予25%生命值和力量。
+HODA_ATTACK_SINGLE_SLOWALL_DRAIN50ALL_MARK20_ASSASSINATE5_4X|攻击一个敌人。使所有敌人减速并吸取其50%力量。标记一个目标：友军会以标记为目标，并造成额外20%伤害。有5%几率暗杀最多四个不同的目标。
+HODA_ATTACK_SINGLE_SLOWROW_ATTACKALL_LEVY10_STUN50|攻击一个敌人并使横排敌人减速，然后攻击所有敌人，附带10%征收，有50%几率造成击晕。
+HODA_ATTACK_SINGLE_STUN_GAIN25_2X_FOLLOWUP40_250X|攻击两个随机目标并造成击晕，每次攻击获得25%力量。有40%几率发动第三次攻击，造成250%力量的伤害。
+HODA_ATTACK_SINGLE_STUN_SLOWALL_GAIN5CRIT|攻击单个目标并造成击晕，然后使所有敌人减速。获得5%的2倍伤害几率。
+HODA_AURA_20HPPWERBEASTELVESDEMONSSTACK_25DMGRESELVES_PLUS15DMGRESMERRILL|<color=green>生物、精灵和恶魔增加20%生命值和力量（效果可叠加）。精灵增加25%伤害抗性，梅丽尔额外增加15%。</color>
+HODA_AURA_20HPPWRALLYDWFNOBSTACK_60HP50CURRESKINGEND_SELFHITALLYGAIN5PWRDRNDMGRES_DTHRET5_MINUS25PWRCURRESPRIBHELEN|<color=green>友军、矮人和贵族增加20%生命值和力量（效果可叠加）。安德林·艾杜肯国王增加60%力量和50%诅咒抗性。遭受攻击时，友军获得5%力量吸取抗性和伤害抗性。死亡时，将所受伤害的5%反弹给敌人。</color> <color=red>伯伦·艾杜肯王子减少25%力量和诅咒抗性。</color>
+HODA_AURA_20HP_TO_HAKKONW_PLUS10PCT_DMG_FOR_HAKKONITES_PLUS15HP_TO_RED_FACTION_PLUS35_STUN_SLOW_RESIST_TO_AVVAR|<color=green>哈肯冬息者增加20%生命值和力量。红色阵营增加15%生命值和力量。哈肯之颌增加10%额外伤害。Avvar增加35%击晕和减速抗性。隐形：攻击不会触发命中效果。</color>
+HODA_AURA_20PPDRAINCURPRES_TEVBLACKMAGEDEMON_STACK_ENEMYHIT_GAIN5PALL_HASTESELF_MINUS20CURP|<color=green>Tevinter、黑色阵营、法师和恶魔增加20%力量、力量吸取抗性和诅咒力量抗性（效果可叠加）。攻击敌人时，友军获得5%力量。更有可能在主动性中率先攻击。</color> <color=red>敌人减少20%诅咒力量抗性。</color>
+HODA_AURA_20P_WHEN_ALLY_HIT_35H_TO_MAGES_MINUS10P_CIRCLES_CHANTRY_POWER_DRAIN_IMMUNE_SELF|<color=green>法师增加35%生命值。友军遭受攻击时获得少量力量。对力量吸取免疫。</color> <color=red>议会和教会英雄减少10%力量。</color>
+HODA_AURA_25H10DMGRES_WARDENS_DEFENDER50_25BNSDMGALL_VS_BLIGHT_MINUS20STUNSLOWRES_ENEMIES|<color=green>守护者增加25%生命值和10%伤害抗性。50%守护者。友军攻击毁灭系英雄时增加25%伤害。</color> <color=red>敌人减少20%击晕和减速抗性。</color>
+HODA_AURA_25HPBEASTS_25STUNRES10BNSDMGGHAST_BRAVETGT_MINUS10SLOWRES|<color=green>生物增加25%生命值和力量。妖鬼增加25%击晕抗性和10%额外伤害。</color><color=orange>有更大几率攻击力量最高的敌人。</color> <color=red>敌人减少10%减速抗性。</color>
+HODA_AURA_25HPFERELDEN_AND_25PWRNOBILITY_AND_20PWRDRNSLOWSTUNRES_WHTFACTION_AND_MINUS10PWR_VS_BLIGHT_AND_TAUNT|<color=green>Ferelden增加25%生命值。贵族增加25%力量。白色阵营增加20%力量吸取、减速和击晕抗性。</color> <color=red>毁灭系敌人减少10%力量。</color>
+HODA_AURA_25HPPWR50SLOWCURSERES10DMGRESELVES|<color=green>精灵增加25%生命值和力量、50%减速和诅咒抗性以及10%伤害抗性。</color>
+HODA_AURA_25HPPWRALLY_25HPPWRELFWTHERFNG_35STUNRESALLY_25DMGALLYVSFERBST_10ALLYHPONALLYHIT_MINUS35STUNRESENMY|<color=green>友军增加25%生命值和力量，精灵和怀特芬额外增加25%。友军增加35%击晕抗性。友军攻击Ferelden和生物时增加25%额外伤害。友军遭受攻击时，少量治疗友军。</color> <color=red>敌人减少35%击晕抗性。</color>
+HODA_AURA_25HPPWRSEEKTEMPLARS_25DEFENDER_10PWRONHIT_IMMUNITYPWRDRN|<color=green>追寻者和圣殿骑士增加25%生命值和力量（效果可叠加）。25%守护者。遭受攻击时获得10%力量。对力量吸取免疫。</color>
+HODA_AURA_25HP_10CRIT_10BNSDMG_25DMGRES_50DRAINRES_50CURSERES_QUNARI_MINUS10POWER_MINUS25ALLRESISTS|<color=green>Qunari增加25%生命值、力量和伤害抗性，增加10%的2倍伤害几率和额外伤害，并增加50%力量吸取和诅咒抗性。</color> <color=red>敌人减少10%力量，并减少25%击晕、减速、吸取和诅咒抗性。</color>
+HODA_AURA_25POWERHEALTH_TO_WARRIOR_AND_ALLY_DAMAGE_ABSORB_50_AND_SLOW_RESIST_50_AND_DMG_RESIST_PCT_25_PERSONAL_AND_35PWRDRNRES_FOR_NOBILITY|<color=green>战士增加25%生命值和力量。友军增加50%减速抗性。贵族增加35%力量吸取抗性。增加25%伤害抗性。遭受攻击时为友军吸收群体攻击伤害。</color><color=orange>有更大几率攻击后排。</color> 
+HODA_AURA_25PWRORLESIANS_25PWRROGUES_35HEALTHASSFLORIANNE_MINUS20STUNRESENEMY_HATREDFERELDENQUNARI|<color=green>Orlesian和盗贼增加25%力量（效果可叠加）。刺客弗洛里安增加35%生命值。</color><color=orange>有更大几率攻击Ferelden和Qunari。</color> <color=red>敌人减少20%击晕抗性。</color>
+HODA_AURA_30DMGRES5BNSDMGDWF_EXTRA5DACE_GAIN25P5DMGRESALL_ONHIT_STUNIMM_GAIN50PANYDTH_75STUNPDRESDACE_MINUS25PSLOWRES_BLACK|<color=green>矮人增加30%伤害抗性和5%额外伤害，戴斯家族额外增加5%。遭受攻击时，友军获得25%力量和5%伤害抗性。对击晕免疫。任何英雄死亡时获得50%力量。戴斯家族增加75%击晕和力量吸取抗性。</color> <color=red>黑色阵营减少25%力量和减速抗性。</color>\n
+HODA_AURA_30HPDRAINCURSEHRESBLACKTEVSTACK_ONHIT_GAIN25P10PDRESALL_35CURPRESBLACK_MINUS35SLOWRESINQWARDEN|<color=green>黑色阵营和Tevinter增加30%生命值、力量吸取抗性和诅咒生命抗性（效果可叠加）。遭受攻击时，友军获得25%力量和10%力量吸取抗性。黑色阵营增加35%诅咒力量抗性。</color> <color=red>审判英雄和守护者减少35%减速抗性。</color>
+HODA_AURA_30HPPWRALLIES_AND_50STUNRESALLIES_AND_MINUS10PWR_ENEMY_AND_PWRDRN15_ENEMY_ONENEMYDEATH|<color=green>友军增加30%生命值和力量。友军增加50%击晕抗性。敌人死亡时，吸取所有敌人15%的力量。</color> <color=red>敌人减少10%力量。</color>
+HODA_AURA_30HPPWRNOBTEV_15HPFELIX_25DMGVSINQ_25HEALALLIESENMYDIE_50SLOWRESTEV_25DMGRESELDER_MIN35SLOWRESENMY|<color=green>贵族和Tevinter增加30%生命值和力量（效果可叠加），菲力克斯·阿莱科修斯额外增加15%。攻击审判英雄时增加25%额外伤害。敌人死亡时，友军获得少量生命值。Tevinter增加50%减速抗性。大长老增加25%伤害抗性。</color> <color=red>敌人减少35%减速抗性。</color>
+HODA_AURA_30HP_STUNIMMUNE_TO_INQUISITION_30HP_RED_FACTION_CRIT_CHANCE_10_ALLIES|<color=green>审判英雄和红色阵营增加30%生命值和力量。审判英雄对击晕免疫。友军增加10%的2倍伤害几率。</color>
+HODA_AURA_30HWARDAPOBLUE_STACK_50DRAINRESWARD_25BNSDMGALL_VS_TEMPLARS_DEMON_MINUS15P50CURSERES_TEMPLARS|<color=green>守护者、叛徒和蓝色阵营增加25%生命值（效果可叠加）。法师增加50%力量吸取抗性。友军攻击教会英雄、圣殿骑士和恶魔时造成25%额外伤害。</color> <color=red>圣殿骑士减少15%力量和50%诅咒抗性。</color>
+HODA_AURA_35DMGRES15BNSDMGBST_35CURHPNUG_30HEALSELFHIT_10HEALALLYHIT_MINUS20PWRPWRDRNRES3S_152S_101S|<color=green>生物增加35%伤害抗性和15%额外伤害。兔猪增加35%诅咒生命抗性。遭受攻击时治疗30%，友军遭受攻击时治疗友军10%。</color> <color=red>3星敌人减少20%力量和吸取抗性，2星敌人减少15%，1星敌人减少10%。</color>
+HODA_AURA_35HPALLY25HPFERELDEN_AND_50PWRDRNRESSELFALLY_AND_20DMGRESBONUSDMGALLYVSBLIGHT_AND_GAIN35PWRALLYDEATH_AND_BRAVETARGET|<color=green>友军增加35%生命值，Ferelden增加25%（效果可叠加）。自身增加100%力量吸取抗性，友军增加50%。友军攻击毁灭系英雄时增加20%伤害抗性和额外伤害。友军死亡时获得35%力量。</color><color=orange>大幅提高攻击力量最高目标的几率。</color>
+HODA_AURA_35HPALLY_35HPFER_100STUNRES_50STUNRESALLY_20PWRALLYONHIT_BRAVETARGET|<color=green>友军增加35%生命值，Ferelden额外增加35%。自身增加100%击晕抗性，友军增加50%。该英雄遭受攻击时，友军获得少量力量。</color><color=orange>有更大几率攻击力量最高的目标。</color>
+HODA_AURA_35HPCURRESQUN_65HPSTUNRESTRI_GAIN25PH7DMGRESQUN_ONHIT_GAIN100PHONDEATH_MINUS35CURDRNRES|<color=green>Qunari增加35%生命值、力量和诅咒抗性。三圣主增加65%生命值、力量和击晕抗性。遭受攻击时，Qunari友军获得25%力量和生命值以及7%伤害抗性。死亡时，友军获得100%力量和生命值。</color> <color=red>减少35%诅咒和吸取抗性。</color>
+HODA_AURA_35HPCURSERESTWARDFERELDEN_STACK_20DMGRESBNSDMGALL_VS_NOBILITY_ALLYHATREDFERELDENNOBILITY_MINUS20PNOBILITY|<color=green>守护者和Ferelden增加35%生命值、力量和诅咒抗性（效果可叠加）。友军攻击贵族时增加20%额外伤害和伤害抗性。</color><color=orange>友军有更大几率攻击Ferelden和贵族。</color> <color=red>贵族减少20%力量。</color>
+HODA_AURA_35HPPOWWARBM_50HPPOWDRYDEN_CON20DMGTOHPPOWWAR_75POWRESBM_35CURRESALY_10DMGRESALY|<color=green>守护者和嗜血法师增加35%生命值和力量（效果可叠加）。索菲娅·德莱顿增加50%生命值和力量。遭受攻击时，将所受伤害的20%转化为友军的生命值和力量。嗜血法师增加75%力量吸取抗性。友军增加35%诅咒抗性和10%伤害抗性。</color>
+HODA_AURA_35HPPWR50STUNSLOWRESALLIES_15HPPWR5CRITORLES_MINUS25PWRFER|<color=green>友军增加35%生命值和力量，增加50%减速和击晕抗性。Orlesian增加15%生命值和力量，以及5%的2倍伤害几率。</color> <color=red>Ferelden减少25%力量。</color>
+HODA_AURA_35HPPWRCHANTRY_AND_25BONUSDMG_VS_BLACKFACTION_AND_50PWRJOWAN_AND_ELUSIVE|<color=green>教会英雄增加35%生命值和力量。友军攻击黑色阵营时增加25%伤害。叛徒琼增加50%力量。</color>
+HODA_AURA_35HPSTUNSLOWCURSERESALL_DEFENDER50_GAIN25PWRSELFHIT_25DMGRESALL_VS_DEMONS_BLIGHT_DRAIN10SELFHIT_MINUS15P_DEM_INQ|<color=green>友军增加35%生命值、力量以及击晕、减速和诅咒抗性。50%守护者。遭受攻击时获得25%力量。友军对抗恶魔和毁灭系英雄时获得25%伤害抗性。遭受攻击时吸取10%敌人力量。</color> <color=red>恶魔和审判英雄减少15%力量和力量吸取抗性。</color>
+HODA_AURA_35HP_SPIRITS_DEMONS_PLUS25HP_FORBIDDEN_ONES_35CURSEHEALTHRESIST_ALLIES_ALLIES_GAIN_HEALTH_WHEN_SELF_ATTACKED_15|<color=green>恶魔和灵魂增加35%生命值和力量。禁忌者增加25%生命值和力量。友军增加35%诅咒生命抗性。该英雄遭受攻击时，友军恢复少量生命值。</color>
+HODA_AURA_35H_15P_TO_BLIGHTED_FLANK_HATRED_WARDEN_FEAR_MORRIGAN_PLUS35_CURSERESIST_TO_BLIGHT|<color=green>毁灭系英雄增加35%生命值、15%力量和35%诅咒抗性。</color><color=orange>有更大几率攻击后排。有更大几率攻击守护者。减少攻击莫丽甘的几率。</color>
+HODA_AURA_35H_ALLIES_25P_BEASTS_SLOW_50RESIST_TO_BEASTS_AND_MAGES_50P_ALLIES_SELF_DEATH|<color=green>友军增加35%生命值。生物增加25%力量。生物和法师增加50%减速抗性。该英雄死亡时，友军获得50%力量。</color>
+HODA_AURA_35H_INQUISITION_15P_ALL_15P_MARIUS_CHARTER_DAMAGE10_RESIST_VS_BLOODMAGES_ALL_MINUS10P_NOBILITY|<color=green>审判英雄增加35%生命值。友军增加15%力量，马吕斯和查特加倍。友军对抗嗜血法师时增加10%伤害抗性。</color> <color=red>嗜血法师减少20%力量吸取抗性。贵族敌人减少10%力量。</color>
+HODA_AURA_35H_ROGUES_AND_DEMONS_50P_DRAGON_MALVERNIS_50CURSEHEALTHRESIST_ALLIES_ALLIES_GAIN_POWER_WHEN_SELF_DEATH_50_HATRED_HAWKE_TO_PARTY|<color=green>恶魔和盗贼增加35%生命值。巨龙马尔弗尼斯增加50%力量。友军增加50%诅咒生命抗性。死亡时，为友军赋予中等力量。</color><color=orange>友军有更大几率攻击霍克。</color>
+HODA_AURA_35POWER_TO_HAKKON_AND_PLUS25POWER_TO_RED_FACTION_AND_PLUS10POWER_TO_HAKKONITES_AND_MINUS15POWER_TO_INQUISITION|<color=green>哈肯冬息者增加35%力量。红色阵营增加25%力量，哈肯之颌额外增加10%。</color> <color=red>审判英雄减少15%力量。</color>
+HODA_AURA_35PWRALLY25PWRFERELDEN_AND_50PWRDRNRESSELFALLY_AND_20DMGRESBONUSDMGALLYVSBLIGHT_AND_GAIN35PWRALLYDEATH_AND_BRAVETARGET|<color=green>友军增加35%力量，Ferelden增加25%（效果可叠加）。自身增加100%力量吸取抗性，友军增加50%。友军攻击毁灭系英雄时增加20%伤害抗性和额外伤害。友军死亡时获得35%力量。</color><color=orange>大幅提高攻击力量最高目标的几率。</color>
+HODA_AURA_35PWRALLY_35PWRFER_100PWRDRNRES_50PWRDRNRESALLY_20ALLYHEALONSELFHIT_BRAVETARGET|<color=green>友军增加35%力量，Ferelden额外增加35%。自身增加100%力量吸取抗性，友军增加50%。该英雄遭受攻击时，友军恢复少量生命值。</color><color=orange>有更大几率攻击力量最高的目标。</color>
+HODA_AURA_40DRTEMP_35SLOWPWRDRNRESTEMP_25BONDMGALLYVSDEMONBLDMGE_35STUNRES_FLANK_HATREDBLDMGE_REDUCEENEMYFLANK|<color=green>圣殿骑士增加40%伤害抗性以及50%减速和力量吸取抗性。友军攻击恶魔和嗜血法师时增加25%额外伤害。增加35%击晕抗性。</color>\n <color=orange>有更大几率攻击后排。有更大几率攻击嗜血法师。</color> <color=red>降低敌人侧击的几率。</color>
+HODA_AURA_40HPPWR30STUNRES15DMGRLYRIUM_EX10MER_60STUNSLOWRESSELF_MIN10HPPWRVARR|<color=green>红伊利姆增加40%生命值和力量、30%击晕抗性和15%额外伤害，红伊利姆梅雷迪斯额外增加10%。自身增加60%击晕和减速抗性。</color> <color=red>菲里克减少10%力量。</color>
+HODA_AURA_40H_BEAST_DEMONS_25PCTP_VS_SPIRITS_PERSONAL_POWER_DRAIN_RESIST_50_DEMONS_15P_WHEN_ALLY_HIT|<color=green>生物和恶魔增加40%生命值。恶魔增加50%力量吸取抗性。攻击灵魂时增加25%额外伤害。友军遭受攻击时获得少量力量。</color>
+HODA_AURA_40PALL_40HAPO_15HPWITCH_ALL25PSELFHIT_30DMGRESAPO|<color=green>友军增加40%力量，叛徒增加40%生命值，女巫各额外增加15%。该英雄遭受攻击时，友军获得25%力量。叛徒增加30%伤害抗性。</color> <color=red>敌人减少10%力量，并减少20%击晕、减速和诅咒抗性。</color>
+HODA_AURA_40PWARD_GAIN25HPALLSELFHIT_GAIN75HPALLSELFDIE_20DMGRESBNSDMGWARD_FLANK_MINUS20CURSERESBLIGHT|<color=green>守护者增加40%力量。英雄遭受攻击时，友军获得25%生命值和力量，英雄死亡时获得75%。守护者增加20%额外伤害和伤害抗性。</color><color=orange>有更大几率攻击后排。</color> <color=red>毁灭系英雄减少20%诅咒抗性。</color>
+HODA_AURA_40P_ALL_20P_QUNARI_PLUS60H_RASAAN_CRIT_CHANCE_15_PERSONAL_35PCT_POWER_VS_INQUISITION_PERSONAL_BRAVE_TARGETING|<color=green>友军增加40%力量，Qunari额外增加20%。拉赞增加60%生命值。自身增加15%的2倍伤害几率。攻击审判英雄时增加35%额外伤害。</color><color=orange>有更大几率攻击力量最高的目标。</color>
+HODA_AURA_50HEALTHBEASTANDAVVAR_50POWERGOATS_35STUNSLOWPOWERDRAINRESGOATS_ALLIES15POWERSELFHIT_MINUS50STUNRESENEMY_TAUNT|<color=green>生物和Avvar增加50%生命值。山羊增加50%力量。山羊增加35%力量吸取、减速和击晕抗性。该英雄遭受攻击时，友军获得少量力量。</color> <color=red>敌人减少50%击晕抗性。</color>
+HODA_AURA_50HEALTHRL_DMGRES10SELF_DMGRES10ALLIESINQ_HEALSELF10ALLYHIT_HEALSELF50ALLYDEATH_ABSORB50_BIGTAUNT|<color=green>红伊利姆增加50%生命值。增加10%伤害抗性。友军对抗审判英雄时增加10%伤害抗性。友军遭受攻击时治疗10%，友军死亡时治疗50%。50%守护者。</color>
+HODA_AURA_50HPALL_20APOWITCH_25BONDMGALL_25DMGRESALL_HEAL25PWR25HIT_PWRDRN3HIT_MINUS20STUNRES|<color=green>友军增加50%生命值和力量，叛徒和荒野女巫额外增加20%（效果可叠加）。友军增加25%额外伤害和伤害抗性。友军遭受攻击时，为友军赋予25%生命值和力量。友军遭受攻击时，吸取敌人3%的力量。</color> <color=red>敌人减少20%击晕抗性</color>
+HODA_AURA_50HPALL_20APOWITCH_75CURRESALL_30BONDMGVSTEMP_15PWRGAINHIT_MINUS15PWRALISTAIR|<color=green>友军增加50%生命值和力量，叛徒和荒野女巫额外增加20%（效果可叠加）。友军增加75%诅咒抗性。友军攻击圣殿骑士时造成30%额外伤害。遭受攻击时获得15%力量。</color> <color=red>阿历斯泰减少15%力量</color>
+HODA_AURA_50HPALL_20APOWITCH_75STUNSLOWRESALL_25BONDMGVSBEAST_30HEALHIT_MINUS25PWRTEMP|<color=green>友军增加50%生命值和力量，叛徒和荒野女巫额外增加20%（效果可叠加）。友军增加75%击晕和减速抗性。友军攻击生物时造成25%额外伤害。遭受攻击时治疗友军30%。</color> <color=red>圣殿骑士减少25%力量</color>
+HODA_AURA_50HPBLIGHT_25DMGVSWARDFORBLIGHT_25PDRESBLIGHT_35POWERVSLC|<color=green>毁灭系英雄增加50%生命值和25%力量吸取抗性。攻击大型生物时增加35%伤害。毁灭系英雄攻击灰袍守护者时增加25%伤害。</color>
+HODA_AURA_50HPBSTSPRT_50CURRESBST_50STUNSLOWRESALLIES_MINUS20PWRDRNRESENMY|<color=green>生物和灵魂增加50%生命值，生物增加50%诅咒抗性。友军增加50%击晕和减速抗性。</color> <color=red>敌人减少35%力量吸取抗性。</color>
+HODA_AURA_50HPPWR10CRITINQBST_40DEF_ONHITALLY40HP100DTH_25DMGCURRESALLY_MINUS20STUNSLOWRES|<color=green>审判英雄和生物增加50%生命值和力量，以及10%的2倍伤害几率。增加40%守护者。遭受攻击时，友军获得40%生命值，死亡时获得100%。友军增加25%伤害和诅咒抗性。</color> <color=red>减少20%击晕和减速抗性。 </color>
+HODA_AURA_50HPPWRALLY30CURRESDOUBLETHEIRIN_35STUNSLOWRESALLY_15DMGRESALLY_2DMGRESALLYONSELFHIT_2PWRDRNSELFHIT_35DEFEND|<color=green>友军增加50%生命值和力量以及30%诅咒抗性，提林家族加倍。友军增加35%击晕和减速抗性以及15%伤害抗性。遭受攻击时，友军获得2%伤害抗性，并吸取敌人2%的力量。35%守护者。</color>
+HODA_AURA_50HPPWRAPOS_30BONDMGWOWVSWAR_15DMGRESDRAGON_15DMGRESGRTDRGN_ALLY50PWRENEMYDEATH|<color=green>叛徒增加50%生命值和力量。荒野女巫攻击战士时增加30%额外伤害。龙增加15%伤害抗性，巨龙额外增加15%。敌人死亡时，友军获得50%力量。</color>
+HODA_AURA_50HPPWRDMN_35DMGALLYVSAVVDWF_ALLY25PWRENMYDTH_ALLY65HPALLYDTH_ALLY75PWRHPSELFDTH|<color=green>恶魔增加50%生命值和力量。友军攻击Avvar和矮人时增加35%额外伤害。敌人死亡时，友军获得25%力量；友军死亡时，友军获得65%生命值。该英雄死亡时，友军获得75%生命值和力量。</color>
+HODA_AURA_50HPQUNARI_25STUNSLOWCURHRESQUN_20DMGRESTRIUMVIRATE_PLUS20DMGRESSTEN_MINUS10PSTUNRESISABELA|<color=green>Qunari增加50%生命值和力量，增加25%击晕、减速和诅咒生命抗性。三圣主增加20%伤害抗性，斯坦大将军额外增加20%。</color> <color=red>伊莎贝拉减少10%力量和击晕抗性。</color>
+HODA_AURA_50HPTEV_25CURRESALLY_35BONDMGVEN_15DMGRESVAR_10CRITCHANCEVAR_5DMGRESALLYONHIT|<color=green>Tevinter增加50%生命值。友军增加25%诅咒抗性。友军攻击Venatori时增加35%额外伤害。菲里克增加15%伤害抗性和10%的2倍伤害几率。该英雄遭受攻击时，友军获得5%伤害抗性。</color>
+HODA_AURA_50HP_25ALLRESIST_ALLIES_15BNSDMGALL_VS_BLIGHT_PLUS15HPSELF_ALLATTACK_MINUS15P_ENEMIES|<color=green>友军增加50%生命值、力量以及25%所有效果抗性。友军攻击毁灭系英雄时造成15%额外伤害。友军遭受攻击时，获得15%生命值和力量。 </color> <color=red>敌人减少15%力量。</color>
+HODA_AURA_50H_ALLIES_25H_TO_WARRIORS_AND_BEASTS_POWER_GAIN_WHEN_ALLY_HIT_15_AURA_CURSE_POWER_IMMUNE_SELF_STUNRESIST_50_ALL_DMG_RESIST_PCT_20_PERSONAL|<color=green>友军增加50%生命值，战士和生物额外增加25%。友军遭受攻击时获得少量力量。对诅咒力量免疫。友军增加50%击晕抗性。增加20%伤害抗性。</color>
+HODA_AURA_50PAPOINQ_35HALL_25HWITCH_25DMGALLRESISTWITCH_50HPENEMYDEATH_DEFENDER75_MINUS25ALLRESISTS|<color=green>叛徒和审判英雄增加50%力量。友军增加35%生命值，女巫额外增加25%。女巫增加25%伤害和所有效果抗性。敌人死亡时获得50%生命值和力量。75%守护者。</color> <color=red>敌人减少25%所有效果抗性。</color>
+HODA_AURA_50P_ALL_PLUS65H_SPIRITS_HEALTH_ON_ALLY_DEATH_30_50DMG_RESIST_PCT_VS_WARRIORS_PERSONAL_35STUN_RESIST_SPIRITS_POWER_DRAIN_RESIST_35_SPIRITS|<color=green>友军增加50%力量。灵魂增加65%生命值。敌人死亡时中等程度治疗。灵魂增加35%击晕和力量吸取抗性。对战士增加50%伤害抗性。</color>
+HODA_AURA_50P_INQUISITION_20H_TESSA_25PCT_POWER_VS_MAGES_ALL_25_PERSONAL_POWER_ON_ENEMY_DEATH_40_10PCT_DMG_RESIST_ALLIES_VS_BLACK_FACTION|<color=green>审判英雄增加50%力量。黛莎·连翘增加20%生命值。攻击法师时增加50%额外伤害，友军增加25%。敌人死亡时获得40%力量。友军对抗黑色阵营时增加15%伤害抗性。隐形：攻击不会触发命中效果。</color>
+HODA_AURA_50_DEFENDER_P_WHEN_SELF_HIT_30_ALLIES_GAIN_POWER_WHEN_SELF_DEATH_75_PLUS50H_15PCT_DMGRESIST_TO_BLIGHT|<color=green>毁灭系英雄增加50%生命值和15%伤害抗性。50%守护者。遭受攻击时获得30%力量。被击杀时，为友军赋予75%力量。</color>
+HODA_AURA_60HP20DMGRESAVVAR_50CURRESPWRDRNRESREDFACX2SELF_35HPPERAVVAR_60DEF_5HEALHIT|<color=green>Avvar增加60%生命值和20%伤害抗性。红色阵营增加50%诅咒力量抗性和力量吸取抗性，自身加倍。每有一名Avvar友军，增加35%生命值。60%守护者。遭受攻击时治疗5%。</color>
+HODA_AURA_60HPPWR25BNSDMG50CURRESFER_100HPPWRALLYONSELFDEATH_60DEFENDER_MASTAUNT|<color=green>Ferelden增加60%生命值和力量、25%额外伤害和50%诅咒抗性。该英雄死亡时，友军获得100%生命值和力量。60%守护者。</color>
+HODA_AURA_60HPPWR40DMGRESCURPWRIMMFER_MINUS50STUNSLOWCURSEPWRDRNRESENMY|<color=green>Ferelden增加60%生命值和力量、40%伤害抗性，并对诅咒力量免疫。</color> <color=red>敌人减少50%击晕、减速、诅咒和力量吸取抗性。</color>
+HODA_AURA_60HPPWRSTUNRESELF_5000DMGRESELF_ALLYHEAL25ONHIT_ALLYPWR100ONDTH_MASSTAUNT_MINUS20PWRENMYPWRDRN|<color=green>精灵增加60%生命值、力量和击晕抗性。精灵抵挡最初的5,000点伤害。该英雄遭受攻击时，友军恢复中等生命值（25%），该英雄死亡时获得100%力量。</color> <color=red>吸取力量的敌人减少20%力量。</color>
+HODA_AURA_60HPPWRWARDS_50STUNSLOWCURPDRESWARDSBSTS_15HPPWRALLYONHIT_CURPWRIMMGARAHEL_MINUS20CURPWRRESBLIGHT|<color=green>守护者增加60%生命值和力量。守护者和生物增加50%击晕、减速、诅咒和力量吸取抗性。遭受攻击时，将所受伤害的15%转化为友军的生命值和力量。加拉赫尔对诅咒力量免疫。</color> <color=red>毁灭系英雄减少20%诅咒力量抗性。</color>
+HODA_AURA_60HSLOWRESTEV_15BNSDMGNOBILITY_GAIN10ALL_SELFHIT_GAIN15HALL_ENEMYHIT_15DMGRESTEV_5DMGRESBLACK_MINUS25CURSEDRAINRES|<color=green>Tevinter增加60%生命值和减速抗性。贵族增加10%额外伤害。遭受攻击时，友军获得10%力量。攻击敌人时，友军获得15%生命值。Tevinter增加15%伤害抗性，黑色阵营额外增加5%。</color> <color=red>敌人减少25%诅咒和吸取抗性。</color>
+HODA_AURA_60POWERTEVINTER_25BNSDMGFERELDENQUNARI_DRAIN10POWERSELFHIT_75STUNRESALLIES_MINUS10POWERENEMY|<color=green>Tevinter和贵族增加60%力量。友军攻击Ferelden和Qunari时增加25%额外伤害。友军增加75%击晕抗性。该英雄遭受攻击时，吸取敌人少量力量。</color> <color=red>敌人减少10%力量。</color>
+HODA_AURA_60PPDRESTEV_75STUNRESSELF_GAIN15SELFDMGANYHERO_HEAL50ALLANYDEATH_GAIN10CURSERESSELFONHIT_15DMGRESTEVNOBSTACK|<color=green>Tevinter增加60%力量和力量吸取抗性。增加75%击晕抗性。将任何英雄所受伤害的15%转化为力量。任何英雄死亡时，友军治疗50%。遭受攻击时，获得10%诅咒抗性。Tevinter和贵族增加15%伤害抗性（效果可叠加）。</color>
+HODA_AURA_65HPPWR20DMGRESDMNELF_35SLOWSTUNRESBLKFCTN_50CURRESELF_ALLYHEAL5ANDENMYPWRDRN2ONENMYHIT_MINUS5CRITENMY|<color=green>恶魔和精灵增加65%生命值和力量以及20%伤害抗性（效果可叠加）。黑色阵营增加35%减速和击晕抗性。精灵增加50%诅咒抗性。敌人遭受攻击时，友军治疗5%，并吸取敌人2%的力量。</color> <color=red>敌人减少5%的2倍伤害几率。</color>
+HODA_AURA_65HPPWRAND15DMGDMN_20HP10PWRSELFHIT_DEFEND50_60PDRESDARKTHEURGE_MINUS35PDRESWHITEFAC|<color=green>恶魔增加65%生命值和力量以及15%额外伤害。遭受攻击时获得20%生命值和10%力量。50%守护者。黑暗神术师增加60%力量吸取抗性。</color> <color=red>白色阵营减少35%力量吸取抗性。</color>
+HODA_AURA_75HPALL_75PWRDRNRESALL_25BONDMGVSNOBILITY_HEAL30PWR20HIT_PWRDRN10HIT|<color=green>友军增加75%生命值、力量和力量吸取抗性。友军攻击贵族时造成25%额外伤害。友军遭受攻击时，为友军赋予30%生命值和20%力量。该英雄遭受攻击时，吸取敌人10%的力量。</color>
+HODA_AURA_75HPCURPRESELF_ONHITALLY5DMG5DMGRES_25ALLEFFECTRES_50DEF_FEARHUMANELF_MINUS15CURRES|<color=green>精灵增加75%生命值和50%诅咒力量抗性。遭受攻击时，友军获得5%额外伤害和伤害抗性。友军增加25%所有效果抗性。增加50%守护者。</color><color=orange>减少攻击人类和精灵的几率。</color> <color=red>减少15%诅咒抗性。</color>
+HODA_AURA_ALLIES40HPPOW_NOB10HPPOW_50CURSEPOWRES_RES2KPERHIT_ALLIES20POWSELFHIT_100POWONDEATH_2DRNENMONENMHIT_MINUS35ALLRES|<color=green>友军获得：40%生命值和力量（贵族额外增加10%），50%诅咒力量抗性，并抵挡每次攻击的2千点伤害。遭受攻击时，友军获得20%力量，死亡时获得100%。敌人遭受攻击时，吸取敌人2%的力量。</color> <color=red>敌人减少35%击晕、减速、力量吸取和诅咒抗性。</color>
+HODA_AURA_ALLY_DAMAGE_ABSORB_50_AND_AURA_PLUS50POWER_TO_WARDENS_AND_POWER_ON_ALLY_DEATH_50_35_PCURSE_WARDENS|<color=green>守护者增加50%力量。守护者增加35%诅咒力量抗性。50%守护者。友军死亡时获得力量。</color>
+HODA_AURA_BRAVETGT_STUNRES100_AND_PERSONAL_POWER_DRAIN_RESIST_AND_PERSONAL_SLOW100|<color=green>增加100%击晕、减速和力量吸取抗性。大幅提高攻击力量最高敌人的几率。隐形：攻击不会触发命中效果。</color>
+HODA_AURA_CRIT5_ALLIES_5_SELF_AND_PLUS25_POWER_TO_ROGUES_AND_BLIGHTED|<color=green>隐形：攻击不会触发命中效果。友军增加5%的2倍伤害几率，自身加倍。盗贼和毁灭系英雄增加25%力量（效果可叠加）。</color>
+HODA_AURA_DEFENDER25_AND_PLUS25HANDP_ALLIES_AND_PLUS40_PDRESIST_ALLIES|<color=green>25%守护者。友军增加25%生命值和力量。友军增加40%力量吸取抗性。</color>
+HODA_AURA_DEFENDER25_DMGRES25ALL_HEAL10SELFHITGHAST_PLUS50HEALTHSELFDIEGHAST_MINUS10DRAINRES_REDUCEFLANK|<color=green>25%守护者。友军增加25%伤害抗性。该英雄遭受攻击时，妖鬼获得10%生命值，该英雄死亡时获得50%生命值。</color> <color=red>敌人减少10%吸取抗性。降低敌人侧击的几率。</color>
+HODA_AURA_DEFENDER50_GAIN50HALLDEATH_GAIN20PALLATTACK_PLUS50HPSLOWRESQUN_PLUS50STUNPDRESTRIUM_RASAANSTUNIMMUNE20H|<color=green>50%守护者。友军死亡时获得50%生命值，友军遭受攻击时获得20%力量。Qunari增加50%生命值、力量和减速抗性。三圣主增加50%击晕和力量吸取抗性。拉赞对击晕免疫并增加20%生命值。</color> 
+HODA_AURA_DEFENDER_AND_BONUS_DAMAGE_VS_BLIGHTED_AND_SLOWIMMUNE_POWERDRAIN_IMMUNE_GREY_WARDENS_35H_WARDENS_HEAL_ALL_SELF_ATTACK_15|<color=green>守护者增加35%生命值。该英雄遭受攻击时，友军恢复少量生命值。50%守护者。攻击毁灭系英雄时增加25%伤害。灰袍守护者对力量吸取和减速免疫。</color>
+HODA_AURA_DEFENDER_AND_PLUS35HP_PLUS50STUNRES_BEAST_CHANTRY_AND_PLUS10HP_LELIANA_AND_25HAND5DMGRESALLYONHIT|<color=green>遭受攻击时为友军吸收中等群体攻击伤害。教会英雄和生物增加35%生命值和力量以及50%击晕抗性。蕾莉安娜增加10%生命值和力量。该英雄遭受攻击时，友军治疗25%并获得5%伤害抗性。</color>
+HODA_AURA_DMG_RESIST_PCT_20_TO_OUTLAWS|<color=green>不法之徒友军所受伤害减少20%。</color>
+HODA_AURA_DMG_RESIST_PCT_5_SELF_5_INQUISITION_FLANK_PLUS30HP_INQUISITION_BLUE_FACTION_POWER_GAIN_WHEN_ALLY_HIT_10_VAL_FROM_DAM|<color=green>审判英雄和蓝色阵营增加30%生命值和力量。友军增加5%伤害抗性，审判英雄额外增加5%。将友军所受伤害的10%转化为力量。隐形：攻击不会触发命中效果。</color> <color=orange>有更大几率攻击后排。</color>
+HODA_AURA_DRAIN20PENEMY_ONHIT_25BNSDMGVSCARTA15DMGRESCRITALLY_GAIN50HRETALIATE20_ENEMYDEATH_MINUS20EFFRES|<color=green>遭受攻击时，吸取所有敌人20%的力量。攻击Carta时增加25%额外伤害，友军增加15%伤害抗性和2倍伤害几率。敌人死亡时，获得50%生命值，所有敌人承受20%已造成的伤害。</color>  <color=red>减少20%所有效果抗性。</color>
+HODA_AURA_FLANK_PLUS25DMG_VS_BLIGHTED_CURSE_IMMUNE_35CH_RESIST_WARDENS_35H_ALL_25P_WARDENS|<color=green>友军增加35%生命值。守护者增加25%力量和35%诅咒生命抗性。对诅咒生命免疫。</color><color=orange>有更大几率攻击后排。</color>
+HODA_AURA_FR_BR_EQUAL_AND_PLUS30H_FOR_SPIRITS_AND_PLUS20DAM_FOR_BLUEFACT_AND_IMM_TO_STUN_SLOW_PD_CURSE_AND_CURSEH_IMM_SPIRITS_AND_ALLIES25P_ONHIT|<color=green>灵魂增加30%生命值。蓝色阵营增加20%额外伤害。对击晕、减速、力量吸取和诅咒免疫。灵魂对诅咒生命免疫。该英雄遭受攻击时，友军获得25%力量。</color> <color=orange>攻击前排和后排的几率相等。</color>
+HODA_AURA_FR_BR_EQU_CHANCE_AND_PLUS20HP_ALL_EXT15_HWKFAM_EXT15_ARCHWK_AND_DEFENDER35_AND_PLUS5DR_FERELDEN_HWKFAM_STACK|<color=green>攻击前排或后排的几率相等。友军增加20%生命值和力量，霍克家族额外增加15%，秘法霍克再额外增加10%。35%守护者。Ferelden和霍克家族增加5%伤害抗性（效果可叠加）。</color>
+HODA_AURA_HANDP25_TO_WARDENS_AND_PLUS35HEALTH_TO_ALISTAIR_AND_PLUS50DAMAGE_VS_NOBILITY_FOR_ALLIES_AND_ONSELFHIT_ALLIES_HEALSMALL_HATRED_NOBLES|<color=green>灰袍守护者增加25%生命值和力量。阿历斯泰增加35%生命值。友军攻击贵族时增加50%伤害。遭受攻击时，少量治疗所有友军。</color><color=orange>友军有更大几率攻击贵族英雄。</color>
+HODA_AURA_HASTE_PLUS60HPINQ_CONVERT15P_ENEMYDMG_20DMGRESALL_SLOWIMMUNE_QUICKTGT_MINUS50SLOWRES|<color=green>更有可能率先攻击。审判英雄增加60%生命值和力量。将对敌人所造成伤害的15%转化为力量。友军增加20%伤害抗性。对减速免疫。 </color> <color=orange>有更大几率攻击速度最快的敌人。</color> <color=red>减少50%减速抗性。</color>
+HODA_AURA_HATRED_AND_PLUS80HEALTH_NOBILITY_AND_HEAL_ALLIES_ONHIT_AND_POWERGAIN_ALLIES_ONDEATH|<color=green>大幅提高暗杀贵族的几率。贵族增加80%生命值。遭受攻击时，大量治疗友军。死亡时，友军获得大量力量。</color>
+HODA_AURA_HPDRNSLOWRES60DWF_EXTRA15DACE_ALLYGAINHP50ONALLYDTH_ALLHP25EMYDTH_75CURRES35DMGRESDACE_MINUSSLOWDRNRES35BLCFAC|<color=green>矮人增加60%生命值、力量吸取抗性和减速抗性，戴斯家族额外增加15%。友军死亡时，友军获得50%力量和生命值。敌人死亡时，友军获得25%生命值。戴斯家族增加75%诅咒抗性和35%伤害抗性。</color> <color=red>黑色阵营减少35%减速和吸取抗性。</color>
+HODA_AURA_MIN15PWR_TO_CIRCCHANT_AND_MIN15PWRDRNRES_TO_ENEM_AND_HPPWR15_TO_SPIRELVESBLUEFACT_AND_ALLIES_GAINPWR_ON_ALLYDEATH75|<color=green>灵魂、精灵和蓝色阵营增加15%生命值和力量（效果可叠加）。友军死亡时，友军增加75%力量。</color> <color=red>敌人减少15%力量吸取抗性。议会和教会英雄减少15%力量。</color>
+HODA_AURA_MINUS20_POWER_TO_MAGES_AND_PLUS35HEALTH__PLUS50POWER_TO_DARKSPAWN_POWERDRAINRESIST50_TO_DARKSPAWN_AURA_50SLOWRESIST_TO_BLIGHTED_AND_35STUNRESIST|<color=green> 毁灭系英雄增加35%生命值和力量。毁灭系英雄增加35%力量吸取、击晕和减速抗性。</color> <color=red>敌方法师减少20%力量。</color>
+HODA_AURA_PERCEPTIVE_20HPORLWINTSTACK_10CRIT_EQUALTGT_GAIN5DMGRES3BNSDMGSELF10PWRALL_SELFHIT|<color=green>洞察：无视隐形。Orlesian和立春友军增加20%生命值和力量（效果可叠加）。增加10%的2倍伤害几率。攻击前排或后排的几率相等。遭受攻击时，获得5%伤害抗性和3%额外伤害，同时友军获得10%力量。</color>
+HODA_AURA_PERCEPTIVE_50HPAPODEM_5000DMGRED_10P10DRALLSELFHIT_EXPLODE3_MIN50CRIT_MIN15ALLEFF|<color=green>洞察：无视隐形。叛徒和恶魔增加50%生命值和力量（效果可叠加）。友军抵挡最初的5000点伤害。遭受攻击时，友军获得10%力量和伤害抗性。友军攻击时，所有敌人承受3%已造成的伤害。</color> <color=red>减少50%的2倍伤害几率。减少25%所有效果抗性。</color>
+HODA_AURA_PERCEPTIVE_PLUS50HPSLOWRESELF_35SENTINEL_GAIN50ANYDTH_DRAIN5HEALSENTINEL50ONHIT_RETALIATE20ONDTH_MIN25CURRES|<color=green>洞察：无视隐形。精灵增加50%生命值、力量和减速抗性，哨兵额外增加35%。任何英雄死亡时获得50%力量。遭受攻击时，吸取敌人5%的力量，并治疗哨兵精灵50%。死亡时，反弹所受伤害的20%。</color> <color=red>黑色阵营减少25%诅咒抗性。</color>
+HODA_AURA_PERCEPTIVE_PLUS50HPSTUNRES30DMGRESALL_RETAL15_GAIN35HEAL35ALL_SELFHIT_2500DMGREDSTUNIMMREAVER_DEFENDER65_MIN25ALLEFF|<color=green>洞察：无视隐形。友军增加50%生命值、力量、击晕抗性以及30%伤害抗性。遭受攻击时，将15%伤害反弹给敌人，同时友军获得35%力量和生命值。掠夺者抵挡每次攻击的2500点伤害，并对击晕免疫。增加65%守护者。</color> <color=red>减少25%所有效果抗性。</color>
+HODA_AURA_PERSONAL_STUN_IMMUNE_35HEALTH_TO_DEMONS_DMG_RESIST10_DEMONS_HEALTH_GAIN_WHEN_ALLY_HIT_10|<color=green>恶魔增加35%生命值。恶魔增加10%伤害抗性。友军遭受攻击时获得少量生命值。对击晕免疫。</color>
+HODA_AURA_PLUS10BNSDMG10DMGRES_ALL_VS_BLIGHT_PLUS40SELF_HEAL15ALL_FRMDMG_RETALIATE5BLACK_MINUS25PDRAINRES|<color=green>友军攻击毁灭系英雄时增加10%额外伤害和伤害抗性，自身额外增加40%。将自身对敌人所造成伤害的15%转化为友军的生命值。遭受攻击时，将所受伤害的5%反弹给黑色阵营敌人。</color> <color=red>减少25%力量吸取抗性。</color>
+HODA_AURA_PLUS10BNSDMG15DMGRES50PDRESBEAST_50STUNSLOWRESWEREWOLVES_DEFENDER50_3DMGRESSELF_ALLYHIT_STUNIMMUNELADY_MINUS15SLOWDRAIN|<color=green>生物增加10%额外伤害、15%伤害抗性和50%力量吸取抗性。狼人增加50%击晕和减速抗性。增加50%守护者。友军遭受攻击时，获得3%伤害抗性。森林女王对击晕免疫。</color> <color=red>减少15%减速和吸取抗性。</color>
+HODA_AURA_PLUS10BNSDMG30DMGRESALL_VS_QUICK_GAIN20HP_ALLHIT_SLOWIMMUNE_QUICKTARGET_MINUS50SLOWRES|<color=green>友军对抗快速敌人时增加10%额外伤害和30%伤害抗性。友军遭受攻击时，获得20%生命值和力量。对减速免疫。</color><color=orange>有更大几率攻击速度最快的敌人。</color> <color=red>减少50%减速抗性。</color>
+HODA_AURA_PLUS10BNSDMGDMGRES50CURRESALL_15CRITSELF_HEAL25ALLENEMYDTH_WOUNDEDTGT_MINUS100STUNRES10PWR|<color=green>友军增加10%额外伤害、20%伤害抗性和50%诅咒抗性。增加15%的2倍伤害几率。敌人死亡时，按所造成伤害的25%治疗友军。</color><color=orange>有更大几率攻击生命值百分比最低的敌人。</color> <color=red>减少100%击晕抗性。减少10%力量。</color>
+HODA_AURA_PLUS10BNSDMGDMGRESALL_5FERELD_STUNIMM_40CURPDRESALL_X2MARIC_WOUNDEDTGT_MIN20PWR50STUNRES|<color=green>友军增加10%额外伤害和伤害抗性，Ferelden额外增加5%。对击晕免疫。友军增加40%诅咒和力量吸取抗性，马瑞克国王加倍。</color><color=orange>有更大几率攻击生命值百分比最低的敌人。</color> <color=red>减少20%力量和50%击晕抗性。</color>
+HODA_AURA_PLUS10DMGRESTEMP_DOUBLEREDLYR_PLUS50CURSERESTEMP_PLUS50SLOWRESREDLYR_CONVERT10ALLYDMGSELFPOWER_MINUS25CURSERES|<color=green>圣殿骑士增加10%伤害抗性，红伊利姆加倍。圣殿骑士增加50%诅咒抗性。红伊利姆增加50%减速抗性。将友军所受伤害的10%转化为力量。</color> <color=red>敌人减少25%诅咒抗性。</color>
+HODA_AURA_PLUS10DMGRES_TEMP_CHANT_PLUS50PDRAINCURPWRRESALL_GAIN5ALL_ALLHIT_HATREDMAGE_MINUS10CURSEHPRES_MAGES|<color=green>圣殿骑士和教会英雄增加10%伤害抗性（效果可叠加）。友军增加50%力量吸取抗性和诅咒力量抗性。友军遭受攻击时，友军获得5%力量。</color><color=orange>有更大几率攻击法师。</color> <color=red>法师减少10%诅咒抗性。</color>
+HODA_AURA_PLUS15DMGRES_PLUS50HDWARVESROGUES_DEFENDER50_PLUS75PBROGAN_PLUS50SLOWRESJERRIK|<color=green>增加15%伤害抗性。矮人和盗贼增加50%生命值。增加50%守护者。布罗根·戴斯增加75%力量。杰瑞克·戴斯增加50%减速抗性。</color>
+HODA_AURA_PLUS15HP_BLT_BLACKF_ST_AND_PGAINALL100_MEDIE_AND_M20ST_SL_PDRES_EN_AND_PLUS50_ST_SL_PDRES_BLT_AND_PLUS10DR_BLIGHT_AND_ALLY_DRFINITE_1500|<color=green>毁灭系英雄和黑色阵营增加15%生命值和力量（效果可叠加）。毁灭系英雄增加10%伤害抗性，友军抵挡每次攻击的最初1500点伤害。毁灭系英雄增加50%击晕、减速和力量吸取抗性。该英雄死亡时，友军获得100%力量。</color> <color=red>敌人减少20%击晕、减速和力量吸取抗性。</color>
+HODA_AURA_PLUS15HP_DWARVES_15HP_SHABRYTOL_HEALTH_GAIN_ALL_WHEN_ALLY_HIT_10|<color=green>矮人和沙布莱托增加15%生命值和力量（效果可叠加）。友军遭受攻击时，少量治疗友军。隐形：攻击不会触发命中效果。</color>
+HODA_AURA_PLUS15POW_BONUSDAM_DEMONS_AND_SELFIMMUNE_SLOW_STUN_PD_PLUS25_DEMONS_AND_POWGAIN_ALL_ON_ALL_HIT_BM_AND_WOUNDTARGETING|<color=green>隐形：攻击不会触发命中效果。恶魔增加15%力量和额外伤害。对减速、击晕和力量吸取免疫，恶魔各增加25%。将友军所受伤害的10%转化为友军的力量。</color><color=orange>有更大几率以生命值百分比最低的敌人为目标。</color>
+HODA_AURA_PLUS15_HP_AND_30STUNSLOWRESIST_TO_ORLESIAN_WHITEFACTION_STACKING_AND_ALLIES_PLUS35_POWER_DAMRES_VS_OUTLAWS_AND_ALLY_HATRED_OUTLAWS|<color=green>Orlesian和白色阵营增加15%生命值和力量以及30%击晕和减速抗性（效果可叠加）。友军有更大几率攻击不法之徒，并在对抗不法之徒时增加35%伤害抗性和额外伤害。</color>
+HODA_AURA_PLUS20DMGRESBNSDMGBLIGHT_DEFENDER50_IMMSTUNSLOW_GAINDMGRES5SELF5BLIGHTSELFATK_RETALIATE5_DMGRED5000|<color=green>毁灭系英雄增加20%伤害抗性和额外伤害。增加50%守护者。对击晕和减速免疫。攻击时，获得5%伤害抗性，并为毁灭系友军赋予5%伤害抗性。遭受攻击时，将所受伤害的5%反弹给所有敌人。每次攻击抵挡5000点伤害。</color>
+HODA_AURA_PLUS20HANDP_WARRIORS_AND_AVELINE_AND_BONUSDAMAGE40_VS_BLIGHT_AND_PLUS25_SLOW_AND_STUN_RESIST_TEMPLARS|<color=green>战士增加20%生命值和力量，艾芙琳额外增加20%。攻击毁灭系英雄时增加40%额外伤害。圣殿骑士增加25%击晕和减速抗性。</color>
+HODA_AURA_PLUS20HCURHRES_DWARVES_GOLEMS_STACK_DRAINIMMUNE_15DMGRESFLANK_ANTIFLANK|<color=green>矮人和魔像增加20%生命值和诅咒生命抗性（效果可叠加）。对力量吸取免疫。对抗侧击者时增加15%伤害抗性。</color> <color=red>阻止敌人侧击后排。</color>
+HODA_AURA_PLUS20HDWARFINQLEGION_STACK_2500DMGRES_PLUS15DMGRESALL_PLUS15ALLRESDWARF_PLUS5ALLRESLEGION_DEFENDER50_MINUS10PBLACK|<color=green>矮人、审判英雄和亡者军团增加20%生命值（效果可叠加）。矮人抵挡每次攻击的2500点伤害。友军增加15%伤害抗性。矮人增加15%所有效果抗性，亡者军团额外增加5%。增加50%守护者。</color> <color=red>黑色阵营减少10%力量。</color>
+HODA_AURA_PLUS20HEALTHPOWERFORMAGESCIRCLEORLESIANS_AND_PLUS50CURSERESISTALLIES_AND_CURSEIMMUNESELF_AND_MINUS20STUNRESISTENEMIES|<color=green>法师、议会英雄和Orlesian增加20%生命值和力量（效果可叠加）。对诅咒免疫。友军增加50%诅咒抗性。</color> <color=red>敌人减少20%击晕抗性。</color>
+HODA_AURA_PLUS20HEALTH_AND_PLUS15DMG_FOR_CHANTRY_DIVINES_STACKING_AND_DEFENDER75_AND_PLUS10DMG_AND_DMGRESIST_PER_DIVINE|<color=green> 教会英雄和神使增加20%生命值和15%额外伤害（效果可叠加）。75%守护者。每有一名神使友军，获得10%额外伤害和伤害抗性。</color>
+HODA_AURA_PLUS20HPALLMAGEBLACKSTACK_15DMGEFFRESBLKMAGESTACK_GAIN10SELF_ANYHIT_PDIMM_DEFENDER25_30BNSDMGALLVTEMP_MINUS35CURSE|<color=green>友军、法师和黑色阵营增加20%生命值和力量（效果可叠加）。黑色阵营和法师增加15%伤害和所有效果抗性（效果可叠加）。任何英雄遭受攻击时，获得10%力量。对力量吸取免疫。25%守护者。友军攻击圣殿骑士时增加30%额外伤害。</color> <color=red>减少35%诅咒抗性。</color>
+HODA_AURA_PLUS20HPCURDRAINRES_WHITEINQADVISOR_STACK_30DMGRESINQ_RETALIATE5ALL_GAIN30HEAL30STUNRES10ALL_ONHIT_MIN20ALLRESBLACK|<color=green>白色阵营、审判英雄和顾问增加20%生命值、力量、诅咒抗性和力量吸取抗性（效果可叠加）。审判英雄增加30%伤害抗性。遭受攻击时，反弹所受伤害的5%，同时友军获得30%力量、生命值和10%击晕抗性。</color> <color=red>黑色阵营减少20%所有效果抗性。</color>
+HODA_AURA_PLUS20HP_CHANTRY_INQ_STACK_AND_PLUS35_STUN_SLOW_PDRES_CHANTRY_INQ_AND_DRAIN5_ON_SELFHIT|<color=green>教会英雄和审判英雄增加20%生命值和力量（效果可叠加）。教会英雄和审判英雄增加35%击晕、减速和力量吸取抗性。遭受攻击时，吸取敌人极少量力量。</color>
+HODA_AURA_PLUS20H_40P_ELVES_AND_CHANTRY_ALLIES_GAIN_POWER_WHEN_SELF_ATTACKED_20_25PCT_POWER_VS_TEVINTER_ALL_50_CURSE_RESIST_ELVES|<color=green>精灵和教会英雄增加20%生命值和40%力量。精灵增加50%诅咒抗性。该英雄遭受攻击时，友军获得20%力量。友军攻击Tevinter敌人时造成25%额外伤害。</color>
+HODA_AURA_PLUS20_HP_FOR_BLIGHT_BLACK_FACTION_AND_PLUS25_CRIT_AND_POWERBOMB100|<color=green>毁灭系英雄和黑色阵营增加20%生命值和力量（效果可叠加）。增加25%的2倍伤害几率。该英雄死亡时，友军获得巨量力量。</color>
+HODA_AURA_PLUS25DMGEFFECTRESALL_CONVERT20HEALTH_GAIN5ALLYATTACK_RETALIATE10_MINUS25EFFRES|<color=green>友军增加25%伤害和所有效果抗性。将所造成或所受伤害的20%转化为生命值。友军攻击时，获得5%力量。遭受攻击时，将所受伤害的10%反弹给敌人。</color> <color=red>敌人减少25%所有效果抗性。</color>
+HODA_AURA_PLUS25DRAINRES_HEALTH_CHARGERS_INQ_PLUS25DMGRES_PLUS10BNSDMG_VS_TEVINTER_ALL_RETALIATE5_TEVINTER_GAIN10HEAL10ALL_ONHIT_MINUS5CRIT|<color=green>公牛冲锋队和审判英雄增加25%力量吸取抗性和生命值（效果可叠加）。友军对抗Tevinter时增加25%伤害抗性和额外伤害。将所受伤害的5%反弹给Tevinter敌人。遭受攻击时，友军获得10%生命值和力量。</color> <color=red>减少5%的2倍伤害几率。</color>
+HODA_AURA_PLUS25H10DMGRES3BNSDMGSPIRITBEASTSTACK_50PDSTUNRESALL_GAIN20P5DMGRESALL_ONHIT_HEAL75ALL_ONDEATH_DEF50_MIN35CURSTUNRES|<color=green>灵魂和生物增加25%生命值、10%伤害抗性和3%额外伤害（效果可叠加）。友军增加50%力量吸取和击晕抗性。遭受攻击时，友军获得20%力量和5%伤害抗性。死亡时，友军治疗75%。增加50%守护者。</color> <color=red>减少35%诅咒和击晕抗性。</color>
+HODA_AURA_PLUS25HANDP_AVVAR_AND_BEASTS_AND_ALLIES_HEAL25_ON_SELF_HIT_AND_STUN_PD_IMMUNE|<color=green>生物和Avvar增加25%生命值和力量（效果可叠加）。该英雄遭受攻击时，友军获得25%生命值。对击晕和力量吸取免疫。</color>
+HODA_AURA_PLUS25HANDP_STUNRES_SLOWRES_PDRES_TO_BLACK_FACTION_AND_ALLIES_GAIN50POWER_ONALLYDEATH_AND_MINUS25PDRESIST_TO_WARDEN_BLIGHT|<color=green>黑色阵营增加25%生命值、力量、击晕抗性、减速抗性和力量吸取抗性。友军死亡时，友军获得中等力量。</color> <color=red>守护者和毁灭系英雄减少25%力量吸取抗性。</color>
+HODA_AURA_PLUS25HANDP_TO_BLIGHT_AND_PLUS15DAMRES_TO_SLOW_HEROES_AND_POWERGAIN20_ONHIT_BM_ABILITY|<color=green>毁灭系英雄增加25%生命值和力量。黑色阵营增加10%伤害抗性。将所受伤害的20%转化为自身力量。</color>
+HODA_AURA_PLUS25HEALTHCURSERES_ELVES_SENTINETLS_STACK_PLUS5BNSDMG_SENTINEL_GAIN50HEALTH_ANYDEATH_REDUCEFLANK|<color=green>精灵增加25%生命值和诅咒生命抗性，哨兵加倍。哨兵增加5%额外伤害。任何英雄死亡时，获得50%生命值。</color> <color=red>降低敌人侧击的几率。</color>
+HODA_AURA_PLUS25HEALTHPOWERCURSERESIST_TO_SPIRITSDEMONSINQUISITIONBLUEFACTION_AND_HEALTHPOWER50_ON_ALLY_DEATH|<color=green>灵魂、恶魔、审判英雄和蓝色阵营增加25%生命值、力量和诅咒抗性（效果可叠加）。友军死亡时，获得50%生命值和力量。</color>
+HODA_AURA_PLUS25HEALTH_ELVES_AND_BM_ABILITY15_SELF_TO_ALLIES_AND_FLANK|<color=green>精灵增加25%生命值和力量。将所受伤害的15%转化为友军的力量。</color><color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS25HEALTH_POWER_TO_INQ_EXTRA15_TO_LELIANA_AND_PLUS35_PDRESIST_CURSEPOWER_RESIST_TO_INQU_AND_DAMRES15_FOR_WHITE_VS_OTHER_FACTIONS|<color=green>审判英雄增加25%生命值和力量，蕾莉安娜额外增加15%。审判英雄增加35%力量吸取抗性和诅咒力量抗性。白色阵营友军受到其他所有阵营的伤害减少20%。</color>
+HODA_AURA_PLUS25HEALTH_TO_ALLIES_AND_PLUS15POWER_TO_ALLIES_AND_PLUS25POWERDRAINRESIST_TO_ALLIES_AND_ALLIESGAIN25POWER_ON_SELF_DEATH|<color=green>友军增加25%生命值、15%力量和25%力量吸取抗性。友军死亡时，友军获得少量力量。</color>
+HODA_AURA_PLUS25HEALTH_TO_WARRIORS_AND_PLUS25DAMAGERESIST_TO_SELF_AND_PLUS15POWERAND15HEALTHSELF_ON_ALLY_HIT_AND_PLUS25POWER_TO_DUKEPROSPER_AND_FLANK|<color=green>战士增加25%生命值。增加25%伤害抗性。友军遭受攻击时，获得少量生命值和力量。帕斯柏公爵增加35%力量。</color><color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS25HP5CRITSPIRITSELVESSTACK_15DMGRESBLUE_HEAL5VALFROMDAMALL|<color=green>灵魂和精灵增加25%生命值和力量，以及5%的2倍伤害几率（效果可叠加）。蓝色阵营增加15%伤害抗性。遭受攻击时，将所受伤害的10%转化为友军的生命值。</color>
+HODA_AURA_PLUS25HPALLFREEMARCHSTACK_15DMGCURRESHAWKEFAMILY_75STUNSLOWRESSELF_FEARTEMPLAR|<color=green>友军和自由边境增加25%生命值和力量（效果可叠加）。霍克家族增加15%伤害和诅咒抗性。增加75%击晕和减速抗性。</color><color=orange>减少攻击圣殿骑士的几率。</color>
+HODA_AURA_PLUS25HPCURSEPWRRES_WARDENS_BLACK_STACKING_PLUS35DMGRES_VS_WARDENS_MAGES_REDUCEENEMYFLANK|<color=green>守护者和黑色阵营增加25%生命值、力量和诅咒力量抗性（效果可叠加）。对抗灰袍守护者和法师时增加35%伤害抗性。</color> <color=red>降低敌人侧击的几率。</color>
+HODA_AURA_PLUS25HPDWARVES_15DMGRESALLVSNOBILITY_RETALIATE2ALL|<color=green>矮人增加25%生命值和力量。友军对抗贵族时增加20%伤害抗性。遭受攻击时，吸取敌人2%的力量，并将所受伤害的2%反弹给所有敌人。</color>
+HODA_AURA_PLUS25HPDWVBLTSTACK_DEFENDER35_50DMGRESLOST_30BNSDMG_VS_BLIGHT_GAIN5PALLYHIT_CURSEPIMMUNE_MINUS20CRIT|<color=green>矮人和毁灭系英雄增加25%生命值和力量（效果可叠加）。增加35%守护者。迷失者增加50%伤害抗性。攻击毁灭系英雄时增加30%额外伤害。友军遭受攻击时，获得5%力量。 对诅咒力量免疫。</color> <color=red>敌人减少20%的2倍伤害几率。</color>
+HODA_AURA_PLUS25HPNOBILITY_40STUNSLOWRESALL_RETALIATE5_CURSEPIMM|<color=green>贵族增加25%生命值和力量。友军增加25%击晕和减速抗性。遭受攻击时，将所受伤害的5%反弹给所有敌人。对诅咒生命免疫。</color>
+HODA_AURA_PLUS25HPPDRAINRES_WHITEFERELDENMARIC_STACK_20DMGRES10CRITFERELDEN_GAIN25HEAL25_ONHIT_RETALIATE10MINUS20PORLESIANWARDEN|<color=green>白色阵营、Ferelden和马瑞克国王增加25%生命值、力量和力量吸取抗性（效果可叠加）。Ferelden增加20%伤害抗性和10%的2倍伤害几率。遭受攻击时，获得25%力量和生命值，并将所受伤害的10%反弹给Orlesian和守护者。</color> <color=red>Orlesian和守护者减少20%力量。</color>
+HODA_AURA_PLUS25HPQUNELFCHARGERSSTACK_20DMGRESIRONBULL_20BNSDMGALL_VSREDLYRIUM_DRAIN5ONHIT|<color=green>Qunari、精灵和公牛冲锋队增加25%生命值和力量（效果可叠加）。铁牛增加20%伤害抗性。友军攻击红伊利姆时造成25%额外伤害。遭受攻击时，吸取敌人5%的力量。</color>
+HODA_AURA_PLUS25HPSTUNSLOWRES_DWARF_GOLEM_WARR_STACK_PLUS25DMGCURPRES_DWARF_PLUS25BNSDMG_GOLEM_GAIN30SELF_ONHIT|<color=green>矮人、魔像和战士增加25%生命值、力量、击晕抗性和减速抗性（效果可叠加）。矮人增加25%伤害和诅咒力量抗性。魔像增加25%额外伤害。遭受攻击时，获得30%力量。</color>
+HODA_AURA_PLUS25HPWARDBLACK_STACK_AND_PLUS35H_DEFS_AND_PLUS35BONDAMALL_VS_DEFS_AND_PLUS25CRES_WARDENS_AND_HEAL75ALL_ALLYDEATH_AND_MINUS35CRES_ENEMIES|<color=green>守护者和黑色阵营增加25%生命值和力量（效果可叠加）。守护者增加35%生命值，友军攻击守护者时增加35%额外伤害。灰袍守护者增加25%诅咒抗性。友军死亡时，治疗友军75%。</color> <color=red>敌人减少35%诅咒抗性。</color>
+HODA_AURA_PLUS25HP_ALLIES_AND_PLUS1KHP_COMMONS_AND_PLUS25DAM_VS_NOB_ALLIES_AND_PLUS25STUNRES_ALLIES_EXTRA25_CHRISTMAS|<color=green>友军增加25%生命值和力量。普通友军增加1000%生命值和力量。友军攻击贵族时增加25%额外伤害。友军增加25%击晕抗性。圣诞英雄额外增加15%力量并对击晕免疫。</color>
+HODA_AURA_PLUS25HP_AND_PLUS50_STUNRES_FOR_OUTLAWS_ROGUES_STACKING_AND_PLUS100BONUSDAMAGE_VS_QUNARI|<color=green>不法之徒和盗贼增加25%生命值和力量以及50%击晕抗性（效果可叠加）。攻击Qunari时增加100%额外伤害。</color>
+HODA_AURA_PLUS25HP_BLUE_FACTION_PLUS35HP_DRACOLISK_PLUS50SLOW_STUN_RESIST_TO_DRAGONS_AND_MAGES_ALLY_DAMAGE_ABSORB_25|<color=green>蓝色阵营增加25%生命值和力量。龙蜥增加35%生命值和力量。龙和法师增加50%减速和击晕抗性。25%守护者。</color>
+HODA_AURA_PLUS25HP_INQ_BIANCA_AND_PLUS25_STUN_SLOW_PDRESIST_ALLIES_AND_BIANCA_STACK_AND_MINUS15_SLOW_PDRESIST_ENEMIES_AND_PLUS10CRIT_ALLIES_AND_ATTACK_FR|<color=green>审判英雄和比安卡增加25%生命值和力量。友军增加25%击晕、减速和力量吸取抗性，比安卡加倍。友军增加10%的2倍伤害几率。</color> <color=red>敌人减少15%减速和力量吸取抗性。</color> <color=orange>有更大几率攻击前排。</color>
+HODA_AURA_PLUS25HP_REDFACT_PLUS10_QUN_AND_DEFENDER50_AND_HP_TO_ALLIES_SELFHIT_AND_IMMUNITYALL_AND_PLUS25RESISTALL_FOR_REDFACT_AND_35DAM_VS_INQ_FOR_ALLIES|<color=green>红色阵营增加25%生命值和力量，Qunari额外增加10%。50%守护者。遭受攻击时，为友军赋予20%生命值和30%力量。红色阵营增加25%击晕、减速、力量吸取和诅咒抗性，自身对其免疫。友军攻击审判英雄时增加35%额外伤害。</color>
+HODA_AURA_PLUS25HP_REDLYRIUM_AND_POWERGAIN_ALLIES_150_ON_DEATH_AND_PLUS50_CURSEPOWERRESIST_TO_ALLIES|<color=green>红伊利姆增加25%生命值和力量。死亡时，友军获得巨量力量。友军增加50%诅咒力量抗性。</color>
+HODA_AURA_PLUS25HP_RED_FACTION_PLUS35HP_DRACOLISK_PLUS25_DAMAGE_FOR_DRAGON_QUNARI_POWER_GAIN_WHEN_ALLY_HIT_25|<color=green>红色阵营增加25%生命值和力量。龙蜥增加35%生命值和力量。龙和Qunari增加25%额外伤害。友军遭受攻击时，获得少量力量。</color>
+HODA_AURA_PLUS25HP_TO_DEMONS_15HP_ON_ALLY_DEATH_35HP_TO_ALLIES_ON_SELF_DEATH|<color=green>恶魔增加25%生命值和力量。友军死亡时，获得少量生命值和力量。该英雄死亡时，友军获得中等生命值和力量。</color>
+HODA_AURA_PLUS25HP_WHITE_FACTION_PLUS35HP_TO_DRACOLISK_ALLIES_GAIN_HEALTH_WHEN_SELF_ATTACKED_25_TAUNT|<color=green>白色阵营增加25%生命值和力量。龙蜥增加35%生命值和力量。友军遭受攻击时，获得少量生命值。</color>
+HODA_AURA_PLUS25HP__BLACK_FACTION_PLUS35HP_DRACOLISK_DMG_RESIST_PCT_15_TO_DRAGONS_AND_BLIGHT_ALLIES_GAIN_30POWER_ON_ENEMY_DEATH|<color=green>黑色阵营增加25%生命值和力量。龙蜥增加35%生命值和力量。龙和毁灭系英雄增加15%伤害抗性。敌人死亡时，为友军赋予中等力量。</color>
+HODA_AURA_PLUS25H_35P_PLUS20PCT_DMG_FOR_AVVAR_INQ_DMG_RESIST_PCT_10_PERSONAL_10_ALL_ALLIES_HEAL_SELF_ATTACKED_25_GAIN_POWER_SELF_DEATH_50|<color=green>友军增加25%生命值和35%力量。Avvar和审判友军增加20%额外伤害。友军增加10%伤害抗性，自身额外增加10%。该英雄遭受攻击时，友军恢复少量生命值，该英雄死亡时，友军获得中等力量。</color>
+HODA_AURA_PLUS25H_ALL_ALLIES_GAIN_15POWER_ON_ENEMY_DEATH_HEALTH_ON_ENEMY_DEATH_15_ALL_GAIN_POWER_WHEN_SELF_ATTACKED_15_ALL|<color=green>友军增加25%生命值。敌人被击杀时，友军获得少量生命值和力量。该英雄遭受攻击时，友军获得少量力量</color>
+HODA_AURA_PLUS25P5DMGRES_RLTEMPTEOSTACK_60CURPDRESRL_HEAL15ALL_ALLYATK_HEAL30GAIN15ALL_ANYDTH_DEFENDER50|<color=green>红伊利姆、圣殿骑士和大长老增加25%力量和5%伤害抗性（效果可叠加）。红伊利姆增加60%诅咒和力量吸取抗性。将友军所造成伤害的15%转化为友军的生命值。任何英雄死亡时，友军治疗30%并获得15%力量。增加50%守护者。</color>
+HODA_AURA_PLUS25PCT_POWER_VS_BLIGHT_AND_TEVINTER_PERSONAL_AND_AURA_PLUS100STUNRESIST_TO_WARDEN_35HP_WARDENS_MAGES_10POWER_ALL_DMG_25P_ALLY_ENEMY_DEATH|<color=green>守护者和法师增加35%生命值和力量。将友军所受伤害的10%转化为力量。敌人或友军死亡时，获得少量力量。灰袍守护者对击晕免疫。攻击毁灭系英雄和Tevinter时增加25%额外伤害。</color>
+HODA_AURA_PLUS25PFERELDENWARDEN_STACKING_DEFENDER20_BM_15PWRGAIN_SELF_50PALL_SELFDEATH_SLOWIMMUNE_STUNIMMUNEALISTAIR|<color=green>Ferelden和灰袍守护者增加25%力量（效果可叠加）。20%守护者。将友军所受伤害的15%转化为自身力量。该英雄死亡时，友军获得50%力量。对减速免疫。让阿历斯泰对击晕免疫。</color>
+HODA_AURA_PLUS25PSLOWRES10CRITDEMONBEASTSTACK_HEAL15ALL_ALLYATK_GAIN50PALL_ONDEATH_MINUS15CRIT|<color=green>恶魔和生物增加25%力量、减速抗性以及10%的2倍伤害几率（效果可叠加）。友军攻击时，友军获得15%生命值。死亡时，友军获得50%力量。</color> <color=red>敌人减少15%的2倍伤害几率。</color>
+HODA_AURA_PLUS25PSTUNRESCHARGERSINQSTACK_GAIN15PLUS5DMGRESALL_ONHIT_MINUS5ALLRESISTS|<color=green>公牛冲锋队和审判英雄增加25%力量和击晕抗性（效果可叠加）。遭受攻击时，友军获得15%力量和5%伤害抗性。</color> <color=red>减少5%所有效果抗性。</color>
+HODA_AURA_PLUS25_HP_ELVES_INQUISITION_AND_PLUS25_CURSERESIST_ALLIES_AND_PLUS15_CURSERESIST_ELVES_INQUISITION_STACKING|<color=green>精灵和审判英雄增加25%生命值和力量。友军增加25%诅咒抗性，精灵和审判英雄额外增加15%（效果可叠加）。</color>
+HODA_AURA_PLUS25_HP_FOR_FERELDEN_ORLESIAN_ELVES_CHANTRY_STACKING_AND_HEAL_ALLIES5_ON_ANY_HIT_DEATH_AND_DEFENDER25_AND_PLUS35_ALL_RESISTS_FOR_ALLIES|<color=green>Ferelden、Orlesian、精灵和教会英雄增加25%生命值和力量（效果可叠加）。友军或敌人遭受攻击或死亡时，治疗友军5%。25%守护者。友军增加35%击晕、减速、力量吸取和诅咒抗性。</color>
+HODA_AURA_PLUS25_HP_INQUISITION_OUTLAWS_STACKING_AND_PLUS35_STUNRESIST_ALLIES_AND_PLUS250_HP_PER_COMMON_UNCOMMON|<color=green>审判英雄和不法之徒增加25%生命值和力量（效果可叠加）。友军增加35%击晕抗性。每有一名普通/罕见友军，增加250%生命值和力量。</color> <color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS30EFFDMGRES_INQ_EXTRA5ADVISOR_GAIN10EFFRES5DMGRESALL_ONHIT_HEAL25GAIN25_FROMDAM_MINUS25EFFRES|<color=green>审判英雄增加30%所有效果抗性和伤害抗性，顾问额外增加5%。遭受攻击时，友军获得5%伤害抗性和10%所有效果抗性。将所受伤害的25%转化为友军的力量和生命值。</color> <color=red>敌人减少25%所有效果抗性。</color>
+HODA_AURA_PLUS30HCHANTRY_PLUS25PSEEKERS_DEFENDER25_15STUNSLOWDMGRESCHANTRY_EXTRA10CASSBYRON_MINUS10DRAINRES|<color=green>教会英雄增加30%生命值。追寻者增加25%力量。增加25%守护者。教会友军增加15%击晕、减速和伤害抗性，卡桑德拉和拜伦额外增加10%。</color> <color=red>减少10%力量吸取抗性。</color>
+HODA_AURA_PLUS30HCURHSTUNRESORLCIRCINQSTACK_20BNSDMGALLVSAPOS_25DMGRESORL_GAIN10HEAL10ALLYHIT_HEAL50ALLANYDEATH_MINUS25PSTUNRESAPO|<color=green>Orlesian、议会英雄和审判英雄增加30%生命值、诅咒生命抗性和击晕抗性（效果可叠加）。友军攻击叛徒时增加20%额外伤害。Orlesian增加25%伤害抗性。友军遭受攻击时，获得10%力量和生命值。任何英雄死亡时，为友军赋予50%生命值。</color> <color=red>叛徒减少25%力量和击晕抗性。</color>
+HODA_AURA_PLUS30HDRAINCURPRES_QUNSAAREBASBENHASSTACK_GAIN2BNSDMG10DMGRESALL_ANYDEATH_STUNIMMUNESAARATH_MINUS35STUNCURRESINQMAGE|<color=green>Qunari、赛洛巴斯和廷尉官增加30%生命值、力量吸取抗性和诅咒力量抗性（效果可叠加）。任何英雄死亡时，友军获得2%额外伤害和10%伤害抗性。萨莱斯对击晕免疫。</color> <color=red>审判英雄和法师减少35%击晕和诅咒抗性。</color>
+HODA_AURA_PLUS30HEALTH_POWER_TO_INQ_AND_GAIN_HEALTH_POWER_5_ON_ALLYHIT_AND_PLUS25_ALL_RESISTS_AND_SLOW_TARGETING_FOR_ALLIES|<color=green>审判英雄增加30%生命值和力量。友军遭受攻击时，获得极少量生命值和力量。增加25%击晕、减速、力量吸取和诅咒抗性。</color> <color=orange>友军有更大几率以速度最慢的敌人为目标。</color>\n
+HODA_AURA_PLUS30HP35SLOWSTUNRES_BLIGHT_DWARF_STACK_25DRAINRESALL_GAIN20HEAL20_ANYDEATH_MINUS20PDWARF|<color=green>毁灭系英雄和矮人增加30%生命值和力量以及35%减速和击晕抗性（效果可叠加）。友军增加25%力量吸取抗性。任何英雄死亡时，获得20%生命值和力量。</color> <color=red>矮人减少20%力量。</color>
+HODA_AURA_PLUS30HPDCURRES10DMGRES_INQSEEKCHA_STACK_10PSLOWRESALL_ALLYATK_25PHALL_ANYDTH_SLOWIMM_DEF50_MIN15P|<color=green>审判英雄、追寻者和教会英雄增加30%生命值、力量吸取抗性和诅咒抗性，以及10%伤害抗性（效果可叠加）。友军攻击时，友军获得10%力量和减速抗性。任何英雄死亡时，友军获得25%力量和生命值。对减速免疫。增加50%守护者。</color> <color=red>减少15%力量。</color>
+HODA_AURA_PLUS30HPORLWARR_10DMGRESALL_DEFENDER50_CURSEIMMGASPARD_GAIN20ALL_ONHIT_HEAL50ALL_ONDEATH_FLANK_MIN10PWR|<color=green>Orlesian和战士增加30%生命值和力量（效果可叠加）。友军增加10%伤害抗性。增加50%守护者。加斯帕·德·夏隆对诅咒免疫。遭受攻击时，友军获得20%力量。死亡时，友军治疗50%。</color><color=orange>有更大几率攻击后排。</color> <color=red>减少10%力量。</color>
+HODA_AURA_PLUS30HP_AND_PLUS25_STUN_SLOW_RESIST_FOR_WARDENS_FERELDEN_STACKING_AND_PLUS25DAMAGE_VS_BLIGHT|<color=green>守护者和Ferelden增加30%生命值和力量以及25%击晕和减速抗性（效果可叠加）。攻击毁灭系英雄时增加25%额外伤害。</color>
+HODA_AURA_PLUS30HP_INQ_SPIRITS_15HP_WYNNE_COLE_EVA_40P_VS_BLACK_FACTION_35CURSERESIST_ALLIES_IMMUNITY_WYNNE_COLE_EVANGELINE_MINUS_10DRAIN_RESIST|<color=green>审判英雄和灵魂增加30%生命值和力量，怀恩、科尔和伊万杰琳额外增加15%。攻击黑色阵营时增加40%额外伤害。友军增加35%诅咒抗性，怀恩、科尔和伊万杰琳对其免疫。</color> <color=red>敌人减少10%力量吸取抗性。</color>
+HODA_AURA_PLUS30HP_RED_FACTION_PLUS15CRIT_BEASTS_HEALSELF15_ON_ALLY_HIT|<color=green>红色阵营增加30%生命值和力量。生物增加15%的2倍伤害几率。友军遭受攻击时，少量自我疗伤。</color><color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS30HP_SPIRITS_DEMONS_MAGES_INQ_STACK_AND_POWERGAIN25_ON_ANYDEATH_AND_DRAIN3POWER_ON_ALLYHIT_AND_ALLYGAINDAMRES1_ON_SELFHIT|<color=green>灵魂、恶魔、法师和审判英雄增加30%生命值和力量（效果可叠加）。敌人或友军死亡时，获得25%力量。友军遭受攻击时，吸取敌人3%的力量。该英雄遭受攻击时，友军获得1%伤害抗性。</color>
+HODA_AURA_PLUS30P5CRITBEASTWEREWOLVESSTACK_HEAL20SELF5BNSDMGALL_SELFHIT_GAIN50WEREWOLVES_SELFDEATH_WWHATREDELVESHUMAN_MINUS15P|<color=green>生物和狼人增加30%力量和5%的2倍伤害几率（效果可叠加）。遭受攻击时，治疗20%，同时友军获得5%额外伤害。死亡时，狼人获得50%力量。</color><color=orange>狼人有更大几率攻击人类和精灵。</color> <color=red>敌人减少15%力量。</color>
+HODA_AURA_PLUS30PDRAINRESSTACKALL_INQ_PLUS50STUNSLOWRESALL_PLUS10PINQALLATTACK_AND_PLUS35PALL_SELFDEATH|<color=green>友军和审判英雄增加30%力量和力量吸取抗性（效果可叠加）。友军增加50%击晕和减速抗性。审判友军攻击时，审判友军获得10%力量。该英雄死亡时，友军获得35%力量。</color>
+HODA_AURA_PLUS30PSLOWPDRES_RLOUTLAWSTACK_DEFENDER50_20DMGRESRED_HEAL15BNSDMG2DMGRES8ALL_ALLYATK_STUNIMMUNE|<color=green>红伊利姆和不法之徒增加30%力量以及25%减速和力量吸取抗性（效果可叠加）。增加50%守护者。红色阵营增加20%伤害抗性。友军攻击时，友军获得15%生命值、2%额外伤害和8%伤害抗性。对击晕免疫。</color>
+HODA_AURA_PLUS30PSLOWRES10CRIT_RL_BLACK_STACK_GAIN75HEAL75ALL_ALLYDEATH_DRAIN35_ONDEATH_MINUS50SLOWRES_INQ|<color=green>红伊利姆和黑色阵营增加30%力量、减速抗性以及10%的2倍伤害几率（效果可叠加）。友军死亡时，友军获得75%力量和生命值。死亡时，吸取敌人35%的力量。</color> <color=red>审判英雄减少50%减速抗性。</color>
+HODA_AURA_PLUS30PSTUNSLOWRESREDDWARFSTACK_CONVERT5PALLY_ALLYATK_GAIN25PSELF30H3BNSDMGALL_ENEMYDEATH_RETALIATE25_ONDEATH|<color=green>红色阵营和矮人增加30%力量、击晕抗性和减速抗性（效果可叠加）。将对敌人所造成伤害的5%转化为友军的力量。敌人死亡时，获得25%力量，同时友军获得30%生命值和3%额外伤害。死亡时，将所受伤害的25%反弹给敌人。</color>
+HODA_AURA_PLUS35HDRAINCURPRES_RL_TEMPLAR_STACK_CRIT10ALL_PLUS25DMGRESBNSDMGALL_VS_MAGE_GAIN25HEAL25ALL_ONHIT_MINUS25DRAINRES|<color=green>红伊利姆和圣殿骑士增加35%生命值、力量吸取抗性和诅咒力量抗性（效果可叠加）。友军增加10%的2倍伤害几率。友军对抗法师时增加25%伤害抗性和额外伤害。遭受攻击时，友军获得25%生命值和力量。</color> <color=red>减少25%力量吸取抗性。</color>
+HODA_AURA_PLUS35HEALTHALLIES_PLUS25HEALTHFERELDEN_50SLOWSELF_50SLOWALLIES_ALLIESGAIN50POWERALLYDEATH_ALLIESHEAL50SELFDEATH|<color=green>友军增加35%生命值，Ferelden增加25%（效果可叠加）。自身增加100%减速抗性，友军增加50%。友军死亡时，友军获得大量力量，该英雄死亡时，友军大量恢复生命值。</color>
+HODA_AURA_PLUS35HEALTH_25BONDAM_25CURSERES_CHANTRY_INQUISITION_AND_DEFENDER50_AND_PLUS35BONDAM_VS_MAGES_TEMPLARS|<color=green>教会英雄和审判英雄增加35%生命值、25%额外伤害和25%诅咒抗性。50%守护者。攻击法师和圣殿骑士时增加35%额外伤害。</color>
+HODA_AURA_PLUS35HEALTH_POWER_TO_SPIRITS_AND_BM_POWERGAIN5_ALLIES_FOR_ALLIES_AND_PLUS75BONUSDAMAGE_VS_MAGES_AND_STEALTH_AND_ANTIFLANK|<color=green>隐形：攻击不会触发命中效果。灵魂增加35%生命值和力量。友军将所受伤害的5%转化为所有友军的力量。攻击法师时增加75%额外伤害。</color> <color=red>阻止敌人侧击后排。</color>
+HODA_AURA_PLUS35HP10DMGRESDWARFSPIRITSTACK_50PDRESALL_GAIN15HEAL15ALL_ONHIT_GAIN75H7BNSDMGALL_ALLYDEATH_MIN25CURRESALL_50BLIGHT|<color=green>矮人和灵魂增加35%生命值和力量以及10%伤害抗性（效果可叠加）。友军增加50%力量吸取抗性。遭受攻击时，友军获得15%生命值和力量。友军死亡时，友军获得75%生命值和7%额外伤害。</color> <color=red>敌人减少25%诅咒抗性，毁灭系英雄加倍。</color>
+HODA_AURA_PLUS35HPCHANTRY_PLUS10DMGRESALL_DEFENDER35_50SLOWDRAINCURSEHRES_SPIRITS_CHANTRY_GAIN20HALL_ONHIT|<color=green>教会英雄增加35%生命值和力量。友军增加10%伤害抗性。增加35%守护者。灵魂和教会英雄增加50%减速、力量吸取和诅咒生命抗性。该英雄遭受攻击时，友军获得20%生命值。</color>
+HODA_AURA_PLUS35HPDEMON_25HPFORBIDDEN_50STUNSLOWRESDEMON_CURHIMMFORBIDDEN_CONV15HALL_RETALIATE5_MIN15CRIT|<color=green>恶魔增加35%生命值和力量，禁忌者额外增加25%。恶魔增加50%击晕和减速抗性。禁忌者对诅咒生命免疫。遭受攻击时，将所受伤害的20%转化为友军的生命值，并将5%反弹给敌人。</color> <color=red>减少15%的2倍伤害几率。</color>
+HODA_AURA_PLUS35HPDRESALL_EXTRA15AVVARSPIRIT_MINUS15CURSLOWRESENEMY_ONHIT_CONVERT15PSELF_ALLYDMG_HEAL50DMGRES15_ALLYDEATH|<color=green>友军增加35%生命值和力量吸取抗性，Avvar和灵魂额外增加15%。遭受攻击时，敌人的诅咒和减速抗性降低15%。将友军所受伤害的15%转化为力量。友军死亡时，治疗50%并获得15%伤害抗性。</color> <color=red>减少35%诅咒抗性。</color>
+HODA_AURA_PLUS35HPNOBILITY_CHANTRY_25STUNSLOWRES_CHANTRY_DEFENDER50_50BNSDMGVSDRAGONS_ALL_MINUS5PWR|<color=green>贵族和教会英雄增加35%生命值和力量。教会英雄增加25%击晕和减速抗性。增加50%守护者。友军攻击龙时造成50%额外伤害。</color> <color=red>敌人减少5%力量。</color>
+HODA_AURA_PLUS35HPPWRORLNOB_50DEF_ONHIT20PWR_10CRITNOB_EMYDEATHALLYHP30_STUNSLOWCURPWRRES40ORL_MIN10PWREMY|<color=green>Orlesian和贵族增加35%生命值和力量（效果可叠加）。增加50%守护者。贵族增加10%的2倍伤害几率。遭受攻击时，贵族友军获得20%力量。敌人死亡时，友军获得30%生命值。Orlesian增加40%击晕、减速和诅咒力量抗性。</color> <color=red>敌人减少10%力量。</color>
+HODA_AURA_PLUS35HPSTUNRESALL_DOUBLEDRAGON_GAIN25HEAL25DRAGON_ONHIT_DEFENDER25_HEAL40_ALLYDEATH_BRAVETARGETING|<color=green>友军增加35%生命值、力量和击晕抗性，龙和Ferelden加倍。遭受攻击时，为龙友军赋予25%生命值和力量。增加25%守护者。友军死亡时治疗40%。</color><color=orange>有更大几率攻击最强的敌人。</color>
+HODA_AURA_PLUS35HP_ALLIES_EXTRA_PLUS10_APOSTATES_AND_PLUS50PDRESIST_FOR_APOSTATES_AND_HEALS25_ON_ENEMY_DEATH|<color=green>友军增加35%生命值和力量，叛徒额外增加10%。叛徒增加50%力量吸取抗性。敌人死亡时，少量治疗。</color>
+HODA_AURA_PLUS35HP_AND_CURSERES_SEEK_CHANT_AND_ALLIESGAINHP_MED_ONANYDEATH_AND_STUN_CURSEHLTH_IMM_AND_ALLY_FACTDAM35_AND_NEG_STUN_SLOWRES_ENEM65|<color=green>追寻者/教会英雄增加35%生命值、力量和诅咒抗性。任何英雄死亡时，友军获得50%生命值和力量。对击晕和诅咒生命免疫。友军对抗敌对阵营时增加35%额外伤害（效果可叠加）。</color> <color=red>敌人减少65%击晕和减速抗性。</color>
+HODA_AURA_PLUS35HP_BEAST_MAGES_STACKING_CONVERT50DAM_TO_HEALTH_FOR_ALLIES_QUICK_TARGETING|<color=green>隐形：攻击不会触发命中效果。生物和法师增加35%生命值和力量（效果可叠加）。将所受伤害的50%转化为友军的生命值。</color><color=orange>有更大几率攻击速度最快的敌人。</color>
+HODA_AURA_PLUS35HP_INQUISITION_AND_PLUS35CURSEPOWERRES_AND_PDRES_FOR_INQUISITION_AND_BRAVE_TARGETING_AND_MINUS15POWER_DEMONS_BLOODMAGES|<color=green>审判英雄增加35%生命值、力量、诅咒力量抗性和力量吸取抗性。</color><color=orange>有更大几率攻击力量最高的目标。</color> <color=red>恶魔和嗜血法师敌人减少15%力量。</color> 
+HODA_AURA_PLUS35HP_TEV_AND_PLUS100SLOWRES_TEV_AND_PGAIN50_ENEMYDEATH_AND_PLUS35BD_ALLIES_VS_VENA_AND_STUN_PD_IMM_AND_MINS25PDRES_CURSERES_ENEM|<color=green>Tevinter增加35%生命值和力量。Tevinter增加100%减速抗性。敌人死亡时，获得中等力量。友军攻击Venatori时增加35%额外伤害。对击晕和力量吸取免疫。</color> <color=red>敌人减少25%力量吸取抗性和诅咒抗性。</color> 
+HODA_AURA_PLUS35HP_TO_DEMONS_PLUS15PCT_POWER_VS_INQUISITION_AND_SPIRITS_PERSONAL_HP_ON_ENEMY_DEATH_25_CURSE_IMMUNE_FORBIDDEN|<color=green>恶魔增加35%生命值和力量。攻击审判英雄和灵魂时增加15%额外伤害。敌人死亡时，获得40%生命值和力量。禁忌者对诅咒力量免疫。</color>
+HODA_AURA_PLUS35HSTUNSLOWRESDWARFOUTLAWSTACK_GAIN15HEAL15ALL_ANYDEATH_DRAIN15_ENEMYDEATH_75PDCURRES5BNSDMGCARTA_MINUS35STUNRES|<color=green>矮人和不法之徒增加35%生命值、击晕抗性和减速抗性（效果可叠加）。任何英雄死亡时，友军获得15%力量和生命值。敌人死亡时，吸取所有敌人15%的力量。Carta增加75%力量吸取和诅咒抗性以及5%额外伤害。 </color> <color=red>减少35%击晕抗性。</color>
+HODA_AURA_PLUS35H_ALL_25H_FERELDEN_POWER_GAIN_WHEN_ALLY_HIT_10_PERSONAL_STUN_RESIST_50_ALL_STUNRESIST_50|<color=green>友军增加35%生命值，Ferelden额外增加25%生命值。增加100%击晕抗性，友军增加50%击晕抗性。</color><color=orange>有更大几率攻击速度最快的敌人。</color>
+HODA_AURA_PLUS35H_AND_15BONDAM_TEMP_AND_POWER25_HEALTH25_ALLYDEATH_AND_PLUS50STUNRES_TEMP_AND_RL_HATR_AND_MINUS10POWER_EN_AND_MINUS5POWER_RL|<color=green>圣殿骑士增加35%生命值和15%额外伤害。圣殿骑士增加50%击晕抗性。友军死亡时，获得25%生命值和力量。</color> <color=red>敌人减少10%力量，红伊利姆额外减少5%。</color> <color=orange>有更大几率攻击红伊利姆。</color>
+HODA_AURA_PLUS35PALL25PFERELDEN_100SLOWRESSELF_50SLOWRESALL_BRAVETGT|<color=green>友军增加35%力量，Ferelden额外增加25%力量。增加100%减速抗性，友军增加50%减速抗性。</color><color=orange>有更大几率攻击最强大的敌人。</color>
+HODA_AURA_PLUS35PHALL_PLUS7BNSDMG35PDRESSKYCULT_DRAIN2P_ONHIT_CURSEIMMSKYHORROR_HEAL25ALLGAIN35SKYCULT_ONDEATH_MINUS10CRIT|<color=green>友军增加35%力量和生命值。天空信徒友军增加7%额外伤害和35%力量吸取抗性。遭受攻击时，吸取敌人2%的力量。天煞对诅咒免疫。死亡时，治疗友军25%，并为天空信徒友军赋予35%力量。</color> <color=red>敌人减少10%的2倍伤害几率。</color>
+HODA_AURA_PLUS35POWBEASTS_PLUS10HPINVISNUG_PLUS25DMGNUG_ALLIES35POWONSELFHIT_STEALTH|<color=green>隐形：攻击不会触发命中效果。生物增加35%力量。隐形兔猪增加10%生命值。兔猪增加25%额外伤害。遭受攻击时，友军获得35%力量。</color>
+HODA_AURA_PLUS35POWERALLIES_PLUS25POWERFERELDEN_50SLOWSELF_50SLOWALLIES_ALLIESGAIN50POWERALLYDEATH_ALLIESHEAL50SELFDEATH|<color=green>友军增加35%力量，Ferelden增加25%（效果可叠加）。自身增加100%减速抗性，友军增加50%。友军死亡时，友军获得大量力量，该英雄死亡时，友军大量恢复生命值。</color>
+HODA_AURA_PLUS35POWERBEASTS_AND_GAINS35POWERONSELFHIT_AND_PLUS100SLOWRESISTBEAST|<color=green>生物增加35%力量。遭受攻击时，获得中等力量。生物增加100%减速抗性。隐形：攻击不会触发命中效果。</color>
+HODA_AURA_PLUS35POWER_TO_CREATURESANDBLIGHTED_AND_PLUS60STUNANDSLOWRESIST_TO_CREATURESANDBLIGHTED_AND_HEALSELF50_ON_ALLY_DEATH_AND_FLANK|<color=green>生物和毁灭系英雄增加35%力量。生物和毁灭系英雄增加60%击晕和减速抗性。友军死亡时，中等程度自我疗伤。</color><color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS35POWER_TO_CREATURES_AND_PLUS25POWERDRAINRESIST_TO_ALLIES|<color=green>生物增加35%力量。友军增加25%力量吸取抗性。</color>
+HODA_AURA_PLUS35POWER_TO_DEMONS_SLOW_RESIST_100_TO_DEMONSMINUS35STUN_SLOW_DRAIN_RESIST_TO_ENEMIES_WOUNDED_TARGETING|<color=green>恶魔增加35%力量和100%减速抗性。</color> <color=red>敌人减少35%击晕、减速和力量吸取抗性。</color> <color=orange>有更大几率攻击生命值最低的目标。</color>
+HODA_AURA_PLUS35POWER_TO_HAKKON_AND_PLUS20_ALLRESIST_TO_OUTLAWS_PLUS10EXTRA_TO_HAKKONITES_ALLIES_GAIN_20POWER_ONHIT_AND_DEFENDER25|<color=green>哈肯冬息者增加35%力量。不法之徒增加20%减速、击晕和力量吸取抗性，哈肯之颌额外增加10%。遭受攻击时，为友军赋予20%力量。25%守护者。</color>
+HODA_AURA_PLUS35PPDRESDWARFOUTLAWSTACK_75STUNSLOW25DMGRESCARTA_CONVERT5PCARTA_CARTAHIT_GAIN10PCURRESALL_ALLYATK_MINUS35CURRES|<color=green>矮人和不法之徒增加35%力量和力量吸取抗性（效果可叠加）。Carta增加75%减速和击晕抗性以及25%伤害抗性。将Carta友军所受伤害的5%转化为Carta友军的力量。友军攻击时，友军获得10%力量和诅咒抗性。</color> <color=red>减少35%诅咒抗性。</color>
+HODA_AURA_PLUS35PREDFACTION_25HPDRAKE_GAIN50HEAL50DRAGON_SELFDEATH|<color=green>红色阵营增加35%力量。德雷克增加25%生命值和力量。该单位死亡时，龙增加50%生命值和力量。</color>
+HODA_AURA_PLUS35P_TEVINTER_75HP__ALLIES_WHEN_SELF_DEATH_35STUN_SLOW_RESIST_TEVINTER_10HP_SELF_WHEN_ALLY_HIT|<color=green>Tevinter增加35%力量。Tevinter增加35%击晕和减速抗性。友军遭受攻击时，获得少量生命值和力量。该英雄死亡时，友军获得巨量生命值和力量。</color>
+HODA_AURA_PLUS40HP25SLOWPDRESALL_EXTRA10REDLYRIUM_50HPRLMEREDITH_GAIN20HEAL20ALLSELFHIT_DEFENDER75_STUNIMM_MINUS20CRIT|<color=green>友军增加40%生命值和力量以及25%减速和力量吸取抗性，红伊利姆额外增加10%。红伊利姆梅雷迪斯增加50%生命值和力量。遭受攻击时，友军获得20%生命值和力量。增加75%守护者。对击晕免疫。</color><color=red>减少20%的2倍伤害几率。</color>
+HODA_AURA_PLUS40HPCHARGERSINQSTACK_DEFENDER25_35CURSEPRESALL_GAIN50PSELF_HEAL15ALL_ONHIT_25BNSDMGBEAST_ALL_10BNSDMGDRAGON_ALL|<color=green>公牛冲锋队和审判英雄增加40%生命值和力量（效果可叠加）。25%守护者。友军增加35%诅咒力量抗性。遭受攻击时，获得50%力量并治疗友军15%。友军攻击生物时增加25%额外伤害，攻击龙时额外增加10%。</color>
+HODA_AURA_PLUS40HPELF_GAIN15PSELFDMGRES3ALLALLYATK_HEAL10ALLALLYHIT_SLOWIMMSELFZATH_CURSEIMM_QUICKTGT|<color=green>精灵增加40%生命值和力量。友军攻击时，获得15%力量，并为友军赋予3%伤害抗性。友军遭受攻击时，治疗友军10%。自身和守护者扎斯瑞恩对减速免疫。对诅咒免疫。</color><color=orange>有更大几率攻击快速攻击的英雄。</color>
+HODA_AURA_PLUS40HPELVESSPIRITS_HEAL5GAIN5VALFROMDAMALL_DRAIN50ONDEATH_MINUS10STUNSLOWRESCRIT|<color=green>精灵和灵魂增加40%生命值和力量。遭受攻击时，将所受伤害的5%转化为友军的生命值和力量。死亡时，吸取敌人50%的力量。</color> <color=red>减少15%击晕和减速抗性以及2倍伤害几率。</color>
+HODA_AURA_PLUS40HPSLOWRES_BEAST_RED_STACK_PLUS5STUNSLOWDMGRESALL_ONHIT_2KDMGRED25BNSDMGVSBLUE_SELF_RED_MINUS15ALLEFFECTRES_BLUE|<color=green>生物和红色阵营增加40%生命值、力量和减速抗性（效果可叠加）。遭受攻击时，友军获得5%击晕、减速和伤害抗性。红色阵营和自身抵挡2000点伤害，并在对抗蓝色阵营时造成25%额外伤害。</color> <color=red>蓝色阵营减少15%所有效果抗性。</color>
+HODA_AURA_PLUS40HP_DWARVES_25HP_SHABRYTOL_SLOWRES100_DWARVES_25BNSDMGALL_VS_INQ_BLIGHT_DEFENDER50|<color=green>矮人增加40%生命值和力量，沙布莱托额外增加25%。矮人增加60%减速和诅咒抗性。友军攻击审判英雄和毁灭系英雄时增加25%伤害。50%守护者。</color> <color=red>敌人减少20%减速抗性。</color>
+HODA_AURA_PLUS40HP_GOLEM_PLUS20HP_SHALE_35STUNSLOWDRAINRES_GOLEM_GAIN20ALL_ONHIT_GAIN100ALL_ONDEATH_MINUS35EFFRES10P_MAGE_BLIGHT|<color=green>魔像增加40%生命值和力量，沙尔额外增加20%。魔像增加35%击晕、减速和力量吸取抗性。遭受攻击时，友军获得20%力量，死亡时获得100%。</color> <color=red>法师和毁灭系英雄减少35%所有效果抗性。法师和毁灭系英雄减少10%力量。</color>
+HODA_AURA_PLUS40H_AND_PLUS25BD_ELVES_ROGUES_AND_ALLIES_GAIN35H_ON_SELF_HIT_AND_PLUS100BD_VS_NOBILITY_AND_PLUS35SLOWRES_ALLIES_DOUBLE_SELF_AND_FEAR_GIANTS|<color=green>精灵和盗贼增加40%生命值和25%额外伤害。将所受伤害的35%转化为友军的生命值。攻击贵族时增加100%额外伤害。友军增加35%减速抗性，自身加倍。</color><color=orange>减少攻击大型生物的几率。</color>
+HODA_AURA_PLUS40H_FOR_ELVES_AND_PLUS40P_FOR_WHITEFACT_AND_AARON_AND_STEALTH_ROGUES_AND_SLOWTAR_AND_SLOWIMM_ALLIES_AND_PLUS15DAM_QUICK|<color=green>精灵增加40%生命值。白色阵营和亚伦爵士增加40%力量（效果可叠加）。快速攻击友军增加15%额外伤害。友军对减速免疫。</color><color=orange>有更大几率击晕速度最慢的敌人。</color>
+HODA_AURA_PLUS40H_PLUS15P_PLUS25CURSEHRES_WARDENS_PETS_AND_PLUS10HPCURSERES_ANDERS_AND_CON5DMGTOHALL_STEALTH|<color=green>隐形：攻击不会触发命中效果。守护者和宠物增加40%生命值、15%力量和25%诅咒生命抗性，安德斯额外增加10%。将友军所受伤害的5%转化为友军的生命值。</color>
+HODA_AURA_PLUS40PCURPMAGE_50HSTUNSLOWRES25DMGRESVEN_GAIN10STUNSLOWRESALL_ONHIT_GAIN25PHSELF_ENEMYDEATH_MINUS35STUNSLOWRES|<color=green>法师增加40%力量和诅咒力量抗性。Venatori增加50%生命值、击晕抗性和减速抗性，以及25%伤害抗性。遭受攻击时，友军获得10%击晕和减速抗性。敌人死亡时，获得25%力量和生命值。</color> <color=red>减少35%击晕和减速抗性。</color>
+HODA_AURA_PLUS40P_ALL_15P_HAWKE_FAMILY_CURSEHIMMUNITY_TO_FERELDEN_HEALTH_GAIN_WHEN_ALLY_HIT10__DMG_RESIST_TO_NOBILITY_FERELDEN15_CURSEHRESIST_MINUS25_ALL|<color=green>友军增加40%力量，霍克家族额外增加15%。Ferelden对诅咒生命免疫。友军遭受攻击时，少量治疗。法师和贵族增加10%伤害抗性。</color> <color=red>敌人减少25%诅咒生命抗性。</color>
+HODA_AURA_PLUS40P_INQUISITION_QUNARI_POWER_GAIN_WHEN_ALLY_HIT_5_VAL_FROM_DAM_MINUS15_P_ORLESIAN_MINUS25_RESISTS_TO_ENEMIES|<color=green>审判英雄和Qunari增加40%力量。将友军所受伤害的5%转化为力量。</color> <color=red>Orlesian减少15%力量。敌人减少25%击晕、减速、力量吸取和诅咒抗性。</color>
+HODA_AURA_PLUS40P_MAGES_EX10_BM_PLUS10CRIT_ALL_EX5_MAGES_AND_PLUS20ALLYDAM_TO_SELF_POWER_AND_PD_IMM_AND_PLUS25PDRES_AND_CPRES_MAGES_APO_STACK|<color=green>法师增加40%力量，嗜血法师额外增加10%。友军增加10%暴击率，法师额外增加5%。法师和叛徒增加25%力量吸取抗性和诅咒力量抗性（效果可叠加）。将友军所受伤害的20%转化为自身力量。对力量吸取免疫。</color>
+HODA_AURA_PLUS50H15DMGRES_DEMSKYCULTSTACK_DEFENDER60_HEAL10BNSDMG2ALLYHIT_RETALIATE10_STUNIMMUNE|<color=green>恶魔和天空信徒友军增加50%生命值和15%伤害抗性（效果可叠加）。增加60%守护者。友军遭受攻击时，获得10%生命值和2%额外伤害。遭受攻击时，将所受伤害的10%反弹给敌人。对击晕免疫。</color>
+HODA_AURA_PLUS50H25CURREST5CRITELFWEREWOLF_GAIN5DMGRESALLDRAIN10_ONHIT_FEARELVES_MINUS10CRIT|<color=green>精灵和狼人增加50%生命值、25%诅咒抗性和5%的2倍伤害几率。遭受攻击时，友军获得5%伤害抗性，并吸取敌人10%的力量。</color><color=orange>减少攻击精灵的几率。</color> <color=red>减少10%的2倍伤害几率。</color>
+HODA_AURA_PLUS50H25DMGRES50CURHRES10CRIT5BNSDMG_DWARF_DEFENDER50_HEAL10ALL_VALFROMDAM|<color=green>矮人增加50%生命值、25%伤害抗性、50%诅咒生命抗性、10%的2倍伤害几率和5%额外伤害。增加50%守护者。将所受伤害的10%转化为友军的生命值。</color>
+HODA_AURA_PLUS50H25PDWARVES_GAIN25P_ONHIT_PLUS50BNSDMG_VSBLIGHT_PLUS50CURPRES_LEGION|<color=green>矮人增加50%生命值和25%力量。遭受攻击时，获得25%力量。攻击毁灭系敌人时增加50%额外伤害。友军增加25%击晕抗性。亡者军团增加50%诅咒力量抗性。</color>
+HODA_AURA_PLUS50H3BNSDMGDWARF_DEFENDER35_DMGRES25_STUNIMMUNE_DRAIN5HEAL15ALL_ONHIT_HEAL75ALL_ONDEATH_PDRAINIMMCARIDIN_MINUS50CRIT|<color=green>矮人增加50%生命值和3%额外伤害。增加35%守护者。增加25%伤害抗性。对击晕免疫。遭受攻击时，吸取敌人5%的力量，并治疗友军15%。死亡时，治疗友军75%。圣者卡瑞丁对力量吸取免疫。</color> <color=red>减少50%的2倍伤害几率。</color>
+HODA_AURA_PLUS50HALL_60PADVISOR_20BNSDMG100SLOWRES_DWARF_INQ_25DMGRESALL_VS_MAGE_VEN_STACK_GAIN25HALL_ONHIT_MINUS25SLOWRES|<color=green>友军增加50%生命值。顾问增加60%力量。矮人和审判英雄增加20%额外伤害和100%减速抗性。友军对抗法师和Venatori时增加25%伤害抗性（效果可叠加）。遭受攻击时，友军获得25%生命值。</color> <color=red>敌人减少25%减速抗性。</color>
+HODA_AURA_PLUS50HALL_RETALIATE4ALL_DRAIN25HEAL75ONDEATH_MINUS10PDRAINRES|<color=green>友军增加50%生命值。遭受攻击时，将所受伤害的4%反弹给所有敌人。死亡时，吸取敌人25%的力量，并治疗友军75%。</color> <color=red>减少10%力量吸取抗性。</color>
+HODA_AURA_PLUS50HCURPPDRESVEN_20DMGRESMAGE_GAIN50HEAL50ALL_ALLYDEATH_RETALIATE15_ONDEATH_MINUS25PDRES_FLANK|<color=green>Venatori增加50%生命值、诅咒力量抗性和力量吸取抗性。法师增加20%伤害抗性。友军死亡时，友军获得50%力量和生命值。死亡时，反弹所受伤害的15%。</color> <color=red>减少25%力量吸取抗性。</color> <color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS50HCURRES_ELFWARR_20DMGRES_5BNSDMG10STUNSLOWRESALL_ONHIT_GAIN25HEAL25ALL_ALLYDEATH_MINUS25SLOWRES|<color=green>精灵和战士增加50%生命值和诅咒抗性。增加20%伤害抗性。遭受攻击时，友军获得5%额外伤害和10%击晕和减速抗性。友军死亡时，友军获得25%生命值和力量。</color> <color=red>敌人减少25%减速抗性。</color>
+HODA_AURA_PLUS50HCURSERESDRAGON_EX10KALTENZAHN_10BNSDMGFROMDRAGONLINGS_HEAL20ALLYHIT_GAIN5DMGRESDRAGONATK_EQUALTGT|<color=green>龙增加50%生命值和诅咒抗性，卡尔滕赞一族额外增加10%。队伍中每有一只龙蚙，获得10%额外伤害。友军遭受攻击时，治疗友军20%。龙友军攻击时，龙获得5%伤害抗性。</color><color=orange>攻击前排和后排的几率相等。</color>
+HODA_AURA_PLUS50HEALTHANDPOWERANDPOWERDRAINRESIST_TO_ELVES_AND_SELF_GAIN_15POWER_ON_ALLY_HIT_AND_MINUS_10POWER_TO_ENEMIES_AND_MINUS_15STUNRESIST_TO_ENEMIES|<color=green>精灵增加50%生命值和力量。精灵增加50%力量吸取抗性。友军遭受攻击时，获得少量力量。</color> <color=red>敌人减少10%力量。敌人减少15%击晕抗性。</color>
+HODA_AURA_PLUS50HEALTHWARRIOR25POWERALLIES_AND_PLUS15POWERREINDEER_AND_PLUS30STUNSLOWRESALLIES30REINDEER_AND_HEALSELF15ONALLYHIT_AND_TAUNT|<color=green>战士增加50%生命值。友军增加25%力量，驯鹿战獒额外增加15%。友军增加30%击晕和减速抗性，驯鹿战獒额外增加30%。友军遭受攻击时，少量自我疗伤。</color>
+HODA_AURA_PLUS50HEALTHWINTERSEND_AND_PLUS35POWERBEASTWHITE_AND_ALLYGAIN15POWERONSELFHIT_AND_PLUS35POWERDRAINRESALLIESWINTERSEND|<color=green>立春卡伦增加50%生命值。生物和白色阵营增加35%力量（效果可叠加）。该英雄遭受攻击时，友军获得少量力量。友军增加35%力量吸取抗性，立春卡伦额外增加35%。</color>
+HODA_AURA_PLUS50HEALTH_40STUNRESIST_40SLOWRESIST_TO_ORLESIAN_AND_PLUS60POWER_VS_TALLIS_HAWKE_AND_PLUS35POWER_TO_PROSPER|<color=green>Orlesian增加50%生命值以及40%击晕和减速抗性。攻击塔利斯和霍克时增加60%额外伤害。帕斯柏公爵增加35%力量。</color>
+HODA_AURA_PLUS50HEALTH_AND_PDIMMUNITY_FOR_QUNARI_AND_PLUS50DAMAGE_REDBLUEFACTION_VS_WHITEBLACKFACTION_AND_ALLY_HEAL40_WHEN_SELF_ATTACK|<color=green>Qunari增加50%生命值。Qunari对力量吸取免疫。红色和蓝色阵营攻击白色和黑色阵营时增加50%额外伤害。遭受攻击时，中等程度治疗友军。</color>
+HODA_AURA_PLUS50HEALTH_ELVES_ORLESIAN_STACKING_PWGAIN25_ALLIES_ON_ENEMY_DEATH_AND_PLUS25_STUN_SLOW_PDRESIST_ORLESIAN_ELVES_STACKING|<color=green>Orlesian和精灵增加50%生命值以及25%击晕、减速和力量吸取抗性（均可叠加）。敌人死亡时，友军获得25%力量。</color>
+HODA_AURA_PLUS50HEALTH_ELVES_OUTLAWS_STACKING_PWGAIN25_ALLIES_ON_ENEMY_DEATH_AND_PLUS25_STUN_SLOW_PDRESIST_OUTLAWS_ELVES_STACKING|<color=green>不法之徒和精灵增加50%生命值以及25%击晕、减速和力量吸取抗性（均可叠加）。敌人死亡时，友军获得少量力量。</color>
+HODA_AURA_PLUS50HEALTH_ELVES_PLUS50POWER_INQ_PLUS35BONDAM_SEEKERS_AND_DEFENDER50_AND_PLUS75CURSEPOWERRES_ELVES_AND_ALLIES_HEAL75_ON_ENEMYDEATH|<color=green>精灵增加50%生命值，审判英雄增加50%力量，追寻者增加35%额外伤害。50%守护者。精灵增加75%诅咒力量抗性。敌人死亡时，友军治疗75%。</color>
+HODA_AURA_PLUS50HEALTH_PLUS25POWER_FOR_SPIRITS_AND_HEAL50_POWERGAIN_20_ON_ALLY_DEATH_AND_PLUS25DMG_VS_DEMONS_50_VS_NIGHTMARE|<color=green>灵魂增加50%生命值和25%力量。友军死亡时，中等程度治疗并获得少量力量。攻击恶魔时增加25%额外伤害，攻击梦魇时额外增加50%。</color>
+HODA_AURA_PLUS50HEALTH_POWER_TO_INQ_ELVES_FLEMETH_AND_STUN_IMMUNITY_AND_PLUS50STUNRES_ALLIES_AND_PLUS50CURSHEALTHRES_ALLIES_AND_DEFENDER25|<color=green>审判英雄、精灵和菲勒梅丝增加50%生命值和力量。对击晕免疫。友军增加50%击晕和诅咒生命抗性。25%守护者。</color>
+HODA_AURA_PLUS50HP10CRITALL_10BNSDMGDMGRES75STUNSLOWRESSELF_GAIN10HPALLYATK_BRAVETGT_MINUS25ALLEFFRES|<color=green>友军增加50%生命值和力量以及10%的2倍伤害几率。增加10%额外伤害和伤害抗性。增加75%击晕和减速抗性。友军攻击时，获得10%生命值和力量。</color> <color=orange>有更大几率攻击最强的敌人。</color> <color=red>减少25%所有效果抗性。</color>
+HODA_AURA_PLUS50HP10DMGRESWARD_60STUNCURRESWARDWARR_15PSELF_ALLYHIT_10SLOWDMGRESALL_ALLYDTH_HEAL30ALL_ENMYDTH_MINUS25ALLEFFRES|<color=green>守护者增加50%生命值、力量和10%伤害抗性。守护者和战士增加60%击晕和诅咒抗性。友军遭受攻击时，获得15%力量。友军死亡时，友军获得10%减速抗性和伤害抗性，敌人死亡时获得30%生命值。</color> <color=red>减少25%所有效果抗性。</color>
+HODA_AURA_PLUS50HP15EFFRESWEREWOLVES_GAIN25HEAL25ALL_ONHIT_HEAL50_ONDEATH_CURSEIMMUNELADY_MINUS25EFFRES|<color=green>狼人增加50%生命值和力量以及15%所有效果抗性。遭受攻击时，友军获得25%生命值和力量。死亡时，友军获得50%生命值。森林女王对诅咒免疫。</color> <color=red>减少25%所有效果抗性。</color>
+HODA_AURA_PLUS50HP20DMGRES50SLOWRESALL_15CRITSELF_CONV15HALLPSELF_EXPLODE5_MINUS10P|<color=green>友军增加50%生命值、力量、20%伤害抗性和50%减速抗性。增加15%的2倍伤害几率。攻击时，将所造成伤害的15%转化为友军的生命值和自身的力量。敌人死亡时，所有敌人承受5%所受的伤害。</color> <color=red>减少10%力量。</color>
+HODA_AURA_PLUS50HP30STUNSLOW10DMGRESRL_CURSEIMMSAMSON_GAIN10EFFRES_ONHIT_GAIN50HEAL100ALL_ONDEATH_MIN25EFFRES10CRIT|<color=green>红伊利姆增加50%生命值和力量、30%击晕和减速抗性以及10%伤害抗性。萨姆森对诅咒免疫。遭受攻击时，友军获得10%所有效果抗性。死亡时，友军获得100%生命值和50%力量。</color> <color=red>减少25%所有效果抗性和10%的2倍伤害几率。</color>
+HODA_AURA_PLUS50HP40SLOWRES15DMGRESALL_GAIN15HEAL15DMGRES4ALL_ALLYATK_HEAL100BNSDMG10ALL_ONDEATH_MIN10P5CRIT35SLOWRES|<color=green>友军增加50%生命值和力量、40%减速抗性和15%伤害抗性。友军攻击时，友军获得15%生命值和力量以及4%伤害抗性。死亡时，友军治疗100%并获得10%额外伤害。</color> <color=red>减少10%力量、5%的2倍伤害几率和35%减速抗性。</color>
+HODA_AURA_PLUS50HPALL_25DMGRESVSQUICK_DOUBLESELF_RETALIATE5EXPLODE5_DEFENDER50_MINUS15P50SLOWQUICK|<color=green>友军增加50%生命值和力量。友军对抗快速攻击英雄时增加25%伤害抗性，自身加倍。友军遭受攻击或攻击时，所有敌人承受5%已造成或所受的伤害。增加50%守护者。</color> <color=red>快速攻击英雄减少15%力量和50%减速抗性。</color>
+HODA_AURA_PLUS50HPALL_75CURSTUNRESORLESIAN_25DMG75ALLEFFRES15CRITDUKEPROSPER_EXPLODE3ALLYTATK_MINUS25STUNPDRES|<color=green>友军增加50%生命值和力量。Orlesian增加75%诅咒和击晕抗性。帕斯柏公爵增加25%伤害抗性、75%所有效果抗性和15%的2倍伤害几率。友军攻击时，所有敌人承受3%已造成的伤害。</color> <color=red>减少25%击晕和力量吸取抗性。</color>
+HODA_AURA_PLUS50HPALL_75STUNRESINQ_PDIMMSELF_GAIN15PSELF15H10CURRESALL_ALLYATK_DRAIN15ANYDTH_MIN20CRITALLEFFRES|<color=green>友军增加50%生命值和力量。审判英雄增加75%击晕抗性。对力量吸取免疫。友军攻击时，获得15%力量，同时友军获得15%生命值和10%诅咒抗性。任何英雄死亡时，吸取所有敌人15%的力量。</color> <color=red>减少20%的2倍伤害几率和所有效果抗性。</color>
+HODA_AURA_PLUS50HPBEASTSPIRIT_10CRIT5BNSDMGALL_RETALIATE10_HEAL30ALL_ONHIT_BNSDMG50VSWARR_GAIN25ALL_ALLYDTH_ANTIFLANK|<color=green>生物和灵魂增加50%生命值和力量。友军增加10%的2倍伤害几率和5%额外伤害。遭受攻击时，反弹所受伤害的10%，并治疗友军30%。攻击战士时增加50%额外伤害。友军死亡时，为友军赋予25%力量。</color> <color=red>降低敌人侧击的几率。</color>
+HODA_AURA_PLUS50HPBEASTWEREWOLVES_10HPWITHERFANG_DEFENDER50_GAIN25P10DMGRES5RETALIATE_ONHIT_HEAL100WEREWOLVES_ONDEATH_FLANK|<color=green>生物和狼人增加50%生命值和力量，怀特芬额外增加10%。增加50%守护者。遭受攻击时，友军获得25%力量和10%伤害抗性，并将所受伤害的5%反弹给敌人。死亡时，狼人治疗100%。</color><color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS50HPBEAST_20ALLRESBEASTWEREWOLFSTACK_RETALIATE10_GAIN15HPBEASTFROMDAM_ONHIT_ANTIFLANK|<color=green>生物增加50%生命值和力量。生物和狼人增加20%所有效果抗性（效果可叠加）。遭受攻击时，将所受伤害的10%反弹给敌人，并将所受伤害的15%转化为生物的生命值和力量。</color> <color=red>降低敌人侧击的几率。</color>
+HODA_AURA_PLUS50HPCURHRES15DMGRESAVVAR_RETALIATE10_HEAL20ALLONHIT_HEAL25GAIN25P10DMGRESALL_ALLYDTH_MINUS35CURRES|<color=green>Avvar增加50%生命值、力量、诅咒生命抗性以及15%伤害抗性。遭受攻击时，将所受伤害的10%反弹给敌人，同时友军获得20%生命值。友军死亡时，友军获得25%生命值和力量以及10%伤害抗性。</color> <color=red>敌人减少35%诅咒抗性。</color>
+HODA_AURA_PLUS50HPCURHRES25DMGRESALL_CONV15HALL_ANYDMG_HEAL75GAIN25ALL_ONDEATH_DEFENDER50_MINUS50CURHRES|<color=green>友军增加50%生命值、力量、诅咒生命抗性和25%伤害抗性。将友军所造成或所受伤害的15%转化为友军的生命值。死亡时，友军获得75%生命值和25%力量。增加50%守护者。</color> <color=red>减少50%诅咒生命抗性。</color>
+HODA_AURA_PLUS50HPCURRES20DMGRESNOBORL_CONVERT5PHALL_ALLDMG_MIN25EFFRES|<color=green>友军增加50%生命值、力量和诅咒抗性。Orlesian和贵族增加20%伤害抗性。将友军所造成或所受伤害的5%转化为友军的力量和生命值。</color> <color=red>减少25%所有效果抗性。</color>
+HODA_AURA_PLUS50HPDSTUNRESALL_25HPALL_SELFHIT_DMG5000ALL_DRAIN15_ANYDTH_PDIMM_MIN25STUNPDRES|<color=green>友军增加50%生命值、力量吸取抗性和击晕抗性。遭受攻击时，友军获得25%生命值和力量。友军抵挡最初的5000点伤害。任何英雄死亡时，吸取敌人15%的力量。对力量吸取免疫。</color> <color=red>减少25%击晕和力量吸取抗性。</color>
+HODA_AURA_PLUS50HPMAGE_5DMGRES_MAGEELFCIRORLSTACK_HEAL15ALLGAIN10SELF_ALLYATK_DRAIN2ONHIT_DEFENDER35_MINUS25SLOWCURRES|<color=green>法师增加50%生命值和力量。法师、精灵、议会英雄和Orlesian增加5%伤害抗性（效果可叠加）。友军攻击时，治疗友军15%并获得10%力量。遭受攻击时，吸取敌人2%的力量。增加35%守护者。</color> <color=red>减少25%减速和诅咒抗性。</color>
+HODA_AURA_PLUS50HPPDRESWARDNOB_DMGRES25WHITE_HEAL15GAIN15STUNCURPALL_ALLYATK_GAIN50HEAL50ALL_ONDEATH_MIN10P20STUNBLACK|<color=green>守护者和贵族增加50%生命值、力量和力量吸取抗性。白色阵营增加25%伤害抗性。友军攻击时，友军获得15%生命值、击晕抗性和诅咒力量抗性。死亡时，友军获得50%力量和生命值。</color> <color=red>黑色阵营减少10%力量和20%击晕抗性。</color>
+HODA_AURA_PLUS50HPPDSTUNRESWARD_GAIN10PCURPHRESALL_ALLYATK_BNSDMG20ALLVSBLIGHTLCSTACK_RETALIATE20ONDTH_MIN25STUNPDRES|<color=green>守护者增加50%生命值、力量、力量吸取抗性和击晕抗性。友军攻击时，友军获得10%力量和诅咒抗性。友军攻击毁灭系英雄和大型生物时造成20%额外伤害（效果可叠加）。死亡时，反弹所受伤害的20%。</color> <color=red>减少25%击晕和力量吸取抗性。</color>
+HODA_AURA_PLUS50HPREAVERS_25HPDRAGONS_2500DMGRED_50SLOWSTUNRESREAVERS_GAIN30ALLONHIT_GAIN100ALLONDEATH_30DMGRESDRAGONLING|<color=green>洞察：无视隐形。掠夺者增加50%生命值和力量，龙增加25%（效果可叠加）。抵挡2500点伤害。掠夺者增加50%减速和击晕抗性。遭受攻击时，友军获得30%力量，死亡时获得100%。龙蚙增加30%伤害抗性。</color>
+HODA_AURA_PLUS50HPSTUNCURPRESAVVAR_HEAL20GAIN8DMGRESALL_ALLYATK_GAIN50HPALL_ALLYDTH_35BNSDMGAVVAR_VS_DEMON_MINUS35CURRES|<color=green>Avvar增加50%生命值、力量、击晕抗性和诅咒力量抗性。友军攻击时，友军获得20%生命值和8%伤害抗性。友军死亡时，友军获得50%力量和生命值。Avvar攻击恶魔时增加35%额外伤害。</color> <color=red>敌人减少35%诅咒抗性。</color>
+HODA_AURA_PLUS50HPSTUNPDRES10DMGRESAVVAR_HEAL50ALL_ALLYDTH_GAIN15PALL_ENMYDTH_CONV8PALL_ALLYATK_25DMG_GOAT_AND_VSGOAT_MINUS25PD|<color=green>Avvar增加50%生命值、力量、击晕抗性、力量吸取抗性以及10%伤害抗性。友军死亡时，友军获得50%生命值，敌人死亡时获得15%力量。将友军所造成伤害的8%转化为友军的力量。山羊攻击他人及被他人攻击时均增加25%额外伤害。</color> <color=red>敌人减少25%力量吸取抗性。</color>
+HODA_AURA_PLUS50HPSTUNRES_REDHAKKON_20DMGRES_HAKKONITE_GAIN10SLOWSTUNDMGRESALL_ONHIT_EXPLODE15ALL_STUNIMMUNE|<color=green>红色阵营和哈肯冬息者增加50%生命值、力量和击晕抗性。哈肯之颌增加20%伤害抗性。遭受攻击时，友军获得10%击晕、减速和伤害抗性。敌人死亡时，所有敌人承受15%已造成的伤害。对击晕免疫。</color>
+HODA_AURA_PLUS50HPSTUNSLOWCURRESALL_EX10VEN_DEFENDER50_GAIN25VENDRAIN25ALL_ONHIT_25DMGRESALLVSINQ_MIN25PPDRESINQ|<color=green>友军增加50%生命值、力量、击晕抗性、减速抗性和诅咒抗性，Venatori额外增加10%。50%守护者。遭受攻击时，Venatori友军获得25%力量，并吸取敌人20%的力量。友军对抗审判英雄时增加25%伤害抗性。</color> <color=red>审判英雄减少25%力量和力量吸取抗性。</color>
+HODA_AURA_PLUS50HPSTUNSLOWRESAVVARINQ_GAIN10P2BNSDMGALL_ALLYATK_GAIN15HPALLEXPLODE15_ENEMYDTH_MINUS25SLOWRES|<color=green>Avvar和审判英雄增加50%生命值、力量、减速抗性和击晕抗性。友军攻击时，友军获得10%力量和2%额外伤害。敌人死亡时，友军获得15%力量和生命值，所有敌人承受15%已造成的伤害。</color> <color=red>敌人减少25%减速抗性。</color>
+HODA_AURA_PLUS50HP_DEMONS_AND50P_RED_LYRIUM_25P_LUCIUS_25P_ENEMY_DEATH_25_35PCT_DAMAGE_POWER_GAINERS_WOUNDED_TARGETING|<color=green>恶魔增加50%生命值。恶魔和红伊利姆增加50%力量。卢修斯·科林增加25%力量。敌人死亡时，少量治疗。攻击力量增益者时增加35%额外伤害。</color> <color=orange>有更大几率攻击生命值最低的目标。</color>
+HODA_AURA_PLUS50HP_DWARF_PLUS15CURSERES_DWARF_GOLEM_STACK_40DMGRES_VSMAGE_MINUS10POWER|<color=green>矮人增加50%生命值和力量。矮人和魔像增加15%诅咒抗性（效果可叠加）。对抗法师时增加40%伤害抗性。</color> <color=red>敌人减少10%力量。</color>
+HODA_AURA_PLUS50HP_ELVES_PLUS50STUNRESALL_PLUS10DMGRES_BLUE_HAWKEL_MINUS20CURSERES|<color=green>精灵增加50%生命值和力量。友军增加50%击晕抗性。蓝色阵营和霍克增加10%伤害抗性（效果可叠加）。</color> <color=red>敌人减少20%诅咒抗性。</color>
+HODA_AURA_PLUS50HP_SPIRITS_AND_DEMONS_20DMG_RESIST_DEMONS_PERS_STUN_IMMUNE_P_ON_ENEMY_DEATH_65|<color=green>恶魔和灵魂增加50%生命值和力量。恶魔增加20%伤害抗性。敌人死亡时，获得巨量力量。对击晕免疫。</color>
+HODA_AURA_PLUS50HP__DWARF_AND_NOBILITY_POWER_GAIN_WHEN_ALLY_HIT_25_PLUS25PCT_DMG_VS_INQUISITION_REDLYRIUM|<color=green>贵族和盗贼增加50%生命值和力量。友军攻击毁灭系英雄和红伊利姆时增加15%额外伤害。友军遭受攻击时，获得少量力量。</color>
+HODA_AURA_PLUS50HSTUNSLOWRESDRAGON_EX10MISTRAL_20DMGRESFROMDRAGONLINGS_GAIN3EFFRESDRAGONHIT_MIN25STUNSLOWRES|<color=green>龙增加50%生命值、击晕抗性和减速抗性，米斯特拉尔一族额外增加10%。队伍中每有一只龙蚙，获得20%伤害抗性。龙友军遭受攻击时，龙友军获得3%所有效果抗性。</color> <color=red>减少25%击晕和减速抗性。</color> 
+HODA_AURA_PLUS50HWARDINQ_DEFENDER50_DMGRES3ALLYHIT_RETALIATE10SELFHIT_GAIN25HANYDTH|<color=green>守护者和审判英雄增加50%生命值。增加50%守护者。友军遭受攻击时，获得3%伤害抗性。遭受攻击时，将所受伤害的10%反弹给敌人。任何英雄死亡时，获得25%生命值。</color>
+HODA_AURA_PLUS50H_FOR_WARR_AND_PLUS25BONDAM_VS_DEFS_FOR_ALLIES_AND_POWER75_ALLYDEATH_AND_PLUS50CPRRES_AND_MINUS25_SLOWRES_ENEMIES|<color=green>战士增加50%生命值。友军攻击守护者时增加25%额外伤害。友军死亡时，获得75%力量。增加50%诅咒力量抗性。</color> <color=red>敌人减少25%减速抗性。</color>
+HODA_AURA_PLUS50P100DRAINRES_RL_GAIN20_ALLYHIT_HATREDMAGE|<color=green>红伊利姆增加50%力量和100%力量吸取抗性。友军遭受攻击时，获得20%力量。 </color> <color=orange>有更大几率攻击法师。</color>
+HODA_AURA_PLUS50P100STUNRES_DWARVES_PLUS50H_INQ_25BNSDMGALL_VS_REDLYR_25DMGRESVSMAGE_MINUS25CURPRES|<color=green>矮人增加50%力量和100%击晕抗性。审判英雄增加50%生命值。友军攻击红伊利姆时增加25%额外伤害。对抗法师时增加25%伤害抗性。</color> <color=red>减少25%诅咒力量抗性。</color>
+HODA_AURA_PLUS50P25CURSEDRAINRESTEMPLAR_15BNSDMGVSSEEKER_RETALIATE5MAGES_HEAL20TEMPLAR_ONHIT_MINUS15PMAGEDEMONWARR|<color=green>圣殿骑士增加50%力量以及25%诅咒和力量吸取抗性。攻击追寻者时增加15%额外伤害。遭受攻击时，将所受伤害的5%反弹给敌方法师，并治疗圣殿骑士友军20%。</color> <color=red>法师、恶魔和战士减少15%力量。</color>
+HODA_AURA_PLUS50P35CURPRES_DWARVES_PLUS50DRAINRES_GOLEM_PLUS5CRITALL_GAIN50HEAL25ALL_ALLYDEATH|<color=green>矮人增加50%力量和35%诅咒力量抗性。魔像增加50%力量吸取抗性。友军增加5%的2倍伤害几率。友军死亡时，友军获得50%力量和25%生命值。</color>
+HODA_AURA_PLUS50PALL_PLUS50HBLUEBEASTSTACK_PLUS25DMGRESSELFBLUEVSRED_PLUS65STUNDRAINRESBEAST_SLOWIMMUNE_PLUS20BNSDMGALL_VS_GIANT|<color=green>友军增加50%力量。蓝色阵营和生物增加50%生命值（效果可叠加）。自身和蓝色阵营对抗红色阵营时增加25%伤害抗性。对减速免疫。生物增加65%击晕和力量吸取抗性。友军攻击巨型生物时造成20%额外伤害。</color>
+HODA_AURA_PLUS50PBEASTSPIRIT_15CRITBNSDMGSELF_GAIN15STUN5ALL_ONHIT_RETALIATE20_ONDEATH_FLANK_MINUS25STUN|<color=green>生物和灵魂增加50%力量。增加15%的2倍伤害几率和额外伤害。遭受攻击时，友军获得15%力量和5%击晕抗性。死亡时，将所受伤害的20%反弹给所有敌人。</color><color=orange>有更大几率攻击后排。</color> <color=red>减少25%击晕抗性。</color>
+HODA_AURA_PLUS50PCURRESALL_STUNIMM_DEFENDER75_EXPLODE3ALLYATK_DMGRES4ALL_ALLYATK_MINUS25STUNCURRES_FEARELVES|<color=green>友军增加50%力量和诅咒抗性。对击晕免疫。增加75%守护者。友军攻击时，所有敌人承受3%已造成的伤害，同时友军获得4%伤害抗性。</color> <color=red>减少25%击晕和诅咒抗性。</color> <color=orange>减少攻击精灵的几率。</color>
+HODA_AURA_PLUS50PCURSTUNRES25DMGRES_INQCHACIR_15HSTUNRES2BNSDMGALL_ALLYATK_CURPIMM_HASTE_MIN25ALL|<color=green>审判英雄、教会英雄和议会英雄增加50%力量、诅咒抗性、击晕抗性和25%伤害抗性。友军攻击时，友军获得15%生命值、击晕抗性和2%额外伤害。对诅咒力量免疫。</color><color=orange>更有可能在主动性中率先攻击。</color> <color=red>减少25%所有效果抗性。</color>
+HODA_AURA_PLUS50PDRAINSTUNRESDRAGON_EX10GAMORDAN_10CRITFROMDRAGONLINGS_DEFENDER50_RETALIATE15_MIN25DRAINCURSERES|<color=green>龙增加50%力量、力量吸取抗性和击晕抗性，加莫丹风暴骑士一族额外增加10%。队伍中每有一只龙蚙，获得10%的2倍伤害几率。增加50%守护者。将所受伤害的15%反弹给敌人。</color> <color=red>减少25%力量吸取抗性和诅咒抗性。</color> 
+HODA_AURA_PLUS50PDWARFWARD_PLUS10SLOWSTUNRES_ONHIT_PLUS20PH_ONHIT_PLUS50PH_ONDEATH_PLUS15DMGRESDWARFWARRSTACK|<color=green>守护者和矮人增加50%力量。遭受攻击时，获得10%减速和击晕抗性、20%力量和20%生命值。任何英雄死亡时，获得50%生命值和力量。矮人和战士增加15%伤害抗性（效果可叠加）。</color>
+HODA_AURA_PLUS50PDWARVESDEMONS_20DMGRESALL_DEFENDER65_20ALLEFFECTRESDWARVES_DRAIN5ONHIT_BRAVETARGETING_MINUS20POWER|<color=green>矮人和恶魔增加50%力量。友军增加20%伤害抗性。增加65%守护者。矮人增加20%所有状态效果抗性。遭受攻击时，吸取敌人5%的力量。</color><color=orange>有更大几率攻击最强的敌人。</color> <color=red>敌人减少20%力量。</color>
+HODA_AURA_PLUS50PHCURRESALL_15PHXMAS_SLOWIMMXMAS_HEAL40ALL_ONHIT_RETALIATE10_GAIN4DMGRESALL_ALLYATK_ANTIFLANK|<color=green>友军增加50%生命值、力量和诅咒抗性。立春友军增加15%生命值、力量，并对减速免疫。遭受攻击时，友军获得40%生命值，并将所受伤害的10%反弹给敌人。友军攻击时，友军获得4%伤害抗性。</color> <color=red>降低敌人侧击的几率。</color>
+HODA_AURA_PLUS50PHCURRESVENWARR_CONVERT7PHALL_EXPLODEALL6HIT20DEATH_MINUS35STUNRESINQ_FLANK|<color=green>Venatori和战士增加50%力量、生命值和诅咒抗性。将友军所受伤害的7%转化为友军的力量和生命值。敌人遭受攻击时，所有敌人承受6%已造成的伤害，死亡时承受20%。</color> <color=red>审判英雄减少35%击晕抗性。</color> <color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS50POWER_TO_DEMONS_15H_ALLIES_BLOODMAGE_10_ALLIES_HIT|<color=green>友军增加15%生命值。恶魔增加50%力量。友军遭受攻击时，获得少量力量。</color>
+HODA_AURA_PLUS50PPDCURPRESSPIWAR_20DMGRES3500DMGREDALL_GAIN20ALLMIN10PDRESENEMY_ONHIT_15DMGRESSELF_ALLYDEATH_STUNIMMUNE_MIN10STUN|<color=green>灵魂和守护者增加50%力量、力量吸取抗性和力量诅咒抗性。友军增加20%伤害抗性。友军抵挡最初的3500点伤害。遭受攻击时，友军获得20%力量，并使敌人的力量吸取抗性降低10%。友军死亡时，获得15%伤害抗性。对击晕免疫。</color> <color=red>减少10%击晕抗性。</color>
+HODA_AURA_PLUS50PPDRAINDMGRES15CRIT_INQ_CHANT_DRAIN5_ONHIT_WOUNDEDTGT|<color=green>审判英雄和教会英雄增加50%力量吸取抗性、50%力量、20%伤害抗性和15%的2倍伤害几率。遭受攻击时，吸取敌人5%的力量。</color><color=orange>有更大几率攻击生命值百分比最低的敌人。</color>
+HODA_AURA_PLUS50PPDSLOWRESVEN_DRAIN3ALLYHIT_DRAIN15ALLYDEATH_DRAIN2ALLYATK_MINUS15PDRES|<color=green>Venatori增加50%力量、力量吸取抗性和减速抗性。友军遭受攻击时，吸取敌人3%的力量，友军死亡时吸取15%。友军攻击时，吸取敌人2%的力量。</color> <color=red>减少15%力量吸取抗性。</color>
+HODA_AURA_PLUS50PSLOWDRAINRESDRAGON_EX10VINSOMER_25PDRESFROMDRAGONLINGS_GAIN10PALLYATK_DRAIN3ONHIT_FLANK|<color=green>龙增加50%力量、减速抗性和力量吸取抗性，电钢龙一族额外增加10%。队伍中每有一只龙蚙，获得25%力量吸取抗性。友军攻击时，友军获得10%力量。遭受攻击时，吸取敌人3%的力量。</color><color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS50PSLOWPDRESVEN_GAIN20P10DMGRESALLY_ONHIT_HEAL35CURRES10ALLY_ANYDEATH_DEFENDER50_STUNIMMUNE_MINUS35SLOWRESINQ|<color=green>Venatori增加50%力量、减速抗性和力量吸取抗性。遭受攻击时，友军获得20%力量和10%伤害抗性。任何英雄死亡时，友军治疗35%并获得10%诅咒抗性。增加50%守护者。对击晕免疫。</color> <color=red>审判英雄减少35%减速抗性。</color>
+HODA_AURA_PLUS50PSTUNPDRES_FERWARROUT_CONV6PHALL_SLOWIMM_MIN25SLOWRESCRIT|<color=green>Ferelden、战士和不法之徒增加50%力量、击晕抗性和力量吸取抗性。将友军所造成伤害的6%转化为友军的力量和生命值。对减速免疫。</color> <color=red>敌人减少25%减速抗性和2倍伤害几率。</color>
+HODA_AURA_PLUS50PSTUNRES5BNSDMGQUN_25DMGEFFRESARIQUN_GAIN15HEAL15ALL_ANYDEATH_RETALIATE5ALL_MINUS25PDRES|<color=green>Qunari增加50%力量、击晕抗性和5%额外伤害。阿里坤增加25%伤害和所有效果抗性。任何英雄死亡时，友军获得15%生命值和力量。将友军所受伤害的5%反弹给敌人。</color> <color=red>敌人减少25%力量吸取抗性。</color>
+HODA_AURA_PLUS50P_APOSTATES_INQUISITION_35PCT_POWER_VS_TEMPLARS_PERSONAL_20P_ON_ENEMY_DEATH_MINUS15_POWER_TO_FLEMETH|<color=green>叛徒和审判英雄增加50%力量。攻击圣殿骑士时增加35%额外伤害。敌人死亡时，获得20%力量。</color> <color=red>菲勒梅丝减少15%力量。</color>
+HODA_AURA_PLUS50P_OUTLAWS_ROGUES_PLUS35BNSDMGALL_VS_QUNARI_STUNIMMUNESELF_PLUS10DR_OUTLAWS_MINUS50STUN_TO_QUNARI_FLANK|<color=green>不法之徒和盗贼增加50%力量。友军攻击Qunari时增加35%额外伤害。对击晕免疫。不法之徒增加20%伤害抗性。</color> <color=red>Qunari减少50%击晕抗性。</color> <color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS50P_TO_TEVINTER_BLOOD_MAGES_AND_FLANK_AND_POWER_DRAIN_IMMUNE_POWER_ALLY_HIT_5|<color=green>Tevinter和嗜血法师增加50%力量。将友军所受伤害的5%转化为自身力量。对力量吸取免疫。</color><color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS50P_TRIUMVIRATE_PLUS50HQUN_PLUS25CURDMGRESQUN_GAIN50PSELFDEATHALL_GAIN25HENEMYDEATHALL|<color=green>三圣主增加50%力量。Qunari增加50%生命值。Qunari增加25%诅咒抗性和伤害抗性。该英雄死亡时，友军获得50%力量，敌人死亡时治疗25%。</color><color=orange>有更大几率攻击力量最高的敌人。</color>
+HODA_AURA_PLUS50_BONUS_DAM_VS_APOSTATES_AND_PLUS65_HEALTH_TO_ORLESIANS_AND_PLUS30_PDRESIST_TO_CHANTRY|<color=green>攻击叛徒时增加50%额外伤害。Orlesian增加65%生命值。教会英雄增加30%力量吸取抗性。</color>
+HODA_AURA_PLUS60H20ALLEFFECTRESDWARF_60SLOWSTUNDRAINRESSELF_DEFENDER50_HEAL75ALL_ALLYDEATH_MINUS20CRIT|<color=green>矮人增加60%生命值和20%所有效果抗性。自身增加60%减速、击晕和力量吸取抗性。增加50%守护者。友军死亡时，友军获得75%生命值。</color> <color=red>减少20%的2倍伤害几率。</color>
+HODA_AURA_PLUS60H50STUNPDRES25DMGRES_NOB_FERELD_30HPLOGHAIN_HEAL30ALL_ENMYDTH_RETALIATE5ALL_MIN50SLOWRES|<color=green>贵族和Ferelden增加60%生命值、50%击晕和力量吸取抗性以及25%伤害抗性。洛根增加30%生命值和力量。敌人死亡时，友军获得30%生命值。将友军所受伤害的5%反弹给敌人。</color> <color=red>减少50%减速抗性。</color>
+HODA_AURA_PLUS60HALL_60PSTUNCURSERESAEDUCAN_MINUS5PDRESENEMY_ONHIT_GAIN7HEAL7ALLVALFROMDAM_GAIN15HEAL15ALL_ENEMYDEATH_ANTIFLANK|<color=green>友军增加60%生命值。艾杜肯家族增加60%力量、击晕抗性和诅咒抗性。遭受攻击时，敌人减少5%力量吸取抗性。将友军所受伤害的7%转化为友军的力量和生命值。敌人死亡时，友军获得15%力量和生命值。</color> <color=red>阻止敌人侧击后排。</color>
+HODA_AURA_PLUS60HCURH_RL_PLUS5DRAINDMGRESALL_ONHIT_PLUS75PHALL_ONDEATH_MINUS35STUNRES_MINUS15CRIT|<color=green>红伊利姆增加60%生命值和诅咒生命抗性。遭受攻击时，友军获得5%力量吸取抗性和伤害抗性。死亡时，友军获得75%力量和生命值。</color> <color=red>减少35%击晕抗性和15%的2倍伤害几率。</color>
+HODA_AURA_PLUS60HCURPRES_FERNOB_HEAL30DMGRES10ALL_SELFHIT_GAIN25HEAL25ALL_ANYDTH_BNSDMG25ALL_VSOUT_MIN15P35STUNRES|<color=green>Ferelden和贵族增加60%生命值和诅咒力量抗性。遭受攻击时，友军获得30%生命值和10%伤害抗性。任何英雄死亡时，友军获得25%力量和生命值，并在攻击不法之徒时造成25%额外伤害。</color> <color=red>敌人减少15%力量和35%击晕抗性。</color>
+HODA_AURA_PLUS60HCURRES30DMGRESBLIGHTTEV_ONHIT_HEAL25GAIN25CURRES10BLIGHTTEV_SLOWIMMURTHEMIEL_MINUS15CRIT10CURSE|<color=green>毁灭系英雄和Tevinter增加60%生命值、诅咒抗性和30%伤害抗性。遭受攻击时，毁灭系英雄和Tevinter友军获得25%生命值和力量以及10%诅咒抗性。大恶魔美丽之龙对减速免疫。</color> <color=red>敌人减少15%的2倍伤害几率和10%诅咒抗性。</color>
+HODA_AURA_PLUS60HCURSTUNRES_RLQUN_25DMGRESWARR_GAIN15PSTUNALL_ALLYATK_GAIN50P20DMGRESALL_SELFDTH_NEGFLANK|<color=green>红伊利姆和Qunari增加50%生命值、诅咒抗性和击晕抗性。战士增加25%伤害抗性。友军攻击时，友军获得15%力量和击晕抗性。死亡时，友军获得50%力量和20%伤害抗性。</color> <color=red>降低敌人侧击的几率。</color>
+HODA_AURA_PLUS60HEALTH_AND_PLUS50_PDRESIST_FOR_NOBILITY_FERELDEN_AND_POWERGAIN25_ON_HIT_AND_PLUS150DAMAGE_VS_VENATORI_AND_MINUS20POWER_BLACK_RED_FACTIONS|<color=green>贵族和Ferelden增加60%生命值和50%力量吸取抗性。遭受攻击时，获得少量力量。攻击Venatori时增加150%额外伤害。</color> <color=red>黑色/红色阵营敌人减少20%力量。</color>
+HODA_AURA_PLUS60HEALTH_ELVES_AND_PLUS35STUNRES_ALLIES_EXTRA20_ELVES_AND_PLUS30DMG_VS_FERELDEN|<color=green>精灵增加60%生命值。友军增加35%击晕抗性，精灵额外增加20%。攻击Ferelden时增加30%额外伤害。</color>
+HODA_AURA_PLUS60HP10CRITALL_25DMGRES_RETALIATE5_DRAIN2ALL_ONHIT_HEAL25GAIN5BNSDMG_ALLYDEATH_ANTIFLANK|<color=green>友军增加60%生命值、力量以及10%的2倍伤害几率。25%伤害抗性。遭受攻击时，反击造成5%伤害，并吸取所有敌人2%的力量。友军死亡时，治疗25%并获得5%额外伤害。</color> <color=red>阻止敌人侧击后排。</color>
+HODA_AURA_PLUS60HP15CRITBLIGHT_25BNSDMGDMGRESBLIGHTVSWHITE_DEFENDER50_GAIN5ALL_ENEMYHIT_STUNIMMURTHEMIEL_MIN35RESISTS_WHITE|<color=green>毁灭系英雄增加60%生命值、力量以及15%的2倍伤害几率。毁灭系英雄对抗白色阵营时增加25%额外伤害和伤害抗性。增加50%守护者。敌人遭受攻击时，友军获得5%力量。大恶魔美丽之龙对击晕免疫。</color> <color=red>白色阵营减少35%所有效果抗性。</color>
+HODA_AURA_PLUS60HP35EFFECTRES_HAWKEFAMILY_25DMGRES_FREEMARCHES_RETALIATE5ALL_HEAL100GAIN100HAWKEFAMILY_ONDEATH|<color=green>霍克家族增加60%生命值和力量以及35%所有效果抗性。自由边境增加25%伤害抗性。遭受攻击时，将所受伤害的5%反弹给敌人。死亡时，霍克家族获得100%生命值和力量。</color>
+HODA_AURA_PLUS60HP35EFFRES_BLIGHTRLVEN_35BNSDMGSELF_VSWARDINQ_DRAIN5RETALIATE15_SELFHIT_GAIN25HEAL25ALL_ALLYDTH_MINUS35PDRES|<color=green>毁灭系英雄、红伊利姆和Venatori增加60%生命值、力量以及35%所有效果抗性。攻击守护者和审判英雄时增加35%额外伤害。遭受攻击时，吸取敌人5%的力量，并反弹所受伤害的15%。友军死亡时，友军获得25%力量和生命值。</color> <color=red>敌人减少35%力量吸取抗性。</color>
+HODA_AURA_PLUS60HP40STUNSLOW35DMGRESWARD_CONV15HALLANYDMG_GAIN25P15STUNRESALLANYDTH_ANTIFLANK_MIN50STUNSLOWRES|<color=green>守护者增加60%生命值、力量，以及40%击晕抗性、减速抗性和35%伤害抗性。将所造成伤害的15%转化为友军的生命值。任何英雄死亡时，友军获得25%力量和15%击晕抗性。</color> <color=red>降低敌人侧击的几率。减少50%击晕和减速抗性。</color>
+HODA_AURA_PLUS60HPALL_DEFENDER25_GAIN30ALL_ONHIT_RETALIATE10ALL_MINUS10DRAINRES_ONHIT_MINUS15HPALLIES_ONDEATH|<color=green>友军增加60%生命值和力量。25%守护者。遭受攻击时，将所受伤害的10%反弹给敌人，同时友军获得30%力量。</color> <color=red>遭受攻击时，敌人的力量吸取抗性降低10%。死亡时，友军损失15%生命值并被吸取力量。</color>
+HODA_AURA_PLUS60HPBLIGHT_25STUNSLOWCURPRESBLIGHTSPIDERSTACK_2000DMGRESALLSELFSTACK_MINUS15PPDRES25STUNCURHRES|<color=green>毁灭系英雄增加60%生命值和力量。毁灭系英雄和蜘蛛增加25%击晕抗性、减速抗性和诅咒力量抗性（效果可叠加）。友军抵挡每次攻击的最初2000点伤害，自身加倍。</color> <color=red>敌人减少15%力量和吸取抗性，并减少20%击晕抗性和诅咒生命抗性。</color> 
+HODA_AURA_PLUS60HPINQ_15BNSDMG_GAIN10SELFHEAL10ALL_ONHIT_RETALIATE35_ONDEATH_CURSEPIMMUNE_MINUS50STUNRES|<color=green>审判英雄增加60%生命值和力量。增加15%额外伤害。遭受攻击时，获得10%力量，并为友军赋予10%生命值。死亡时，将所受伤害的35%反弹给敌人。对力量诅咒免疫。</color> <color=red>减少50%击晕抗性。</color>
+HODA_AURA_PLUS60HPINQ_DRAIN5ALL_GAIN20SELF_ONHIT_CRIT10ALL_25BNSDMG_VS_NOBILITY_HATREDNOBILITY_MINUS15PNOBILITY|<color=green>审判英雄增加60%生命值和力量。遭受攻击时，吸取所有敌人5%的力量，并获得20%力量。友军增加10%的2倍伤害几率。攻击贵族时增加25%额外伤害。</color><color=orange>有更大几率攻击贵族。</color> <color=red>贵族减少15%力量。</color>
+HODA_AURA_PLUS60HPINQ_EXPLODE20ENEMYDEATH_40DMGRES_STUNIMMUNE_MINUS10CRIT|<color=green>审判英雄增加60%生命值和力量。敌人死亡时，所有敌人承受20%已造成的伤害。增加40%伤害抗性。对击晕免疫。</color> <color=red>减少10%的2倍伤害几率。</color>
+HODA_AURA_PLUS60HPPWR5CRIT35RESORL_25DMGRESALLY_2500DMGRESSELF_25MINPWRANTIFLANKEMY|<color=green>Orlesian增加60%生命值和力量、5%的2倍伤害几率以及35%所有效果抗性。友军增加25%伤害抗性。抵挡每次攻击的最初2500点伤害。</color> <color=red>敌人减少25%力量。阻止敌人侧击后排。</color>
+HODA_AURA_PLUS60HPSTUNPDRESAVVAR_40BNSDMGVSWHITE_REDSELF_CONVERT7HPALL_ALLYATK_GAIN50HEAL50SELF_ALLYDTH_MINUS50STUNSLOWRES|<color=green>Avvar增加60%生命值、力量、击晕抗性和力量吸取抗性。红色阵营和自身攻击白色阵营时增加40%额外伤害。将友军所造成伤害的7%转化为友军的生命值和力量。友军死亡时，获得50%力量和生命值。</color> <color=red>敌人减少50%击晕和减速抗性。</color>
+HODA_AURA_PLUS60HP_FOR_WITCHES_AND_PLUS35_STUN_SLOW_RESIST_FOR_APOSTATES_AND_PLUS25DAMRES_VS_WARRIORS_AND_POWERGAIN130_ON_ALLYDEATH|<color=green>荒野女巫增加60%生命值和力量。叛徒增加35%击晕和减速抗性。对抗战士时增加25%伤害抗性。友军死亡时，获得极大量力量。</color>
+HODA_AURA_PLUS60HP_TEMPLARS_PLUS65CPRES_PDIMM_FOR_TEMPLARS_AND_DEFENDER25_AND_FLANK_AND_MINUS5POWER_35SLOWRES_ENEMIES|<color=green>圣殿骑士增加60%生命值和力量。圣殿骑士增加65%诅咒力量抗性，并对力量吸取免疫。25%守护者。</color> <color=red>敌人减少5%力量和35%减速抗性。</color>
+HODA_AURA_PLUS60HP_TEVINTER_AND_POWERGAIN_ALLIES_50_ON_SELF_HIT_AND_DEATH_AND_IMMUNE_STUN_SLOW_AND_PLUS40_ALL_RESISTS|<color=green>Tevinter增加60%生命值和力量。该旗帜遭受攻击以及被击毁时，友军获得中等力量。对击晕和减速免疫。Tevinter增加40%击晕、减速、诅咒和力量吸取抗性。</color>
+HODA_AURA_PLUS60HP_WARDENS_AND_ONHIT_HEAL25_POWER25_ALLIES_AND_PLUS40ALLRESISTS_AND_MINUS10POWER_ENEMIES_MINUS5_HEALERS|<color=green>守护者增加60%生命值和力量。遭受攻击时，治疗友军并为其增加25%力量。守护者增加40%击晕、减速、力量吸取和诅咒抗性。</color> <color=red>敌人减少10%力量，敌方治疗者额外减少5%。</color>
+HODA_AURA_PLUS60HSLOWCURS15DMGRESTEVVEN_CONVERT5HPALLYDMG_STUNIMMTEO_MINUS25ALLEFFRES|<color=green>Tevinter和Venatori增加60%生命值、减速抗性、诅咒抗性和15%伤害抗性。将友军所受伤害的5%转化为友军的力量和生命值。大长老对击晕免疫。</color> <color=red>减少25%所有效果抗性。</color>
+HODA_AURA_PLUS60HSTUNPDRESALLIES_30DMGRESNOB_CONVERT8PHALL_ALLYATK_GAIN35HP7DMGRESALL_ANYDEATH_DEFENDER65_MINUS35STUNRES|<color=green>友军增加60%生命值、击晕抗性和力量吸取抗性。贵族增加30%伤害抗性。将对敌人所造成伤害的8%转化为友军的力量和生命值。任何英雄死亡时，友军获得35%生命值、力量和7%伤害抗性。65%守护者。</color> <color=red>减少35%击晕抗性。</color>
+HODA_AURA_PLUS60HSTUNPDRESREDLYRIUMVEN_CONVERT15HALLY_ALLYHIT_HEAL35GAIN35DMGRES10ALLY_ALLYDEATH_DEFENDER75|<color=green>Venatori和红伊利姆增加60%生命值、击晕抗性、力量吸取抗性和25%伤害抗性。将友军所受伤害的15%转化为友军的生命值。友军死亡时，友军获得35%生命值、力量和10%伤害抗性。增加75%守护者。</color>
+HODA_AURA_PLUS60HSTUNRES30DMGRES_ELFFREEMARCH_GAIN25P10CURRESALL_ONHIT_GAIN5PPDRES_ALLYATTACK_MINUS15PCURRES_DOUBLETEV|<color=green>精灵和自由边境增加60%生命值、击晕抗性和30%伤害抗性。遭受攻击时，友军获得25%力量和10%诅咒抗性。友军攻击时，友军获得5%力量和力量吸取抗性。</color> <color=red>敌人减少15%力量和诅咒抗性，Tevinter加倍。</color>
+HODA_AURA_PLUS60HSTUNRESMAGEDEMONSTACK_30DMGRESBLACK_CONVERT30P_ANYHIT_GAIN10CURRES_ALLYATK_PDIMMUNE_25BNSDMGVSWHITEALL|<color=green>法师和恶魔增加60%生命值和击晕抗性。黑色阵营增加30%伤害抗性。将任何英雄所受伤害的10%转化为力量。友军攻击时，友军获得10%诅咒抗性。对力量吸取免疫。友军攻击白色阵营时增加25%额外伤害。</color>
+HODA_AURA_PLUS60HSTUNSLOWRESTEV_HEAL25BNSDMG5ALL_ONHIT_DMGCURSERES25GEREON_GAIN75HEAL75TEV_ONDEATH_MIN15PWR|<color=green>Tevinter增加60%生命值、击晕抗性和减速抗性。遭受攻击时，友军获得25%生命值和5%额外伤害。格里昂·阿莱科修斯增加50%力量以及25%伤害抗性和诅咒抗性。死亡时，Tevinter友军获得75%力量和生命值。</color> <color=red>敌人减少15%力量。</color>
+HODA_AURA_PLUS60H_ALLIES_15H_COLE_WYNNE_RHYS_35STUN_DRAIN_RESIST_ALLIES_POWER_GAIN_ALLY_HIT_15_DEFENDER35_BRAVE_TARGETING|<color=green>友军增加60%生命值，怀恩、科尔和莱斯额外增加15%。友军增加35%击晕和力量吸取抗性。友军遭受攻击时，获得15%力量。35%守护者。</color><color=orange>有更大几率攻击力量最高的敌人。</color>
+HODA_AURA_PLUS60H_RL_GAIN50SELF_GAIN15HEAL15ALL_ONHIT_PLUS50STUNCURSERES30DMGRES_RL_STUNIMMUNESELF|<color=green>红伊利姆增加60%生命值。遭受攻击时，获得50%力量，同时友军获得15%力量和生命值。红伊利姆增加50%击晕和诅咒抗性以及30%伤害抗性。对击晕免疫。</color>
+HODA_AURA_PLUS60PDRAINCURPRES25DMGRESBLIGHT_CONVERT10PBLIGHT_DEFENDER25_GAIN15STUNSLOWRESALL_ONHIT_MINUS25ALLRESIST|<color=green>毁灭系英雄增加60%力量、吸取抗性、诅咒力量抗性以及25%伤害抗性。将毁灭系友军所造成伤害的10%转化为毁灭系友军的力量。25%守护者。遭受攻击时，友军获得15%击晕和减速抗性。</color> <color=red>敌人减少25%所有效果抗性。</color>
+HODA_AURA_PLUS60PPDSLOWWARDNOB_50H15DMGRESCRITFREEMARCH_CONVERT7PALL_ALLYATK_MIN25SLOWPDRES_FLANK|<color=green>守护者和贵族增加60%力量、力量吸取抗性和减速抗性。自由边境增加50%生命值、15%伤害抗性和2倍伤害几率。将友军所造成伤害的7%转化为友军的力量。</color> <color=red>减少25%减速和力量吸取抗性。</color> <color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS60PSPIRITELVES_35HBLUE_5DMGRESALL_ONHIT_RETALIATE20ONDEATH_FLANK|<color=green>灵魂和精灵增加60%力量。蓝色阵营增加35%生命值。遭受攻击时，友军获得5%伤害抗性。死亡时，将所受伤害的20%反弹给敌人。</color><color=orange>有更大几率攻击后排。</color>
+HODA_AURA_PLUS60PSTUNRESALL_25DMGRES10CRIT_ELFROGUE_GAIN5PSLOWRESALL_ALLYATTACK_RETALIATE15_ONDEATH_MINUS35STUNRES|<color=green>友军增加60%力量和击晕抗性。精灵和盗贼增加25%伤害抗性和10%的2倍伤害几率。友军攻击时，友军获得5%力量和减速抗性。死亡时，反弹所受伤害的15%。</color> <color=red>敌人减少35%击晕抗性。</color>
+HODA_AURA_PLUS65H15DMGRES25CURRESQUN_GAIN25PALL_ONHIT_10BNSDMGBENHAS_CONVERT15PSELF_ALLYATK_DEFENDER65_MINUS35STUNSLOWRES|<color=green>Qunari增加65%生命值、15%伤害抗性和25%诅咒抗性。遭受攻击时，友军获得25%力量。廷尉官增加10%额外伤害。将友军所造成伤害的15%转化为力量和生命值。增加65%守护者。</color> <color=red>敌人减少35%击晕和减速抗性。</color>
+HODA_AURA_PLUS65HP20DR_BLACK_EXTRA25HP5DR_TEO_DEFENDER50_PLUS50STUNDRAINRES_BLIGHT_RL_MINUS35ALLEFFRES|<color=green>黑色阵营增加65%生命值、力量以及20%伤害抗性，大长老额外增加25%生命值、力量和5%伤害抗性。增加50%守护者。毁灭系英雄和红伊利姆增加50%击晕和力量吸取抗性。</color> <color=red>减少35%所有效果抗性。</color>
+HODA_AURA_PLUS65HPELVES_50PDRESELVES_GAIN25_ALLHIT_RETALIATE15_STUNIMMUNE_SLOWIMMUNE_50CURSERES_MINUS10P15STUNRES|<color=green>精灵增加65%生命值和力量。精灵增加50%力量吸取抗性。友军遭受攻击时，获得25%力量。遭受攻击时，反弹所受伤害的15%。对击晕和减速免疫。增加50%诅咒抗性。</color> <color=red>敌人减少10%力量。敌人减少15%击晕抗性。</color>
+HODA_AURA_PLUS65P25DMGEFFRESQUN_10BNSDMG15CRITARVAARAD_GAIN10CURPRES3BNSDMGQUN_ONHIT_PDIMMVIDDASALA_MINUS15P|<color=green>Qunari增加65%力量以及25%伤害和所有抗性。阿瓦莱德增加10%额外伤害和15%的2倍伤害几率。遭受攻击时，Qunari友军获得10%诅咒力量抗性和3%额外伤害。菲达萨拉对力量吸取免疫。</color> <color=red>敌人减少15%力量。</color>
+HODA_AURA_PLUS65PCURSLOWRES15BNSDMGAVVDEM_35DMGRES_CONV15PSELF_ALLYATK_HEAL75BNSDMG5ALL_ANYDEATH_CURPIMM_MINUS35STUNSLOW|<color=green>Avvar和恶魔增加65%力量、诅咒抗性、减速抗性以及15%额外伤害。增加35%伤害抗性。将友军所造成伤害的15%转化为力量。任何英雄死亡时，友军获得75%生命值和5%额外伤害。对诅咒力量免疫。</color> <color=red>敌人减少35%击晕和减速抗性。</color>
+HODA_AURA_PLUS70HPELVESAPOSTATE_DRAIN3ALLHIT_GAIN30HEAL30ONHIT_RETALIATE15_35STUNSLOWDRAINRESAPOSTATE_CURSEIMMUNE_MINUS25ALLRESISTS|<color=green>精灵和叛徒增加70%生命值和力量。友军遭受攻击时，吸取敌人3%的力量。遭受攻击时，获得30%力量和生命值，并反弹所受伤害的15%。叛徒增加35%击晕、减速和吸取抗性。对诅咒免疫。</color> <color=red>减少25%所有效果抗性。</color>
+HODA_AURA_PLUS70HP_ELVESWARDENS_PLUS50SLOWSTUNRES_ELVES_20DMGRESBNSDMG_WARDENS_CURSEHEALTHIMMUNEISSEYA|<color=green>精灵和守护者增加70%生命值和力量。精灵增加50%减速和击晕抗性。守护者增加20%伤害抗性和额外伤害。伊瑟亚对诅咒生命免疫。</color>
+HODA_AURA_PLUS75HEALTH30POWER_AVVAROUTLAW_AND_PLUS50PWRDRNRES_AVVAROUTLAW_AND_ALLYGAINPWRSELFHIT_AND_HEALENEMYDEATH_AND_GAINSPWRENEMYDEATH|<color=green>Avvar和不法之徒增加75%生命值、30%力量和50%力量吸取抗性。该英雄遭受攻击时，友军获得极少量力量。敌人死亡时，治疗并获得中等力量。</color>
+HODA_AURA_PLUS75HEALTH_AND_PLUS25POWER_FOR_SPIRITS_AND_HEALS_MEDIUM_POWERGAINS_SMALL_ON_ALL_DEATHS_AND_PLUS25DMG_VS_DEMONS_75DMG_VS_NIGHTMARE|<color=green>灵魂增加75%生命值和25%力量。敌人或友军死亡时，中等程度治疗并获得少量力量。攻击恶魔时增加25%额外伤害，攻击梦魇时额外增加50%。</color>
+HODA_AURA_PLUS75HPALL_25BNSDMGALL_VS_STEALTH_40DMGRES_VS_STEALTH_DRAIN5HEAL10_ONHIT_DEFENDER50_STUNIMMUNE_HATREDSTEALTH|<color=green>洞察：无视隐形。友军增加75%生命值和力量。友军攻击拥有隐形的英雄时增加25%额外伤害。对抗拥有隐形的英雄时增加40%伤害抗性。遭受攻击时，吸取所有敌人5%的力量，并治疗友军10%。增加50%守护者。对击晕免疫。</color><color=orange>有更大几率攻击拥有隐形的英雄。</color>
+HODA_AURA_PLUS75PSTUNRES_RL_STUNIMMUNESELF_GAIN20SELF_ALLHIT_PLUS20DR_RL_EXTRA5_TEMP_TEO_GAIN10STUNALL_ONHIT_MINUS60CURRES_INQ|<color=green>红伊利姆增加75%力量和击晕抗性。对击晕免疫。友军遭受攻击时，获得20%力量。红伊利姆增加20%伤害抗性，圣殿骑士和大长老额外增加5%。遭受攻击时，友军获得10%击晕抗性。</color> <color=red>审判英雄减少60%诅咒抗性。</color>
+HODA_AURA_PLUS_25HP_ALLIES_15H_50DRAIN_RESIST_CHRISTMAS|<color=green>友军增加25%生命值和力量。圣诞英雄增加15%生命值和50%力量吸取抗性。</color>
+HODA_AURA_POWERGAIN_ON_SELFHIT50_AND_PLUS25POWER_VS_BEASTS_AND_STUNRESIST100_AND_PLUS50STUNRESIST_AND_PLUS50PDRESIST_TO_OUTLAW_AND_HEALTH_ON_ENEMYDEATH_25|<color=green>遭受攻击时，获得中等力量。攻击生物时增加25%伤害。增加100%击晕抗性。不法之徒增加50%击晕抗性和力量吸取抗性。该英雄遭受攻击时，友军获得少量力量。</color>
+HODA_AURA_POWER_GAIN_WHEN_ALLY_HIT_AND_AURA_PLUS50POWER_TO_TEMPLAR_AND_HATRED_MAGE|<color=green> 友军遭受攻击时，获得力量。圣殿骑士增加50%力量。</color><color=orange> 有更大几率攻击法师。</color>
+HODA_AURA_SLOW_IMMUNE_REAVERS_AND_35HANDP_ALLIES_AND_DRAGONS_AND_2500_RAW_DMG_RESIST|<color=green>友军增加35%生命值和力量，龙加倍。掠夺者对减速免疫。抵挡每次攻击的最初2500点伤害。</color>
+HODA_AURA_STEALTH_10BNSDMG25DMGRES_FERNOB_40P15CRIT_OUTLAW_STUNIMMLOGHAIN_MIN20DRAINRES|<color=green>隐形：攻击不会触发命中效果。Ferelden和贵族增加10%额外伤害和25%伤害抗性。不法之徒增加40%力量和15%的2倍伤害几率。洛根对击晕免疫。</color> <color=red>敌人减少20%力量吸取抗性。</color>
+HODA_AURA_STEALTH_15HPPWRBST_10HPPWRFEN_10SLWRESBLKFAC_15DMGVSNUGS|<color=green>隐形：攻击不会触发命中效果。生物增加15%生命值和力量，耳廓狐额外增加10%。黑色阵营增加10%减速抗性。攻击兔猪时增加15%额外伤害。</color>
+HODA_AURA_STEALTH_40HPWHTFAC_50CURHPRESXENON_ONHIT15PWRALLIESANDXENON_40STUNSLOWRESWHTFAC|<color=green>隐形：攻击不会触发命中效果。白色阵营增加40%生命值。克塞农增加50%诅咒生命抗性。该英雄遭受攻击时，友军和克塞农获得15%力量（效果可叠加）。白色阵营增加40%击晕和减速抗性。</color>
+HODA_AURA_STEALTH_50HQUN_35SLOWRESQUN_15BNSDMGQUN_PLUS10CRITQUN_MINUS15SLOWRESENEMIES|<color=green>隐形：攻击不会触发命中效果。Qunari增加50%生命值、35%减速抗性、15%额外伤害和10%的2倍伤害几率。</color> <color=red>敌人减少15%减速抗性。</color>
+HODA_AURA_STEALTH_AND_PLUS50POWER_TO_QUNARI_AND_PLUS5CRITCHANCE_ALLIES_10_SELF_AND_HEAL25_ON_ENEMYDEATH|<color=green>隐形：攻击不会触发命中效果。Qunari增加50%力量。友军增加5%的2倍伤害几率，自身额外增加10%。敌人死亡时，少量治疗。</color>
+HODA_AURA_STEALTH_PLUS35HPCURHRES_WARD_LEGION_PLUS35STUNDRAINRESALL_FLANK_MINUS20CURSERESBLIGHT|<color=green>隐形。守护者和亡者军团增加35%生命值、力量和诅咒生命抗性（效果可叠加）。友军增加35%击晕和力量吸取抗性。</color><color=orange>有更大几率攻击后排。</color> <color=red>毁灭系英雄减少20%诅咒抗性。</color>
+HODA_AURA_STEALTH_PLUS50HDWARFDEMON_PLUS10CRITALL_PLUS10STUNSLOWRESALL_ONHIT_GAIN10_ONDEATH_HATREDPOWERDRAIN_MINUS35CURSERES|<color=green>隐形：攻击不会触发命中效果。矮人和恶魔增加50%生命值。友军增加10%的2倍伤害几率。遭受攻击时，友军获得10%击晕和减速抗性。死亡时，友军获得50%力量。</color><color=orange>有更大几率攻击力量吸取者。</color> <color=red>减少35%诅咒抗性。</color>
+HODA_AURA_STEALTH_PLUS50HPSLOWRES_CHA_EXPLODE15_5BNSDMG15DMGRES_WHITE_75HPALL_SELFDTH_STUNIMMDIVINE|<color=green>隐形：攻击不会触发命中效果。教会英雄增加50%生命值、力量和减速抗性。敌人死亡时，敌人承受15%已造成的伤害。白色阵营增加5%额外伤害和15%伤害抗性。死亡时，友军获得75%生命值和力量。神使对击晕免疫。</color>
+HODA_AURA_STEALTH_PLUS50HSTUNRES5BONUSDMGVEN_2BNSDMG_ALLYHIT_GAIN5P7DMGRESALL_ANYDEATH_SLOWIMMUNE_MINUS35PDRESINQ|<color=green>隐形：攻击不会触发命中效果。Venatori增加50%生命值、击晕抗性和5%额外伤害。友军遭受攻击时，获得2%额外伤害。任何英雄死亡时，友军获得15%力量和7%伤害抗性。对减速免疫。</color> <color=red>审判英雄减少35%力量吸取抗性。</color>
+HODA_AURA_STEALTH_PLUS60HPDSLOWRESNOBORL_CONV5PALLYATK_75PSTUNIMMLEOPOLD_FLANK_MINUS35SLOWRES|<color=green>隐形：攻击不会触发命中效果。Orlesian和贵族增加60%生命值、力量吸取抗性和减速抗性。将友军所造成伤害的5%转化为力量。利奥波德增加75%力量并对击晕免疫。</color><color=orange>有更大几率攻击后排。</color> <color=red>减少35%减速抗性。</color>
+HODA_CONSUME_FACTION_BUTTON_DESC|相同阵营
+HODA_CONSUME_FACTION_DESC|所有相同稀有度和阵营的英雄。
+HODA_CONSUME_FACTION_TITLE|按阵营吞噬
+HODA_CONSUME_FORTIFY_CONFIRMATION_GEAR_WARNING|该英雄的装备将被摧毁。确定吗？
+HODA_CONSUME_IDENTICAL_BUTTON_DESC|相同英雄
+HODA_CONSUME_IDENTICAL_DESC|所选英雄的所有副本。
+HODA_CONSUME_IDENTICAL_TITLE|吞噬副本
+HODA_CONSUME_MULTIPLE_BUTTON_DESC|批量吞噬
+HODA_CONSUME_MULTIPLE_CONFIRM|将吞噬{0}个英雄。确定吗？
+HODA_CONSUME_MULTIPLE_WINDOW_DESC|选择要吞噬的英雄：
+HODA_CONSUME_MULTIPLE_WINDOW_FOOTNOTE_DESC|队伍中的英雄不会被吞噬。
+HODA_CONSUME_RARITY_BUTTON_DESC|相同稀有度
+HODA_CONSUME_RARITY_DESC|所有相同稀有度的英雄。
+HODA_CONSUME_RARITY_TITLE|按稀有度吞噬
+HODA_CURSEPOWERALL_NOATTACK|以所有敌人为目标并诅咒力量（不可攻击）。
+HODA_DAMAGE_3X_INCREASE_POWER|最多攻击3次，每次攻击一个目标，每次攻击都增加力量。
+HODA_DAMAGE_ALL_20CHANCE_FOLLOWUP_3XDAMAGE|攻击所有敌人，有20%几率再次发动攻击并造成3倍伤害。
+HODA_DAMAGE_ALL_40CHANCE_STUN_SLOW|攻击所有敌人，有中等几率造成减速或击晕。
+HODA_DAMAGE_ALL_AND_CURSE_POWER_DRAINPOWER15|攻击所有敌人，诅咒力量并吸取少量力量。
+HODA_DAMAGE_ALL_AND_SLOW_AND_CURSE_POWER_HEALTH_ALL|攻击并减速所有敌人，同时诅咒生命值和力量。
+HODA_DAMAGE_ALL_CURSEHEALTH_STUN20|攻击所有敌人并诅咒生命值，每个敌人有很小几率被击晕。
+HODA_DAMAGE_ALL_CURSEPOWER40|攻击所有敌人，有中等几率诅咒力量。
+HODA_DAMAGE_ALL_CURSEPOWER_CHANCE_HEAL_20|攻击所有敌人并诅咒力量，有很小几率大量治疗。
+HODA_DAMAGE_ALL_CURSEPOWER_HEAL50_ALL|攻击所有敌人并诅咒力量，同时大量治疗友军。
+HODA_DAMAGE_ALL_CURSEPOWER_HEAL_ALL_CRIT10_ALL|攻击所有敌人，诅咒力量，少量治疗友军，并使友军的2倍伤害几率增加10%。
+HODA_DAMAGE_ALL_CURSEPOWER_SLOWDRAIN50_ALLYGAIN35|攻击所有敌人并诅咒力量，有50%几率减速并吸取50%力量。为友军赋予35%力量。
+HODA_DAMAGE_ALL_CURSE_HEALTH|攻击所有敌人并诅咒生命值。
+HODA_DAMAGE_ALL_CURSE_HEALTH_POWERDRAIN20|攻击所有敌人，诅咒生命值并吸取少量力量。
+HODA_DAMAGE_ALL_DAMAGE_SINGLE_DRAINPOWER_HEAL_ALLIES_25|攻击所有敌人，然后攻击一个随机敌人并吸取大量力量。少量治疗友军。
+HODA_DAMAGE_ALL_DRAIN5CRIT_CURSECHANCE50_2ROUNDS|攻击所有敌人并吸取5%的2倍伤害几率，有50%几率诅咒生命值和力量，持续2回合。
+HODA_DAMAGE_ALL_DRAINPOWER35|攻击所有敌人并吸取中等力量。
+HODA_DAMAGE_ALL_DRAINPOWER_25_AND_SLOW_50_FOLLOWUP_SINGLE_FOLLOWUP_MARK|攻击所有敌人，吸取少量力量，每个敌人有50%几率被减速，然后攻击单个目标。标记一个敌人：友军会以标记为目标，并造成额外30%伤害。
+HODA_DAMAGE_ALL_DRAINPOWER_65|攻击所有敌人并吸取65%力量。
+HODA_DAMAGE_ALL_GAINPOWER_ADD15CRITCHANCE|攻击所有敌人，获得少量力量并获得15%暴击率。
+HODA_DAMAGE_ALL_HEAL_25_ALL_POWERGAIN_30_ALL_CRIT_05_ALL|攻击所有敌人并少量治疗友军，友军获得中等力量和5%的2倍伤害几率。
+HODA_DAMAGE_ALL_HEAL_ALL_TWICE|攻击所有敌人并中等程度治疗。
+HODA_DAMAGE_ALL_SLOW_2ROUNDS_HEAL50_ALL|攻击并大幅减速所有敌人，中等程度治疗友军。
+HODA_DAMAGE_ALL_SLOW_CHANCE60|攻击所有敌人，每个敌人有60%几率被减速。
+HODA_DAMAGE_ALL_SLOW_GAINHP30_ALL|攻击所有敌人并使其减速，为友军赋予30%生命值和力量。
+HODA_DAMAGE_ALL_STUN25|攻击所有敌人，有25%几率造成击晕。
+HODA_DAMAGE_ALL_STUN25_SLOW25|攻击所有敌人，每个敌人有25%几率被击晕和减速。
+HODA_DAMAGE_ALL_STUN_ALL_25_ASSASSINATE5|攻击所有敌人，每个敌人有25%几率被击晕。有5%几率暗杀一个随机目标。
+HODA_DAMAGE_ALL_STUN_ROW_GAIN_POWER_ALL|攻击所有敌人，击晕横排敌人，友军获得少量力量。
+HODA_DAMAGE_COLUMN_ADD10CRITCHANCE_ALLIES|攻击竖排敌人，友军的2倍伤害几率增加10%。
+HODA_DAMAGE_COLUMN_ADD10CRITCHANCE_STEALTH|攻击竖排敌人并获得10%的2倍伤害几率。
+HODA_DAMAGE_COLUMN_ALLIES_GAIN_MEDIUM_POWER_HEALTH|攻击竖排敌人。为友军赋予50%生命值和力量。
+HODA_DAMAGE_COLUMN_CURSE_ALLYGAINHEAL25_40CHANCESELFGAIN75|攻击竖排敌人并造成诅咒。为友军赋予25%力量和生命值。有40%几率获得75%力量。
+HODA_DAMAGE_COLUMN_DRAIN15_GAIN35|攻击竖排敌人，吸取少量力量，并获得中等力量。
+HODA_DAMAGE_COLUMN_DRAINPOWER25|攻击竖排敌人并吸取少量力量。
+HODA_DAMAGE_COLUMN_GAIN_POWER_ATTACK_GAIN_AGAIN_CHANCE35|攻击竖排敌人并获得少量力量。有35%几率再次攻击并再次获得力量。
+HODA_DAMAGE_COLUMN_HEAVYSLOW_HEALALL_POWERGAIN|攻击竖排敌人并大幅减速，获得50%力量，大量治疗所有友军。
+HODA_DAMAGE_COLUMN_LEVY20_CURSEPOWERALL_HEAL50ALL|攻击竖排敌人，附带20%征收，并诅咒所有敌人的力量。治疗友军50%。
+HODA_DAMAGE_COLUMN_SLOW_ALL_GAIN_HEALTH_SELF|攻击竖排敌人，使所有敌人减速，并中等程度自我疗伤。
+HODA_DAMAGE_COLUMN_STUNCHANCE75_GAINPOWER25|攻击竖排敌人，每个敌人有75%几率被击晕。获得少量力量。
+HODA_DAMAGE_COLUMN_STUN_CHANCE35_POWERGAIN25_ALL|攻击竖排敌人，每个敌人有35%几率被击晕。友军获得35%力量。
+HODA_DAMAGE_INIT_50_ROW_DRAIN_HEAL25|攻击横排敌人，吸取50%力量并使其减速。治疗25%。
+HODA_DAMAGE_ONE_10CRITGAIN_FOLLOWUP_40MARK_25PWRGAINALLIES|攻击单个目标，获得10%的2倍伤害几率，并为友军赋予25%力量。标记一个敌人：友军会以标记为目标，并造成额外40%伤害。
+HODA_DAMAGE_ONE_10X_HEAL5_CRIT2_SMALL_CHANCE_NEG_AILMENT|攻击随机敌人最多10次，每次命中极少量治疗，并使2倍伤害几率增加2%。每次攻击都有几率造成负面效果。
+HODA_DAMAGE_ONE_15CRITCHANCEALLIES_40LEVY|攻击单个目标，附带40%征收，并使友军的2倍伤害几率增加15%。
+HODA_DAMAGE_ONE_2X_15PGAINALL_30MARK|攻击同一目标两次，并为友军赋予少量力量。标记一个敌人：友军会以标记为目标，并造成额外30%伤害。
+HODA_DAMAGE_ONE_3X_DRAIN_GAIN_30|攻击单个英雄3次，吸取中等力量，并获得中等力量。
+HODA_DAMAGE_ONE_3X_FOLLOWUP_MARK_5|攻击单个目标3次。标记一个敌人：友军会以标记为目标，并造成额外5%伤害。
+HODA_DAMAGE_ONE_65HEALALL_35POWERDRAINALL|攻击单个目标，吸取所有敌人35%的力量，并治疗友军65%。
+HODA_DAMAGE_ONE_DRAIN20_CHANCE20_POWER200|攻击单个目标并吸取20%力量。有20%几率以双倍力量再次攻击。
+HODA_DAMAGE_ONE_GAIN_POWER_BIG_ATTACK2X_AND_3X_HALFPOWER_AND_HEAL_ALL|攻击单个敌人并获得海量力量。有50%几率以一半力量发动第2次和第3次攻击，每次攻击都少量治疗友军。
+HODA_DAMAGE_ONE_LEVY35_GAIN50_HEAL50|攻击一个敌人，附带35%征收。获得50%力量并治疗50%。
+HODA_DAMAGE_ONE_LEVY_15PCT_ALLYGAIN_15PCT|攻击单个目标，附带15%征收。为友军赋予15%力量。
+HODA_DAMAGE_ONE_LEVY_30PCT_DRAINPOWER_25PCT|攻击单个敌人，附带30%征收，并吸取25%力量。
+HODA_DAMAGE_ONE_ROW_COLUMN_ALL_PLUS50CRIT|依次攻击一个敌人、横排敌人、竖排敌人，然后攻击所有敌人，接着获得50%的2倍伤害几率，最后含情脉脉地望向友军以求认可。
+HODA_DAMAGE_ONE_STUN_ATTACK_ROW25POWER|攻击单个敌人并造成击晕，然后以25%力量攻击横排敌人。
+HODA_DAMAGE_ONE_X8_LEVY05_ALLYGAIN_25PCT|攻击单个目标最多8次，每次附带5%征收。为友军赋予25%力量。
+HODA_DAMAGE_RANDOM_SINGLE_2X_POWERDRAIN_EACH|攻击2个随机敌人，各自吸取中等力量。
+HODA_DAMAGE_ROW_2X_CURSEPOWER_GAIN40|攻击横排敌人两次，有50%几率诅咒力量，并获得中等力量。
+HODA_DAMAGE_ROW_3X_AND_DRAINPOWER50|攻击横排敌人三次，然后吸取50%力量。
+HODA_DAMAGE_ROW_3X_DRAINPOWER_SLOW_CHANCE40|攻击横排敌人3次，每次有40%几率造成减速，然后吸取极大量力量。
+HODA_DAMAGE_ROW_ALLIES_GAIN_HEALTH_AND_POWER_20|攻击横排敌人，友军获得少量生命值和力量。
+HODA_DAMAGE_ROW_ATTACK2X_35PCTCHANCE|攻击横排敌人，有35%几率再次发动攻击。
+HODA_DAMAGE_ROW_CURSEHEALTH_SLOW50|攻击横排敌人并诅咒生命值，每个敌人有50%几率被减速。
+HODA_DAMAGE_ROW_CURSEPOWER_STUN60|攻击横排敌人并诅咒力量，有很大几率造成击晕。
+HODA_DAMAGE_ROW_DRAIN25_STUN25_ASSASSINATE_SINGLE_PCT10|攻击横排敌人并吸取少量力量，每个敌人有25%几率被击晕。有极小几率暗杀。
+HODA_DAMAGE_ROW_DRAIN_MEDIUM_POWER_CHANCE25_STUN|攻击横排敌人并吸取中等力量，有很小几率造成击晕。
+HODA_DAMAGE_ROW_HEAL35_FOLLOWUP40_HEAL_ALLIES25|攻击横排敌人并中等程度治疗所有友军。有几率发动第2次攻击并再次治疗。
+HODA_DAMAGE_ROW_HEAL50_SELF|攻击横排敌人并中等程度治疗。
+HODA_DAMAGE_ROW_SLOW_ALL_LEVY_25PCT|攻击横排敌人，附带25%征收，并使所有敌人减速。
+HODA_DAMAGE_ROW_SLOW_CURSEHEALTH|攻击横排敌人，使其减速并诅咒生命值。
+HODA_DAMAGE_ROW_STUN50_POWERGAIN20_ALL|攻击横排敌人，有50%几率造成击晕，并为友军赋予20%力量。
+HODA_DAMAGE_ROW_STUN50_SLOW50_HEAL_LARGE|攻击横排敌人，每个敌人有50%几率被击晕和/或减速。大量治疗。
+HODA_DAMAGE_ROW_STUN_50|攻击横排敌人，有50%几率造成击晕。
+HODA_DAMAGE_ROW_TWICE_CHANCE_ASSASSINATE_ROW_5_STEALTH|攻击横排敌人两次，每次有极小几率暗杀。
+HODA_DAMAGE_ROW_TWICE_GAINPOWER25_ALL|攻击横排敌人两次，并为友军赋予少量力量。
+HODA_DAMAGE_SINGLE_2X_50CHANCE_THIRD_ATTACK_300POWER|攻击单个敌人两次。有50%几率以300%力量再次攻击。
+HODA_DAMAGE_SINGLE_3X|攻击单个目标3次。
+HODA_DAMAGE_SINGLE_ATTACK3_50CHANCE_ATTACK1AT3XPOWER|攻击单个敌人3次，有50%几率以3倍力量发动第4次攻击。
+HODA_DAMAGE_SINGLE_HEAL_ALLIES40|攻击单个敌人并中等程度治疗所有友军。
+HODA_DAMAGE_SINGLE_STUN50_4XFOLLOWUPCHANCE25|攻击单个敌人，有50%几率造成击晕。最多有4次额外攻击，每次有25%几率发动并造成双倍伤害。
+HODA_DAMAGE_SINGLE_STUN75_GAINPOWER|攻击单个敌人，有75%几率造成击晕，并获得中等力量。
+HODA_DAMAGE_STUN35_COLUMN|攻击竖排敌人，每个敌人有35%几率被击晕。
+HODA_GALLERY_CARTA_TITLE|Carta
+HODA_GALLERY_EXCLUSIVE_TITLE|专属
+HODA_GALLERY_FREEMARCHES_TITLE|自由边境
+HODA_GALLERY_HUMAN_TITLE|人类
+HODA_GALLERY_LEGIONOFTHEDEAD_TITLE|亡者军团
+HODA_GALLERY_NUG_TITLE|兔猪
+HODA_GALLERY_WEREWOLVES_TITLE|狼人
+HODA_GALLERY_WISP_TITLE|魔光
+HODA_GEAR_AURA_HEALTH_GAIN_ALL_WHEN_ENEMY_HIT_2_DESC|<color=green>敌人遭受攻击时，友军治疗2%。</color>
+HODA_GEAR_BONUSDMG_SELF_SELFHIT_PLUS5_DESC|<color=green>遭受攻击时，获得5%额外伤害。</color>
+HODA_GEAR_DAMRESGAIN_SELF_7_ON_SELF_HIT_DESC|<color=green>遭受攻击时，获得7%伤害抗性。</color>
+HODA_GEAR_DMG_RESIST_1500_DESC|<color=green>友军抵挡最初的1500点伤害。</color>
+HODA_GEAR_DMG_RESIST_PCT_10_DESC|<color=green>友军增加10%伤害抗性。</color>
+HODA_GEAR_DMG_RESIST_PCT_15_TO_BLIGHT_DESC|<color=green>毁灭系英雄增加15%伤害抗性。</color>
+HODA_GEAR_EMBLAZONED_KIRKWALL_SHIELD_AURA_LOC_OVERRIDE|<color=green>友军抵挡每次攻击的最初2000点伤害。自由边境增加10%所有效果抗性。</color>
+HODA_GEAR_FADE_TOUCHED_SILVERITE_AURA_LOC_OVERRIDE|<color=green>遭受攻击时，获得5%伤害抗性。友军死亡时，获得20%生命值和力量。</color>
+HODA_GEAR_GRIFFONRIDER_LEATHERS_AURA_LOC_OVERRIDE|<color=green>增加7%额外伤害。任何英雄死亡时，友军获得15%力量和生命值。敌人死亡时，所有敌人承受2%已造成的伤害。</color>
+HODA_GEAR_LITANY_OF_ADRALLA_AURA_LOC_OVERRIDE|<color=green>友军攻击恶魔和嗜血法师时增加25%额外伤害。友军增加15%诅咒抗性。</color>
+HODA_GRANT_ALLIES_100POWER_NO_ATTACK|为所有友军赋予等同于该英雄力量值的力量（不可攻击）。
+HODA_GUILD_BUSY_MESSAGE|服务器繁忙，请重试。
+HODA_GUILD_OFFLINE_MESSAGE|工会和聊天仅在连接服务器时可用。
+HODA_GUILD_PROFILE_CHANGED_MESSAGE|您的资料已在服务器上更改，请重试。
+HODA_HEAL200SELF_HEAL25ALLIES|每回合治疗200%。治疗友军25%。
+HODA_HEALS_AND_POWERGAINS_ALLIES_15_AND_CURSES_ENEMIES_2_ROUNDS_NO_ATTACK|治疗友军并为其增加15%力量。诅咒所有敌人，持续2回合（不可攻击）。
+HODA_HEALTHPOWER_CURSED_DEBUFF|诅咒！
+HODA_HEROES_SORT_BUTTON|排序
+HODA_NOATTACK_HEAL100ALL_GAIN100ALL|为友军赋予等同于她力量值的生命值和力量（不可攻击）。
+HODA_NOATTACK_HEAL75ALL_GAIN50ALL_STUN50ROW_SLOW50COL|治疗友军75%并为友军赋予50%力量（不可攻击）。有50%几率击晕横排敌人和/或减速竖排敌人。
+HODA_NOATTACK_HEALALL50_GAINALL100_STUNROW50_SLOWROW50_CURSEPWRROW50|为友军赋予100%力量和50%生命值（不可攻击）。有50%几率分别击晕、减速或诅咒横排敌人的力量。
+HODA_NOATTACK_HEALALL_GAIN35ALL|治疗友军并赋予35%力量（不可攻击）。
+HODA_POWER_DRAIN_ALL50_ASSASSINATE_CHANCE10|吸取所有敌人中等力量（不可攻击）。有很小几率暗杀。
+HODA_SLOWS_ALL_CURSE_POWER_BACKROW_STUN_COLUMN|使所有敌人减速，并以后排为目标诅咒力量，然后有很大几率击晕竖排敌人（不可攻击）。
+HODA_SLOWS_ROW_HEAVY_POWERGAIN_ALLIES_50|大幅减速横排敌人，更有可能是后排，同时友军获得50%力量（不可攻击）。
+HODA_SLOW_ALL_DRAIN25_ALLIES_CRIT7_NO_ATTACK|使所有敌人减速，吸取少量力量，同时友军获得7%的2倍伤害几率（不可攻击）。
+HODA_STUN_SINGLE_DRAIN_ALL25_CRITGAIN10_ALLIES_NO_ATTACK|击晕单个敌人，吸取所有敌人25%的力量，同时友军获得10%暴击率（不可攻击）。
+HODA_UNIT_ALPHAGOATI|头领山羊I
+HODA_UNIT_ALPHAGOATII|头领山羊II
+HODA_UNIT_ALPHAGOATIII|头领山羊III
+HODA_UNIT_ALPHAGOATIV|头领山羊IV
+HODA_UNIT_ANORAMACTIRI|安诺拉·麦缇I
+HODA_UNIT_ANORAMACTIRII|安诺拉·麦缇II
+HODA_UNIT_ANORAMACTIRIII|安诺拉·麦缇III
+HODA_UNIT_ANORAMACTIRIV|安诺拉·麦缇IV
+HODA_UNIT_ARCANEGARRETTHAWKEI|秘法加勒特·霍克I
+HODA_UNIT_ARCANEGARRETTHAWKEII|秘法加勒特·霍克II
+HODA_UNIT_ARCANEGARRETTHAWKEIII|秘法加勒特·霍克III
+HODA_UNIT_ARCANEGARRETTHAWKEIV|秘法加勒特·霍克IV
+HODA_UNIT_ARCANEMARIANHAWKEI|秘法玛丽安·霍克I
+HODA_UNIT_ARCANEMARIANHAWKEII|秘法玛丽安·霍克II
+HODA_UNIT_ARCANEMARIANHAWKEIII|秘法玛丽安·霍克III
+HODA_UNIT_ARCANEMARIANHAWKEIV|秘法玛丽安·霍克IV
+HODA_UNIT_ARCHIVISTI|档案管理员I
+HODA_UNIT_ARCHIVISTII|档案管理员II
+HODA_UNIT_ARCHIVISTIII|档案管理员III
+HODA_UNIT_ARCHIVISTIV|档案管理员IV
+HODA_UNIT_ARCHONRADONISI|执政官拉多尼斯I
+HODA_UNIT_ARCHONRADONISII|执政官拉多尼斯II
+HODA_UNIT_ARCHONRADONISIII|执政官拉多尼斯III
+HODA_UNIT_ARCHONRADONISIV|执政官拉多尼斯IV
+HODA_UNIT_ARLTEAGANGUERRINI|领主提根·格瑞恩I
+HODA_UNIT_ARLTEAGANGUERRINII|领主提根·格瑞恩II
+HODA_UNIT_ARLTEAGANGUERRINIII|领主提根·格瑞恩III
+HODA_UNIT_ARLTEAGANGUERRINIV|领主提根·格瑞恩IV
+HODA_UNIT_ASHA'BELLANARI|阿莎·贝兰纳I
+HODA_UNIT_ASHA'BELLANARII|阿莎·贝兰纳II
+HODA_UNIT_ASHA'BELLANARIII|阿莎·贝兰纳III
+HODA_UNIT_ASHA'BELLANARIV|阿莎·贝兰纳IV
+HODA_UNIT_AUGUSTRAMI|高贵公羊I
+HODA_UNIT_AUGUSTRAMII|高贵公羊II
+HODA_UNIT_AUGUSTRAMIII|高贵公羊III
+HODA_UNIT_AUGUSTRAMIV|高贵公羊IV
+HODA_UNIT_AUTUMNI|秋I
+HODA_UNIT_AUTUMNII|秋II
+HODA_UNIT_AUTUMNIII|秋III
+HODA_UNIT_AUTUMNIV|秋IV
+HODA_UNIT_AVERNUSI|阿维努斯I
+HODA_UNIT_AVERNUSII|阿维努斯II
+HODA_UNIT_AVERNUSIII|阿维努斯III
+HODA_UNIT_AVERNUSIV|阿维努斯IV
+HODA_UNIT_AVVARWARNUGI|Avvar战斗兔猪I
+HODA_UNIT_AVVARWARNUGII|Avvar战斗兔猪II
+HODA_UNIT_AVVARWARNUGIII|Avvar战斗兔猪III
+HODA_UNIT_AVVARWARNUGIV|Avvar战斗兔猪IV
+HODA_UNIT_BATTLEMASTERGARRETTHAWKEI|战斗大师加勒特·霍克I
+HODA_UNIT_BATTLEMASTERGARRETTHAWKEII|战斗大师加勒特·霍克II
+HODA_UNIT_BATTLEMASTERGARRETTHAWKEIII|战斗大师加勒特·霍克III
+HODA_UNIT_BATTLEMASTERGARRETTHAWKEIV|战斗大师加勒特·霍克IV
+HODA_UNIT_BATTLEMASTERMARIANHAWKEI|战斗大师玛丽安·霍克I
+HODA_UNIT_BATTLEMASTERMARIANHAWKEII|战斗大师玛丽安·霍克II
+HODA_UNIT_BATTLEMASTERMARIANHAWKEIII|战斗大师玛丽安·霍克III
+HODA_UNIT_BATTLEMASTERMARIANHAWKEIV|战斗大师玛丽安·霍克IV
+HODA_UNIT_BEASTOFTELLARISWAMPSI|泰拉里沼泽野兽I
+HODA_UNIT_BEASTOFTELLARISWAMPSII|泰拉里沼泽野兽II
+HODA_UNIT_BEASTOFTELLARISWAMPSIII|泰拉里沼泽野兽III
+HODA_UNIT_BEASTOFTELLARISWAMPSIV|泰拉里沼泽野兽IV
+HODA_UNIT_BETHANYHAWKEI|贝森妮·霍克I
+HODA_UNIT_BETHANYHAWKEII|贝森妮·霍克II
+HODA_UNIT_BETHANYHAWKEIII|贝森妮·霍克III
+HODA_UNIT_BETHANYHAWKEIV|贝森妮·霍克IV
+HODA_UNIT_BLIGHTEDFENNECI|毁灭耳廓狐I
+HODA_UNIT_BLIGHTEDFENNECII|毁灭耳廓狐II
+HODA_UNIT_BLIGHTEDFENNECIII|毁灭耳廓狐III
+HODA_UNIT_BLIGHTEDFENNECIV|毁灭耳廓狐IV
+HODA_UNIT_BLIGHTEDHALLAI|毁灭豚鹿I
+HODA_UNIT_BLIGHTEDHALLAII|毁灭豚鹿II
+HODA_UNIT_BLIGHTEDHALLAIII|毁灭豚鹿III
+HODA_UNIT_BLIGHTEDHALLAIV|毁灭豚鹿IV
+HODA_UNIT_BLIGHTEDOGHRENI|毁灭奥根I
+HODA_UNIT_BLIGHTEDOGHRENII|毁灭奥根II
+HODA_UNIT_BLIGHTEDOGHRENIII|毁灭奥根III
+HODA_UNIT_BLIGHTEDOGHRENIV|毁灭奥根IV
+HODA_UNIT_BLIGHTEDSHADOWWOLFI|毁灭暗影狼I
+HODA_UNIT_BLIGHTEDSHADOWWOLFII|毁灭暗影狼II
+HODA_UNIT_BLIGHTEDSHADOWWOLFIII|毁灭暗影狼III
+HODA_UNIT_BLIGHTEDSHADOWWOLFIV|毁灭暗影狼IV
+HODA_UNIT_BLIGHTEDZEVRANI|毁灭泽弗兰I
+HODA_UNIT_BLIGHTEDZEVRANII|毁灭泽弗兰II
+HODA_UNIT_BLIGHTEDZEVRANIII|毁灭泽弗兰III
+HODA_UNIT_BLIGHTEDZEVRANIV|毁灭泽弗兰IV
+HODA_UNIT_BROTHERGENITIVII|吉尼提维修士I
+HODA_UNIT_BROTHERGENITIVIII|吉尼提维修士II
+HODA_UNIT_BROTHERGENITIVIIII|吉尼提维修士III
+HODA_UNIT_BROTHERGENITIVIIV|吉尼提维修士IV
+HODA_UNIT_BULFAI|布尔法I
+HODA_UNIT_BULFAII|布尔法II
+HODA_UNIT_BULFAIII|布尔法III
+HODA_UNIT_BULFAIV|布尔法IV
+HODA_UNIT_CARESSI|爱抚I
+HODA_UNIT_CARESSII|爱抚II
+HODA_UNIT_CARESSIII|爱抚III
+HODA_UNIT_CARESSIV|爱抚IV
+HODA_UNIT_CARVERHAWKEI|卡弗·霍克I
+HODA_UNIT_CARVERHAWKEII|卡弗·霍克II
+HODA_UNIT_CARVERHAWKEIII|卡弗·霍克III
+HODA_UNIT_CARVERHAWKEIV|卡弗·霍克IV
+HODA_UNIT_CASSIANI|卡西安I
+HODA_UNIT_CASSIANII|卡西安II
+HODA_UNIT_CASSIANIII|卡西安III
+HODA_UNIT_CASSIANIV|卡西安IV
+HODA_UNIT_CHARTERI|查特I
+HODA_UNIT_CHARTERII|查特II
+HODA_UNIT_CHARTERIII|查特III
+HODA_UNIT_CHARTERIV|查特IV
+HODA_UNIT_CHAUNCEYI|昌西I
+HODA_UNIT_CHAUNCEYII|昌西II
+HODA_UNIT_CHAUNCEYIII|昌西III
+HODA_UNIT_CHAUNCEYIV|昌西IV
+HODA_UNIT_DAILANI|戴兰I
+HODA_UNIT_DAILANII|戴兰II
+HODA_UNIT_DAILANIII|戴兰III
+HODA_UNIT_DAILANIV|戴兰IV
+HODA_UNIT_DALISHBANNERI|Dalish旗帜I
+HODA_UNIT_DALISHBANNERII|Dalish旗帜II
+HODA_UNIT_DALISHBANNERIII|Dalish旗帜III
+HODA_UNIT_DALISHBANNERIV|Dalish旗帜IV
+HODA_UNIT_DANYLAI|丹妮拉I
+HODA_UNIT_DANYLAII|丹妮拉II
+HODA_UNIT_DANYLAIII|丹妮拉III
+HODA_UNIT_DANYLAIV|丹妮拉IV
+HODA_UNIT_DIVINECASSANDRAI|神圣卡桑德拉I
+HODA_UNIT_DIVINECASSANDRAII|神圣卡桑德拉II
+HODA_UNIT_DIVINECASSANDRAIII|神圣卡桑德拉III
+HODA_UNIT_DIVINECASSANDRAIV|神圣卡桑德拉IV
+HODA_UNIT_DIVINEGUARDI|神圣卫士I
+HODA_UNIT_DIVINEGUARDII|神圣卫士II
+HODA_UNIT_DIVINEGUARDIII|神圣卫士III
+HODA_UNIT_DIVINEGUARDIV|神圣卫士IV
+HODA_UNIT_DRAGONMALVERNISI|巨龙马尔弗尼斯I
+HODA_UNIT_DRAGONMALVERNISII|巨龙马尔弗尼斯II
+HODA_UNIT_DRAGONMALVERNISIII|巨龙马尔弗尼斯III
+HODA_UNIT_DRAGONMALVERNISIV|巨龙马尔弗尼斯IV
+HODA_UNIT_DRUFFALOI|德鲁法罗牛I
+HODA_UNIT_DRUFFALOII|德鲁法罗牛II
+HODA_UNIT_DRUFFALOIII|德鲁法罗牛III
+HODA_UNIT_DRUFFALOIV|德鲁法罗牛IV
+HODA_UNIT_DUKEANTOINEOFWYCOMEI|威康的安托万公爵I
+HODA_UNIT_DUKEANTOINEOFWYCOMEII|威康的安托万公爵II
+HODA_UNIT_DUKEANTOINEOFWYCOMEIII|威康的安托万公爵III
+HODA_UNIT_DUKEANTOINEOFWYCOMEIV|威康的安托万公爵IV
+HODA_UNIT_DUKECYRILI|西里尔公爵I
+HODA_UNIT_DUKECYRILII|西里尔公爵II
+HODA_UNIT_DUKECYRILIII|西里尔公爵III
+HODA_UNIT_DUKECYRILIV|西里尔公爵IV
+HODA_UNIT_DUKEREMACHEDELYDESI|雷马什·德·莱德公爵I
+HODA_UNIT_DUKEREMACHEDELYDESII|雷马什·德·莱德公爵II
+HODA_UNIT_DUKEREMACHEDELYDESIII|雷马什·德·莱德公爵III
+HODA_UNIT_DUKEREMACHEDELYDESIV|雷马什·德·莱德公爵IV
+HODA_UNIT_EMERALDGRAVESNUGI|翡翠坟地兔猪I
+HODA_UNIT_EMERALDGRAVESNUGII|翡翠坟地兔猪II
+HODA_UNIT_EMERALDGRAVESNUGIII|翡翠坟地兔猪III
+HODA_UNIT_EMERALDGRAVESNUGIV|翡翠坟地兔猪IV
+HODA_UNIT_ENVYDEMONI|嫉妒魔I
+HODA_UNIT_ENVYDEMONII|嫉妒魔II
+HODA_UNIT_ENVYDEMONIII|嫉妒魔III
+HODA_UNIT_ENVYDEMONIV|嫉妒魔IV
+HODA_UNIT_EVANGELINEI|伊万杰琳I
+HODA_UNIT_EVANGELINEII|伊万杰琳II
+HODA_UNIT_EVANGELINEIII|伊万杰琳III
+HODA_UNIT_EVANGELINEIV|伊万杰琳IV
+HODA_UNIT_FADE-TOUCHEDLURKERI|影界侵染潜伏者I
+HODA_UNIT_FADE-TOUCHEDLURKERII|影界侵染潜伏者II
+HODA_UNIT_FADE-TOUCHEDLURKERIII|影界侵染潜伏者III
+HODA_UNIT_FADE-TOUCHEDLURKERIV|影界侵染潜伏者IV
+HODA_UNIT_FAIRBANKSI|费尔班克斯I
+HODA_UNIT_FAIRBANKSII|费尔班克斯II
+HODA_UNIT_FAIRBANKSIII|费尔班克斯III
+HODA_UNIT_FAIRBANKSIV|费尔班克斯IV
+HODA_UNIT_FERELDENBANNERI|Ferelden旗帜I
+HODA_UNIT_FERELDENBANNERII|Ferelden旗帜II
+HODA_UNIT_FERELDENBANNERIII|Ferelden旗帜III
+HODA_UNIT_FERELDENBANNERIV|Ferelden旗帜IV
+HODA_UNIT_FORESTSPIRITI|森林之灵I
+HODA_UNIT_FORESTSPIRITII|森林之灵II
+HODA_UNIT_FORESTSPIRITIII|森林之灵III
+HODA_UNIT_FORESTSPIRITIV|森林之灵IV
+HODA_UNIT_FORGEMASTERI|熔炉大师I
+HODA_UNIT_FORGEMASTERII|熔炉大师II
+HODA_UNIT_FORGEMASTERIII|熔炉大师III
+HODA_UNIT_FORGEMASTERIV|熔炉大师IV
+HODA_UNIT_GALLOWSGUARDIANI|Gallows守卫者I
+HODA_UNIT_GALLOWSGUARDIANII|Gallows守卫者II
+HODA_UNIT_GALLOWSGUARDIANIII|Gallows守卫者III
+HODA_UNIT_GALLOWSGUARDIANIV|Gallows守卫者IV
+HODA_UNIT_GAMORDANSTORMRIDERDRAGONLINGI|加莫丹风暴骑士龙蚙I
+HODA_UNIT_GAMORDANSTORMRIDERDRAGONLINGII|加莫丹风暴骑士龙蚙II
+HODA_UNIT_GAMORDANSTORMRIDERDRAGONLINGIII|加莫丹风暴骑士龙蚙III
+HODA_UNIT_GAMORDANSTORMRIDERDRAGONLINGIV|加莫丹风暴骑士龙蚙IV
+HODA_UNIT_GARAHELI|加拉赫尔I
+HODA_UNIT_GARAHELII|加拉赫尔II
+HODA_UNIT_GARAHELIII|加拉赫尔III
+HODA_UNIT_GARAHELIV|加拉赫尔IV
+HODA_UNIT_GATEKEEPERI|守门人I
+HODA_UNIT_GATEKEEPERII|守门人II
+HODA_UNIT_GATEKEEPERIII|守门人III
+HODA_UNIT_GATEKEEPERIV|守门人IV
+HODA_UNIT_GEREONALEXIUSI|格里昂·阿莱科修斯I
+HODA_UNIT_GEREONALEXIUSII|格里昂·阿莱科修斯II
+HODA_UNIT_GEREONALEXIUSIII|格里昂·阿莱科修斯III
+HODA_UNIT_GEREONALEXIUSIV|格里昂·阿莱科修斯IV
+HODA_UNIT_GHOSTOFTHESPIREI|尖塔幽魂I
+HODA_UNIT_GHOSTOFTHESPIREII|尖塔幽魂II
+HODA_UNIT_GHOSTOFTHESPIREIII|尖塔幽魂III
+HODA_UNIT_GHOSTOFTHESPIREIV|尖塔幽魂IV
+HODA_UNIT_GIBBERINGHORRORI|喃喃恐魔I
+HODA_UNIT_GIBBERINGHORRORII|喃喃恐魔II
+HODA_UNIT_GIBBERINGHORRORIII|喃喃恐魔III
+HODA_UNIT_GIBBERINGHORRORIV|喃喃恐魔IV
+HODA_UNIT_GRANDENCHANTERVIVIENNEI|大术士维维恩I
+HODA_UNIT_GRANDENCHANTERVIVIENNEII|大术士维维恩II
+HODA_UNIT_GRANDENCHANTERVIVIENNEIII|大术士维维恩III
+HODA_UNIT_GRANDENCHANTERVIVIENNEIV|大术士维维恩IV
+HODA_UNIT_GREATDRAGONI|巨龙I
+HODA_UNIT_GREATDRAGONII|巨龙II
+HODA_UNIT_GREATDRAGONIII|巨龙III
+HODA_UNIT_GREATDRAGONIV|巨龙IV
+HODA_UNIT_GREATERFROSTBACKELKI|大型霜背麋鹿I
+HODA_UNIT_GREATERFROSTBACKELKII|大型霜背麋鹿II
+HODA_UNIT_GREATERFROSTBACKELKIII|大型霜背麋鹿III
+HODA_UNIT_GREATERFROSTBACKELKIV|大型霜背麋鹿IV
+HODA_UNIT_GREATERMISTRALDRAGONLINGI|米斯特拉尔龙蚙I
+HODA_UNIT_GREATERMISTRALDRAGONLINGII|米斯特拉尔龙蚙II
+HODA_UNIT_GREATERMISTRALDRAGONLINGIII|米斯特拉尔龙蚙III
+HODA_UNIT_GREATERMISTRALDRAGONLINGIV|米斯特拉尔龙蚙IV
+HODA_UNIT_GREATERRAGEDEMONI|大型怒魔I
+HODA_UNIT_GREATERRAGEDEMONII|大型怒魔II
+HODA_UNIT_GREATERRAGEDEMONIII|大型怒魔III
+HODA_UNIT_GREATERRAGEDEMONIV|大型怒魔IV
+HODA_UNIT_GREYWARDENBANNERI|灰袍守护者旗帜I
+HODA_UNIT_GREYWARDENBANNERII|灰袍守护者旗帜II
+HODA_UNIT_GREYWARDENBANNERIII|灰袍守护者旗帜III
+HODA_UNIT_GREYWARDENBANNERIV|灰袍守护者旗帜IV
+HODA_UNIT_GREYWARDENLOGHAINI|灰袍守护者洛根I
+HODA_UNIT_GREYWARDENLOGHAINII|灰袍守护者洛根II
+HODA_UNIT_GREYWARDENLOGHAINIII|灰袍守护者洛根III
+HODA_UNIT_GREYWARDENLOGHAINIV|灰袍守护者洛根IV
+HODA_UNIT_GUARDIANOFMYTHALI|弥萨尔守卫者I
+HODA_UNIT_GUARDIANOFMYTHALII|弥萨尔守卫者II
+HODA_UNIT_GUARDIANOFMYTHALIII|弥萨尔守卫者III
+HODA_UNIT_GUARDIANOFMYTHALIV|弥萨尔守卫者IV
+HODA_UNIT_GURNI|格恩I
+HODA_UNIT_GURNII|格恩II
+HODA_UNIT_GURNIII|格恩III
+HODA_UNIT_GURNIV|格恩IV
+HODA_UNIT_HAKKONITESPELLBINDERI|哈肯尼特缚术师I
+HODA_UNIT_HAKKONITESPELLBINDERII|哈肯尼特缚术师II
+HODA_UNIT_HAKKONITESPELLBINDERIII|哈肯尼特缚术师III
+HODA_UNIT_HAKKONITESPELLBINDERIV|哈肯尼特缚术师IV
+HODA_UNIT_HEROOFRIVERDANEI|丹恩河英雄I
+HODA_UNIT_HEROOFRIVERDANEII|丹恩河英雄II
+HODA_UNIT_HEROOFRIVERDANEIII|丹恩河英雄III
+HODA_UNIT_HEROOFRIVERDANEIV|丹恩河英雄IV
+HODA_UNIT_HISSERAI|希瑟拉I
+HODA_UNIT_HISSERAII|希瑟拉II
+HODA_UNIT_HISSERAIII|希瑟拉III
+HODA_UNIT_HISSERAIV|希瑟拉IV
+HODA_UNIT_HIVERNALI|冬季使者I
+HODA_UNIT_HIVERNALII|冬季使者II
+HODA_UNIT_HIVERNALIII|冬季使者III
+HODA_UNIT_HIVERNALIV|冬季使者IV
+HODA_UNIT_HUNTERHORNSHRIKEI|猎角伯劳I
+HODA_UNIT_HUNTERHORNSHRIKEII|猎角伯劳II
+HODA_UNIT_HUNTERHORNSHRIKEIII|猎角伯劳III
+HODA_UNIT_HUNTERHORNSHRIKEIV|猎角伯劳IV
+HODA_UNIT_HUNTERSHADEDRACOLISKI|猎手暗影龙蜥I
+HODA_UNIT_HUNTERSHADEDRACOLISKII|猎手暗影龙蜥II
+HODA_UNIT_HUNTERSHADEDRACOLISKIII|猎手暗影龙蜥III
+HODA_UNIT_HUNTERSHADEDRACOLISKIV|猎手暗影龙蜥IV
+HODA_UNIT_HURLOCKVANGUARDI|赫洛克先锋I
+HODA_UNIT_HURLOCKVANGUARDII|赫洛克先锋II
+HODA_UNIT_HURLOCKVANGUARDIII|赫洛克先锋III
+HODA_UNIT_HURLOCKVANGUARDIV|赫洛克先锋IV
+HODA_UNIT_ICEGIANTI|冰霜巨人I
+HODA_UNIT_ICEGIANTII|冰霜巨人II
+HODA_UNIT_ICEGIANTIII|冰霜巨人III
+HODA_UNIT_ICEGIANTIV|冰霜巨人IV
+HODA_UNIT_IMSHAELI|伊姆沙尔I
+HODA_UNIT_IMSHAELII|伊姆沙尔II
+HODA_UNIT_IMSHAELIII|伊姆沙尔III
+HODA_UNIT_IMSHAELIV|伊姆沙尔IV
+HODA_UNIT_INQUISITORAMERIDANI|审判官阿梅里丹I
+HODA_UNIT_INQUISITORAMERIDANII|审判官阿梅里丹II
+HODA_UNIT_INQUISITORAMERIDANIII|审判官阿梅里丹III
+HODA_UNIT_INQUISITORAMERIDANIV|审判官阿梅里丹IV
+HODA_UNIT_INVISIBLENUGI|隐形兔猪I
+HODA_UNIT_INVISIBLENUGII|隐形兔猪II
+HODA_UNIT_INVISIBLENUGIII|隐形兔猪III
+HODA_UNIT_INVISIBLENUGIV|隐形兔猪IV
+HODA_UNIT_ISSEYAI|伊瑟亚I
+HODA_UNIT_ISSEYAII|伊瑟亚II
+HODA_UNIT_ISSEYAIII|伊瑟亚III
+HODA_UNIT_ISSEYAIV|伊瑟亚IV
+HODA_UNIT_JANEKAI|詹妮卡I
+HODA_UNIT_JANEKAII|詹妮卡II
+HODA_UNIT_JANEKAIII|詹妮卡III
+HODA_UNIT_JANEKAIV|詹妮卡IV
+HODA_UNIT_KALTENZAHNDRAGONLINGI|卡尔滕赞龙蚙I
+HODA_UNIT_KALTENZAHNDRAGONLINGII|卡尔滕赞龙蚙II
+HODA_UNIT_KALTENZAHNDRAGONLINGIII|卡尔滕赞龙蚙III
+HODA_UNIT_KALTENZAHNDRAGONLINGIV|卡尔滕赞龙蚙IV
+HODA_UNIT_KALTENZAHNI|卡尔滕赞I
+HODA_UNIT_KALTENZAHNII|卡尔滕赞II
+HODA_UNIT_KALTENZAHNIII|卡尔滕赞III
+HODA_UNIT_KALTENZAHNIV|卡尔滕赞IV
+HODA_UNIT_KEEPERDESHANNAI|守护者黛珊娜I
+HODA_UNIT_KEEPERDESHANNAII|守护者黛珊娜II
+HODA_UNIT_KEEPERDESHANNAIII|守护者黛珊娜III
+HODA_UNIT_KEEPERDESHANNAIV|守护者黛珊娜IV
+HODA_UNIT_KEEPERZATHRIANI|守护者扎斯瑞恩I
+HODA_UNIT_KEEPERZATHRIANII|守护者扎斯瑞恩II
+HODA_UNIT_KEEPERZATHRIANIII|守护者扎斯瑞恩III
+HODA_UNIT_KEEPERZATHRIANIV|守护者扎斯瑞恩IV
+HODA_UNIT_KINGCALENHADI|卡伦哈德国王I
+HODA_UNIT_KINGCALENHADII|卡伦哈德国王II
+HODA_UNIT_KINGCALENHADIII|卡伦哈德国王III
+HODA_UNIT_KINGCALENHADIV|卡伦哈德国王IV
+HODA_UNIT_KITTYI|小猫咪I
+HODA_UNIT_KITTYII|小猫咪II
+HODA_UNIT_KITTYIII|小猫咪III
+HODA_UNIT_KITTYIV|小猫咪IV
+HODA_UNIT_KNIGHT-CAPTAINDENAMI|骑士团长德纳姆I
+HODA_UNIT_KNIGHT-CAPTAINDENAMII|骑士团长德纳姆II
+HODA_UNIT_KNIGHT-CAPTAINDENAMIII|骑士团长德纳姆III
+HODA_UNIT_KNIGHT-CAPTAINDENAMIV|骑士团长德纳姆IV
+HODA_UNIT_LADYSEEKERCASSANDRAI|追寻者女士卡桑德拉I
+HODA_UNIT_LADYSEEKERCASSANDRAII|追寻者女士卡桑德拉II
+HODA_UNIT_LADYSEEKERCASSANDRAIII|追寻者女士卡桑德拉III
+HODA_UNIT_LADYSEEKERCASSANDRAIV|追寻者女士卡桑德拉IV
+HODA_UNIT_LANAYAI|拉娜雅I
+HODA_UNIT_LANAYAII|拉娜雅II
+HODA_UNIT_LANAYAIII|拉娜雅III
+HODA_UNIT_LANAYAIV|拉娜雅IV
+HODA_UNIT_LARIUSI|拉里乌斯I
+HODA_UNIT_LARIUSII|拉里乌斯II
+HODA_UNIT_LARIUSIII|拉里乌斯III
+HODA_UNIT_LARIUSIV|拉里乌斯IV
+HODA_UNIT_LEANDRAAMELLI|莱昂德拉·阿梅尔I
+HODA_UNIT_LEANDRAAMELLII|莱昂德拉·阿梅尔II
+HODA_UNIT_LEANDRAAMELLIII|莱昂德拉·阿梅尔III
+HODA_UNIT_LEANDRAAMELLIV|莱昂德拉·阿梅尔IV
+HODA_UNIT_LIBRARIANI|图书管理员I
+HODA_UNIT_LIBRARIANII|图书管理员II
+HODA_UNIT_LIBRARIANIII|图书管理员III
+HODA_UNIT_LIBRARIANIV|图书管理员IV
+HODA_UNIT_LURKERI|潜伏者I
+HODA_UNIT_LURKERII|潜伏者II
+HODA_UNIT_LURKERIII|潜伏者III
+HODA_UNIT_LURKERIV|潜伏者IV
+HODA_UNIT_MAFERATHI|马弗拉斯I
+HODA_UNIT_MAFERATHII|马弗拉斯II
+HODA_UNIT_MAFERATHIII|马弗拉斯III
+HODA_UNIT_MAFERATHIV|马弗拉斯IV
+HODA_UNIT_MAGISTERDORIANI|魔导师多里安I
+HODA_UNIT_MAGISTERDORIANII|魔导师多里安II
+HODA_UNIT_MAGISTERDORIANIII|魔导师多里安III
+HODA_UNIT_MAGISTERDORIANIV|魔导师多里安IV
+HODA_UNIT_MALVERNISI|马尔弗尼斯I
+HODA_UNIT_MALVERNISII|马尔弗尼斯II
+HODA_UNIT_MALVERNISIII|马尔弗尼斯III
+HODA_UNIT_MALVERNISIV|马尔弗尼斯IV
+HODA_UNIT_MARIUSI|马吕斯I
+HODA_UNIT_MARIUSII|马吕斯II
+HODA_UNIT_MARIUSIII|马吕斯III
+HODA_UNIT_MARIUSIV|马吕斯IV
+HODA_UNIT_MOTHERGISELLEI|吉塞尔母亲I
+HODA_UNIT_MOTHERGISELLEII|吉塞尔母亲II
+HODA_UNIT_MOTHERGISELLEIII|吉塞尔母亲III
+HODA_UNIT_MOTHERGISELLEIV|吉塞尔母亲IV
+HODA_UNIT_MOUNTAINDRACOLISKI|高山龙蜥I
+HODA_UNIT_MOUNTAINDRACOLISKII|高山龙蜥II
+HODA_UNIT_MOUNTAINDRACOLISKIII|高山龙蜥III
+HODA_UNIT_MOUNTAINDRACOLISKIV|高山龙蜥IV
+HODA_UNIT_MYTHICBLACKWISPIV|神话黑色鬼火IV
+HODA_UNIT_MYTHICBLUEBLACKWISPIV|神话蓝黑色魔光IV
+HODA_UNIT_MYTHICBLUEREDWISPIV|神话蓝红色魔光IV
+HODA_UNIT_MYTHICBLUEWISPIV|神话蓝色鬼火IV
+HODA_UNIT_MYTHICGIANTWISPIV|神话巨型魔光IV
+HODA_UNIT_MYTHICPRESTIGEWISPIV|神话威望魔光IV
+HODA_UNIT_MYTHICREDBLACKWISPIV|神话红黑色魔光IV
+HODA_UNIT_MYTHICREDWISPIV|神话红色鬼火IV
+HODA_UNIT_MYTHICWHITEBLACKWISPIV|神话黑白色魔光IV
+HODA_UNIT_MYTHICWHITEBLUEWISPIV|神话蓝白色魔光IV
+HODA_UNIT_MYTHICWHITEREDWISPIV|神话红白色魔光IV
+HODA_UNIT_MYTHICWHITEWISPIV|神话白色鬼火IV
+HODA_UNIT_NAISHEI|奈什I
+HODA_UNIT_NAISHEII|奈什II
+HODA_UNIT_NAISHEIII|奈什III
+HODA_UNIT_NAISHEIV|奈什IV
+HODA_UNIT_NIGHTMAREI|梦魇I
+HODA_UNIT_NIGHTMAREII|梦魇II
+HODA_UNIT_NIGHTMAREIII|梦魇III
+HODA_UNIT_NIGHTMAREIV|梦魇IV
+HODA_UNIT_OGREALPHAI|食人魔头领I
+HODA_UNIT_OGREALPHAII|食人魔头领II
+HODA_UNIT_OGREALPHAIII|食人魔头领III
+HODA_UNIT_OGREALPHAIV|食人魔头领IV
+HODA_UNIT_ORLESIANBANNERI|Orlesian旗帜I
+HODA_UNIT_ORLESIANBANNERII|Orlesian旗帜II
+HODA_UNIT_ORLESIANBANNERIII|Orlesian旗帜III
+HODA_UNIT_ORLESIANBANNERIV|Orlesian旗帜IV
+HODA_UNIT_PARVOLLENBANNERI|Par Vollen旗帜I
+HODA_UNIT_PARVOLLENBANNERII|Par Vollen旗帜II
+HODA_UNIT_PARVOLLENBANNERIII|Par Vollen旗帜III
+HODA_UNIT_PARVOLLENBANNERIV|Par Vollen旗帜IV
+HODA_UNIT_PHANTASMALSHADOWI|幻影暗影I
+HODA_UNIT_PHANTASMALSHADOWII|幻影暗影II
+HODA_UNIT_PHANTASMALSHADOWIII|幻影暗影III
+HODA_UNIT_PHANTASMALSHADOWIV|幻影暗影IV
+HODA_UNIT_PHANTASMALWARRIORI|幻影战士I
+HODA_UNIT_PHANTASMALWARRIORII|幻影战士II
+HODA_UNIT_PHANTASMALWARRIORIII|幻影战士III
+HODA_UNIT_PHANTASMALWARRIORIV|幻影战士IV
+HODA_UNIT_PIOTINAEDUCANI|皮奥廷·艾杜肯I
+HODA_UNIT_PIOTINAEDUCANII|皮奥廷·艾杜肯II
+HODA_UNIT_PIOTINAEDUCANIII|皮奥廷·艾杜肯III
+HODA_UNIT_PIOTINAEDUCANIV|皮奥廷·艾杜肯IV
+HODA_UNIT_POSSESSEDOGRECOMMANDERI|附身食人魔指挥官I
+HODA_UNIT_POSSESSEDOGRECOMMANDERII|附身食人魔指挥官II
+HODA_UNIT_POSSESSEDOGRECOMMANDERIII|附身食人魔指挥官III
+HODA_UNIT_POSSESSEDOGRECOMMANDERIV|附身食人魔指挥官IV
+HODA_UNIT_PRIMAL-TRAINEDLONGMADRACOLISKI|原始训练龙马I
+HODA_UNIT_PRIMAL-TRAINEDLONGMADRACOLISKII|原始训练龙马II
+HODA_UNIT_PRIMAL-TRAINEDLONGMADRACOLISKIII|原始训练龙马III
+HODA_UNIT_PRIMAL-TRAINEDLONGMADRACOLISKIV|原始训练龙马IV
+HODA_UNIT_PROFANEI|亵渎者I
+HODA_UNIT_PROFANEII|亵渎者II
+HODA_UNIT_PROFANEIII|亵渎者III
+HODA_UNIT_PROFANEIV|亵渎者IV
+HODA_UNIT_QUEENANORATHEIRINI|安诺拉·提林王后I
+HODA_UNIT_QUEENANORATHEIRINII|安诺拉·提林王后II
+HODA_UNIT_QUEENANORATHEIRINIII|安诺拉·提林王后III
+HODA_UNIT_QUEENANORATHEIRINIV|安诺拉·提林王后IV
+HODA_UNIT_QUEENOFTHEEASTERNSEASI|东海女王I
+HODA_UNIT_QUEENOFTHEEASTERNSEASII|东海女王II
+HODA_UNIT_QUEENOFTHEEASTERNSEASIII|东海女王III
+HODA_UNIT_QUEENOFTHEEASTERNSEASIV|东海女王IV
+HODA_UNIT_QUNARIDEFENDERI|Qunari守护者I
+HODA_UNIT_QUNARIDEFENDERII|Qunari守护者II
+HODA_UNIT_QUNARIDEFENDERIII|Qunari守护者III
+HODA_UNIT_QUNARIDEFENDERIV|Qunari守护者IV
+HODA_UNIT_RABIDWEREWOLFI|狂暴狼人I
+HODA_UNIT_RABIDWEREWOLFII|狂暴狼人II
+HODA_UNIT_RABIDWEREWOLFIII|狂暴狼人III
+HODA_UNIT_RABIDWEREWOLFIV|狂暴狼人IV
+HODA_UNIT_REDLYRIUMBARTRANDI|红伊利姆巴特兰I
+HODA_UNIT_REDLYRIUMBARTRANDII|红伊利姆巴特兰II
+HODA_UNIT_REDLYRIUMBARTRANDIII|红伊利姆巴特兰III
+HODA_UNIT_REDLYRIUMBARTRANDIV|红伊利姆巴特兰IV
+HODA_UNIT_REDLYRIUMBLACKWALLI|红伊利姆黑墙I
+HODA_UNIT_REDLYRIUMBLACKWALLII|红伊利姆黑墙II
+HODA_UNIT_REDLYRIUMBLACKWALLIII|红伊利姆黑墙III
+HODA_UNIT_REDLYRIUMBLACKWALLIV|红伊利姆黑墙IV
+HODA_UNIT_REDLYRIUMNUGI|红伊利姆兔猪I
+HODA_UNIT_REDLYRIUMNUGII|红伊利姆兔猪II
+HODA_UNIT_REDLYRIUMNUGIII|红伊利姆兔猪III
+HODA_UNIT_REDLYRIUMNUGIV|红伊利姆兔猪IV
+HODA_UNIT_REINDEERMABARII|驯鹿战獒I
+HODA_UNIT_REINDEERMABARIII|驯鹿战獒II
+HODA_UNIT_REINDEERMABARIIII|驯鹿战獒III
+HODA_UNIT_REINDEERMABARIIV|驯鹿战獒IV
+HODA_UNIT_REVENANTGURDI|亡魂歌德I
+HODA_UNIT_REVENANTGURDII|亡魂歌德II
+HODA_UNIT_REVENANTGURDIII|亡魂歌德III
+HODA_UNIT_REVENANTGURDIV|亡魂歌德IV
+HODA_UNIT_RHYSI|莱斯I
+HODA_UNIT_RHYSII|莱斯II
+HODA_UNIT_RHYSIII|莱斯III
+HODA_UNIT_RHYSIV|莱斯IV
+HODA_UNIT_RITTSI|里茨I
+HODA_UNIT_RITTSII|里茨II
+HODA_UNIT_RITTSIII|里茨III
+HODA_UNIT_RITTSIV|里茨IV
+HODA_UNIT_RUNICGOLEMI|符文魔像I
+HODA_UNIT_RUNICGOLEMII|符文魔像II
+HODA_UNIT_RUNICGOLEMIII|符文魔像III
+HODA_UNIT_RUNICGOLEMIV|符文魔像IV
+HODA_UNIT_SABOTEURGARRETTHAWKEI|破坏者加勒特·霍克I
+HODA_UNIT_SABOTEURGARRETTHAWKEII|破坏者加勒特·霍克II
+HODA_UNIT_SABOTEURGARRETTHAWKEIII|破坏者加勒特·霍克III
+HODA_UNIT_SABOTEURGARRETTHAWKEIV|破坏者加勒特·霍克IV
+HODA_UNIT_SABOTEURMARIANHAWKEI|破坏者玛丽安·霍克I
+HODA_UNIT_SABOTEURMARIANHAWKEII|破坏者玛丽安·霍克II
+HODA_UNIT_SABOTEURMARIANHAWKEIII|破坏者玛丽安·霍克III
+HODA_UNIT_SABOTEURMARIANHAWKEIV|破坏者玛丽安·霍克IV
+HODA_UNIT_SERAARONHAWTHORNEI|赛尔·亚伦·霍桑I
+HODA_UNIT_SERAARONHAWTHORNEII|赛尔·亚伦·霍桑II
+HODA_UNIT_SERAARONHAWTHORNEIII|赛尔·亚伦·霍桑III
+HODA_UNIT_SERAARONHAWTHORNEIV|赛尔·亚伦·霍桑IV
+HODA_UNIT_SERWESLEYVALLENI|赛尔·韦斯利·范伦I
+HODA_UNIT_SERWESLEYVALLENII|赛尔·韦斯利·范伦II
+HODA_UNIT_SERWESLEYVALLENIII|赛尔·韦斯利·范伦III
+HODA_UNIT_SERWESLEYVALLENIV|赛尔·韦斯利·范伦IV
+HODA_UNIT_SHA-BRYTOLSTALKERI|沙布莱托追猎者I
+HODA_UNIT_SHA-BRYTOLSTALKERII|沙布莱托追猎者II
+HODA_UNIT_SHA-BRYTOLSTALKERIII|沙布莱托追猎者III
+HODA_UNIT_SHA-BRYTOLSTALKERIV|沙布莱托追猎者IV
+HODA_UNIT_SHADOWNUGI|暗影兔猪I
+HODA_UNIT_SHADOWNUGII|暗影兔猪II
+HODA_UNIT_SHADOWNUGIII|暗影兔猪III
+HODA_UNIT_SHADOWNUGIV|暗影兔猪IV
+HODA_UNIT_SHADOWWEREWOLFI|暗影狼人I
+HODA_UNIT_SHADOWWEREWOLFII|暗影狼人II
+HODA_UNIT_SHADOWWEREWOLFIII|暗影狼人III
+HODA_UNIT_SHADOWWEREWOLFIV|暗影狼人IV
+HODA_UNIT_SHAPESHIFTERMORRIGANII|变形者莫丽甘
+HODA_UNIT_SHAPESHIFTERMORRIGANIIII|变形者莫丽甘II
+HODA_UNIT_SHAPESHIFTERMORRIGANIIIIII|变形者莫丽甘III
+HODA_UNIT_SHAPESHIFTERMORRIGANIVIV|变形者莫丽甘IV
+HODA_UNIT_SHARPTAILDRACOLISKI|尖尾龙蜥I
+HODA_UNIT_SHARPTAILDRACOLISKII|尖尾龙蜥II
+HODA_UNIT_SHARPTAILDRACOLISKIII|尖尾龙蜥III
+HODA_UNIT_SHARPTAILDRACOLISKIV|尖尾龙蜥IV
+HODA_UNIT_SHIANNII|夏妮I
+HODA_UNIT_SHIANNIII|夏妮II
+HODA_UNIT_SHIANNIIII|夏妮III
+HODA_UNIT_SHIANNIIV|夏妮IV
+HODA_UNIT_SIGRIDGULDSDOTTENI|西格丽德·古尔兹多特I
+HODA_UNIT_SIGRIDGULDSDOTTENII|西格丽德·古尔兹多特II
+HODA_UNIT_SIGRIDGULDSDOTTENIII|西格丽德·古尔兹多特III
+HODA_UNIT_SIGRIDGULDSDOTTENIV|西格丽德·古尔兹多特IV
+HODA_UNIT_SISTERNIGHTINGALEI|南丁格尔修女I
+HODA_UNIT_SISTERNIGHTINGALEII|南丁格尔修女II
+HODA_UNIT_SISTERNIGHTINGALEIII|南丁格尔修女III
+HODA_UNIT_SISTERNIGHTINGALEIV|南丁格尔修女IV
+HODA_UNIT_SKYCULTISTI|天空邪教徒I
+HODA_UNIT_SKYCULTISTII|天空邪教徒II
+HODA_UNIT_SKYCULTISTIII|天空邪教徒III
+HODA_UNIT_SKYCULTISTIV|天空邪教徒IV
+HODA_UNIT_SPIRITARCHERI|灵魂弓箭手I
+HODA_UNIT_SPIRITARCHERII|灵魂弓箭手II
+HODA_UNIT_SPIRITARCHERIII|灵魂弓箭手III
+HODA_UNIT_SPIRITARCHERIV|灵魂弓箭手IV
+HODA_UNIT_SPIRITCHAMPIONI|灵魂勇士I
+HODA_UNIT_SPIRITCHAMPIONII|灵魂勇士II
+HODA_UNIT_SPIRITCHAMPIONIII|灵魂勇士III
+HODA_UNIT_SPIRITCHAMPIONIV|灵魂勇士IV
+HODA_UNIT_SPIRITOFSHARTANI|沙坦之魂I
+HODA_UNIT_SPIRITOFSHARTANII|沙坦之魂II
+HODA_UNIT_SPIRITOFSHARTANIII|沙坦之魂III
+HODA_UNIT_SPIRITOFSHARTANIV|沙坦之魂IV
+HODA_UNIT_SPIRITSPELLBINDERI|灵魂缚术师I
+HODA_UNIT_SPIRITSPELLBINDERII|灵魂缚术师II
+HODA_UNIT_SPIRITSPELLBINDERIII|灵魂缚术师III
+HODA_UNIT_SPIRITSPELLBINDERIV|灵魂缚术师IV
+HODA_UNIT_STONEJAWI|石颚I
+HODA_UNIT_STONEJAWII|石颚II
+HODA_UNIT_STONEJAWIII|石颚III
+HODA_UNIT_STONEJAWIV|石颚IV
+HODA_UNIT_STORVACKERI|斯托瓦克I
+HODA_UNIT_STORVACKERII|斯托瓦克II
+HODA_UNIT_STORVACKERIII|斯托瓦克III
+HODA_UNIT_STORVACKERIV|斯托瓦克IV
+HODA_UNIT_SUNDERMOUNTVARTERRALI|Sundermount瓦特拉尔I
+HODA_UNIT_SUNDERMOUNTVARTERRALII|Sundermount瓦特拉尔II
+HODA_UNIT_SUNDERMOUNTVARTERRALIII|Sundermount瓦特拉尔III
+HODA_UNIT_SUNDERMOUNTVARTERRALIV|Sundermount瓦特拉尔IV
+HODA_UNIT_SUNSHINEI|阳光I
+HODA_UNIT_SUNSHINEII|阳光II
+HODA_UNIT_SUNSHINEIII|阳光III
+HODA_UNIT_SUNSHINEIV|阳光IV
+HODA_UNIT_TEMPESTSERAII|风暴塞拉，寒霜灵药
+HODA_UNIT_TEMPESTSERAIIII|风暴塞拉，寒霜灵药II
+HODA_UNIT_TEMPESTSERAIIIIII|风暴塞拉，闪电灵药III
+HODA_UNIT_TEMPESTSERAIVIV|风暴塞拉，火焰灵药IV
+HODA_UNIT_TEMPLARBANNERI|圣殿骑士旗帜I
+HODA_UNIT_TEMPLARBANNERII|圣殿骑士旗帜II
+HODA_UNIT_TEMPLARBANNERIII|圣殿骑士旗帜III
+HODA_UNIT_TEMPLARBANNERIV|圣殿骑士旗帜IV
+HODA_UNIT_TESSAFORSYTHIAI|黛莎·连翘I
+HODA_UNIT_TESSAFORSYTHIAII|黛莎·连翘II
+HODA_UNIT_TESSAFORSYTHIAIII|黛莎·连翘III
+HODA_UNIT_TESSAFORSYTHIAIV|黛莎·连翘IV
+HODA_UNIT_TEVINTERBANNERI|Tevinter旗帜I
+HODA_UNIT_TEVINTERBANNERII|Tevinter旗帜II
+HODA_UNIT_TEVINTERBANNERIII|Tevinter旗帜III
+HODA_UNIT_TEVINTERBANNERIV|Tevinter旗帜IV
+HODA_UNIT_THADDEUSGIGANTUSCRUMBUMI|撒迪厄斯·吉甘图斯·克伦布姆I
+HODA_UNIT_THADDEUSGIGANTUSCRUMBUMII|撒迪厄斯·吉甘图斯·克伦布姆II
+HODA_UNIT_THADDEUSGIGANTUSCRUMBUMIII|撒迪厄斯·吉甘图斯·克伦布姆III
+HODA_UNIT_THADDEUSGIGANTUSCRUMBUMIV|撒迪厄斯·吉甘图斯·克伦布姆IV
+HODA_UNIT_THEAUGURI|占卜者I
+HODA_UNIT_THEAUGURII|占卜者II
+HODA_UNIT_THEAUGURIII|占卜者III
+HODA_UNIT_THEAUGURIV|占卜者IV
+HODA_UNIT_THEDARKTHEURGEI|黑暗神术师I
+HODA_UNIT_THEDARKTHEURGEII|黑暗神术师II
+HODA_UNIT_THEDARKTHEURGEIII|黑暗神术师III
+HODA_UNIT_THEDARKTHEURGEIV|黑暗神术师IV
+HODA_UNIT_THEDOWAGERI|太后I
+HODA_UNIT_THEDOWAGERII|太后II
+HODA_UNIT_THEDOWAGERIII|太后III
+HODA_UNIT_THEDOWAGERIV|太后IV
+HODA_UNIT_THEFORMLESSONEI|无形者I
+HODA_UNIT_THEFORMLESSONEII|无形者II
+HODA_UNIT_THEFORMLESSONEIII|无形者III
+HODA_UNIT_THEFORMLESSONEIV|无形者IV
+HODA_UNIT_THEHIGHESTONEI|至高者I
+HODA_UNIT_THEHIGHESTONEII|至高者II
+HODA_UNIT_THEHIGHESTONEIII|至高者III
+HODA_UNIT_THEHIGHESTONEIV|至高者IV
+HODA_UNIT_THEMADHERMITI|疯狂隐士I
+HODA_UNIT_THEMADHERMITII|疯狂隐士II
+HODA_UNIT_THEMADHERMITIII|疯狂隐士III
+HODA_UNIT_THEMADHERMITIV|疯狂隐士IV
+HODA_UNIT_THOMRAINIERI|汤姆·雷尼尔I
+HODA_UNIT_THOMRAINIERII|汤姆·雷尼尔II
+HODA_UNIT_THOMRAINIERIII|汤姆·雷尼尔III
+HODA_UNIT_THOMRAINIERIV|汤姆·雷尼尔IV
+HODA_UNIT_TITANHEARTGUARDIANI|泰坦之心守卫者I
+HODA_UNIT_TITANHEARTGUARDIANII|泰坦之心守卫者II
+HODA_UNIT_TITANHEARTGUARDIANIII|泰坦之心守卫者III
+HODA_UNIT_TITANHEARTGUARDIANIV|泰坦之心守卫者IV
+HODA_UNIT_TORPORI|昏沉I
+HODA_UNIT_TORPORII|昏沉II
+HODA_UNIT_TORPORIII|昏沉III
+HODA_UNIT_TORPORIV|昏沉IV
+HODA_UNIT_TRANQUILMADDOXI|宁静者马多克斯I
+HODA_UNIT_TRANQUILMADDOXII|宁静者马多克斯II
+HODA_UNIT_TRANQUILMADDOXIII|宁静者马多克斯III
+HODA_UNIT_TRANQUILMADDOXIV|宁静者马多克斯IV
+HODA_UNIT_VAEAI|维娅I
+HODA_UNIT_VAEAII|维娅II
+HODA_UNIT_VAEAIII|维娅III
+HODA_UNIT_VAEAIV|维娅IV
+HODA_UNIT_VEILWARDENI|帷幕守护者伊斯瑞尔I
+HODA_UNIT_VEILWARDENII|帷幕守护者伊斯瑞尔II
+HODA_UNIT_VEILWARDENIII|帷幕守护者伊斯瑞尔III
+HODA_UNIT_VEILWARDENIV|帷幕守护者伊斯瑞尔IV
+HODA_UNIT_VENATORIZEALOTI|Venatori狂热者I
+HODA_UNIT_VENATORIZEALOTII|Venatori狂热者II
+HODA_UNIT_VENATORIZEALOTIII|Venatori狂热者III
+HODA_UNIT_VENATORIZEALOTIV|Venatori狂热者IV
+HODA_UNIT_VINSOMERDRAGONLINGI|电钢龙蚙I
+HODA_UNIT_VINSOMERDRAGONLINGII|电钢龙蚙II
+HODA_UNIT_VINSOMERDRAGONLINGIII|电钢龙蚙III
+HODA_UNIT_VINSOMERDRAGONLINGIV|电钢龙蚙IV
+HODA_UNIT_VISCOUNTVARRICI|子爵菲里克I
+HODA_UNIT_VISCOUNTVARRICII|子爵菲里克II
+HODA_UNIT_VISCOUNTVARRICIII|子爵菲里克III
+HODA_UNIT_VISCOUNTVARRICIV|子爵菲里克IV
+HODA_UNIT_WARDEN-COMMANDERSOPHIAI|守护者指挥官索菲娅I
+HODA_UNIT_WARDEN-COMMANDERSOPHIAII|守护者指挥官索菲娅II
+HODA_UNIT_WARDEN-COMMANDERSOPHIAIII|守护者指挥官索菲娅III
+HODA_UNIT_WARDEN-COMMANDERSOPHIAIV|守护者指挥官索菲娅IV
+HODA_UNIT_WEREWOLFALPHAI|狼人头领I
+HODA_UNIT_WEREWOLFALPHAII|狼人头领II
+HODA_UNIT_WEREWOLFALPHAIII|狼人头领III
+HODA_UNIT_WEREWOLFALPHAIV|狼人头领IV
+HODA_UNIT_WILDHARTI|野生雄鹿I
+HODA_UNIT_WILDHARTII|野生雄鹿II
+HODA_UNIT_WILDHARTIII|野生雄鹿III
+HODA_UNIT_WILDHARTIV|野生雄鹿IV
+HODA_UNIT_WILDSYLVANI|野生树精I
+HODA_UNIT_WILDSYLVANII|野生树精II
+HODA_UNIT_WILDSYLVANIII|野生树精III
+HODA_UNIT_WILDSYLVANIV|野生树精IV
+HODA_UNIT_WINTERSENDCULLENI|立春卡伦I
+HODA_UNIT_WINTERSENDCULLENII|立春卡伦II
+HODA_UNIT_WINTERSENDCULLENIII|立春卡伦III
+HODA_UNIT_WINTERSENDCULLENIV|立春卡伦IV
+HODA_UNIT_WINTERSENDHARLEQUINI|立春小丑I
+HODA_UNIT_WINTERSENDHARLEQUINII|立春小丑II
+HODA_UNIT_WINTERSENDHARLEQUINIII|立春小丑III
+HODA_UNIT_WINTERSENDHARLEQUINIV|立春小丑IV
+HODA_UNIT_WINTERSENDNUGGALOPEI|立春娜迦洛普I
+HODA_UNIT_WINTERSENDNUGGALOPEII|立春娜迦洛普II
+HODA_UNIT_WINTERSENDNUGGALOPEIII|立春娜迦洛普III
+HODA_UNIT_WINTERSENDNUGGALOPEIV|立春娜迦洛普IV
+HODA_UNIT_WINTERSENDVIVIENNEI|立春维维恩I
+HODA_UNIT_WINTERSENDVIVIENNEII|立春维维恩II
+HODA_UNIT_WINTERSENDVIVIENNEIII|立春维维恩III
+HODA_UNIT_WINTERSENDVIVIENNEIV|立春维维恩IV
+HODA_UNIT_WRYMEI|莱姆I
+HODA_UNIT_WRYMEII|莱姆II
+HODA_UNIT_WRYMEIII|莱姆III
+HODA_UNIT_WRYMEIV|莱姆IV
+HODA_UNIT_XENONTHEANTIQUARIANI|古董商克塞农I
+HODA_UNIT_XENONTHEANTIQUARIANII|古董商克塞农II
+HODA_UNIT_XENONTHEANTIQUARIANIII|古董商克塞农III
+HODA_UNIT_XENONTHEANTIQUARIANIV|古董商克塞农IV
