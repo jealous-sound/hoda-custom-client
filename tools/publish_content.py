@@ -81,6 +81,10 @@ def wrangler_upload(bucket: str, key: str, path: Path, content_type: str, cache_
     raise SystemExit(f"upload of {key} failed:\n{failure}")
 
 
+def published_files(published: dict | None) -> set[str]:
+    return {pack["file"] for pack in (published or {}).get("packs", [])}
+
+
 def same_packs(manifest: dict, published: dict | None) -> bool:
     return bool(published) and published.get("packs") == manifest["packs"]
 
@@ -100,9 +104,12 @@ def publish(
     manifest, written = build_content_packs.build(root, files, out, published, workers)
     if dry_run or (not written and same_packs(manifest, published)):
         return manifest, written, False
+    already_uploaded = published_files(published)
     with ThreadPoolExecutor(max_workers=UPLOAD_WORKERS) as pool:
         uploads = [
-            pool.submit(upload, bucket, key, out / key, PACK_CONTENT_TYPE, PACK_CACHE_CONTROL) for key in written
+            pool.submit(upload, bucket, key, out / key, PACK_CONTENT_TYPE, PACK_CACHE_CONTROL)
+            for key in written
+            if key not in already_uploaded
         ]
         for finished in uploads:
             finished.result()

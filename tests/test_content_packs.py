@@ -172,6 +172,16 @@ class PublishContentTest(unittest.TestCase):
         _, written, released = self.publish(published)
         self.assertEqual((written, released, self.uploads), ([], False, []))
 
+    def test_a_format_change_uploads_only_packs_the_bucket_lacks(self) -> None:
+        published, _, _ = self.publish(None)
+        published["format"] = build_content_packs.MANIFEST_FORMAT - 1
+        self.uploads.clear()
+        manifest, written, released = self.publish(published)
+        self.assertTrue(written)
+        self.assertTrue(released)
+        self.assertEqual([key for _, key, _ in self.uploads], [build_content_packs.MANIFEST_NAME])
+        self.assertEqual(manifest["packs"], [dict(pack) for pack in published["packs"]])
+
     def test_dry_run_builds_without_uploading(self) -> None:
         _, written, released = self.publish(None, dry_run=True)
         self.assertTrue(written)
