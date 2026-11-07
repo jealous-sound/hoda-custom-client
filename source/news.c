@@ -305,6 +305,15 @@ static void NewsDrawRich(Font font, const char *text, Rectangle box, float size,
     HeroesDrawRich(font, text, box, CampaignFitWrappedSize(font, text, box, size, NEWS_TEXT_MIN_SIZE), color);
 }
 
+static void NewsDrawTickerLine(Font font, const char *text, Rectangle box, float size, Color color) {
+    float width = MeasureTextEx(font, text, size, 1.0f).x;
+    if (width > box.width) {
+        size *= box.width / width;
+        width = box.width;
+    }
+    DrawTextEx(font, text, (Vector2){box.x + (box.width - width) * 0.5f, box.y}, size, 1.0f, color);
+}
+
 static float NewsZoomScale(const News *news) {
     if (news->zoom == NEWS_ZOOM_NONE) return 1.0f;
     float shown = news->zoom == NEWS_ZOOM_OPENING ? news->zoom_progress : 1.0f - news->zoom_progress;
@@ -602,7 +611,7 @@ static void NewsDrawPvpTicker(News *news, Color tint, bool interactive) {
     QuestsShortTime(time_text, sizeof(time_text), PvpEventRemaining(now));
     snprintf(timer, sizeof(timer), "%s (%s)", LocGet(PvpEventForCycle(PvpEventCycle(now))->title_key), time_text);
     Rectangle timer_box = {title.x, frame.y + NEWS_TICKER_TIMER_Y, title.width, NEWS_TICKER_TIMER_H};
-    NewsDrawRich(GuiFont(FNT_MENU), timer, timer_box, 16.0f, Fade(NEWS_TITLE_COLOR, tint.a / 255.0f));
+    NewsDrawTickerLine(GuiFont(FNT_MENU), timer, timer_box, 16.0f, Fade(NEWS_TITLE_COLOR, tint.a / 255.0f));
     if (interactive && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(UiMouse(), frame)) {
         GuiSoundPlay(SND_UI_BIG_BUTTON);
         news->pvp_event_requested = true;
@@ -643,7 +652,7 @@ static void NewsDrawTicker(News *news, Quests *quests, const Nexus *nexus, bool 
     QuestsShortTime(time_text, sizeof(time_text), message->seconds);
     snprintf(timer, sizeof(timer), "%s (%s)", NexusEventAt(nexus, message->event)->name, time_text);
     Rectangle timer_box = {title.x, frame.y + NEWS_TICKER_TIMER_Y, title.width, NEWS_TICKER_TIMER_H};
-    NewsDrawRich(GuiFont(FNT_MENU), timer, timer_box, 16.0f, Fade(NEWS_TITLE_COLOR, tint.a / 255.0f));
+    NewsDrawTickerLine(GuiFont(FNT_MENU), timer, timer_box, 16.0f, Fade(NEWS_TITLE_COLOR, tint.a / 255.0f));
 
     bool pressed = interactive && IsMouseButtonPressed(MOUSE_BUTTON_LEFT) && CheckCollisionPointRec(UiMouse(), frame);
     if (pressed) {
