@@ -7,10 +7,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "data/hero_pool.json"
 CHARACTERS = ROOT / "client-additional-data/characters.json"
-CLI_DESCRIPTION = "Build the hero pool the backend rolls store packs from, in client catalog order."
+CLI_DESCRIPTION = (
+    "Build the hero pool the backend rolls store packs from and levels heroes with, in client catalog order."
+)
 
 TIER_ORDER = ("I", "II", "III", "IV")
-POOL_VERSION = 1
+POOL_VERSION = 2
 
 
 def initial_tier(character):
@@ -19,6 +21,11 @@ def initial_tier(character):
         if tier in tiers and (tiers[tier].get("max_level") or 0) >= 1:
             return tier
     return None
+
+
+def tier_levels(character):
+    tiers = character.get("tiers") or {}
+    return {tier: tiers[tier].get("max_level") or 0 for tier in TIER_ORDER if tier in tiers}
 
 
 def build():
@@ -34,6 +41,11 @@ def build():
                 "rarity": character["rarity"],
                 "obtainable": bool(character.get("obtainable")),
                 "initial_tier": tier,
+                "name": character["name"],
+                "faction": character["faction"],
+                "giant": bool(character.get("giant")),
+                "max_tier": character["max_tier"],
+                "tier_levels": tier_levels(character),
             }
         )
     return {"version": POOL_VERSION, "heroes": heroes}
