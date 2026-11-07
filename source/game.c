@@ -1630,7 +1630,8 @@ void GameDraw(Game *g) {
     PlayerUpdate(&g->player, dt);
     if (g->screen != SCREEN_STORE) StorePollServerPurchase(&g->store, &g->player, &g->heroes);
     GameSyncServerActions(g);
-    g->home_ui.expeditions_shown = ExpeditionsHomeShown(&g->player);
+    g->home_ui.expeditions_shown = ExpeditionsAvailable();
+    g->home_ui.expeditions_open = ExpeditionsHomeOpen(&g->player);
     g->home_ui.expeditions_badge = ExpeditionsHomeBadge(&g->player);
     if (g->screen != SCREEN_GUILD) GuildSetChatVisible(&g->guild, false);
     GuildUpdate(&g->guild, &g->player);
@@ -1701,6 +1702,15 @@ void GameDraw(Game *g) {
             } else if (pressed == HOME_EXPEDITIONS) {
                 ExpeditionsOpen(&g->expeditions);
                 g->screen = SCREEN_EXPEDITIONS;
+            } else if (pressed == HOME_EXPEDITIONS_LOCKED) {
+                char message[GUILD_MESSAGE_CAP];
+                LocFormat1(
+                    message,
+                    sizeof(message),
+                    "HODA_EXPEDITION_LOCKED_MESSAGE",
+                    TextFormat("%d", ExpeditionUnlockLevel())
+                );
+                GuildNoticePopupShow(&g->guild_notice, LocGet("HODA_EXPEDITIONS_TITLE"), message);
             } else if (pressed != HOME_NONE) {
                 GameHandleGuildButton(g, pressed);
             }

@@ -85,7 +85,7 @@ render the screens.
 ## Expeditions
 
 Expeditions are this client's passive farming, after the Dragon Age: Inquisition war table: the Expeditions button
-next to Goals (from player level 3) opens a board of ten expeditions across Thedas, each with a party size, a
+next to Goals (dimmed, with an unlock notice, below player level 3) opens a board of ten expeditions across Thedas, each with a party size, a
 duration from 15 minutes to 20 hours, optional requirements (a number of heroes of a rarity or better) and a bonus
 trait (a hero group, faction or large creature). Send picks the party from heroes in no squad, with Auto-fill
 choosing the cheapest heroes that meet the requirements and the bonus; heroes away on an expedition show a compass

@@ -19,6 +19,7 @@ HODA_EXPEDITION_HERO_XP|+{0} XP
 HODA_EXPEDITION_HINTERLANDS_DESCRIPTION|Verzamel elfwortel en zeldzame kruiden in de heuvels van het Achterland.
 HODA_EXPEDITION_HINTERLANDS_NAME|Kruiden in het Achterland
 HODA_EXPEDITION_LEVEL_LOCK|Niveau {0}
+HODA_EXPEDITION_LOCKED_MESSAGE|Expedities worden ontgrendeld op spelersniveau {0}.
 HODA_EXPEDITION_LOTHERING_DESCRIPTION|Bewaak de vluchtelingenweg door Lothering en bescherm de boerderijen tegen bandieten.
 HODA_EXPEDITION_LOTHERING_NAME|Patrouille in Lothering
 HODA_EXPEDITION_NEEDS|Vereist {0}

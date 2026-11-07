@@ -19,6 +19,7 @@ HODA_EXPEDITION_HERO_XP|+{0} XP
 HODA_EXPEDITION_HINTERLANDS_DESCRIPTION|Gather elfroot and rare herbs in the hills of the Hinterlands.
 HODA_EXPEDITION_HINTERLANDS_NAME|Hinterlands Herb Run
 HODA_EXPEDITION_LEVEL_LOCK|Level {0}
+HODA_EXPEDITION_LOCKED_MESSAGE|Expeditions open at player level {0}.
 HODA_EXPEDITION_LOTHERING_DESCRIPTION|Guard the refugee road through Lothering and keep the farms safe from bandits.
 HODA_EXPEDITION_LOTHERING_NAME|Lothering Patrol
 HODA_EXPEDITION_NEEDS|Needs {0}

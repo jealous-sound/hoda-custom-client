@@ -19,6 +19,7 @@ HODA_EXPEDITION_HERO_XP|+{0} XP
 HODA_EXPEDITION_HINTERLANDS_DESCRIPTION|Récoltez de l'elfique et des herbes rares dans les collines de l'Arrière-pays.
 HODA_EXPEDITION_HINTERLANDS_NAME|Cueillette dans l'Arrière-pays
 HODA_EXPEDITION_LEVEL_LOCK|Niveau {0}
+HODA_EXPEDITION_LOCKED_MESSAGE|Les expéditions s'ouvrent au niveau de joueur {0}.
 HODA_EXPEDITION_LOTHERING_DESCRIPTION|Gardez la route des réfugiés de Lothering et protégez les fermes des bandits.
 HODA_EXPEDITION_LOTHERING_NAME|Patrouille de Lothering
 HODA_EXPEDITION_NEEDS|Requiert {0}

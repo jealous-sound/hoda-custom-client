@@ -116,7 +116,7 @@ int ExpeditionsHomeBadge(const Player *p) {
     return ExpeditionsAvailable() ? ExpeditionsReadyCount(&p->expeditions, ServerNow()) : 0;
 }
 
-bool ExpeditionsHomeShown(const Player *p) {
+bool ExpeditionsHomeOpen(const Player *p) {
     return ExpeditionsAvailable() && p->level >= ExpeditionUnlockLevel();
 }
 

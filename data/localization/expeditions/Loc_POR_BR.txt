@@ -19,6 +19,7 @@ HODA_EXPEDITION_HERO_XP|+{0} XP
 HODA_EXPEDITION_HINTERLANDS_DESCRIPTION|Colha raiz élfica e ervas raras nas colinas do Interior.
 HODA_EXPEDITION_HINTERLANDS_NAME|Ervas do Interior
 HODA_EXPEDITION_LEVEL_LOCK|Nível {0}
+HODA_EXPEDITION_LOCKED_MESSAGE|As expedições são liberadas no nível de jogador {0}.
 HODA_EXPEDITION_LOTHERING_DESCRIPTION|Proteja a estrada dos refugiados em Lothering e defenda as fazendas dos bandidos.
 HODA_EXPEDITION_LOTHERING_NAME|Patrulha de Lothering
 HODA_EXPEDITION_NEEDS|Requer {0}

@@ -19,6 +19,7 @@ HODA_EXPEDITION_HERO_XP|+{0} PE
 HODA_EXPEDITION_HINTERLANDS_DESCRIPTION|Raccogli radice elfica ed erbe rare sulle colline dell'Entroterra.
 HODA_EXPEDITION_HINTERLANDS_NAME|Erbe dell'Entroterra
 HODA_EXPEDITION_LEVEL_LOCK|Livello {0}
+HODA_EXPEDITION_LOCKED_MESSAGE|Le spedizioni si sbloccano al livello giocatore {0}.
 HODA_EXPEDITION_LOTHERING_DESCRIPTION|Proteggi la strada dei profughi a Lothering e difendi le fattorie dai banditi.
 HODA_EXPEDITION_LOTHERING_NAME|Pattuglia di Lothering
 HODA_EXPEDITION_NEEDS|Richiede {0}

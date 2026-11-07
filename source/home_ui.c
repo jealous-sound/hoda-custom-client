@@ -10,6 +10,7 @@ typedef enum {
     HOME_GUILD_CHAT,
     HOME_GUILD_CHAT_LOCKED,
     HOME_EXPEDITIONS,
+    HOME_EXPEDITIONS_LOCKED,
 } HomeButton;
 
 #define HOME_GUILD_BUTTON_X 13.0f
@@ -17,6 +18,8 @@ typedef enum {
 #define HOME_GUILD_CHAT_BUTTON_Y 421.0f
 #define HOME_GUILD_BUTTON_SIZE 73.0f
 #define HOME_GUILD_BADGE_SHOWN_MAX 3
+
+static const Color HOME_LOCKED_TINT = {120, 120, 120, 255};
 
 typedef struct {
     Button store;
@@ -29,9 +32,23 @@ typedef struct {
     Button guild_chat;
     Button guild_chat_locked;
     Button expeditions;
+    Button expeditions_locked;
     bool expeditions_shown;
+    bool expeditions_open;
     int expeditions_badge;
 } HomeUI;
+
+static Texture2D HomeUIDimmedTexture(const char *art) {
+    const char *path = TextFormat(EXTRA_ASSET_DIR "%s", art);
+    if (!ResourceExists(path)) return (Texture2D){0};
+    Image image = LoadImage(path);
+    ImageColorTint(&image, HOME_LOCKED_TINT);
+    Texture2D texture = LoadTextureFromImage(image);
+    UnloadImage(image);
+    GenTextureMipmaps(&texture);
+    SetTextureFilter(texture, TEXTURE_FILTER_TRILINEAR);
+    return texture;
+}
 
 void HomeUIInitialize(HomeUI *hui) {
     Font font = GuiFont(FNT_COOL);
@@ -71,6 +88,10 @@ void HomeUIInitialize(HomeUI *hui) {
                   0.2f
               );
     hui->expeditions.click = GuiSound(SND_UI_BIG_BUTTON);
+    Texture2D dimmed = HomeUIDimmedTexture(EXPEDITIONS_HOME_ART);
+    hui->expeditions_locked = hui->expeditions;
+    if (dimmed.id) hui->expeditions_locked.idle = hui->expeditions_locked.active = dimmed;
+    hui->expeditions_locked.label_color = HOME_LOCKED_TINT;
 }
 
 static void HomeUIDrawGuildBadge(Rectangle button, int count) {
@@ -111,8 +132,10 @@ HomeButton HomeUIDraw(HomeUI *hui, bool interactive, int heroes_badge, int missi
     ButtonDrawBadge(history, missions_badge);
     if (hui->expeditions_shown) {
         Rectangle expeditions = {pad + (size + gap) * 2.0f, y, size, size};
-        if (ButtonDrawEx(&hui->expeditions, expeditions, interactive)) clicked = HOME_EXPEDITIONS;
-        ButtonDrawBadge(expeditions, hui->expeditions_badge);
+        Button *button = hui->expeditions_open ? &hui->expeditions : &hui->expeditions_locked;
+        if (ButtonDrawEx(button, expeditions, interactive))
+            clicked = hui->expeditions_open ? HOME_EXPEDITIONS : HOME_EXPEDITIONS_LOCKED;
+        if (hui->expeditions_open) ButtonDrawBadge(expeditions, hui->expeditions_badge);
     }
 
     Rectangle heroes = {(screen_w - size) * 0.5f, y, size, size};

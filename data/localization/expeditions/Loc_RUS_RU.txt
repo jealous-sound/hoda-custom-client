@@ -19,6 +19,7 @@ HODA_EXPEDITION_HERO_XP|+{0} опыта
 HODA_EXPEDITION_HINTERLANDS_DESCRIPTION|Соберите эльфийский корень и редкие травы на холмах Внутренних земель.
 HODA_EXPEDITION_HINTERLANDS_NAME|Травы Внутренних земель
 HODA_EXPEDITION_LEVEL_LOCK|Уровень {0}
+HODA_EXPEDITION_LOCKED_MESSAGE|Экспедиции открываются на {0} уровне игрока.
 HODA_EXPEDITION_LOTHERING_DESCRIPTION|Охраняйте дорогу беженцев через Лотеринг и защитите фермы от разбойников.
 HODA_EXPEDITION_LOTHERING_NAME|Дозор в Лотеринге
 HODA_EXPEDITION_NEEDS|Нужно: {0}
