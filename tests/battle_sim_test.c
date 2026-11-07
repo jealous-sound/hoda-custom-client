@@ -6227,6 +6227,71 @@ static void TestServerPurchaseProfileReplacesThePlayer(void) {
     PlayerUnloadRoster(&player);
 }
 
+static void AssertBattleStartReplaysTheBattle(Game *g, unsigned seed) {
+    cJSON *fields = GameBattleStartFields(g);
+    assert(fields);
+    cJSON *replay = cJSON_CreateObject();
+    cJSON_AddNumberToObject(replay, "seed", seed);
+    cJSON_AddItemToObject(replay, "player", cJSON_Duplicate(cJSON_GetObjectItemCaseSensitive(fields, "squad"), true));
+    cJSON_AddItemToObject(replay, "enemy", cJSON_Duplicate(cJSON_GetObjectItemCaseSensitive(fields, "enemy"), true));
+    cJSON_AddItemToObject(
+        replay, "changer", cJSON_Duplicate(cJSON_GetObjectItemCaseSensitive(fields, "changer"), true)
+    );
+    cJSON *catalog_root = BattleReplayCatalogLoad();
+    BattleReplayOutcome outcome;
+    assert(BattleReplayRun(cJSON_GetObjectItemCaseSensitive(catalog_root, "characters"), replay, &outcome));
+
+    static BattleSim played;
+    BattleSimRun(&played, &g->player, &g->battle.enemy_roster, seed);
+    char timeline[BATTLE_REPLAY_DIGEST_HEX];
+    BattleReplayDigest(&played, timeline);
+    assert(outcome.won == played.player_won && outcome.actions == played.action_count);
+    assert(!strcmp(outcome.timeline, timeline));
+
+    cJSON_Delete(catalog_root);
+    cJSON_Delete(replay);
+    cJSON_Delete(fields);
+}
+
+static void TestBattleStartSendsTheBattleTheClientPlays(void) {
+    static Game game;
+    Game *g = &game;
+    ProgressionInitializePlayerDefaults(&g->player);
+    PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    long long now = RuneNow();
+    uint64_t uuid = RuneGrant(&g->player.runes, RuneDefIndex("rune-power-1"), now);
+    assert(uuid && RuneActivate(&g->player.runes, g->player.current_squad, 0, uuid, now) == RUNE_ASSIGN_OK);
+    for (int r = 0; r < g->player.roster_count; r++) g->player.roster[r].level = 1 + r;
+
+    BattleRosterLoad(
+        &g->battle.enemy_roster, "data/campaign_rosters.json", HOD_CACHE "characters.json", "PVE_MAP_01", 2
+    );
+    g->battle_map_index = 0;
+    g->battle_node_index = 1;
+    cJSON *fields = GameBattleStartFields(g);
+    assert(!strcmp(JsonStr(fields, "mode"), "campaign") && JsonInt(fields, "node") == 1);
+    const cJSON *rune_ids = cJSON_GetObjectItemCaseSensitive(fields, "rune_ids");
+    assert(cJSON_GetArraySize(rune_ids) == 1 && (uint64_t)cJSON_GetArrayItem(rune_ids, 0)->valuedouble == uuid);
+    const cJSON *squad_runes =
+        cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(fields, "squad"), "runes");
+    assert(!strcmp(cJSON_GetArrayItem(squad_runes, 0)->valuestring, "rune-power-1"));
+    cJSON_Delete(fields);
+    for (unsigned seed = 1; seed <= 8; seed++) AssertBattleStartReplaysTheBattle(g, seed);
+
+    g->battle_is_pvp = true;
+    g->pvp_event = true;
+    g->pvp_opponent = GameLadderOpponent(g);
+    PvpOpponentRoster(&g->battle.enemy_roster, &g->pvp_opponent);
+    g->battle.enemy_roster.game_changer = &PvpEventForCycle(PvpEventCycle(g->pvp_match.at))->changer;
+    fields = GameBattleStartFields(g);
+    const cJSON *opponent = cJSON_GetObjectItemCaseSensitive(fields, "opponent");
+    assert(!strcmp(JsonStr(opponent, "kind"), "event") && JsonInt(opponent, "squad") == g->pvp_opponent.squad);
+    assert(cJSON_IsObject(cJSON_GetObjectItemCaseSensitive(fields, "changer")));
+    cJSON_Delete(fields);
+    for (unsigned seed = 1; seed <= 8; seed++) AssertBattleStartReplaysTheBattle(g, seed);
+    PlayerUnloadRoster(&g->player);
+}
+
 int main(void) {
     TestBattleFeetSitOnPadsWhoseBottomsShareOnePlane();
     TestPvpBannerCurvePeaksAtTheLadderMidpoint();
@@ -6258,6 +6323,7 @@ int main(void) {
     TestPvpEveryPooledSquadFights();
     TestPvpOpponentRunesApplyToTheEnemySide();
     TestPvpSaveRoundTrip();
+    TestBattleStartSendsTheBattleTheClientPlays();
     TestTutorialScriptCoversBothFunnels();
     TestTutorialScriptsTheTwoLostBattles();
     TestTutorialResumesAtTheSavedRestorePoint();

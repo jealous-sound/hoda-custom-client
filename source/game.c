@@ -25,6 +25,19 @@ typedef enum {
 #define GAME_TUTORIAL_UNIT_MARKER_SIZE 80.0f
 #define GAME_TUTORIAL_UNIT_HEAD_LIFT 1.6f
 
+#define GAME_TUTORIAL_CAMPAIGN_MAPS 2
+#define GAME_PVP_KIND_LADDER "ladder"
+#define GAME_PVP_KIND_EVENT "event"
+#define GAME_PVP_KIND_BOT "bot"
+#define GAME_PVP_KIND_REVENGE "revenge"
+
+typedef struct {
+    const char *kind;
+    long long at;
+    int trophies;
+    int banners;
+} GamePvpMatch;
+
 typedef struct {
     int index;
     unsigned serial;
@@ -74,6 +87,7 @@ typedef struct {
     bool pvp_can_next;
     int pvp_revenge_index;
     PvpOpponent pvp_opponent;
+    GamePvpMatch pvp_match;
     Screen pvp_return_screen;
 
     bool battle_is_nexus;
@@ -84,6 +98,9 @@ typedef struct {
     bool battle_energy_spent;
     bool battle_nexus_revived;
     bool battle_outcome_committed;
+    bool battle_start_waiting;
+    bool battle_start_dropped;
+    long long battle_server_id;
     bool nexus_award_waiting;
     int nexus_award_potions;
     BattleRewardResult battle_reward;
@@ -172,10 +189,17 @@ static void GameEnterPvpOpponent(Game *g) {
     g->screen = SCREEN_BATTLE;
 }
 
-static PvpOpponent GameLadderOpponent(const Game *g) {
+static void GameRememberPvpMatch(Game *g, const char *kind, long long now) {
+    g->pvp_match = (GamePvpMatch){
+        .kind = kind, .at = now, .trophies = g->player.pvp.trophies, .banners = g->player.pvp.event.banners
+    };
+}
+
+static PvpOpponent GameLadderOpponent(Game *g) {
     long long now = ServerNow();
     unsigned seed = (unsigned)GetRandomValue(1, 0x7FFFFFFF);
     const PlayerPvp *pvp = &g->player.pvp;
+    GameRememberPvpMatch(g, g->pvp_event ? GAME_PVP_KIND_EVENT : GAME_PVP_KIND_LADDER, now);
     if (g->pvp_event) return PvpEventOpponentGenerate(g->player.level, pvp->trophies, pvp->event.banners, now, seed);
     return PvpOpponentGenerate(g->player.level, pvp->trophies, PvpDay(now), seed);
 }
@@ -192,6 +216,7 @@ static void GameEnterEventBotBattle(Game *g, int bot) {
     long long now = ServerNow();
     unsigned seed = (unsigned)GetRandomValue(1, 0x7FFFFFFF);
     g->pvp_event = true;
+    GameRememberPvpMatch(g, GAME_PVP_KIND_BOT, now);
     g->pvp_opponent = PvpOpponentFromBot(bot, g->player.level, g->player.pvp.trophies, PvpDay(now), seed);
     g->pvp_can_next = false;
     g->pvp_revenge_index = -1;
@@ -201,6 +226,7 @@ static void GameEnterEventBotBattle(Game *g, int bot) {
 
 static void GameEnterFixedPvpBattle(Game *g, PvpOpponent opponent, int revenge_index, Screen return_screen) {
     g->pvp_event = false;
+    GameRememberPvpMatch(g, GAME_PVP_KIND_REVENGE, ServerNow());
     g->pvp_opponent = opponent;
     g->pvp_can_next = false;
     g->pvp_revenge_index = revenge_index;
@@ -259,14 +285,46 @@ static int GameGuildAwardBadge(const Game *g) {
 static void GameSubmitBattle(const Game *g, bool won) {
     cJSON *fields = ServerActionCreate("battle");
     if (!fields) return;
+    cJSON_AddNumberToObject(fields, "battle_id", (double)g->battle_server_id);
     cJSON_AddBoolToObject(fields, "won", won);
     cJSON_AddNumberToObject(fields, "crit_gold", BattlePlayCriticalGold(&g->battle_play));
+    ServerActionSubmit(fields);
+}
+
+static void GameAddPvpOpponent(cJSON *fields, const Game *g) {
+    const PvpOpponent *o = &g->pvp_opponent;
+    cJSON_AddBoolToObject(fields, "event", g->pvp_event);
+    if (o->duel) {
+        cJSON_AddStringToObject(fields, "duel", o->duel_id);
+        return;
+    }
+    cJSON *opponent = cJSON_AddObjectToObject(fields, "opponent");
+    if (!opponent) return;
+    cJSON_AddStringToObject(opponent, "kind", g->pvp_match.kind ? g->pvp_match.kind : GAME_PVP_KIND_LADDER);
+    cJSON_AddNumberToObject(opponent, "seed", o->seed);
+    cJSON_AddNumberToObject(opponent, "bot", o->bot);
+    cJSON_AddNumberToObject(opponent, "squad", o->squad);
+    cJSON_AddNumberToObject(opponent, "level", o->level);
+    cJSON_AddNumberToObject(opponent, "trophies", g->pvp_match.trophies);
+    cJSON_AddNumberToObject(opponent, "banners", g->pvp_match.banners);
+    cJSON_AddNumberToObject(opponent, "now", (double)g->pvp_match.at);
+}
+
+static void GameAddActiveRuneIds(cJSON *fields, const Player *player) {
+    cJSON *ids = cJSON_AddArrayToObject(fields, "rune_ids");
+    long long now = RuneNow();
+    for (int slot = 0; ids && slot < RUNE_SLOT_COUNT; slot++) {
+        const PlayerRune *rune = RuneInSlot(&player->runes, player->current_squad, slot);
+        if (rune && !RuneIsExpired(rune, now)) cJSON_AddItemToArray(ids, cJSON_CreateNumber((double)rune->uuid));
+    }
+}
+
+static cJSON *GameBattleStartFields(const Game *g) {
+    cJSON *fields = ServerActionCreate("battle_start");
+    if (!fields) return NULL;
     if (g->battle_is_pvp) {
         cJSON_AddStringToObject(fields, "mode", "pvp");
-        cJSON_AddNumberToObject(fields, "seed", g->pvp_opponent.seed);
-        cJSON_AddBoolToObject(fields, "event", g->pvp_event);
-        cJSON_AddNumberToObject(fields, "banners", g->battle_reward.banner_delta);
-        if (g->pvp_opponent.duel) cJSON_AddStringToObject(fields, "duel", g->pvp_opponent.duel_id);
+        GameAddPvpOpponent(fields, g);
     } else if (g->battle_is_nexus) {
         cJSON_AddStringToObject(fields, "mode", "nexus");
         cJSON_AddNumberToObject(fields, "step", g->battle_node_index + 1);
@@ -275,8 +333,16 @@ static void GameSubmitBattle(const Game *g, bool won) {
         cJSON_AddStringToObject(fields, "mode", "campaign");
         cJSON_AddNumberToObject(fields, "map", g->battle_map_index);
         cJSON_AddNumberToObject(fields, "node", g->battle_node_index);
+        if (TutorialActive(&g->tutorial) && g->battle_map_index < GAME_TUTORIAL_CAMPAIGN_MAPS)
+            cJSON_AddStringToObject(
+                fields, "tutorial_outcome", TutorialWantsVictory(&g->tutorial) ? "victory" : "defeat"
+            );
     }
-    ServerActionSubmit(fields);
+    cJSON_AddItemToObject(fields, "squad", BattleReplayPlayerJson(&g->player));
+    GameAddActiveRuneIds(fields, &g->player);
+    cJSON_AddItemToObject(fields, "enemy", BattleReplayRosterJson(&g->battle.enemy_roster, false));
+    cJSON_AddItemToObject(fields, "changer", BattleReplayChangerJson(g->battle.enemy_roster.game_changer));
+    return fields;
 }
 
 static void GameSubmitSimpleAction(const char *action) {
@@ -475,6 +541,10 @@ static void GameStartPendingCampaignAnimation(Game *g) {
 }
 
 static void GameExitBattleTo(Game *g, Screen destination) {
+    if (g->battle_start_waiting) {
+        g->battle_start_waiting = false;
+        g->battle_start_dropped = !ServerActionsCancelUnsent(SERVER_REPLY_BATTLE_START);
+    }
     BattlePlayStop(&g->battle_play);
     BattleResultsFlowReset(&g->battle_results);
     BattleStopAmbience(&g->battle);
@@ -585,10 +655,48 @@ static unsigned GameTutorialBattleSeed(Game *g, const Player *player) {
     return seed;
 }
 
-static void GameStartBattlePlay(Game *g, const Player *player) {
+static void GameStartBattlePlayWithSeed(Game *g, const Player *player, unsigned seed) {
     g->battle_end_announced = false;
-    BattlePlayStart(&g->battle_play, &g->battle, player, GameTutorialBattleSeed(g, player));
+    BattlePlayStart(&g->battle_play, &g->battle, player, seed);
     BattlePlaySetFast(&g->battle_play, g->player.fast_battles);
+}
+
+static void GameStartBattlePlay(Game *g, const Player *player) {
+    GameStartBattlePlayWithSeed(g, player, GameTutorialBattleSeed(g, player));
+}
+
+static bool GameBattlesOnServer(const Game *g) {
+    return ServerActionsActive() && !g->battle_is_intro;
+}
+
+static void GameRequestBattleStart(Game *g) {
+    cJSON *fields = GameBattleStartFields(g);
+    if (!fields) return;
+    g->battle_start_waiting = true;
+    ServerActionSubmitTagged(fields, SERVER_REPLY_BATTLE_START);
+}
+
+static Screen GameBattleReturnScreen(const Game *g) {
+    return g->battle_is_pvp ? g->pvp_return_screen : g->battle_is_nexus ? SCREEN_NEXUS : SCREEN_MAP;
+}
+
+static void GamePollBattleStart(Game *g) {
+    cJSON *reply = NULL;
+    if (!g->battle_start_waiting || !ServerActionsTakeSettledReply(SERVER_REPLY_BATTLE_START, &reply)) return;
+    g->battle_start_waiting = false;
+    const cJSON *granted = cJSON_GetObjectItemCaseSensitive(reply, "granted");
+    const cJSON *id = cJSON_GetObjectItemCaseSensitive(granted, "battle_id");
+    const cJSON *seed = cJSON_GetObjectItemCaseSensitive(granted, "seed");
+    if (!cJSON_IsNumber(id) || !cJSON_IsNumber(seed) || id->valuedouble <= 0) {
+        TraceLog(LOG_WARNING, "Server: the battle could not start");
+        cJSON_Delete(reply);
+        GameExitBattleTo(g, GameBattleReturnScreen(g));
+        return;
+    }
+    g->battle_server_id = (long long)id->valuedouble;
+    GameStartBattlePlayWithSeed(g, &g->player, (unsigned)seed->valuedouble);
+    cJSON_Delete(reply);
+    GameCommitBattleOutcome(g, g->battle_play.sim.player_won);
 }
 
 static void GameStartIntroBattle(Game *g) {
@@ -1295,6 +1403,11 @@ static void GameDrawGalleryPopup(Game *g, bool resource_modal) {
 
 static void GameSyncServerActions(Game *g) {
     ServerActionsPump();
+    cJSON *dropped = NULL;
+    if (g->battle_start_dropped && ServerActionsTakeSettledReply(SERVER_REPLY_BATTLE_START, &dropped)) {
+        g->battle_start_dropped = false;
+        cJSON_Delete(dropped);
+    }
     if (g->screen == SCREEN_BATTLE) return;
     cJSON *adopt = ServerActionsTakeAdoption();
     if (adopt) {
@@ -1776,6 +1889,7 @@ void GameDraw(Game *g) {
             break;
         }
         case SCREEN_BATTLE: {
+            GamePollBattleStart(g);
             bool showing_results = BattleResultsFlowActive(&g->battle_results);
             if (!showing_results) {
                 BattlePlayUpdate(&g->battle_play, &g->battle, TutorialHoldsBattle(&g->tutorial) ? 0.0f : dt);
@@ -1844,7 +1958,8 @@ void GameDraw(Game *g) {
                     }
                 }
             } else {
-                if (ba == BATTLE_UI_FIGHT && !combat) {
+                bool starting = g->battle_start_waiting || g->battle_start_dropped;
+                if (ba == BATTLE_UI_FIGHT && !combat && !starting) {
                     bool paid = g->battle_energy_spent ||
                                 (g->battle_is_pvp ? PlayerSpendStamina(&g->player, g->battle_energy_cost)
                                                   : PlayerSpendEnergy(&g->player, g->battle_energy_cost));
@@ -1852,13 +1967,17 @@ void GameDraw(Game *g) {
                         g->battle_energy_spent = true;
                         GameClearBattleOutcome(g);
                         ProgressionSave(&g->player);
-                        GameStartBattlePlay(g, &g->player);
-                        GameCommitBattleOutcome(g, g->battle_play.sim.player_won);
+                        if (GameBattlesOnServer(g)) {
+                            GameRequestBattleStart(g);
+                        } else {
+                            GameStartBattlePlay(g, &g->player);
+                            GameCommitBattleOutcome(g, g->battle_play.sim.player_won);
+                        }
                     } else {
                         GameOpenResourceDialogSilently(g, g->battle_is_pvp);
                     }
                 }
-                if (ba == BATTLE_UI_NEXT && !combat && PvpSpendNext(&g->player.pvp, ServerNow())) {
+                if (ba == BATTLE_UI_NEXT && !combat && !starting && PvpSpendNext(&g->player.pvp, ServerNow())) {
                     ProgressionSave(&g->player);
                     g->pvp_opponent = GameLadderOpponent(g);
                     GameEnterPvpOpponent(g);
