@@ -4,6 +4,7 @@ on:
   push:
     branches: [master]
     tags: ["v*"]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -48,6 +49,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Install Linux build dependencies
         if: matrix.platform == 'linux'
@@ -84,6 +88,18 @@ jobs:
             RAYLIB_LINK="$RAYLIB_DIR/lib/libraylib.a" \
             EXTRA_CFLAGS="${{ matrix.extra_cflags }}"
 
+      - name: Test
+        if: matrix.platform != 'windows'
+        run: |
+          make ci-test \
+            PLATFORM=${{ matrix.platform }} \
+            RAYLIB_DIR="$RAYLIB_DIR" \
+            RAYLIB_LINK="$RAYLIB_DIR/lib/libraylib.a"
+
+      - name: Check for comments
+        if: matrix.platform == 'linux'
+        run: python3 tools/check_comments.py
+
       - name: Package
         run: |
           mkdir -p package
@@ -104,51 +120,33 @@ jobs:
 
   release:
     name: release
-    if: github.event_name == 'push' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/master')
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     needs: build
     runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          fetch-tags: true
-
-      - name: Choose release tag
-        id: tag
-        run: |
-          if [ "$GITHUB_REF_TYPE" = tag ]; then
-            echo "name=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if [ -n "$(git tag -l 'v*' --points-at "$GITHUB_SHA")" ]; then
-            echo "Commit is already tagged; its tag run publishes the release."
-            exit 0
-          fi
-          latest=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1)
-          latest=${latest:-v0.0.0}
-          IFS=. read -r major minor patch <<< "${latest#v}"
-          echo "name=v$major.$minor.$((patch + 1))" >> "$GITHUB_OUTPUT"
-
       - uses: actions/download-artifact@v4
-        if: steps.tag.outputs.name != ''
         with:
           path: release
           merge-multiple: true
 
       - name: Publish GitHub release
-        if: steps.tag.outputs.name != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ steps.tag.outputs.name }}
+          TAG: ${{ github.ref_name }}
         run: |
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             echo "Release $TAG already exists."
             exit 0
           fi
+          prerelease=()
+          case "$TAG" in
+            *-*) prerelease=(--prerelease) ;;
+          esac
           gh release create "$TAG" release/* \
             --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
+            --verify-tag \
             --title "Heroes of Dragon Age $TAG" \
-            --generate-notes
+            --generate-notes \
+            "${prerelease[@]}"

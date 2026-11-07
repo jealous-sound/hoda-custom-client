@@ -38,5 +38,6 @@ Setup, run and test details are in `README.md`.
 - When a task is done and builds with its checks passing, commit it, push the branch and open a pull request
   against `master` with `gh pr create`. Do this yourself: do not ask for permission to commit, push or open the PR.
   Later changes to the same task go to that branch and PR. Leave merging to the maintainer.
+- Pushing a `v*` tag publishes a release that players download; leave tagging to the maintainer.
 - Work on a branch named for the change, cut from `origin/master`; never commit to `master`, to a branch whose PR is
   already merged, or to a branch holding unrelated work.

@@ -5,6 +5,7 @@
 #define OPTIONS_LABEL_FONT_SIZE 26.0f
 #define OPTIONS_TOGGLE_FONT_SIZE 20.0f
 #define OPTIONS_PLAYER_ID_FONT_SIZE 18.0f
+#define OPTIONS_VERSION_FONT_SIZE 18.0f
 #define OPTIONS_BUTTON_LABEL_SCALE 0.3f
 #define OPTIONS_OK_LABEL_SCALE (20.0f / 76.0f)
 #define OPTIONS_MORE_SLOT_COUNT 4
@@ -25,6 +26,7 @@ static const Rectangle OPTIONS_MORE_PANEL = {447.0f, 72.0f, 388.0f, 584.0f};
 static const Rectangle OPTIONS_MORE_TITLE = {447.0f, 72.0f, 388.0f, 65.0f};
 static const Rectangle OPTIONS_MORE_CLOSE = {777.0f, 103.0f, 73.0f, 73.0f};
 static const Rectangle OPTIONS_MORE_PLAYER_ID = {476.0f, 638.0f, 330.0f, 65.0f};
+static const Rectangle OPTIONS_MORE_VERSION = {476.0f, 620.0f, 330.0f, 40.0f};
 static const float OPTIONS_MORE_SLOT_Y[OPTIONS_MORE_SLOT_COUNT] = {176.0f, 248.0f, 320.0f, 392.0f};
 static const Rectangle OPTIONS_MORE_SLOT = {505.0f, 0.0f, 272.0f, 68.0f};
 
@@ -197,6 +199,9 @@ static void OptionsDrawMore(OptionsPopup *o, const char *player_id) {
         if (i == OPTIONS_MORE_LANGUAGE) OptionsShowLanguages(o);
         if (i == OPTIONS_MORE_FULLSCREEN) ToggleBorderlessWindowed();
     }
+    UiDrawTextCentered(
+        o->menu_font, HOD_VERSION, OptionsPlace(OPTIONS_MORE_VERSION), OPTIONS_VERSION_FONT_SIZE, OPTIONS_TEXT_COLOR
+    );
     if (player_id && player_id[0]) {
         char text[LANGUAGE_NAME_CAP];
         LocFormat1(text, sizeof(text), "OPTIONS_PLAYER_ID", player_id);
