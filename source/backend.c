@@ -210,6 +210,28 @@ static const char *BackendPlayerId(void) {
     return backend_state.player_id;
 }
 
+static bool BackendRequestSession(const BackendState *state, BackendResponse *response) {
+    cJSON *request = cJSON_CreateObject();
+    cJSON_AddStringToObject(request, "player_id", state->player_id);
+    if (state->secret[0]) cJSON_AddStringToObject(request, "secret", state->secret);
+    char *body = cJSON_PrintUnformatted(request);
+    cJSON_Delete(request);
+    if (!body) {
+        memset(response, 0, sizeof(*response));
+        return false;
+    }
+    bool ok = BackendRequest("POST", "/v1/sessions", body, -1, response);
+    cJSON_free(body);
+    return ok;
+}
+
+static bool BackendReplaceUnknownAccount(BackendState *state) {
+    const char *forced = getenv(BACKEND_PLAYER_ENV);
+    if (forced && forced[0]) return false;
+    TraceLog(LOG_WARNING, "Backend: the server has no account %s, creating a new guest", state->player_id);
+    return BackendCreateGuest(state, BackendAccountPath());
+}
+
 static bool BackendOpenSession(void) {
     BackendState *state = &backend_state;
     if (state->session_open) return true;
@@ -219,15 +241,12 @@ static bool BackendOpenSession(void) {
         state->session_failed_at = sent_at;
         return false;
     }
-    cJSON *request = cJSON_CreateObject();
-    cJSON_AddStringToObject(request, "player_id", BackendPlayerId());
-    if (state->secret[0]) cJSON_AddStringToObject(request, "secret", state->secret);
-    char *body = cJSON_PrintUnformatted(request);
-    cJSON_Delete(request);
-    if (!body) return false;
     BackendResponse response;
-    bool ok = BackendRequest("POST", "/v1/sessions", body, -1, &response);
-    cJSON_free(body);
+    bool ok = BackendRequestSession(state, &response);
+    if (ok && response.status == BACKEND_HTTP_NOT_FOUND && BackendReplaceUnknownAccount(state)) {
+        free(response.body);
+        ok = BackendRequestSession(state, &response);
+    }
     if (!ok) {
         state->session_failed_at = sent_at;
         return false;
