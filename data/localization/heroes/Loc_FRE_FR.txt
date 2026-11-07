@@ -1342,3 +1342,11 @@ HODA_UNIT_XENONTHEANTIQUARIANI|Xenon l'antiquaire I
 HODA_UNIT_XENONTHEANTIQUARIANII|Xenon l'antiquaire II
 HODA_UNIT_XENONTHEANTIQUARIANIII|Xenon l'antiquaire III
 HODA_UNIT_XENONTHEANTIQUARIANIV|Xenon l'antiquaire IV
+HODA_UI_REMOVE_FORTIFICATIONS|Retirer les consolidations
+HODA_UI_EXIT_REMOVE_FORTIFICATIONS|Terminer le retrait
+HODA_UI_UNFORTIFY_CONFIRM_DESC|Retirer ce héros de son emplacement de consolidation ?
+HODA_UI_UNFORTIFY_ALL_CONFIRM_DESC|Retirer tous les héros des emplacements de consolidation de ce héros ?
+HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Les héros retirés reviennent dans votre inventaire au niveau 1 et n'accordent plus leur bonus de consolidation.
+HODA_UI_CONFIRM_UNFORTIFY|Retirer
+HODA_UI_UNFORTIFY_REMOVE_ALL|Tout retirer
+HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Coût du retrait

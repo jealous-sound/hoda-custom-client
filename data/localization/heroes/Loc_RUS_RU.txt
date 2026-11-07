@@ -1342,3 +1342,11 @@ HODA_UNIT_XENONTHEANTIQUARIANI|Ксенон Антиквар I
 HODA_UNIT_XENONTHEANTIQUARIANII|Ксенон Антиквар II
 HODA_UNIT_XENONTHEANTIQUARIANIII|Ксенон Антиквар III
 HODA_UNIT_XENONTHEANTIQUARIANIV|Ксенон Антиквар IV
+HODA_UI_REMOVE_FORTIFICATIONS|Убрать поддержку
+HODA_UI_EXIT_REMOVE_FORTIFICATIONS|Готово
+HODA_UI_UNFORTIFY_CONFIRM_DESC|Убрать этого героя из ячейки поддержки?
+HODA_UI_UNFORTIFY_ALL_CONFIRM_DESC|Убрать всех героев из ячеек поддержки этого героя?
+HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Убранные герои вернутся в инвентарь на 1-м уровне, а их бонус поддержки пропадёт.
+HODA_UI_CONFIRM_UNFORTIFY|Убрать
+HODA_UI_UNFORTIFY_REMOVE_ALL|Убрать всех
+HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Стоимость удаления

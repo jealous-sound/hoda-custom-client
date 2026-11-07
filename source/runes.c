@@ -33,7 +33,8 @@ typedef enum {
     RUNES_LEAVE_RETURN,
     RUNES_LEAVE_SELECT_SQUAD,
     RUNES_LEAVE_GALLERY,
-    RUNES_LEAVE_CONSUME
+    RUNES_LEAVE_CONSUME,
+    RUNES_LEAVE_FORTIFY
 } RunesLeave;
 
 typedef enum {
@@ -1014,6 +1015,7 @@ RunesLeave RunesDraw(RunesScreen *r, Heroes *h, Player *p, float dt) {
     if (nav == HEROES_SQUAD) RunesRequestLeave(r, RUNES_LEAVE_SQUAD, 0);
     if (nav == HEROES_GALLERY) RunesRequestLeave(r, RUNES_LEAVE_GALLERY, 0);
     if (nav == HEROES_CONSUME) RunesRequestLeave(r, RUNES_LEAVE_CONSUME, 0);
+    if (nav == HEROES_FORTIFY) RunesRequestLeave(r, RUNES_LEAVE_FORTIFY, 0);
 
     if (input || r->press_uuid) RunesUpdateDrag(r, p, !blocked, now);
     RunesDrawDragged(r, p);

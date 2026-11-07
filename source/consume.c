@@ -275,10 +275,7 @@ void ConsumeNormalizeCharacter(Character *ch) {
 
 bool ConsumeCharactersShareFaction(const Character *a, const Character *b) {
     if (a->giant && b->giant) return true;
-    return (FactionIsWhite(a->faction) && FactionIsWhite(b->faction)) ||
-           (FactionIsRed(a->faction) && FactionIsRed(b->faction)) ||
-           (FactionIsBlue(a->faction) && FactionIsBlue(b->faction)) ||
-           (FactionIsBlack(a->faction) && FactionIsBlack(b->faction));
+    return FactionsOverlap(a->faction, b->faction);
 }
 
 static int ConsumeRarityIndex(const Character *ch) {

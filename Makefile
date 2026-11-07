@@ -105,6 +105,7 @@ test: $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(GOLDEN_TARGET)
 	python3 tools/build_pvp_rules.py --check
 	python3 tools/build_nexus_game_changers.py --check
 	python3 tools/build_consume_tables.py --check
+	python3 tools/build_fortify_tables.py --check
 	python3 tools/build_consume_scene.py --check
 	./$(TEST_TARGET)
 	./$(CONTENT_TEST_TARGET)

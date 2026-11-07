@@ -418,6 +418,37 @@ typedef enum {
     GUI_OPTIONS_TOGGLE_ON,
     GUI_OPTIONS_TOGGLE_OFF,
     GUI_LANGUAGE_ROW_BG,
+    GUI_FORTIFY_FRAME,
+    GUI_FORTIFY_PEDESTAL,
+    GUI_FORTIFY_STATS_FRAME,
+    GUI_FORTIFY_STATS_HIGHLIGHT,
+    GUI_FORTIFY_FLY,
+    GUI_FORTIFY_ARROW,
+    GUI_FORTIFY_PATH_LONG,
+    GUI_FORTIFY_PATH_LONG_ON,
+    GUI_FORTIFY_PATH_MED,
+    GUI_FORTIFY_PATH_MED_ON,
+    GUI_FORTIFY_PATH_SHORT,
+    GUI_FORTIFY_PATH_SHORT_ON,
+    GUI_FORTIFY_PATH_OUTPUT,
+    GUI_FORTIFY_PATH_OUTPUT_ON,
+    GUI_FORTIFY_SLOT_HEALTH,
+    GUI_FORTIFY_SLOT_HEALTH_LOCKED,
+    GUI_FORTIFY_SLOT_POWER,
+    GUI_FORTIFY_SLOT_POWER_LOCKED,
+    GUI_FORTIFY_SLOT_HIGHLIGHT,
+    GUI_FORTIFY_STATS_CONFIRM,
+    GUI_FORTIFY_STARBURST,
+    GUI_FORTIFY_XP_BG,
+    GUI_FORTIFY_XP_FILL,
+    GUI_FORTIFY_LEVEL,
+    GUI_FORTIFY_TIER_1,
+    GUI_FORTIFY_TIER_2,
+    GUI_FORTIFY_TIER_3,
+    GUI_FORTIFY_TIER_4,
+    GUI_FORTIFY_HEALTH_ICON,
+    GUI_FORTIFY_BUTTON,
+    GUI_ROSTER_FORTIFIED,
     GUI_COUNT
 } GuiId;
 
@@ -461,6 +492,13 @@ typedef enum {
     SND_CONSUME_LEVEL_2,
     SND_CONSUME_LEVEL_3,
     SND_CONSUME_LEVEL_4,
+    SND_FORTIFY_PARENT,
+    SND_FORTIFY_HEALTH_1,
+    SND_FORTIFY_HEALTH_2,
+    SND_FORTIFY_POWER_1,
+    SND_FORTIFY_POWER_2,
+    SND_FORTIFY_TALLY_LOOP,
+    SND_FORTIFY_TALLY_END,
     SND_COUNT
 } SoundId;
 
@@ -906,6 +944,37 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_OPTIONS_TOGGLE_ON] = CACHE_BUNDLE_RESOURCE("GameOptionsPopupV", "toggle_on"),
     [GUI_OPTIONS_TOGGLE_OFF] = CACHE_BUNDLE_RESOURCE("GameOptionsPopupV", "toggle_off"),
     [GUI_LANGUAGE_ROW_BG] = APK_RESOURCE("Bg_FlatBlackFill"),
+    [GUI_FORTIFY_FRAME] = CACHE_RESOURCE("FortifyFrame"),
+    [GUI_FORTIFY_PEDESTAL] = CACHE_RESOURCE("FortifyPedestal"),
+    [GUI_FORTIFY_STATS_FRAME] = CACHE_RESOURCE("FortifyStatsFrame"),
+    [GUI_FORTIFY_STATS_HIGHLIGHT] = CACHE_RESOURCE("FortifyStatsFrameHighlight"),
+    [GUI_FORTIFY_FLY] = CACHE_BUNDLE_RESOURCE("FortifyScreenV", "FortifyFlyText"),
+    [GUI_FORTIFY_ARROW] = CACHE_RESOURCE("GuideArrow"),
+    [GUI_FORTIFY_PATH_LONG] = CACHE_RESOURCE("PathLongDefault"),
+    [GUI_FORTIFY_PATH_LONG_ON] = CACHE_RESOURCE("PathLongBrillFill"),
+    [GUI_FORTIFY_PATH_MED] = CACHE_RESOURCE("PathMedDefault"),
+    [GUI_FORTIFY_PATH_MED_ON] = CACHE_RESOURCE("PathMedBrillFill"),
+    [GUI_FORTIFY_PATH_SHORT] = CACHE_RESOURCE("PathShortDefault"),
+    [GUI_FORTIFY_PATH_SHORT_ON] = CACHE_RESOURCE("PathShortBrillFill"),
+    [GUI_FORTIFY_PATH_OUTPUT] = CACHE_RESOURCE("PathOutputDefault"),
+    [GUI_FORTIFY_PATH_OUTPUT_ON] = CACHE_RESOURCE("PathOutputBrillFill"),
+    [GUI_FORTIFY_SLOT_HEALTH] = CACHE_RESOURCE("FortifySlotHealth"),
+    [GUI_FORTIFY_SLOT_HEALTH_LOCKED] = CACHE_RESOURCE("FortifySlotHealthLocked"),
+    [GUI_FORTIFY_SLOT_POWER] = CACHE_RESOURCE("FortifySlotPower"),
+    [GUI_FORTIFY_SLOT_POWER_LOCKED] = CACHE_RESOURCE("FortifySlotPowerLocked"),
+    [GUI_FORTIFY_SLOT_HIGHLIGHT] = CACHE_RESOURCE("FortifySlotHighlight"),
+    [GUI_FORTIFY_STATS_CONFIRM] = CACHE_BUNDLE_RESOURCE("FortifyConfirmPopupV", "FortifyStatsConfirm"),
+    [GUI_FORTIFY_STARBURST] = CACHE_BUNDLE_RESOURCE("FortifyCelebrationPopupV", "Victory_starburst"),
+    [GUI_FORTIFY_XP_BG] = CACHE_BUNDLE_RESOURCE("FortifyScreenV", "Bg_Exp_Background"),
+    [GUI_FORTIFY_XP_FILL] = CACHE_BUNDLE_RESOURCE("FortifyScreenV", "MeterFillBlue"),
+    [GUI_FORTIFY_LEVEL] = CACHE_BUNDLE_RESOURCE("FortifyScreenV", "Ico_XpHUD"),
+    [GUI_FORTIFY_TIER_1] = CACHE_RESOURCE("tex.Ico_Promote1"),
+    [GUI_FORTIFY_TIER_2] = CACHE_BUNDLE_RESOURCE("FortifySlotSmart", "tex.Ico_Promote2"),
+    [GUI_FORTIFY_TIER_3] = CACHE_RESOURCE("tex.Ico_Promote3"),
+    [GUI_FORTIFY_TIER_4] = CACHE_RESOURCE("tex.Ico_Promote4"),
+    [GUI_FORTIFY_HEALTH_ICON] = CACHE_BUNDLE_RESOURCE("FortifySlotSmart", "tex.Ico_Health"),
+    [GUI_FORTIFY_BUTTON] = CACHE_BUNDLE_RESOURCE("FortifyConfirmPopupV", "SmallButtonDarkBlue"),
+    [GUI_ROSTER_FORTIFIED] = CACHE_BUNDLE_RESOURCE("UnitSmart", "RosterFortifyFrame"),
 };
 
 #define FONT_BASE_SIZE 96
@@ -977,6 +1046,13 @@ static const char *const sound_paths[SND_COUNT] = {
     [SND_CONSUME_LEVEL_2] = CACHE_RESOURCE("gui_levelup_2"),
     [SND_CONSUME_LEVEL_3] = CACHE_RESOURCE("gui_levelup_3"),
     [SND_CONSUME_LEVEL_4] = CACHE_RESOURCE("gui_levelup_4"),
+    [SND_FORTIFY_PARENT] = CACHE_RESOURCE("gui_fortify_slot_hero_1"),
+    [SND_FORTIFY_HEALTH_1] = CACHE_RESOURCE("gui_fortify_slot_health_1"),
+    [SND_FORTIFY_HEALTH_2] = CACHE_RESOURCE("gui_fortify_slot_health_2"),
+    [SND_FORTIFY_POWER_1] = CACHE_RESOURCE("gui_fortify_slot_power_1"),
+    [SND_FORTIFY_POWER_2] = CACHE_RESOURCE("gui_fortify_slot_power_2"),
+    [SND_FORTIFY_TALLY_LOOP] = CACHE_RESOURCE("gui_fortify_tally_loop"),
+    [SND_FORTIFY_TALLY_END] = CACHE_RESOURCE("gui_fortify_tally end"),
 };
 
 static Texture2D gui_tex[GUI_COUNT];
@@ -1088,6 +1164,12 @@ void GuiSoundStop(SoundId id) {
         if (slot->source_buffer != gui_sounds[id].stream.buffer || !IsSoundValid(slot->alias)) continue;
         if (IsSoundPlaying(slot->alias)) StopSound(slot->alias);
     }
+}
+
+float GuiSoundSeconds(SoundId id) {
+    if (id < 0 || id >= SND_COUNT || !IsSoundValid(gui_sounds[id]) || gui_sounds[id].stream.sampleRate == 0)
+        return 0.0f;
+    return (float)gui_sounds[id].frameCount / (float)gui_sounds[id].stream.sampleRate;
 }
 
 void GuiClickSoundPlay(void) {

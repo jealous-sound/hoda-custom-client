@@ -1342,3 +1342,11 @@ HODA_UNIT_XENONTHEANTIQUARIANI|Xenon el Anticuario I
 HODA_UNIT_XENONTHEANTIQUARIANII|Xenon el Anticuario II
 HODA_UNIT_XENONTHEANTIQUARIANIII|Xenon el Anticuario III
 HODA_UNIT_XENONTHEANTIQUARIANIV|Xenon el Anticuario IV
+HODA_UI_REMOVE_FORTIFICATIONS|Quitar fortificaciones
+HODA_UI_EXIT_REMOVE_FORTIFICATIONS|Terminar
+HODA_UI_UNFORTIFY_CONFIRM_DESC|¿Quitar este héroe de su espacio de fortificación?
+HODA_UI_UNFORTIFY_ALL_CONFIRM_DESC|¿Quitar todos los héroes de los espacios de fortificación de este héroe?
+HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Los héroes quitados vuelven a tu inventario con nivel 1 y dejan de otorgar su bonificación de fortificación.
+HODA_UI_CONFIRM_UNFORTIFY|Quitar
+HODA_UI_UNFORTIFY_REMOVE_ALL|Quitar todos
+HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Coste de retirada
