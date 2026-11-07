@@ -1,0 +1,48 @@
+HODA_EXPEDITIONS_BUTTON|Экспедиции
+HODA_EXPEDITIONS_TITLE|Экспедиции
+HODA_EXPEDITION_ARBOR_WILDS_DESCRIPTION|Обыщите древние эльфийские храмы, скрытые в Дебрях Арбора.
+HODA_EXPEDITION_ARBOR_WILDS_NAME|Руины Дебрей Арбора
+HODA_EXPEDITION_AUTO_FILL|Заполнить
+HODA_EXPEDITION_BONUS|Большой успех: {0}
+HODA_EXPEDITION_CLAIM_FAILED|Не удалось забрать награду экспедиции. Попробуйте ещё раз.
+HODA_EXPEDITION_COLLECT_ALL|Забрать всё
+HODA_EXPEDITION_COMPLETE_TITLE|Экспедиция завершена
+HODA_EXPEDITION_DEEP_ROADS_DESCRIPTION|Исследуйте затерянный тейг и добудьте забытые творения гномов.
+HODA_EXPEDITION_DEEP_ROADS_NAME|На Глубинные тропы
+HODA_EXPEDITION_EMPRISE_DU_LION_DESCRIPTION|Прорвите осаду красного лириума у крепости Суледин.
+HODA_EXPEDITION_EMPRISE_DU_LION_NAME|Осада Владений Льва
+HODA_EXPEDITION_FADE_RIFT_DESCRIPTION|Закройте разрыв в Завесе и соберите оставшийся лириум.
+HODA_EXPEDITION_FADE_RIFT_NAME|Закрыть разрыв
+HODA_EXPEDITION_GREAT_SUCCESS|Большой успех!
+HODA_EXPEDITION_HERO_AWAY_MESSAGE|Этот герой в экспедиции.
+HODA_EXPEDITION_HERO_XP|+{0} опыта
+HODA_EXPEDITION_HINTERLANDS_DESCRIPTION|Соберите эльфийский корень и редкие травы на холмах Внутренних земель.
+HODA_EXPEDITION_HINTERLANDS_NAME|Травы Внутренних земель
+HODA_EXPEDITION_LEVEL_LOCK|Уровень {0}
+HODA_EXPEDITION_LOCKED_MESSAGE|Экспедиции открываются на {0} уровне игрока.
+HODA_EXPEDITION_LOTHERING_DESCRIPTION|Охраняйте дорогу беженцев через Лотеринг и защитите фермы от разбойников.
+HODA_EXPEDITION_LOTHERING_NAME|Дозор в Лотеринге
+HODA_EXPEDITION_NEEDS|Нужно: {0}
+HODA_EXPEDITION_NEXT_SLOT|Ещё один отряд на уровне {0}
+HODA_EXPEDITION_NO_SLOT|Нет свободного отряда
+HODA_EXPEDITION_ORLAIS_DESCRIPTION|Сыграйте в Большую игру в Зимнем дворце ради золота, услуг и подарков.
+HODA_EXPEDITION_ORLAIS_NAME|Орлейский маскарад
+HODA_EXPEDITION_PARTY_SIZE|Героев: {0}
+HODA_EXPEDITION_PARTY_SIZE_ONE|1 герой
+HODA_EXPEDITION_RARITY_OR_BETTER|{0} или лучше
+HODA_EXPEDITION_READY|Вернулись!
+HODA_EXPEDITION_RECALL|Отозвать
+HODA_EXPEDITION_RECALL_MESSAGE|Герои вернутся сейчас и ничего не принесут.
+HODA_EXPEDITION_RECALL_TITLE|Отозвать отряд?
+HODA_EXPEDITION_ROSTER_FULL|Список героев заполнен. Освободите место и заберите награду.
+HODA_EXPEDITION_SEND|Отправить
+HODA_EXPEDITION_SLOTS|Отрядов в пути: {0}/{1}
+HODA_EXPEDITION_SQUAD_HINT|Герои из отрядов остаются дома.
+HODA_EXPEDITION_STORM_COAST_DESCRIPTION|Обыщите обломки кораблей на Штормовом берегу в поисках даров моря.
+HODA_EXPEDITION_STORM_COAST_NAME|Обломки Штормового берега
+HODA_EXPEDITION_TEVINTER_DESCRIPTION|Перевербуйте агентов в Минратосе и привлеките их на свою сторону.
+HODA_EXPEDITION_TEVINTER_NAME|Тевинтерская шпионская сеть
+HODA_EXPEDITION_TIME_LEFT|Осталось {0}
+HODA_EXPEDITION_TRAIT_COUNT|{0}x {1}
+HODA_EXPEDITION_WESTERN_APPROACH_DESCRIPTION|Выследите дракона в пустыне и наймите спасённых выживших.
+HODA_EXPEDITION_WESTERN_APPROACH_NAME|Охота в Западном пределе

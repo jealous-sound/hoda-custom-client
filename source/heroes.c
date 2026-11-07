@@ -91,6 +91,7 @@ typedef struct {
     bool in_use;
     bool selected;
     bool fortified;
+    bool away;
 } RosterCardState;
 
 typedef void (*RosterCardDrawFn)(const HeroCard *card, Rectangle cell, int roster_index, const void *context);
@@ -798,7 +799,7 @@ static void HeroesDrawDetails(HeroCard *card, float span_x, float span_w) {
 
 static void RosterDrawCard(const HeroCard *card, Rectangle cell, const RosterCardState *state) {
     Font font = GuiFont(FNT_MENU);
-    Color tint = state->in_use ? (Color){110, 110, 110, 255} : WHITE;
+    Color tint = state->in_use || state->away ? (Color){110, 110, 110, 255} : WHITE;
     if (state->selected) UiDrawTexture(GuiTex(GUI_CARD_SELECT), UiRect(cell, 0.5f, 0.5f, 1.1f, 1.1f), WHITE);
     if (state->fortified)
         UiDrawTexture(GuiTex(GUI_ROSTER_FORTIFIED), HudFitRect(cell, 0.5f, 0.5f, 1.9f, 0.96f, 0.97f), tint);
@@ -841,6 +842,11 @@ static void RosterDrawCard(const HeroCard *card, Rectangle cell, const RosterCar
         float size = cell.height * 0.2f;
         UiDrawTexture(GuiTex(GUI_GALLERY_IN_SQUAD), UiRect(cell, 0.14f, 0.06f, size, size), WHITE);
     }
+    Texture2D away_badge = state->away ? ExpeditionTexture(EXPEDITION_AWAY_BADGE_ART) : (Texture2D){0};
+    if (away_badge.id) {
+        float size = cell.height * 0.2f;
+        UiDrawTexture(away_badge, UiRect(cell, 0.14f, 0.06f, size, size), WHITE);
+    }
 }
 
 typedef struct {
@@ -873,6 +879,7 @@ static void HeroesDrawRosterCard(const HeroCard *card, Rectangle cell, int roste
         .maxed = card->xp_frac >= 1.0f,
         .in_squad = in_squad,
         .in_use = in_squad,
+        .away = PlayerHeroAway(c->player, roster_index),
         .selected = roster_index == c->heroes->selected,
         .fortified = FortifyHasChildren(card->ch),
     };

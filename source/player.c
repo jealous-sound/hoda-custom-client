@@ -126,6 +126,7 @@ typedef struct {
     PlayerGallery gallery;
     PlayerMissions missions;
     PlayerPvp pvp;
+    PlayerExpeditions expeditions;
 
     char name[PLAYER_NAME_CAPACITY];
     PlayerTutorial tutorial;
@@ -428,10 +429,16 @@ int PlayerSquadFindUnit(const Player *p, int squad, int roster_index) {
     return -1;
 }
 
+bool PlayerHeroAway(const Player *p, int roster_index) {
+    return roster_index >= 0 && roster_index < p->roster_count &&
+           ExpeditionsHoldInstance(&p->expeditions, p->roster[roster_index].instance_id);
+}
+
 bool PlayerSquadPlace(Player *p, int squad, int slot, int roster_index) {
     if (squad < 0 || squad >= PLAYER_MAX_SQUADS) return false;
     if (slot < 0 || slot >= SQUAD_SLOT_COUNT) return false;
     if (roster_index < 0 || roster_index >= p->roster_count) return false;
+    if (PlayerHeroAway(p, roster_index)) return false;
     if (p->roster[roster_index].giant != (slot == SQUAD_SLOT_LARGE)) return false;
 
     int from = PlayerSquadFindUnit(p, squad, roster_index);
@@ -493,7 +500,8 @@ static int PlayerRosterCompact(Player *p, const bool *remove, int keep_index) {
 }
 
 bool PlayerConsumeSeedAllowed(const Player *p, int target, int seed) {
-    return seed >= 0 && seed < p->roster_count && seed != target && !PlayerSquadsContain(p, seed);
+    return seed >= 0 && seed < p->roster_count && seed != target && !PlayerSquadsContain(p, seed) &&
+           !PlayerHeroAway(p, seed) && !PlayerHeroAway(p, target);
 }
 
 int PlayerConsumeUnits(Player *p, int target, const int *seeds, int count) {

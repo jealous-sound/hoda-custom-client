@@ -12,6 +12,10 @@ typedef struct {
 } DebugShot;
 
 #define DEBUG_SHOT_DEFAULT_FRAMES 90
+#define DEBUG_EXPEDITION_LEVEL 30
+#define DEBUG_EXPEDITION_LONG_AGO 3600
+#define DEBUG_EXPEDITION_HALF_WAY 7200
+#define DEBUG_EXPEDITION_JUST_LEFT 600
 #define DEBUG_TUTORIAL_SELECT_FRAME 5
 #define DEBUG_PVP_TROPHIES 640
 #define DEBUG_PVP_FIGHT_SEED 7
@@ -1251,6 +1255,106 @@ static void DebugPrepareGuild(Game *game, DebugShot *shot) {
     game->screen = home_buttons ? SCREEN_HOME : SCREEN_GUILD;
 }
 
+static const char *const DEBUG_EXPEDITION_BENCH[] = {
+    "UNIT_CARTATHUG",
+    "UNIT_CARTASMUGGLER",
+    "UNIT_CIRCLEAPPRENTICE",
+    "UNIT_SKELETONMAGE",
+    "UNIT_ELFBANDIT",
+    "UNIT_BLACKSTONEIRREGULAR",
+    "UNIT_FERELDANKNIGHT",
+    "UNIT_ENRAGEDSPIRIT",
+    "UNIT_COTERIETHUG",
+    "UNIT_INFERNOGOLEM",
+    "UNIT_ELVENMAGE",
+    "UNIT_REDIRONMAGE",
+};
+
+static int DebugRosterIndexOf(const Player *p, const char *id) {
+    for (int i = p->roster_count - 1; i >= 0; i--)
+        if (!strcmp(p->roster[i].id, id)) return i;
+    return -1;
+}
+
+static void DebugStartExpedition(Game *game, const char *id, const char *const *heroes, int count, long long ago) {
+    Player *p = &game->player;
+    int party[EXPEDITION_PARTY_CAPACITY];
+    for (int i = 0; i < count; i++) party[i] = DebugRosterIndexOf(p, heroes[i]);
+    if (!ExpeditionStart(p, ExpeditionIndexById(id), party, count, ServerNow() - ago))
+        TraceLog(LOG_WARNING, "Debug: cannot start expedition %s", id);
+}
+
+static void DebugRevealExpeditionRewards(Game *game, const DebugShot *shot) {
+    Player *p = &game->player;
+    ExpeditionsView *v = &game->expeditions;
+    bool heroes = DebugShotIs(shot, "expeditions_reveal_hero");
+    v->reward = (ExpeditionReward){.expeditions = 2, .great_successes = 1, .gold = 1240, .gems = 6, .hero_xp = 200};
+    if (heroes) {
+        v->reward.heroes[0] = DebugRosterIndexOf(p, "UNIT_INFERNOGOLEM");
+        v->reward.hero_new[0] = true;
+        v->reward.hero_count = 1;
+    } else {
+        for (int i = 0; i < GearCatalogCount() && v->reward.gear_count < 2; i++)
+            if (GearDefAt(i)->rarity == v->reward.gear_count + 2) v->reward.gear[v->reward.gear_count++] = i;
+        v->reward.runes[0] = RuneDefIndex("rune-power-2");
+        v->reward.rune_new[0] = true;
+        v->reward.rune_count = 1;
+    }
+    v->reveal_pending = true;
+    ExpeditionsRevealRewards(v, &game->store);
+    game->store_return_screen = SCREEN_EXPEDITIONS;
+    if (heroes) {
+        game->store.view = STORE_VIEW_RESULT;
+        game->store.phase_time = STORE_OPEN_COMPLETE;
+        game->store.result_time = 1.0f;
+    } else {
+        DebugAdvanceItemReveal(&game->store);
+    }
+}
+
+static void DebugPrepareExpeditions(Game *game, DebugShot *shot) {
+    if (!shot->screen || strncmp(shot->screen, "expeditions", strlen("expeditions")) != 0) return;
+    bool reveal = strncmp(shot->screen, "expeditions_reveal", strlen("expeditions_reveal")) == 0;
+    game->screen = DebugShotIs(shot, "expeditions_home")     ? SCREEN_HOME
+                   : DebugShotIs(shot, "expeditions_roster") ? SCREEN_HEROES
+                   : reveal                                  ? SCREEN_STORE
+                                                             : SCREEN_EXPEDITIONS;
+    if (shot->flow_started) return;
+    shot->flow_started = true;
+    Player *p = &game->player;
+    p->level = EnvInt("HOD_EXPEDITION_LEVEL", DEBUG_EXPEDITION_LEVEL);
+    p->expeditions = (PlayerExpeditions){0};
+    int added = 0;
+    for (int i = 0; i < (int)(sizeof(DEBUG_EXPEDITION_BENCH) / sizeof(DEBUG_EXPEDITION_BENCH[0])); i++)
+        DebugConsumeDefinition(game, DEBUG_EXPEDITION_BENCH[i], &added);
+    HeroesSyncRoster(&game->heroes, p);
+    static const char *const patrol[] = {"UNIT_BLACKSTONEIRREGULAR"};
+    static const char *const delvers[] = {"UNIT_CARTATHUG", "UNIT_CARTASMUGGLER", "UNIT_COTERIETHUG"};
+    static const char *const gatherers[] = {"UNIT_ELFBANDIT", "UNIT_CIRCLEAPPRENTICE"};
+    DebugStartExpedition(game, "lothering", patrol, 1, DEBUG_EXPEDITION_LONG_AGO);
+    DebugStartExpedition(game, "deep_roads", delvers, 3, DEBUG_EXPEDITION_HALF_WAY);
+    DebugStartExpedition(game, "hinterlands", gatherers, 2, DEBUG_EXPEDITION_JUST_LEFT);
+    ExpeditionsOpen(&game->expeditions);
+    ExpeditionsView *v = &game->expeditions;
+    if (DebugShotIs(shot, "expeditions_roster")) {
+        game->heroes.roster.filter = ROSTER_FILTER_NEWEST;
+        game->heroes.roster.pin_squad = false;
+        RosterRefreshOrder(&game->heroes.roster, p);
+    }
+    if (DebugShotIs(shot, "expeditions_party")) ExpeditionsOpenParty(v, p, ExpeditionIndexById("fade_rift"));
+    if (DebugShotIs(shot, "expeditions_recall")) {
+        v->selected = ExpeditionIndexById("deep_roads");
+        v->dialog = EXPEDITIONS_DIALOG_RECALL;
+    }
+    if (reveal) DebugRevealExpeditionRewards(game, shot);
+    if (DebugShotIs(shot, "expeditions_reward")) {
+        int def = ExpeditionIndexById("lothering");
+        v->reward = ExpeditionClaim(p, &def, 1, ServerNow());
+        HeroesSyncRoster(&game->heroes, p);
+        v->dialog = EXPEDITIONS_DIALOG_REWARD;
+    }
+}
+
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
     if (DebugPrepareTutorial(game, shot) || DebugPrepareNamePrompt(game, shot)) return;
     if (DebugPrepareOptions(game, shot) || DebugPrepareClientUpdate(game, shot)) return;
@@ -1283,6 +1387,7 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     DebugPreparePvp(game, shot);
     DebugPrepareGuild(game, shot);
     DebugPrepareMapProgress(game, shot);
+    DebugPrepareExpeditions(game, shot);
     int selected_hero = EnvInt("HOD_SELECT", -1);
     if (selected_hero >= 0 && selected_hero < game->heroes.card_count) game->heroes.selected = selected_hero;
     DebugOpenResourceDialog(game, shot);

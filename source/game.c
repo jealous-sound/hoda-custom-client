@@ -11,6 +11,7 @@ typedef enum {
     SCREEN_PVP_HUB,
     SCREEN_PVP_EVENT,
     SCREEN_GUILD,
+    SCREEN_EXPEDITIONS,
     SCREEN_MAP,
     SCREEN_NEXUS,
     SCREEN_BATTLE
@@ -90,6 +91,7 @@ typedef struct {
     Button update_download;
 
     PvpHub pvp_hub;
+    ExpeditionsView expeditions;
     PvpEventView pvp_event_view;
     Guild guild;
     GuildView guild_view;
@@ -1147,6 +1149,7 @@ bool GameInitialize(Game *g) {
     LoadingScreenShowMessage();
     LoadingScreenPresent();
     MissionCatalogLoad("data/missions.json");
+    ExpeditionCatalogLoad(EXPEDITIONS_PATH);
 
     PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
     LoadingScreenPresent();
@@ -1185,6 +1188,7 @@ bool GameInitialize(Game *g) {
     CampaignInitialize(&g->map, "data/campaign_maps.json");
     MissionsInitialize(&g->missions);
     PvpHubInitialize(&g->pvp_hub);
+    ExpeditionsInitialize(&g->expeditions);
     PvpEventViewInitialize(&g->pvp_event_view);
     GuildInitialize(&g->guild);
     GuildViewInitialize(&g->guild_view);
@@ -1263,7 +1267,9 @@ bool GameHandlePopupBack(Game *g) {
         return true;
     }
     if (g->screen == SCREEN_QUESTS && QuestsHandleBack(&g->quests)) return true;
-    if (g->screen == SCREEN_MISSIONS || g->screen == SCREEN_PVP_HUB || g->screen == SCREEN_PVP_EVENT) {
+    if (g->screen == SCREEN_EXPEDITIONS && ExpeditionsHandleBack(&g->expeditions)) return true;
+    if (g->screen == SCREEN_MISSIONS || g->screen == SCREEN_PVP_HUB || g->screen == SCREEN_PVP_EVENT ||
+        g->screen == SCREEN_EXPEDITIONS) {
         g->screen = SCREEN_HOME;
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return true;
@@ -1275,7 +1281,9 @@ bool GameHandlePopupBack(Game *g) {
     }
     if (g->screen == SCREEN_NEXUS && NexusHandleBack(&g->nexus)) return true;
     if (g->screen == SCREEN_STORE) {
-        if (StoreHandleBack(&g->store, &g->heroes) == STORE_ACTION_CLOSE) g->screen = SCREEN_HOME;
+        StoreAction back = StoreHandleBack(&g->store, &g->heroes);
+        if (back == STORE_ACTION_CLOSE) g->screen = SCREEN_HOME;
+        if (back == STORE_ACTION_REWARDS_SHOWN) g->screen = g->store_return_screen;
         return true;
     }
     return false;
@@ -1603,6 +1611,10 @@ static void GameSyncServerActions(Game *g) {
         GameOpenNexusRecapFromServer(g, reply);
         cJSON_Delete(reply);
     }
+    if (g->expeditions.claim_waiting && ServerActionsTakeReply(SERVER_REPLY_EXPEDITION_CLAIM, &reply)) {
+        ExpeditionsTakeClaimReply(&g->expeditions, &g->heroes, &g->player, reply);
+        cJSON_Delete(reply);
+    }
     GamePollPvpMatch(g);
 }
 
@@ -1618,6 +1630,9 @@ void GameDraw(Game *g) {
     PlayerUpdate(&g->player, dt);
     if (g->screen != SCREEN_STORE) StorePollServerPurchase(&g->store, &g->player, &g->heroes);
     GameSyncServerActions(g);
+    g->home_ui.expeditions_shown = ExpeditionsAvailable();
+    g->home_ui.expeditions_open = ExpeditionsHomeOpen(&g->player);
+    g->home_ui.expeditions_badge = ExpeditionsHomeBadge(&g->player);
     if (g->screen != SCREEN_GUILD) GuildSetChatVisible(&g->guild, false);
     GuildUpdate(&g->guild, &g->player);
     if (g->player.roster_count != g->player.gallery.synced_roster_count) PlayerGallerySync(&g->player);
@@ -1684,6 +1699,18 @@ void GameDraw(Game *g) {
                 g->screen = SCREEN_MISSIONS;
             } else if (pressed == HOME_PVP) {
                 GameOpenPvpHub(g);
+            } else if (pressed == HOME_EXPEDITIONS) {
+                ExpeditionsOpen(&g->expeditions);
+                g->screen = SCREEN_EXPEDITIONS;
+            } else if (pressed == HOME_EXPEDITIONS_LOCKED) {
+                char message[GUILD_MESSAGE_CAP];
+                LocFormat1(
+                    message,
+                    sizeof(message),
+                    "HODA_EXPEDITION_LOCKED_MESSAGE",
+                    TextFormat("%d", ExpeditionUnlockLevel())
+                );
+                GuildNoticePopupShow(&g->guild_notice, LocGet("HODA_EXPEDITIONS_TITLE"), message);
             } else if (pressed != HOME_NONE) {
                 GameHandleGuildButton(g, pressed);
             }
@@ -1711,7 +1738,7 @@ void GameDraw(Game *g) {
             }
             UiFrameEnd();
 
-            if (store_action == STORE_ACTION_CLOSE) {
+            if (store_action == STORE_ACTION_CLOSE || store_action == STORE_ACTION_REWARDS_SHOWN) {
                 g->screen = g->store_return_screen;
             } else if (store_action == STORE_ACTION_GOTO_MAP) {
                 g->screen = SCREEN_MAP;
@@ -1953,6 +1980,23 @@ void GameDraw(Game *g) {
                 int index = g->missions.tabs.selected;
                 PvpOpponent opponent = PvpOpponentFromBattle(&g->player.pvp.history[index], g->player.pvp.trophies);
                 GameEnterFixedPvpBattle(g, opponent, index, SCREEN_MISSIONS);
+            }
+            break;
+        }
+        case SCREEN_EXPEDITIONS: {
+            HomeBackgroundUpdate(&g->scene, dt);
+            HomeBackgroundDraw(&g->scene);
+            GameDrawSceneFx(g, g->scene.cam, dt);
+
+            UiFrameBegin();
+            if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
+            HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
+            ExpeditionsAction pressed = ExpeditionsDraw(&g->expeditions, &g->heroes, &g->player);
+            UiFrameEnd();
+            if (pressed == EXPEDITIONS_CLOSE) g->screen = SCREEN_HOME;
+            if (pressed != EXPEDITIONS_CLOSE && ExpeditionsRevealRewards(&g->expeditions, &g->store)) {
+                g->store_return_screen = SCREEN_EXPEDITIONS;
+                g->screen = SCREEN_STORE;
             }
             break;
         }

@@ -9,6 +9,8 @@ typedef enum {
     HOME_GUILD_LOCKED,
     HOME_GUILD_CHAT,
     HOME_GUILD_CHAT_LOCKED,
+    HOME_EXPEDITIONS,
+    HOME_EXPEDITIONS_LOCKED,
 } HomeButton;
 
 #define HOME_GUILD_BUTTON_X 13.0f
@@ -16,6 +18,8 @@ typedef enum {
 #define HOME_GUILD_CHAT_BUTTON_Y 421.0f
 #define HOME_GUILD_BUTTON_SIZE 73.0f
 #define HOME_GUILD_BADGE_SHOWN_MAX 3
+
+static const Color HOME_LOCKED_TINT = {120, 120, 120, 255};
 
 typedef struct {
     Button store;
@@ -27,7 +31,24 @@ typedef struct {
     Button guild_locked;
     Button guild_chat;
     Button guild_chat_locked;
+    Button expeditions;
+    Button expeditions_locked;
+    bool expeditions_shown;
+    bool expeditions_open;
+    int expeditions_badge;
 } HomeUI;
+
+static Texture2D HomeUIDimmedTexture(const char *art) {
+    const char *path = TextFormat(EXTRA_ASSET_DIR "%s", art);
+    if (!ResourceExists(path)) return (Texture2D){0};
+    Image image = LoadImage(path);
+    ImageColorTint(&image, HOME_LOCKED_TINT);
+    Texture2D texture = LoadTextureFromImage(image);
+    UnloadImage(image);
+    GenTextureMipmaps(&texture);
+    SetTextureFilter(texture, TEXTURE_FILTER_TRILINEAR);
+    return texture;
+}
 
 void HomeUIInitialize(HomeUI *hui) {
     Font font = GuiFont(FNT_COOL);
@@ -53,6 +74,24 @@ void HomeUIInitialize(HomeUI *hui) {
     hui->guild_chat_locked = ButtonLoad(GUI_GUILD_CHAT_BUTTON_OFF, GUI_GUILD_CHAT_BUTTON_OFF);
     ButtonSetClickSound(&hui->guild, SND_UI_BIG_BUTTON);
     ButtonSetClickSound(&hui->guild_chat, SND_UI_BIG_BUTTON);
+    Texture2D expeditions = ExpeditionTexture(EXPEDITIONS_HOME_ART);
+    Texture2D expeditions_on = ExpeditionTexture(EXPEDITIONS_HOME_ART_ON);
+    hui->expeditions =
+        expeditions.id && expeditions_on.id
+            ? ButtonFromTextures(expeditions, expeditions_on, LocGet("HODA_EXPEDITIONS_BUTTON"), font, anchor, scale)
+            : ButtonFromTextures(
+                  GuiTex(GUI_BTN_GREY),
+                  GuiTex(GUI_BTN_GREY_ON),
+                  LocGet("HODA_EXPEDITIONS_BUTTON"),
+                  font,
+                  (Vector2){0.5f, 0.5f},
+                  0.2f
+              );
+    hui->expeditions.click = GuiSound(SND_UI_BIG_BUTTON);
+    Texture2D dimmed = HomeUIDimmedTexture(EXPEDITIONS_HOME_ART);
+    hui->expeditions_locked = hui->expeditions;
+    if (dimmed.id) hui->expeditions_locked.idle = hui->expeditions_locked.active = dimmed;
+    hui->expeditions_locked.label_color = HOME_LOCKED_TINT;
 }
 
 static void HomeUIDrawGuildBadge(Rectangle button, int count) {
@@ -91,6 +130,13 @@ HomeButton HomeUIDraw(HomeUI *hui, bool interactive, int heroes_badge, int missi
     Rectangle history = {pad + size + gap, y, size, size};
     if (ButtonDrawEx(&hui->history, history, interactive)) clicked = HOME_HISTORY;
     ButtonDrawBadge(history, missions_badge);
+    if (hui->expeditions_shown) {
+        Rectangle expeditions = {pad + (size + gap) * 2.0f, y, size, size};
+        Button *button = hui->expeditions_open ? &hui->expeditions : &hui->expeditions_locked;
+        if (ButtonDrawEx(button, expeditions, interactive))
+            clicked = hui->expeditions_open ? HOME_EXPEDITIONS : HOME_EXPEDITIONS_LOCKED;
+        if (hui->expeditions_open) ButtonDrawBadge(expeditions, hui->expeditions_badge);
+    }
 
     Rectangle heroes = {(screen_w - size) * 0.5f, y, size, size};
     if (ButtonDrawEx(&hui->heroes, heroes, interactive)) clicked = HOME_HEROES;

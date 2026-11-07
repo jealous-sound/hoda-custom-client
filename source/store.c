@@ -131,6 +131,24 @@ typedef struct {
 } StoreItemResult;
 
 typedef enum {
+    STORE_REWARD_STAGE_HEROES,
+    STORE_REWARD_STAGE_GEAR,
+    STORE_REWARD_STAGE_RUNES,
+    STORE_REWARD_STAGE_DONE,
+} StoreRewardStage;
+
+typedef struct {
+    bool active;
+    StoreRewardStage stage;
+    int heroes[STORE_MAX_RESULTS];
+    int hero_count;
+    StoreItemResult gear[STORE_MAX_ITEM_RESULTS];
+    int gear_count;
+    StoreItemResult runes[STORE_MAX_ITEM_RESULTS];
+    int rune_count;
+} StoreRewardReveal;
+
+typedef enum {
     STORE_VIEW_LANDING,
     STORE_VIEW_HEROES,
     STORE_VIEW_ITEMS,
@@ -149,6 +167,7 @@ typedef enum {
     STORE_ACTION_GOTO_MAP,
     STORE_ACTION_GOTO_SQUAD,
     STORE_ACTION_GOTO_CONSUME,
+    STORE_ACTION_REWARDS_SHOWN,
 } StoreAction;
 
 typedef enum {
@@ -314,6 +333,7 @@ typedef struct {
     int pack_gear_def;
     int result_roster_indices[STORE_MAX_RESULTS];
     int result_count;
+    StoreRewardReveal reward_reveal;
     int reveal_index;
     int loaded_reveal_index;
     float phase_time;
@@ -831,6 +851,7 @@ void StoreOpen(Store *store) {
     store->reveal_hitch_guard_frames = 0;
     store->status_time = 0.0f;
     store->status[0] = '\0';
+    store->reward_reveal.active = false;
     GuiSoundPlay(SND_STORE_OPEN);
 }
 
@@ -907,6 +928,7 @@ void StoreDrawWorld(Store *store, Heroes *heroes) {
 
 static void StoreBeginCurrentResult(Store *store);
 static void StoreFinishCurrentResult(Store *store, Heroes *heroes, bool skipped);
+static StoreAction StoreFinishRewardStage(Store *store);
 
 StoreAction StoreHandleBack(Store *store, Heroes *heroes) {
     if (store->dialog != STORE_DIALOG_NONE) {
@@ -926,11 +948,13 @@ StoreAction StoreHandleBack(Store *store, Heroes *heroes) {
             GuiSoundPlay(SND_UI_POPUP_CLOSE);
             return STORE_ACTION_NONE;
         case STORE_VIEW_ITEM_REVEAL:
-            if (store->item_details >= 0)
-                store->item_details = -1;
-            else
-                store->view = store->packs[store->selected_pack].page;
             GuiSoundPlay(SND_UI_POPUP_CLOSE);
+            if (store->item_details >= 0) {
+                store->item_details = -1;
+                return STORE_ACTION_NONE;
+            }
+            if (store->reward_reveal.active) return StoreFinishRewardStage(store);
+            store->view = store->packs[store->selected_pack].page;
             return STORE_ACTION_NONE;
         case STORE_VIEW_OPENING:
             StoreFinishCurrentResult(store, heroes, true);
@@ -940,6 +964,10 @@ StoreAction StoreHandleBack(Store *store, Heroes *heroes) {
                 store->reveal_index++;
                 store->loaded_reveal_index = -1;
                 StoreBeginCurrentResult(store);
+            } else if (store->reward_reveal.active) {
+                PackHeroClear(&store->opening_hero);
+                GuiSoundPlay(SND_UI_POPUP_CLOSE);
+                return StoreFinishRewardStage(store);
             } else {
                 store->view = store->return_view;
                 PackHeroClear(&store->opening_hero);
@@ -1211,21 +1239,84 @@ static int StoreGrantScriptedRune(const TutorialPackReward *reward, PlayerRunes 
     return def >= 0 && RuneGrant(runes, def, RuneNow()) ? def : -1;
 }
 
-static void StoreBeginHeroReveal(Store *store, int pack_index, int first_index, int count) {
+static void StoreBeginHeroRevealOf(Store *store, int pack_index, const int *roster_indices, int count) {
     store->selected_pack = pack_index;
     store->return_view = pack_index >= 0 ? store->packs[pack_index].page : STORE_VIEW_HEROES;
     store->result_count = count;
-    for (int i = 0; i < count; i++) store->result_roster_indices[i] = first_index + i;
+    for (int i = 0; i < count; i++) store->result_roster_indices[i] = roster_indices[i];
     store->reveal_index = 0;
     store->loaded_reveal_index = -1;
     store->status_time = 0.0f;
     StoreBeginCurrentResult(store);
 }
 
+static void StoreBeginHeroReveal(Store *store, int pack_index, int first_index, int count) {
+    int roster_indices[STORE_MAX_RESULTS];
+    for (int i = 0; i < count; i++) roster_indices[i] = first_index + i;
+    StoreBeginHeroRevealOf(store, pack_index, roster_indices, count);
+}
+
 void StoreRevealGrantedHeroes(Store *store, int first_index, int count) {
     store->pack_rune_def = -1;
     store->pack_gear_def = -1;
+    store->reward_reveal.active = false;
     StoreBeginHeroReveal(store, -1, first_index, count);
+}
+
+static bool StoreBeginNextRewardStage(Store *store) {
+    StoreRewardReveal *reveal = &store->reward_reveal;
+    while (reveal->active && reveal->stage < STORE_REWARD_STAGE_DONE) {
+        StoreRewardStage stage = reveal->stage++;
+        if (stage == STORE_REWARD_STAGE_HEROES) {
+            if (reveal->hero_count == 0) continue;
+            store->pack_rune_def = -1;
+            store->pack_gear_def = -1;
+            StoreBeginHeroRevealOf(store, -1, reveal->heroes, reveal->hero_count);
+            return true;
+        }
+        bool gear = stage == STORE_REWARD_STAGE_GEAR;
+        int count = gear ? reveal->gear_count : reveal->rune_count;
+        if (count == 0) continue;
+        memcpy(store->item_results, gear ? reveal->gear : reveal->runes, (size_t)count * sizeof(StoreItemResult));
+        StoreBeginItemReveal(store, -1, gear ? STORE_KIND_GEAR : STORE_KIND_RUNE, count);
+        return true;
+    }
+    reveal->active = false;
+    return false;
+}
+
+static StoreAction StoreFinishRewardStage(Store *store) {
+    if (StoreBeginNextRewardStage(store)) return STORE_ACTION_NONE;
+    store->view = STORE_VIEW_LANDING;
+    return STORE_ACTION_REWARDS_SHOWN;
+}
+
+static int StoreRewardItems(StoreItemResult *results, const int *defs, const bool *newly_owned, int count) {
+    int kept = count < STORE_MAX_ITEM_RESULTS ? count : STORE_MAX_ITEM_RESULTS;
+    for (int i = 0; i < kept; i++) results[i] = (StoreItemResult){defs[i], newly_owned[i], false, 0.0f};
+    return kept;
+}
+
+bool StoreRevealRewards(
+    Store *store,
+    const int *heroes,
+    int hero_count,
+    const int *gear,
+    const bool *gear_new,
+    int gear_count,
+    const int *runes,
+    const bool *runes_new,
+    int rune_count
+) {
+    StoreRewardReveal *reveal = &store->reward_reveal;
+    *reveal = (StoreRewardReveal){.active = true, .stage = STORE_REWARD_STAGE_HEROES};
+    reveal->hero_count = hero_count < STORE_MAX_RESULTS ? hero_count : STORE_MAX_RESULTS;
+    memcpy(reveal->heroes, heroes, (size_t)reveal->hero_count * sizeof(int));
+    reveal->gear_count = StoreRewardItems(reveal->gear, gear, gear_new, gear_count);
+    reveal->rune_count = StoreRewardItems(reveal->runes, runes, runes_new, rune_count);
+    store->dialog = STORE_DIALOG_NONE;
+    store->status_time = 0.0f;
+    return StoreBeginNextRewardStage(store);
 }
 
 static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, int pack_index) {
@@ -2003,9 +2094,10 @@ static StoreAction StoreDrawItemReveal(Store *store, Player *player, Heroes *her
         if (store->item_results[i].age >= 0.0f && StoreReleasedOn(store, card)) StoreShowItemDetails(store, i);
     }
     bool interactive = !StoreInputBlocked(store);
-    bool again = ButtonDrawEx(&store->item_again, STORE_REVEAL_AGAIN_RECT, interactive);
+    bool again = store->selected_pack >= 0 && ButtonDrawEx(&store->item_again, STORE_REVEAL_AGAIN_RECT, interactive);
     bool done = ButtonDrawEx(&store->item_done, STORE_REVEAL_DONE_RECT, interactive);
     if (store->item_details >= 0) StoreDrawItemDetails(store);
+    if (done && store->reward_reveal.active) return StoreFinishRewardStage(store);
     if (done) store->view = store->packs[store->selected_pack].page;
     if (again && StoreRequestPurchase(store, player, heroes, store->selected_pack)) return STORE_ACTION_PURCHASED;
     StoreDrawToast(store);
@@ -2407,6 +2499,10 @@ static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes)
     bool again = store->selected_pack >= 0 &&
                  ButtonDrawEx(&store->buy_again, StoreFromRightEdge(STORE_RESULT_BUY_AGAIN_BUTTON), interactive);
     if (ButtonDrawEx(&store->done, StoreFromRightEdge(STORE_RESULT_CORNER_BUTTON), interactive)) {
+        if (store->reward_reveal.active) {
+            PackHeroClear(&store->opening_hero);
+            return StoreFinishRewardStage(store);
+        }
         store->view = store->return_view;
         store->info_pack = -1;
         PackHeroClear(&store->opening_hero);

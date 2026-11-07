@@ -1,0 +1,48 @@
+HODA_EXPEDITIONS_BUTTON|Expeditionen
+HODA_EXPEDITIONS_TITLE|Expeditionen
+HODA_EXPEDITION_ARBOR_WILDS_DESCRIPTION|Durchsuche die alten Elfentempel in der Arborwildnis.
+HODA_EXPEDITION_ARBOR_WILDS_NAME|Ruinen der Arborwildnis
+HODA_EXPEDITION_AUTO_FILL|Auffüllen
+HODA_EXPEDITION_BONUS|Großer Erfolg: {0}
+HODA_EXPEDITION_CLAIM_FAILED|Die Expedition konnte nicht eingesammelt werden. Versuche es erneut.
+HODA_EXPEDITION_COLLECT_ALL|Alle einsammeln
+HODA_EXPEDITION_COMPLETE_TITLE|Expedition abgeschlossen
+HODA_EXPEDITION_DEEP_ROADS_DESCRIPTION|Erkunde ein verlorenes Thaig und berge vergessene Zwergenkunst.
+HODA_EXPEDITION_DEEP_ROADS_NAME|In die Tiefen Wege
+HODA_EXPEDITION_EMPRISE_DU_LION_DESCRIPTION|Brich die Rotlyrium-Belagerung der Feste Suledin.
+HODA_EXPEDITION_EMPRISE_DU_LION_NAME|Belagerung in Emprise du Lion
+HODA_EXPEDITION_FADE_RIFT_DESCRIPTION|Schließe einen Riss im Schleier und sammle das Lyrium, das er zurücklässt.
+HODA_EXPEDITION_FADE_RIFT_NAME|Einen Riss versiegeln
+HODA_EXPEDITION_GREAT_SUCCESS|Großer Erfolg!
+HODA_EXPEDITION_HERO_AWAY_MESSAGE|Dieser Held ist auf einer Expedition.
+HODA_EXPEDITION_HERO_XP|+{0} EP
+HODA_EXPEDITION_HINTERLANDS_DESCRIPTION|Sammle Elfenwurz und seltene Kräuter in den Hügeln des Hinterlands.
+HODA_EXPEDITION_HINTERLANDS_NAME|Kräuter im Hinterland
+HODA_EXPEDITION_LEVEL_LOCK|Stufe {0}
+HODA_EXPEDITION_LOCKED_MESSAGE|Expeditionen werden ab Spielerstufe {0} freigeschaltet.
+HODA_EXPEDITION_LOTHERING_DESCRIPTION|Bewache die Flüchtlingsstraße durch Lothering und schütze die Höfe vor Banditen.
+HODA_EXPEDITION_LOTHERING_NAME|Patrouille in Lothering
+HODA_EXPEDITION_NEEDS|Benötigt {0}
+HODA_EXPEDITION_NEXT_SLOT|Weiterer Trupp ab Stufe {0}
+HODA_EXPEDITION_NO_SLOT|Kein Trupp frei
+HODA_EXPEDITION_ORLAIS_DESCRIPTION|Spiele das Große Spiel im Winterpalast um Gold, Gunst und Geschenke.
+HODA_EXPEDITION_ORLAIS_NAME|Orlaisianischer Maskenball
+HODA_EXPEDITION_PARTY_SIZE|{0} Helden
+HODA_EXPEDITION_PARTY_SIZE_ONE|1 Held
+HODA_EXPEDITION_RARITY_OR_BETTER|{0} oder besser
+HODA_EXPEDITION_READY|Zurück!
+HODA_EXPEDITION_RECALL|Zurückrufen
+HODA_EXPEDITION_RECALL_MESSAGE|Die Helden kehren sofort zurück und bringen nichts mit.
+HODA_EXPEDITION_RECALL_TITLE|Trupp zurückrufen?
+HODA_EXPEDITION_ROSTER_FULL|Deine Heldenliste ist voll. Schaffe Platz und sammle dann ein.
+HODA_EXPEDITION_SEND|Senden
+HODA_EXPEDITION_SLOTS|Trupps unterwegs: {0}/{1}
+HODA_EXPEDITION_SQUAD_HINT|Helden in einem Trupp bleiben daheim.
+HODA_EXPEDITION_STORM_COAST_DESCRIPTION|Durchsuche die Wracks an der Sturmküste nach allem, was das Meer zurückließ.
+HODA_EXPEDITION_STORM_COAST_NAME|Bergung an der Sturmküste
+HODA_EXPEDITION_TEVINTER_DESCRIPTION|Gewinne Agenten in Minrathous für deine Sache.
+HODA_EXPEDITION_TEVINTER_NAME|Tevinter-Spionagenetz
+HODA_EXPEDITION_TIME_LEFT|Noch {0}
+HODA_EXPEDITION_TRAIT_COUNT|{0}x {1}
+HODA_EXPEDITION_WESTERN_APPROACH_DESCRIPTION|Verfolge einen Drachen durch die Wüste und rekrutiere die Geretteten.
+HODA_EXPEDITION_WESTERN_APPROACH_NAME|Jagd im Westlichen Grat

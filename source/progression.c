@@ -1171,6 +1171,12 @@ char *ProgressionSerialize(const Player *player) {
         goto save_json_failed;
     }
 
+    cJSON *expeditions = ExpeditionsSave(&player->expeditions);
+    if (!expeditions || !cJSON_AddItemToObject(root, "expeditions", expeditions)) {
+        cJSON_Delete(expeditions);
+        goto save_json_failed;
+    }
+
     cJSON *tutorial = cJSON_AddObjectToObject(root, "tutorial");
     if (!tutorial || !cJSON_AddBoolToObject(tutorial, "complete", player->tutorial.main_complete) ||
         !cJSON_AddBoolToObject(tutorial, "consume_complete", player->tutorial.consume_complete))
@@ -1767,6 +1773,9 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
     static PlayerMissions loaded_missions;
     ProgressionLoadMissions(cJSON_GetObjectItemCaseSensitive(root, "missions"), &loaded_missions);
 
+    PlayerExpeditions loaded_expeditions;
+    ExpeditionsLoad(cJSON_GetObjectItemCaseSensitive(root, "expeditions"), &loaded_expeditions);
+
     PlayerGallery loaded_gallery = {0};
     if (valid && version >= 6)
         valid = ProgressionLoadGallery(cJSON_GetObjectItemCaseSensitive(root, "gallery"), &loaded_gallery);
@@ -1860,6 +1869,7 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
     GalleryFree(&player->gallery);
     player->gallery = loaded_gallery;
     player->missions = loaded_missions;
+    player->expeditions = loaded_expeditions;
     player->pvp = loaded_pvp;
     PvpHistorySanitize(&player->pvp);
     free(loaded_runes);

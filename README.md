@@ -82,6 +82,30 @@ fortified hero's stat at its current tier's maximum level. The math runs in floa
 `fortify_parent`, `fortify_pending`, `fortify_confirm`, `fortify_celebration`, `fortify_remove_mode` and `fortify_remove`
 render the screens.
 
+## Expeditions
+
+Expeditions are this client's passive farming, after the Dragon Age: Inquisition war table: the Expeditions button
+next to Goals (dimmed, with an unlock notice, below player level 3) opens a board of ten expeditions across Thedas, each with a party size, a
+duration from 15 minutes to 20 hours, optional requirements (a number of heroes of a rarity or better) and a bonus
+trait (a hero group, faction or large creature). Send picks the party from heroes in no squad, with Auto-fill
+choosing the cheapest heroes that meet the requirements and the bonus; heroes away on an expedition show a compass
+badge and cannot join a squad, be consumed, consume, fortify or be fortified until the party comes back. A party
+that meets the bonus trait returns with a Great Success: 50% more gold, gems and hero XP and every drop for sure.
+Rewards are gold, gems, hero XP for the party, gear, runes and heroes; Claim and Collect All pay returned parties,
+and Recall brings a party home early with nothing. New heroes, gear and runes are revealed in the store the way packs
+reveal them (the portal and hero card, then the gear and rune cards), and the board then sums up the gold, gems and
+XP. Party slots open at levels 3, 8, 15, 25 and 40.
+
+`data/expeditions.json` holds the expeditions, slot levels and the Great Success bonus; `data/hero_pool.json` carries
+each hero's groups so the server can check traits. Starts and recalls apply locally and are queued as the
+`expedition_start` and `expedition_recall` server actions; `expedition_claim` waits for the server's roll, as the
+Nexus recap does. The location paintings and the board backdrop were generated with the Codex CLI; the home button
+and the away tag are Codex edits of the original Quest button and in-squad tag, with the new compass glyph composited
+into the original frame. They live in `client-additional-data/extra/gui/expeditions/`, so they ship with
+`make content`; without them the screens fall back to plain panels and the stock grey button. `HOD_SHOT_SCREEN=expeditions`, `expeditions_party`,
+`expeditions_recall`, `expeditions_reward`, `expeditions_home`, `expeditions_roster`, `expeditions_reveal_hero` and
+`expeditions_reveal_items` render the screens with three parties out.
+
 ## Commands
 
 ```sh
@@ -104,12 +128,13 @@ like the data download. `hoda-original-backend` is the separate Python server fo
 
 Against the backend, the server owns the economy: gold, gems, vouchers, energy, level, potions, keys, tomes and which
 heroes, runes and gear exist. Store purchases and refills wait for the server's answer. Nexus awards, mission and
-event claims, gear sales, prestige slots, ascension, rune crafting, fortify and tutorial rewards are applied locally at once and
-queued in `source/server_actions.c`; the queue sends them in order and, once it is empty and the player is out of
+event claims, gear sales, prestige slots, ascension, rune crafting, fortify, expedition starts and recalls and tutorial rewards are
+applied locally at once and queued in `source/server_actions.c`; the queue sends them in order and, once it is empty and the player is out of
 battle, loads the profile the server sends back, so the server's numbers win. A Nexus recap waits for the server so it
 shows the heroes the server rolled. `data/hero_pool.json` (`tools/build_hero_pool.py`) is the hero list the server
 rolls from; after changing it or `store_packs.json`, `runes.json`, `gear.json`, `tutorial_rewards.json`,
-`campaign_maps.json`, `nexus_maps.json`, `pvp_rules.json`, `missions.json`, `fortify_tables.json` or `new_player.json`, run
+`campaign_maps.json`, `nexus_maps.json`, `pvp_rules.json`, `missions.json`, `fortify_tables.json`, `expeditions.json` or
+`new_player.json`, run
 `scripts/sync-client-data.sh` in the backend. Store schedules use UTC dates.
 
 Battles are replayed on the server. FIGHT sends `battle_start` with the squad, its active runes, the enemy and the game

@@ -328,6 +328,10 @@ static const char *ConsumeSeedWarning(const ConsumeScreen *c, const Character *c
 static void ConsumePlaceUnit(ConsumeScreen *c, HeroesBackground *scene, const Player *p, int index) {
     if (ConsumeIsPlaced(c, index)) return;
     const Character *ch = &p->roster[index];
+    if (PlayerHeroAway(p, index)) {
+        ConsumeShowMessage(c, LocGet("HODA_EXPEDITION_HERO_AWAY_MESSAGE"));
+        return;
+    }
     if (c->target < 0) {
         if (ConsumeCharacterMaxed(ch)) {
             HeroesBackgroundShake(scene);
@@ -461,6 +465,7 @@ static void ConsumeDrawRosterCard(const HeroCard *card, Rectangle cell, int rost
         .grey_bar = true,
         .in_squad = PlayerSquadsContain(c->player, roster_index),
         .in_use = ConsumeIsPlaced(c->screen, roster_index),
+        .away = PlayerHeroAway(c->player, roster_index),
         .fortified = FortifyHasChildren(ch),
     };
     if (!state.maxed) {

@@ -1,0 +1,48 @@
+HODA_EXPEDITIONS_BUTTON|Expedities
+HODA_EXPEDITIONS_TITLE|Expedities
+HODA_EXPEDITION_ARBOR_WILDS_DESCRIPTION|Doorzoek de oude elfentempels verborgen in de Arborwildernis.
+HODA_EXPEDITION_ARBOR_WILDS_NAME|Ruïnes van de Arborwildernis
+HODA_EXPEDITION_AUTO_FILL|Aanvullen
+HODA_EXPEDITION_BONUS|Groot succes: {0}
+HODA_EXPEDITION_CLAIM_FAILED|De expeditie kon niet worden opgehaald. Probeer het opnieuw.
+HODA_EXPEDITION_COLLECT_ALL|Alles ophalen
+HODA_EXPEDITION_COMPLETE_TITLE|Expeditie voltooid
+HODA_EXPEDITION_DEEP_ROADS_DESCRIPTION|Verken een verloren thaig en berg vergeten dwergenvakmanschap.
+HODA_EXPEDITION_DEEP_ROADS_NAME|De Diepe Wegen in
+HODA_EXPEDITION_EMPRISE_DU_LION_DESCRIPTION|Doorbreek het rood-lyriumbeleg van Burcht Suledin.
+HODA_EXPEDITION_EMPRISE_DU_LION_NAME|Beleg van Emprise du Lion
+HODA_EXPEDITION_FADE_RIFT_DESCRIPTION|Dicht een scheur in de Sluier en verzamel het lyrium dat achterblijft.
+HODA_EXPEDITION_FADE_RIFT_NAME|Een scheur dichten
+HODA_EXPEDITION_GREAT_SUCCESS|Groot succes!
+HODA_EXPEDITION_HERO_AWAY_MESSAGE|Deze held is op expeditie.
+HODA_EXPEDITION_HERO_XP|+{0} XP
+HODA_EXPEDITION_HINTERLANDS_DESCRIPTION|Verzamel elfwortel en zeldzame kruiden in de heuvels van het Achterland.
+HODA_EXPEDITION_HINTERLANDS_NAME|Kruiden in het Achterland
+HODA_EXPEDITION_LEVEL_LOCK|Niveau {0}
+HODA_EXPEDITION_LOCKED_MESSAGE|Expedities worden ontgrendeld op spelersniveau {0}.
+HODA_EXPEDITION_LOTHERING_DESCRIPTION|Bewaak de vluchtelingenweg door Lothering en bescherm de boerderijen tegen bandieten.
+HODA_EXPEDITION_LOTHERING_NAME|Patrouille in Lothering
+HODA_EXPEDITION_NEEDS|Vereist {0}
+HODA_EXPEDITION_NEXT_SLOT|Nog een groep op niveau {0}
+HODA_EXPEDITION_NO_SLOT|Geen groep vrij
+HODA_EXPEDITION_ORLAIS_DESCRIPTION|Speel het Spel in het Winterpaleis voor goud, gunsten en geschenken.
+HODA_EXPEDITION_ORLAIS_NAME|Orlesiaans gemaskerd bal
+HODA_EXPEDITION_PARTY_SIZE|{0} helden
+HODA_EXPEDITION_PARTY_SIZE_ONE|1 held
+HODA_EXPEDITION_RARITY_OR_BETTER|{0} of beter
+HODA_EXPEDITION_READY|Terug!
+HODA_EXPEDITION_RECALL|Terugroepen
+HODA_EXPEDITION_RECALL_MESSAGE|De helden komen nu terug en nemen niets mee.
+HODA_EXPEDITION_RECALL_TITLE|Groep terugroepen?
+HODA_EXPEDITION_ROSTER_FULL|Je heldenlijst is vol. Maak ruimte en haal daarna op.
+HODA_EXPEDITION_SEND|Versturen
+HODA_EXPEDITION_SLOTS|Groepen op pad: {0}/{1}
+HODA_EXPEDITION_SQUAD_HINT|Helden in een squad blijven thuis.
+HODA_EXPEDITION_STORM_COAST_DESCRIPTION|Doorzoek de wrakken op de Stormkust naar wat de zee achterliet.
+HODA_EXPEDITION_STORM_COAST_NAME|Berging op de Stormkust
+HODA_EXPEDITION_TEVINTER_DESCRIPTION|Win agenten in Minrathous voor je zaak.
+HODA_EXPEDITION_TEVINTER_NAME|Tevinters spionnennetwerk
+HODA_EXPEDITION_TIME_LEFT|Nog {0}
+HODA_EXPEDITION_TRAIT_COUNT|{0}x {1}
+HODA_EXPEDITION_WESTERN_APPROACH_DESCRIPTION|Volg een draak door de woestijn en rekruteer de overlevenden die je redt.
+HODA_EXPEDITION_WESTERN_APPROACH_NAME|Jacht in de Westelijke Toegang

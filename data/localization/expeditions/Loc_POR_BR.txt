@@ -1,0 +1,48 @@
+HODA_EXPEDITIONS_BUTTON|Expedições
+HODA_EXPEDITIONS_TITLE|Expedições
+HODA_EXPEDITION_ARBOR_WILDS_DESCRIPTION|Explore os antigos templos élficos escondidos nas Selvas de Arbor.
+HODA_EXPEDITION_ARBOR_WILDS_NAME|Ruínas das Selvas de Arbor
+HODA_EXPEDITION_AUTO_FILL|Preencher
+HODA_EXPEDITION_BONUS|Grande sucesso: {0}
+HODA_EXPEDITION_CLAIM_FAILED|Não foi possível coletar a expedição. Tente novamente.
+HODA_EXPEDITION_COLLECT_ALL|Coletar tudo
+HODA_EXPEDITION_COMPLETE_TITLE|Expedição concluída
+HODA_EXPEDITION_DEEP_ROADS_DESCRIPTION|Explore um thaig perdido e recupere o artesanato anão esquecido.
+HODA_EXPEDITION_DEEP_ROADS_NAME|Nas Estradas Profundas
+HODA_EXPEDITION_EMPRISE_DU_LION_DESCRIPTION|Rompa o cerco de lírio vermelho da Fortaleza de Suledin.
+HODA_EXPEDITION_EMPRISE_DU_LION_NAME|Cerco de Emprise du Lion
+HODA_EXPEDITION_FADE_RIFT_DESCRIPTION|Feche um rasgo no Véu e colete o lírio que ele deixa para trás.
+HODA_EXPEDITION_FADE_RIFT_NAME|Selar uma fenda
+HODA_EXPEDITION_GREAT_SUCCESS|Grande sucesso!
+HODA_EXPEDITION_HERO_AWAY_MESSAGE|Este herói está em uma expedição.
+HODA_EXPEDITION_HERO_XP|+{0} XP
+HODA_EXPEDITION_HINTERLANDS_DESCRIPTION|Colha raiz élfica e ervas raras nas colinas do Interior.
+HODA_EXPEDITION_HINTERLANDS_NAME|Ervas do Interior
+HODA_EXPEDITION_LEVEL_LOCK|Nível {0}
+HODA_EXPEDITION_LOCKED_MESSAGE|As expedições são liberadas no nível de jogador {0}.
+HODA_EXPEDITION_LOTHERING_DESCRIPTION|Proteja a estrada dos refugiados em Lothering e defenda as fazendas dos bandidos.
+HODA_EXPEDITION_LOTHERING_NAME|Patrulha de Lothering
+HODA_EXPEDITION_NEEDS|Requer {0}
+HODA_EXPEDITION_NEXT_SLOT|Outro grupo no nível {0}
+HODA_EXPEDITION_NO_SLOT|Nenhum grupo livre
+HODA_EXPEDITION_ORLAIS_DESCRIPTION|Jogue o Grande Jogo no Palácio de Inverno por ouro, favores e presentes.
+HODA_EXPEDITION_ORLAIS_NAME|Baile de máscaras orlesiano
+HODA_EXPEDITION_PARTY_SIZE|{0} heróis
+HODA_EXPEDITION_PARTY_SIZE_ONE|1 herói
+HODA_EXPEDITION_RARITY_OR_BETTER|{0} ou melhor
+HODA_EXPEDITION_READY|De volta!
+HODA_EXPEDITION_RECALL|Chamar de volta
+HODA_EXPEDITION_RECALL_MESSAGE|Os heróis voltam agora e não trazem nada.
+HODA_EXPEDITION_RECALL_TITLE|Chamar o grupo de volta?
+HODA_EXPEDITION_ROSTER_FULL|Sua lista de heróis está cheia. Abra espaço e depois colete.
+HODA_EXPEDITION_SEND|Enviar
+HODA_EXPEDITION_SLOTS|Grupos fora: {0}/{1}
+HODA_EXPEDITION_SQUAD_HINT|Heróis em um esquadrão ficam em casa.
+HODA_EXPEDITION_STORM_COAST_DESCRIPTION|Vasculhe os naufrágios da Costa da Tempestade atrás do que o mar deixou.
+HODA_EXPEDITION_STORM_COAST_NAME|Destroços da Costa da Tempestade
+HODA_EXPEDITION_TEVINTER_DESCRIPTION|Recrute agentes em Minrathous e traga-os para a sua causa.
+HODA_EXPEDITION_TEVINTER_NAME|Rede de espiões de Tevinter
+HODA_EXPEDITION_TIME_LEFT|Faltam {0}
+HODA_EXPEDITION_TRAIT_COUNT|{0}x {1}
+HODA_EXPEDITION_WESTERN_APPROACH_DESCRIPTION|Siga um dragão pelo deserto e recrute os sobreviventes que salvar.
+HODA_EXPEDITION_WESTERN_APPROACH_NAME|Caçada na Abordagem Ocidental
