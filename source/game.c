@@ -73,6 +73,7 @@ typedef struct {
     bool pvp_event;
     bool pvp_can_next;
     int pvp_revenge_index;
+    long long pvp_revenge_at;
     PvpOpponent pvp_opponent;
     Screen pvp_return_screen;
 
@@ -184,6 +185,7 @@ static void GameEnterLadderBattle(Game *g, Screen return_screen) {
     g->pvp_opponent = GameLadderOpponent(g);
     g->pvp_can_next = true;
     g->pvp_revenge_index = -1;
+    g->pvp_revenge_at = 0;
     g->pvp_return_screen = return_screen;
     GameEnterPvpOpponent(g);
 }
@@ -195,6 +197,7 @@ static void GameEnterEventBotBattle(Game *g, int bot) {
     g->pvp_opponent = PvpOpponentFromBot(bot, g->player.level, g->player.pvp.trophies, PvpDay(now), seed);
     g->pvp_can_next = false;
     g->pvp_revenge_index = -1;
+    g->pvp_revenge_at = 0;
     g->pvp_return_screen = SCREEN_PVP_EVENT;
     GameEnterPvpOpponent(g);
 }
@@ -204,6 +207,8 @@ static void GameEnterFixedPvpBattle(Game *g, PvpOpponent opponent, int revenge_i
     g->pvp_opponent = opponent;
     g->pvp_can_next = false;
     g->pvp_revenge_index = revenge_index;
+    g->pvp_revenge_at =
+        revenge_index >= 0 && revenge_index < g->player.pvp.history_count ? g->player.pvp.history[revenge_index].at : 0;
     g->pvp_return_screen = return_screen;
     GameEnterPvpOpponent(g);
 }
@@ -259,14 +264,22 @@ static int GameGuildAwardBadge(const Game *g) {
 static void GameSubmitBattle(const Game *g, bool won) {
     cJSON *fields = ServerActionCreate("battle");
     if (!fields) return;
+    MissionBattleFacts facts = MissionsBattleFacts(&g->battle_play.sim);
     cJSON_AddBoolToObject(fields, "won", won);
     cJSON_AddNumberToObject(fields, "crit_gold", BattlePlayCriticalGold(&g->battle_play));
+    cJSON_AddNumberToObject(fields, "damage", (double)facts.damage);
+    cJSON_AddBoolToObject(fields, "faction_hit", facts.faction_hit);
     if (g->battle_is_pvp) {
         cJSON_AddStringToObject(fields, "mode", "pvp");
         cJSON_AddNumberToObject(fields, "seed", g->pvp_opponent.seed);
         cJSON_AddBoolToObject(fields, "event", g->pvp_event);
         cJSON_AddNumberToObject(fields, "banners", g->battle_reward.banner_delta);
-        if (g->pvp_opponent.duel) cJSON_AddStringToObject(fields, "duel", g->pvp_opponent.duel_id);
+        if (g->pvp_event) cJSON_AddBoolToObject(fields, "buffed", facts.squad_buffed);
+        if (g->pvp_opponent.duel)
+            cJSON_AddStringToObject(fields, "duel", g->pvp_opponent.duel_id);
+        else
+            cJSON_AddNumberToObject(fields, "bot", g->pvp_opponent.bot);
+        if (g->pvp_revenge_at > 0) cJSON_AddNumberToObject(fields, "revenge_at", (double)g->pvp_revenge_at);
     } else if (g->battle_is_nexus) {
         cJSON_AddStringToObject(fields, "mode", "nexus");
         cJSON_AddNumberToObject(fields, "step", g->battle_node_index + 1);
@@ -935,7 +948,11 @@ bool GameInitialize(Game *g) {
         return false;
     }
     PvpEventSync(&g->player.pvp, ServerNow());
-    if (PvpSimulateDefense(&g->player.pvp, g->player.level, ServerNow()) > 0) ProgressionSave(&g->player);
+    if (ServerActionsActive()) {
+        if (g->player.pvp.wins + g->player.pvp.losses > 0) GameSubmitSimpleAction("pvp_defend");
+    } else if (PvpSimulateDefense(&g->player.pvp, g->player.level, ServerNow()) > 0) {
+        ProgressionSave(&g->player);
+    }
     PlayerGallerySync(&g->player);
 
     HudInitialize(&g->hud);

@@ -782,18 +782,37 @@ static void ConsumeDrawLadder(ConsumeScreen *c, const Character *ch, int base_xp
     if (ButtonDrawEx(&c->ladder_close, close, input)) c->ladder_open = false;
 }
 
+static cJSON *ConsumeServerAction(const Player *p, int target, const int *seeds, int count) {
+    if (target < 0 || target >= p->roster_count) return NULL;
+    for (int i = 0; i < count; i++)
+        if (seeds[i] < 0 || seeds[i] >= p->roster_count) return NULL;
+    cJSON *fields = ServerActionCreate("consume");
+    cJSON *list = fields ? cJSON_AddArrayToObject(fields, "seeds") : NULL;
+    if (!list) {
+        cJSON_Delete(fields);
+        return NULL;
+    }
+    cJSON_AddNumberToObject(fields, "target", (double)p->roster[target].instance_id);
+    for (int i = 0; i < count; i++)
+        cJSON_AddItemToArray(list, cJSON_CreateNumber((double)p->roster[seeds[i]].instance_id));
+    return fields;
+}
+
 static void ConsumeBeginResults(ConsumeScreen *c, Heroes *h, Player *p) {
     bool multi = c->multi_type != CONSUME_MULTI_NONE;
     const int *seeds = multi ? c->multi_seeds : c->seeds;
     int count = multi ? c->multi_count : c->seed_count;
 
     c->before = p->roster[c->target];
+    cJSON *server_action = ConsumeServerAction(p, c->target, seeds, count);
     int target = PlayerConsumeUnits(p, c->target, seeds, count);
     if (target < 0) {
+        cJSON_Delete(server_action);
         ConsumeShowMessage(c, LocGet("CONSUME_CONFIRMATION_SQUAD_WARNING"));
         return;
     }
     ProgressionSave(p);
+    ServerActionSubmit(server_action);
     HeroesApplyConsume(h, p, seeds, count, target);
     RosterRefreshOrder(&c->roster, p);
     c->target = target;
