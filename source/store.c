@@ -331,6 +331,8 @@ typedef struct {
 #define STORE_OPEN_SEQUENCE_START 4.80f
 #define STORE_OPEN_COMPLETE 8.0503f
 #define STORE_PACK_RUNE_RECT ((Rectangle){1074.0f, 88.0f, 206.0f, 206.0f})
+#define STORE_RESULT_CORNER_BUTTON ((Rectangle){1044.0f, 654.0f, 236.0f, 59.0f})
+#define STORE_RESULT_BUY_AGAIN_BUTTON ((Rectangle){808.0f, 654.0f, 236.0f, 59.0f})
 #define STORE_PACK_RUNE_ICON_SCALE 0.78f
 #define STORE_PACK_RUNE_BURST_SCALE 1.2f
 #define STORE_PACK_RUNE_FADE_IN 0.8f
@@ -1285,6 +1287,7 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
         GuiSoundPlay(SND_STORE_ERROR);
         return false;
     }
+    if (scripted) TutorialRecordMockStorePurchase(player, first_index, pack->hero_count);
     StoreOfferPay(offer, player);
     static PlayerRunes old_runes;
     old_runes = player->runes;
@@ -2306,8 +2309,13 @@ static void StoreFinishCurrentResult(Store *store, Heroes *heroes, bool skipped)
     }
 }
 
+static Rectangle StoreFromRightEdge(Rectangle design) {
+    design.x += UiWidth() - UI_DESIGN_W;
+    return design;
+}
+
 static StoreAction StoreDrawOpening(Store *store, Heroes *heroes) {
-    if (ButtonDraw(&store->skip, (Rectangle){1044.0f, 654.0f, 236.0f, 59.0f}))
+    if (ButtonDraw(&store->skip, StoreFromRightEdge(STORE_RESULT_CORNER_BUTTON)))
         StoreFinishCurrentResult(store, heroes, true);
     return STORE_ACTION_NONE;
 }
@@ -2333,7 +2341,7 @@ static float StoreClamp01(float value) {
 
 static void StoreDrawPackBonus(const Store *store, Texture2D icon, int rarity) {
     float time = store->result_time;
-    Rectangle slot = STORE_PACK_RUNE_RECT;
+    Rectangle slot = StoreFromRightEdge(STORE_PACK_RUNE_RECT);
 
     float burst_time = time - STORE_PACK_RUNE_BURST_DELAY;
     if (burst_time >= 0.0f && burst_time < STORE_PACK_RUNE_BURST_DURATION) {
@@ -2380,13 +2388,13 @@ static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes)
     } else if (store->pack_rune_def >= 0 && first_result) {
         const RuneDef *rune = RuneDefAt(store->pack_rune_def);
         StoreDrawPackBonus(store, RuneIconLoad(rune->icon), rune->rarity);
-        TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_RUNE, STORE_PACK_RUNE_RECT);
+        TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_RUNE, StoreFromRightEdge(STORE_PACK_RUNE_RECT));
     }
     bool squad = StoreDrawResultNavigation(store, last);
 
     bool interactive = !StoreInputBlocked(store);
     if (!last) {
-        Rectangle next = {1044.0f, 654.0f, 236.0f, 59.0f};
+        Rectangle next = StoreFromRightEdge(STORE_RESULT_CORNER_BUTTON);
         TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_NEXT, next);
         if (ButtonDrawEx(&store->next, next, interactive)) {
             store->reveal_index++;
@@ -2397,8 +2405,8 @@ static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes)
     }
 
     bool again = store->selected_pack >= 0 &&
-                 ButtonDrawEx(&store->buy_again, (Rectangle){808.0f, 654.0f, 236.0f, 59.0f}, interactive);
-    if (ButtonDrawEx(&store->done, (Rectangle){1044.0f, 654.0f, 236.0f, 59.0f}, interactive)) {
+                 ButtonDrawEx(&store->buy_again, StoreFromRightEdge(STORE_RESULT_BUY_AGAIN_BUTTON), interactive);
+    if (ButtonDrawEx(&store->done, StoreFromRightEdge(STORE_RESULT_CORNER_BUTTON), interactive)) {
         store->view = store->return_view;
         store->info_pack = -1;
         PackHeroClear(&store->opening_hero);

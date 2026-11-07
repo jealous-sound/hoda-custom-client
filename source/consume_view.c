@@ -214,7 +214,15 @@ void ConsumeOpen(ConsumeScreen *c, const Player *p) {
     c->placed_spot = -1;
     c->last_click_index = -1;
     c->leave_done = CONSUME_LEAVE_NONE;
+    if (TutorialLimitsRosterToMockStoreUnits(p))
+        c->roster.filter = ROSTER_FILTER_TUTORIAL;
+    else if (c->roster.filter == ROSTER_FILTER_TUTORIAL)
+        c->roster.filter = ROSTER_FILTER_ALL;
     RosterRefreshOrder(&c->roster, p);
+}
+
+bool ConsumeDialogOpen(const ConsumeScreen *c) {
+    return c->dialog != CONSUME_DIALOG_NONE;
 }
 
 static bool ConsumeIsPlaced(const ConsumeScreen *c, int index) {
@@ -251,6 +259,10 @@ static void ConsumeShowMessage(ConsumeScreen *c, const char *text) {
     StrCopy(c->message, sizeof(c->message), text);
     c->dialog = CONSUME_DIALOG_MESSAGE;
     GuiSoundPlay(SND_STORE_ERROR);
+}
+
+void ConsumeShowHowTo(ConsumeScreen *c) {
+    ConsumeShowMessage(c, LocGet("CONSUME_FTUE_CONSUME_HOW_TO"));
 }
 
 static void ConsumeQueueFly(ConsumeScreen *c, const char *label, const char *amount, Texture2D icon) {
@@ -552,9 +564,7 @@ static void ConsumeDrawCallToAction(ConsumeScreen *c, bool input) {
     float size = 19.0f, width = MeasureTextEx(font, text, size, 1.0f).x;
     if (width > text_box.width) size *= text_box.width / width;
     UiDrawTextCentered(font, text, text_box, size, WHITE);
-    if (ButtonDrawEx(&c->info, ConsumePxSquare(1393.0f, 24.0f, 90.0f), input)) {
-        ConsumeShowMessage(c, LocGet("CONSUME_FTUE_CONSUME_HOW_TO"));
-    }
+    if (ButtonDrawEx(&c->info, ConsumePxSquare(1393.0f, 24.0f, 90.0f), input)) ConsumeShowHowTo(c);
 }
 
 static void ConsumeDrawProgressPanel(

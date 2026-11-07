@@ -135,6 +135,7 @@ typedef enum {
     TUTORIAL_REQUEST_SAVE,
     TUTORIAL_REQUEST_MAIN_FINISHED,
     TUTORIAL_REQUEST_CONSUME_FINISHED,
+    TUTORIAL_REQUEST_SHOW_ABOUT,
 } TutorialRequestKind;
 
 typedef struct {
@@ -590,7 +591,9 @@ static void TutorialAdvance(Tutorial *t, Player *player) {
 
 static bool TutorialStepIsSilent(const TutorialStep *step) {
     bool anchor_unsupported = step->highlight_required && step->highlight == TUTORIAL_ANCHOR_NONE;
-    return (!step->text[0] && !step->highlight_required && !step->drag_arrow) || anchor_unsupported ||
+    bool shows_nothing = !step->text[0] && !step->highlight_required;
+    bool drag_without_event = step->drag_arrow && step->event == TUTORIAL_EVENT_NONE;
+    return (shows_nothing && !drag_without_event) || anchor_unsupported ||
            step->action == TUTORIAL_ACTION_ABOUT_SCREEN || step->action == TUTORIAL_ACTION_UNSUPPORTED;
 }
 
@@ -603,6 +606,7 @@ static bool TutorialEnterStep(Tutorial *t, Player *player, const TutorialStep *s
     }
     if (step->action == TUTORIAL_ACTION_START_INTRO_BATTLE) TutorialPushKind(t, TUTORIAL_REQUEST_START_INTRO_BATTLE);
     if (step->action == TUTORIAL_ACTION_AWARD_GEM_PACK) TutorialPushKind(t, TUTORIAL_REQUEST_AWARD_GEM_PACK);
+    if (step->action == TUTORIAL_ACTION_ABOUT_SCREEN) TutorialPushKind(t, TUTORIAL_REQUEST_SHOW_ABOUT);
     if (step->award_giant) {
         TutorialPushKind(t, TUTORIAL_REQUEST_AWARD_GIANT);
         TutorialAdvance(t, player);
@@ -631,6 +635,7 @@ static void TutorialPublishHooks(const Tutorial *t, const TutorialStep *step, bo
     tutorial_hooks.drag_rarity = drag_phase ? step->drag_rarity : TUTORIAL_NO_RARITY;
     tutorial_hooks.drag_giant = drag_phase && step->drag_giant;
     tutorial_hooks.scripted_pack = t->pending_pack >= 0 ? &t->packs[t->pending_pack] : NULL;
+    tutorial_hooks.mock_store = step && step->mock_store;
 }
 
 static float TutorialWidthOffset(void) {

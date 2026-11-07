@@ -49,8 +49,11 @@ typedef enum {
     ROSTER_FILTER_COMMON,
     ROSTER_FILTER_UNCOMMON,
     ROSTER_FILTER_RARE,
+    ROSTER_FILTER_TUTORIAL,
     ROSTER_FILTER_COUNT
 } RosterFilter;
+
+#define ROSTER_FILTER_PICKABLE_COUNT ROSTER_FILTER_TUTORIAL
 
 static const char *const ROSTER_FILTER_KEYS[ROSTER_FILTER_COUNT] = {
     "ROSTER_FILTER_ALL_HEROES",
@@ -63,6 +66,7 @@ static const char *const ROSTER_FILTER_KEYS[ROSTER_FILTER_COUNT] = {
     "ROSTER_FILTER_COMMON",
     "ROSTER_FILTER_UNCOMMON",
     "ROSTER_FILTER_RARE",
+    "ROSTER_FILTER_TUTORIAL",
 };
 
 typedef struct {
@@ -257,6 +261,8 @@ static bool RosterFilterAccepts(RosterFilter filter, const Character *ch) {
             return ch->rarity == RARITY_UNCOMMON;
         case ROSTER_FILTER_RARE:
             return ch->rarity == RARITY_RARE;
+        case ROSTER_FILTER_TUTORIAL:
+            return TutorialMockStoreUnit(ch);
         default:
             return true;
     }
@@ -319,7 +325,7 @@ static void RosterInitialize(Roster *r, const Player *p) {
 
 static void RosterDrawFilterList(Roster *r, const Player *p, bool input) {
     Font font = GuiFont(FNT_COOL);
-    for (int i = 0; i < ROSTER_FILTER_COUNT; i++) {
+    for (int i = 0; i < ROSTER_FILTER_PICKABLE_COUNT; i++) {
         Rectangle row = RosterPx(8.0f, 124.0f + i * ROSTER_FILTER_ROW, 378.0f, 70.0f);
         bool selected = r->filter == (RosterFilter)i;
         UiDrawTexture(GuiTex(selected ? GUI_CONSUME_CATEGORY_ON : GUI_CONSUME_CATEGORY), row, WHITE);

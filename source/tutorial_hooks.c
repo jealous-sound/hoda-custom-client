@@ -77,6 +77,9 @@ typedef struct {
     Rarity drag_rarity;
     bool drag_giant;
     const TutorialPackReward *scripted_pack;
+    bool mock_store;
+    uint64_t mock_store_units[TUTORIAL_PACK_REWARD_HEROES];
+    int mock_store_unit_count;
 } TutorialHooks;
 
 static TutorialHooks tutorial_hooks = {0};
@@ -132,4 +135,24 @@ bool TutorialWantsDragFrom(const Character *ch) {
 const TutorialPackReward *TutorialScriptedPack(const char *pack_id) {
     const TutorialPackReward *reward = tutorial_hooks.running ? tutorial_hooks.scripted_pack : NULL;
     return reward && pack_id && !strcmp(reward->pack_id, pack_id) ? reward : NULL;
+}
+
+void TutorialRecordMockStorePurchase(const Player *p, int first, int count) {
+    if (!tutorial_hooks.running || !tutorial_hooks.mock_store) return;
+    tutorial_hooks.mock_store_unit_count = 0;
+    for (int i = 0; i < count && i < TUTORIAL_PACK_REWARD_HEROES; i++)
+        tutorial_hooks.mock_store_units[tutorial_hooks.mock_store_unit_count++] = p->roster[first + i].instance_id;
+}
+
+bool TutorialMockStoreUnit(const Character *ch) {
+    for (int i = 0; i < tutorial_hooks.mock_store_unit_count; i++)
+        if (tutorial_hooks.mock_store_units[i] == ch->instance_id) return true;
+    return false;
+}
+
+bool TutorialLimitsRosterToMockStoreUnits(const Player *p) {
+    if (!tutorial_hooks.running) return false;
+    for (int i = 0; i < p->roster_count; i++)
+        if (TutorialMockStoreUnit(&p->roster[i])) return true;
+    return false;
 }

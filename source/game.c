@@ -842,7 +842,7 @@ static TutorialSignal GameTutorialSignal(const Game *g) {
         case SCREEN_HEROES:
             return TUTORIAL_SIGNAL_EDIT_FORMATION;
         case SCREEN_CONSUME:
-            return TUTORIAL_SIGNAL_CONSUME;
+            return ConsumeDialogOpen(&g->consume) ? TUTORIAL_SIGNAL_UNSUPPORTED : TUTORIAL_SIGNAL_CONSUME;
         case SCREEN_STORE:
             return StoreShowsPackOpening(&g->store) ? TUTORIAL_SIGNAL_PACK_OPENING : TUTORIAL_SIGNAL_STORE;
         case SCREEN_BATTLE:
@@ -925,6 +925,9 @@ static void GameHandleTutorialRequests(Game *g) {
             case TUTORIAL_REQUEST_SAVE:
             case TUTORIAL_REQUEST_CONSUME_FINISHED:
                 ProgressionSave(&g->player);
+                break;
+            case TUTORIAL_REQUEST_SHOW_ABOUT:
+                if (g->screen == SCREEN_CONSUME) ConsumeShowHowTo(&g->consume);
                 break;
             case TUTORIAL_REQUEST_NONE:
                 break;
@@ -1532,7 +1535,8 @@ void GameDraw(Game *g) {
 
             UiFrameBegin();
             bool news_allowed = !TutorialMainActive(&g->tutorial);
-            bool news_auto_show = news_allowed && !GameAwaitingPlayerName(g);
+            bool popups_allowed = !TutorialActive(&g->tutorial);
+            bool news_auto_show = popups_allowed && !GameAwaitingPlayerName(g);
             if (news_auto_show && NewsAutoShow(&g->news, &g->player)) ProgressionSave(&g->player);
             bool news_open = news_allowed && NewsIsOpen(&g->news);
             bool home_interactive = !news_open;
@@ -1541,7 +1545,7 @@ void GameDraw(Game *g) {
             int missions_badge = MissionUnseenClaimableCount(&g->player.missions);
             missions_badge += PvpEventUnclaimedCount(&g->player.pvp) + GameGuildAwardBadge(g);
             if (missions_badge == 0) missions_badge = abs(g->player.pvp.trophies - g->player.pvp.trophies_seen);
-            bool guild_notice_open = news_allowed && !news_open && GuildNoticePopupIsOpen(&g->guild_notice);
+            bool guild_notice_open = popups_allowed && !news_open && GuildNoticePopupIsOpen(&g->guild_notice);
             if (guild_notice_open) home_interactive = false;
             HomeButton pressed = HomeUIDraw(&g->home_ui, home_interactive, g->player.gallery.badge, missions_badge);
             if (news_allowed) {
@@ -1562,7 +1566,7 @@ void GameDraw(Game *g) {
                 QuestsOpenEvent(&g->quests, &g->nexus, &g->player, NewsTargetEvent(&g->news));
                 g->screen = SCREEN_QUESTS;
             }
-            if (news_allowed && !NewsIsOpen(&g->news) && !resource_modal)
+            if (popups_allowed && !NewsIsOpen(&g->news) && !resource_modal)
                 GuildNoticePopupDraw(&g->guild_notice, &g->guild);
             UiFrameEnd();
             if (pressed == HOME_NONE && home_interactive && !news_open && !resource_modal &&
