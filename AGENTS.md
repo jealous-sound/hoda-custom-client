@@ -35,3 +35,8 @@ Setup, run and test details are in `README.md`.
 - Build with `make`; run the area you changed with `make test` pieces (`./tests/battle_sim_test`, the
   `python3 -m unittest` modules) once.
 - Never commit `player_save.dat`, recordings or the cache directory.
+- When a task is done and builds with its checks passing, commit it, push the branch and open a pull request
+  against `master` with `gh pr create`. Do this yourself: do not ask for permission to commit, push or open the PR.
+  Later changes to the same task go to that branch and PR. Leave merging to the maintainer.
+- Work on a branch named for the change, cut from `origin/master`; never commit to `master`, to a branch whose PR is
+  already merged, or to a branch holding unrelated work.
