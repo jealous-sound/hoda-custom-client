@@ -485,6 +485,26 @@ PvpOpponent PvpOpponentFromBattle(const PlayerPvpBattle *battle, int trophies) {
     return o;
 }
 
+bool PvpOpponentFromServerMatch(const cJSON *match, int trophies, PvpOpponent *out) {
+    const PvpTable *t = PvpTableEnsure();
+    const cJSON *seed = cJSON_GetObjectItemCaseSensitive(match, "seed");
+    int bot = JsonInt(match, "bot");
+    int squad = JsonInt(match, "squad");
+    int level = JsonInt(match, "level");
+    if (!cJSON_IsObject(match) || !cJSON_IsNumber(seed) || bot < 0 || bot >= t->bot_count || squad < 0 ||
+        squad >= t->squad_count || level < 1 || level > PVP_LOCAL_MAX_LEVEL)
+        return false;
+    PlayerPvpBattle matched = {
+        .bot = bot,
+        .squad = squad,
+        .level = level,
+        .opponent_trophies = JsonInt(match, "trophies"),
+        .seed = (unsigned)seed->valuedouble,
+    };
+    *out = PvpOpponentFromBattle(&matched, trophies);
+    return true;
+}
+
 PvpOpponent
 PvpOpponentFromDuel(const char *id, const char *name, int level, int opponent_trophies, int trophies, unsigned seed) {
     PvpOpponent o = {.bot = -1, .squad = -1, .duel = true, .seed = seed ? seed : 1u};

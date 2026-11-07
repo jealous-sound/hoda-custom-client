@@ -429,8 +429,8 @@ static void DebugPreparePvp(Game *game, DebugShot *shot) {
     game->screen = SCREEN_BATTLE;
     if (!game->battle.squads_loaded) {
         game->player.pvp.trophies = DEBUG_PVP_TROPHIES;
-        game->pvp_event = DebugShotIsAny(shot, (const char *const[]){"pvp_event_match", "pvp_event_results"}, 2);
-        GameEnterLadderBattle(game, SCREEN_PVP_HUB);
+        bool event = DebugShotIsAny(shot, (const char *const[]){"pvp_event_match", "pvp_event_results"}, 2);
+        GameMatchPvp(game, event, GAME_PVP_MATCHMAKING, false, SCREEN_PVP_HUB);
         return;
     }
     const char *fight_seed = getenv("HOD_FIGHT");

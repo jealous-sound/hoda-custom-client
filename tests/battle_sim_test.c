@@ -6280,16 +6280,117 @@ static void TestBattleStartSendsTheBattleTheClientPlays(void) {
 
     g->battle_is_pvp = true;
     g->pvp_event = true;
-    g->pvp_opponent = GameLadderOpponent(g);
+    g->pvp_match = (GamePvpMatch){.id = 7, .at = ServerNow()};
+    GamePvpMatchRequest event = {.event = true, .bot = GAME_PVP_MATCHMAKING};
+    g->pvp_opponent = GameLocalOpponent(g, &event, g->pvp_match.at);
     PvpOpponentRoster(&g->battle.enemy_roster, &g->pvp_opponent);
     g->battle.enemy_roster.game_changer = &PvpEventForCycle(PvpEventCycle(g->pvp_match.at))->changer;
     fields = GameBattleStartFields(g);
-    const cJSON *opponent = cJSON_GetObjectItemCaseSensitive(fields, "opponent");
-    assert(!strcmp(JsonStr(opponent, "kind"), "event") && JsonInt(opponent, "bot") == g->pvp_opponent.bot);
+    assert(JsonInt(fields, "match") == 7 && JsonBool(fields, "event"));
+    assert(!cJSON_GetObjectItemCaseSensitive(fields, "opponent"));
     assert(cJSON_IsObject(cJSON_GetObjectItemCaseSensitive(fields, "changer")));
     cJSON_Delete(fields);
     for (unsigned seed = 1; seed <= 8; seed++) AssertBattleStartReplaysTheBattle(g, seed);
+
+    g->pvp_event = false;
+    g->pvp_revenge_at = 1234;
+    fields = GameBattleStartFields(g);
+    const cJSON *opponent = cJSON_GetObjectItemCaseSensitive(fields, "opponent");
+    assert(!strcmp(JsonStr(opponent, "kind"), "revenge") && JsonInt(fields, "revenge_at") == 1234);
+    assert((unsigned)cJSON_GetObjectItemCaseSensitive(opponent, "seed")->valuedouble == g->pvp_opponent.seed);
+    assert(!cJSON_GetObjectItemCaseSensitive(fields, "match"));
+    cJSON_Delete(fields);
     PlayerUnloadRoster(&g->player);
+}
+
+static void TestPvpMatchAsksTheServerForTheOpponent(void) {
+    GamePvpMatchRequest ladder = {.bot = GAME_PVP_MATCHMAKING};
+    cJSON *fields = GamePvpMatchFields(&ladder);
+    assert(!strcmp(JsonStr(fields, "action"), "pvp_match") && !JsonBool(fields, "event"));
+    assert(!cJSON_GetObjectItemCaseSensitive(fields, "bot") && !cJSON_GetObjectItemCaseSensitive(fields, "next"));
+    cJSON_Delete(fields);
+
+    GamePvpMatchRequest next = {.event = true, .bot = GAME_PVP_MATCHMAKING, .next = true};
+    fields = GamePvpMatchFields(&next);
+    assert(JsonBool(fields, "event") && JsonBool(fields, "next") && !cJSON_GetObjectItemCaseSensitive(fields, "bot"));
+    cJSON_Delete(fields);
+
+    GamePvpMatchRequest chosen = {.event = true, .bot = 0};
+    fields = GamePvpMatchFields(&chosen);
+    assert(cJSON_IsNumber(cJSON_GetObjectItemCaseSensitive(fields, "bot")) && JsonInt(fields, "bot") == 0);
+    cJSON_Delete(fields);
+}
+
+static void GameTestSettlePvpMatch(cJSON *reply) {
+    ServerActionsPop(&server_actions);
+    server_actions.reply_tag = SERVER_REPLY_PVP_MATCH;
+    server_actions.reply = reply;
+}
+
+static void TestPvpMatchWaitsForTheServersReply(void) {
+    static Game game;
+    Game *g = &game;
+    memset(g, 0, sizeof(*g));
+    ProgressionInitializePlayerDefaults(&g->player);
+    bool backend_was_enabled = backend_state.enabled;
+    backend_state.enabled = true;
+
+    g->screen = SCREEN_PVP_EVENT;
+    GameMatchPvp(g, true, 3, false, SCREEN_PVP_EVENT);
+    GameMatchPvp(g, false, GAME_PVP_MATCHMAKING, false, SCREEN_PVP_HUB);
+    assert(g->pvp_match_waiting && g->screen == SCREEN_PVP_EVENT && server_actions.count == 1);
+    const ServerActionEntry *entry = &server_actions.queue[0];
+    assert(entry->tag == SERVER_REPLY_PVP_MATCH && !strcmp(JsonStr(entry->fields, "action"), "pvp_match"));
+    assert(JsonBool(entry->fields, "event") && JsonInt(entry->fields, "bot") == 3);
+
+    GameTestSettlePvpMatch(NULL);
+    GamePollPvpMatch(g);
+    assert(!g->pvp_match_waiting && g->screen == SCREEN_PVP_EVENT && !g->battle_is_pvp);
+
+    g->screen = SCREEN_PVP_HUB;
+    GameMatchPvp(g, false, GAME_PVP_MATCHMAKING, false, SCREEN_PVP_HUB);
+    assert(g->pvp_match_waiting && server_actions.count == 1);
+    g->screen = SCREEN_HOME;
+    PvpOpponent offered = PvpOpponentGenerate(1, 0, 20000, 11);
+    cJSON *reply = cJSON_CreateObject();
+    cJSON *match = cJSON_AddObjectToObject(cJSON_AddObjectToObject(reply, "granted"), "match");
+    cJSON_AddNumberToObject(match, "id", 4);
+    cJSON_AddNumberToObject(match, "bot", offered.bot);
+    cJSON_AddNumberToObject(match, "squad", offered.squad);
+    cJSON_AddNumberToObject(match, "level", offered.level);
+    cJSON_AddNumberToObject(match, "trophies", offered.trophies);
+    cJSON_AddNumberToObject(match, "seed", offered.seed);
+    GameTestSettlePvpMatch(reply);
+    GamePollPvpMatch(g);
+    assert(!g->pvp_match_waiting && g->screen == SCREEN_HOME && !g->battle_is_pvp && g->pvp_match.id == 0);
+    assert(ServerActionsDrained());
+
+    backend_state.enabled = backend_was_enabled;
+}
+
+static void TestPvpOpponentFromServerMatchRebuildsTheBot(void) {
+    PvpOpponent expected = PvpOpponentFromBot(3, 20, 400, 20000, 0x9E3779B1u);
+    cJSON *match = cJSON_CreateObject();
+    cJSON_AddNumberToObject(match, "id", 5);
+    cJSON_AddNumberToObject(match, "bot", expected.bot);
+    cJSON_AddNumberToObject(match, "squad", expected.squad);
+    cJSON_AddNumberToObject(match, "level", expected.level);
+    cJSON_AddNumberToObject(match, "trophies", expected.trophies);
+    cJSON_AddNumberToObject(match, "seed", expected.seed);
+    PvpOpponent rebuilt;
+    assert(PvpOpponentFromServerMatch(match, 400, &rebuilt));
+    assert(memcmp(&rebuilt, &expected, sizeof(rebuilt)) == 0);
+
+    cJSON_ReplaceItemInObject(match, "bot", cJSON_CreateNumber(PvpTableEnsure()->bot_count));
+    assert(!PvpOpponentFromServerMatch(match, 400, &rebuilt));
+    cJSON_ReplaceItemInObject(match, "bot", cJSON_CreateNumber(expected.bot));
+    cJSON_ReplaceItemInObject(match, "squad", cJSON_CreateNumber(-1));
+    assert(!PvpOpponentFromServerMatch(match, 400, &rebuilt));
+    cJSON_ReplaceItemInObject(match, "squad", cJSON_CreateNumber(expected.squad));
+    cJSON_DeleteItemFromObject(match, "seed");
+    assert(!PvpOpponentFromServerMatch(match, 400, &rebuilt));
+    assert(!PvpOpponentFromServerMatch(NULL, 400, &rebuilt));
+    cJSON_Delete(match);
 }
 
 int main(void) {
@@ -6318,6 +6419,9 @@ int main(void) {
     TestPvpMatchingStaysInTheTrophyWindow();
     TestPvpTrophyBounds();
     TestPvpNextsResetDaily();
+    TestPvpMatchAsksTheServerForTheOpponent();
+    TestPvpMatchWaitsForTheServersReply();
+    TestPvpOpponentFromServerMatchRebuildsTheBot();
     TestPvpDefenseLogWaitsForFirstBattleAndCapsAttacks();
     TestPvpRevengeRebuildsTheSameOpponent();
     TestPvpEveryPooledSquadFights();
