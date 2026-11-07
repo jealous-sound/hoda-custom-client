@@ -9,6 +9,7 @@ typedef enum {
     SERVER_REPLY_NEXUS_AWARD,
     SERVER_REPLY_TUTORIAL_HEROES,
     SERVER_REPLY_BATTLE_START,
+    SERVER_REPLY_PVP_MATCH,
 } ServerReplyTag;
 
 typedef struct {

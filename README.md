@@ -93,7 +93,10 @@ Battles are replayed on the server. FIGHT sends `battle_start` with the squad, i
 changer exactly as `source/battle_replay.c` serializes them; the server checks them against its own copy, spends the
 energy or stamina and answers with a seed, and the battle plays from that seed (the corner spinner shows while it
 waits). The result goes back as `battle` with the battle id, and the server pays what its own replay of
-`battle_sim.c` says, not the client's claim. Local play keeps picking its own seeds. The server's replay is a Go port
+`battle_sim.c` says, not the client's claim. Online PvP opponents come from the server too: opening a ladder or event
+fight, picking a bot on a leaderboard, Next and Continue send `pvp_match`, the battle screen opens on the opponent
+the server answers, and FIGHT names that match. The server rolls the match seed, reads its own trophies, banners and
+clock, and counts the day's Next uses. Local play keeps picking its own seeds and opponents. The server's replay is a Go port
 of the simulation, so `make golden` regenerates `tests/golden/`: recorded battles that cover every hero twice, the
 campaign and Nexus rosters, game changers, PvP opponents and the built-in ability recipes. `make test` fails while the
 corpus is stale; after `make golden`, run `scripts/sync-client-data.sh` in the backend, whose tests replay the corpus
