@@ -124,7 +124,12 @@ of the simulation, so `make golden` regenerates `tests/golden/`: recorded battle
 campaign and Nexus rosters, game changers, PvP opponents and the built-in ability recipes. `make test` fails while the
 corpus is stale; after `make golden`, run `scripts/sync-client-data.sh` in the backend, whose tests replay the corpus
 and require the same outcome, crit count and action timeline. Builds use `-ffp-contract=off` so float results do not
-depend on the compiler fusing multiply-adds.
+depend on the compiler fusing multiply-adds. A stale check names the first entry and field that differ. A changed
+battle input means the generator drew differently. A changed outcome means the sim played differently:
+`./tests/battle_replay_golden --trace <battle name>` prints that battle's actions as the text its `timeline` digest
+hashes, so diffing two builds' traces shows the first step that diverges. The generator draws each random value in a
+statement of its own, because C leaves the order of function arguments unspecified and GCC and clang evaluate them in
+opposite orders.
 
 `make` builds `Heroes of Dragon Age.app`, a macOS app bundle with its icon from `packaging/app_icon.png` and its
 `Info.plist` from `packaging/macos/`. The game runs from the folder that holds the bundle, so it finds `data/` and

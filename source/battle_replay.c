@@ -1,5 +1,6 @@
 #define BATTLE_REPLAY_CATALOG_PATH HOD_CACHE "characters.json"
 #define BATTLE_REPLAY_DIGEST_HEX (SHA256_DIGEST_BYTES * 2 + 1)
+#define BATTLE_REPLAY_ACTION_TEXT (64 + SIM_MAX_TARGETS * 96)
 
 static const char *BattleReplayGearId(const Character *ch, int slot) {
     const GearDef *def = GearInSlot(ch, slot);
@@ -161,44 +162,53 @@ static uint32_t BattleReplayFloatBits(float value) {
     return bits;
 }
 
+static int BattleReplayActionText(const BattleSimAction *a, char text[BATTLE_REPLAY_ACTION_TEXT]) {
+    int length = snprintf(
+        text,
+        BATTLE_REPLAY_ACTION_TEXT,
+        "%d %d%d%d%d %d %d",
+        a->actor,
+        a->newround,
+        a->crit,
+        a->replay_attack,
+        a->same_swing,
+        (int)a->ailments,
+        a->target_count
+    );
+    for (int t = 0; t < a->target_count; t++) {
+        const BattleSimTarget *target = &a->targets[t];
+        length += snprintf(
+            text + length,
+            BATTLE_REPLAY_ACTION_TEXT - (size_t)length,
+            " %d %d %d %d %d %08x %08x",
+            target->unit,
+            target->health_delta,
+            target->power_delta,
+            target->initiative_delta,
+            target->health_faction_delta,
+            BattleReplayFloatBits(target->crit_delta),
+            BattleReplayFloatBits(target->damage_bonus_delta)
+        );
+    }
+    length += snprintf(text + length, BATTLE_REPLAY_ACTION_TEXT - (size_t)length, "\n");
+    return length;
+}
+
 void BattleReplayDigest(const BattleSim *s, char hex[BATTLE_REPLAY_DIGEST_HEX]) {
     Sha256 hash;
     Sha256Begin(&hash);
-    char line[96];
-    for (int i = 0; i < s->action_count; i++) {
-        const BattleSimAction *a = &s->actions[i];
-        int length = snprintf(
-            line,
-            sizeof(line),
-            "%d %d%d%d%d %d %d",
-            a->actor,
-            a->newround,
-            a->crit,
-            a->replay_attack,
-            a->same_swing,
-            (int)a->ailments,
-            a->target_count
-        );
-        Sha256Update(&hash, line, (size_t)length);
-        for (int t = 0; t < a->target_count; t++) {
-            const BattleSimTarget *target = &a->targets[t];
-            length = snprintf(
-                line,
-                sizeof(line),
-                " %d %d %d %d %d %08x %08x",
-                target->unit,
-                target->health_delta,
-                target->power_delta,
-                target->initiative_delta,
-                target->health_faction_delta,
-                BattleReplayFloatBits(target->crit_delta),
-                BattleReplayFloatBits(target->damage_bonus_delta)
-            );
-            Sha256Update(&hash, line, (size_t)length);
-        }
-        Sha256Update(&hash, "\n", 1);
-    }
+    char text[BATTLE_REPLAY_ACTION_TEXT];
+    for (int i = 0; i < s->action_count; i++)
+        Sha256Update(&hash, text, (size_t)BattleReplayActionText(&s->actions[i], text));
     Sha256FinishHex(&hash, hex);
+}
+
+void BattleReplayTimelineWrite(const BattleSim *s, FILE *file) {
+    char text[BATTLE_REPLAY_ACTION_TEXT];
+    for (int i = 0; i < s->action_count; i++) {
+        BattleReplayActionText(&s->actions[i], text);
+        fprintf(file, "%d: %s", i, text);
+    }
 }
 
 typedef struct {
@@ -210,10 +220,9 @@ typedef struct {
     MissionBattleFacts facts;
 } BattleReplayOutcome;
 
-bool BattleReplayRun(const cJSON *catalog, const cJSON *replay, BattleReplayOutcome *out) {
+bool BattleReplaySimulate(const cJSON *catalog, const cJSON *replay, BattleSim *sim) {
     static BattleRoster player, enemy;
     static BattleGameChanger changer;
-    static BattlePlay play;
     const cJSON *changer_json = cJSON_GetObjectItemCaseSensitive(replay, "changer");
     if (!BattleReplayRosterLoad(&player, catalog, cJSON_GetObjectItemCaseSensitive(replay, "player"), true) ||
         !BattleReplayRosterLoad(&enemy, catalog, cJSON_GetObjectItemCaseSensitive(replay, "enemy"), false) ||
@@ -222,7 +231,13 @@ bool BattleReplayRun(const cJSON *catalog, const cJSON *replay, BattleReplayOutc
     enemy.game_changer = cJSON_IsObject(changer_json) ? &changer : NULL;
     const cJSON *seed = cJSON_GetObjectItemCaseSensitive(replay, "seed");
     if (!cJSON_IsNumber(seed) || seed->valuedouble < 0 || seed->valuedouble > UINT32_MAX) return false;
-    BattleSimRunRosters(&play.sim, &player, &enemy, (unsigned)seed->valuedouble);
+    BattleSimRunRosters(sim, &player, &enemy, (unsigned)seed->valuedouble);
+    return true;
+}
+
+bool BattleReplayRun(const cJSON *catalog, const cJSON *replay, BattleReplayOutcome *out) {
+    static BattlePlay play;
+    if (!BattleReplaySimulate(catalog, replay, &play.sim)) return false;
     out->won = play.sim.player_won;
     out->crits = BattlePlayCriticalGold(&play) / BP_CRIT_GOLD_REWARD;
     out->rounds = play.sim.rounds;
