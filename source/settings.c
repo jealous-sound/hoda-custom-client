@@ -1,12 +1,14 @@
 #define SETTINGS_PATH "settings.json"
 #define SETTINGS_TEMPORARY_PATH SETTINGS_PATH ".tmp"
 #define SETTINGS_LANGUAGE_CAP 16
+#define SETTINGS_VERSION_CAP 64
 
 typedef struct {
     bool loaded;
     char language[SETTINGS_LANGUAGE_CAP];
     bool music;
     bool sound;
+    char skipped_update[SETTINGS_VERSION_CAP];
 } Settings;
 
 static Settings settings;
@@ -29,6 +31,7 @@ static void SettingsLoad(void) {
     StrCopy(settings.language, sizeof(settings.language), JsonStr(root, "language"));
     settings.music = SettingsFlag(root, "music", true);
     settings.sound = SettingsFlag(root, "sound", true);
+    StrCopy(settings.skipped_update, sizeof(settings.skipped_update), JsonStr(root, "skipped_update"));
     cJSON_Delete(root);
 }
 
@@ -37,6 +40,7 @@ static bool SettingsSave(void) {
     cJSON_AddStringToObject(root, "language", settings.language);
     cJSON_AddBoolToObject(root, "music", settings.music);
     cJSON_AddBoolToObject(root, "sound", settings.sound);
+    if (settings.skipped_update[0]) cJSON_AddStringToObject(root, "skipped_update", settings.skipped_update);
     char *text = cJSON_Print(root);
     cJSON_Delete(root);
     bool saved = text && SaveFileText(SETTINGS_TEMPORARY_PATH, text) &&
@@ -76,5 +80,16 @@ void SettingsSetMusic(bool enabled) {
 void SettingsSetSound(bool enabled) {
     SettingsLoad();
     settings.sound = enabled;
+    SettingsSave();
+}
+
+const char *SettingsSkippedUpdate(void) {
+    SettingsLoad();
+    return settings.skipped_update;
+}
+
+void SettingsSetSkippedUpdate(const char *version) {
+    SettingsLoad();
+    StrCopy(settings.skipped_update, sizeof(settings.skipped_update), version ? version : "");
     SettingsSave();
 }

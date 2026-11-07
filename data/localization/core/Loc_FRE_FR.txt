@@ -6,3 +6,12 @@ HODA_OPTIONS_LANGUAGE|Langue
 HODA_LANGUAGE_SYSTEM|Langue du système
 HODA_CONTENT_CLIENT_TOO_OLD_TITLE|Mise à jour requise
 HODA_CONTENT_CLIENT_TOO_OLD_MESSAGE|Cette version de Heroes of Dragon Age est trop ancienne pour les données de jeu actuelles. Veuillez télécharger la dernière version pour continuer à jouer.
+HODA_UPDATE_AVAILABLE_TITLE|Mise à jour disponible
+HODA_UPDATE_AVAILABLE_MESSAGE|Heroes of Dragon Age {0} est disponible. Téléchargez-le sur le site pour obtenir les derniers héros et correctifs.
+HODA_UPDATE_REQUIRED_TITLE|Mise à jour requise
+HODA_UPDATE_REQUIRED_MESSAGE|Cette version ne permet plus de jouer en ligne. Téléchargez Heroes of Dragon Age {0} pour continuer à jouer en ligne.
+HODA_UPDATE_REQUIRED_ONLINE_MESSAGE|Le jeu en ligne nécessite une version plus récente. Téléchargez Heroes of Dragon Age {0} pour jouer en ligne, ou lancez une partie locale.
+HODA_UPDATE_DOWNLOAD|Télécharger
+HODA_UPDATE_LATER|Plus tard
+HODA_UPDATE_QUIT|Quitter
+HODA_OPTIONS_VERSION_UPDATE|{0} ({1} disponible)

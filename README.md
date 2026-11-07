@@ -162,6 +162,28 @@ Every build carries its version: `git describe --tags` (override with `CLIENT_VE
 `HOD_VERSION`, shown in the settings popup above the player ID and sent as `User-Agent: HeroesOfDragonAge/<version>` on
 every server and download request. The macOS bundle's `CFBundleShortVersionString` is the latest tag's number.
 
+## Updates
+
+At launch the game asks the server for `GET /v1/client` (`latest`, `minimum`, `download_url`) in the background,
+whichever mode the player then picks, and compares them with its own version: release candidates sort before their
+release and `git describe` builds after it, and a build without a version tag (`dev`, a bare hash) never asks for an
+update. The server's `latest` follows the client repository's latest GitHub release, so pushing a release tag is all
+it takes; `minimum` is the server's `HOD_MIN_CLIENT_VERSION`, raised only when old clients can no longer play online.
+
+- A newer `latest` puts 5.4.4-style Update Available over the Local Game / Online Game choice, with Download and
+  Later. Later hides that version until a newer one appears (`skipped_update` in `settings.json`); the settings popup
+  keeps showing `<version> (<latest> available)` under the gear button.
+- A version below `minimum` shows Update Required on that screen instead and keeps Online Game from starting; Local
+  Game still works.
+- Online, any request the server answers with `426 Upgrade Required` (a minimum raised while the game runs, or one the
+  launch check missed) puts Update Required over the game with Download and Quit, and the game stops talking to the
+  server.
+- A newer manifest format on the content server (see below) shows its Update Required with Download and Quit.
+
+Download opens `download_url` in the browser, only when it is a plain `https://` address, and otherwise the website's
+download section. `HOD_SHOT_SCREEN=play_mode_update`, `play_mode_update_required`, `update_required` and
+`options_update` render the popups with a sample release.
+
 ## Language and settings
 
 The game starts in the system language (macOS preferred languages, the Windows display language, or `LANGUAGE`,

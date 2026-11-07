@@ -84,6 +84,10 @@ typedef struct {
     bool stamina_dialog_top;
     OptionsPopup options;
     bool restart_requested;
+    bool quit_requested;
+    bool update_buttons_ready;
+    Button update_quit;
+    Button update_download;
 
     PvpHub pvp_hub;
     PvpEventView pvp_event_view;
@@ -1013,6 +1017,53 @@ static bool GameAwaitServerRetry(void) {
     return false;
 }
 
+#define GAME_UPDATE_TEXT_CAP 512
+
+static void GameDrawClientUpdate(Game *g) {
+    if (!ClientUpdateOnlineRefused()) return;
+    if (!g->update_buttons_ready) {
+        g->update_buttons_ready = true;
+        g->update_quit = ButtonLoadText(
+            GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("HODA_UPDATE_QUIT"), GuiFont(FNT_COOL), (Vector2){0.5f, 0.5f}, 0.34f
+        );
+        g->update_download = ButtonLoadText(
+            GUI_BTN_GOLD,
+            GUI_BTN_GOLD_ON,
+            LocGet("HODA_UPDATE_DOWNLOAD"),
+            GuiFont(FNT_COOL),
+            (Vector2){0.5f, 0.5f},
+            0.34f
+        );
+    }
+    char message[GAME_UPDATE_TEXT_CAP];
+    LocFormat1(message, sizeof(message), "HODA_UPDATE_REQUIRED_MESSAGE", ClientUpdateCurrentRelease().latest);
+    UiSetInputBlocked(false);
+    UiSetInputSuspended(false);
+    UiSetInputWindow(false, (Rectangle){0});
+    UiFrameBegin();
+    MessagePopupChoice choice = MessagePopupDrawChoice(
+        GuiTex(GUI_STORE_OVERLAY),
+        GuiFont(FNT_COOL),
+        GuiFont(FNT_MENU),
+        LocGet("HODA_UPDATE_REQUIRED_TITLE"),
+        message,
+        &g->update_quit,
+        &g->update_download
+    );
+    UiFrameEnd();
+    if (choice == MESSAGE_POPUP_CHOICE_ACCEPT) ClientUpdateOpenDownload();
+    if (choice == MESSAGE_POPUP_CHOICE_DECLINE) g->quit_requested = true;
+}
+
+static void GameAwaitClientUpdate(Game *g) {
+    while (!g->quit_requested && !WindowShouldClose() && !IsKeyPressed(KEY_ESCAPE)) {
+        BeginDrawing();
+        ClearBackground(BLACK);
+        GameDrawClientUpdate(g);
+        EndDrawing();
+    }
+}
+
 static bool GameAwaitProfileFetch(void) {
     BackendBeginProfileFetch();
     while (!BackendProfileFetchSettled()) {
@@ -1038,7 +1089,7 @@ static GameBusyOverlay game_busy_overlay = GAME_BUSY_HIDDEN;
 
 bool GameBusyOverlayUpdate(const Game *g, float dt) {
     static float busy_seconds = 0.0f;
-    busy_seconds = BackendBusy() ? busy_seconds + dt : 0.0f;
+    busy_seconds = BackendBusy() && !ClientUpdateOnlineRefused() ? busy_seconds + dt : 0.0f;
     bool slow = busy_seconds >= GAME_BUSY_OVERLAY_DELAY_SECONDS;
     if (!slow)
         game_busy_overlay = GAME_BUSY_HIDDEN;
@@ -1070,6 +1121,10 @@ static bool GameLoadProgression(Game *g) {
     ProgressionLoadResult loaded = GameFetchProgression(g, &window_closed);
     if (window_closed) return false;
     while (loaded == PROGRESSION_LOAD_UNAVAILABLE && ProgressionNeedsServer()) {
+        if (ClientUpdateOnlineRefused()) {
+            GameAwaitClientUpdate(g);
+            return false;
+        }
         TraceLog(LOG_WARNING, "Account: server unreachable, waiting for retry");
         if (!GameAwaitServerRetry()) return false;
         loaded = GameFetchProgression(g, &window_closed);
@@ -1175,6 +1230,7 @@ static EnergyDialog *GameTopResourceDialog(Game *g) {
 }
 
 bool GameHandlePopupBack(Game *g) {
+    if (ClientUpdateOnlineRefused()) return false;
     if (OptionsPopupBack(&g->options)) return true;
     EnergyDialog *top = GameTopResourceDialog(g);
     if (top) {
@@ -1553,7 +1609,7 @@ static void GameSyncServerActions(Game *g) {
 void GameDraw(Game *g) {
     float dt = GetFrameTime();
     TutorialHooksBeginFrame();
-    if (NamePromptIsOpen(&g->name_prompt)) UiSetInputWindow(true, (Rectangle){0});
+    if (NamePromptIsOpen(&g->name_prompt) || ClientUpdateOnlineRefused()) UiSetInputWindow(true, (Rectangle){0});
     Screen screen_at_frame_start = g->screen;
     bool pvp_battle = g->screen == SCREEN_BATTLE && g->battle_is_pvp;
     g->hud.show_banners = g->screen == SCREEN_PVP_EVENT || (pvp_battle && g->pvp_event);
@@ -2206,6 +2262,7 @@ void GameDraw(Game *g) {
     }
     GameDrawTutorial(g, dt);
     GameDrawNamePrompt(g, dt);
+    GameDrawClientUpdate(g);
     GameStopUnseenWispLoops(g);
 }
 

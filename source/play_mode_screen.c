@@ -12,6 +12,10 @@
 #define PLAY_MODE_HINT_COLOR ((Color){230, 230, 230, 255})
 #define PLAY_MODE_SHADE_HEIGHT 0.4f
 #define PLAY_MODE_SHADE_COLOR ((Color){0, 0, 0, 200})
+#define PLAY_MODE_NOTICE_FRAME APK_RESOURCE("Bg_Overlay_Short")
+#define PLAY_MODE_NOTICE_DECLINE APK_RESOURCE("Btn_Default_grey")
+#define PLAY_MODE_NOTICE_DECLINE_ACTIVE APK_RESOURCE("Btn_Default_grey_active")
+#define PLAY_MODE_NOTICE_TEXT_CAP 512
 
 typedef enum {
     PLAY_MODE_UNDECIDED,
@@ -20,12 +24,24 @@ typedef enum {
     PLAY_MODE_QUIT,
 } PlayModeChoice;
 
+typedef enum {
+    PLAY_MODE_NOTICE_NONE,
+    PLAY_MODE_NOTICE_UPDATE_AVAILABLE,
+    PLAY_MODE_NOTICE_UPDATE_REQUIRED,
+} PlayModeNotice;
+
 typedef struct {
     Texture2D splash;
     Font title_font;
     Font menu_font;
     Button local;
     Button online;
+    Texture2D notice_frame;
+    Button notice_download;
+    Button notice_decline;
+    PlayModeNotice notice;
+    bool offered_update;
+    bool warned_required;
 } PlayModeScreen;
 
 static void PlayModeScreenLoad(PlayModeScreen *screen) {
@@ -42,11 +58,30 @@ static void PlayModeScreenLoad(PlayModeScreen *screen) {
     screen->online = ButtonFromTextures(
         idle, active, LocGet("HODA_PLAY_MODE_ONLINE"), screen->title_font, centre, PLAY_MODE_BUTTON_LABEL_SCALE
     );
+    screen->notice_frame = LoadingScreenTexture(PLAY_MODE_NOTICE_FRAME);
+    screen->notice_download = ButtonFromTextures(
+        idle, active, LocGet("HODA_UPDATE_DOWNLOAD"), screen->title_font, centre, PLAY_MODE_BUTTON_LABEL_SCALE
+    );
+    screen->notice_decline = ButtonFromTextures(
+        LoadingScreenTexture(PLAY_MODE_NOTICE_DECLINE),
+        LoadingScreenTexture(PLAY_MODE_NOTICE_DECLINE_ACTIVE),
+        NULL,
+        screen->title_font,
+        centre,
+        PLAY_MODE_BUTTON_LABEL_SCALE
+    );
     ResourceShutdown();
 }
 
 static void PlayModeScreenUnload(PlayModeScreen *screen) {
-    Texture2D textures[] = {screen->splash, screen->local.idle, screen->local.active};
+    Texture2D textures[] = {
+        screen->splash,
+        screen->local.idle,
+        screen->local.active,
+        screen->notice_frame,
+        screen->notice_decline.idle,
+        screen->notice_decline.active,
+    };
     for (size_t i = 0; i < sizeof(textures) / sizeof(textures[0]); i++)
         if (textures[i].id) UnloadTexture(textures[i]);
     if (screen->title_font.texture.id) UnloadFont(screen->title_font);
@@ -69,6 +104,41 @@ static void PlayModeDrawHint(const PlayModeScreen *screen, const char *hint, Rec
     MessagePopupDrawText(screen->menu_font, hint, box, size, PLAY_MODE_HINT_COLOR);
 }
 
+static void PlayModeRaiseNotice(PlayModeScreen *screen) {
+    if (screen->notice != PLAY_MODE_NOTICE_NONE) return;
+    if (!screen->warned_required && ClientUpdateStatusNow() == CLIENT_UPDATE_REQUIRED) {
+        screen->warned_required = true;
+        screen->notice = PLAY_MODE_NOTICE_UPDATE_REQUIRED;
+    } else if (!screen->offered_update && ClientUpdateOffered()) {
+        screen->offered_update = true;
+        screen->notice = PLAY_MODE_NOTICE_UPDATE_AVAILABLE;
+    }
+}
+
+static void PlayModeDrawNotice(PlayModeScreen *screen) {
+    bool required = screen->notice == PLAY_MODE_NOTICE_UPDATE_REQUIRED;
+    char message[PLAY_MODE_NOTICE_TEXT_CAP];
+    LocFormat1(
+        message,
+        sizeof(message),
+        required ? "HODA_UPDATE_REQUIRED_ONLINE_MESSAGE" : "HODA_UPDATE_AVAILABLE_MESSAGE",
+        ClientUpdateCurrentRelease().latest
+    );
+    screen->notice_decline.label = LocGet(required ? "MAIN_MESSAGE_DIALOG_OK" : "HODA_UPDATE_LATER");
+    MessagePopupChoice choice = MessagePopupDrawChoice(
+        screen->notice_frame,
+        screen->title_font,
+        screen->menu_font,
+        LocGet(required ? "HODA_UPDATE_REQUIRED_TITLE" : "HODA_UPDATE_AVAILABLE_TITLE"),
+        message,
+        &screen->notice_decline,
+        &screen->notice_download
+    );
+    if (choice == MESSAGE_POPUP_CHOICE_ACCEPT) ClientUpdateOpenDownload();
+    if (choice == MESSAGE_POPUP_CHOICE_DECLINE && !required) ClientUpdateSkipOffered();
+    if (choice != MESSAGE_POPUP_CHOICE_NONE || IsKeyPressed(KEY_ESCAPE)) screen->notice = PLAY_MODE_NOTICE_NONE;
+}
+
 static PlayModeChoice PlayModeScreenDraw(PlayModeScreen *screen) {
     Rectangle root = UiRoot();
     UiDrawTexture(screen->splash, root, WHITE);
@@ -84,9 +154,19 @@ static PlayModeChoice PlayModeScreenDraw(PlayModeScreen *screen) {
     Rectangle online = {row.x + width + gap, row.y, width, height};
     PlayModeDrawHint(screen, LocGet("HODA_PLAY_MODE_LOCAL_HINT"), local);
     PlayModeDrawHint(screen, LocGet("HODA_PLAY_MODE_ONLINE_HINT"), online);
-    bool local_chosen = ButtonDraw(&screen->local, local);
-    bool online_chosen = ButtonDraw(&screen->online, online);
+    PlayModeRaiseNotice(screen);
+    bool interactive = screen->notice == PLAY_MODE_NOTICE_NONE;
+    bool local_chosen = ButtonDrawEx(&screen->local, local, interactive);
+    bool online_chosen = ButtonDrawEx(&screen->online, online, interactive);
+    if (!interactive) {
+        PlayModeDrawNotice(screen);
+        return PLAY_MODE_UNDECIDED;
+    }
     if (local_chosen) return PLAY_MODE_LOCAL;
+    if (online_chosen && ClientUpdateStatusNow() == CLIENT_UPDATE_REQUIRED) {
+        screen->notice = PLAY_MODE_NOTICE_UPDATE_REQUIRED;
+        return PLAY_MODE_UNDECIDED;
+    }
     if (online_chosen) return PLAY_MODE_ONLINE;
     return IsKeyPressed(KEY_ESCAPE) ? PLAY_MODE_QUIT : PLAY_MODE_UNDECIDED;
 }

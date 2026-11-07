@@ -30,6 +30,7 @@
 #include "sha256.c"
 #include "settings.c"
 #include "content_update.c"
+#include "client_update.c"
 #include "backend.c"
 #include "server_actions.c"
 #include "ui.c"
@@ -119,7 +120,7 @@ static bool RunGameSession(void) {
         bool captured = shot.output && DebugShotCapture(&shot);
         EndDrawing();
 
-        if (captured || game.restart_requested) break;
+        if (captured || game.restart_requested || game.quit_requested) break;
     }
 
     bool restart = game.restart_requested;
@@ -136,6 +137,8 @@ static void RunSelectedMode(void) {
         DebugRunModelLoadTest(getenv("HOD_LOADTEST"));
     } else if (EnvFlag("HOD_NEXUS_SCENE")) {
         DebugRenderNexusScene(getenv("HOD_NEXUS_SCENE"));
+    } else if (DebugRenderPlayMode(getenv("HOD_SHOT_SCREEN"), getenv("HOD_SHOT"))) {
+        return;
     } else if (PlayModeScreenRun()) {
         RunGame();
     }
@@ -158,6 +161,7 @@ int main(void) {
     if (screenshot_mode || EnvFlag("HOD_MUTE")) SetMasterVolume(0.0f);
     SetTargetFPS(144);
 
+    if (!screenshot_mode) ClientUpdateCheckStart(BackendUrlOverride() ? BackendUrlOverride() : BackendDefaultUrl());
     if (ContentScreenRun()) RunSelectedMode();
 
     CloseAudioDevice();

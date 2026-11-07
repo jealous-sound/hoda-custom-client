@@ -3,6 +3,8 @@
 #define CONTENT_ALERT_FRAME APK_RESOURCE("Bg_Overlay_Short")
 #define CONTENT_ALERT_BUTTON APK_RESOURCE("Btn_CTA_gold")
 #define CONTENT_ALERT_BUTTON_ACTIVE APK_RESOURCE("Btn_CTA_gold_active")
+#define CONTENT_ALERT_DECLINE APK_RESOURCE("Btn_Default_grey")
+#define CONTENT_ALERT_DECLINE_ACTIVE APK_RESOURCE("Btn_Default_grey_active")
 #define CONTENT_ALERT_BUTTON_LABEL_SCALE 0.34f
 #define CONTENT_PROGRESS_CONTAINER_X 0.5f
 #define CONTENT_PROGRESS_CONTAINER_Y 0.25f
@@ -49,6 +51,7 @@ typedef struct {
     const char *message_key;
     const char *button_key;
     bool quits;
+    bool offers_download;
 } ContentAlert;
 
 typedef struct {
@@ -63,6 +66,7 @@ typedef struct {
     Font menu_font;
     Font title_font;
     Button alert_button;
+    Button alert_decline;
 } ContentArt;
 
 typedef struct {
@@ -117,7 +121,8 @@ static ContentAlert ContentAlertFor(ContentError error) {
             return (ContentAlert){
                 "HODA_CONTENT_CLIENT_TOO_OLD_TITLE",
                 "HODA_CONTENT_CLIENT_TOO_OLD_MESSAGE",
-                "MAIN_MESSAGE_DIALOG_OK",
+                "HODA_UPDATE_QUIT",
+                true,
                 true
             };
         case CONTENT_ERROR_NONE:
@@ -146,6 +151,8 @@ static void ContentArtUnload(ContentArt *art) {
         &art->alert_frame,
         &art->alert_button.idle,
         &art->alert_button.active,
+        &art->alert_decline.idle,
+        &art->alert_decline.active,
     };
     for (size_t i = 0; i < sizeof(textures) / sizeof(textures[0]); i++)
         if (textures[i]->id) UnloadTexture(*textures[i]);
@@ -174,10 +181,19 @@ static void ContentArtLoad(ContentArt *art) {
         (Vector2){0.5f, 0.5f},
         CONTENT_ALERT_BUTTON_LABEL_SCALE
     );
+    art->alert_decline = ButtonFromTextures(
+        LoadingScreenTexture(CONTENT_ALERT_DECLINE),
+        LoadingScreenTexture(CONTENT_ALERT_DECLINE_ACTIVE),
+        NULL,
+        art->title_font,
+        (Vector2){0.5f, 0.5f},
+        CONTENT_ALERT_BUTTON_LABEL_SCALE
+    );
     ResourceShutdown();
     bool complete = art->splash.id && art->plate.id && art->ring.id && art->track.id && art->fill.id &&
                     art->alert_frame.id && art->alert_button.idle.id && art->alert_button.active.id &&
-                    art->menu_font.texture.id && art->title_font.texture.id;
+                    art->alert_decline.idle.id && art->alert_decline.active.id && art->menu_font.texture.id &&
+                    art->title_font.texture.id;
     if (!complete) {
         LocUnload();
         ContentArtUnload(art);
@@ -281,6 +297,23 @@ ContentDrawProgressLabels(const ContentArt *art, const ContentProgress *progress
     UiDrawTextCentered(art->menu_font, detail, detail_box, CONTENT_DETAIL_FONT_SIZE * ContentCanvasScale(), WHITE);
 }
 
+static ContentScreenChoice ContentDrawDownloadAlert(ContentArt *art, const ContentAlert *alert) {
+    art->alert_button.label = LocGet("HODA_UPDATE_DOWNLOAD");
+    art->alert_decline.label = LocGet(alert->button_key);
+    MessagePopupChoice choice = MessagePopupDrawChoice(
+        art->alert_frame,
+        art->title_font,
+        art->menu_font,
+        LocGet(alert->title_key),
+        LocGet(alert->message_key),
+        &art->alert_decline,
+        &art->alert_button
+    );
+    if (choice == MESSAGE_POPUP_CHOICE_ACCEPT) ClientUpdateOpenDownload();
+    if (choice == MESSAGE_POPUP_CHOICE_DECLINE || IsKeyPressed(KEY_ESCAPE)) return CONTENT_SCREEN_QUIT;
+    return CONTENT_SCREEN_WAIT;
+}
+
 static ContentScreenChoice ContentDrawArt(ContentArt *art, const ContentProgress *progress) {
     Rectangle root = UiRoot();
     UiDrawTexture(art->splash, root, WHITE);
@@ -296,6 +329,7 @@ static ContentScreenChoice ContentDrawArt(ContentArt *art, const ContentProgress
     }
     if (progress->phase != CONTENT_PHASE_FAILED) return CONTENT_SCREEN_WAIT;
     ContentAlert alert = ContentAlertFor(progress->error);
+    if (alert.offers_download) return ContentDrawDownloadAlert(art, &alert);
     art->alert_button.label = LocGet(alert.button_key);
     bool pressed = MessagePopupDrawAlert(
         art->alert_frame,

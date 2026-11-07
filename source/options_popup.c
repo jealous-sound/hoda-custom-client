@@ -182,6 +182,14 @@ static bool OptionsScrimClicked(OptionsPopup *o, Rectangle panel) {
     return clicked;
 }
 
+static void OptionsVersionLine(char *out, size_t capacity) {
+    if (ClientUpdateStatusNow() == CLIENT_UPDATE_CURRENT) {
+        StrCopy(out, (int)capacity, HOD_VERSION);
+        return;
+    }
+    LocFormat2(out, capacity, "HODA_OPTIONS_VERSION_UPDATE", HOD_VERSION, ClientUpdateCurrentRelease().latest);
+}
+
 static void OptionsDrawMore(OptionsPopup *o, const char *player_id) {
     UiDrawTexture(GuiTex(GUI_OPTIONS_MORE_BG), OptionsPlace(OPTIONS_MORE_BACKGROUND), WHITE);
     UiDrawTextCentered(
@@ -199,8 +207,10 @@ static void OptionsDrawMore(OptionsPopup *o, const char *player_id) {
         if (i == OPTIONS_MORE_LANGUAGE) OptionsShowLanguages(o);
         if (i == OPTIONS_MORE_FULLSCREEN) ToggleBorderlessWindowed();
     }
+    char version[LANGUAGE_NAME_CAP];
+    OptionsVersionLine(version, sizeof(version));
     UiDrawTextCentered(
-        o->menu_font, HOD_VERSION, OptionsPlace(OPTIONS_MORE_VERSION), OPTIONS_VERSION_FONT_SIZE, OPTIONS_TEXT_COLOR
+        o->menu_font, version, OptionsPlace(OPTIONS_MORE_VERSION), OPTIONS_VERSION_FONT_SIZE, OPTIONS_TEXT_COLOR
     );
     if (player_id && player_id[0]) {
         char text[LANGUAGE_NAME_CAP];

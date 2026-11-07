@@ -17,6 +17,7 @@ TEST_TARGET = tests/battle_sim_test
 GOLDEN_TARGET = tests/battle_replay_golden
 GOLDEN_DIR = tests/golden
 CONTENT_TEST_TARGET = tests/content_update_test
+UPDATE_TEST_TARGET = tests/client_update_test
 BACKEND_DIR ?= ../hoda-custom-backend
 DIST_DIR ?= ../hoda-custom-dist
 DIST_BACKEND_URL ?=
@@ -87,12 +88,16 @@ golden: $(GOLDEN_TARGET)
 $(CONTENT_TEST_TARGET): tests/content_update_test.c $(DEPS) Makefile
 	$(CC) $(CFLAGS) tests/content_update_test.c source/platform.c -o $(CONTENT_TEST_TARGET) $(LDFLAGS) $(LIBS)
 
-ci-test: $(CONTENT_TEST_TARGET) $(GOLDEN_TARGET)
+$(UPDATE_TEST_TARGET): tests/client_update_test.c $(DEPS) Makefile
+	$(CC) $(CFLAGS) tests/client_update_test.c source/platform.c -o $(UPDATE_TEST_TARGET) $(LDFLAGS) $(LIBS)
+
+ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(GOLDEN_TARGET)
 	python3 tools/validate_ability_recipes.py
 	python3 tools/validate_intrinsic_passives.py
 	python3 tools/build_hero_pool.py --check
 	python3 tools/validate_localization.py
 	./$(CONTENT_TEST_TARGET)
+	./$(UPDATE_TEST_TARGET)
 	./$(GOLDEN_TARGET) --check $(GOLDEN_DIR)
 
 test: ci-test $(TEST_TARGET)
@@ -129,7 +134,7 @@ content:
 	python3 tools/publish_content.py --bucket "$(CONTENT_BUCKET)" --content-url "$(CONTENT_URL)"
 
 clean:
-	rm -rf "$(APP_NAME).app" build $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(GOLDEN_TARGET)
+	rm -rf "$(APP_NAME).app" build $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(GOLDEN_TARGET)
 
 format:
 	clang-format -i source/*.c
