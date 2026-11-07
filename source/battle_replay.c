@@ -204,6 +204,7 @@ typedef struct {
     int rounds;
     int actions;
     char timeline[BATTLE_REPLAY_DIGEST_HEX];
+    MissionBattleFacts facts;
 } BattleReplayOutcome;
 
 bool BattleReplayRun(const cJSON *catalog, const cJSON *replay, BattleReplayOutcome *out) {
@@ -224,6 +225,7 @@ bool BattleReplayRun(const cJSON *catalog, const cJSON *replay, BattleReplayOutc
     out->rounds = play.sim.rounds;
     out->actions = play.sim.action_count;
     BattleReplayDigest(&play.sim, out->timeline);
+    out->facts = MissionsBattleFacts(&play.sim);
     return true;
 }
 
@@ -233,4 +235,7 @@ void BattleReplayOutcomeAdd(cJSON *entry, const BattleReplayOutcome *outcome) {
     cJSON_AddNumberToObject(entry, "rounds", outcome->rounds);
     cJSON_AddNumberToObject(entry, "actions", outcome->actions);
     cJSON_AddStringToObject(entry, "timeline", outcome->timeline);
+    cJSON_AddNumberToObject(entry, "damage", (double)outcome->facts.damage);
+    cJSON_AddBoolToObject(entry, "faction_hit", outcome->facts.faction_hit);
+    cJSON_AddBoolToObject(entry, "squad_buffed", outcome->facts.squad_buffed);
 }

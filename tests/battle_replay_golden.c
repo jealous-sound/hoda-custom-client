@@ -22,12 +22,14 @@
 #define GOLDEN_PVP_OPPONENTS 40
 #define GOLDEN_PVP_CYCLES 24
 #define GOLDEN_FIRST_NOW 1767225600LL
+#define GOLDEN_BUFFED_BATTLES 4
 #define GOLDEN_NOW_SPAN (86400LL * 400)
 
 typedef struct {
     char id[64];
     bool giant;
     bool consumable;
+    unsigned faction_mask;
     bool has_tier[TIER_COUNT];
     int max_level[TIER_COUNT];
     const ConsumeXpTable *consume_table;
@@ -79,6 +81,7 @@ static void GoldenLoadCharacters(Golden *g) {
         GoldenCharacter *entry = &g->characters[g->character_count++];
         StrCopy(entry->id, sizeof(entry->id), ch.id);
         entry->giant = ch.giant;
+        entry->faction_mask = SimFactionMask(ch.faction);
         for (int t = 0; t < TIER_COUNT; t++) {
             entry->has_tier[t] = ch.has_tier[t];
             entry->max_level[t] = ch.stats[t].max_level > 0 ? ch.stats[t].max_level : 1;
@@ -212,6 +215,41 @@ static void GoldenHeroBattles(Golden *g) {
         cJSON *player = GoldenSide(g, true);
         cJSON *enemy = GoldenSide(g, false);
         GoldenAddBattle(g, TextFormat("heroes-%03d", battle), player, enemy, GoldenChanger(g));
+    }
+}
+
+static bool GoldenChangerBuffsFaction(const BattleGameChanger *changer, unsigned *faction) {
+    if (changer->effect_count == 0) return false;
+    const BattleChangerEffect *effect = &changer->effects[0];
+    *faction = effect->faction_mask;
+    return effect->faction_mask && effect->group_count == 0 && effect->unit_count == 0;
+}
+
+static void GoldenBuffedBattles(Golden *g) {
+    int written = 0;
+    for (int c = 0; c < g->changer_count && written < GOLDEN_BUFFED_BATTLES; c++) {
+        unsigned faction = 0;
+        if (!GoldenChangerBuffsFaction(&g->changers[c], &faction)) continue;
+        cJSON *player = cJSON_CreateObject();
+        cJSON *units = cJSON_AddArrayToObject(player, "units");
+        int slot = 0;
+        for (int i = 0; i < g->character_count && slot < GOLDEN_STANDARD_SLOTS; i++) {
+            GoldenCharacter *ch = &g->characters[GoldenRange(g, 0, g->character_count - 1)];
+            if (ch->giant || !ch->consumable || !(ch->faction_mask & faction)) continue;
+            cJSON_AddItemToArray(units, GoldenUnit(g, ch, slot++, true));
+        }
+        cJSON_AddItemToObject(player, "runes", cJSON_CreateArray());
+        if (slot == 0) {
+            cJSON_Delete(player);
+            continue;
+        }
+        GoldenAddBattle(
+            g,
+            TextFormat("buffed-%d", written++),
+            player,
+            GoldenSide(g, false),
+            BattleReplayChangerJson(&g->changers[c])
+        );
     }
 }
 
@@ -489,6 +527,7 @@ int main(int argc, char **argv) {
     GoldenLoadChangers(g);
 
     GoldenHeroBattles(g);
+    GoldenBuffedBattles(g);
     cJSON *campaign = GoldenCampaignRosters(g, "data/campaign_rosters.json", "campaign");
     cJSON *nexus = GoldenCampaignRosters(g, "data/nexus_rosters.json", "nexus");
     GoldenNexusBattles(g, nexus);

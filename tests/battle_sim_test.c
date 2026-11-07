@@ -6285,7 +6285,7 @@ static void TestBattleStartSendsTheBattleTheClientPlays(void) {
     g->battle.enemy_roster.game_changer = &PvpEventForCycle(PvpEventCycle(g->pvp_match.at))->changer;
     fields = GameBattleStartFields(g);
     const cJSON *opponent = cJSON_GetObjectItemCaseSensitive(fields, "opponent");
-    assert(!strcmp(JsonStr(opponent, "kind"), "event") && JsonInt(opponent, "squad") == g->pvp_opponent.squad);
+    assert(!strcmp(JsonStr(opponent, "kind"), "event") && JsonInt(opponent, "bot") == g->pvp_opponent.bot);
     assert(cJSON_IsObject(cJSON_GetObjectItemCaseSensitive(fields, "changer")));
     cJSON_Delete(fields);
     for (unsigned seed = 1; seed <= 8; seed++) AssertBattleStartReplaysTheBattle(g, seed);

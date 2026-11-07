@@ -210,6 +210,18 @@ static bool MissionSquadFullyBuffed(const BattleSim *sim) {
     return any;
 }
 
+typedef struct {
+    long long damage;
+    bool faction_hit;
+    bool squad_buffed;
+} MissionBattleFacts;
+
+MissionBattleFacts MissionsBattleFacts(const BattleSim *sim) {
+    MissionBattleFacts facts = {.squad_buffed = MissionSquadFullyBuffed(sim)};
+    facts.damage = MissionBattleDamage(sim, &facts.faction_hit);
+    return facts;
+}
+
 void MissionsRecordEventBattle(Player *p, const BattleSim *sim, int banners) {
     MissionAddCounter(&p->missions, MISSION_STAT_EVENT_BANNERS, banners);
     if (p->pvp.event.buffed || !MissionSquadFullyBuffed(sim)) return;

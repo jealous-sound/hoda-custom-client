@@ -34,7 +34,6 @@ typedef enum {
 typedef struct {
     const char *kind;
     long long at;
-    int trophies;
     int banners;
 } GamePvpMatch;
 
@@ -86,6 +85,7 @@ typedef struct {
     bool pvp_event;
     bool pvp_can_next;
     int pvp_revenge_index;
+    long long pvp_revenge_at;
     PvpOpponent pvp_opponent;
     GamePvpMatch pvp_match;
     Screen pvp_return_screen;
@@ -190,9 +190,7 @@ static void GameEnterPvpOpponent(Game *g) {
 }
 
 static void GameRememberPvpMatch(Game *g, const char *kind, long long now) {
-    g->pvp_match = (GamePvpMatch){
-        .kind = kind, .at = now, .trophies = g->player.pvp.trophies, .banners = g->player.pvp.event.banners
-    };
+    g->pvp_match = (GamePvpMatch){.kind = kind, .at = now, .banners = g->player.pvp.event.banners};
 }
 
 static PvpOpponent GameLadderOpponent(Game *g) {
@@ -208,6 +206,7 @@ static void GameEnterLadderBattle(Game *g, Screen return_screen) {
     g->pvp_opponent = GameLadderOpponent(g);
     g->pvp_can_next = true;
     g->pvp_revenge_index = -1;
+    g->pvp_revenge_at = 0;
     g->pvp_return_screen = return_screen;
     GameEnterPvpOpponent(g);
 }
@@ -220,6 +219,7 @@ static void GameEnterEventBotBattle(Game *g, int bot) {
     g->pvp_opponent = PvpOpponentFromBot(bot, g->player.level, g->player.pvp.trophies, PvpDay(now), seed);
     g->pvp_can_next = false;
     g->pvp_revenge_index = -1;
+    g->pvp_revenge_at = 0;
     g->pvp_return_screen = SCREEN_PVP_EVENT;
     GameEnterPvpOpponent(g);
 }
@@ -230,6 +230,8 @@ static void GameEnterFixedPvpBattle(Game *g, PvpOpponent opponent, int revenge_i
     g->pvp_opponent = opponent;
     g->pvp_can_next = false;
     g->pvp_revenge_index = revenge_index;
+    g->pvp_revenge_at =
+        revenge_index >= 0 && revenge_index < g->player.pvp.history_count ? g->player.pvp.history[revenge_index].at : 0;
     g->pvp_return_screen = return_screen;
     GameEnterPvpOpponent(g);
 }
@@ -298,14 +300,12 @@ static void GameAddPvpOpponent(cJSON *fields, const Game *g) {
         cJSON_AddStringToObject(fields, "duel", o->duel_id);
         return;
     }
+    if (g->pvp_revenge_at > 0) cJSON_AddNumberToObject(fields, "revenge_at", (double)g->pvp_revenge_at);
     cJSON *opponent = cJSON_AddObjectToObject(fields, "opponent");
     if (!opponent) return;
     cJSON_AddStringToObject(opponent, "kind", g->pvp_match.kind ? g->pvp_match.kind : GAME_PVP_KIND_LADDER);
     cJSON_AddNumberToObject(opponent, "seed", o->seed);
     cJSON_AddNumberToObject(opponent, "bot", o->bot);
-    cJSON_AddNumberToObject(opponent, "squad", o->squad);
-    cJSON_AddNumberToObject(opponent, "level", o->level);
-    cJSON_AddNumberToObject(opponent, "trophies", g->pvp_match.trophies);
     cJSON_AddNumberToObject(opponent, "banners", g->pvp_match.banners);
     cJSON_AddNumberToObject(opponent, "now", (double)g->pvp_match.at);
 }
@@ -1043,7 +1043,11 @@ bool GameInitialize(Game *g) {
         return false;
     }
     PvpEventSync(&g->player.pvp, ServerNow());
-    if (PvpSimulateDefense(&g->player.pvp, g->player.level, ServerNow()) > 0) ProgressionSave(&g->player);
+    if (ServerActionsActive()) {
+        if (g->player.pvp.wins + g->player.pvp.losses > 0) GameSubmitSimpleAction("pvp_defend");
+    } else if (PvpSimulateDefense(&g->player.pvp, g->player.level, ServerNow()) > 0) {
+        ProgressionSave(&g->player);
+    }
     PlayerGallerySync(&g->player);
 
     HudInitialize(&g->hud);
