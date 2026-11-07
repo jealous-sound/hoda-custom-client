@@ -4,3 +4,5 @@ HODA_PLAY_MODE_LOCAL_HINT|이 컴퓨터에 진행 상황이 저장됩니다
 HODA_PLAY_MODE_ONLINE_HINT|서버에 저장, 길드와 채팅
 HODA_OPTIONS_LANGUAGE|언어
 HODA_LANGUAGE_SYSTEM|시스템 언어
+HODA_CONTENT_CLIENT_TOO_OLD_TITLE|업데이트 필요
+HODA_CONTENT_CLIENT_TOO_OLD_MESSAGE|이 버전의 Heroes of Dragon Age는 현재 게임 데이터를 사용하기에 너무 오래되었습니다. 계속 플레이하려면 최신 버전을 다운로드하세요.

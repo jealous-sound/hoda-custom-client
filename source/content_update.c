@@ -4,7 +4,7 @@
 #define HOD_CONTENT_URL ""
 #endif
 #define CONTENT_MANIFEST_FILE "manifest.json"
-#define CONTENT_MANIFEST_FORMAT 1
+#define CONTENT_MANIFEST_FORMAT 2
 #define CONTENT_STATE_PATH "content-state.json"
 #define CONTENT_DOWNLOAD_DIR "downloads"
 #define CONTENT_MANIFEST_DOWNLOAD CONTENT_DOWNLOAD_DIR "/" CONTENT_MANIFEST_FILE
@@ -290,7 +290,7 @@ static ContentError ContentFetchManifest(ContentUpdate *update, ContentManifest 
     bool parsed = root && ContentManifestParse(root, manifest);
     cJSON_Delete(root);
     remove(CONTENT_MANIFEST_DOWNLOAD);
-    if (!parsed) return CONTENT_ERROR_SERVER;
+    if (!parsed || manifest->format < CONTENT_MANIFEST_FORMAT) return CONTENT_ERROR_SERVER;
     return manifest->format == CONTENT_MANIFEST_FORMAT ? CONTENT_ERROR_NONE : CONTENT_ERROR_CLIENT_TOO_OLD;
 }
 
@@ -391,7 +391,7 @@ static bool ContentStatePackIntact(const cJSON *pack) {
 
 static bool ContentStateUsable(cJSON *state) {
     cJSON *packs = ContentStatePacks(state);
-    if (cJSON_GetArraySize(packs) == 0) return false;
+    if (JsonInt(state, "format") != CONTENT_MANIFEST_FORMAT || cJSON_GetArraySize(packs) == 0) return false;
     cJSON *pack;
     cJSON_ArrayForEach(pack, packs) {
         if (!ContentStatePackIntact(pack)) return false;
@@ -507,6 +507,8 @@ ContentApplyManifest(ContentUpdate *update, ContentProgress *progress, cJSON *st
     ContentStateDropRetired(state, manifest);
     cJSON_DeleteItemFromObjectCaseSensitive(state, "version");
     cJSON_AddStringToObject(state, "version", manifest->version);
+    cJSON_DeleteItemFromObjectCaseSensitive(state, "format");
+    cJSON_AddNumberToObject(state, "format", manifest->format);
     return ContentStateSave(state) ? CONTENT_ERROR_NONE : CONTENT_ERROR_DISK;
 }
 

@@ -4,3 +4,5 @@ HODA_PLAY_MODE_LOCAL_HINT|このコンピューターに進行状況を保存し
 HODA_PLAY_MODE_ONLINE_HINT|サーバーに保存、ギルドとチャット
 HODA_OPTIONS_LANGUAGE|言語
 HODA_LANGUAGE_SYSTEM|システムの言語
+HODA_CONTENT_CLIENT_TOO_OLD_TITLE|アップデートが必要です
+HODA_CONTENT_CLIENT_TOO_OLD_MESSAGE|このバージョンのHeroes of Dragon Ageは現在のゲームデータに対応していません。プレイを続けるには最新バージョンをダウンロードしてください。

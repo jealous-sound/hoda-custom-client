@@ -48,6 +48,7 @@ typedef struct {
     const char *title_key;
     const char *message_key;
     const char *button_key;
+    bool quits;
 } ContentAlert;
 
 typedef struct {
@@ -112,10 +113,16 @@ static ContentAlert ContentAlertFor(ContentError error) {
                 "ERROR_INSUFFICIENT_DEVICE_STORAGE",
                 "ASSET_DOWNLOAD_ERROR_BUTTON_RETRY"
             };
+        case CONTENT_ERROR_CLIENT_TOO_OLD:
+            return (ContentAlert){
+                "HODA_CONTENT_CLIENT_TOO_OLD_TITLE",
+                "HODA_CONTENT_CLIENT_TOO_OLD_MESSAGE",
+                "MAIN_MESSAGE_DIALOG_OK",
+                true
+            };
         case CONTENT_ERROR_NONE:
         case CONTENT_ERROR_NOT_CONFIGURED:
         case CONTENT_ERROR_SERVER:
-        case CONTENT_ERROR_CLIENT_TOO_OLD:
         case CONTENT_ERROR_CORRUPT:
         case CONTENT_ERROR_CANCELLED:
             break;
@@ -290,7 +297,7 @@ static ContentScreenChoice ContentDrawArt(ContentArt *art, const ContentProgress
     if (progress->phase != CONTENT_PHASE_FAILED) return CONTENT_SCREEN_WAIT;
     ContentAlert alert = ContentAlertFor(progress->error);
     art->alert_button.label = LocGet(alert.button_key);
-    bool retry = MessagePopupDrawAlert(
+    bool pressed = MessagePopupDrawAlert(
         art->alert_frame,
         art->title_font,
         art->menu_font,
@@ -298,7 +305,7 @@ static ContentScreenChoice ContentDrawArt(ContentArt *art, const ContentProgress
         LocGet(alert.message_key),
         &art->alert_button
     );
-    if (retry) return CONTENT_SCREEN_RETRY;
+    if (pressed) return alert.quits ? CONTENT_SCREEN_QUIT : CONTENT_SCREEN_RETRY;
     return IsKeyPressed(KEY_ESCAPE) ? CONTENT_SCREEN_QUIT : CONTENT_SCREEN_WAIT;
 }
 
