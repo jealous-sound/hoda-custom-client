@@ -26,6 +26,11 @@
 #define GOLDEN_NOW_SPAN (86400LL * 400)
 #define GOLDEN_FORTIFIED_BATTLES 32
 #define GOLDEN_FORTIFY_SLOT_PCT 60
+#define GOLDEN_BATTLES_SECTION "battles"
+#define GOLDEN_USAGE "usage: battle_replay_golden [--check | --trace BATTLE] [DIR]"
+#define GOLDEN_COUNT(array) ((int)(sizeof(array) / sizeof((array)[0])))
+
+static const char *const GOLDEN_BATTLE_INPUTS[] = {"name", "seed", "player", "enemy", "changer"};
 
 typedef struct {
     char id[64];
@@ -47,6 +52,11 @@ typedef struct {
     int changer_count;
     cJSON *battles;
 } Golden;
+
+typedef struct {
+    const char *name;
+    const cJSON *entries;
+} GoldenSection;
 
 static unsigned GoldenRand(Golden *g) {
     unsigned x = g->rng;
@@ -326,12 +336,14 @@ static void GoldenNexusBattles(Golden *g, const cJSON *rosters) {
     cJSON_ArrayForEach(entry, rosters) count++;
     for (int i = 0; i < GOLDEN_NEXUS_BATTLES; i++) {
         const cJSON *pick = cJSON_GetArrayItem(rosters, GoldenRange(g, 0, count - 1));
+        cJSON *player = GoldenSide(g, true);
+        cJSON *changer = BattleReplayChangerJson(&g->changers[GoldenRange(g, 0, g->changer_count - 1)]);
         GoldenAddBattle(
             g,
             TextFormat("nexus-%s-%d", JsonStr(pick, "map"), JsonInt(pick, "step")),
-            GoldenSide(g, true),
+            player,
             cJSON_Duplicate(cJSON_GetObjectItemCaseSensitive(pick, "enemy"), true),
-            BattleReplayChangerJson(&g->changers[GoldenRange(g, 0, g->changer_count - 1)])
+            changer
         );
     }
 }
@@ -394,11 +406,14 @@ static PvpOpponent GoldenPvpOpponent(Golden *g, cJSON *entry) {
         return PvpOpponentFromBot(bot, level, trophies, PvpDay(now), seed);
     }
     if (!strcmp(kind, "revenge")) {
+        int bot = GoldenRange(g, 0, table->bot_count - 1);
+        int squad = GoldenRange(g, 0, table->squad_count - 1);
+        int opponent_trophies = GoldenRange(g, 0, 4000);
         PlayerPvpBattle battle = {
-            .bot = GoldenRange(g, 0, table->bot_count - 1),
-            .squad = GoldenRange(g, 0, table->squad_count - 1),
+            .bot = bot,
+            .squad = squad,
             .level = level,
-            .opponent_trophies = GoldenRange(g, 0, 4000),
+            .opponent_trophies = opponent_trophies,
             .seed = seed,
         };
         cJSON_AddNumberToObject(entry, "bot", battle.bot);
@@ -423,14 +438,16 @@ static cJSON *GoldenPvpOpponents(Golden *g) {
         cJSON_AddNumberToObject(result, "trophies", opponent.trophies);
         cJSON_AddItemToObject(entry, "enemy", BattleReplayRosterJson(&roster, false));
         cJSON_AddItemToArray(opponents, entry);
-        if (i < GOLDEN_PVP_BATTLES)
-            GoldenAddBattle(
-                g,
-                TextFormat("pvp-%s-%d", JsonStr(entry, "kind"), i),
-                GoldenSide(g, true),
-                BattleReplayRosterJson(&roster, false),
-                GoldenChanger(g)
-            );
+        if (i >= GOLDEN_PVP_BATTLES) continue;
+        cJSON *player = GoldenSide(g, true);
+        cJSON *changer = GoldenChanger(g);
+        GoldenAddBattle(
+            g,
+            TextFormat("pvp-%s-%d", JsonStr(entry, "kind"), i),
+            player,
+            BattleReplayRosterJson(&roster, false),
+            changer
+        );
     }
     return opponents;
 }
@@ -530,30 +547,120 @@ static bool GoldenSameContents(FILE *generated, const char *path) {
     return a == b;
 }
 
-static FILE *GoldenOpen(bool check, const char *path) {
-    FILE *file = check ? tmpfile() : fopen(path, "wb");
-    if (!file) TraceLog(LOG_FATAL, "Golden: cannot write %s", path);
-    return file;
+static bool GoldenIsBattleInput(const char *field) {
+    for (int i = 0; i < GOLDEN_COUNT(GOLDEN_BATTLE_INPUTS); i++)
+        if (!strcmp(GOLDEN_BATTLE_INPUTS[i], field)) return true;
+    return false;
 }
 
-static bool GoldenClose(FILE *file, bool check, const char *path) {
+static const char *GoldenFirstDifferentField(const cJSON *generated, const cJSON *tracked) {
+    const cJSON *field = NULL;
+    cJSON_ArrayForEach(field, generated) {
+        if (!cJSON_Compare(field, cJSON_GetObjectItemCaseSensitive(tracked, field->string), true)) return field->string;
+    }
+    cJSON_ArrayForEach(field, tracked) {
+        if (!cJSON_GetObjectItemCaseSensitive(generated, field->string)) return field->string;
+    }
+    return NULL;
+}
+
+static void GoldenReportEntry(const char *section, int index, const cJSON *generated, const cJSON *tracked) {
+    const char *field = GoldenFirstDifferentField(generated, tracked);
+    const char *label = JsonStr(generated, "name")[0] ? JsonStr(generated, "name") : JsonStr(generated, "key");
+    printf(
+        "Golden: first difference is %s[%d]%s%s, field %s\n",
+        section,
+        index,
+        label[0] ? " " : "",
+        label,
+        field ? field : "order"
+    );
+    if (!field || strcmp(section, GOLDEN_BATTLES_SECTION)) return;
+    if (GoldenIsBattleInput(field))
+        printf("Golden: the generator drew different inputs for %s before the sim ran\n", label);
+    else
+        printf("Golden: the sim played %s differently; diff the output of --trace %s across builds\n", label, label);
+}
+
+static bool GoldenReportSection(const GoldenSection *section, const cJSON *tracked) {
+    const cJSON *generated = section->entries->child;
+    const cJSON *recorded = cJSON_IsArray(tracked) ? tracked->child : NULL;
+    for (int i = 0; generated && recorded; i++, generated = generated->next, recorded = recorded->next) {
+        if (cJSON_Compare(generated, recorded, true)) continue;
+        GoldenReportEntry(section->name, i, generated, recorded);
+        return true;
+    }
+    int generated_count = cJSON_GetArraySize(section->entries);
+    int tracked_count = cJSON_GetArraySize(tracked);
+    if (generated_count == tracked_count) return false;
+    printf("Golden: %s has %d entries, the tracked file %d\n", section->name, generated_count, tracked_count);
+    return true;
+}
+
+static void GoldenReportDifference(const char *path, const GoldenSection *sections, int count) {
+    if (!FileExists(path)) return;
+    cJSON *root = JsonLoadFile(path);
+    bool found = false;
+    for (int s = 0; s < count && !found; s++)
+        found = GoldenReportSection(&sections[s], cJSON_GetObjectItemCaseSensitive(root, sections[s].name));
+    if (!found) printf("Golden: %s holds the same entries laid out differently\n", path);
+    cJSON_Delete(root);
+}
+
+static bool GoldenWriteFile(bool check, const char *path, const GoldenSection *sections, int count) {
+    FILE *file = check ? tmpfile() : fopen(path, "wb");
+    if (!file) TraceLog(LOG_FATAL, "Golden: cannot write %s", path);
+    fprintf(file, "{\n  \"version\": 1,\n");
+    for (int s = 0; s < count; s++) GoldenWriteArray(file, sections[s].name, sections[s].entries, s == count - 1);
+    fprintf(file, "}\n");
     bool current = !check || GoldenSameContents(file, path);
     fclose(file);
-    if (check && !current) printf("Golden: %s is stale; run make golden\n", path);
-    return current;
+    if (current) return true;
+    printf("Golden: %s is stale; run make golden\n", path);
+    GoldenReportDifference(path, sections, count);
+    return false;
+}
+
+static int GoldenTrace(const cJSON *catalog, const char *dir, const char *name) {
+    char path[512];
+    snprintf(path, sizeof(path), "%s/%s", dir, GOLDEN_REPLAYS_FILE);
+    cJSON *root = JsonLoadFile(path);
+    const cJSON *battle = NULL;
+    cJSON_ArrayForEach(battle, cJSON_GetObjectItemCaseSensitive(root, GOLDEN_BATTLES_SECTION)) {
+        if (!strcmp(JsonStr(battle, "name"), name)) break;
+    }
+    static BattleSim sim;
+    bool played = battle && BattleReplaySimulate(catalog, battle, &sim);
+    if (played)
+        BattleReplayTimelineWrite(&sim, stdout);
+    else
+        printf("Golden: %s holds no playable battle named %s\n", path, name);
+    cJSON_Delete(root);
+    return played ? 0 : 1;
 }
 
 int main(int argc, char **argv) {
     SetTraceLogLevel(LOG_WARNING);
     bool check = argc > 1 && !strcmp(argv[1], "--check");
-    const char *dir = argc > (check ? 2 : 1) ? argv[check ? 2 : 1] : GOLDEN_DEFAULT_DIR;
+    bool trace = argc > 1 && !strcmp(argv[1], "--trace");
+    if (trace && argc < 3) {
+        printf("%s\n", GOLDEN_USAGE);
+        return 2;
+    }
+    int dir_arg = trace ? 3 : check ? 2 : 1;
+    const char *dir = argc > dir_arg ? argv[dir_arg] : GOLDEN_DEFAULT_DIR;
+    cJSON *catalog_root = BattleReplayCatalogLoad();
+    if (trace) {
+        int status = GoldenTrace(cJSON_GetObjectItemCaseSensitive(catalog_root, "characters"), dir, argv[2]);
+        cJSON_Delete(catalog_root);
+        return status;
+    }
     char replays_path[512], recipes_path[512];
     snprintf(replays_path, sizeof(replays_path), "%s/%s", dir, GOLDEN_REPLAYS_FILE);
     snprintf(recipes_path, sizeof(recipes_path), "%s/%s", dir, GOLDEN_RECIPES_FILE);
     static Golden golden;
     Golden *g = &golden;
     g->rng = GOLDEN_RNG_SEED;
-    cJSON *catalog_root = BattleReplayCatalogLoad();
     g->catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
     g->battles = cJSON_CreateArray();
     GoldenLoadCharacters(g);
@@ -570,22 +677,17 @@ int main(int argc, char **argv) {
     GoldenFortifiedBattles(g);
     cJSON *recipes = GoldenBuiltinRecipes();
 
-    FILE *file = GoldenOpen(check, replays_path);
-    fprintf(file, "{\n  \"version\": 1,\n");
-    GoldenWriteArray(file, "battles", g->battles, false);
-    GoldenWriteArray(file, "campaign_rosters", campaign, false);
-    GoldenWriteArray(file, "nexus_rosters", nexus, false);
-    GoldenWriteArray(file, "nexus_changers", nexus_changers, false);
-    GoldenWriteArray(file, "pvp_changers", pvp_changers, false);
-    GoldenWriteArray(file, "pvp_opponents", opponents, true);
-    fprintf(file, "}\n");
-    bool current = GoldenClose(file, check, replays_path);
-
-    file = GoldenOpen(check, recipes_path);
-    fprintf(file, "{\n  \"version\": 1,\n");
-    GoldenWriteArray(file, "recipes", recipes, true);
-    fprintf(file, "}\n");
-    current = GoldenClose(file, check, recipes_path) && current;
+    const GoldenSection replay_sections[] = {
+        {GOLDEN_BATTLES_SECTION, g->battles},
+        {"campaign_rosters", campaign},
+        {"nexus_rosters", nexus},
+        {"nexus_changers", nexus_changers},
+        {"pvp_changers", pvp_changers},
+        {"pvp_opponents", opponents},
+    };
+    const GoldenSection recipe_sections[] = {{"recipes", recipes}};
+    bool current = GoldenWriteFile(check, replays_path, replay_sections, GOLDEN_COUNT(replay_sections));
+    current = GoldenWriteFile(check, recipes_path, recipe_sections, GOLDEN_COUNT(recipe_sections)) && current;
 
     if (check && current) printf("Golden: %s matches the sim\n", dir);
     if (!check) printf("Golden: %d battles written to %s\n", cJSON_GetArraySize(g->battles), dir);
