@@ -1030,6 +1030,8 @@ char *ProgressionSerialize(const Player *player) {
             cJSON_Delete(entry);
             goto save_json_failed;
         }
+        cJSON *fortify = FortifyChildrenJson(ch);
+        if (fortify) cJSON_AddItemToObject(entry, "fortify", fortify);
         if (!ProgressionJsonAddArrayItem(additions, entry)) goto save_json_failed;
     }
 
@@ -1643,6 +1645,12 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
                 ch->consume_xp = consume_xp_value;
                 ch->instance_id = instance_id;
                 ch->ability = ability;
+                if (!FortifyChildrenLoad(ch, cJSON_GetObjectItemCaseSensitive(entry, "fortify")))
+                    TraceLog(
+                        LOG_WARNING,
+                        "Progression: dropped unreadable fortify slots of hero %llu",
+                        (unsigned long long)instance_id
+                    );
                 if (instance_id > max_instance_id) max_instance_id = instance_id;
             }
         }

@@ -7,6 +7,7 @@ typedef struct {
     bool resource_opened;
     bool runes_seeded;
     bool consume_opened;
+    bool fortify_opened;
     bool gear_store;
 } DebugShot;
 
@@ -769,6 +770,55 @@ static void DebugPrepareConsume(Game *game, DebugShot *shot) {
     if (DebugShotIs(shot, "consume_results")) ConsumeBeginResults(c, &game->heroes, &game->player);
 }
 
+#define DEBUG_FORTIFY_CONSUME_LEVEL 18
+
+static FortifyChild DebugFortifyChild(const char *id, Tier tier, bool ascended) {
+    FortifyChild child = {.tier = tier, .ascended = ascended};
+    StrCopy(child.id, sizeof(child.id), id);
+    return child;
+}
+
+static void DebugPrepareFortify(Game *game, DebugShot *shot) {
+    if (!shot->screen || strncmp(shot->screen, "fortify", 7) != 0) return;
+    if (shot->fortify_opened) {
+        if (game->screen == SCREEN_HEROES) game->screen = SCREEN_FORTIFY;
+        return;
+    }
+    shot->fortify_opened = true;
+    Player *p = &game->player;
+    FortifyScreen *f = &game->fortify;
+    int parent = -1, merged = -1, wanderer = -1, cassandra = -1;
+    if (!DebugShotIs(shot, "fortify")) {
+        Character *ch = (Character *)DebugConsumeDefinition(game, "UNIT_ELVENMAGE", &parent);
+        ch->tier = TIER_III;
+        ch->consume_xp = ConsumeXpForLevel(ConsumeProfileFor(ch)->consume_table, DEBUG_FORTIFY_CONSUME_LEVEL);
+        ConsumeNormalizeCharacter(ch);
+        ch->fortify[0] = DebugFortifyChild("UNIT_REDIRONMAGE", TIER_I, false);
+        ch->fortify[1] = DebugFortifyChild("UNIT_OGRE", TIER_IV, true);
+        DebugConsumeDefinition(game, "UNIT_REDIRONMAGE", &merged);
+        DebugConsumeDefinition(game, "UNIT_APOSTATEWANDERER", &wanderer);
+        DebugConsumeDefinition(game, "UNIT_CASSANDRAPENTAGHAST", &cassandra);
+        p->gems = DEBUG_PACK_FUNDS;
+    }
+    HeroesSyncRoster(&game->heroes, p);
+    if (parent >= 0) HeroesRebuildCard(&game->heroes, p, parent);
+    GameOpenFortify(game);
+    if (DebugShotIs(shot, "fortify")) return;
+    FortifySelectParent(f, parent, true);
+    if (DebugShotIs(shot, "fortify_parent")) return;
+    if (DebugShotIs(shot, "fortify_remove_mode") || DebugShotIs(shot, "fortify_remove")) {
+        f->remove_mode = true;
+        f->remove_slot = 1;
+        if (DebugShotIs(shot, "fortify_remove")) f->dialog = FORTIFY_DIALOG_REMOVE;
+        return;
+    }
+    FortifyPlace(f, p, 2, wanderer);
+    FortifyPlace(f, p, 3, cassandra);
+    FortifyPlace(f, p, 0, merged);
+    if (DebugShotIs(shot, "fortify_confirm")) f->dialog = FORTIFY_DIALOG_CONFIRM;
+    if (DebugShotIs(shot, "fortify_celebration")) FortifyConfirm(f, &game->heroes, p);
+}
+
 static bool DebugPrepareTutorial(Game *game, DebugShot *shot) {
     if (!DebugShotIs(shot, "tutorial")) return false;
     int selected = EnvInt("HOD_SELECT", -1);
@@ -1172,6 +1222,7 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     DebugActivateBattleRunes(game, shot);
     DebugPrepareRunes(game, shot);
     DebugPrepareConsume(game, shot);
+    DebugPrepareFortify(game, shot);
     DebugPrepareGear(game, shot);
     DebugPrepareGallery(game, shot);
     DebugSeedGoals(game, shot);

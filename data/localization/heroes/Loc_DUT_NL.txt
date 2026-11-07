@@ -1342,3 +1342,11 @@ HODA_UNIT_XENONTHEANTIQUARIANI|Xenon de Antiquair I
 HODA_UNIT_XENONTHEANTIQUARIANII|Xenon de Antiquair II
 HODA_UNIT_XENONTHEANTIQUARIANIII|Xenon de Antiquair III
 HODA_UNIT_XENONTHEANTIQUARIANIV|Xenon de Antiquair IV
+HODA_UI_REMOVE_FORTIFICATIONS|Versterkingen verwijderen
+HODA_UI_EXIT_REMOVE_FORTIFICATIONS|Klaar met verwijderen
+HODA_UI_UNFORTIFY_CONFIRM_DESC|Deze held uit zijn versterkingsslot verwijderen?
+HODA_UI_UNFORTIFY_ALL_CONFIRM_DESC|Alle helden uit de versterkingsslots van deze held verwijderen?
+HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Verwijderde helden keren terug naar je inventaris op niveau 1 en geven geen versterkingsbonus meer.
+HODA_UI_CONFIRM_UNFORTIFY|Verwijderen
+HODA_UI_UNFORTIFY_REMOVE_ALL|Alles verwijderen
+HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Kosten voor verwijderen

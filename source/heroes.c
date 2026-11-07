@@ -90,6 +90,7 @@ typedef struct {
     bool in_squad;
     bool in_use;
     bool selected;
+    bool fortified;
 } RosterCardState;
 
 typedef void (*RosterCardDrawFn)(const HeroCard *card, Rectangle cell, int roster_index, const void *context);
@@ -799,6 +800,8 @@ static void RosterDrawCard(const HeroCard *card, Rectangle cell, const RosterCar
     Font font = GuiFont(FNT_MENU);
     Color tint = state->in_use ? (Color){110, 110, 110, 255} : WHITE;
     if (state->selected) UiDrawTexture(GuiTex(GUI_CARD_SELECT), UiRect(cell, 0.5f, 0.5f, 1.1f, 1.1f), WHITE);
+    if (state->fortified)
+        UiDrawTexture(GuiTex(GUI_ROSTER_FORTIFIED), HudFitRect(cell, 0.5f, 0.5f, 1.9f, 0.96f, 0.97f), tint);
     UiDrawTexture(card->portrait, UiRect(cell, 0.5f, 0.5f, 0.85f, 0.85f), tint);
 
     float bh = cell.height * 0.06f, bw = bh * 10.0f;
@@ -871,6 +874,7 @@ static void HeroesDrawRosterCard(const HeroCard *card, Rectangle cell, int roste
         .in_squad = in_squad,
         .in_use = in_squad,
         .selected = roster_index == c->heroes->selected,
+        .fortified = FortifyHasChildren(card->ch),
     };
     RosterDrawCard(card, cell, &state);
     if (TutorialRunning()) HeroesPublishTutorialCard(c, card, cell, roster_index, in_squad);
@@ -889,7 +893,11 @@ HeroesButton HeroesDrawNav(Heroes *h, HeroesButton active, bool interactive, int
     else if (ButtonDrawEx(&h->train, train, interactive))
         clicked = HEROES_CONSUME;
     y += w + gap;
-    ButtonDrawEx(&h->fortify, (Rectangle){x, y, w, w}, false);
+    Rectangle fortify = {x, y, w, w};
+    if (active == HEROES_FORTIFY)
+        ButtonDrawSelected(&h->fortify, fortify);
+    else if (ButtonDrawEx(&h->fortify, fortify, interactive))
+        clicked = HEROES_FORTIFY;
     y += w + gap;
     Rectangle runes = {x, y, w, w};
     if (active == HEROES_RUNES)

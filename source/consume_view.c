@@ -40,7 +40,8 @@ typedef enum {
     CONSUME_LEAVE_RUNES,
     CONSUME_LEAVE_GALLERY,
     CONSUME_LEAVE_PVP,
-    CONSUME_LEAVE_QUESTS
+    CONSUME_LEAVE_QUESTS,
+    CONSUME_LEAVE_FORTIFY
 } ConsumeLeave;
 
 typedef enum {
@@ -94,6 +95,7 @@ typedef struct {
     int pending_seed;
     bool warning_disable;
     bool warnings_disabled[RARITY_MYTHIC + 1];
+    bool fortified_warning_disabled;
 
     bool board_dirty;
     int placed_spot;
@@ -307,12 +309,17 @@ static bool ConsumeRarityNeedsWarning(const ConsumeScreen *c, const Character *c
     return ch->rarity >= CONSUME_RARITY_EPIC_WARNING && !c->warnings_disabled[ch->rarity];
 }
 
-static bool ConsumeSeedNeedsWarning(const ConsumeScreen *c, const Character *ch) {
-    return GearHasEquipped(ch) || ConsumeRarityNeedsWarning(c, ch);
+static bool ConsumeFortifiedNeedsWarning(const ConsumeScreen *c, const Character *ch) {
+    return !GearHasEquipped(ch) && FortifyHasChildren(ch) && !c->fortified_warning_disabled;
 }
 
-static const char *ConsumeSeedWarning(const Character *ch) {
+static bool ConsumeSeedNeedsWarning(const ConsumeScreen *c, const Character *ch) {
+    return GearHasEquipped(ch) || ConsumeFortifiedNeedsWarning(c, ch) || ConsumeRarityNeedsWarning(c, ch);
+}
+
+static const char *ConsumeSeedWarning(const ConsumeScreen *c, const Character *ch) {
     if (GearHasEquipped(ch)) return LocGet(CONSUME_GEAR_WARNING_KEY);
+    if (ConsumeFortifiedNeedsWarning(c, ch)) return LocGet("CONSUME_CONFIRMATION_FORTIFIED_WARNING");
     return LocGet(
         ch->rarity == RARITY_EPIC ? "CONSUME_CONFIRMATION_EPIC_WARNING" : "CONSUME_CONFIRMATION_LEGENDARY_WARNING"
     );
@@ -387,7 +394,7 @@ static void ConsumeMultiSelect(ConsumeScreen *c, const Player *p, ConsumeMultiTy
     memset(c->multi_counts, 0, sizeof(c->multi_counts));
     for (int i = 0; i < p->roster_count; i++) {
         if (!PlayerConsumeSeedAllowed(p, c->target, i)) continue;
-        if (GearHasEquipped(&p->roster[i]) && !ConsumeIsPlaced(c, i)) continue;
+        if ((GearHasEquipped(&p->roster[i]) || FortifyHasChildren(&p->roster[i])) && !ConsumeIsPlaced(c, i)) continue;
         for (int s = 0; s < c->seed_count; s++) {
             if (!ConsumeMultiMatches(type, &p->roster[i], &p->roster[c->seeds[s]])) continue;
             c->multi_seeds[c->multi_count++] = i;
@@ -454,6 +461,7 @@ static void ConsumeDrawRosterCard(const HeroCard *card, Rectangle cell, int rost
         .grey_bar = true,
         .in_squad = PlayerSquadsContain(c->player, roster_index),
         .in_use = ConsumeIsPlaced(c->screen, roster_index),
+        .fortified = FortifyHasChildren(ch),
     };
     if (!state.maxed) {
         state.progress = ConsumeBandFraction(profile->consume_table, ch->consume_level, ch->consume_xp);
@@ -992,7 +1000,7 @@ static void ConsumeDrawRarityWarning(ConsumeScreen *c, HeroesBackground *scene, 
     UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), popup, WHITE);
     Rectangle content = UiRect(popup, 0.5f, 0.5f, 0.8f, 0.8f);
     Rectangle body = UiRect(content, 0.0f, 0.0f, 1.0f, 0.5f);
-    MessagePopupDrawText(GuiFont(FNT_MENU), ConsumeSeedWarning(seed), body, 26.0f, WHITE);
+    MessagePopupDrawText(GuiFont(FNT_MENU), ConsumeSeedWarning(c, seed), body, 26.0f, WHITE);
 
     Rectangle check_row = {content.x, body.y + body.height, content.width, content.height * 0.187f};
     float box_size = check_row.height * 0.8f;
@@ -1009,7 +1017,10 @@ static void ConsumeDrawRarityWarning(ConsumeScreen *c, HeroesBackground *scene, 
     if (!yes && !no) return;
     c->dialog = CONSUME_DIALOG_NONE;
     if (!yes) return;
-    c->warnings_disabled[seed->rarity] = c->warning_disable;
+    if (ConsumeFortifiedNeedsWarning(c, seed))
+        c->fortified_warning_disabled = c->warning_disable;
+    else
+        c->warnings_disabled[seed->rarity] = c->warning_disable;
     ConsumeSeedAdd(c, p, c->pending_seed);
     HeroesBackgroundPlayPlace(scene);
 }
@@ -1225,6 +1236,7 @@ ConsumeLeave ConsumeDraw(ConsumeScreen *c, HeroesBackground *scene, Heroes *h, P
             if (nav == HEROES_SQUAD) ConsumeRequestLeave(c, CONSUME_LEAVE_SQUAD);
             if (nav == HEROES_RUNES) ConsumeRequestLeave(c, CONSUME_LEAVE_RUNES);
             if (nav == HEROES_GALLERY) ConsumeRequestLeave(c, CONSUME_LEAVE_GALLERY);
+            if (nav == HEROES_FORTIFY) ConsumeRequestLeave(c, CONSUME_LEAVE_FORTIFY);
         }
         if (!c->ladder_open) ConsumeDrawFlyText(c, dt);
         if (input || c->press_index >= 0) ConsumeUpdateDrag(c, scene, p, !blocked);

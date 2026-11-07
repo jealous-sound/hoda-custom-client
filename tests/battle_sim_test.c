@@ -5189,8 +5189,15 @@ static void TestConsumeWarnsAboutEquippedGear(void) {
     geared.gear.defs[0] = 1;
     assert(ConsumeSeedNeedsWarning(&c, &geared));
     LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
-    assert(!strcmp(ConsumeSeedWarning(&geared), "Снаряжение этого героя будет уничтожено. Вы уверены?"));
+    assert(!strcmp(ConsumeSeedWarning(&c, &geared), "Снаряжение этого героя будет уничтожено. Вы уверены?"));
     LocUnload();
+
+    Character fortified = plain;
+    StrCopy(fortified.fortify[3].id, sizeof(fortified.fortify[3].id), "UNIT_OGRE");
+    assert(ConsumeSeedNeedsWarning(&c, &fortified));
+    assert(ConsumeSeedWarning(&c, &fortified) == LocGet("CONSUME_CONFIRMATION_FORTIFIED_WARNING"));
+    c.fortified_warning_disabled = true;
+    assert(!ConsumeSeedNeedsWarning(&c, &fortified));
 }
 
 static void TestGearViewEquipFlow(void) {
@@ -6416,6 +6423,275 @@ static void AssertBattleStartReplaysTheBattle(Game *g, unsigned seed) {
     cJSON_Delete(fields);
 }
 
+static Character FortifyTestHero(const cJSON *catalog, const char *id, Tier tier) {
+    static Ability ability;
+    Character ch;
+    CharacterParse(CatalogFindCharacter(catalog, id), &ch, &ability);
+    ch.tier = tier;
+    ch.level = 1;
+    ConsumeNormalizeCharacter(&ch);
+    return ch;
+}
+
+static FortifyChild FortifyTestChild(const char *id, Tier tier, bool ascended) {
+    FortifyChild child = {.tier = tier, .ascended = ascended};
+    StrCopy(child.id, sizeof(child.id), id);
+    return child;
+}
+
+static void AssertFortifyBonus(
+    const Character *parent, int slot, FortifyChild child, FortifyStat stat, int rarity, int faction, int tier
+) {
+    FortifyBonus bonus = FortifySlotBonus(parent, slot, &child);
+    assert(FortifySlotDefAt(parent, slot)->stat == stat);
+    assert(bonus.rarity == rarity && bonus.faction == faction && bonus.tier == tier);
+}
+
+static void TestFortifyTablesCarryThe544Rules(void) {
+    FortifyCatalogEnsure();
+    assert(fortify_catalog.faction_bonus == 0.125f);
+    assert(fortify_catalog.rarity_tier_bonus[RARITY_LEGENDARY - 1][TIER_IV] == 1.0f);
+    assert(fortify_catalog.rarity_tier_bonus[RARITY_MYTHIC - 1][TIER_IV] == 1.24f);
+    static const int remove_costs[RARITY_MYTHIC] = {5, 5, 5, 5, 15, 30};
+    assert(memcmp(fortify_catalog.remove_gem_cost, remove_costs, sizeof(remove_costs)) == 0);
+    assert(FortifyHeroFind("UNIT_ELVENMAGE") && !FortifyHeroFind("UNIT_DOES_NOT_EXIST"));
+}
+
+static void TestFortifyBonusesFollowThe544Calculator(void) {
+    cJSON *root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+
+    Character elven_mage = FortifyTestHero(catalog, "UNIT_ELVENMAGE", TIER_IV);
+    AssertFortifyBonus(
+        &elven_mage, 0, FortifyTestChild("UNIT_REDIRONMAGE", TIER_II, false), FORTIFY_STAT_HEALTH, 68, 0, 7
+    );
+    elven_mage = FortifyTestHero(catalog, "UNIT_ELVENMAGE", TIER_II);
+    AssertFortifyBonus(
+        &elven_mage, 1, FortifyTestChild("UNIT_ELVENMAGE", TIER_IV, true), FORTIFY_STAT_POWER, 150, 24, 46
+    );
+    Character wanderer = FortifyTestHero(catalog, "UNIT_APOSTATEWANDERER", TIER_III);
+    AssertFortifyBonus(
+        &wanderer, 3, FortifyTestChild("UNIT_CASSANDRAPENTAGHAST", TIER_I, false), FORTIFY_STAT_POWER, 49, 0, 0
+    );
+    Character golem = FortifyTestHero(catalog, "UNIT_INFERNOGOLEM", TIER_IV);
+    GearApplyAscension(&golem);
+    AssertFortifyBonus(&golem, 2, FortifyTestChild("UNIT_OGRE", TIER_III, false), FORTIFY_STAT_HEALTH, 360, 54, 72);
+
+    int power = CharacterStatPower(&golem), health = CharacterStatHealth(&golem);
+    golem.fortify[2] = FortifyTestChild("UNIT_OGRE", TIER_III, false);
+    golem.fortify[1] = FortifyTestChild("UNIT_ELVENMAGE", TIER_I, false);
+    int power_bonus = FortifyBonusTotal(FortifySlotBonus(&golem, 1, &golem.fortify[1]));
+    assert(power_bonus > 0 && FortifyBonusPower(&golem) == power_bonus && FortifyBonusHealth(&golem) == 486);
+    assert(CharacterStatPower(&golem) == power + power_bonus && CharacterStatHealth(&golem) == health + 486);
+    assert(CharacterLevelPower(&golem) == power && CharacterLevelHealth(&golem) == health);
+    cJSON_Delete(root);
+}
+
+static void TestFortifyMaximaMatchThe5xCatalog(void) {
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    int checked = 0;
+    const cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, (cJSON *)catalog) {
+        const cJSON *tiers = cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "tiers");
+        for (int tier = 0; tier < TIER_COUNT; tier++) {
+            const cJSON *row = cJSON_GetObjectItemCaseSensitive((cJSON *)tiers, TIER_NAMES[tier]);
+            const cJSON *max_power = cJSON_GetObjectItemCaseSensitive((cJSON *)row, "max_fortify_power");
+            const cJSON *max_health = cJSON_GetObjectItemCaseSensitive((cJSON *)row, "max_fortify_health");
+            if (!cJSON_IsNumber(max_power) || !cJSON_IsNumber(max_health)) continue;
+            Character ch = FortifyTestHero(catalog, JsonStr(entry, "id"), (Tier)tier);
+            assert(FortifyMaxBonus(&ch, FORTIFY_STAT_POWER) == max_power->valueint);
+            assert(FortifyMaxBonus(&ch, FORTIFY_STAT_HEALTH) == max_health->valueint);
+            checked++;
+        }
+    }
+    assert(checked > 2000);
+    cJSON_Delete(root);
+}
+
+static void TestFortifyMergesTiersLikeThe544Slot(void) {
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    Character parent = FortifyTestHero(catalog, "UNIT_ELVENMAGE", TIER_IV);
+    Character same = FortifyTestHero(catalog, "UNIT_REDIRONMAGE", TIER_I);
+    Character other = FortifyTestHero(catalog, "UNIT_OGRE", TIER_II);
+
+    FortifyChild placed = FortifyMergedChild(&parent, 0, &same);
+    assert(!strcmp(placed.id, "UNIT_REDIRONMAGE") && placed.tier == TIER_I && !placed.ascended);
+    parent.fortify[0] = placed;
+    assert(FortifyMergedChild(&parent, 0, &same).tier == TIER_II);
+    parent.fortify[0].tier = TIER_II;
+    assert(FortifyMergedChild(&parent, 0, &same).tier == TIER_III);
+    FortifyChild replaced = FortifyMergedChild(&parent, 0, &other);
+    assert(!strcmp(replaced.id, "UNIT_OGRE") && replaced.tier == TIER_II);
+
+    parent.fortify[0].tier = TIER_IV;
+    assert(FortifyReplacementBlocked(&parent, 0, &same));
+    Character ascended = same;
+    GearApplyAscension(&ascended);
+    assert(!FortifyReplacementBlocked(&parent, 0, &ascended));
+    FortifyChild promoted = FortifyMergedChild(&parent, 0, &ascended);
+    assert(promoted.tier == TIER_IV && promoted.ascended);
+    parent.fortify[0] = promoted;
+    assert(FortifyReplacementBlocked(&parent, 0, &ascended) && FortifyReplacementBlocked(&parent, 0, &same));
+    assert(!FortifyReplacementBlocked(&parent, 0, &other));
+    cJSON_Delete(root);
+}
+
+static void TestFortifySlotsUnlockWithConsumeLevel(void) {
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    Character ch = FortifyTestHero(catalog, "UNIT_ELVENMAGE", TIER_I);
+    assert(ch.consume_level == 1 && FortifySlotsUnlocked(&ch) == 2);
+    const ConsumeProfile *profile = ConsumeProfileFor(&ch);
+    ch.consume_xp = ConsumeXpForLevel(profile->consume_table, 4);
+    ConsumeNormalizeCharacter(&ch);
+    assert(FortifySlotsUnlocked(&ch) == 3);
+    ch.consume_xp = ConsumeXpForLevel(profile->consume_table, profile->consume_table->count);
+    ConsumeNormalizeCharacter(&ch);
+    assert(FortifySlotsUnlocked(&ch) == FORTIFY_SLOT_COUNT);
+    cJSON_Delete(root);
+}
+
+static void TestPlayerFortifyConsumesTheChildren(void) {
+    Player player = TestStarterPlayer();
+    cJSON *root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    int parent = -1, first_child = -1, second_child = -1, locked_child = -1;
+    ConsumeTestAdd(&player, catalog, "UNIT_ELVENMAGE", &parent);
+    ConsumeTestAdd(&player, catalog, "UNIT_REDIRONMAGE", &first_child);
+    ConsumeTestAdd(&player, catalog, "UNIT_OGRE", &second_child);
+    ConsumeTestAdd(&player, catalog, "UNIT_APOSTATEWANDERER", &locked_child);
+    int squad_member = PlayerSquadUnitAt(&player, player.current_squad, 0);
+    assert(squad_member >= 0);
+    uint64_t parent_id = player.roster[parent].instance_id;
+    int roster_before = player.roster_count;
+
+    FortifyPlacement squad[] = {{0, squad_member}};
+    assert(PlayerFortify(&player, parent, squad, 1) < 0);
+    FortifyPlacement locked[] = {{2, locked_child}};
+    assert(PlayerFortify(&player, parent, locked, 1) < 0);
+    FortifyPlacement twice[] = {{0, first_child}, {1, first_child}};
+    assert(PlayerFortify(&player, parent, twice, 2) < 0);
+    assert(player.roster_count == roster_before);
+
+    FortifyPlacement placements[] = {{0, first_child}, {1, second_child}};
+    cJSON *action = FortifyServerAction(&player, parent, placements, 2);
+    assert(!strcmp(JsonStr(action, "action"), "fortify"));
+    assert((uint64_t)cJSON_GetObjectItemCaseSensitive(action, "parent")->valuedouble == parent_id);
+    const cJSON *slots = cJSON_GetObjectItemCaseSensitive(action, "slots");
+    assert(cJSON_GetArraySize(slots) == 2 && JsonInt(cJSON_GetArrayItem(slots, 1), "index") == 1);
+    assert((uint64_t)cJSON_GetObjectItemCaseSensitive(cJSON_GetArrayItem(slots, 1), "unit")->valuedouble ==
+           player.roster[second_child].instance_id);
+    cJSON_Delete(action);
+
+    int power = CharacterStatPower(&player.roster[parent]), health = CharacterStatHealth(&player.roster[parent]);
+    int kept = PlayerFortify(&player, parent, placements, 2);
+    assert(kept >= 0 && player.roster[kept].instance_id == parent_id && player.roster_count == roster_before - 2);
+    const Character *fortified = &player.roster[kept];
+    assert(!strcmp(fortified->fortify[0].id, "UNIT_REDIRONMAGE") && !strcmp(fortified->fortify[1].id, "UNIT_OGRE"));
+    assert(FortifyHasChildren(fortified) && FortifyFilledCount(fortified) == 2);
+    assert(CharacterStatHealth(fortified) == health + FortifyBonusHealth(fortified) && FortifyBonusHealth(fortified) > 0);
+    assert(CharacterStatPower(fortified) == power + FortifyBonusPower(fortified) && FortifyBonusPower(fortified) > 0);
+    for (int i = 0; i < player.roster_count; i++) assert(strcmp(player.roster[i].id, "UNIT_OGRE") != 0);
+
+    cJSON_Delete(root);
+    PlayerUnloadRoster(&player);
+}
+
+static void TestPlayerRemoveFortifyReturnsHeroesForGems(void) {
+    Player player = TestStarterPlayer();
+    cJSON *root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    int parent = -1;
+    Character *ch = ConsumeTestAdd(&player, catalog, "UNIT_ELVENMAGE", &parent);
+    ch->fortify[0] = FortifyTestChild("UNIT_REDIRONMAGE", TIER_II, false);
+    ch->fortify[3] = FortifyTestChild("UNIT_OGRE", TIER_III, true);
+    assert(FortifyRemoveCost(ch, 0) == 5 && FortifyRemoveCost(ch, 3) == 30);
+    assert(FortifyRemoveCost(ch, FORTIFY_REMOVE_ALL) == 35);
+
+    cJSON *action = FortifyRemoveServerAction(&player, parent, FORTIFY_REMOVE_ALL);
+    assert(!strcmp(JsonStr(action, "action"), "remove_fortify") && JsonInt(action, "index") == FORTIFY_REMOVE_ALL);
+    cJSON_Delete(action);
+
+    player.gems = 34;
+    int roster_before = player.roster_count;
+    assert(PlayerRemoveFortify(&player, parent, FORTIFY_REMOVE_ALL, NULL) == 0);
+    assert(player.gems == 34 && player.roster_count == roster_before && FortifyFilledCount(ch) == 2);
+    assert(PlayerRemoveFortify(&player, parent, 5, NULL) == 0);
+
+    uint64_t next_instance = player.next_instance_id;
+    int first = -1;
+    assert(PlayerRemoveFortify(&player, parent, 3, &first) == 1);
+    assert(player.gems == 4 && player.roster_count == roster_before + 1 && first == roster_before);
+    const Character *returned = &player.roster[first];
+    assert(!strcmp(returned->id, "UNIT_OGRE") && returned->tier == TIER_III && returned->ascended);
+    assert(returned->rarity == RARITY_MYTHIC && returned->level == 1 && returned->instance_id == next_instance);
+    assert(ConsumeProgressionLevelOfTier(ConsumeProfileFor(returned), TIER_III) + 1 <= returned->consume_level);
+    assert(!FortifySlotFilled(&player.roster[parent], 3) && FortifySlotFilled(&player.roster[parent], 0));
+
+    assert(PlayerRemoveFortify(&player, parent, FORTIFY_REMOVE_ALL, &first) == 0);
+    player.gems = 5;
+    assert(PlayerRemoveFortify(&player, parent, FORTIFY_REMOVE_ALL, &first) == 1 && player.gems == 0);
+    assert(!FortifyHasChildren(&player.roster[parent]));
+    cJSON_Delete(root);
+    PlayerUnloadRoster(&player);
+}
+
+static void TestFortifySlotsTravelThroughSavesAndBattles(void) {
+    const char *path = "tests/fortify_save_test.dat";
+    static Game game;
+    Game *g = &game;
+    ProgressionInitializePlayerDefaults(&g->player);
+    PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    int hero = PlayerSquadUnitAt(&g->player, g->player.current_squad, 0);
+    Character *ch = &g->player.roster[hero];
+    ch->fortify[0] = FortifyTestChild("UNIT_REDIRONMAGE", TIER_II, false);
+    ch->fortify[1] = FortifyTestChild("UNIT_OGRE", TIER_IV, true);
+    ch->fortify[7] = FortifyTestChild("UNIT_ELVENMAGE", TIER_I, false);
+
+    cJSON *slots = FortifyChildrenJson(ch);
+    assert(cJSON_GetArraySize(slots) == 3);
+    const cJSON *ogre = cJSON_GetArrayItem(slots, 1);
+    assert(JsonInt(ogre, "slot") == 1 && !strcmp(JsonStr(ogre, "tier"), "IV") && JsonBool(ogre, "ascended"));
+    assert(!cJSON_GetObjectItemCaseSensitive(cJSON_GetArrayItem(slots, 0), "ascended"));
+    cJSON_Delete(slots);
+    Character blank = *ch;
+    assert(FortifyChildrenLoad(&blank, NULL) && !FortifyHasChildren(&blank));
+    cJSON *bad = cJSON_Parse("[{\"slot\":2,\"id\":\"UNIT_OGRE\",\"tier\":\"IV\"},{\"slot\":2,\"id\":\"UNIT_OGRE\",\"tier\":\"I\"}]");
+    assert(!FortifyChildrenLoad(&blank, bad) && !FortifyHasChildren(&blank));
+    cJSON_Delete(bad);
+
+    assert(ProgressionSaveToPath(&g->player, path));
+    Player loaded = {0};
+    ProgressionInitializePlayerDefaults(&loaded);
+    PlayerLoadRoster(&loaded, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    assert(ProgressionLoadFromPath(&loaded, path));
+    assert(memcmp(loaded.roster[hero].fortify, ch->fortify, sizeof(ch->fortify)) == 0);
+    PlayerUnloadRoster(&loaded);
+    remove(path);
+
+    BattleRosterLoad(
+        &g->battle.enemy_roster, "data/campaign_rosters.json", HOD_CACHE "characters.json", "PVE_MAP_01", 2
+    );
+    g->battle_map_index = 0;
+    g->battle_node_index = 1;
+    cJSON *fields = GameBattleStartFields(g);
+    const cJSON *unit = cJSON_GetArrayItem(
+        cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(fields, "squad"), "units"), 0
+    );
+    assert(cJSON_GetArraySize(cJSON_GetObjectItemCaseSensitive(unit, "fortify")) == 3);
+    cJSON_Delete(fields);
+    for (unsigned seed = 1; seed <= 4; seed++) AssertBattleStartReplaysTheBattle(g, seed);
+
+    SimUnit units[SIM_UNIT_COUNT];
+    SimUnitsInit(units, 0, 2, ch);
+    assert(units[2].start_power == CharacterLevelPower(ch) + FortifyBonusPower(ch));
+    assert(units[2].max_health == CharacterLevelHealth(ch) + FortifyBonusHealth(ch));
+    assert(FortifyBonusHealth(ch) > 0 && FortifyBonusPower(ch) > 0);
+    PlayerUnloadRoster(&g->player);
+}
+
 static void TestBattleStartSendsTheBattleTheClientPlays(void) {
     static Game game;
     Game *g = &game;
@@ -6594,6 +6870,14 @@ int main(void) {
     TestPvpOpponentRunesApplyToTheEnemySide();
     TestPvpSaveRoundTrip();
     TestBattleStartSendsTheBattleTheClientPlays();
+    TestFortifyTablesCarryThe544Rules();
+    TestFortifyBonusesFollowThe544Calculator();
+    TestFortifyMaximaMatchThe5xCatalog();
+    TestFortifyMergesTiersLikeThe544Slot();
+    TestFortifySlotsUnlockWithConsumeLevel();
+    TestPlayerFortifyConsumesTheChildren();
+    TestPlayerRemoveFortifyReturnsHeroesForGems();
+    TestFortifySlotsTravelThroughSavesAndBattles();
     TestTutorialScriptCoversBothFunnels();
     TestTutorialScriptsTheTwoLostBattles();
     TestTutorialResumesAtTheSavedRestorePoint();

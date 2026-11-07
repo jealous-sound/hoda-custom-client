@@ -61,6 +61,27 @@ made from an older spec. `look` holds:
 
 `data/custom_heroes/veilwarden.json`, Veilwarden Ithriel from Solas, is the worked example.
 
+## Fortify
+
+The Fortify tab of the heroes screens is 5.4.4's `FortifyScreenState`, laid out from the 4.4.0 `FortifyScreenV`,
+`FortifySlotSmart`, `FortifyConfirmPopupV` and `FortifyCelebrationPopupV` prefabs. Drag a hero onto the pedestal, then
+drag other heroes into its ten slots; each slot is a health or power slot set by the hero's archetype, and slots open
+with the hero's consume level (two at first, ten at the end of the ladder). Confirm shows the rarity, faction and tier
+breakdown, and the celebration tallies the new stats. Squad members cannot be sacrificed, a hero with slotted heroes or
+gear asks first, and dropping a copy of the hero already in a slot combines them a tier up. Remove Fortifications
+(added in 5.4.4) gives slotted heroes back at level 1 for gems by rarity.
+
+A slot adds `round(max * cap * bonus[rarity][I]) + round(max * cap * (bonus[rarity][tier] - bonus[rarity][I]))` to the
+hero's power or health, plus 12.5% of that when the two heroes share a faction (or are both large), where `max` is the
+fortified hero's stat at its current tier's maximum level. The math runs in float32 with half-to-even rounding, as
+5.4.4's `FortifyBonusCalculatorDO` does, and the bonus counts in battle. `tools/build_fortify_tables.py` writes
+`data/fortify_tables.json` from the decoded 4.4.0 archetypes and bonus rows and the 5.4.4 `Config.cs` removal costs.
+4.4.0 has no Mythic row; its Tier IV value, 1.24, is the one that reproduces every 5.x `MaxFortify*Bonus` in
+`HoDA_character_info/UnitData.json`, and Tiers I-III follow the Legendary row's shape. Slots are saved on the hero as
+`fortify`, the server owns them, and `fortify` and `remove_fortify` are queued server actions. `HOD_SHOT_SCREEN=fortify`,
+`fortify_parent`, `fortify_pending`, `fortify_confirm`, `fortify_celebration`, `fortify_remove_mode` and `fortify_remove`
+render the screens.
+
 ## Commands
 
 ```sh
@@ -82,12 +103,12 @@ like the data download. `hoda-original-backend` is the separate Python server fo
 
 Against the backend, the server owns the economy: gold, gems, vouchers, energy, level, potions, keys, tomes and which
 heroes, runes and gear exist. Store purchases and refills wait for the server's answer. Nexus awards, mission and
-event claims, gear sales, prestige slots, ascension, rune crafting and tutorial rewards are applied locally at once and
+event claims, gear sales, prestige slots, ascension, rune crafting, fortify and tutorial rewards are applied locally at once and
 queued in `source/server_actions.c`; the queue sends them in order and, once it is empty and the player is out of
 battle, loads the profile the server sends back, so the server's numbers win. A Nexus recap waits for the server so it
 shows the heroes the server rolled. `data/hero_pool.json` (`tools/build_hero_pool.py`) is the hero list the server
 rolls from; after changing it or `store_packs.json`, `runes.json`, `gear.json`, `tutorial_rewards.json`,
-`campaign_maps.json`, `nexus_maps.json`, `pvp_rules.json`, `missions.json` or `new_player.json`, run
+`campaign_maps.json`, `nexus_maps.json`, `pvp_rules.json`, `missions.json`, `fortify_tables.json` or `new_player.json`, run
 `scripts/sync-client-data.sh` in the backend. Store schedules use UTC dates.
 
 Battles are replayed on the server. FIGHT sends `battle_start` with the squad, its active runes, the enemy and the game

@@ -118,6 +118,13 @@ typedef struct {
 } TierStats;
 
 #define GEAR_SLOT_CAPACITY 5
+#define FORTIFY_SLOT_COUNT 10
+
+typedef struct {
+    char id[64];
+    Tier tier;
+    bool ascended;
+} FortifyChild;
 
 typedef struct {
     short defs[GEAR_SLOT_CAPACITY];
@@ -164,6 +171,7 @@ typedef struct {
     int consume_xp;
     int consume_level;
     int crit_chance;
+    FortifyChild fortify[FORTIFY_SLOT_COUNT];
 } Character;
 
 static const char *TIER_NAMES[TIER_COUNT] = {"I", "II", "III", "IV"};
@@ -216,6 +224,11 @@ bool FactionIsBlue(Faction f) {
 bool FactionIsBlack(Faction f) {
     return f == FACTION_BLACK || f == FACTION_WHITE_BLACK || f == FACTION_RED_BLACK || f == FACTION_BLUE_BLACK ||
            f == FACTION_ALL;
+}
+
+bool FactionsOverlap(Faction a, Faction b) {
+    return (FactionIsWhite(a) && FactionIsWhite(b)) || (FactionIsRed(a) && FactionIsRed(b)) ||
+           (FactionIsBlue(a) && FactionIsBlue(b)) || (FactionIsBlack(a) && FactionIsBlack(b));
 }
 
 static TargetPattern TargetFromString(const char *s) {
@@ -356,14 +369,25 @@ static const char *CharacterDataId(const Character *ch) {
     return ch->based_on[0] ? ch->based_on : ch->id;
 }
 
-int CharacterStatPower(const Character *ch) {
+int FortifyBonusPower(const Character *ch);
+int FortifyBonusHealth(const Character *ch);
+
+int CharacterLevelPower(const Character *ch) {
     const TierStats *st = &ch->stats[ch->tier];
     return st->base_power + (ch->level - 1) * st->power_per_level;
 }
 
-int CharacterStatHealth(const Character *ch) {
+int CharacterLevelHealth(const Character *ch) {
     const TierStats *st = &ch->stats[ch->tier];
     return st->base_health + (ch->level - 1) * st->health_per_level;
+}
+
+int CharacterStatPower(const Character *ch) {
+    return CharacterLevelPower(ch) + FortifyBonusPower(ch);
+}
+
+int CharacterStatHealth(const Character *ch) {
+    return CharacterLevelHealth(ch) + FortifyBonusHealth(ch);
 }
 
 #define CHARACTER_PROJECT_KEY_PREFIX "HODA_"

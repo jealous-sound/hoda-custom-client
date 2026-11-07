@@ -20,6 +20,8 @@ static cJSON *BattleReplayUnitJson(const Character *ch, int slot, bool player_si
     cJSON *gear = cJSON_AddArrayToObject(unit, "gear");
     for (int g = 0; gear && g < GEAR_SLOT_CAPACITY; g++)
         cJSON_AddItemToArray(gear, cJSON_CreateString(BattleReplayGearId(ch, g)));
+    cJSON *fortify = FortifyChildrenJson(ch);
+    if (fortify) cJSON_AddItemToObject(unit, "fortify", fortify);
     return unit;
 }
 
@@ -126,6 +128,7 @@ static bool BattleReplayUnitLoad(BattleRoster *roster, const cJSON *catalog, con
             if (gear->valuestring[0] && index < 0) return false;
             ch->gear.defs[gear_slot++] = (short)(index + 1);
         }
+        if (!FortifyChildrenLoad(ch, cJSON_GetObjectItemCaseSensitive(unit, "fortify"))) return false;
     }
     roster->present[slot] = true;
     return true;

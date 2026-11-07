@@ -1342,3 +1342,11 @@ HODA_UNIT_XENONTHEANTIQUARIANI|Xenon l'Antiquario I
 HODA_UNIT_XENONTHEANTIQUARIANII|Xenon l'Antiquario II
 HODA_UNIT_XENONTHEANTIQUARIANIII|Xenon l'Antiquario III
 HODA_UNIT_XENONTHEANTIQUARIANIV|Xenon l'Antiquario IV
+HODA_UI_REMOVE_FORTIFICATIONS|Rimuovi fortificazioni
+HODA_UI_EXIT_REMOVE_FORTIFICATIONS|Fine rimozione
+HODA_UI_UNFORTIFY_CONFIRM_DESC|Rimuovere questo eroe dal suo slot di fortificazione?
+HODA_UI_UNFORTIFY_ALL_CONFIRM_DESC|Rimuovere tutti gli eroi dagli slot di fortificazione di questo eroe?
+HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Gli eroi rimossi tornano nell'inventario al livello 1 e non forniscono più il loro bonus di fortificazione.
+HODA_UI_CONFIRM_UNFORTIFY|Rimuovi
+HODA_UI_UNFORTIFY_REMOVE_ALL|Rimuovi tutti
+HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Costo di rimozione

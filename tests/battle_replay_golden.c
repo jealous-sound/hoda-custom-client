@@ -24,6 +24,8 @@
 #define GOLDEN_FIRST_NOW 1767225600LL
 #define GOLDEN_BUFFED_BATTLES 4
 #define GOLDEN_NOW_SPAN (86400LL * 400)
+#define GOLDEN_FORTIFIED_BATTLES 32
+#define GOLDEN_FORTIFY_SLOT_PCT 60
 
 typedef struct {
     char id[64];
@@ -202,6 +204,37 @@ static void GoldenAddBattle(Golden *g, const char *name, cJSON *player, cJSON *e
     if (!BattleReplayRun(g->catalog, entry, &outcome)) TraceLog(LOG_FATAL, "Golden: battle %s does not load", name);
     BattleReplayOutcomeAdd(entry, &outcome);
     cJSON_AddItemToArray(g->battles, entry);
+}
+
+static cJSON *GoldenFortifyChildren(Golden *g) {
+    cJSON *children = cJSON_CreateArray();
+    for (int slot = 0; slot < FORTIFY_SLOT_COUNT; slot++) {
+        if (!GoldenChance(g, GOLDEN_FORTIFY_SLOT_PCT)) continue;
+        const GoldenCharacter *child = &g->characters[GoldenRange(g, 0, g->character_count - 1)];
+        cJSON *entry = cJSON_CreateObject();
+        cJSON_AddNumberToObject(entry, "slot", slot);
+        cJSON_AddStringToObject(entry, "id", child->id);
+        cJSON_AddStringToObject(entry, "tier", TIER_NAMES[GoldenTier(g, child)]);
+        if (GoldenChance(g, GOLDEN_ASCENDED_PCT)) cJSON_AddBoolToObject(entry, "ascended", true);
+        cJSON_AddItemToArray(children, entry);
+    }
+    return children;
+}
+
+static void GoldenFortifiedBattles(Golden *g) {
+    for (int battle = 0; battle < GOLDEN_FORTIFIED_BATTLES; battle++) {
+        cJSON *player = GoldenSide(g, true);
+        cJSON *unit = NULL;
+        cJSON_ArrayForEach(unit, cJSON_GetObjectItemCaseSensitive(player, "units")) {
+            cJSON *children = GoldenFortifyChildren(g);
+            if (cJSON_GetArraySize(children) > 0)
+                cJSON_AddItemToObject(unit, "fortify", children);
+            else
+                cJSON_Delete(children);
+        }
+        cJSON *enemy = GoldenSide(g, false);
+        GoldenAddBattle(g, TextFormat("fortified-%03d", battle), player, enemy, GoldenChanger(g));
+    }
 }
 
 static bool GoldenHeroesCovered(const Golden *g) {
@@ -534,6 +567,7 @@ int main(int argc, char **argv) {
     cJSON *opponents = GoldenPvpOpponents(g);
     cJSON *nexus_changers = GoldenNexusChangers();
     cJSON *pvp_changers = GoldenPvpChangers(g);
+    GoldenFortifiedBattles(g);
     cJSON *recipes = GoldenBuiltinRecipes();
 
     FILE *file = GoldenOpen(check, replays_path);

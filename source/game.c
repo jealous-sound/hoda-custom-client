@@ -4,6 +4,7 @@ typedef enum {
     SCREEN_HEROES,
     SCREEN_RUNES,
     SCREEN_CONSUME,
+    SCREEN_FORTIFY,
     SCREEN_GALLERY,
     SCREEN_QUESTS,
     SCREEN_MISSIONS,
@@ -64,6 +65,7 @@ typedef struct {
     MissionsScreen missions;
     Screen runes_return_screen;
     ConsumeScreen consume;
+    FortifyScreen fortify;
     Character consume_shown_target;
     ConsumeAttackClip consume_attack_pending;
     GameWispLoop wisp_loops[GAME_WISP_LOOP_CAPACITY];
@@ -1120,6 +1122,7 @@ bool GameInitialize(Game *g) {
     HeroesInitialize(&g->heroes, &g->player);
     RunesInitialize(&g->runes);
     ConsumeInitialize(&g->consume, &g->player);
+    FortifyInitialize(&g->fortify, &g->player);
     GalleryInitialize(&g->gallery, HOD_CACHE "characters.json");
     RuneGrantStarterSet(&g->player.runes, RuneNow());
     StoreInitialize(&g->store, "data/store_packs.json", HOD_CACHE "characters.json");
@@ -1192,6 +1195,7 @@ bool GameHandlePopupBack(Game *g) {
     }
     if (g->screen == SCREEN_RUNES) return RunesHandleBack(&g->runes);
     if (g->screen == SCREEN_CONSUME) return ConsumeHandleBack(&g->consume);
+    if (g->screen == SCREEN_FORTIFY) return FortifyHandleBack(&g->fortify);
     if (g->screen == SCREEN_HOME && NewsHandleBack(&g->news)) return true;
     if (g->screen == SCREEN_HOME && GuildNoticePopupClose(&g->guild_notice)) return true;
     if (g->screen == SCREEN_GUILD) {
@@ -1293,6 +1297,39 @@ static void GameOpenConsume(Game *g) {
     g->screen = SCREEN_CONSUME;
 }
 
+static void GameOpenFortify(Game *g) {
+    FortifyOpen(&g->fortify, &g->player);
+    g->screen = SCREEN_FORTIFY;
+}
+
+static void GameHandleFortifyLeave(Game *g, FortifyLeave leave) {
+    switch (leave) {
+        case FORTIFY_LEAVE_SQUAD:
+            g->screen = SCREEN_HEROES;
+            break;
+        case FORTIFY_LEAVE_HOME:
+            g->screen = SCREEN_HOME;
+            break;
+        case FORTIFY_LEAVE_CONSUME:
+            GameOpenConsume(g);
+            break;
+        case FORTIFY_LEAVE_RUNES:
+            GameOpenRunes(g, SCREEN_HEROES);
+            break;
+        case FORTIFY_LEAVE_STORE:
+            g->store_return_screen = SCREEN_HEROES;
+            StoreOpen(&g->store);
+            g->screen = SCREEN_STORE;
+            break;
+        case FORTIFY_LEAVE_GALLERY:
+            g->screen = SCREEN_HEROES;
+            GalleryOpenPopup(&g->gallery, &g->player);
+            break;
+        default:
+            break;
+    }
+}
+
 static void GameHandleConsumeLeave(Game *g, ConsumeLeave leave) {
     switch (leave) {
         case CONSUME_LEAVE_SQUAD:
@@ -1319,6 +1356,9 @@ static void GameHandleConsumeLeave(Game *g, ConsumeLeave leave) {
         case CONSUME_LEAVE_GALLERY:
             g->screen = SCREEN_HEROES;
             GalleryOpenPopup(&g->gallery, &g->player);
+            break;
+        case CONSUME_LEAVE_FORTIFY:
+            GameOpenFortify(g);
             break;
         default:
             break;
@@ -1376,6 +1416,10 @@ static void GameHandleRunesLeave(Game *g, RunesLeave leave) {
         case RUNES_LEAVE_CONSUME:
             GameLeaveRunesTo(g, SCREEN_HEROES);
             GameOpenConsume(g);
+            break;
+        case RUNES_LEAVE_FORTIFY:
+            GameLeaveRunesTo(g, SCREEN_HEROES);
+            GameOpenFortify(g);
             break;
         case RUNES_LEAVE_SELECT_SQUAD:
             PlayerSquadSelect(&g->player, g->runes.leave_squad);
@@ -1655,6 +1699,8 @@ void GameDraw(Game *g) {
                 GalleryOpenPopup(&g->gallery, &g->player);
             } else if (heroes_action == HEROES_CONSUME) {
                 GameOpenConsume(g);
+            } else if (heroes_action == HEROES_FORTIFY) {
+                GameOpenFortify(g);
             } else if (heroes_action != HEROES_NONE && heroes_action != HEROES_SQUAD) {
                 TraceLog(LOG_INFO, "Heroes action %d has no local target screen yet", heroes_action);
             }
@@ -1738,6 +1784,24 @@ void GameDraw(Game *g) {
             GameHandleHudAction(g, hud_action);
             break;
         }
+        case SCREEN_FORTIFY: {
+            HeroesBackgroundUpdate(&g->heroes_scene, dt);
+            HeroesBackgroundDraw(&g->heroes_scene);
+            GameDrawSceneFx(g, g->heroes_scene.cam, dt);
+
+            UiFrameBegin();
+            HudAction hud_action = resource_modal ? HUD_NONE : HudDraw(&g->hud, &g->player, true, false);
+            if (hud_action == HUD_HOME) {
+                FortifyRequestLeave(&g->fortify, FORTIFY_LEAVE_HOME);
+                hud_action = HUD_NONE;
+            }
+            UiSetInputBlocked(resource_modal);
+            FortifyLeave leave = FortifyDraw(&g->fortify, &g->heroes, &g->player, dt);
+            UiFrameEnd();
+            GameHandleFortifyLeave(g, leave);
+            GameHandleHudAction(g, hud_action);
+            break;
+        }
         case SCREEN_GALLERY: {
             HomeBackgroundUpdate(&g->scene, dt);
             HomeBackgroundSetGalleryView(&g->scene, true);
@@ -1760,6 +1824,8 @@ void GameDraw(Game *g) {
                     GameOpenRunes(g, SCREEN_HEROES);
                 } else if (gallery_action == GALLERY_SCREEN_ACTION_CONSUME) {
                     GameOpenConsume(g);
+                } else if (gallery_action == GALLERY_SCREEN_ACTION_FORTIFY) {
+                    GameOpenFortify(g);
                 } else if (gallery_action == GALLERY_SCREEN_ACTION_POPUP) {
                     GalleryOpenPopup(&g->gallery, &g->player);
                 }
@@ -2116,6 +2182,10 @@ void GameDraw(Game *g) {
     GameHandleHudAction(g, popup_hud_action);
     if (screen_at_frame_start == SCREEN_HEROES && g->screen != SCREEN_HEROES && g->screen != SCREEN_RUNES)
         HeroesBackgroundClearRowBonus(&g->heroes_scene);
+    if (screen_at_frame_start == SCREEN_FORTIFY && g->screen != SCREEN_FORTIFY) {
+        FortifyPortraitsUnload(&g->fortify);
+        HomeBackgroundMarkSquadStale(&g->scene);
+    }
     if (screen_at_frame_start == SCREEN_CONSUME && g->screen != SCREEN_CONSUME) {
         HeroesBackgroundReloadSquad(&g->heroes_scene, &g->player);
         HomeBackgroundMarkSquadStale(&g->scene);
@@ -2142,6 +2212,8 @@ void GameDraw(Game *g) {
 void GameDestroy(Game *g) {
     if (g->battle_is_intro) PlayerUnloadRoster(&g->intro_player);
     ConsumeCatalogUnload();
+    FortifyDestroy(&g->fortify);
+    FortifyCatalogUnload();
     StoreDestroy(&g->store);
     GalleryDestroy(&g->gallery);
     RuneIconsUnload();

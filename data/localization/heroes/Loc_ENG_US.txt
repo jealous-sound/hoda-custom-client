@@ -1342,3 +1342,11 @@ HODA_UNIT_XENONTHEANTIQUARIANI|Xenon the Antiquarian I
 HODA_UNIT_XENONTHEANTIQUARIANII|Xenon the Antiquarian II
 HODA_UNIT_XENONTHEANTIQUARIANIII|Xenon the Antiquarian III
 HODA_UNIT_XENONTHEANTIQUARIANIV|Xenon the Antiquarian IV
+HODA_UI_REMOVE_FORTIFICATIONS|Remove Fortifications
+HODA_UI_EXIT_REMOVE_FORTIFICATIONS|Done Removing
+HODA_UI_UNFORTIFY_CONFIRM_DESC|Remove this hero from its Fortify slot?
+HODA_UI_UNFORTIFY_ALL_CONFIRM_DESC|Remove every hero from this hero's Fortify slots?
+HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Removed heroes return to your roster at level 1 and stop granting their Fortify bonus.
+HODA_UI_CONFIRM_UNFORTIFY|Remove
+HODA_UI_UNFORTIFY_REMOVE_ALL|Remove All
+HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Removal cost
