@@ -3241,6 +3241,59 @@ static void TestCampaignOpenerCanBeWon(void) {
     PlayerUnloadRoster(&player);
 }
 
+static void
+TestCatalogSquad(BattleRoster *r, const cJSON *catalog, const char *const ids[SQUAD_SLOT_COUNT], int level) {
+    memset(r, 0, sizeof(*r));
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        cJSON *def = CatalogFindCharacter(catalog, ids[slot]);
+        assert(def != NULL);
+        CharacterParse(def, &r->chars[slot], &r->abilities[slot]);
+        r->chars[slot].tier = TIER_I;
+        assert(level <= r->chars[slot].stats[TIER_I].max_level);
+        r->chars[slot].level = level;
+        r->present[slot] = true;
+    }
+}
+
+static int TestCampaignNodeWins(BattleSim *sim, const BattleRoster *squad, const char *map_id, int step, int seeds) {
+    BattleRoster enemy = {0};
+    BattleRosterLoad(&enemy, "data/campaign_rosters.json", HOD_CACHE "characters.json", map_id, step);
+    int wins = 0;
+    for (unsigned seed = 1; seed <= (unsigned)seeds; seed++) {
+        BattleSimRunRosters(sim, squad, &enemy, seed);
+        wins += sim->player_won;
+    }
+    return wins;
+}
+
+static void TestZathriansCurseBossFitsAPostTutorialSquad(void) {
+    static const char *const post_tutorial_squad[SQUAD_SLOT_COUNT] = {
+        "UNIT_GREYWARDENMAGE",
+        "UNIT_GREYWARDENWARRIOR",
+        "UNIT_ASHAAD",
+        "UNIT_FERELDANASHWARRIOR",
+        "UNIT_BEAR",
+    };
+    enum { SEEDS = 32, CURSED_RUINS = 4, LADY_OF_THE_FOREST = 5 };
+    cJSON *catalog_root = JsonLoadFile(HOD_CACHE "characters.json");
+    assert(catalog_root != NULL);
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
+    BattleSim *sim = (BattleSim *)calloc(1, sizeof(*sim));
+    assert(sim != NULL);
+
+    BattleRoster squad;
+    TestCatalogSquad(&squad, catalog, post_tutorial_squad, 10);
+    assert(TestCampaignNodeWins(sim, &squad, "PVE_MAP_02", CURSED_RUINS, SEEDS) == SEEDS);
+    int boss_wins_at_10 = TestCampaignNodeWins(sim, &squad, "PVE_MAP_02", LADY_OF_THE_FOREST, SEEDS);
+    assert(boss_wins_at_10 >= SEEDS / 4 && boss_wins_at_10 < SEEDS);
+
+    TestCatalogSquad(&squad, catalog, post_tutorial_squad, 15);
+    assert(TestCampaignNodeWins(sim, &squad, "PVE_MAP_02", LADY_OF_THE_FOREST, SEEDS) >= SEEDS * 3 / 4);
+
+    free(sim);
+    cJSON_Delete(catalog_root);
+}
+
 static void TestCampaignNodeCoordinates(void) {
     const Vector2 centre = {512.0f, 300.0f};
     const float world_w = 2880.0f;
@@ -7031,6 +7084,7 @@ int main(void) {
     TestDamageShakeFallback();
     TestAttackClipReturnsToIdle();
     TestCampaignOpenerCanBeWon();
+    TestZathriansCurseBossFitsAPostTutorialSquad();
     TestCriticalGoldCommitOnce();
     TestCampaignNodeCoordinates();
     TestCampaignMapRewardSchema();
