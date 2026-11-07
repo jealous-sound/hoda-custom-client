@@ -1943,44 +1943,100 @@ static void SimUnitsGameChanger(SimUnit *units, const BattleGameChanger *changer
     }
 }
 
-static RuneBonus SimPlayerRuneBonus(const Player *player) {
-    return RuneSquadBonus(&player->runes, player->current_squad, RuneNow());
+typedef struct {
+    const Character *chars[SQUAD_SLOT_COUNT];
+    int rune_defs[RUNE_SLOT_COUNT];
+    int rune_def_count;
+} BattleSimSide;
+
+static BattleSimSide SimPlayerSide(const Player *player) {
+    BattleSimSide side = {0};
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) side.chars[slot] = PlayerSquadCharacter(player, slot);
+    side.rune_def_count = RuneActiveDefs(&player->runes, player->current_squad, RuneNow(), side.rune_defs);
+    return side;
+}
+
+static BattleSimSide SimRosterSide(const BattleRoster *roster) {
+    BattleSimSide side = {0};
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
+        side.chars[slot] = roster->present[slot] ? &roster->chars[slot] : NULL;
+    for (int i = 0; i < roster->rune_def_count && i < RUNE_SLOT_COUNT; i++)
+        side.rune_defs[side.rune_def_count++] = roster->rune_defs[i];
+    return side;
 }
 
 static void SimUnitsSetup(
-    SimUnit *units, unsigned faction[2], float bonus_pct[2], const Player *player, const BattleRoster *enemy
+    SimUnit *units,
+    unsigned faction[2],
+    float bonus_pct[2],
+    const BattleSimSide *player,
+    const BattleSimSide *enemy,
+    const BattleGameChanger *changer
 ) {
     PassiveManifestEnsure();
     for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
-        SimUnitsInit(units, 0, slot, PlayerSquadCharacter(player, slot));
-        SimUnitsInit(units, 1, slot, enemy->present[slot] ? &enemy->chars[slot] : NULL);
+        SimUnitsInit(units, 0, slot, player->chars[slot]);
+        SimUnitsInit(units, 1, slot, enemy->chars[slot]);
     }
     SimUnitsBattleStartPassives(units);
     SimUnitsFormationBonus(units, 0, &faction[0], &bonus_pct[0]);
     SimUnitsFormationBonus(units, 1, &faction[1], &bonus_pct[1]);
-    RuneBonus rune_bonus = SimPlayerRuneBonus(player);
+    RuneBonus rune_bonus = RuneDefsBonus(player->rune_defs, player->rune_def_count);
     SimUnitsRuneBonus(units, 0, &rune_bonus);
     RuneBonus enemy_rune_bonus = RuneDefsBonus(enemy->rune_defs, enemy->rune_def_count);
     SimUnitsRuneBonus(units, 1, &enemy_rune_bonus);
-    SimUnitsGameChanger(units, enemy->game_changer);
+    SimUnitsGameChanger(units, changer);
+}
+
+static void BattleSimSetupSides(
+    BattleSim *s, const BattleSimSide *player, const BattleSimSide *enemy, const BattleGameChanger *changer
+) {
+    memset(s, 0, sizeof(*s));
+    SimUnitsSetup(s->units, s->formation_faction, s->formation_bonus_pct, player, enemy, changer);
+    s->rune_bonus[0] = RuneDefsBonus(player->rune_defs, player->rune_def_count);
+    s->rune_bonus[1] = RuneDefsBonus(enemy->rune_defs, enemy->rune_def_count);
+    s->rune_def_count = player->rune_def_count;
+    memcpy(s->rune_defs, player->rune_defs, sizeof(s->rune_defs));
 }
 
 void BattleSimSetup(BattleSim *s, const Player *player, const BattleRoster *enemy) {
-    memset(s, 0, sizeof(*s));
-    SimUnitsSetup(s->units, s->formation_faction, s->formation_bonus_pct, player, enemy);
-    s->rune_bonus[0] = SimPlayerRuneBonus(player);
-    s->rune_bonus[1] = RuneDefsBonus(enemy->rune_defs, enemy->rune_def_count);
-    s->rune_def_count = RuneActiveDefs(&player->runes, player->current_squad, RuneNow(), s->rune_defs);
+    BattleSimSide player_side = SimPlayerSide(player), enemy_side = SimRosterSide(enemy);
+    BattleSimSetupSides(s, &player_side, &enemy_side, enemy->game_changer);
 }
 
 void BattleSimPreview(SimUnit units[SIM_UNIT_COUNT], const Player *player, const BattleRoster *enemy) {
     unsigned faction[2] = {0};
     float bonus_pct[2] = {0};
-    SimUnitsSetup(units, faction, bonus_pct, player, enemy);
+    BattleSimSide player_side = SimPlayerSide(player), enemy_side = SimRosterSide(enemy);
+    SimUnitsSetup(units, faction, bonus_pct, &player_side, &enemy_side, enemy->game_changer);
 }
 
+static void BattleSimRunSides(
+    BattleSim *s,
+    const BattleSimSide *player,
+    const BattleSimSide *enemy,
+    const BattleGameChanger *changer,
+    unsigned seed
+);
+
 void BattleSimRun(BattleSim *s, const Player *player, const BattleRoster *enemy, unsigned seed) {
-    BattleSimSetup(s, player, enemy);
+    BattleSimSide player_side = SimPlayerSide(player), enemy_side = SimRosterSide(enemy);
+    BattleSimRunSides(s, &player_side, &enemy_side, enemy->game_changer, seed);
+}
+
+void BattleSimRunRosters(BattleSim *s, const BattleRoster *player, const BattleRoster *enemy, unsigned seed) {
+    BattleSimSide player_side = SimRosterSide(player), enemy_side = SimRosterSide(enemy);
+    BattleSimRunSides(s, &player_side, &enemy_side, enemy->game_changer, seed);
+}
+
+static void BattleSimRunSides(
+    BattleSim *s,
+    const BattleSimSide *player,
+    const BattleSimSide *enemy,
+    const BattleGameChanger *changer,
+    unsigned seed
+) {
+    BattleSimSetupSides(s, player, enemy, changer);
     s->rng = seed ? seed : 0x9E3779B9u;
 
     for (int round = 1; round <= SIM_ROUND_CAP; round++) {

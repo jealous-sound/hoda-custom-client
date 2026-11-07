@@ -66,6 +66,7 @@ made from an older spec. `look` holds:
 make run
 make play
 make test
+make golden
 make format-check
 python3 tools/check_comments.py
 ```
@@ -79,14 +80,25 @@ against that server; `make play` uses it to run the game against the Go backend 
 like the data download. `hoda-original-backend` is the separate Python server for the original Android client.
 
 Against the backend, the server owns the economy: gold, gems, vouchers, energy, level, potions, keys, tomes and which
-heroes, runes and gear exist. Store purchases and refills wait for the server's answer. Battles, Nexus awards,
-mission and event claims, gear sales, prestige slots, ascension, rune crafting and tutorial rewards are applied
-locally at once and queued in `source/server_actions.c`; the queue sends them in order and, once it is empty and the
-player is out of battle, loads the profile the server sends back, so the server's numbers win. A Nexus recap waits
-for the server so it shows the heroes the server rolled. `data/hero_pool.json` (`tools/build_hero_pool.py`) is the
-hero list the server rolls from; after changing it or `store_packs.json`, `runes.json`, `gear.json`,
-`tutorial_rewards.json`, `campaign_maps.json`, `nexus_maps.json`, `pvp_rules.json`, `missions.json` or
-`new_player.json`, run `scripts/sync-client-data.sh` in the backend. Store schedules use UTC dates.
+heroes, runes and gear exist. Store purchases and refills wait for the server's answer. Nexus awards, mission and
+event claims, gear sales, prestige slots, ascension, rune crafting and tutorial rewards are applied locally at once and
+queued in `source/server_actions.c`; the queue sends them in order and, once it is empty and the player is out of
+battle, loads the profile the server sends back, so the server's numbers win. A Nexus recap waits for the server so it
+shows the heroes the server rolled. `data/hero_pool.json` (`tools/build_hero_pool.py`) is the hero list the server
+rolls from; after changing it or `store_packs.json`, `runes.json`, `gear.json`, `tutorial_rewards.json`,
+`campaign_maps.json`, `nexus_maps.json`, `pvp_rules.json`, `missions.json` or `new_player.json`, run
+`scripts/sync-client-data.sh` in the backend. Store schedules use UTC dates.
+
+Battles are replayed on the server. FIGHT sends `battle_start` with the squad, its active runes, the enemy and the game
+changer exactly as `source/battle_replay.c` serializes them; the server checks them against its own copy, spends the
+energy or stamina and answers with a seed, and the battle plays from that seed (the corner spinner shows while it
+waits). The result goes back as `battle` with the battle id, and the server pays what its own replay of
+`battle_sim.c` says, not the client's claim. Local play keeps picking its own seeds. The server's replay is a Go port
+of the simulation, so `make golden` regenerates `tests/golden/`: recorded battles that cover every hero twice, the
+campaign and Nexus rosters, game changers, PvP opponents and the built-in ability recipes. `make test` fails while the
+corpus is stale; after `make golden`, run `scripts/sync-client-data.sh` in the backend, whose tests replay the corpus
+and require the same outcome, crit count and action timeline. Builds use `-ffp-contract=off` so float results do not
+depend on the compiler fusing multiply-adds.
 
 `make` builds `Heroes of Dragon Age.app`, a macOS app bundle with its icon from `packaging/app_icon.png` and its
 `Info.plist` from `packaging/macos/`. The game runs from the folder that holds the bundle, so it finds `data/` and

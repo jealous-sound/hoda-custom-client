@@ -7,11 +7,13 @@ RAYLIB_LINK ?= -lraylib
 CONTENT_URL ?= https://cdn.hodareborn.com
 SERVER_URL ?= https://api.hodareborn.com
 CONTENT_BUCKET ?= hoda-assets
-CFLAGS  = -Wall -O2 -std=c99 -I$(RAYLIB_DIR)/include -DHOD_CONTENT_URL='"$(CONTENT_URL)"' -DHOD_SERVER_URL='"$(SERVER_URL)"' $(PLATFORM_CFLAGS) $(EXTRA_CFLAGS)
+CFLAGS  = -Wall -O2 -std=c99 -ffp-contract=off -I$(RAYLIB_DIR)/include -DHOD_CONTENT_URL='"$(CONTENT_URL)"' -DHOD_SERVER_URL='"$(SERVER_URL)"' $(PLATFORM_CFLAGS) $(EXTRA_CFLAGS)
 LDFLAGS = -L$(RAYLIB_DIR)/lib
 SRC     = source/main.c source/platform.c
 DEPS    = $(wildcard source/*.c source/*.h source/vendors/*.c source/vendors/*.h)
 TEST_TARGET = tests/battle_sim_test
+GOLDEN_TARGET = tests/battle_replay_golden
+GOLDEN_DIR = tests/golden
 CONTENT_TEST_TARGET = tests/content_update_test
 BACKEND_DIR ?= ../hoda-custom-backend
 DIST_DIR ?= ../hoda-custom-dist
@@ -73,10 +75,16 @@ app: $(TARGET)
 $(TEST_TARGET): tests/battle_sim_test.c $(DEPS) Makefile
 	$(CC) $(CFLAGS) tests/battle_sim_test.c source/platform.c -o $(TEST_TARGET) $(LDFLAGS) $(LIBS)
 
+$(GOLDEN_TARGET): tests/battle_replay_golden.c $(DEPS) Makefile
+	$(CC) $(CFLAGS) tests/battle_replay_golden.c source/platform.c -o $(GOLDEN_TARGET) $(LDFLAGS) $(LIBS)
+
+golden: $(GOLDEN_TARGET)
+	./$(GOLDEN_TARGET) $(GOLDEN_DIR)
+
 $(CONTENT_TEST_TARGET): tests/content_update_test.c $(DEPS) Makefile
 	$(CC) $(CFLAGS) tests/content_update_test.c source/platform.c -o $(CONTENT_TEST_TARGET) $(LDFLAGS) $(LIBS)
 
-test: $(TEST_TARGET) $(CONTENT_TEST_TARGET)
+test: $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(GOLDEN_TARGET)
 	python3 client-additional-data/validate_characters.py
 	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py tests/test_build_dist.py tests/test_build_custom_heroes.py tests/test_content_packs.py
 	python3 tools/audit_character_models.py --deep
@@ -99,6 +107,7 @@ test: $(TEST_TARGET) $(CONTENT_TEST_TARGET)
 	python3 tools/build_consume_scene.py --check
 	./$(TEST_TARGET)
 	./$(CONTENT_TEST_TARGET)
+	./$(GOLDEN_TARGET) --check $(GOLDEN_DIR)
 
 run: $(TARGET)
 	"./$(APP_EXECUTABLE)"
@@ -113,7 +122,7 @@ content:
 	python3 tools/publish_content.py --bucket "$(CONTENT_BUCKET)" --content-url "$(CONTENT_URL)"
 
 clean:
-	rm -rf "$(APP_NAME).app" build $(TEST_TARGET) $(CONTENT_TEST_TARGET)
+	rm -rf "$(APP_NAME).app" build $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(GOLDEN_TARGET)
 
 format:
 	clang-format -i source/*.c
@@ -121,4 +130,4 @@ format:
 format-check:
 	clang-format --dry-run --Werror source/*.c
 
-.PHONY: app run play dist content test clean format format-check
+.PHONY: app run play dist content test golden clean format format-check

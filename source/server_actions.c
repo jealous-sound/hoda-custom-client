@@ -8,11 +8,13 @@ typedef enum {
     SERVER_REPLY_NONE,
     SERVER_REPLY_NEXUS_AWARD,
     SERVER_REPLY_TUTORIAL_HEROES,
+    SERVER_REPLY_BATTLE_START,
 } ServerReplyTag;
 
 typedef struct {
     cJSON *fields;
     ServerReplyTag tag;
+    bool sent;
 } ServerActionEntry;
 
 typedef struct {
@@ -116,6 +118,7 @@ void ServerActionsPump(void) {
     if (s->count == 0 || GetTime() < s->retry_at) return;
     cJSON *body = cJSON_Duplicate(s->queue[0].fields, true);
     s->ticket = BackendBeginAction(SERVER_ACTION_ROUTE, body);
+    if (s->ticket != BACKEND_NO_TICKET) s->queue[0].sent = true;
     cJSON_Delete(body);
 }
 
@@ -183,4 +186,26 @@ bool ServerActionsTakeReply(ServerReplyTag tag, cJSON **out_reply) {
     s->reply = NULL;
     s->reply_tag = SERVER_REPLY_NONE;
     return true;
+}
+
+bool ServerActionsTakeSettledReply(ServerReplyTag tag, cJSON **out_reply) {
+    ServerActions *s = &server_actions;
+    *out_reply = NULL;
+    if (s->reply_tag != tag || ServerActionsReplyWaiting(tag)) return false;
+    *out_reply = s->reply;
+    s->reply = NULL;
+    s->reply_tag = SERVER_REPLY_NONE;
+    return true;
+}
+
+bool ServerActionsCancelUnsent(ServerReplyTag tag) {
+    ServerActions *s = &server_actions;
+    for (int i = 0; i < s->count; i++) {
+        if (s->queue[i].tag != tag || s->queue[i].sent) continue;
+        cJSON_Delete(s->queue[i].fields);
+        memmove(&s->queue[i], &s->queue[i + 1], (size_t)(s->count - i - 1) * sizeof(s->queue[0]));
+        s->count--;
+        return true;
+    }
+    return false;
 }
