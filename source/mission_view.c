@@ -62,7 +62,7 @@ void MissionsInitialize(MissionsScreen *s) {
     s->claim = ButtonLoadText(
         GUI_MISSION_CLAIM,
         GUI_MISSION_CLAIM_ON,
-        LocGetOr("LEADERBOARD_MISSIONS_CLAIM", "Получ."),
+        LocGet("LEADERBOARD_MISSIONS_CLAIM"),
         s->font,
         (Vector2){0.5f, 0.5f},
         0.5f
@@ -325,11 +325,7 @@ MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, const GoalsG
     Rectangle panel = UiRect(root, 0.5f, 0.6f, 940.0f, 597.0f);
     UiDrawTexture(GuiTex(GUI_QUESTS_BG), panel, WHITE);
     UiDrawTextCentered(
-        s->font,
-        LocGetOr("LEADERBOARD_TITLE", "Цели"),
-        (Rectangle){0.0f, panel.y + 38.0f, UiWidth(), 0.0f},
-        42.0f,
-        MISSIONS_TEXT
+        s->font, LocGet("LEADERBOARD_TITLE"), (Rectangle){0.0f, panel.y + 38.0f, UiWidth(), 0.0f}, 42.0f, MISSIONS_TEXT
     );
 
     if (s->claim_series != MISSION_NONE) {

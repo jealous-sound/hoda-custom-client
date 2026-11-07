@@ -1,0 +1,11 @@
+HODA_NEXUS_EVENT_BREACH_OPENS_AGAIN_TITLE|La Brecha se abre de nuevo
+HODA_NEXUS_EVENT_WOODLAND_SPIRITS_TITLE|Espíritus del bosque
+HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLACK_FACTION|La facción negra consigue 150% a la Salud y la Fuerza.
+HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLUE_FACTION|La facción azul consigue 150% a la Salud y la Fuerza.
+HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_RED_FACTION|La facción roja consigue 150% a la Salud y la Fuerza.
+HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_WHITE_FACTION|La facción blanca consigue 150% a la Salud y la Fuerza.
+HODA_NEXUS_MAP_BATTLE_COUNT|Combates: {0}
+HODA_NEXUS_UNLOCK_START|Iniciar
+HODA_PVP_NO_BATTLES|Aún no hay combates. ¡Combate contra otro jugador!
+HODA_PVP_NO_FINISHED_EVENTS|Aún no hay eventos terminados.
+HODA_PVP_YOU|Tú

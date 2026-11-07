@@ -25,6 +25,8 @@
 #define GEAR_VIEW_SCROLL_SPEED 40.0f
 #define GEAR_VIEW_MESSAGE_CAPACITY 640
 #define GEAR_VIEW_DETAILS_CAPACITY 960
+#define GEAR_VIEW_AURA_CAPACITY 640
+#define GEAR_VIEW_PAGE_LABEL_CAPACITY 64
 
 typedef struct {
     const char *title;
@@ -56,8 +58,9 @@ typedef enum {
 } GearViewDialog;
 
 typedef struct {
-    bool loaded;
     Button category, sort, equip, sell, store, prev, next, yes, no, close, unlock;
+    char prev_label[GEAR_VIEW_PAGE_LABEL_CAPACITY];
+    char next_label[GEAR_VIEW_PAGE_LABEL_CAPACITY];
     bool open;
     int hero;
     int slot;
@@ -75,25 +78,26 @@ typedef struct {
 
 static GearView gear_view;
 
-static void GearViewEnsureButtons(void) {
-    if (gear_view.loaded) return;
-    gear_view.loaded = true;
-    Font font = GuiFont(FNT_COOL);
-    Vector2 anchor = {0.5f, 0.5f};
-    gear_view.category = ButtonLoadText(GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", font, anchor, 0.32f);
-    gear_view.sort = ButtonLoadText(GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "Сорт.", font, anchor, 0.34f);
-    gear_view.equip =
-        ButtonLoadText(GUI_STORE_BUY, GUI_STORE_BUY_ON, GearText("GEAR_EQUIP_BUTTON_TEXT"), font, anchor, 0.34f);
-    gear_view.sell =
-        ButtonLoadText(GUI_STORE_BUY, GUI_STORE_BUY_ON, GearText("GEAR_SELL_BUTTON_TEXT"), font, anchor, 0.34f);
-    gear_view.store = ButtonLoadText(GUI_STORE_BUY, GUI_STORE_BUY_ON, LocGet("STORE_TITLE"), font, anchor, 0.3f);
-    gear_view.prev = ButtonLoadText(GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", font, anchor, 0.32f);
-    gear_view.next = ButtonLoadText(GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", font, anchor, 0.32f);
-    gear_view.yes = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "OK", font, anchor, 0.34f);
-    gear_view.no = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("RUNES_CANCEL"), font, anchor, 0.34f);
-    gear_view.close = ButtonLoad(GUI_BTN_CLOSE, GUI_BTN_CLOSE);
-    gear_view.unlock =
-        ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, GearText("GEAR_PRESTIGE_UNLOCK"), font, anchor, 0.26f);
+static void GearViewLoadButton(Button *button, GuiId idle, GuiId active, const char *label, float scale) {
+    bool armed = button->armed;
+    *button = ButtonLoadText(idle, active, label, GuiFont(FNT_COOL), (Vector2){0.5f, 0.5f}, scale);
+    button->armed = armed;
+}
+
+static void GearViewLoadButtons(void) {
+    GearViewLoadButton(&gear_view.category, GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", 0.32f);
+    GearViewLoadButton(
+        &gear_view.sort, GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, LocGet("HODA_INVENTORY_SORT"), 0.34f
+    );
+    GearViewLoadButton(&gear_view.equip, GUI_STORE_BUY, GUI_STORE_BUY_ON, LocGet("HODA_GEAR_EQUIP_BUTTON_TEXT"), 0.34f);
+    GearViewLoadButton(&gear_view.sell, GUI_STORE_BUY, GUI_STORE_BUY_ON, LocGet("HODA_GEAR_SELL_BUTTON_TEXT"), 0.34f);
+    GearViewLoadButton(&gear_view.store, GUI_STORE_BUY, GUI_STORE_BUY_ON, LocGet("STORE_TITLE"), 0.3f);
+    GearViewLoadButton(&gear_view.prev, GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", 0.32f);
+    GearViewLoadButton(&gear_view.next, GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", 0.32f);
+    GearViewLoadButton(&gear_view.yes, GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("MAIN_MESSAGE_DIALOG_OK"), 0.34f);
+    GearViewLoadButton(&gear_view.no, GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("RUNES_CANCEL"), 0.34f);
+    GearViewLoadButton(&gear_view.close, GUI_BTN_CLOSE, GUI_BTN_CLOSE, NULL, 0.0f);
+    GearViewLoadButton(&gear_view.unlock, GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("HODA_GEAR_PRESTIGE_UNLOCK"), 0.26f);
 }
 
 bool GearViewIsOpen(void) {
@@ -141,12 +145,6 @@ void GearViewOpenInventory(void) {
 static void GearViewShowMessage(const char *text) {
     StrCopy(gear_view.message, sizeof(gear_view.message), text);
     gear_view.dialog = GEAR_VIEW_DIALOG_MESSAGE;
-}
-
-static const char *GearTextFormatZero(const char *key) {
-    static char format[64];
-    HeroesFormat2(format, sizeof(format), GearText(key), "%d", "");
-    return format;
 }
 
 static bool GearViewClicked(Rectangle r) {
@@ -202,9 +200,9 @@ static Rectangle GearViewSlotRect(Rectangle details, int row) {
 static void GearViewClickTomeSlot(const Player *p, int hero) {
     GuiClickSoundPlay();
     if (!GearCanAscend(&p->roster[hero])) {
-        GearViewShowMessage(GearText("EVO_TOME_SLOT_LOCKED_MESSAGE"));
+        GearViewShowMessage(LocGet("HODA_EVO_TOME_SLOT_LOCKED_MESSAGE"));
     } else if (p->gear.tomes <= 0) {
-        GearViewShowMessage(GearText("EVO_TOME_REQUIRED_MESSAGE"));
+        GearViewShowMessage(LocGet("HODA_EVO_TOME_REQUIRED_MESSAGE"));
     } else {
         gear_view.hero = hero;
         gear_view.dialog = GEAR_VIEW_DIALOG_ASCEND;
@@ -253,13 +251,13 @@ void GearViewDrawSlots(Player *p, int hero, Rectangle details) {
 static const char *GearViewEquipFailure(GearEquipResult result) {
     switch (result) {
         case GEAR_EQUIP_DUPLICATE:
-            return GearText("GEAR_EQUIP_FAIL_DUPLICATE_CONFIRM");
+            return LocGet("HODA_GEAR_EQUIP_FAIL_DUPLICATE_CONFIRM");
         case GEAR_EQUIP_AURAS_CANNOT_STACK:
-            return GearText("GEAR_EQUIP_FAIL_DEFENDER_CONFIRM");
+            return LocGet("HODA_GEAR_EQUIP_FAIL_DEFENDER_CONFIRM");
         case GEAR_EQUIP_INVALID_PRESTIGE:
-            return GearText("GEAR_EQUIP_FAIL_INVALID_PRESTIGE_GEAR");
+            return LocGet("HODA_GEAR_EQUIP_FAIL_INVALID_PRESTIGE_GEAR");
         default:
-            return GearText("GEAR_EQUIP_FAIL_CATEGORY_LIMIT_CONFIRM");
+            return LocGet("HODA_GEAR_EQUIP_FAIL_CATEGORY_LIMIT_CONFIRM");
     }
 }
 
@@ -272,11 +270,9 @@ static void GearViewRequestEquip(Player *p) {
     }
     const GearDef *replaced = GearInSlot(ch, gear_view.slot);
     if (replaced) {
-        HeroesFormat2(
-            gear_view.message, sizeof(gear_view.message), GearText("GEAR_EQUIP_FILLED_CONFIRM"), replaced->title_ru, ""
-        );
+        LocFormat1(gear_view.message, sizeof(gear_view.message), "HODA_GEAR_EQUIP_FILLED_CONFIRM", GearTitle(replaced));
     } else {
-        StrCopy(gear_view.message, sizeof(gear_view.message), GearText("GEAR_EQUIP_EMPTY_CONFIRM"));
+        StrCopy(gear_view.message, sizeof(gear_view.message), LocGet("HODA_GEAR_EQUIP_EMPTY_CONFIRM"));
     }
     gear_view.dialog = GEAR_VIEW_DIALOG_EQUIP;
 }
@@ -286,8 +282,8 @@ static void GearViewRequestSell(void) {
         gear_view.message,
         sizeof(gear_view.message),
         "%s\n%s %d",
-        GearText("GEAR_SELL_MAIN_CONFIRM"),
-        GearText("GEAR_SELL_RECEIVE_CONFIRM"),
+        LocGet("HODA_GEAR_SELL_MAIN_CONFIRM"),
+        LocGet("HODA_GEAR_SELL_RECEIVE_CONFIRM"),
         GearSellValue(GearDefAt(gear_view.selected))
     );
     gear_view.dialog = GEAR_VIEW_DIALOG_SELL;
@@ -341,21 +337,21 @@ static void GearViewDrawAscendBody(const Player *p, Rectangle content) {
     float y = book.y + book.height + 4.0f;
     Rectangle count = {content.x, y, content.width, 26.0f};
     char tomes[64];
-    HeroesFormat2(tomes, sizeof(tomes), GearText("EVO_TOME_COUNT"), TextFormat("%d", p->gear.tomes), "");
+    LocFormatInt(tomes, sizeof(tomes), "HODA_EVO_TOME_COUNT", p->gear.tomes);
     UiDrawTextCentered(GuiFont(FNT_COOL), tomes, count, 20.0f, GOLD);
     Rectangle ask = {content.x, y + 28.0f, content.width, 56.0f};
-    MessagePopupDrawText(GuiFont(FNT_MENU), GearText("EVO_TOME_USE_CONFIRM"), ask, 21.0f, WHITE);
+    MessagePopupDrawText(GuiFont(FNT_MENU), LocGet("HODA_EVO_TOME_USE_CONFIRM"), ask, 21.0f, WHITE);
     Rectangle bonus = {content.x, y + 88.0f, content.width, 50.0f};
-    HeroesDrawRich(GuiFont(FNT_MENU), GearText("EVO_TOME_EXPLAIN_DESC"), bonus, 17.0f, WHITE);
+    HeroesDrawRich(GuiFont(FNT_MENU), LocGet("HODA_EVO_TOME_EXPLAIN_DESC"), bonus, 17.0f, WHITE);
 }
 
 static void GearViewDrawPrestigeDialog(Player *p, Rectangle popup) {
     Rectangle text = UiRect(popup, 0.5f, 0.2f, 0.84f, 0.5f);
-    MessagePopupDrawText(GuiFont(FNT_MENU), GearText("GEAR_PRESTIGE_MESSAGE"), text, 22.0f, WHITE);
+    MessagePopupDrawText(GuiFont(FNT_MENU), LocGet("HODA_GEAR_PRESTIGE_MESSAGE"), text, 22.0f, WHITE);
     Rectangle currency = UiRect(popup, 0.62f, 0.68f, 0.2f, 0.11f);
     UiDrawTextRight(
         GuiFont(FNT_MENU),
-        "Цена:",
+        LocGet("REFRESH_COST"),
         (Rectangle){0.0f, currency.y + currency.height * 0.5f, currency.x - 12.0f, 0.0f},
         22.0f,
         WHITE
@@ -424,13 +420,13 @@ static const char *GearViewFilterName(GearFilter filter) {
         "ROSTER_FILTER_COMMON",
         "ROSTER_FILTER_UNCOMMON",
         "ROSTER_FILTER_RARE",
-        "ROSTER_FILTER_EPIC",
-        "ROSTER_FILTER_LEGENDARY",
-        "ROSTER_FILTER_MYTHIC",
+        "HODA_ROSTER_FILTER_EPIC",
+        "HODA_ROSTER_FILTER_LEGENDARY",
+        "HODA_ROSTER_FILTER_MYTHIC",
     };
-    if (filter == GEAR_FILTER_ALL) return GearText("GEAR_FILTER_ALL_TITLE");
-    if (filter == GEAR_FILTER_EQUIPPABLE) return GearText("GEAR_FILTER_EQUIPPABLE_TITLE");
-    return GearText(rarity_keys[filter - GEAR_FILTER_COMMON]);
+    if (filter == GEAR_FILTER_ALL) return LocGet("HODA_GEAR_FILTER_ALL_TITLE");
+    if (filter == GEAR_FILTER_EQUIPPABLE) return LocGet("HODA_GEAR_FILTER_EQUIPPABLE_TITLE");
+    return LocGet(rarity_keys[filter - GEAR_FILTER_COMMON]);
 }
 
 static void GearViewDrawFilterList(const Player *p, bool input) {
@@ -459,7 +455,7 @@ static void GearViewDrawFilterList(const Player *p, bool input) {
 static void GearViewDrawGrid(const Player *p, const int *items, int count, Rectangle view, bool input) {
     if (count == 0) {
         Rectangle text = UiRect(view, 0.5f, 0.3f, 0.9f, 0.4f);
-        HeroesDrawRich(GuiFont(FNT_MENU), GearText("GEAR_EMPTY_INVENTORY_MESSAGE"), text, 17.0f, LIGHTGRAY);
+        HeroesDrawRich(GuiFont(FNT_MENU), LocGet("HODA_GEAR_EMPTY_INVENTORY_MESSAGE"), text, 17.0f, LIGHTGRAY);
         return;
     }
     int first = gear_view.page * GEAR_VIEW_PAGE_SIZE;
@@ -501,14 +497,14 @@ static void GearViewDrawGrid(const Player *p, const int *items, int count, Recta
 
 static const char *GearViewRarityText(int rarity) {
     static const char *const keys[GEAR_RARITY_COUNT] = {
-        "GEAR_RARITY_COMMON",
-        "GEAR_RARITY_UNCOMMON",
-        "GEAR_RARITY_RARE",
-        "GEAR_RARITY_EPIC",
-        "GEAR_RARITY_LEGENDARY",
-        "GEAR_RARITY_MYTHIC",
+        "HODA_GEAR_RARITY_COMMON",
+        "HODA_GEAR_RARITY_UNCOMMON",
+        "HODA_GEAR_RARITY_RARE",
+        "HODA_GEAR_RARITY_EPIC",
+        "HODA_GEAR_RARITY_LEGENDARY",
+        "HODA_GEAR_RARITY_MYTHIC",
     };
-    return GearText(keys[rarity - 1]);
+    return LocGet(keys[rarity - 1]);
 }
 
 static float GearViewDrawRarityAndLimits(
@@ -535,8 +531,10 @@ static void GearViewDrawFittedDescription(const char *text, Rectangle area, floa
 
 static GearInfoText GearViewInfoTextFor(const GearDef *def, char *limits, int limits_size, char *text, int text_size) {
     GearFormatLimits(def, limits, limits_size);
-    snprintf(text, (size_t)text_size, "%s\n%s", def->description_ru, def->aura_ru);
-    return (GearInfoText){def->title_ru, def->rarity, limits, text};
+    char aura[GEAR_VIEW_AURA_CAPACITY];
+    GearFormatAura(def, aura, sizeof(aura));
+    snprintf(text, (size_t)text_size, "%s\n%s", GearDescription(def), aura);
+    return (GearInfoText){GearTitle(def), def->rarity, limits, text};
 }
 
 void GearDrawRevealCard(const GearDef *def, Rectangle panel) {
@@ -548,7 +546,9 @@ void GearDrawRevealCard(const GearDef *def, Rectangle panel) {
     char text[GEAR_VIEW_DETAILS_CAPACITY];
     GearInfoText info =
         def ? GearViewInfoTextFor(def, limits, sizeof(limits), text, sizeof(text))
-            : (GearInfoText){GearText("TOME_POPUP_TITLE"), GEAR_RARITY_COUNT, "", GearText("EVO_TOME_EXPLAIN_DESC")};
+            : (GearInfoText){
+                  LocGet("HODA_TOME_POPUP_TITLE"), GEAR_RARITY_COUNT, "", LocGet("HODA_EVO_TOME_EXPLAIN_DESC")
+              };
 
     Rectangle title = {
         panel.x + side * GEAR_CARD_TEXT_LEFT,
@@ -606,7 +606,7 @@ static void GearViewDrawDetails(Player *p, bool input) {
     if (gear_view.slot >= 0) {
         if (ButtonDrawEx(&gear_view.equip, UiRect(row, 0.0f, 0.0f, 0.49f, 1.0f), input)) GearViewRequestEquip(p);
     } else {
-        HeroesDrawRich(body, GearText("GEAR_SELECT_HERO_HELP"), UiRect(row, 0.0f, 0.5f, 0.49f, 1.0f), 11.0f, WHITE);
+        HeroesDrawRich(body, LocGet("HODA_GEAR_SELECT_HERO_HELP"), UiRect(row, 0.0f, 0.5f, 0.49f, 1.0f), 11.0f, WHITE);
     }
     if (ButtonDrawEx(&gear_view.sell, UiRect(row, 1.0f, 0.0f, 0.49f, 1.0f), input)) GearViewRequestSell();
 
@@ -617,20 +617,21 @@ static void GearViewDrawDetails(Player *p, bool input) {
 static void GearViewDrawFooter(bool input) {
     Rectangle footer = RosterPx(16.0f, 764.0f, 372.0f, 56.0f);
     Rectangle hint = UiRect(footer, 0.0f, 0.5f, 0.62f, 1.0f);
-    HeroesDrawRich(GuiFont(FNT_MENU), GearText("GEAR_INVENTORY_FOOTER_TEXT"), hint, 12.0f, WHITE);
+    HeroesDrawRich(GuiFont(FNT_MENU), LocGet("HODA_GEAR_INVENTORY_FOOTER_TEXT"), hint, 12.0f, WHITE);
     if (ButtonDrawEx(&gear_view.store, UiRect(footer, 1.0f, 0.0f, 0.36f, 1.0f), input))
         gear_view.store_requested = true;
 }
 
-static void GearViewDrawPageButton(Button *button, const char *key, Rectangle r, bool input, int delta) {
-    button->label = TextFormat(GearTextFormatZero(key), GEAR_VIEW_PAGE_SIZE);
+static void GearViewDrawPageButton(Button *button, char *label, const char *key, Rectangle r, bool input, int delta) {
+    LocFormatInt(label, GEAR_VIEW_PAGE_LABEL_CAPACITY, key, GEAR_VIEW_PAGE_SIZE);
+    button->label = label;
     if (!ButtonDrawEx(button, r, input)) return;
     gear_view.page += delta;
     gear_view.scroll = 0.0f;
 }
 
 void GearViewDrawPanel(Player *p) {
-    GearViewEnsureButtons();
+    GearViewLoadButtons();
     bool input = GearViewAcceptsInput();
     UiDrawTexture(GuiTex(GUI_CONSUME_TRAY), RosterPx(-7.0f, 0.0f, 455.0f, 938.0f), WHITE);
 
@@ -663,13 +664,25 @@ void GearViewDrawPanel(Player *p) {
     float top = 124.0f, bottom = details ? 456.0f : 756.0f;
     bool has_prev = gear_view.page > 0, has_next = gear_view.page + 1 < pages;
     if (has_prev) {
-        GearViewDrawPageButton(&gear_view.prev, "GEAR_SHOW_PREVIOUS", RosterPx(16.0f, top, 372.0f, 60.0f), input, -1);
+        GearViewDrawPageButton(
+            &gear_view.prev,
+            gear_view.prev_label,
+            "HODA_GEAR_SHOW_PREVIOUS",
+            RosterPx(16.0f, top, 372.0f, 60.0f),
+            input,
+            -1
+        );
         top += 64.0f;
     }
     if (has_next) {
         bottom -= 64.0f;
         GearViewDrawPageButton(
-            &gear_view.next, "GEAR_SHOW_NEXT", RosterPx(16.0f, bottom + 2.0f, 372.0f, 60.0f), input, 1
+            &gear_view.next,
+            gear_view.next_label,
+            "HODA_GEAR_SHOW_NEXT",
+            RosterPx(16.0f, bottom + 2.0f, 372.0f, 60.0f),
+            input,
+            1
         );
     }
     GearViewDrawGrid(p, items, count, RosterPx(8.0f, top, 378.0f, bottom - top), input);
@@ -680,6 +693,6 @@ void GearViewDrawPanel(Player *p) {
 }
 
 void GearViewDrawDialogs(Player *p) {
-    GearViewEnsureButtons();
+    GearViewLoadButtons();
     if (gear_view.dialog != GEAR_VIEW_DIALOG_NONE) GearViewDrawDialog(p);
 }

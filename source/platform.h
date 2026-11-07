@@ -8,6 +8,7 @@
 #include <time.h>
 
 #define PLATFORM_HTTP_HEADER_VALUE_CAP 64
+#define PLATFORM_FONT_PATH_CAP 512
 
 typedef enum {
     PLATFORM_DOWNLOAD_OK,
@@ -46,5 +47,7 @@ PlatformDownloadResult PlatformDownload(
 );
 bool PlatformUserDataDirectory(const char *app_name, char *out, size_t capacity);
 bool PlatformMakeDirectory(const char *path);
+bool PlatformPreferredLanguage(char *out, size_t capacity);
+int PlatformFallbackFonts(char paths[][PLATFORM_FONT_PATH_CAP], int capacity);
 
 #endif

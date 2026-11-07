@@ -32,12 +32,6 @@ static void CampaignDrawWrapped(
 #define STORE_DIALOG_TEXT_CAPACITY 512
 #define STORE_PURCHASE_ROUTE "store/purchases"
 #define STORE_NO_SERVER_PURCHASE (-1)
-#define STORE_ITEMS_TITLE "Предметы"
-#define STORE_VAULT_TITLE "Хранилище"
-#define STORE_FEATURED_TITLE "Популярное"
-#define STORE_COMING_SOON_TEXT "Скоро!"
-#define STORE_CONFIRM_GEMS_FORMAT "Потратить %d"
-#define STORE_CONFIRM_GEMS_SUFFIX "?"
 #define STORE_CONFIRM_TEXT_SIZE 26.0f
 #define STORE_CONFIRM_ICON_OF_TEXT 1.3f
 #define STORE_PLATE_TOP 76.0f
@@ -244,7 +238,6 @@ typedef struct {
     const cJSON *catalog;
     const cJSON **rarity_pool[RARITY_LEGENDARY + 1];
     int rarity_pool_count[RARITY_LEGENDARY + 1];
-    char balance_note_ru[256];
     StorePackDef packs[STORE_PACK_CAPACITY];
     int pack_count;
     const char *voucher_icons[PLAYER_VOUCHER_CAPACITY];
@@ -476,14 +469,6 @@ static void StoreOfferPay(StoreOffer offer, Player *player) {
     if (!spent) TraceLog(LOG_FATAL, "Store: validated currency spend failed");
 }
 
-static const char *StorePackLocText(const cJSON *json, const char *suffix, const char *fallback_key) {
-    char key[96];
-    snprintf(key, sizeof(key), "%s%s", JsonStr(json, "loc_id"), suffix);
-    const char *text = LocGet(key);
-    if (!text[0] && fallback_key) text = JsonStr(json, fallback_key);
-    return text;
-}
-
 static int StoreVoucherIndex(const Store *store, const cJSON *config, const char *id) {
     int index = 0;
     const cJSON *row = NULL;
@@ -592,8 +577,8 @@ static StoreView StorePageFromCategory(const char *category) {
 
 static void StoreLoadPack(Store *store, StorePackDef *pack, const cJSON *json) {
     StrCopy(pack->id, sizeof(pack->id), JsonStr(json, "id"));
-    pack->name = StorePackLocText(json, "_PACK_NAME", "name_ru");
-    pack->info = StorePackLocText(json, "_PACK_INFO", "info_ru");
+    pack->name = LocGet(JsonStr(json, "name_key"));
+    pack->info = LocGet(JsonStr(json, "info_key"));
     pack->header = JsonStr(json, "header");
     pack->header_tint = StoreParseTint(JsonStr(json, "header_tint"), pack->id);
     pack->icon = JsonStr(json, "icon");
@@ -614,12 +599,13 @@ static void StoreLoadPack(Store *store, StorePackDef *pack, const cJSON *json) {
         store->flash_count++;
     }
 
-    const char *description = StorePackLocText(json, "_PACK_DESCRIPTION", NULL);
-    if (description[0]) pack->bullets[pack->bullet_count++] = (StoreBullet){description, 0};
+    const char *description_key = JsonStr(json, "description_key");
+    if (description_key[0]) pack->bullets[pack->bullet_count++] = (StoreBullet){LocGet(description_key), 0};
     const cJSON *bullet = NULL;
     cJSON_ArrayForEach(bullet, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "bullets")) {
         if (pack->bullet_count < STORE_PACK_BULLET_MAX)
-            pack->bullets[pack->bullet_count++] = (StoreBullet){JsonStr(bullet, "text_ru"), JsonInt(bullet, "rarity")};
+            pack->bullets[pack->bullet_count++] =
+                (StoreBullet){LocGet(JsonStr(bullet, "text_key")), JsonInt(bullet, "rarity")};
     }
 
     const char *kind = JsonStr(json, "kind");
@@ -633,7 +619,9 @@ static void StoreLoadPack(Store *store, StorePackDef *pack, const cJSON *json) {
         pack->kind = STORE_KIND_HERO;
         StoreLoadHeroContents(pack, json);
     }
-    if (!pack->name[0] || !pack->info[0] || pack->bullet_count == 0)
+    bool bullets_resolved = pack->bullet_count > 0;
+    for (int i = 0; i < pack->bullet_count; i++) bullets_resolved &= pack->bullets[i].text[0] != '\0';
+    if (!pack->name[0] || !pack->info[0] || !bullets_resolved)
         TraceLog(LOG_FATAL, "Store: invalid pack definition %s", pack->id);
 }
 
@@ -715,7 +703,6 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
     memset(store, 0, sizeof(*store));
     store->config_root = JsonLoadFile(config_path);
     if (JsonInt(store->config_root, "version") != 3) TraceLog(LOG_FATAL, "Store: unsupported config version");
-    StrCopy(store->balance_note_ru, sizeof(store->balance_note_ru), JsonStr(store->config_root, "balance_note_ru"));
     store->flash_days = JsonInt(store->config_root, "flash_days");
     const cJSON *voucher = NULL;
     cJSON_ArrayForEach(voucher, cJSON_GetObjectItemCaseSensitive(store->config_root, "vouchers")) {
@@ -779,25 +766,34 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
     store->pack_rune_def = -1;
     store->pack_gear_def = -1;
     store->next =
-        ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "ДАЛЕЕ", store->title_font, (Vector2){0.5f, 0.5f}, 0.34f);
+        ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("NEXT"), store->title_font, (Vector2){0.5f, 0.5f}, 0.34f);
     store->skip =
-        ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "ПРОПУСТИТЬ", store->title_font, (Vector2){0.5f, 0.5f}, 0.29f);
+        ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("SKIP"), store->title_font, (Vector2){0.5f, 0.5f}, 0.29f);
     store->done =
-        ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "ГОТОВО", store->title_font, (Vector2){0.5f, 0.5f}, 0.34f);
-    store->buy_again =
-        ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "КУПИТЬ ЕЩЁ", store->title_font, (Vector2){0.5f, 0.5f}, 0.27f);
-    store->item_done =
-        ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "ГОТОВО", store->title_font, (Vector2){0.5f, 0.5f}, 0.4f);
-    store->item_again =
-        ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "КУПИТЬ ЕЩЁ", store->title_font, (Vector2){0.5f, 0.5f}, 0.36f);
+        ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("DONE"), store->title_font, (Vector2){0.5f, 0.5f}, 0.34f);
+    store->buy_again = ButtonLoadText(
+        GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("BUY_ANOTHER"), store->title_font, (Vector2){0.5f, 0.5f}, 0.27f
+    );
+    store->item_done = ButtonLoadText(
+        GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("RUNE_REVEAL_DONE"), store->title_font, (Vector2){0.5f, 0.5f}, 0.4f
+    );
+    store->item_again = ButtonLoadText(
+        GUI_BTN_GREY,
+        GUI_BTN_GREY_ON,
+        LocGet("RUNE_REVEAL_BUY_ANOTHER"),
+        store->title_font,
+        (Vector2){0.5f, 0.5f},
+        0.36f
+    );
     store->nav_train = ButtonLoad(GUI_BTN_PACK_TRAIN, GUI_BTN_PACK_TRAIN_ON);
     store->nav_runes = ButtonLoad(GUI_BTN_PACK_RUNES, GUI_BTN_PACK_RUNES_ON);
     store->nav_squad = ButtonLoad(GUI_BTN_PACK_SQUAD, GUI_BTN_PACK_SQUAD_ON);
     store->dialog_ok = ButtonLoadText(
         GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("MAIN_MESSAGE_DIALOG_OK"), store->title_font, (Vector2){0.5f, 0.5f}, 0.34f
     );
-    store->dialog_cancel =
-        ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "ОТМЕНА", store->title_font, (Vector2){0.5f, 0.5f}, 0.3f);
+    store->dialog_cancel = ButtonLoadText(
+        GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("FORTIFY_CANCEL_BUTTON"), store->title_font, (Vector2){0.5f, 0.5f}, 0.3f
+    );
     store->view = STORE_VIEW_LANDING;
     store->return_view = STORE_VIEW_HEROES;
     store->info_pack = -1;
@@ -1098,7 +1094,7 @@ static void StoreBeginItemReveal(Store *store, int pack_index, StorePackKind kin
 }
 
 static void StorePurchaseSaveFailed(Store *store) {
-    StoreSetStatus(store, "Не удалось сохранить покупку");
+    StoreSetStatus(store, LocGet("HODA_STORE_PURCHASE_SAVE_FAILED"));
     GuiSoundPlay(SND_STORE_ERROR);
 }
 
@@ -1130,7 +1126,7 @@ static bool StoreTryBuyRunePack(Store *store, Player *player, int pack_index) {
         defs[i] = StoreRollRune(&pack->slots[i], &rng);
         if (defs[i] < 0 || !RuneGrant(&player->runes, defs[i], now)) {
             player->runes = old_runes;
-            StoreSetStatus(store, "Этот пак временно недоступен");
+            StoreSetStatus(store, LocGet("HODA_STORE_PACK_UNAVAILABLE"));
             GuiSoundPlay(SND_STORE_ERROR);
             return false;
         }
@@ -1243,7 +1239,7 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
         return false;
     }
     if (player->store_opened_total == INT_MAX || player->store_opened_by_pack[counter] == INT_MAX) {
-        StoreSetStatus(store, "Достигнут предел счётчика покупок");
+        StoreSetStatus(store, LocGet("HODA_STORE_COUNTER_LIMIT"));
         GuiSoundPlay(SND_STORE_ERROR);
         return false;
     }
@@ -1273,7 +1269,7 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
             definitions[i] = StoreRollPackDefinition(store, pack, rarities[i], definitions, i, &rng);
         }
         if (!definitions[i]) {
-            StoreSetStatus(store, "Этот пак временно недоступен");
+            StoreSetStatus(store, LocGet("HODA_STORE_PACK_UNAVAILABLE"));
             GuiSoundPlay(SND_STORE_ERROR);
             return false;
         }
@@ -1285,7 +1281,7 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
 
     int first_index = -1;
     if (!PlayerRosterAppendDefinitions(player, definitions, pack->hero_count, &first_index)) {
-        StoreSetStatus(store, "Не удалось добавить героев в ростер");
+        StoreSetStatus(store, LocGet("HODA_STORE_ROSTER_ADD_FAILED"));
         GuiSoundPlay(SND_STORE_ERROR);
         return false;
     }
@@ -1367,7 +1363,7 @@ static bool StoreRequestServerPurchase(Store *store, Player *player, int pack_in
     store->awaiting_ticket = BackendBeginAction(STORE_PURCHASE_ROUTE, fields);
     cJSON_Delete(fields);
     if (store->awaiting_ticket == BACKEND_NO_TICKET) {
-        StoreSetStatus(store, "Сервер занят, попробуйте ещё раз");
+        StoreSetStatus(store, LocGet("HODA_STORE_SERVER_BUSY"));
         GuiSoundPlay(SND_STORE_ERROR);
         return false;
     }
@@ -1397,7 +1393,7 @@ StoreRevealServerHeroes(Store *store, Player *player, Heroes *heroes, int pack_i
     int first_index =
         cJSON_IsNumber(first_id) ? StoreRosterIndexOfInstance(player, (uint64_t)first_id->valuedouble) : -1;
     if (count <= 0 || count > STORE_MAX_RESULTS || first_index < 0 || first_index + count > player->roster_count) {
-        StoreSetStatus(store, "Не удалось добавить героев в ростер");
+        StoreSetStatus(store, LocGet("HODA_STORE_ROSTER_ADD_FAILED"));
         GuiSoundPlay(SND_STORE_ERROR);
         return false;
     }
@@ -1435,11 +1431,11 @@ static void StoreShowServerRefusal(Store *store, const cJSON *response) {
         return;
     }
     if (!strcmp(code, "counter_limit"))
-        StoreSetStatus(store, "Достигнут предел счётчика покупок");
+        StoreSetStatus(store, LocGet("HODA_STORE_COUNTER_LIMIT"));
     else if (!strcmp(code, "offer_changed"))
-        StoreSetStatus(store, "Цена изменилась, попробуйте ещё раз");
+        StoreSetStatus(store, LocGet("HODA_STORE_PRICE_CHANGED"));
     else
-        StoreSetStatus(store, "Этот пак временно недоступен");
+        StoreSetStatus(store, LocGet("HODA_STORE_PACK_UNAVAILABLE"));
     GuiSoundPlay(SND_STORE_ERROR);
 }
 
@@ -1466,7 +1462,7 @@ static bool StorePollServerPurchase(Store *store, Player *player, Heroes *heroes
         StoreShowServerRefusal(store, response);
     } else {
         StoreSetStatus(
-            store, state == BACKEND_ACTION_CONFLICT ? "Профиль изменился на сервере" : "Нет связи с сервером"
+            store, LocGet(state == BACKEND_ACTION_CONFLICT ? "HODA_STORE_PROFILE_CHANGED" : "CONNECTION_ERROR_TITLE")
         );
         GuiSoundPlay(SND_STORE_ERROR);
     }
@@ -1644,11 +1640,11 @@ static StoreAction StoreDrawLanding(Store *store) {
         STORE_VIEW_FEATURED, STORE_VIEW_HEROES, STORE_VIEW_ITEMS, STORE_VIEW_GEMS, STORE_VIEW_VAULT
     };
     const char *labels[STORE_TILE_COUNT] = {
-        STORE_FEATURED_TITLE,
+        LocGet("BUTTON_STORE_FEATURED_TAB"),
         LocGet("BUTTON_STORE_HERO_TAB"),
-        STORE_ITEMS_TITLE,
+        LocGet("HODA_STORE_ITEMS_TAB"),
         LocGet("BUTTON_STORE_GEMS_TAB"),
-        STORE_VAULT_TITLE,
+        LocGet("HODA_STORE_VAULT_TAB"),
     };
     for (int tile = 0; tile < STORE_TILE_COUNT; tile++) {
         Color frame = tile == STORE_TILE_FEATURED ? STORE_FEATURED_FRAME_TINT : WHITE;
@@ -1753,13 +1749,18 @@ StoreDrawPackBullets(Store *store, const StorePackDef *pack, const Player *playe
     StoreDrawRarityIcon(pack->kind, card, bullet.rarity, Fade(WHITE, alpha));
 }
 
+static const char *StoreTimeParts(long long major, const char *major_key, long long minor, const char *minor_key) {
+    if (minor <= 0) return TextFormat("%d%s", (int)major, LocGet(major_key));
+    return TextFormat("%d%s %d%s", (int)major, LocGet(major_key), (int)minor, LocGet(minor_key));
+}
+
 static const char *StoreShortTime(long long seconds) {
     long long minutes = seconds / 60;
     long long hours = minutes / 60;
     long long days = hours / 24;
-    if (days > 0) return TextFormat("%dд %dч", (int)days, (int)(hours % 24));
-    if (hours > 0) return TextFormat("%dч %dм", (int)hours, (int)(minutes % 60));
-    return TextFormat("%dм", (int)fmaxf((float)minutes, 1.0f));
+    if (days > 0) return StoreTimeParts(days, "DAY_SHORT", hours % 24, "HOUR_SHORT");
+    if (hours > 0) return StoreTimeParts(hours, "HOUR_SHORT", minutes % 60, "MINUTE_SHORT");
+    return StoreTimeParts(minutes > 0 ? minutes : 1, "MINUTE_SHORT", 0, NULL);
 }
 
 static void StoreDrawTimerBanner(Store *store, Rectangle cell, long long seconds) {
@@ -1984,7 +1985,8 @@ static void StoreDrawItemDetails(Store *store) {
 static StoreAction StoreDrawItemReveal(Store *store, Player *player, Heroes *heroes, float dt) {
     int chrome = StoreDrawPopupChrome(
         store,
-        store->item_kind == STORE_KIND_RUNE ? LocGet("RUNE_REVEAL_WINDOW_TITLE") : GearText("GEAR_REVEAL_WINDOW_TITLE"),
+        store->item_kind == STORE_KIND_RUNE ? LocGet("RUNE_REVEAL_WINDOW_TITLE")
+                                            : LocGet("HODA_GEAR_REVEAL_WINDOW_TITLE"),
         false
     );
     if (chrome == 1) return STORE_ACTION_CLOSE;
@@ -2126,14 +2128,14 @@ static StoreAction StoreDrawPackPage(Store *store, Player *player, Heroes *heroe
 }
 
 static StoreAction StoreDrawVaultPage(Store *store) {
-    int chrome = StoreDrawPopupChrome(store, STORE_VAULT_TITLE, true);
+    int chrome = StoreDrawPopupChrome(store, LocGet("HODA_STORE_VAULT_TAB"), true);
     if (chrome == 1) return STORE_ACTION_CLOSE;
     if (chrome == 2) {
         StoreEnterPage(store, STORE_VIEW_LANDING);
         return STORE_ACTION_NONE;
     }
     StoreDrawCenteredFit(
-        store->title_font, STORE_COMING_SOON_TEXT, StoreListRect(), 44.0f, (Color){236, 232, 220, 255}
+        store->title_font, LocGet("HODA_STORE_COMING_SOON"), StoreListRect(), 44.0f, (Color){236, 232, 220, 255}
     );
     return STORE_ACTION_NONE;
 }
@@ -2227,7 +2229,7 @@ static StoreAction StoreDrawGemsPage(Store *store) {
         UiDrawTexture(GuiTex(GUI_STORE_BUY), bar, WHITE);
         StoreDrawCenteredFit(store->title_font, sku->cost, bar, 24.0f, (Color){235, 232, 220, 255});
         if (StoreReleasedOn(store, cell)) {
-            StoreSetStatus(store, "Покупки за реальные деньги недоступны в оффлайн-версии");
+            StoreSetStatus(store, LocGet("HODA_STORE_REAL_MONEY_OFFLINE"));
             GuiSoundPlay(SND_STORE_INFO);
         }
     }
@@ -2431,10 +2433,8 @@ static void StoreDialogText(const Store *store, const Player *player, char *head
         StrCopy(body, size, LocGet("VOUCHER_PACK_UNAVAILABLE_BODY"));
     } else if (store->dialog == STORE_DIALOG_CONFIRM_GEMS) {
         StrCopy(header, size, name);
-        StrCopy(
-            body,
-            size,
-            TextFormat(STORE_CONFIRM_GEMS_FORMAT, StoreActiveOffer(&store->packs[store->pending_pack], player).price)
+        LocFormatInt(
+            body, size, "HODA_STORE_CONFIRM_GEMS", StoreActiveOffer(&store->packs[store->pending_pack], player).price
         );
     } else {
         bool afford = store->dialog == STORE_DIALOG_CANT_AFFORD;
@@ -2462,15 +2462,14 @@ static bool StoreDrawDialog(Store *store, Player *player, Heroes *heroes) {
         float icon = STORE_CONFIRM_TEXT_SIZE * STORE_CONFIRM_ICON_OF_TEXT;
         float gap = STORE_CONFIRM_TEXT_SIZE * 0.3f;
         Vector2 amount = MeasureTextEx(store->body_font, body, STORE_CONFIRM_TEXT_SIZE, 1.0f);
-        Vector2 suffix = MeasureTextEx(store->body_font, STORE_CONFIRM_GEMS_SUFFIX, STORE_CONFIRM_TEXT_SIZE, 1.0f);
+        const char *suffix_text = LocGet("HODA_STORE_CONFIRM_GEMS_SUFFIX");
+        Vector2 suffix = MeasureTextEx(store->body_font, suffix_text, STORE_CONFIRM_TEXT_SIZE, 1.0f);
         float x = body_rect.x + (body_rect.width - (amount.x + gap + icon + suffix.x)) * 0.5f;
         float y = body_rect.y + (body_rect.height - amount.y) * 0.5f;
         DrawTextEx(store->body_font, body, (Vector2){x, y}, STORE_CONFIRM_TEXT_SIZE, 1.0f, WHITE);
         x += amount.x + gap;
         UiDrawTexture(store->currency_gems, (Rectangle){x, y + (amount.y - icon) * 0.5f, icon, icon}, WHITE);
-        DrawTextEx(
-            store->body_font, STORE_CONFIRM_GEMS_SUFFIX, (Vector2){x + icon, y}, STORE_CONFIRM_TEXT_SIZE, 1.0f, WHITE
-        );
+        DrawTextEx(store->body_font, suffix_text, (Vector2){x + icon, y}, STORE_CONFIRM_TEXT_SIZE, 1.0f, WHITE);
     } else {
         MessagePopupDrawText(store->body_font, body, body_rect, STORE_CONFIRM_TEXT_SIZE, WHITE);
     }
@@ -2539,10 +2538,10 @@ StoreAction StoreDraw(Store *store, Player *player, Heroes *heroes, float dt) {
             action = StoreDrawPackPage(store, player, heroes, LocGet("BUTTON_STORE_HERO_TAB"));
             break;
         case STORE_VIEW_ITEMS:
-            action = StoreDrawPackPage(store, player, heroes, STORE_ITEMS_TITLE);
+            action = StoreDrawPackPage(store, player, heroes, LocGet("HODA_STORE_ITEMS_TAB"));
             break;
         case STORE_VIEW_FEATURED:
-            action = StoreDrawPackPage(store, player, heroes, STORE_FEATURED_TITLE);
+            action = StoreDrawPackPage(store, player, heroes, LocGet("BUTTON_STORE_FEATURED_TAB"));
             break;
         case STORE_VIEW_VAULT:
             action = StoreDrawVaultPage(store);

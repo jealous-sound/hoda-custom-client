@@ -1,4 +1,3 @@
-#define CONTENT_LOCALIZATION_PATH ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt"
 #define CONTENT_TRACK_TEXTURE APK_RESOURCE("Bar_ProgBarBg_v4")
 #define CONTENT_FILL_TEXTURE APK_RESOURCE("Meter_LoadingFill")
 #define CONTENT_ALERT_FRAME APK_RESOURCE("Bg_Overlay_Short")
@@ -36,24 +35,8 @@
 #define CONTENT_DEFAULT_DECIMAL_SEPARATOR '.'
 #define CONTENT_LABEL_CAP 64
 #define CONTENT_SCREEN_TEXT_CAP 512
-#define CONTENT_BOOT_BACKGROUND BLACK
-#define CONTENT_BOOT_TEXT ((Color){230, 230, 230, 255})
-#define CONTENT_BOOT_TRACK ((Color){40, 36, 40, 255})
-#define CONTENT_BOOT_FILL ((Color){150, 24, 20, 255})
-#define CONTENT_BOOT_BUTTON ((Color){58, 50, 56, 255})
-#define CONTENT_BOOT_BUTTON_HOVER ((Color){92, 76, 70, 255})
-#define CONTENT_BOOT_FONT_SIZE 20.0f
-#define CONTENT_BOOT_SPACING_RATIO 0.1f
-#define CONTENT_BOOT_LINE_HEIGHT 30.0f
-#define CONTENT_BOOT_BAR_HEIGHT 12.0f
-#define CONTENT_BOOT_COLUMN_WIDTH 760.0f
-#define CONTENT_BOOT_STATUS_Y 0.45f
-#define CONTENT_BOOT_MESSAGE_Y 0.55f
-#define CONTENT_BOOT_MESSAGE_LINES 3
-#define CONTENT_BOOT_BUTTONS_Y 0.72f
-#define CONTENT_BOOT_BUTTON_WIDTH 200.0f
-#define CONTENT_BOOT_BUTTON_HEIGHT 52.0f
-#define CONTENT_BOOT_BUTTON_GAP 24.0f
+#define CONTENT_BLANK_BACKGROUND BLACK
+#define CONTENT_BLANK_RETRY_SECONDS 5.0
 
 typedef enum {
     CONTENT_SCREEN_WAIT,
@@ -84,6 +67,8 @@ typedef struct {
 typedef struct {
     char directory[CONTENT_PATH_CAP];
     bool entered;
+    bool failure_seen;
+    double failure_time;
     ContentArt art;
 } ContentScreen;
 
@@ -140,34 +125,6 @@ static ContentAlert ContentAlertFor(ContentError error) {
     };
 }
 
-static const char *ContentBootStatus(const ContentProgress *progress) {
-    if (progress->phase == CONTENT_PHASE_FAILED) return "Download stopped";
-    return progress->packs_total == 0 ? "Checking for updates" : "Downloading game data";
-}
-
-static const char *ContentBootErrorText(ContentError error) {
-    switch (error) {
-        case CONTENT_ERROR_NOT_CONFIGURED:
-            return "This build has no download address. Set HOD_CONTENT_URL and start the game again.";
-        case CONTENT_ERROR_DOWNLOAD_UNAVAILABLE:
-            return "Downloading needs libcurl, which this system is missing. Install curl and try again.";
-        case CONTENT_ERROR_OFFLINE:
-            return "Couldn't reach the download server. Check your internet connection and try again.";
-        case CONTENT_ERROR_SERVER:
-            return "The download server sent an unexpected answer. Try again in a few minutes.";
-        case CONTENT_ERROR_CLIENT_TOO_OLD:
-            return "This version of the game is too old for the current game data. Download the latest version.";
-        case CONTENT_ERROR_CORRUPT:
-            return "A downloaded pack was damaged and has been discarded. Try again to download it once more.";
-        case CONTENT_ERROR_DISK:
-            return "Couldn't save the game data. Check that the disk has free space and try again.";
-        case CONTENT_ERROR_NONE:
-        case CONTENT_ERROR_CANCELLED:
-            break;
-    }
-    return "The download stopped unexpectedly. Try again.";
-}
-
 static float ContentCanvasScale(void) {
     return UiHeight() / LOADING_PREFAB_CANVAS_HEIGHT;
 }
@@ -191,22 +148,17 @@ static void ContentArtUnload(ContentArt *art) {
     *art = (ContentArt){.attempted = art->attempted};
 }
 
-static Font ContentArtFont(FontId id) {
-    Font font = LoadCyrillicFont(font_paths[id], FONT_BASE_SIZE);
-    SetTextureFilter(font.texture, TEXTURE_FILTER_BILINEAR);
-    return font;
-}
-
 static void ContentArtLoad(ContentArt *art) {
     art->attempted = true;
+    LocLoadPreferred();
     art->splash = LoadingScreenTexture(LOADING_SCREEN_SPLASH);
     art->plate = LoadingScreenTexture(LOADING_SCREEN_PLATE);
     art->ring = LoadingScreenTexture(LOADING_INDICATOR_RING);
     art->track = LoadingScreenTexture(CONTENT_TRACK_TEXTURE);
     art->fill = LoadingScreenTexture(CONTENT_FILL_TEXTURE);
     art->alert_frame = LoadingScreenTexture(CONTENT_ALERT_FRAME);
-    art->menu_font = ContentArtFont(FNT_MENU);
-    art->title_font = ContentArtFont(FNT_COOL);
+    art->menu_font = LoadGameFont(FNT_MENU);
+    art->title_font = LoadGameFont(FNT_COOL);
     art->alert_button = ButtonFromTextures(
         LoadingScreenTexture(CONTENT_ALERT_BUTTON),
         LoadingScreenTexture(CONTENT_ALERT_BUTTON_ACTIVE),
@@ -220,15 +172,15 @@ static void ContentArtLoad(ContentArt *art) {
                     art->alert_frame.id && art->alert_button.idle.id && art->alert_button.active.id &&
                     art->menu_font.texture.id && art->title_font.texture.id;
     if (!complete) {
+        LocUnload();
         ContentArtUnload(art);
         return;
     }
-    LocLoad(CONTENT_LOCALIZATION_PATH);
     art->loaded = true;
 }
 
 static void ContentArtLoadWhenInstalled(ContentArt *art) {
-    if (!art->attempted && FileExists(ORIGINAL_APK_PATH) && FileExists(CONTENT_LOCALIZATION_PATH)) ContentArtLoad(art);
+    if (!art->attempted && FileExists(ORIGINAL_APK_PATH) && LocPreferredInstalled()) ContentArtLoad(art);
 }
 
 static float ContentFitMessageSize(Font font, const char *text, Rectangle box, float size) {
@@ -350,81 +302,22 @@ static ContentScreenChoice ContentDrawArt(ContentArt *art, const ContentProgress
     return IsKeyPressed(KEY_ESCAPE) ? CONTENT_SCREEN_QUIT : CONTENT_SCREEN_WAIT;
 }
 
-static void ContentBootText(const char *text, Rectangle box) {
-    Font font = GetFontDefault();
-    float spacing = CONTENT_BOOT_FONT_SIZE * CONTENT_BOOT_SPACING_RATIO;
-    Vector2 measured = MeasureTextEx(font, text, CONTENT_BOOT_FONT_SIZE, spacing);
-    Vector2 at = {box.x + (box.width - measured.x) * 0.5f, box.y + (box.height - measured.y) * 0.5f};
-    DrawTextEx(font, text, at, CONTENT_BOOT_FONT_SIZE, spacing, CONTENT_BOOT_TEXT);
-}
-
-static void ContentBootWrapped(const char *text, Rectangle box) {
-    Font font = GetFontDefault();
-    float spacing = CONTENT_BOOT_FONT_SIZE * CONTENT_BOOT_SPACING_RATIO;
-    char line[CONTENT_SCREEN_TEXT_CAP] = "", candidate[CONTENT_SCREEN_TEXT_CAP];
-    Rectangle row = {box.x, box.y, box.width, CONTENT_BOOT_LINE_HEIGHT};
-    int lines = 0;
-    for (const char *word = text; *word && lines < CONTENT_BOOT_MESSAGE_LINES;) {
-        size_t length = strcspn(word, " ");
-        snprintf(candidate, sizeof(candidate), "%s%s%.*s", line, line[0] ? " " : "", (int)length, word);
-        if (line[0] && MeasureTextEx(font, candidate, CONTENT_BOOT_FONT_SIZE, spacing).x > box.width) {
-            ContentBootText(line, row);
-            row.y += CONTENT_BOOT_LINE_HEIGHT;
-            lines++;
-            snprintf(line, sizeof(line), "%.*s", (int)length, word);
-        } else {
-            StrCopy(line, sizeof(line), candidate);
-        }
-        word += length;
-        while (*word == ' ') word++;
+static ContentScreenChoice ContentDrawBlank(ContentScreen *screen, const ContentProgress *progress) {
+    if (IsKeyPressed(KEY_ESCAPE)) return CONTENT_SCREEN_QUIT;
+    if (progress->phase != CONTENT_PHASE_FAILED) return CONTENT_SCREEN_WAIT;
+    if (!screen->failure_seen) {
+        screen->failure_seen = true;
+        screen->failure_time = GetTime();
     }
-    if (line[0] && lines < CONTENT_BOOT_MESSAGE_LINES) ContentBootText(line, row);
-}
-
-static bool ContentBootButton(Rectangle box, const char *label) {
-    bool hovered = CheckCollisionPointRec(UiMouse(), box);
-    DrawRectangleRec(box, hovered ? CONTENT_BOOT_BUTTON_HOVER : CONTENT_BOOT_BUTTON);
-    ContentBootText(label, box);
-    return hovered && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
-}
-
-static ContentScreenChoice ContentDrawBoot(const ContentProgress *progress) {
-    Rectangle root = UiRoot();
-    Rectangle column = UiRect(root, 0.5f, 0.0f, CONTENT_BOOT_COLUMN_WIDTH, root.height);
-    ContentBootText(
-        ContentBootStatus(progress), UiRect(column, 0.5f, CONTENT_BOOT_STATUS_Y, 1.0f, CONTENT_BOOT_LINE_HEIGHT)
-    );
-    if (progress->phase != CONTENT_PHASE_FAILED) {
-        if (progress->packs_total == 0) return CONTENT_SCREEN_WAIT;
-        Rectangle track = UiRect(column, 0.5f, CONTENT_BOOT_MESSAGE_Y, 1.0f, CONTENT_BOOT_BAR_HEIGHT);
-        DrawRectangleRec(track, CONTENT_BOOT_TRACK);
-        Rectangle fill = track;
-        fill.width *= (float)ContentPercent(progress) / (float)CONTENT_PERCENT_MAX;
-        DrawRectangleRec(fill, CONTENT_BOOT_FILL);
-        return CONTENT_SCREEN_WAIT;
-    }
-    ContentBootWrapped(
-        ContentBootErrorText(progress->error),
-        UiRect(column, 0.5f, CONTENT_BOOT_MESSAGE_Y, 1.0f, CONTENT_BOOT_LINE_HEIGHT * CONTENT_BOOT_MESSAGE_LINES)
-    );
-    float row_width = CONTENT_BOOT_BUTTON_WIDTH * 2.0f + CONTENT_BOOT_BUTTON_GAP;
-    Rectangle row = UiRect(column, 0.5f, CONTENT_BOOT_BUTTONS_Y, row_width, CONTENT_BOOT_BUTTON_HEIGHT);
-    Rectangle retry = {row.x, row.y, CONTENT_BOOT_BUTTON_WIDTH, CONTENT_BOOT_BUTTON_HEIGHT};
-    Rectangle quit = {
-        row.x + CONTENT_BOOT_BUTTON_WIDTH + CONTENT_BOOT_BUTTON_GAP,
-        row.y,
-        CONTENT_BOOT_BUTTON_WIDTH,
-        CONTENT_BOOT_BUTTON_HEIGHT
-    };
-    if (ContentBootButton(retry, "Try again") || IsKeyPressed(KEY_ENTER)) return CONTENT_SCREEN_RETRY;
-    return ContentBootButton(quit, "Quit") || IsKeyPressed(KEY_ESCAPE) ? CONTENT_SCREEN_QUIT : CONTENT_SCREEN_WAIT;
+    return GetTime() - screen->failure_time >= CONTENT_BLANK_RETRY_SECONDS ? CONTENT_SCREEN_RETRY : CONTENT_SCREEN_WAIT;
 }
 
 static ContentScreenChoice ContentScreenDraw(ContentScreen *screen, const ContentProgress *progress) {
-    return screen->art.loaded ? ContentDrawArt(&screen->art, progress) : ContentDrawBoot(progress);
+    return screen->art.loaded ? ContentDrawArt(&screen->art, progress) : ContentDrawBlank(screen, progress);
 }
 
 static bool ContentScreenStart(ContentScreen *screen, ContentUpdate *update) {
+    screen->failure_seen = false;
     if (!screen->entered) screen->entered = ContentEnterInstallDirectory(screen->directory, sizeof(screen->directory));
     if (!screen->entered) return false;
     ContentArtLoadWhenInstalled(&screen->art);
@@ -448,7 +341,7 @@ static bool ContentScreenRun(void) {
         }
         if (screen.entered) ContentArtLoadWhenInstalled(&screen.art);
         BeginDrawing();
-        ClearBackground(CONTENT_BOOT_BACKGROUND);
+        ClearBackground(CONTENT_BLANK_BACKGROUND);
         UiFrameBegin();
         ContentScreenChoice choice = ContentScreenDraw(&screen, &progress);
         UiFrameEnd();

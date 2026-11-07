@@ -1,4 +1,12 @@
-typedef enum { QUESTS_NONE = 0, QUESTS_MAP, QUESTS_NEXUS, QUESTS_UNLOCK, QUESTS_FORFEIT, QUESTS_CLOSE, QUESTS_NEWS } QuestButton;
+typedef enum {
+    QUESTS_NONE = 0,
+    QUESTS_MAP,
+    QUESTS_NEXUS,
+    QUESTS_UNLOCK,
+    QUESTS_FORFEIT,
+    QUESTS_CLOSE,
+    QUESTS_NEWS
+} QuestButton;
 
 typedef enum {
     QUESTS_DIALOG_NONE = 0,
@@ -133,16 +141,6 @@ int QuestsSelectedNexusDifficulty(const Quests *q) {
 
 int QuestsPendingNexusEvent(const Quests *q) {
     return q->pending_event;
-}
-
-static const char *QuestsDifficultyTitle(const char *difficulty) {
-    if (!strcmp(difficulty, "easy")) return LocGetOr("Event_Nexus_Easy_Title", "Легко");
-    if (!strcmp(difficulty, "medium")) return LocGetOr("Event_Nexus_Medium_Title", "Умеренно");
-    if (!strcmp(difficulty, "hard")) return LocGetOr("Event_Nexus_Hard_Title", "Сложно");
-    if (!strcmp(difficulty, "veryhard")) return LocGetOr("Event_Nexus_VERYHard_Title", "Очень сложно");
-    if (!strcmp(difficulty, "insane")) return LocGetOr("Event_Nexus_Insane_Title", "Безумие");
-    if (!strcmp(difficulty, "ludicrous")) return LocGetOr("Event_Nexus_Ludicrous_Title", "Абсурд");
-    return difficulty;
 }
 
 static void QuestsDialogClose(Quests *q) {
@@ -299,17 +297,17 @@ static void QuestsShortTime(char *out, size_t size, long long seconds) {
                                                                : NEXUS_SECONDS_PER_DAY;
     static const struct {
         long long unit;
-        const char *key, *fallback;
+        const char *key;
     } suffixes[] = {
-        {1, "SECONDS_SHORT", "сек."},
-        {QUESTS_SECONDS_PER_MINUTE, "MINUTE_SHORT", "мин."},
-        {QUESTS_SECONDS_PER_HOUR, "HOUR_SHORT", "ч."},
-        {NEXUS_SECONDS_PER_DAY, "DAY_SHORT", "д."},
+        {1, "SECONDS_SHORT"},
+        {QUESTS_SECONDS_PER_MINUTE, "MINUTE_SHORT"},
+        {QUESTS_SECONDS_PER_HOUR, "HOUR_SHORT"},
+        {NEXUS_SECONDS_PER_DAY, "DAY_SHORT"},
     };
     const char *suffix = "", *sub_suffix = "";
     for (int i = 0; i < (int)(sizeof(suffixes) / sizeof(suffixes[0])); i++) {
-        if (suffixes[i].unit == unit) suffix = LocGetOr(suffixes[i].key, suffixes[i].fallback);
-        if (suffixes[i].unit == sub_unit) sub_suffix = LocGetOr(suffixes[i].key, suffixes[i].fallback);
+        if (suffixes[i].unit == unit) suffix = LocGet(suffixes[i].key);
+        if (suffixes[i].unit == sub_unit) sub_suffix = LocGet(suffixes[i].key);
     }
     long long sub_value = remainder / sub_unit;
     if (unit != 1 && sub_value != 0)
@@ -338,7 +336,7 @@ static void QuestsHubTimeString(char *out, size_t size, const Nexus *nexus, cons
     const NexusEvent *e = NexusEventAt(nexus, event);
     long long remaining = NexusEventTimeRemaining(nexus, player, event, now);
     if (remaining <= 0) {
-        StrCopy(out, size, LocGetOr("PVE_HUB_NEXUS_TIME_EXPIRED", "Время вышло!"));
+        StrCopy(out, size, LocGet("PVE_HUB_NEXUS_TIME_EXPIRED"));
         return;
     }
     bool unlocked = NexusEventGated(e) && !NexusEventLocked(nexus, player, event, now);
@@ -615,8 +613,7 @@ static bool QuestsDrawEventCell(Quests *q, const Nexus *nexus, const Player *pla
     Rectangle plate = {cell.x + 16.0f, foot - 48.0f, cell.width - 32.0f, 40.0f};
     if (locked) {
         QuestsDrawUnlockRequirement(q, player, e, (Rectangle){cell.x + 20.0f, foot - 80.0f, cell.width - 40.0f, 30.0f});
-        const char *label =
-            e->unlock_key == 0 ? LocGetOr("GAUNTLET_START_TIMER", "Запустить") : LocGetOr("BUTTON_LOCKED", "Закрыто");
+        const char *label = LocGet(e->unlock_key == 0 ? "HODA_NEXUS_UNLOCK_START" : "BUTTON_LOCKED");
         QuestsDrawActionPlate(
             q, plate, label, false, QuestsPlayerHasUnlockItem(player, e) ? WHITE : QUESTS_COMMITTED_ELSEWHERE
         );
@@ -624,9 +621,8 @@ static bool QuestsDrawEventCell(Quests *q, const Nexus *nexus, const Player *pla
     }
 
     bool unlocked = NexusEventGated(e);
-    const char *label = !unlocked || e->unlock_key == 0 ? LocGetOr("PVE_HUB_EVENT_ENTER_BUTTON", "Войти")
-                                                        : LocGetOr("BUTTON_UNLOCKED", "Открыто");
-    if (committed) label = LocGetOr("PVE_HUB_NEXUS_EVENT_CONTINUE_BUTTON", "Продолжить");
+    const char *label = LocGet(!unlocked || e->unlock_key == 0 ? "PVE_HUB_EVENT_ENTER_BUTTON" : "BUTTON_UNLOCKED");
+    if (committed) label = LocGet("PVE_HUB_NEXUS_EVENT_CONTINUE_BUTTON");
     QuestsDrawActionPlate(
         q, plate, label, committed, QuestsCommittedElsewhere(nexus, player, event) ? QUESTS_COMMITTED_ELSEWHERE : WHITE
     );
@@ -636,7 +632,7 @@ static bool QuestsDrawEventCell(Quests *q, const Nexus *nexus, const Player *pla
 static void QuestsDrawCarousel(Quests *q, const Nexus *nexus, const Player *player, Rectangle panel) {
     UiDrawTextCentered(
         q->font,
-        LocGetOr("PVE_HUB_SELECT_MAP", "Выберите карту"),
+        LocGet("PVE_HUB_SELECT_MAP"),
         (Rectangle){panel.x, panel.y + 94.0f, panel.width, 0.0f},
         24.0f,
         (Color){206, 198, 176, 255}
@@ -665,7 +661,7 @@ static void QuestsDrawCarousel(Quests *q, const Nexus *nexus, const Player *play
     if (q->live_count == 0) {
         UiDrawTextCentered(
             q->font,
-            LocGetOr("NEXUS_HUB_FEATURED_PLACEHOLDER", "Готовьтесь к новой карте!"),
+            LocGet("NEXUS_HUB_FEATURED_PLACEHOLDER"),
             (Rectangle){viewport.x, viewport.y, viewport.width, viewport.height},
             28.0f,
             (Color){178, 178, 178, 255}
@@ -723,9 +719,13 @@ static bool QuestsDrawLadder(Quests *q, const Nexus *nexus, const Player *player
         changer_height = QUESTS_CHANGER_HEIGHT;
         Rectangle box = {panel.x + 110.0f, panel.y + 152.0f, panel.width - 220.0f, changer_height};
         const char *rule = NexusGameChangerText(changer);
-        HeroesDrawRich(q->body, rule, box, CampaignFitWrappedSize(q->body, rule, box, 16.0f, 11.0f), QUESTS_CHANGER_COLOR);
+        HeroesDrawRich(
+            q->body, rule, box, CampaignFitWrappedSize(q->body, rule, box, 16.0f, 11.0f), QUESTS_CHANGER_COLOR
+        );
     }
-    Rectangle list = {panel.x + 96.0f, panel.y + 156.0f + changer_height, panel.width - 192.0f, 376.0f - changer_height};
+    Rectangle list = {
+        panel.x + 96.0f, panel.y + 156.0f + changer_height, panel.width - 192.0f, 376.0f - changer_height
+    };
     float stride = fminf(list.height / (float)e->difficulty_count, 96.0f);
     float top = list.y + (list.height - stride * e->difficulty_count) * 0.5f;
     bool entered = false;
@@ -745,7 +745,7 @@ static bool QuestsDrawLadder(Quests *q, const Nexus *nexus, const Player *player
         Rectangle cost = {nodes.x - 196.0f, row.y, 180.0f, row.height};
 
         char title[96];
-        StrCopy(title, sizeof(title), QuestsDifficultyTitle(d->difficulty));
+        StrCopy(title, sizeof(title), NexusDifficultyTitle(d));
         if (player->nexus_events.completions[q->ladder_event][i] > 0) {
             char done[96];
             LocFormat2(done, sizeof(done), "PVE_HUB_NEXUS_MAP_COMPLETED", title, "");
@@ -756,17 +756,18 @@ static bool QuestsDrawLadder(Quests *q, const Nexus *nexus, const Player *player
         );
 
         Color muted = selectable ? (Color){198, 194, 184, 255} : (Color){136, 133, 128, 255};
-        UiDrawTextLeftMiddle(q->body, LocGetOr("PVE_HUB_MAP_COST", "Цена:"), cost, 19.0f, muted);
+        UiDrawTextLeftMiddle(q->body, LocGet("PVE_HUB_MAP_COST"), cost, 19.0f, muted);
         UiDrawTexture(
             q->energy,
             (Rectangle){cost.x + cost.width - 78.0f, cy - 15.0f, 30.0f, 30.0f},
             selectable ? WHITE : (Color){140, 140, 140, 220}
         );
         UiDrawTextRight(q->font, TextFormat("%d", d->energy_cost), cost, 24.0f, label_color);
-        UiDrawTextRight(q->body, TextFormat("Узлов: %d", d->node_count), nodes, 19.0f, muted);
+        char battles[48];
+        LocFormatInt(battles, sizeof(battles), "HODA_NEXUS_MAP_BATTLE_COUNT", d->node_count);
+        UiDrawTextRight(q->body, battles, nodes, 19.0f, muted);
 
-        const char *label = committed ? LocGetOr("PVE_HUB_NEXUS_EVENT_CONTINUE_BUTTON", "Продолжить")
-                                      : LocGetOr("PVE_HUB_EVENT_ENTER_BUTTON", "Войти");
+        const char *label = LocGet(committed ? "PVE_HUB_NEXUS_EVENT_CONTINUE_BUTTON" : "PVE_HUB_EVENT_ENTER_BUTTON");
         QuestsDrawActionPlate(q, plate, label, committed, selectable ? WHITE : QUESTS_COMMITTED_ELSEWHERE);
         if (!entered && selectable && QuestsReleasedOn(q, row) && player->roster_count >= player->roster_capacity) {
             QuestsDialogOpen(q, QUESTS_DIALOG_MESSAGE, -1, LocGet("MESSAGE_TOO_MANY_BODY_NO_CONSUME"));
@@ -830,7 +831,7 @@ QuestsDrawCurrentMap(Quests *q, const Campaign *campaign, const PlayerCampaignPr
     QuestsDrawImageFit(q->current_maps[map], image, hover ? (Color){255, 236, 180, 255} : WHITE);
     UiDrawTextCentered(
         q->body,
-        CapitalizeFirst(LocGetOr("NEXUS_HUB_FEATURED_CURRENT", "текущая карта")),
+        CapitalizeFirst(LocGet("NEXUS_HUB_FEATURED_CURRENT")),
         (Rectangle){area.x, image.y + image.height + 12.0f, area.width, 0.0f},
         17.0f,
         QUESTS_TEXT
@@ -861,18 +862,18 @@ static QuestButton QuestsDrawDialog(Quests *q, const Player *player) {
     int event = d->event;
 
     if (d->kind == QUESTS_DIALOG_MESSAGE) {
-        q->dialog_ok.label = LocGetOr("MAIN_MESSAGE_DIALOG_OK", "ОК");
+        q->dialog_ok.label = LocGet("MAIN_MESSAGE_DIALOG_OK");
         if (ButtonDrawEx(&q->dialog_ok, single, interactive)) QuestsDialogClose(q);
     } else if (d->kind == QUESTS_DIALOG_EXPIRED) {
-        q->dialog_ok.label = LocGetOr("NEXUS_MAP_EXPIRED_OK", "ОК");
+        q->dialog_ok.label = LocGet("NEXUS_MAP_EXPIRED_OK");
         if (ButtonDrawEx(&q->dialog_ok, single, interactive)) {
             QuestsDialogClose(q);
             q->pending_event = -1;
             result = QUESTS_FORFEIT;
         }
     } else if (d->kind == QUESTS_DIALOG_UNLOCK) {
-        q->dialog_yes.label = LocGetOr("CONFIRM_DIALOG_YES", "Да");
-        q->dialog_no.label = LocGetOr("CONFIRM_DIALOG_NO", "Нет");
+        q->dialog_yes.label = LocGet("CONFIRM_DIALOG_YES");
+        q->dialog_no.label = LocGet("CONFIRM_DIALOG_NO");
         if (ButtonDrawEx(&q->dialog_yes, left, interactive)) {
             QuestsDialogClose(q);
             q->pending_event = event;
@@ -881,8 +882,8 @@ static QuestButton QuestsDrawDialog(Quests *q, const Player *player) {
             QuestsDialogClose(q);
         }
     } else if (d->kind == QUESTS_DIALOG_COMMITTED) {
-        q->dialog_yes.label = LocGetOr("NEXUS_COMMIT_MAP_EXPLANATION_CONTINUE_BUTTON", "Продолжить карту");
-        q->dialog_no.label = LocGetOr("NEXUS_COMMIT_MAP_EXPLANATION_QUIT_BUTTON", "Покинуть карту");
+        q->dialog_yes.label = LocGet("NEXUS_COMMIT_MAP_EXPLANATION_CONTINUE_BUTTON");
+        q->dialog_no.label = LocGet("NEXUS_COMMIT_MAP_EXPLANATION_QUIT_BUTTON");
         if (ButtonDrawEx(&q->dialog_yes, left, interactive)) {
             QuestsDialogClose(q);
             q->ladder_event = player->nexus_run.event_index;
@@ -908,7 +909,9 @@ QuestButton QuestsDraw(Quests *q, const Nexus *nexus, const Player *player, cons
     QuestsEnsureCurrentMaps(q, campaign);
     if (q->dialog.kind == QUESTS_DIALOG_NONE && NexusRunExpired(nexus, player, QuestsNow())) {
         char text[QUESTS_DIALOG_TEXT_SIZE];
-        LocFormat2(text, sizeof(text), "NEXUS_MAP_EXPIRED_BODY", NexusEventAt(nexus, player->nexus_run.event_index)->name, "");
+        LocFormat2(
+            text, sizeof(text), "NEXUS_MAP_EXPIRED_BODY", NexusEventAt(nexus, player->nexus_run.event_index)->name, ""
+        );
         QuestsDialogOpen(q, QUESTS_DIALOG_EXPIRED, -1, text);
     }
     bool dialog_open = q->dialog.kind != QUESTS_DIALOG_NONE;
@@ -924,11 +927,7 @@ QuestButton QuestsDraw(Quests *q, const Nexus *nexus, const Player *player, cons
     }
 
     UiDrawTextCentered(
-        q->font,
-        LocGetOr("PVE_HUB_TITLE", "Задания"),
-        (Rectangle){0.0f, panel.y + 38.0f, UiWidth(), 0.0f},
-        42.0f,
-        QUESTS_TEXT
+        q->font, LocGet("PVE_HUB_TITLE"), (Rectangle){0.0f, panel.y + 38.0f, UiWidth(), 0.0f}, 42.0f, QUESTS_TEXT
     );
 
     QuestsCollectLiveEvents(q, nexus, player);
@@ -951,7 +950,7 @@ QuestButton QuestsDraw(Quests *q, const Nexus *nexus, const Player *player, cons
         float caption_fs = 30.0f;
         UiDrawTextCentered(
             q->font,
-            LocGetOr("NEXUS_HUB_FEATURED_CONTINUE", "Продолжить основное задание"),
+            LocGet("NEXUS_HUB_FEATURED_CONTINUE"),
             (Rectangle){0.0f, dst.y - caption_fs, UiWidth(), 0.0f},
             caption_fs,
             QUESTS_TEXT

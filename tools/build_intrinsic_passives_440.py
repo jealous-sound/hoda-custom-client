@@ -396,7 +396,7 @@ def build(
     families = common._family_index(catalog, reference)
 
     occurrences: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    texts: dict[str, tuple[str, str]] = {}
+    texts: dict[str, str] = {}
     promote_to_passive: dict[str, str] = {}
     definition_to_passive: dict[str, str] = {}
     target_weights: list[dict[str, Any]] = []
@@ -409,12 +409,12 @@ def build(
             passive = {}
         key = str(passive.get("key", ""))
         if key:
-            pair = (str(passive.get("text", "")), str(passive.get("text_ru", "")))
-            if key in texts and texts[key] != pair:
+            text = str(passive.get("text", ""))
+            if key in texts and texts[key] != text:
                 raise SystemExit(
                     f"4.4 passive key {key!r} has multiple localized texts"
                 )
-            texts[key] = pair
+            texts[key] = text
             occurrence = {
                 "semantic_recipe_key": str(recipe["semantic_recipe_key"]),
                 "promote_group": int(recipe["promote_group"]),
@@ -433,7 +433,7 @@ def build(
 
     passive_records: list[dict[str, Any]] = []
     for key in sorted(texts):
-        text, text_ru = texts[key]
+        text = texts[key]
         effects, unresolved = _static_effects(text, names, families)
         effects.extend(_personal_resistance_effects(text))
         effects.extend(_personal_damage_resistance_effects(text))
@@ -468,7 +468,6 @@ def build(
             {
                 "key": key,
                 "text": text,
-                "text_ru": text_ru,
                 "occurrences": sorted(
                     occurrences[key], key=lambda value: value["promote_group"]
                 ),

@@ -429,8 +429,7 @@ static bool BpSwingAwardsCritGold(const BattlePlay *bp, const BattleSimAction *f
 static void BpApplyAction(BattlePlay *bp, Battle *b, const BattleSimAction *a) {
     const Color red = {232, 43, 43, 255};
     const Color white = {245, 244, 238, 255};
-    const char *cursed = LocGet("HEALTHPOWER_CURSED_DEBUFF");
-    if (!cursed[0]) cursed = "Проклятие!";
+    const char *cursed = LocGet("HODA_HEALTHPOWER_CURSED_DEBUFF");
 
     for (int i = 0; i < a->target_count; i++) {
         const BattleSimTarget *t = &a->targets[i];
@@ -1285,11 +1284,7 @@ void BattlePlaySummary(const BattlePlay *bp, BattleSummary *out) {
             }
         }
         if (best >= 0) {
-            const Character *ch = bp->sim.units[best].ch;
-            char key[96];
-            snprintf(key, sizeof(key), "%s%s", ch->id, TIER_NAMES[ch->tier]);
-            const char *name = LocGet(key);
-            StrCopy(out->mvp[side], sizeof(out->mvp[side]), name[0] ? name : ch->name_ru[0] ? ch->name_ru : ch->name);
+            StrCopy(out->mvp[side], sizeof(out->mvp[side]), CharacterName(bp->sim.units[best].ch));
         }
     }
 }

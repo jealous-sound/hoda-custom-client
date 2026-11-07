@@ -413,6 +413,11 @@ typedef enum {
     GUI_GUILD_MEDAL_SILVER,
     GUI_GUILD_MEDAL_BRONZE,
     GUI_GUILD_REWARD_RULE,
+    GUI_OPTIONS_MORE_BG,
+    GUI_OPTIONS_AUDIO_BG,
+    GUI_OPTIONS_TOGGLE_ON,
+    GUI_OPTIONS_TOGGLE_OFF,
+    GUI_LANGUAGE_ROW_BG,
     GUI_COUNT
 } GuiId;
 
@@ -896,9 +901,18 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_SPLASH_GRUNGE] = CACHE_RESOURCE("victory_defeat_texture"),
     [GUI_SPLASH_GLOW] = CACHE_RESOURCE("valor_glow"),
     [GUI_SPLASH_SMOKE] = CACHE_RESOURCE("wispy10"),
+    [GUI_OPTIONS_MORE_BG] = CACHE_BUNDLE_RESOURCE("GameOptionsPopupV", "bg_settings_legal"),
+    [GUI_OPTIONS_AUDIO_BG] = CACHE_BUNDLE_RESOURCE("GameOptionsPopupV", "bg_settings_audio"),
+    [GUI_OPTIONS_TOGGLE_ON] = CACHE_BUNDLE_RESOURCE("GameOptionsPopupV", "toggle_on"),
+    [GUI_OPTIONS_TOGGLE_OFF] = CACHE_BUNDLE_RESOURCE("GameOptionsPopupV", "toggle_off"),
+    [GUI_LANGUAGE_ROW_BG] = APK_RESOURCE("Bg_FlatBlackFill"),
 };
 
 #define FONT_BASE_SIZE 96
+#define FONT_DENSE_BASE_SIZE 48
+#define FONT_DENSE_GLYPHS 1024
+#define FONT_GLYPH_CAP 8192
+#define FONT_NO_BREAK_SPACE 0x00A0
 static const char *const font_paths[FNT_COUNT] = {
     [FNT_MENU] = APK_RESOURCE("DAmFont"),
     [FNT_COOL] = APK_RESOURCE("inquisition"),
@@ -1010,6 +1024,24 @@ bool GuiSoundAllowsDuplicate(SoundId id) {
     }
 }
 
+float AudioMusicGain(void) {
+    return SettingsMusicEnabled() ? 1.0f : 0.0f;
+}
+
+float AudioSoundGain(void) {
+    return SettingsSoundEnabled() ? 1.0f : 0.0f;
+}
+
+void AudioPlaySound(Sound sound, float volume) {
+    SetSoundVolume(sound, volume * AudioSoundGain());
+    PlaySound(sound);
+}
+
+void AudioUpdateMusic(Music music, float volume) {
+    SetMusicVolume(music, volume * AudioMusicGain());
+    UpdateMusicStream(music);
+}
+
 void GuiSoundPlayHandle(Sound source, bool allow_duplicate) {
     if (!IsSoundValid(source)) return;
     int voice = -1;
@@ -1041,7 +1073,7 @@ void GuiSoundPlayHandle(Sound source, bool allow_duplicate) {
         slot->alias = LoadSoundAlias(source);
         slot->source_buffer = IsSoundValid(slot->alias) ? source.stream.buffer : NULL;
     }
-    if (IsSoundValid(slot->alias)) PlaySound(slot->alias);
+    if (IsSoundValid(slot->alias)) AudioPlaySound(slot->alias, 1.0f);
 }
 
 void GuiSoundPlay(SoundId id) {
@@ -1075,24 +1107,47 @@ static void GuiSoundVoicesUnload(void) {
     memset(gui_sound_voices, 0, sizeof(gui_sound_voices));
 }
 
-static int FillRussianFontCodepoints(int codepoints[256]) {
+static const int FONT_BASE_RANGES[][2] = {
+    {0x0020, 0x007E},
+    {0x00A0, 0x017F},
+    {0x0400, 0x045F},
+    {0x2013, 0x2014},
+    {0x2018, 0x201E},
+    {0x2026, 0x2026},
+    {0x20AC, 0x20AC},
+    {0x2212, 0x2212},
+};
+
+static int FontBaseCodepoints(int *codepoints) {
     int n = 0;
-    for (int c = 32; c <= 126; c++) codepoints[n++] = c;
-    codepoints[n++] = 0x00A0;
-    codepoints[n++] = 0x00AB;
-    codepoints[n++] = 0x00BB;
-    codepoints[n++] = 0x0401;
-    codepoints[n++] = 0x0451;
-    for (int c = 0x0410; c <= 0x044F; c++) codepoints[n++] = c;
-    codepoints[n++] = 0x2014;
-    codepoints[n++] = 0x2212;
+    for (size_t r = 0; r < sizeof(FONT_BASE_RANGES) / sizeof(FONT_BASE_RANGES[0]); r++)
+        for (int c = FONT_BASE_RANGES[r][0]; c <= FONT_BASE_RANGES[r][1]; c++) codepoints[n++] = c;
     return n;
 }
 
-static Font LoadCyrillicFont(const char *path, int size) {
-    int codepoints[256];
-    int n = FillRussianFontCodepoints(codepoints);
-    return ResourceLoadFont(path, size, codepoints, n);
+static int FontCodepoints(int codepoints[FONT_GLYPH_CAP], FontId id) {
+    return LocCollectCodepoints(codepoints, FontBaseCodepoints(codepoints), FONT_GLYPH_CAP, id == FNT_MENU);
+}
+
+static void FontWidenNoBreakSpace(Font *font) {
+    int space = GetGlyphIndex(*font, ' ');
+    int no_break = GetGlyphIndex(*font, FONT_NO_BREAK_SPACE);
+    if (font->glyphs[no_break].value != FONT_NO_BREAK_SPACE) return;
+    font->glyphs[no_break].advanceX = font->glyphs[space].advanceX;
+    font->glyphs[no_break].offsetX = font->glyphs[space].offsetX;
+    font->glyphs[no_break].offsetY = font->glyphs[space].offsetY;
+    font->recs[no_break] = font->recs[space];
+}
+
+static Font LoadGameFont(FontId id) {
+    static int codepoints[FONT_GLYPH_CAP];
+    int count = FontCodepoints(codepoints, id);
+    int size = count > FONT_DENSE_GLYPHS ? FONT_DENSE_BASE_SIZE : FONT_BASE_SIZE;
+    const char *path = id == FNT_COOL && LocIdeographic() ? font_paths[FNT_MENU] : font_paths[id];
+    Font font = FontLoadWithFallbacks(path, size, codepoints, count);
+    if (font.glyphCount > 0) FontWidenNoBreakSpace(&font);
+    SetTextureFilter(font.texture, TEXTURE_FILTER_BILINEAR);
+    return font;
 }
 
 static void ImageSwapGreenBlue(Image *image) {
@@ -1115,8 +1170,7 @@ void AssetsLoad(void) {
         if (gui_tex[i].id == 0) TraceLog(LOG_FATAL, "Assets: failed to load %s", gui_paths[i]);
     }
     for (int i = 0; i < FNT_COUNT; i++) {
-        gui_fonts[i] = LoadCyrillicFont(font_paths[i], FONT_BASE_SIZE);
-        SetTextureFilter(gui_fonts[i].texture, TEXTURE_FILTER_BILINEAR);
+        gui_fonts[i] = LoadGameFont(i);
     }
     for (int i = 0; i < MUS_COUNT; i++) {
         gui_music[i] = ResourceLoadMusic(music_defs[i].path);

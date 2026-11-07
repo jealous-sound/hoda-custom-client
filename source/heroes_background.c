@@ -345,12 +345,12 @@ void HeroesBackgroundPlayProjectile(HeroesBackground *scene, int spot) {
 }
 
 void HeroesBackgroundShake(HeroesBackground *scene) {
-    PlaySound(scene->snd_fail);
+    AudioPlaySound(scene->snd_fail, 1.0f);
     scene->shake_time = 0.5f;
 }
 
 void HeroesBackgroundPlayPlace(const HeroesBackground *scene) {
-    PlaySound(scene->snd_place);
+    AudioPlaySound(scene->snd_place, 1.0f);
 }
 
 static void HeroFxSpawn(
@@ -908,7 +908,7 @@ void HeroesBackgroundConsumeDragMove(HeroesBackground *scene, bool over_tray) {
         p.y += (HERO_CONSUME_DRAG_LIFT_RADIUS - distance) * HERO_CONSUME_DRAG_LIFT_RATE;
     if (!scene->drag.in_world) {
         scene->drag.in_world = true;
-        PlaySound(scene->snd_pickup[GetRandomValue(0, 2)]);
+        AudioPlaySound(scene->snd_pickup[GetRandomValue(0, 2)], 1.0f);
         HeroesDragUnitLoad(scene);
     }
     scene->drag.shown = true;
@@ -974,7 +974,7 @@ bool HeroesBackgroundDragStart(HeroesBackground *scene, const Player *player, in
     if (scene->drag.from_board) {
         HeroesSlotClear(scene, from_slot);
         HeroesDragUnitLoad(scene);
-        PlaySound(scene->snd_pickup[GetRandomValue(0, 2)]);
+        AudioPlaySound(scene->snd_pickup[GetRandomValue(0, 2)], 1.0f);
     }
     return true;
 }
@@ -990,7 +990,7 @@ void HeroesBackgroundDragMove(HeroesBackground *scene, bool over_tray) {
     if (!ok) return;
     if (!scene->drag.in_world) {
         scene->drag.in_world = true;
-        PlaySound(scene->snd_pickup[GetRandomValue(0, 2)]);
+        AudioPlaySound(scene->snd_pickup[GetRandomValue(0, 2)], 1.0f);
         if (scene->drag.from_slot >= 0 && scene->units[scene->drag.from_slot].active)
             HeroesSlotClear(scene, scene->drag.from_slot);
         HeroesDragUnitLoad(scene);
@@ -1028,10 +1028,10 @@ bool HeroesBackgroundDragDrop(HeroesBackground *scene, Player *player, bool over
         if (PlayerSquadPlace(player, cur, slot, scene->drag.roster_index)) {
             changed = true;
             placed_slot = slot;
-            PlaySound(scene->snd_place);
+            AudioPlaySound(scene->snd_place, 1.0f);
             HeroRowBonusStart(scene, slot);
         } else {
-            PlaySound(scene->snd_fail);
+            AudioPlaySound(scene->snd_fail, 1.0f);
             scene->shake_time = 0.5f;
         }
     } else if (scene->drag.from_slot >= 0) {
@@ -1039,7 +1039,7 @@ bool HeroesBackgroundDragDrop(HeroesBackground *scene, Player *player, bool over
             changed = true;
             HeroesBackgroundClearRowBonus(scene);
         } else {
-            PlaySound(scene->snd_fail);
+            AudioPlaySound(scene->snd_fail, 1.0f);
             scene->shake_time = 0.5f;
         }
     }

@@ -29,7 +29,7 @@ void PvpHubInitialize(PvpHub *hub) {
     hub->body = GuiFont(FNT_MENU);
     hub->close = ButtonLoad(GUI_BTN_CLOSE, GUI_BTN_CLOSE);
     ButtonSetClickSound(&hub->close, SND_UI_POPUP_CLOSE);
-    const char *go = LocGetOr("PVP_HUB_GO_BUTTON_STRING", "Перейти");
+    const char *go = LocGet("PVP_HUB_GO_BUTTON_STRING");
     hub->ladder = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, go, hub->font, (Vector2){0.5f, 0.5f}, 0.32f);
     hub->event = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, go, hub->font, (Vector2){0.5f, 0.5f}, 0.32f);
 }
@@ -75,7 +75,7 @@ static void PvpHubDrawLadderStats(const PvpHub *hub, const PlayerPvp *pvp, Recta
     );
     UiDrawTextLeftMiddle(
         hub->body,
-        TextFormat("%s #%d", LocGetOr("LEADERBOARD_RANK", "Ранг"), hub->rank),
+        TextFormat("%s #%d", LocGet("LEADERBOARD_RANK"), hub->rank),
         (Rectangle){x, area.y + 40.0f, area.width - icon.width, 28.0f},
         20.0f,
         PVP_HUB_TEXT_DIM
@@ -99,7 +99,7 @@ static void PvpHubDrawEventColumn(const PvpHub *hub, const PlayerPvp *pvp, Recta
     LocFormat2(earned, sizeof(earned), "PVP_EVENT_BANNERS_EARNED", TextFormat("%d", pvp->event.banners), "");
     UiDrawTextLeftMiddle(
         hub->body,
-        TextFormat("%s %s   %s", LocGetOr("PVP_EVENT_ENDS_IN", "оконч.:"), remaining, earned),
+        TextFormat("%s %s   %s", LocGet("PVP_EVENT_ENDS_IN"), remaining, earned),
         (Rectangle){x, area.y + 40.0f, area.width - icon.width - 12.0f, 28.0f},
         20.0f,
         PVP_HUB_TEXT_DIM
@@ -112,11 +112,7 @@ PvpHubAction PvpHubDraw(PvpHub *hub, const Player *p) {
     Rectangle panel = UiRect(root, 0.5f, 0.6f, 940.0f, 597.0f);
     UiDrawTexture(GuiTex(GUI_QUESTS_BG), panel, WHITE);
     UiDrawTextCentered(
-        hub->font,
-        LocGetOr("PVP_HUB_TITLE", "Выберите режим PvP"),
-        (Rectangle){0.0f, panel.y + 38.0f, UiWidth(), 0.0f},
-        42.0f,
-        PVP_HUB_TEXT
+        hub->font, LocGet("PVP_HUB_TITLE"), (Rectangle){0.0f, panel.y + 38.0f, UiWidth(), 0.0f}, 42.0f, PVP_HUB_TEXT
     );
 
     bool interactive = !UiInputBlocked();
@@ -126,27 +122,20 @@ PvpHubAction PvpHubDraw(PvpHub *hub, const Player *p) {
     Rectangle right = {left.x + width + PVP_HUB_COLUMN_GAP, left.y, width, height};
 
     PvpHubAction action = PVP_HUB_NONE;
-    Rectangle event_area = PvpHubColumnBody(
-        hub,
-        left,
-        LocGetOr("PVP_HUB_EVENT_SIDE_TITLE", "Сегодняшнее событие"),
-        LocGetOr("PVP_HUB_EVENT_SIDE_DESCRIPTION", "")
-    );
+    Rectangle event_area =
+        PvpHubColumnBody(hub, left, LocGet("PVP_HUB_EVENT_SIDE_TITLE"), LocGet("PVP_HUB_EVENT_SIDE_DESCRIPTION"));
     PvpHubDrawEventColumn(hub, &p->pvp, event_area, ServerNow());
     if (PvpHubDrawGo(&hub->event, left, interactive)) action = PVP_HUB_EVENT;
 
     Rectangle ladder_area = PvpHubColumnBody(
-        hub,
-        right,
-        LocGetOr("PVP_HUB_PROVING_GROUND_SIDE_TITLE", "Арена Испытаний"),
-        LocGetOr("PVP_HUB_PROVING_GROUND_SIDE_DESCRIPTION", "")
+        hub, right, LocGet("PVP_HUB_PROVING_GROUND_SIDE_TITLE"), LocGet("PVP_HUB_PROVING_GROUND_SIDE_DESCRIPTION")
     );
     PvpHubDrawLadderStats(hub, &p->pvp, ladder_area);
     if (PvpHubDrawGo(&hub->ladder, right, interactive)) action = PVP_HUB_LADDER;
 
     UiDrawTextCentered(
         hub->body,
-        LocGetOr("PVP_HUB_STAMINA", "Используйте выносливость в PvP"),
+        LocGet("PVP_HUB_STAMINA"),
         (Rectangle){panel.x, left.y + left.height + 6.0f, panel.width, PVP_HUB_FOOTER_HEIGHT},
         20.0f,
         PVP_HUB_TEXT_DIM

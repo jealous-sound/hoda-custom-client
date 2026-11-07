@@ -40,10 +40,10 @@
 #define GUILD_REWARD_CENTERED_SLOTS 3
 #define GUILD_REWARD_SLOTS 6
 #define GUILD_REWARD_MEDALS 4
-#define GUILD_OFFLINE_MESSAGE "Гильдии и чат работают только при подключении к серверу."
-#define GUILD_UNREACHABLE_MESSAGE "Нет связи с сервером. Попробуйте ещё раз."
-#define GUILD_BUSY_MESSAGE "Сервер занят, попробуйте ещё раз."
-#define GUILD_PROFILE_CHANGED_MESSAGE "Профиль изменился на сервере, попробуйте ещё раз."
+#define GUILD_OFFLINE_MESSAGE LocGet("HODA_GUILD_OFFLINE_MESSAGE")
+#define GUILD_UNREACHABLE_MESSAGE LocGet("CONNECTION_ERROR_MESSAGE")
+#define GUILD_BUSY_MESSAGE LocGet("HODA_GUILD_BUSY_MESSAGE")
+#define GUILD_PROFILE_CHANGED_MESSAGE LocGet("HODA_GUILD_PROFILE_CHANGED_MESSAGE")
 
 static const Color GUILD_TEXT = {235, 232, 220, 255};
 static const Color GUILD_TEXT_DIM = {182, 178, 168, 255};
@@ -463,7 +463,7 @@ static void GuildViewFillDraft(GuildView *v, const Guild *g) {
         TextFieldSet(&v->motd, g->mine.motd);
         TextFieldSet(&v->min_level, TextFormat("%d", s->required_level));
     } else {
-        StrCopy(v->draft.language, sizeof(v->draft.language), GUILD_DEFAULT_LANGUAGE);
+        StrCopy(v->draft.language, sizeof(v->draft.language), LocLanguageCode());
         v->draft.status = GUILD_STATUS_OPEN;
         v->draft.required_level = GUILD_LEVEL_UNLOCK;
         TextFieldClear(&v->name);

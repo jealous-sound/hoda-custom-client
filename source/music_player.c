@@ -17,6 +17,6 @@ void MusicPlayerInitialize(MusicPlayer *mp) {
 
 void MusicPlayerUpdate(MusicPlayer *mp) {
     Music m = GuiMusic(mp->current);
-    UpdateMusicStream(m);
+    AudioUpdateMusic(m, 1.0f);
     if (!IsMusicStreamPlaying(m)) MusicPlayerPlayRandom(mp);
 }

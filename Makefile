@@ -22,7 +22,7 @@ APP_ICON = packaging/app_icon.png
 .DEFAULT_GOAL := app
 
 ifeq ($(PLATFORM),macos)
-LIBS    = $(RAYLIB_LINK) -framework Cocoa -framework IOKit -framework OpenGL -framework CoreAudio -framework CoreVideo
+LIBS    = $(RAYLIB_LINK) -framework Cocoa -framework CoreFoundation -framework IOKit -framework OpenGL -framework CoreAudio -framework CoreVideo
 APP_BUNDLE = $(APP_NAME).app
 APP_CONTENTS = $(APP_BUNDLE)/Contents
 APP_EXECUTABLE = $(APP_CONTENTS)/MacOS/$(APP_NAME)
@@ -97,6 +97,7 @@ test: $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(GOLDEN_TARGET)
 	python3 tools/build_hero_pool.py --check
 	python3 tools/build_custom_heroes.py --check
 	python3 tools/validate_cache_refs.py
+	python3 tools/validate_localization.py
 	python3 tools/build_campaign_node_layout.py --check
 	python3 tools/build_runes.py --check
 	python3 tools/build_missions.py --check

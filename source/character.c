@@ -105,7 +105,6 @@ static const char *const SPECIALTY_NAMES[SPECIALTY_COUNT] = {
 typedef struct {
     char key[160];
     char text[224];
-    char text_ru[448];
     TargetPattern target;
     unsigned mechanics;
 } Ability;
@@ -130,7 +129,6 @@ typedef struct {
     char id[64];
     char based_on[64];
     char name[64];
-    char name_ru[96];
     Rarity rarity;
     int stars;
     bool giant;
@@ -139,7 +137,6 @@ typedef struct {
     Faction faction;
 
     char groups[MAX_GROUPS][24];
-    char group_names_ru[MAX_GROUPS][64];
     int group_count;
 
     Specialty specialties[MAX_SPECIALTIES];
@@ -147,9 +144,7 @@ typedef struct {
 
     const Ability *ability;
     char equipped_rune[160];
-    char equipped_rune_text_ru[768];
     char target_weight[32];
-    char target_weight_text_ru[96];
 
     int gear_slots;
     bool has_prestige_slot;
@@ -286,16 +281,13 @@ static void CharacterParse(const cJSON *c, Character *ch, Ability *ab) {
     StrCopy(ch->id, sizeof(ch->id), JsonStr(c, "id"));
     StrCopy(ch->based_on, sizeof(ch->based_on), JsonStr(c, "based_on"));
     StrCopy(ch->name, sizeof(ch->name), JsonStr(c, "name"));
-    StrCopy(ch->name_ru, sizeof(ch->name_ru), JsonStr(c, "name_ru"));
     ch->rarity = RarityFromString(JsonStr(c, "rarity"));
     ch->stars = JsonInt(c, "stars");
     ch->giant = JsonBool(c, "giant");
     ch->speed = SpeedFromString(JsonStr(c, "speed"));
     ch->faction = FactionFromString(JsonStr(c, "faction"));
     StrCopy(ch->equipped_rune, sizeof(ch->equipped_rune), JsonStr(c, "equipped_rune"));
-    StrCopy(ch->equipped_rune_text_ru, sizeof(ch->equipped_rune_text_ru), JsonStr(c, "equipped_rune_text_ru"));
     StrCopy(ch->target_weight, sizeof(ch->target_weight), JsonStr(c, "target_weight"));
-    StrCopy(ch->target_weight_text_ru, sizeof(ch->target_weight_text_ru), JsonStr(c, "target_weight_text_ru"));
     ch->gear_slots = JsonInt(c, "gear_slots");
     ch->has_prestige_slot = cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive(c, "has_prestige_slot"));
 
@@ -305,10 +297,6 @@ static void CharacterParse(const cJSON *c, Character *ch, Ability *ab) {
     cJSON_ArrayForEach(item, groups) {
         if (ch->group_count >= MAX_GROUPS) break;
         StrCopy(ch->groups[ch->group_count++], 24, item->valuestring);
-    }
-    cJSON *groups_ru = cJSON_GetObjectItemCaseSensitive((cJSON *)c, "groups_ru");
-    for (int g = 0; g < ch->group_count; g++) {
-        StrCopy(ch->group_names_ru[g], 64, cJSON_GetStringValue(cJSON_GetArrayItem(groups_ru, g)));
     }
 
     cJSON *specialties = cJSON_GetObjectItemCaseSensitive((cJSON *)c, "specialties");
@@ -322,7 +310,6 @@ static void CharacterParse(const cJSON *c, Character *ch, Ability *ab) {
     cJSON *ability = cJSON_GetObjectItemCaseSensitive((cJSON *)c, "ability");
     StrCopy(ab->key, sizeof(ab->key), JsonStr(ability, "key"));
     StrCopy(ab->text, sizeof(ab->text), JsonStr(ability, "text"));
-    StrCopy(ab->text_ru, sizeof(ab->text_ru), JsonStr(ability, "text_ru"));
     ab->target = TargetFromString(JsonStr(ability, "target"));
     cJSON *mechanics = cJSON_GetObjectItemCaseSensitive(ability, "mechanics");
     cJSON_ArrayForEach(item, mechanics) {
@@ -377,4 +364,49 @@ int CharacterStatPower(const Character *ch) {
 int CharacterStatHealth(const Character *ch) {
     const TierStats *st = &ch->stats[ch->tier];
     return st->base_health + (ch->level - 1) * st->health_per_level;
+}
+
+#define CHARACTER_PROJECT_KEY_PREFIX "HODA_"
+#define CHARACTER_LOC_KEY_CAPACITY 224
+
+static const char *CharacterProjectText(const char *original_key) {
+    if (!original_key || !original_key[0]) return "";
+    char key[CHARACTER_LOC_KEY_CAPACITY];
+    snprintf(key, sizeof(key), CHARACTER_PROJECT_KEY_PREFIX "%s", original_key);
+    return LocGet(key);
+}
+
+const char *CharacterLocText(const char *original_key) {
+    const char *text = LocGet(original_key);
+    return text[0] ? text : CharacterProjectText(original_key);
+}
+
+const char *CharacterTierName(const Character *ch, Tier tier) {
+    char key[CHARACTER_LOC_KEY_CAPACITY];
+    snprintf(key, sizeof(key), "%s%s", ch->id, TIER_NAMES[tier]);
+    const char *name = CharacterLocText(key);
+    if (!name[0]) name = LocGet(ch->id);
+    return name[0] ? name : ch->name;
+}
+
+const char *CharacterName(const Character *ch) {
+    return CharacterTierName(ch, ch->tier);
+}
+
+const char *CharacterAbilityText(const Ability *ability) {
+    const char *text = LocGetAbility(ability->key);
+    if (!text[0]) text = CharacterProjectText(ability->key);
+    return text[0] ? text : ability->text;
+}
+
+static void CharacterGroupTitleKey(char *out, int capacity, const char *group) {
+    snprintf(out, (size_t)capacity, "GALLERY_%s_TITLE", group);
+    for (char *c = out; *c; c++) *c = (char)toupper((unsigned char)*c);
+}
+
+const char *CharacterGroupTitle(const char *group) {
+    char key[CHARACTER_LOC_KEY_CAPACITY];
+    CharacterGroupTitleKey(key, sizeof(key), group);
+    const char *title = CharacterLocText(key);
+    return title[0] ? title : group;
 }

@@ -9,13 +9,14 @@ import shutil
 import sys
 from pathlib import Path
 
+import economy_localization as loc
+
 CLI_DESCRIPTION = 'Build data/gear.json from the 5.4.4 gear reference and copy gear icons into extra/'
 ROOT = Path(__file__).resolve().parents[1]
 GEAR_DEFS = ROOT / 'client-additional-data/HoDA_character_info/GearData.json'
 LOCALIZATION = ROOT / 'client-additional-data/HoDA_character_info/Localization_ENG.json'
 CHARACTERS = ROOT / 'client-additional-data/characters.json'
 REFERENCE = ROOT / '.claude/skills/hoda-reference'
-REFERENCE_GEAR = REFERENCE / 'data/gear.json'
 REFERENCE_ICONS = REFERENCE / 'references/gears'
 OUTPUT = ROOT / 'data/gear.json'
 EXTRA_ICON_DIR = ROOT / 'client-additional-data/extra/gui/gear'
@@ -26,16 +27,6 @@ INITIATIVE_SPEEDS = {'FAST': 'Quick', 'MEDIUM': 'Normal', 'SLOW': 'Slow'}
 RARITY_GOLD_VALUES = [50, 200, 800, 3000, 10000, 30000]
 PRESTIGE_SLOT_GEM_COST = 100
 COVERAGE_FLOOR = 0.99
-RUSSIAN_LOCALIZATION = REFERENCE / 'data/localization/Loc_RUS_RU.json'
-TEXT_KEYS = [
-    'GEAR_EQUIP_EMPTY_CONFIRM', 'GEAR_EQUIP_FILLED_CONFIRM', 'GEAR_EQUIP_FAIL_CATEGORY_LIMIT_CONFIRM',
-    'GEAR_EQUIP_FAIL_DUPLICATE_CONFIRM', 'GEAR_EQUIP_FAIL_DEFENDER_CONFIRM', 'GEAR_EQUIP_FAIL_INVALID_PRESTIGE_GEAR',
-    'GEAR_SELL_BUTTON_TEXT', 'GEAR_EQUIP_BUTTON_TEXT', 'GEAR_SELL_MAIN_CONFIRM', 'GEAR_SELL_RECEIVE_CONFIRM',
-    'GEAR_PRESTIGE_MESSAGE', 'GEAR_PRESTIGE_UNLOCK', 'GEAR_EMPTY_INVENTORY_MESSAGE', 'GEAR_FILTER_ALL_TITLE', 'GEAR_FILTER_EQUIPPABLE_TITLE',
-    'GEAR_NO_LIMITATIONS', 'GEAR_LIMITED_TITLE', 'GEAR_REVEAL_WINDOW_TITLE', 'GEAR_SELECT_HERO_HELP', 'GEAR_INVENTORY_FOOTER_TEXT', 'GEAR_RARITY_COMMON', 'GEAR_RARITY_UNCOMMON',
-    'GEAR_RARITY_RARE', 'GEAR_RARITY_EPIC', 'GEAR_RARITY_LEGENDARY', 'GEAR_RARITY_MYTHIC',
-]
-TOME_LOCAL_NAME = 'Том вознесения'
 UI_TEXTURE_DIR = REFERENCE / 'references/game-assets/textures'
 UI_TEXTURES = (
     'tex.tomeofascension', 'tex.gear_frame_common', 'tex.gear_frame_uncommon', 'tex.gear_frame_rare',
@@ -43,19 +34,6 @@ UI_TEXTURES = (
     'Gear_Slot_Add_Deselect', 'Gear_Empty_Slot', 'tex.Ico_Gear_Slot_Deselected',
     'tex.Ico_Gear_TomeofAscension_Deselected',
 )
-LOCAL_FILTER_NAMES = {
-    'GEAR_SHOW_PREVIOUS': 'Предыдущие {0}', 'GEAR_SHOW_NEXT': 'Следующие {0}',
-    'EVO_TOME_SLOT_LOCKED_MESSAGE': 'Заполните все ячейки снаряжения, чтобы открыть том вознесения.',
-    'EVO_TOME_REQUIRED_MESSAGE': 'Нужен том вознесения. Его можно купить в магазине.',
-    'EVO_TOME_USE_CONFIRM': 'Использовать том вознесения, чтобы повысить героя до мифической редкости?',
-    'EVO_TOME_EXPLAIN_DESC': 'Мифические герои получают <color=#ffa500ff>+5 к макс. уровню</color> и '
-                             '<color=#ffa500ff>доп. ячейку снаряжения</color>!',
-    'EVO_TOME_COUNT': 'Томов: {0}',
-    'TOME_POPUP_TITLE': TOME_LOCAL_NAME,
-    'RARITY_MYTHIC': 'Мифический',
-    'ROSTER_FILTER_COMMON': 'Обычные', 'ROSTER_FILTER_UNCOMMON': 'Необычные', 'ROSTER_FILTER_RARE': 'Редкие',
-    'ROSTER_FILTER_EPIC': 'Эпические', 'ROSTER_FILTER_LEGENDARY': 'Легендарные', 'ROSTER_FILTER_MYTHIC': 'Мифические',
-}
 GROUP_NAMES = {
     'apostate': 'Apostate', 'apostates': 'Apostate', 'avvar': 'Avvar', 'beast': 'Beast', 'beasts': 'Beast',
     'creature': 'Beast', 'creatures': 'Beast', 'blight': 'Blight', 'blighted': 'Blight', 'blood mage': 'Blood_Mage',
@@ -118,10 +96,6 @@ UNSUPPORTED_SENTENCES = {
 def clean(text: str) -> str:
     text = re.sub(r'<[^>]+>', '', text or '').replace('\u200b', '').replace('\u2019', "'")
     return re.sub(r'\s+', ' ', text).strip()
-
-
-def rich(text: str) -> str:
-    return re.sub(r'\s+', ' ', (text or '').replace('\u200b', '')).strip()
 
 
 def effective_text(gear: dict, table: dict) -> str:
@@ -441,8 +415,12 @@ def absorbs_damage(effects: list[dict]) -> bool:
     return any(row['stat'] == 'defender' for row in effects)
 
 
+def aura_keys(gear: dict) -> list[str]:
+    return [gear['RuneOverride']] if gear['RuneOverride'] else list(gear['RuneKeys'])
+
+
 def build_item(
-    gear: dict, reference: dict, table: dict, resolver: TermResolver, curated: dict[str, list[dict]]
+    gear: dict, table: dict, resolver: TermResolver, curated: dict[str, list[dict]]
 ) -> tuple[dict, list[str]]:
     text = effective_text(gear, table)
     effects: list[dict] = []
@@ -466,12 +444,11 @@ def build_item(
         if kind == 'initiative':
             value = INITIATIVE_SPEEDS[value]
         categories.append({'kind': kind, 'value': value})
-    aura_ru = rich(reference.get('rune_override_ru') or ' '.join(reference.get('rune_effects_ru') or []))
     return {
         'id': gear['Id'],
-        'title_ru': reference.get('title_ru') or reference.get('title_en') or gear['Id'],
-        'description_ru': clean(reference.get('desc_ru') or reference.get('desc_en') or ''),
-        'aura_ru': aura_ru or text,
+        'title_key': loc.project_key(gear['Title']),
+        'description_key': loc.project_key(gear['Description']),
+        'aura_keys': [loc.project_key(key) for key in aura_keys(gear)],
         'rarity': gear['Rarity'],
         'icon': f'{EXTRA_ICON_REF}{gear["Icon"]}.png',
         'categories': categories,
@@ -501,28 +478,28 @@ def build() -> tuple[dict, list[str], int]:
     gear = json.loads(GEAR_DEFS.read_text(encoding='utf-8'))
     table = json.loads(LOCALIZATION.read_text(encoding='utf-8'))
     characters = json.loads(CHARACTERS.read_text(encoding='utf-8'))['characters']
-    reference = json.loads(REFERENCE_GEAR.read_text(encoding='utf-8'))
     resolver = TermResolver(characters)
     curated = curated_sentences(resolver)
     items = []
     unparsed = []
     sentences = 0
     for gear_id in sorted(gear):
-        item, misses = build_item(gear[gear_id], reference.get(gear_id, {}), table, resolver, curated)
+        item, misses = build_item(gear[gear_id], table, resolver, curated)
         sentences += len(sentences_of(effective_text(gear[gear_id], table)))
         items.append(item)
         unparsed.extend(f'{gear_id}: {miss}' for miss in misses)
-    russian = json.loads(RUSSIAN_LOCALIZATION.read_text(encoding='utf-8'))
     return {
         'version': 1,
         'balance_note': 'Sell values, the prestige slot cost and pack contents were served remotely; they are local balance.',
         'rarity_gold_values': RARITY_GOLD_VALUES,
         'prestige_slot_gem_cost': PRESTIGE_SLOT_GEM_COST,
-        'strings': [{'key': key, 'text': russian[key]} for key in TEXT_KEYS]
-        + [{'key': key, 'text': text} for key, text in LOCAL_FILTER_NAMES.items()],
         'unparsed': unparsed,
         'items': items,
     }, unparsed, sentences
+
+
+def text_keys(catalog: dict) -> list[str]:
+    return [key for item in catalog['items'] for key in (item['title_key'], item['description_key'], *item['aura_keys'])]
 
 
 def main() -> int:
@@ -530,6 +507,10 @@ def main() -> int:
     parser.add_argument('--dry-run', action='store_true')
     args = parser.parse_args()
     catalog, unparsed, sentences = build()
+    unknown = loc.unknown_keys(text_keys(catalog))
+    if unknown:
+        print(f'localization keys missing from the tables: {", ".join(unknown)}', file=sys.stderr)
+        return 1
     coverage = 1.0 - len(unparsed) / sentences
     missing = copy_icons(catalog['items'], dry_run=args.dry_run)
     for line in unparsed:

@@ -1,0 +1,6 @@
+HODA_PLAY_MODE_LOCAL|Local Game
+HODA_PLAY_MODE_ONLINE|Online Game
+HODA_PLAY_MODE_LOCAL_HINT|Progress saved on this computer
+HODA_PLAY_MODE_ONLINE_HINT|Progress saved on the server, guilds and chat
+HODA_OPTIONS_LANGUAGE|Language
+HODA_LANGUAGE_SYSTEM|System Language

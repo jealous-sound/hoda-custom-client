@@ -32,13 +32,28 @@ ORIGINAL_GAME = f"{ASSETS}/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.ga
 ORIGINAL_APK = f"{ASSETS}/Heroes-of-Dragon-Age-v4-4-0-androidp1.com.apk"
 ORIGINAL_BUNDLES = f"{ORIGINAL_GAME}/files/UnityCache/Shared"
 EXTRA_DIR = f"{ASSETS}/extra"
+LOCALIZATION_DIR = f"{ORIGINAL_GAME}/cache/Localization"
+LANGUAGE_FILES = (
+    "Loc_ENG_US.txt",
+    "Loc_FRE_FR.txt",
+    "Loc_GER_DE.txt",
+    "Loc_ITA_IT.txt",
+    "Loc_SPA_XM.txt",
+    "Loc_POR_BR.txt",
+    "Loc_DUT_NL.txt",
+    "Loc_RUS_RU.txt",
+    "Loc_JPN_JP.txt",
+    "Loc_KOR_KR.txt",
+    "Loc_CHS_CN.txt",
+    "Loc_CHT_CN.txt",
+)
 SINGLE_FILES = (
     ORIGINAL_APK,
     f"{ASSETS}/characters.json",
     f"{ASSETS}/player_starter.json",
     f"{ASSETS}/startup_images.txt",
     f"{ASSETS}/anim_tools/display_scales.json",
-    f"{ORIGINAL_GAME}/cache/Localization/Loc_RUS_RU.txt",
+    *(f"{LOCALIZATION_DIR}/{name}" for name in LANGUAGE_FILES),
 )
 WHOLE_TREES = (
     "data",

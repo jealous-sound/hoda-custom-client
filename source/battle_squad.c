@@ -2,7 +2,6 @@
 #define BATTLE_CHANGER_MAX_EFFECTS 4
 #define BATTLE_CHANGER_MAX_GROUPS 2
 #define BATTLE_CHANGER_MAX_UNITS 2
-#define BATTLE_CHANGER_TEXT_SIZE 256
 
 typedef struct {
     char groups[BATTLE_CHANGER_MAX_GROUPS][24];
@@ -15,7 +14,6 @@ typedef struct {
 
 typedef struct {
     char text_key[128];
-    char text_ru[BATTLE_CHANGER_TEXT_SIZE];
     BattleChangerEffect effects[BATTLE_CHANGER_MAX_EFFECTS];
     int effect_count;
 } BattleGameChanger;

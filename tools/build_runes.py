@@ -9,13 +9,13 @@ import shutil
 import sys
 from pathlib import Path
 
+import economy_localization as loc
 import original_cache
 
 CLI_DESCRIPTION = 'Build data/runes.json from the 5.4.4 rune reference and copy icons the 4.4.0 cache lacks into extra/'
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE = ROOT / '.claude/skills/hoda-reference'
 RUNES_JSON = REFERENCE / 'data/runes.json'
-LOCALIZATION_JSON = REFERENCE / 'data/localization/Loc_RUS_RU.json'
 REFERENCE_ICONS = REFERENCE / 'references/runes'
 OUTPUT = ROOT / 'data/runes.json'
 EXTRA_ICON_DIR = ROOT / 'client-additional-data/extra/gui/runes'
@@ -26,7 +26,18 @@ BASE_TIERS = 6
 SPECIAL_SUFFIX = 'Special'
 OVERCHARGE_STEPS = (2, 4, 8)
 FAMILY_PATTERN = re.compile(r'^(rune-[a-z-]+?)-(\d|Special)(?:-(\d))?$')
-UNFORMATTED_VALUE_TYPES = {'stealth': 'Ур. {0}', 'perceptive': 'Ур. {0}'}
+PERCENT_VALUE_FORMAT = 'buff-type-power-value-format'
+LEVEL_VALUE_FORMAT = 'buff-type-highest-power-unit-value-format'
+VALUE_FORMATS_MISSING_FROM_THE_ORIGINAL = {
+    'gold': PERCENT_VALUE_FORMAT,
+    'xp': PERCENT_VALUE_FORMAT,
+    'damage-resist-percent': PERCENT_VALUE_FORMAT,
+    'damage-retaliation-percent': PERCENT_VALUE_FORMAT,
+    'stealth': LEVEL_VALUE_FORMAT,
+    'perceptive': LEVEL_VALUE_FORMAT,
+    'damage': 'HODA_RUNE_VALUE_DAMAGE',
+    'power-cursed': 'HODA_RUNE_VALUE_IMMUNE',
+}
 ICON_ALIASES = {'tex.softcurrency': 'tex.Ico_BuffGold', 'tex.xp_nonumber': 'tex.Ico_BuffXP'}
 
 
@@ -60,19 +71,25 @@ def icon_ref(name: str) -> str:
     return f'{EXTRA_ICON_REF}{name}.png'
 
 
-def localized(table: dict, key: str) -> str:
-    return (table.get(key.upper()) or '').strip()
+def original_or(key: str, fallback: str) -> str:
+    return key if loc.has_original(key) else fallback
 
 
-def build_entry(rune: dict, known: set[str], table: dict) -> dict:
+def name_key(rune_id: str, family: str) -> str:
+    if loc.has_original(rune_id):
+        return rune_id
+    return original_or(f'{family}-1', loc.project_key(f'{family}-name'))
+
+
+def value_key(buff_type: str) -> str:
+    key = f'buff-type-{buff_type}-value-format'
+    return key if loc.has_original(key) else VALUE_FORMATS_MISSING_FROM_THE_ORIGINAL[buff_type]
+
+
+def build_entry(rune: dict, known: set[str]) -> dict:
     rune_id = rune['id']
     family, _, _ = family_of(rune_id)
     buff_type = rune['buff_type']
-    name = rune.get('name_ru') or localized(table, f'{family}-1') or localized(table, f'{family}-6')
-    description = rune.get('desc_ru') or localized(table, f'desc-{family}')
-    value = (rune.get('buff_value_formatted_raw') or '').strip()
-    if '{' in value or not value:
-        value = UNFORMATTED_VALUE_TYPES.get(buff_type, '{0}').format(rune['buff_value'])
     return {
         'id': rune_id,
         'family': family,
@@ -80,10 +97,10 @@ def build_entry(rune: dict, known: set[str], table: dict) -> dict:
         'buff_type': buff_type,
         'buff_value': abs(rune['buff_value']),
         'duration_minutes': rune['duration'],
-        'name_ru': name,
-        'desc_ru': description,
-        'buff_ru': localized(table, f'buff-type-{buff_type}'),
-        'value_ru': value,
+        'name_key': name_key(rune_id, family),
+        'desc_key': original_or(f'desc-{family}', loc.project_key(f'{family}-description')),
+        'buff_key': original_or(f'buff-type-{buff_type}', loc.project_key(f'rune-buff-{buff_type}')),
+        'value_key': value_key(buff_type),
         'icon': icon_ref(rune['icon']),
         'buff_icon': icon_ref(rune['buff_type_icon']),
         'craft_to': craft_target(rune_id, known),
@@ -96,9 +113,13 @@ def sort_key(entry: dict) -> tuple:
 
 def build() -> dict:
     runes = json.loads(RUNES_JSON.read_text())
-    table = json.loads(LOCALIZATION_JSON.read_text())
     known = set(runes)
-    return {'version': 1, 'runes': sorted((build_entry(rune, known, table) for rune in runes.values()), key=sort_key)}
+    return {'version': 1, 'runes': sorted((build_entry(rune, known) for rune in runes.values()), key=sort_key)}
+
+
+def unknown_text_keys(catalog: dict) -> list[str]:
+    fields = ('name_key', 'desc_key', 'buff_key', 'value_key')
+    return loc.unknown_keys(entry[field] for entry in catalog['runes'] for field in fields)
 
 
 def extra_icons(catalog: dict) -> list[str]:
@@ -118,6 +139,10 @@ def main() -> int:
     args = parser.parse_args()
 
     catalog = build()
+    unknown = unknown_text_keys(catalog)
+    if unknown:
+        print(f'localization keys missing from the tables: {", ".join(unknown)}', file=sys.stderr)
+        return 1
     text = json.dumps(catalog, ensure_ascii=False, indent=1) + '\n'
     if args.check:
         if OUTPUT.read_text() != text:

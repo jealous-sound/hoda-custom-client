@@ -3,7 +3,7 @@
   "client_version": "4.4.0",
   "source": "data/ability_recipes_440.json",
   "catalog_source": "client-additional-data/characters.json",
-  "reference_source": ".agents/skills/hoda-reference/data/characters.json",
+  "reference_source": ".claude/skills/hoda-reference/data/characters.json",
   "conventions": {
     "percent_unit": "whole percentage points",
     "hero_aura_stacking": "base * (1 + sum(hero aura percentages) / 100)",
@@ -3958,7 +3958,6 @@
     {
       "key": "aura_10pct_ally_dmg_resist_and_hatred_vs_black_faction_and_plus25health_to_wynne_and_slow_resist_50_to_spirits",
       "text": "+10% damage resist for allies. +25% Health for Wynne. +50% slow resist for Spirits. More likely to attack black faction.",
-      "text_ru": "+10 % сопротивления урону для союзников. +25 % здоровья для Винн. +50 % сопротивления замедлению для духов. Чаще атакует \"черную\" фракцию.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2150",
@@ -4014,7 +4013,6 @@
     {
       "key": "aura_15handp_5damres_double_spirits_75pdresist_handp_on_hit_and_ondeath_defender25",
       "text": "+15% Health and Power and +5% damage resist for allies, double for Spirits. +75% power drain resist for allies. Allies gain very small Health and Power when hero hit, medium on death. Absorbs 25% AoE damage.",
-      "text_ru": "+15 % здоровья и силы и +5 % сопротивления урону для союзников, для духов — в двойном размере. +75 % к сопротивлению вытягиванию силы для союзников. При попадании по герою дает союзникам небольшую прибавку к здоровью и силе, при смерти героя — среднюю прибавку. При попадании \"по области\" поглощает 25 % урона.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2834",
@@ -4103,7 +4101,6 @@
     {
       "key": "aura_15health_to_qunari_and_elves_and_aura_25powerdrainresist_to_qunari_and_elves",
       "text": "Grants 15% health and 25% power drain resist to Qunari and Elves.",
-      "text_ru": "+15 % к здоровью и 25 % сопротивления вытягиванию силы для кунари и эльфов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2462",
@@ -4158,7 +4155,6 @@
     {
       "key": "aura_15power_to_bullschargers_and_inquisition_and_aura_25stunresist_to_bullschargers_and_inquisition",
       "text": "Grants 15% power and 25% stun resist to Bull's Chargers and Inquisition Allies.",
-      "text_ru": "+15 % силы, а также +25 % сопротивления оглушению для \"Боевых Быков\" и союзников из Инквизиции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2458",
@@ -4213,7 +4209,6 @@
     {
       "key": "aura_15stunresist",
       "text": "+15% ally stun resistance.",
-      "text_ru": "+15% сопр. оглушению для союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1878",
@@ -4250,7 +4245,6 @@
     {
       "key": "aura_15stunresist_and_aura_slow_resist_50_and_aura_plus50pct_power_vs_mages_personal",
       "text": "Deals 50% bonus damage to Mages, +50% slow resist and 15% stun resist to allies",
-      "text_ru": "Наносит 50 % доп. урона магам; +50 % сопротивления замедлению и 15 % сопротивления оглушению для союзников",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2050",
@@ -4281,7 +4275,6 @@
     {
       "key": "aura_15stunresist_and_plus50power_to_elves",
       "text": "+50% power to Elves, 15% ally stun resist",
-      "text_ru": "+50 % силы для эльфов, 15 % сопротивления оглушению для союзников",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1514",
@@ -4332,7 +4325,6 @@
     {
       "key": "aura_20resist_slow_stun_powerdrain_to_outlaws_and_warriors_35power_to_hakkonwintersbreath_allies_gain_power_when_self_attacked_20",
       "text": "+20% slow, stun, power drain resist to Outlaws and Warriors. +35% Power to Hakkon Wintersbreath. Absorbs 25% of AOE damage for allies and they gain 20% power.",
-      "text_ru": "+20% сопротивления замедлению, оглушению и вытягиванию силы для изгоев и воинов. +35 % силы для Гаккона Зимодыха. При атаке \"по области\" поглощает 25 % урона союзников и дает им 20 % силы.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2594",
@@ -4394,7 +4386,6 @@
     {
       "key": "aura_25_health_venatori_and_aura_allies_damage_absorb_25_and_power_gain_allies_when_self_hit_10",
       "text": "Absorbs 25% AOE damage for allies when attacked. Grants a small amount of Power to allies based on damage this unit receives. +25% Health for Venatori.",
-      "text_ru": "Поглощает 25 % урона по площади, когда на союзников нападают. В зависимости от получаемого урона дает союзникам небольшое количество силы. +25 % здоровья для венатори.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2854",
@@ -4456,7 +4447,6 @@
     {
       "key": "aura_25powerdrainresist_to_bullschargers_and_inquisition_25health_to_bullschargers_and_inquisition",
       "text": "Grants 25% power drain resist and health to Charger and Inquisition allies.",
-      "text_ru": "Дает 25 % к сопротивлению вытягивания силы и здоровья для дружественных \"Боевых Быков\" и героев Инквизиции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2454",
@@ -4482,7 +4472,6 @@
     {
       "key": "aura_35p_to_demons_15pct_dmg_vs_mages_wardens_all_personal_damageresist_20pct_and_plus25dmg_vs_spirits_elusive",
       "text": "+35% Power for Demons. +15% bonus damage vs Mages and Wardens. Personal +20% damage resist and +25% bonus damage vs Spirits.",
-      "text_ru": "+35 % силы для демонов. +15 % дополнительного урона против магов и Стражей. Для себя +20 % сопротивления урону и +25 % дополнительного урона против духов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1458",
@@ -4543,7 +4532,6 @@
     {
       "key": "aura_35power_to_hakkonwintersbreath_15power_to_outlaws_and_warriors_minus_15health_to_inquisition",
       "text": "+15% Power to Outlaws and Warriors. +35% Power to Hakkon Wintersbreath. -15% Power to Inquisition.",
-      "text_ru": "+15 % силы для изгоев и воинов. +35 % силы для Гаккона Зимодыха. -15 % силы для Инквизиции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2590",
@@ -4639,7 +4627,6 @@
     {
       "key": "aura_35stunresist_slowresist_and_pdresist_and_plus25power_to_chantry_and_inquisition",
       "text": "+35% stun, slow, and power drain resist and +25% Power for Chantry and Inquisition.",
-      "text_ru": "+35% сопротивления оглушению, замедлению и вытягиванию силы, +25 % силы для церковников и Инквизиции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2438",
@@ -4694,7 +4681,6 @@
     {
       "key": "aura_50_power_health_black_faction_and_plus50_resist_elder_one_and_plus25pct_power_vs_inquisition_to_allies",
       "text": "+50% Power and Health to Black Faction. +25% damage vs Inquisition for allies. +50% stun, slow, and powerdrain resist to The Elder One.",
-      "text_ru": "+50 % силы и здоровья для \"черных\" героев. +25 % урона для союзников против Инквизиции. +50 % сопротивления оглушению, замедлению и вытягиванию силы для Старшего.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2566",
@@ -4751,7 +4737,6 @@
     {
       "key": "aura_50_slow_100_stun_resist_rogues_and_50health_beraht",
       "text": "+50% slow resist and +100% stun resist to Rogues. +50% Health to Beraht.",
-      "text_ru": "+50 % сопротивления замедлению и +100 % сопротивления оглушению для разбойников. +50 % здоровья для Берата.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2558",
@@ -4802,7 +4787,6 @@
     {
       "key": "aura_allies_gain_power_when_hero_attack_10_and_plus25health_to_beasts_and_flank",
       "text": "Allies gain a very small amount of Power when this hero is attacked. +25% Health for Creatures. More likely to attack the back row.",
-      "text_ru": "Когда этот герой атакован, союзники получают очень незначительную прибавку к силе. +25 % здоровья для существ. Чаще атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1962",
@@ -4858,7 +4842,6 @@
     {
       "key": "aura_allies_gain_power_when_self_attacked",
       "text": "When attacked, allies gain power.",
-      "text_ru": "Попав под атаку, повышает здоровье союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2154",
@@ -4884,7 +4867,6 @@
     {
       "key": "aura_allies_gain_power_when_self_dies",
       "text": "Upon death, allies gain power.",
-      "text_ru": "При смерти повышает силу союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2170",
@@ -4910,7 +4892,6 @@
     {
       "key": "aura_allies_power_when_self_attacked_and_aura_ally_damage_absorb25_and_minus20stunresist_to_enemies_and_aura_minus20slowresist_to_enemies",
       "text": "Absorbs small damage when attacked. Allies gain power when hero is attacked. Enemy stun and slow resist reduced by 20%.",
-      "text_ru": "Подвергнувшись атаке, поглощает немного урона и повышает силу союзников. -20 % сопротивления врагов к оглушению и замедлению.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2466",
@@ -4958,7 +4939,6 @@
     {
       "key": "aura_ally_damage_absorb_25_and_self_gain_power_power_drain_immune_personal",
       "text": "Absorbs small AOE damage for allies if attacked. Gains a small amount of Power when hit. Immune to Power Drain.",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает небольшую часть урона союзников. Получив удар, ненамного приращивает силу. Не дает вытянуть у себя силу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2606",
@@ -5018,7 +4998,6 @@
     {
       "key": "aura_ally_damage_absorb_25_health_gain_when_ally_hit_10_plus25health_power_to_dwarves_and_minus_power_drain_resist_15_to_enemies",
       "text": "+25% Health and Power for Dwarves. Absorbs 25% AOE damage for allies. Gains 10% Health when allies are hit. -15% power drain resist to enemies.",
-      "text_ru": "+25 % здоровья и силы гномам. Подвергнувшись атаке \"по области\", поглощает 25 % урона союзников. Получает +10 % к здоровью при попадании по союзнику. На 15 % снижает сопротивление вытягиванию силы у врагов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2622",
@@ -5086,7 +5065,6 @@
     {
       "key": "aura_ally_damage_absorb_50",
       "text": "Absorbs medium AOE damage for allies if attacked.",
-      "text_ru": "В случае атаки \"по области\" умеренно поглощает урон союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6244",
@@ -5157,7 +5135,6 @@
     {
       "key": "aura_ally_damage_absorb_50_and_aura_personal_stun_resist_100",
       "text": "Absorbs AOE damage for allies if attacked also, immune to stun",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает урон союзников; не дает себя оглушить",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6160",
@@ -5211,7 +5188,6 @@
     {
       "key": "aura_ally_damage_absorb_50_and_aura_plus35pct_power_vs_mages_personal_and_aura_plus35pct_power_vs_templars_personal",
       "text": "Absorbs AOE damage for allies if attacked also, Deals 35% bonus damage to Mages and Templars.",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает урон союзников; наносит 35 % дополнительного урона магам и храмовникам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2062",
@@ -5254,7 +5230,6 @@
     {
       "key": "aura_ally_damage_absorb_50_and_aura_plus50health_to_wardens_and_inquisition_and_health_on_ally_and_enemy_death_25",
       "text": "Absorb area damage for allies. Gain health on any hero death. +50% health: Wardens, Inquisition.",
-      "text_ru": "Поглощает урон \"по площади\" союзников. Приращивает здоровье при смерти любого героя. +50 % к здоровью для Серых Стражей и Инквизиции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2250",
@@ -5297,7 +5272,6 @@
     {
       "key": "aura_ally_damage_absorb_50_and_aura_plus50power_to_wardens_and_power_on_ally_death_50",
       "text": "Absorb damage from allies if attacked. Gain power on ally death. +50% power to Wardens.",
-      "text_ru": "Подвергнувшись атаке, поглощает урон союзников. Приращивает силу при смерти союзника. +50 % к силе для Серых Стражей.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2254",
@@ -5364,7 +5338,6 @@
     {
       "key": "aura_ally_damage_absorb_50_and_healthandpower_on_enemydeath25_and_plus35healthandpower_to_redfaction_and_selfdr20_and_teodr10",
       "text": "Absorbs AOE damage for allies if attacked also. Gains a small amount of Power and Health when enemies die. +35% Health and Power to Red Faction. +20% damage resist for self, and +10% for The Elder One.",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает урон союзников. При смерти врага ненамного приращивает силу и здоровье. +35 % здоровья и силы для \"красных\" героев. +20 % сопротивления урону для себя и +10 % для Старшего.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2218",
@@ -5432,7 +5405,6 @@
     {
       "key": "aura_ally_damage_absorb_50_and_power_gain_when_self_hit_30",
       "text": "Absorbs AOE damage for allies if attacked also, Gains power when attacked.",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает урон союзников; приращивает силу, подвергнувшись атаке.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6076",
@@ -5470,7 +5442,6 @@
     {
       "key": "aura_ally_damage_absorb_50_and_power_gain_when_self_hit_30_and_dmgresist15_and_ally_powergain75_on_selfdeath",
       "text": "+15% damage resist. Absorbs medium AOE damage for allies if attacked also. Gains power when attacked. Allies gain a large amount of power when hero dies.",
-      "text_ru": "+15 % сопротивления урону. Подвергнувшись атаке \"по области\", умеренно поглощает урон союзников. Приращивает силу, подвергнувшись атаке. При смерти героя у союзников значительно возрастает сила.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1998",
@@ -5529,7 +5500,6 @@
     {
       "key": "aura_ally_damageabsorb25_and_plus50power_to_wynne_and_allies_gainpower_on_selfdeath50_and_plus50power_to_demons_and_allies_gainpower_on_selfattack15",
       "text": "Absorbs small AOE damage for allies if also attacked. Allies gain Power when this hero is attacked or dies. +50% Power for Wynne. +50% damage vs Demons.",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает небольшую часть урона союзников. При смерти этого героя или нападении на него у союзников прирастает сила. +50 % силы для Винн. +50 % к урону против демонов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2330",
@@ -5606,7 +5576,6 @@
     {
       "key": "aura_ally_powergain15_onattack_and_defender15",
       "text": "Allies gain small Power when this hero is attacked. Absorbs a small amount of AoE damage when also attacked.",
-      "text_ru": "Когда этого героя атакуют, сила его союзников немного повышается. Также при атаке поглощает небольшую часть урона от ударов \"по области\".",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2950",
@@ -5649,7 +5618,6 @@
     {
       "key": "aura_bonus_damage_vs_blight_and_plus25power_rogues_and_beasts_and_gain_power5_when_ally_hit_and_dmg_resist10_to_wardens_and_defender_low_and_flank",
       "text": "+25% Power for Rogues and Wardens. +25% damage vs Blighted. Gains Power when ally hit. +10% damage resist for Wardens. Absorbs small AOE damage for allies when also attacked. Usually attacks the back row.",
-      "text_ru": "+25 % силы для разбойников и Серых Стражей. +25 % урона против моровых героев. Приращивает силу при попадании по союзнику. +10 % сопротивления урону для Стражей. Подвергнувшись атаке \"по области\", поглощает небольшую часть урона союзников. Обычно атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1982",
@@ -5730,7 +5698,6 @@
     {
       "key": "aura_bonus_damage_vs_blighted",
       "text": "Deals bonus damage to Blighted.",
-      "text_ru": "Наносит дополнительный урон моровым героям.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:182",
@@ -5778,7 +5745,6 @@
     {
       "key": "aura_circle_chantry_inq_get_plus35_stun_slow_pdresist_and_plus25_handp_and_xp50_to_squad_and_minus25pdresist_to_enemies_and_minus15_pdresist_to_apost",
       "text": "+25% Health and Power and +35% stun, slow, and power drain resist to Circle, Chantry, and Inquisition. -25% power drain resist to enemies and additional -15% to Apostates.",
-      "text_ru": "+25% здор. и силы, +35% сопротивл. оглуш., замедл. и вытяг. силы Кругу, Церкви и Инквизиции. -25% сопротивл. вытяг. силы для врагов и доп. -15% для отступников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2646",
@@ -5843,7 +5809,6 @@
     {
       "key": "aura_damage25_vs_nobility_brave_targeting_slow50_resist_allies_plus35power_35health",
       "text": "+35% Health and Power for allies. +50% slow resist for allies. +25% damage vs Nobility for allies. Much more likely to attack the highest Power enemy.",
-      "text_ru": "+35 % здоровья и силы для союзников. +50 % сопротивления замедлению для союзников. +25 % урона против знати для союзников. Гораздо чаще атакует самого сильного врага.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2862",
@@ -5896,7 +5861,6 @@
     {
       "key": "aura_damage50pct_vs_warriors_and_plus50power_to_apostates",
       "text": "50% power to Apostates, Deals 50% more damage vs Warriors.",
-      "text_ru": "50 % к силе для отступников, на 50 % больше урона воинам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:154",
@@ -5958,7 +5922,6 @@
     {
       "key": "aura_damage_resist_10pct_to_beasts_and_spirits_and_plus25health_to_giants",
       "text": "Creatures and Spirits take 10% less damage, +25% health to Giants",
-      "text_ru": "Существа и духи получают на 10 % меньше урона; +25 % здоровья для гигантов",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2122",
@@ -6003,7 +5966,6 @@
     {
       "key": "aura_defender25_and_power_gain_on_selfhit50_and_plus25pct_power_vs_beasts_and_heal_all_on_attack15_and_plus10health_to_charger_and_outlaw",
       "text": "Absorbs small AOE damage for allies. Gains medium Power and heals all when attacked. +25% damage vs Creatures. +10% Health for Bulls Chargers and Outlaws.",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает небольшую часть урона союзников. Подвергнувшись атаке, умеренно приращивает силу и лечит всех. +25 % урона против существ. +10 % здоровья для \"Боевых Быков\" и изгоев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2346",
@@ -6074,7 +6036,6 @@
     {
       "key": "aura_defender75_and_stun_resist50_for_allies_and_plus30power_for_venatori_and_minus15power_for_inquisition",
       "text": "+50% stun resist for allies. +30% Power for Venatori. Absorbs 75% of AoE damage for allies when also attacked. -15% Power to Inquisition enemies.",
-      "text_ru": "+50 % сопротивления оглушению для союзников. +30 % силы для венатори. Подвергнувшись атаке \"по площади\", поглощает 75 % урона союзников. -15 % силы для врагов из Инквизиции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2906",
@@ -6164,7 +6125,6 @@
     {
       "key": "aura_defender_and_bonus_damage_vs_blighted",
       "text": "Absorbs AOE damage for allies if attacked also, Deals bonus damage to Blighted.",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает урон союзников; наносит дополнительный урон моровым героям.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:338",
@@ -6244,7 +6204,6 @@
     {
       "key": "aura_defender_and_bonus_damage_vs_blighted_and_slowimmune_powerdrain_immune_to_grey_wardens",
       "text": "Absorbs medium AOE damage for allies if attacked also. +25% damage vs Blighted. Power drain and slow immune for Grey Wardens.",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает урон союзников. +25 % урона моровым героям. Не дает вытянуть силу у Серых Стражей и замедлить их.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1986",
@@ -6292,7 +6251,6 @@
     {
       "key": "aura_defender_and_damageresist10_to_allies",
       "text": "Absorbs AOE damage for allies if attacked also, Allies take 10% less damage.",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает урон союзников; союзники получают на 10 % меньше урона.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2046",
@@ -6323,7 +6281,6 @@
     {
       "key": "aura_defender_and_damageresist10_to_allies_and_plus50_slow_and_pdresist_to_spirits",
       "text": "Absorbs AOE damage for allies if also attacked. +10% damage resist for allies. +50% slow and power drain resist for Spirits.",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает урон союзников. +10 % сопротивления урону для союзников. +50 % сопротивления замедлению и вытягиванию силы для духов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1978",
@@ -6359,7 +6316,6 @@
     {
       "key": "aura_defender_and_plus25health_and_power_to_outlaw",
       "text": "Absorbs AOE damage for allies if attacked also, 25% health and power to Outlaws.",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает урон союзников; 25 % к здоровью и силе для изгоев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1994",
@@ -6416,7 +6372,6 @@
     {
       "key": "aura_defender_and_plus35health_and_plus50_stunresist_and_plus35_power_to_beast_and_chantry_and_plus10_hp_to_nightingale",
       "text": "Absorbs medium AOE damage for allies if attacked also. +35% Health and Power and +50% stun resist for Chantry and Creatures. +10% Health and Power for Sister Nightingale.",
-      "text_ru": "Подвергнувшись атаке \"по области\", умеренно поглощает урон союзников. +35 % здоровья и силы и +50 % сопротивления оглушению для церковников и существ. +10 % здоровья и силы для сестры Соловей.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1470",
@@ -6513,7 +6468,6 @@
     {
       "key": "aura_dmg25_vs_nobility_and_5khealth_and_power_to_common_and_power25_to_nice_and_25_health_power_for_xmas",
       "text": "+25% damage vs. Nobility. +1000% Health and Power to Commons. +25% Health and Power to heroes on the \"Naughty\" list.",
-      "text_ru": "+25 % урона против знати. +1000 % здоровья и силы для обычных героев. +25 % здоровья и силы для \"непослушных\" героев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2642",
@@ -6549,7 +6503,6 @@
     {
       "key": "aura_dmg_resist_10_dwarves_slowresist50_minus15powertoblight_damage15_resist_to_brogan_plus50health_to_dwarves",
       "text": "+10% damage resist for Dwarves and additional +15% for Brogan Dace. +50% slow resist. +50% Health for Dwarves. -15% Power to Blight enemies.",
-      "text_ru": "+10 % сопротивления урону для гномов и дополнительно +15 % для Брогана Дейса. +50 % сопротивления замедлению. +50 % здоровья для гномов. -15 % силы для моровых врагов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2846",
@@ -6629,7 +6582,6 @@
     {
       "key": "aura_dmg_resist_pct_10",
       "text": "Allies take 10% less damage.",
-      "text_ru": "Союзники получают на 10 % меньше урона.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:306",
@@ -6660,7 +6612,6 @@
     {
       "key": "aura_dmg_resist_pct_10_and_aura_plus10power_and_health_on_ally_death10_and_plus25_health_and_power_to_inquisition",
       "text": "+10% damage resist and Power for allies. Gains very small Health on ally death. +25% Health and Power for Inquisition.",
-      "text_ru": "+10 % сопротивления урону и силы для союзников. При смерти союзника очень незначительно приращивает здоровье. +25 % здоровья и силы для Инквизиции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2186",
@@ -6712,7 +6663,6 @@
     {
       "key": "aura_dmg_resist_pct_10_and_plus25power_to_whitefaction_and_plus25_stun_slow_pdresist_to_warrior_and_plus20health_to_cass",
       "text": "+10% damage resist for allies. +25% Power for white faction. +25% stun, slow, and power drain resist for Warriors. +20% Health for Cassandra.",
-      "text_ru": "+10% сопротивления урону для союзников. +25% силы для \"белой\" фракции. +25% сопротивления оглушению, замедлению и вытягиванию силы для воинов. +20% здоровья для Кассандры.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1898",
@@ -6803,7 +6753,6 @@
     {
       "key": "aura_dmg_resist_pct_10_to_blighted_plus35health_to_blighted_and_power_on_enemy_death_50_and_minus10_power_to_mages",
       "text": "Gains medium Power on enemy death. +10% damage resist and +35% Health for Blighted. -10% Power to Mages.",
-      "text_ru": "Умеренно приращивает силу при смерти врага. +10 % сопротивления урону и +35 % здоровья для моровых героев. -10 % силы для магов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1466",
@@ -6877,7 +6826,6 @@
     {
       "key": "aura_dmg_resist_pct_10_to_dwarves",
       "text": "Dwarf allies take 10% less damage.",
-      "text_ru": "Союзники-гномы получают на 10 % меньше урона.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1810",
@@ -6897,7 +6845,6 @@
     {
       "key": "aura_dmg_resist_pct_10_to_dwarves_and_aura_ally_damage_absorb_50_and_aura_plus50health_to_dwarves",
       "text": "+50% Health for Dwarves. Absorbs 50% AOE damage for allies if attacked also. +10% damage resist for Dwarves.",
-      "text_ru": "+50 % здоровья для гномов. Подвергнувшись атаке \"по области\", поглощает урон союзников. +10 % сопротивления урону для гномов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1802",
@@ -6959,7 +6906,6 @@
     {
       "key": "aura_dmg_resist_pct_20_personal",
       "text": "Takes 20% less damage.",
-      "text_ru": "Получает на 20 % меньше урона.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6012",
@@ -6991,7 +6937,6 @@
     {
       "key": "aura_dmg_resist_pct_20_personal_and_pdresist75_for_allies_and_dmgresist5_to_chantry",
       "text": "+20% damage resist. +75% power drain resist for allies. +5% damage resist for Chantry.",
-      "text_ru": "+20% сопротивления урону. +75% сопротивления вытягиванию силы для союзников. +5% сопротивления урону для церковников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1902",
@@ -7029,7 +6974,6 @@
     {
       "key": "aura_dmg_resist_pct_25_personal_and_aura_plus50pct_power_vs_mages_personal",
       "text": "Takes 25% less damage, Deals 50% bonus damage to Mages.",
-      "text_ru": "Получает на 25 % меньше урона; наносит 50 % дополнительного урона магам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2054",
@@ -7055,7 +6999,6 @@
     {
       "key": "aura_dmg_resist_pct_25_personal_and_plus35_power_to_spirits_and_stunimmune_spirits_and_brave_targeting",
       "text": "+25% damage resist. +35% Power and stun immunity for Spirits. Much more likely to attack the highest power enemy.",
-      "text_ru": "+25% сопротивления урону. +35% силы и сопротивления оглушению для духов. Гораздо чаще атакует самых сильных героев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1890",
@@ -7122,7 +7065,6 @@
     {
       "key": "aura_dmg_resist_pct_50_vs_grey_plus50power_50health_to_blighted_plus25stunresist_slow25_resist_allies_power_drain_immune_power_drain",
       "text": "+50% Damage Resist Vs. Grey Wardens. +50% Health and Power to Blight and Tevinter. +100% Power Drain Resist to Blight. +25% Stun and Slow Resist to allies. Immune to Power Drain. +50% Power to the Architect.",
-      "text_ru": "+50% сопротивл. урону против Серых Стражей. +50% к здоровью и силе для моровых героев и тевинтерцев. +100% сопротивл. вытягиванию силы для моровых героев. +25% сопротивл. оглушению и замедлению для союзников. Не дает вытянуть у себя силу. +50 % силы для Архитектора.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2658",
@@ -7229,7 +7171,6 @@
     {
       "key": "aura_dmg_resist_pct_50_vs_mages_personal_power_on_enemy_death_25_plus30h_red_lyrium_plus25_power_vs_mages_personal_25allies",
       "text": "+30% Health for Red Lyrium. Gains small Power when enemies are killed. +50% Damage resist vs Mages. +50% damage vs Mages. +25% damage vs Mages for allies.",
-      "text_ru": "+30 % здоровья для краснолириумных героев. Ненамного приращивает силу при убийстве врагов. +50 % сопротивления урону против магов. +50 % урона против магов. +25 % урона против магов для союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1410",
@@ -7295,7 +7236,6 @@
     {
       "key": "aura_dmgresist15_and_powerdrainresist50_to_spirits",
       "text": "+15% damage resist for all allies. +50% power drain resist for Spirits.",
-      "text_ru": "+15 % сопротивления урону для всех союзников. +50 % сопротивления вытягиванию силы для духов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1894",
@@ -7321,7 +7261,6 @@
     {
       "key": "aura_dmgresist25_self_and_plus35healthandpower_and_plus50stunandslowresist_to_dwarves_golems_warriors",
       "text": "+25% damage resist. +35% Health and Power and +50% stun and slow resist to Dwarves, Golems, and Warriors.",
-      "text_ru": "+25 % сопротивления урону. +35 % здоровья и силы и +50 % сопротивления оглушению и замедлению для гномов, големов и воинов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1922",
@@ -7392,7 +7331,6 @@
     {
       "key": "aura_flank",
       "text": "Usually attacks the back row.",
-      "text_ru": "Обычно атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:134",
@@ -7616,7 +7554,6 @@
     {
       "key": "aura_flank_all_ally_defender_25",
       "text": "Absorbs a small amount of AOE damage for allies if attacked. Allies more likely to attack the back row.",
-      "text_ru": "Подвергнувшись атаке \"по области\", поглощает небольшую часть урона союзников. Союзники будут чаще атаковать заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2542",
@@ -7659,7 +7596,6 @@
     {
       "key": "aura_flank_and_35power_to_beasts_and_dmg_resist_pct_10_to_rogues_and_beasts",
       "text": "+35% Power for Creatures. +10% damage resist for Rogues and Creatures. More likely to attack the back row.",
-      "text_ru": "+35 % силы для существ. +10 % сопротивления урону для разбойников и существ. Чаще атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1970",
@@ -7710,7 +7646,6 @@
     {
       "key": "aura_flank_and_aura_plus25health_and_plus25power_to_elves",
       "text": "Usually attacks back row, +25% health and power to Elves",
-      "text_ru": "Обычно атакует заднюю шеренгу; +25 % здоровья и силы для эльфов",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1510",
@@ -7762,7 +7697,6 @@
     {
       "key": "aura_flank_and_damage25pct_vs_blight",
       "text": "Deals 25% more damage vs Blighted. Usually attacks the back row.",
-      "text_ru": "Наносит на 25 % больше урона моровым персонажам Обычно атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:222",
@@ -7793,7 +7727,6 @@
     {
       "key": "aura_flank_and_gain_health_when_hero_dies_and_plus25health_to_sentinel_elves",
       "text": "Much more likely to attack back row, Gains health when any hero dies, 25% health to Sentinel Elves.",
-      "text_ru": "Чаще всего атакует заднюю шеренгу; приращивает здоровье при смерти любого героя; 25 % к здоровью для эльфов-часовых.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2206",
@@ -7824,7 +7757,6 @@
     {
       "key": "aura_flank_and_plus35health_to_nobility",
       "text": "Usually attacks back row, 35% health to Nobility",
-      "text_ru": "Как правило, атакует заднюю шеренгу; 35 % к здоровью для знати",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1638",
@@ -7875,7 +7807,6 @@
     {
       "key": "aura_flank_and_plus50power_to_creatures_and_spirits",
       "text": "Usually attacks back row, 50% power to Creatures and Spirits",
-      "text_ru": "Как правило, атакует заднюю шеренгу, 50 % к силе для существ и духов",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1954",
@@ -7930,7 +7861,6 @@
     {
       "key": "aura_flank_plus25dmg_vs_blighted",
       "text": "Usually attacks back row, Deals 25% bonus damage vs Blighted",
-      "text_ru": "Как правило, атакует заднюю шеренгу; наносит 25 % дополнительного урона моровым героям",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2106",
@@ -7961,7 +7891,6 @@
     {
       "key": "aura_gain_health_and_gain_power_when_enemy_dies",
       "text": "Gains health and power when enemy dies.",
-      "text_ru": "Приращивает здоровье и силу при смерти врага.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2010",
@@ -7998,7 +7927,6 @@
     {
       "key": "aura_gain_health_when_hero_dies_and_plus25health_to_sentinel_elves",
       "text": "Gains health when any hero dies, 25% health to Sentinel Elves.",
-      "text_ru": "Приращивает здоровье при смерти любого героя; 25 % к здоровью для эльфов-часовых.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2198",
@@ -8035,7 +7963,6 @@
     {
       "key": "aura_gain_power_pct_when_self_attacked",
       "text": "Gains power when attacked.",
-      "text_ru": "Приращивает силу, подвергнувшись атаке.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2118",
@@ -8061,7 +7988,6 @@
     {
       "key": "aura_gain_power_pct_when_self_attacked_and_bonus_damage_vs_blighted",
       "text": "Gains power when attacked, Deals bonus damage to Blighted.",
-      "text_ru": "Приращивает силу, подвергнувшись атаке; наносит дополнительный урон моровым героям.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6040",
@@ -8092,7 +8018,6 @@
     {
       "key": "aura_gain_power_pct_when_self_attacked_and_bonus_damage_vs_blighted_and_damage_resist_self10",
       "text": "Gains a small amount of Power when attacked. +25% damage vs Blighted. +10% damage resist.",
-      "text_ru": "Подвергнувшись атаке, ненамного приращивает силу. +25 % урона против моровых героев. +10 % сопротивления урону.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:382",
@@ -8135,7 +8060,6 @@
     {
       "key": "aura_gain_power_when_allly_dies_and_dmg_resist_pct_25_vs_warriors_personal",
       "text": "Gains power when ally dies and takes 25% less damage from warriors.",
-      "text_ru": "Приращивает силу при смерти союзника и получает на 25 % меньше урона от воинов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:386",
@@ -8177,7 +8101,6 @@
     {
       "key": "aura_gain_power_when_attacked_pct_and_50health_to_ferelden_and_squad_heal_onattack_and_plus50stunres_nobil_fereld_and_plus10damres_fereld",
       "text": "+50% Health and +10% damage resist for Ferelden. +50% stun resist for Nobility and Ferelden. Gains Power and heals allies when attacked.",
-      "text_ru": "+50 % здоровья и +10 % сопротивления урону для ферелденцев. +50 % сопротивления оглушению для знати и ферелденцев. Подвергнувшись атаке, приращивает силу и лечит союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1938",
@@ -8233,7 +8156,6 @@
     {
       "key": "aura_handp25_to_wardens_and_plus35health_to_alistair_and_plus50damage_vs_nobility_for_allies_and_onselfhit_allies_healsmall",
       "text": "+25% Health and Power for Grey Wardens. +35% Health for Alistair. +50% damage vs Nobility for allies. When hit, heals all allies a small amount.",
-      "text_ru": "+25 % здоровья и силы для Серых Стражей. +35 % здоровья для Алистера. +50 % урона против знати для союзников. Получив удар, незначительно лечит всех союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2894",
@@ -8322,7 +8244,6 @@
     {
       "key": "aura_hatred_all_except_beasts_and_elves",
       "text": "Less likely to attack Creatures or Elves.",
-      "text_ru": "С меньшей вероятностью нападает на существ и эльфов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2134",
@@ -8348,7 +8269,6 @@
     {
       "key": "aura_health_gain_when_ally_dies_and_personal_slow_resist",
       "text": "Gains a medium amount of Health when allies die. Immune to slow.",
-      "text_ru": "Умеренно приращивает здоровье при смерти союзников. Не дает замедлить себя.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2034",
@@ -8392,7 +8312,6 @@
     {
       "key": "aura_health_gain_when_enemy_dies_and_plus25health_and_plus25power_to_reavers",
       "text": "Gains Health when an enemy dies. +25% Health and Power to Reavers.",
-      "text_ru": "Приращивает здоровье при смерти врага. +25 % к силе и здоровью потрошителей",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6112",
@@ -8444,7 +8363,6 @@
     {
       "key": "aura_health_on_ally_death_50_and_power_gain_when_ally_hit_and_slow_resist50_plus25_handp_to_qunari_and_plus50slowpdresist_to_tri",
       "text": "Gains 50% Health when ally dies. Gains 20% Power when allies are attacked. +25% Health and Power, and +50% slow resist for Qunari. +50% stun and power drain resist for Triumvirate.",
-      "text_ru": "При смерти союзника на 50 % приращивает здоровье. На 20 % приращивает силу, если союзники атакованы. +25 % здоровья и силы, а также +50 % сопротивления замедлению для кунари. +50 % сопротивления к оглушению и вытягиванию силы для Триумвирата.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2066",
@@ -8511,7 +8429,6 @@
     {
       "key": "aura_health_on_ally_death_50_plus50health_to_allies_plus50power_to_white_faction",
       "text": "Gains 50% Health on ally death. +50% Health to allies. +50% Power to White Faction.",
-      "text_ru": "Получает 50 % здоровья при смерти союзника. +50 % здоровья для союзников. +50 % силы для \"белой\" фракции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2550",
@@ -8577,7 +8494,6 @@
     {
       "key": "aura_minus10healthtoblight_minus_10powertoblight_health_to_allies_when_hit_powerdrainresist50_plus50stundslow_to_dwarves_plus15pct_vs_blight",
       "text": "Heals all allies for 10% when hit. +50% power drain resist for allies. +50% stun and slow resist for Dwarves. +25% damage vs Blight. -10% Health and Power to Blight enemies.",
-      "text_ru": "Подвергнувшись атаке, лечит всех союзников на 10 %. 50 % сопротивления вытягиванию силы для союзников. 50 % сопротивления оглушению и замедлению для гномов. 25 % дополнительного урона против моровых врагов. -10 % здоровья и силы для моровых врагов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2850",
@@ -8643,7 +8559,6 @@
     {
       "key": "aura_minus15_power_to_circle_and_chantry_and_health25_and_power25_to_spirits_and_elves_and_allies_gain_power_on_ally_death50",
       "text": "+25% Power and Health to Spirits and Elves. +50% Power to allies on ally death. -15% Power to Circle and Chantry.",
-      "text_ru": "+25 % силы и здоровья духам и эльфам. +50 % силы союзникам при смерти союзника. -15 % силы врагов из Круга и Церкви.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2478",
@@ -8726,7 +8641,6 @@
     {
       "key": "aura_minus15_power_to_demons_and_bloodmages",
       "text": "+35% Power for Inquisition. -15% Power to Demons and Blood Mages. Inquisition more likely to attack Demons and Blood Mages.",
-      "text_ru": "+35 % силы для Инквизиции. -15 % силы для магов крови и демонов. Герои Инквизиции будут чаще атаковать Демонов и Магов крови.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2434",
@@ -8804,7 +8718,6 @@
     {
       "key": "aura_minus15_power_to_mages_minus_15power_to_warrior_minus15power_to_demons_plus50power_to_templar_powerdrainresist_50",
       "text": "+50% Power to Templar. +50% Power Drain resist. -15% Power to Mages, Demons, and Warriors.",
-      "text_ru": "+50 % силы для храмовников. +50 % сопротивления вытягиванию силы. Сила вражеских магов, демонов и воинов снижается на 15 %.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2610",
@@ -8892,7 +8805,6 @@
     {
       "key": "aura_minus15_power_to_redlyrium_health_on_ally_death_25_power_on_ally_death_25_plus50_stunresist_to_templars_hatred_redlyrium",
       "text": "+25% Health and Power on ally death. +50% Stun resist to Templars. More likely to attack Red Lyrium enemies. -15% Power to Red Lyrium enemies.",
-      "text_ru": "+25 % здоровья и силы при смерти союзника. +50 % сопротивления к оглушению для храмовников. Чаще атакует краснолириумных врагов. -15 % силы краснолириумным врагам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2530",
@@ -8952,7 +8864,6 @@
     {
       "key": "aura_minus20powerdrainresist_to_enemies_power_drain_resist_75_to_qunari_and_plus25health",
       "text": "+25% Health and +75% power drain resist for Qunari. -20% power drain resist to enemies.",
-      "text_ru": "+25 % здоровья и +75 % сопротивления вытягиванию силы для кунари. -20 % сопротивления вытягиванию силы для врагов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2630",
@@ -9008,7 +8919,6 @@
     {
       "key": "aura_minus20stun_slow_powerdrainresist_to_enemies_and_plus50stun_slow_powerdrainresist_to_blight",
       "text": "+50% stun, slow, and power drain resist for Blighted-20% stun, slow, and power drain resist to enemies.",
-      "text_ru": "+50 % сопротивления оглушению, замедлению и вытягиванию силы для моровых героевНа 20 % снижает сопротивление врагов оглушению, замедлению и вытягиванию силы.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2450",
@@ -9034,7 +8944,6 @@
     {
       "key": "aura_minus35stunresist_power_gain_onallyhit15_power_drain_resist_35_brave_targeting_aura_dmg_resist_pc_10_to_nobility",
       "text": "+35% power drain resist. Gains 20% Power when allies are hit. +10% damage resist for Nobility. -35% stun resist to enemies. Much more likely to attack the highest Power enemy.",
-      "text_ru": "+35 % сопротивления вытягиванию силы. На 20 % приращивает силу, когда союзники атакованы. +10 % сопротивления урону для знати. -35 % сопротивления оглушению для врагов. Гораздо чаще атакует самого сильного врага.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2842",
@@ -9083,7 +8992,6 @@
     {
       "key": "aura_outlaws_orlesian_25health_25power_allies_gain_power",
       "text": "+25% Health and Power to Outlaws and Orlesians. When Snoufleur dies, allies gain 100% Power.",
-      "text_ru": "+25 % здоровья и силы для изгоев и орлесианцев. Когда снуфлер умирает, союзники получают 100 % силы.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2634",
@@ -9139,7 +9047,6 @@
     {
       "key": "aura_pd_stun_and_slow_immune_and_and_plus50pdres_squad_and_plus35pandh_and_plus25slowres_to_demons_and_heal_on_allydeath_and_plus25dmg_vs_temp_squad",
       "text": "Immune to power drain, slow, and stun. Squad gets +50% power drain resist and +25% damage vs Templars. +25% slow resist and +35% Health and Power for Demons. Small heal on ally death.",
-      "text_ru": "Не дает вытянуть у себя силу, замедлить или оглушить себя. Отряд получает +50 % сопротивления вытягиванию силы и +25 % урона против храмовников. +25 % сопротивления замедлению и +35 % здоровья и силы для демонов. Незначительно лечится при смерти союзника.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2094",
@@ -9247,7 +9154,6 @@
     {
       "key": "aura_pdres50_and_plus25ph_to_warriors_outlaws_and_plus25stunres_and_plus10dmgres_to_outlaws_fereld_and_dmgres5_self_and_plus25_health_maric",
       "text": "+50% power drain resist for allies. +25% Power and Health for Warriors and Outlaws. +25% stun resist and +10% damage resist for Outlaws and Ferelden (and +5% self). +25% Health for King Maric.",
-      "text_ru": "+50 % сопротивления вытягиванию силы для союзников. +25 % силы и здоровья для воинов и изгоев. +25 % сопротивления оглушению и +10 % сопротивления урону для изгоев и ферелденцев (и +5 % для себя). +25 % здоровья для короля Мэрика.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1418",
@@ -9332,7 +9238,6 @@
     {
       "key": "aura_personal_power_drain_and_stun_resist",
       "text": "Immune to power drain and stun",
-      "text_ru": "Не дает вытянуть у себя силу и оглушить себя",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6068",
@@ -9394,7 +9299,6 @@
     {
       "key": "aura_personal_power_drain_resist",
       "text": "Immune to power drain.",
-      "text_ru": "У героя нельзя вытянуть силу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1926",
@@ -9455,7 +9359,6 @@
     {
       "key": "aura_personal_slow_resist",
       "text": "Cannot be slowed.",
-      "text_ru": "Героя нельзя замедлить.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1838",
@@ -9510,7 +9413,6 @@
     {
       "key": "aura_personal_stun_resist_100",
       "text": "Cannot be stunned.",
-      "text_ru": "Героя нельзя оглушить.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2098",
@@ -9609,7 +9511,6 @@
     {
       "key": "aura_personal_stun_resist_15",
       "text": "+15% stun resist.",
-      "text_ru": "Сопротивляется оглушению (15%).",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1646",
@@ -9642,7 +9543,6 @@
     {
       "key": "aura_personal_stun_resist_25",
       "text": "Has a chance to resist stun.",
-      "text_ru": "Есть шанс противостоять оглушению.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6172",
@@ -9668,7 +9568,6 @@
     {
       "key": "aura_personal_stun_resist_50",
       "text": "+50% stun resist.",
-      "text_ru": "+50 % сопротивления оглушению.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6252",
@@ -9712,7 +9611,6 @@
     {
       "key": "aura_personal_stunresist100_and_plus35stunresist_to_beasts_and_reavers_and_plus35health_to_reavers",
       "text": "Immune to stun. +35% stun resist for Creatures and Reavers. +35% Health for Reavers.",
-      "text_ru": "Невосприимчивость к оглушению. +35 % сопротивления к оглушению для существ и потрошителей. +35 % к здоровью для потрошителей.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:42",
@@ -9780,7 +9678,6 @@
     {
       "key": "aura_plus100health_to_spirits",
       "text": "+100% health to Spirits.",
-      "text_ru": "+100 % здоровья для духов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2290",
@@ -9825,7 +9722,6 @@
     {
       "key": "aura_plus100stun_and_slow_resist_to_inquisition_and_aura_dmg_resist_pct_10_and_minus25_pdresist_to_enemy",
       "text": "Stun and slow immunity for Inquisition. +10% damage resist for allies. -25% power drain resist to enemies.",
-      "text_ru": "Невосприимчивость к оглушению и замедлению для Инквизиции. +10 % сопротивления урону для союзников. -25 % сопротивления вытягиванию силы для врагов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2230",
@@ -9856,7 +9752,6 @@
     {
       "key": "aura_plus100stunresist_and_plus75powerdrainresist_and_plus50power_and_plus20damageresist_to_rogues_and_beasts",
       "text": "+100% stun resist, +75% power drain resist, +50% Power, and +20% damage resist for Rogues and Creatures.",
-      "text_ru": "+100 % сопротивления оглушению, +75 % сопротивления вытягиванию силы, +50 % силы и +20 % сопротивления урону для разбойников и существ.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2510",
@@ -9911,7 +9806,6 @@
     {
       "key": "aura_plus100stunresist_to_dwarves_and_aura_plus25pct_power_vs_red_lyrium_to_allies_and_aura_dmg_resist_pct_25_vs_mages_personal",
       "text": "+100% stun resist to Dwarves. +25% damage resist vs Mages. Allies deal +25% damage to Red Lyrium.",
-      "text_ru": "+100 % сопротивления оглушению для гномов. +25 % сопротивления урону против магов. Союзники наносят 25 % дополнительного урона краснолириумным героям.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2410",
@@ -9947,7 +9841,6 @@
     {
       "key": "aura_plus100stunresist_to_inquisition",
       "text": "Grants Stun immunity to Inquisition.",
-      "text_ru": "Невосприимчивость к оглушению для Инквизиции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2334",
@@ -9973,7 +9866,6 @@
     {
       "key": "aura_plus10power",
       "text": "+10% ally power.",
-      "text_ru": "+10% к силе союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:322",
@@ -10059,7 +9951,6 @@
     {
       "key": "aura_plus15_handp_to_dragons_and_plus10_handp_to_abh_and_plus10_damres_to_orlesian_and_allies_gain_handp25_on_hero_death",
       "text": "+15% Health and Power for Dragons and additional +10% for Abyssal High Dragon. +10% damage resist for Orlesians. Gives allies small Health and Power on death, double to dragons.",
-      "text_ru": "+15 % здоровья и силы для драконов и дополнительно +10 % для глубинного высшего дракона. +10 % сопротивления урону для орлесианцев. При смерти дает союзникам небольшую прибавку к здоровью и силе (драконам — удвоенную).",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2698",
@@ -10136,7 +10027,6 @@
     {
       "key": "aura_plus15damageresist_and_plus25stunresist_and_slowresist_to_demons_and_allies_gain_small_power_when_hero_attacked",
       "text": "+15% damage resist. Demons get +25% stun resist and +50% slow resist. Allies gain a small amount of power when hero is attacked.",
-      "text_ru": "+15 % сопротивления урону. +25 % сопротивления оглушению и +50 % сопротивления к замедлению демонам. Подвергнувшись атаке, незначительно повышает силу союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1414",
@@ -10179,7 +10069,6 @@
     {
       "key": "aura_plus15health_to_allies_15handp_to_Qunari_health_gain_when_self_hit_10_dmg_resist_pct_10_to_red_faction",
       "text": "+15% Health for all allies. +15% Health and Power for Qunari. Gains small Health when attacked. +10% damage resist to red faction.",
-      "text_ru": "+15 % здоровья для всех союзников. +15 % здоровья и силы для кунари. Получает небольшую прибавку к здоровью при атаке. +10 % к сопротивлению урону для \"красных\" бойцов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2818",
@@ -10246,7 +10135,6 @@
     {
       "key": "aura_plus15health_to_spirits",
       "text": "+15% health to Spirits.",
-      "text_ru": "+15 % здоровья для духов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2306",
@@ -10291,7 +10179,6 @@
     {
       "key": "aura_plus15hlth_and_pow_to_rog_and_fereld_and_abs_med_ally_aoe_if_atck_and_hero_atck_allies_gain_small_hlth_and_pow_and_plus100hlth_and_pow_to_logh",
       "text": "+15% Health and Power to Rogues and Ferelden. When attacked, allies gain small Health and Power. Absorbs medium AOE damage for allies. +100% Health and Power to Loghain.",
-      "text_ru": "+15% к здоровью и силе для разбойников и ферелденцев. Когда герой атакован, союзники получают небольшую прибавку к силе и здоровью. Умеренно поглощает урон \"по площади\" для союзников. +100% к здоровью и силе для Логэйна.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2526",
@@ -10391,7 +10278,6 @@
     {
       "key": "aura_plus25_handp_to_inquisition_bianca_and_plus50_stun_slow_pdresist__to_self_bianca_and_plus15_damage_vs_rl_squad_and_minus15_power_rl",
       "text": "+25% Health and Power for Inquisition and Bianca. +50% stun, slow and power drain resist for Bianca and self. +15% damage vs Red Lyrium for squad. -15% Power to Red Lyrium.",
-      "text_ru": "+25 % здоровья и силы для Инквизиции и Бьянки. +50 % сопротивления оглушению, замедлению и вытягиванию силы для Бьянки и себя. +15 % урона против краснолириумных героев для отряда. -15 % силы для краснолириумных героев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2686",
@@ -10475,7 +10361,6 @@
     {
       "key": "aura_plus25_health_and_power_to_elves_and_dmg_resist_pct10_to_warriors_hatred_tevinter_squad_and_flank",
       "text": "+25% Health and Power for Elves. +10% damage resist for Warriors. Grants hatred of Tevinter to allies. Usually attacks the back row.",
-      "text_ru": "+25 % здоровья и силы для эльфов. +10 % сопротивления урону для воинов. Заражает союзников ненавистью к тевинтерцам. Обычно атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1522",
@@ -10527,7 +10412,6 @@
     {
       "key": "aura_plus25_stun_slow_and_powerdrain_resist_to_chantry_and_minus50_slow_resist_to_apostates",
       "text": "+25% stun, slow, and power drain resist for Chantry. -50% slow resist to Apostates.",
-      "text_ru": "+25 % сопротивления оглушению, замедлению и вытягиванию силы для церковников. -50 % сопротивления замедлению для отступников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2602",
@@ -10558,7 +10442,6 @@
     {
       "key": "aura_plus25healh_and_power_to_rogues_and_immunestun_and_allies_gainpower_on_allyhit_and_flank_and_allies_hatred_leliana",
       "text": "+25% Health and Power to Rogues. Immune to stun. Allies gain very small power when any ally is attacked. More likely to attack the back row. Allies more likely to attack Leliana.",
-      "text_ru": "+25 % здоровья и силы для разбойников. Не дает себя оглушить. Очень незначительно приращивает силу союзников при атаке по любому из них. Гораздо чаще атакует заднюю шеренгу. Союзники будут чаще атаковать Лелиану.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2942",
@@ -10637,7 +10520,6 @@
     {
       "key": "aura_plus25health",
       "text": "+25% health to allies.",
-      "text_ru": "+25 % здоровья для союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6176",
@@ -10673,7 +10555,6 @@
     {
       "key": "aura_plus25health_and_allies_heal_ondeath_and_slowres_pdres50_to_mages_and_power_vs_bloodmages_allies_and_defender25",
       "text": "+25% Health to allies. Heals allies on death. +50% slow and power drain resist for Mages. +25% damage vs Blood Mages for squad. Absorbs small AoE damage for allies.",
-      "text_ru": "+25 % здоровья для союзников. Умирая, лечит союзников. +50 % сопротивления замедлению и вытягиванию силы для магов. +25 % урона против магов крови для отряда. Ненамного поглощает урон по площади за союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1342",
@@ -10736,7 +10617,6 @@
     {
       "key": "aura_plus25health_and_pdresist_to_dwarves_and_shabrytol_stacking_and_powergain25_on_allyhit_and_minus25pdresist_to_enemies_double_to_inquisition",
       "text": "+25% Health and +25% power drain resist for Dwarves and the Sha-Brytol (bonuses stack). Gains a small amount of Power when allies are attacked. -25% power drain resist to enemies, double to Inquisition.",
-      "text_ru": "+25 % здоровья и +25 % сопротивления вытягиванию силы для гномов и ша-бритолов (бонусы суммируются). Ненамного приращивает силу, когда союзники атакованы. -25 % сопротивления вытягиванию силы для врагов, для Инквизиции значение удваивается.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2902",
@@ -10821,7 +10701,6 @@
     {
       "key": "aura_plus25health_and_plus25power_to_demons_and_wardens_and_aura_dmg_resist_pct_35_vs_grey_wardens_and_mages_personal",
       "text": "+25% health and power to Demons and Wardens, takes 35% less damage from Grey Wardens and Mages",
-      "text_ru": "+25 % зд. и с. для демонов и Стражей; на 35 % меньше ур. от Стражей и магов",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2086",
@@ -10877,7 +10756,6 @@
     {
       "key": "aura_plus25health_and_plus25power_to_elves",
       "text": "+25% Health and Power to Elves",
-      "text_ru": "+25 % здоровья и силы для эльфов",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1350",
@@ -10934,7 +10812,6 @@
     {
       "key": "aura_plus25health_and_plus25power_to_ferelden",
       "text": "+25% health and power to Ferelden",
-      "text_ru": "+25 % здоровья и силы для ферелденцев",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1302",
@@ -10980,7 +10857,6 @@
     {
       "key": "aura_plus25health_and_plus25power_to_inquisition",
       "text": "+25% health and power to Inquisition",
-      "text_ru": "+25 % здоровья и силы для Инквизиции",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2178",
@@ -11026,7 +10902,6 @@
     {
       "key": "aura_plus25health_and_plus25power_to_nobility",
       "text": "Plus 25% health and power to Nobility",
-      "text_ru": "+25 % здоровья и силы для знати",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2002",
@@ -11072,7 +10947,6 @@
     {
       "key": "aura_plus25health_and_power_to_elves_and_power_on_ally_and_enemy_death_50_and_aura_slow_resist_100_to_elves",
       "text": "Gains power when any hero dies. +25% health and power to Elves. Grants Slow immunity to Elves.",
-      "text_ru": "Приращивает силу при смерти любого героя. +25 % здоровья и силы для эльфов. Дает эльфам невосприимчивость к замедлению.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2194",
@@ -11129,7 +11003,6 @@
     {
       "key": "aura_plus25health_and_power_to_inquisition_and_hatred_bloodmage",
       "text": "+25% health and power to Inquisition. More likely to attack Blood Mages.",
-      "text_ru": "+25 % здоровья и силы для Инквизиции. Чаще атакует магов крови.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2210",
@@ -11181,7 +11054,6 @@
     {
       "key": "aura_plus25health_and_power_to_nobility_and_tevinter",
       "text": "+25% health and power to Nobility and Tevinter",
-      "text_ru": "+25 % здоровья и силы для знати и тевинтерцев",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2182",
@@ -11231,7 +11103,6 @@
     {
       "key": "aura_plus25health_and_power_to_red_faction_and_power_gain_when_self_hit_50",
       "text": "+25% Health and Power to Red Faction. Gains power when attacked.",
-      "text_ru": "+25 % здоровья и силы для \"красных\" героев. Приращивает силу, подвергнувшись атаке.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2398",
@@ -11283,7 +11154,6 @@
     {
       "key": "aura_plus25health_and_power_to_spirits_and_demons_and_health_and_power_on_ally_death_25",
       "text": "Gains power and health when allies die. +25% health and power to Spirits and Demons.",
-      "text_ru": "Приращивает силу и здоровье при смерти союзников. +25 % здоровья и силы для духов и демонов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2174",
@@ -11339,7 +11209,6 @@
     {
       "key": "aura_plus25health_to_allies_and_heal_all_75_on_selfdeath",
       "text": "+25% Health to all allies. Upon death, allies gain a large amount of Health.",
-      "text_ru": "+25 % здоровья для всех союзников. При смерти героя у союзников значительно возрастает здоровье.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2138",
@@ -11381,7 +11250,6 @@
     {
       "key": "aura_plus25health_to_beasts_and_demons",
       "text": "+25% Health to Creatures and Demons",
-      "text_ru": "+25 % здоровья для тварей и демонов",
       "occurrences": [
         {
           "semantic_recipe_key": "440:410",
@@ -11463,7 +11331,6 @@
     {
       "key": "aura_plus25health_to_inquisition_plus25power_to_dwarves_minus15_power_to_enemy_dwarf",
       "text": "+25% Health for Inquisition and +25% Power for Dwarves. -15% Power to enemy Dwarves.",
-      "text_ru": "+25 % здоровья для Инквизиции и +25 % силы для гномов. -15 % силы для вражеских гномов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2666",
@@ -11555,7 +11422,6 @@
     {
       "key": "aura_plus25health_to_nobility_and_aura_plus25power_to_nobility",
       "text": "+25% Health and Power to Nobility.",
-      "text_ru": "+25 % здоровья и силы для знати.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2238",
@@ -11612,7 +11478,6 @@
     {
       "key": "aura_plus25health_to_nugs_and_ferelden_and_plus25health_and_power_to_nugly",
       "text": "+25% Health to Nugs and Ferelden (stacking) and +25% bonus Health and Power to Nugly Sweater Nugs.",
-      "text_ru": "+25 % к здоровью для нагов и ферелденцев (бонусы суммируются); +25 % дополнительного здоровья и силы для нагов в нажьих свитерах",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2130",
@@ -11661,7 +11526,6 @@
     {
       "key": "aura_plus25health_to_spirits",
       "text": "+25% health to Spirits.",
-      "text_ru": "+25 % здоровья для духов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2302",
@@ -11706,7 +11570,6 @@
     {
       "key": "aura_plus25pct_power_vs_blight_and_tevinter_personal_and_aura_plus100stunresist_to_warden",
       "text": "Stun Immune to Grey Wardens. Deals bonus damage to Blighted and Tevinter.",
-      "text_ru": "Невосприимчивость к оглушению для Серых Стражей. Наносит дополнительный урон моровым героям и тевинтерцам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2242",
@@ -11737,7 +11600,6 @@
     {
       "key": "aura_plus25pct_power_vs_spirits_personal_and_aura_power_drain_resist_50_to_demons",
       "text": "Grants 50% Power Drain resistance to Demons. Deals bonus damage to Spirits.",
-      "text_ru": "Дает демонам 50 % сопротивления к вытягиванию силы. Наносит дополнительный урон духам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2430",
@@ -11768,7 +11630,6 @@
     {
       "key": "aura_plus25power_25health_to_beasts_health_gain_when_ally_hit_15",
       "text": "+25% Health and Power for Creatures. Nug King gains +25% Power for every Nug in the squad. Gains small Health when allies are hit.",
-      "text_ru": "+25 % здоровья и силы для существ. Нажий король получает +25 % силы за каждого нага в команде. Получает немного здоровья при попадании по союзникам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2886",
@@ -11820,7 +11681,6 @@
     {
       "key": "aura_plus25power_25health_to_ferelden_allies_heal_all_when_self_death_25_allies_gain_power_when_self_death_50_plus100pct_power_vs_Duncan",
       "text": "+25% Health and Power for Ferelden. +100% damage vs Duncan. When this hero dies, allies heal a small amount and gain 50% Power.",
-      "text_ru": "+25 % здоровья и силы для ферелденцев. + 100 % против Дункана. Когда он умирает, союзники получают +50 % силы и незначительно излечиваются.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2874",
@@ -11877,7 +11737,6 @@
     {
       "key": "aura_plus25power_50health_to_dwarves_power_gain_when_self_hit_25_hatred_blight_shabrytol_aura_plus50pct_power_vs_blight_personal",
       "text": "+50% Health and +25% Power for Dwarves. Gains medium Power when hit. +50% bonus damage vs Blighted enemies.",
-      "text_ru": "+50 % здоровья и +25% силы для гномов. Получает умеренное количество силы, подвергнувшись атаке. +50 % дополнительного урона против моровых врагов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2882",
@@ -11957,7 +11816,6 @@
     {
       "key": "aura_plus25power_and_10pct_damage_reduction_to_elves",
       "text": "+25% power to Elves, Elven allies take 10% less damage.",
-      "text_ru": "+25 % к силе для эльфов; союзники-эльфы получают на 10 % меньше урона.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1498",
@@ -12002,7 +11860,6 @@
     {
       "key": "aura_plus25power_and_health_to_warrior_and_aura_ally_damage_absorb_50_and_aura_slow_resist_50_and_aura_dmg_resist_pct_25_personal",
       "text": "+25% power and health to Warriors. Absorbs AOE damage for allies if attacked. Allies resist slow. Takes 25% less damage.",
-      "text_ru": "+25 % силы и здоровья для воинов. Подвергнувшись атаке \"по области\", поглощает урон союзников. Союзники сопротивляются замедлению. Получает на 25 % меньше урона.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1346",
@@ -12081,7 +11938,6 @@
     {
       "key": "aura_plus25power_for_bloodmages_and_demons_and_plus50health_for_demons_and_bloodmage_powergain_30pct",
       "text": "+25% Power for Blood Mages and Demons. +50% Health for Demons. Converts 30% of damage received into Power.",
-      "text_ru": "+25 % к силе для магов крови и демонов. +50 % к здоровью для демонов. Переводит 30 % полученного урона в силу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2162",
@@ -12160,7 +12016,6 @@
     {
       "key": "aura_plus25power_to_anders_and_circle_and_plus50power_to_self",
       "text": "25% power to Anders and Circle Mages, 50% power to Ser Pounce-A-Lot.",
-      "text_ru": "25 % к силе для Андерса и магов Круга; 50 % к силе для сера Ланселапа.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2078",
@@ -12233,7 +12088,6 @@
     {
       "key": "aura_plus25power_to_beasts_and_aura_plus25health_to_beasts_and_health_on_ally_death_50",
       "text": "Gains health when ally dies. +25% Health and Power for Creatures.",
-      "text_ru": "Приращивает здоровье при смерти союзника. +25 % к здоровью и силе для существ.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2270",
@@ -12285,7 +12139,6 @@
     {
       "key": "aura_plus25power_to_beasts_plus25power_to_fennec_and_hatred_vs_nugs",
       "text": "+25% power for Creatures. +25% bonus Power for Fennec. More likely to attack Nugs.",
-      "text_ru": "+25 % к силе для существ. +25 % дополнительной силы для фенека. чаще всего атакует нагов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2146",
@@ -12336,7 +12189,6 @@
     {
       "key": "aura_plus25power_to_demons_and_aura_plus25health_to_demons",
       "text": "+25% Health and Power to Demons.",
-      "text_ru": "+25 % к здоровью и силе для демонов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2366",
@@ -12382,7 +12234,6 @@
     {
       "key": "aura_plus25power_to_mages_and_aura_plus50health_to_inquisition_and_aura_dmg_resist_pct_25_personal",
       "text": "+25% Power to Mages. +50% Health to Inquisition. Takes 25% less damage.",
-      "text_ru": "+25 % к силе для магов. +50 % к здоровью для Инквизиции. Получает на 25 % меньше урона.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2362",
@@ -12462,7 +12313,6 @@
     {
       "key": "aura_plus25power_to_nobility_and_orlesians_and_plus75power_and_health_to_dukeprosper",
       "text": "+25% Power to Nobility and Orlesians. +75% Health and Power to Duke Prosper.",
-      "text_ru": "+25 % силы для орлесианцев и знати. +75 % силы и здоровья для герцога Проспера.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1494",
@@ -12536,7 +12386,6 @@
     {
       "key": "aura_plus25power_to_orlesian_and_rogues_and_hatred_vs_ferelden_and_qunari",
       "text": "+25% power to Orlesians and Rogues, More likely to attack Ferelden or Qunari",
-      "text_ru": "+25 % к силе для орлесианцев и разбойников; чаще всего атакует ферелденцев и кунари",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2114",
@@ -12591,7 +12440,6 @@
     {
       "key": "aura_plus25power_to_red_lyrium_and_aura_slow_resist_100_to_red_lyrium_and_hatred_mage",
       "text": "Grants slow immunity and +25% Power to Red Lyrium heroes. More likely to attack Mages.",
-      "text_ru": "Невосприимчивость к замедлению и +25 % к силе для краснолириумных героев. Чаще атакует магов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2318",
@@ -12647,7 +12495,6 @@
     {
       "key": "aura_plus25power_to_templar_and_hatred_bloodmage",
       "text": "+25% Power for Templars. More likely to attack Blood Mages.",
-      "text_ru": "+25 % силы для храмовников. Чаще атакует магов крови.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2650",
@@ -12698,7 +12545,6 @@
     {
       "key": "aura_plus25power_to_tevinter",
       "text": "+25% power to Tevinter allies.",
-      "text_ru": "+25 % силы для союзников-тевинтерцев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:29",
@@ -12765,7 +12611,6 @@
     {
       "key": "aura_plus25power_to_tevinter_and_25_health_venatori",
       "text": "+25% Power to Tevinter. +25% Health to Venatori.",
-      "text_ru": "+25 % силы для тевинтерцев. +25 % здоровья для венатори.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2570",
@@ -12834,7 +12679,6 @@
     {
       "key": "aura_plus25power_to_white_faction_and_minus10slowresistself_and_plus35slowresistallies",
       "text": "+25% Power for white faction. +35% slow resist only to allies. -10% slow resist to self.",
-      "text_ru": "+25 % к силе для \"белых\" героев. +35 % сопротивления к замедлению только для союзников. -10 % сопротивления к замедлению для себя.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1294",
@@ -12902,7 +12746,6 @@
     {
       "key": "aura_plus25stun_and_slow_resist_to_qunari_and_aura_plus25health_and_power_to_qunari",
       "text": "+25% stun and slow resist for Qunari. +25% Health and Power for Qunari.",
-      "text_ru": "+25 % сопротивления к оглушению и замедлению для союзников-кунари. +25 % здоровья и силы для кунари.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2214",
@@ -12954,7 +12797,6 @@
     {
       "key": "aura_plus30health_to_white_faction_plus30power_to_blue_faction_dmg_resist_pct_15_vs_apostates",
       "text": "+30% Health for white faction and +30% Power for blue faction allies. +15% damage resist vs Apostates for allies.",
-      "text_ru": "+30 % здоровья для союзников из «белой» фракции и +30 % силы для союзников из «синей» фракции. +15 % сопротивления урону против отступников для союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2866",
@@ -13029,7 +12871,6 @@
     {
       "key": "aura_plus30healthstacking_to_chantry_mages_inquisition_schmoop_and_allies_damresistfin_5k_and_allies_plus25damres_blackfaction_and_defender50",
       "text": "+30% Health for Chantry, Mages, Inquisition, and Schmooples (bonuses stack). Allies resist 5,000 damage per hit. Allies do +25% damage vs black faction. Absorbs medium AoE damage for allies when also attacked.",
-      "text_ru": "+30% здоровья церковникам, магам, инквизиции и Шмоплзу! (бонусы суммируются). Союзники выдерживают 5000 ед. ур. за удар. Союзники наносят +25% урона \"черным\". При атаке \"по области\", умеренно поглощает урон союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2938",
@@ -13108,7 +12949,6 @@
     {
       "key": "aura_plus30pct_bonus_damage_vs_ferelden_and_blighted",
       "text": "Deals 30% bonus damage vs Ferelden and Blighted",
-      "text_ru": "Наносит 30 % дополнительного урона ферелденцам и моровым героям",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2102",
@@ -13134,7 +12974,6 @@
     {
       "key": "aura_plus30power_30stunresist_to_dwarves_shabrytol_allies_gain_health_when_self_attacked_15minus_15power_to_inquisition_flank",
       "text": "+30% Power and +30% stun resist for Dwarves and Sha-Brytol (stacking). Allies gain small health when this unit is hit. -15% Power to Inquisition.",
-      "text_ru": "+30 % силы и +30 % сопротивления оглушению для гномов и ша-бритолов (суммируется). Союзники получают небольшую прибавку к здоровью при попадании по этому бойцу. -15 % силы для Инквизиции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2966",
@@ -13237,7 +13076,6 @@
     {
       "key": "aura_plus30power_to_rl_and_blackfaction_and_ally_med_powergain_on_allydeath_and_stealth_and_minus35stunres_to_inquisition",
       "text": "+30% Power for Red Lyrium and black faction (bonuses stack). Allies gain medium Power when any ally dies. Stealth: Attacks without triggering on-hit effects. -35% stun resist to Inquisition.",
-      "text_ru": "+30 % силы краснолириумным героям и \"черной\" фракции (бонусы суммируются). Умеренно приращивает силу союзников при гибели любого из них. Скрытность: атакует, не вызывая эффектов, возникающих при попадании. -35 % сопротивления оглушению для Инквизиции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2946",
@@ -13307,7 +13145,6 @@
     {
       "key": "aura_plus30power_to_tevinter_and_aura_heal_allies_when_self_death_75_and_allies_gain_power_on_self_death_75",
       "text": "On death, heals all allies a large amount and grants +75% Power to all allies. +30% Power for Tevinter.",
-      "text_ru": "Умирая, значительно лечит всех союзников и дает им 75 % силы. +30 % силы для тевинтерцев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2858",
@@ -13358,7 +13195,6 @@
     {
       "key": "aura_plus30power_to_white_faction_plus30health_to_blue_faction_dmg_resist_pct_15_vs_demons",
       "text": "+30% Health for blue faction and +30% Power for white faction allies. +15% damage resist vs Demons for allies.",
-      "text_ru": "+30 % здоровья для союзников из «синей» фракции и +30 % силы для союзников из «белой» фракции. +15 % сопротивления урону против демонов для союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2870",
@@ -13433,7 +13269,6 @@
     {
       "key": "aura_plus35_health_and_power_to_elves_and_plus50stunresist_to_elves_and_plus10damres_to_bluefaction",
       "text": "+35% Health and Power and +50% stun resist for Elves. +10% damage resist for blue faction.",
-      "text_ru": "+35 % здоровья и силы и +50 % сопротивления оглушению для эльфов. +10 % сопротивления урону для \"синей\" фракции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:158",
@@ -13485,7 +13320,6 @@
     {
       "key": "aura_plus35health_25stun_25powerdrain_and_25power_to_golem_and_blight_and_plus30_power_vs_blight",
       "text": "+35% Health for Golems and Blighted. +30% Power vs Blighted. +15% stun resist, +25% power drain resist, and +25% Power to Golems and Blighted.",
-      "text_ru": "+35 % здоровья големам и моровым героям. +30 % силы против моровых героев. +15 % сопротивления к оглушению, +25 % сопротивления вытягиванию силы и +25 % силы для моровых героев и големов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2446",
@@ -13573,7 +13407,6 @@
     {
       "key": "aura_plus35health_and_50power_to_qunari_and_plus50health_and_25power_to_arvaarad_and_plus10damres_to_qunari",
       "text": "+35% Health and +50% Power to Qunari, and an additional +50% Health and +25% Power to Arvaarad. +10% damage resist to Qunari allies.",
-      "text_ru": "+35 % здоровья и +50 % силы для кунари, а также дополнительно +50 % здоровья и +25 % силы для арваарада. +10 % сопротивления урону для союзников-кунари.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2498",
@@ -13690,7 +13523,6 @@
     {
       "key": "aura_plus35health_and_plus15pct_dmg_vs_mages_demons_and_health_on_enemy_death_15",
       "text": "+35% Health to allies. +15% damage vs Mages and Demons for allies. Allies gain 15% Health on enemy death.",
-      "text_ru": "+35 % здоровья для союзников. Союзники получают +15 % к урону против магов и демонов. +15 % здоровья союзникам при смерти врага.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2582",
@@ -13737,7 +13569,6 @@
     {
       "key": "aura_plus35health_and_plus35power_to_nobility_and_chantry",
       "text": "+35% health and power to Nobility and Chantry",
-      "text_ru": "+35 % здоровья и силы для знати и церковников",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2006",
@@ -13787,7 +13618,6 @@
     {
       "key": "aura_plus35health_and_power_to_ketojan_and_saarebas_and_plus50_stun_slow_and_powerdrain_resist_for_qunari",
       "text": "+35% Health and Power to Ketojan and Saarebas. +50% stun, slow, and power drain resist for Qunari allies.",
-      "text_ru": "+35 % к здоровью и силе для Кетоджана и саирабаза. +50 % к сопротивлению оглушению, замедлению и вытягиванию силы для союзников-кунари.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2502",
@@ -13843,7 +13673,6 @@
     {
       "key": "aura_plus35health_and_power_to_mages_orlesian_and_gainspower_and_heals_allies_on_enemydeath",
       "text": "+35% Health and Power for Mages and Orlesian. Heals allies a medium amount on enemy death. Huge Power gain on enemy death.",
-      "text_ru": "+35 % к силе и здоровью для магов и орлесианцев. При гибели врага умеренно лечит союзников. Неимоверно приращивает силу при смерти врага.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2954",
@@ -13904,7 +13733,6 @@
     {
       "key": "aura_plus35health_to_Orlesian_minus10_power_to_demons_self_gain_power_when_self_attacked_5",
       "text": "+35% Health to Orlesians. Gains a very small amount of Power when attacked. -10% Power to Demons.",
-      "text_ru": "+35 % здоровья для орлесианцев. Подвергнувшись атаке, очень незначительно приращивает силу. -10 % силы для демонов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2546",
@@ -13978,7 +13806,6 @@
     {
       "key": "aura_plus35health_to_allies_and_plus35power_to_apostates_and_gain_health_when_enemy_dies",
       "text": "35% health to allies, 35% power to Apostates, Gains health when enemy dies.",
-      "text_ru": "35 % к здоровью для союзников, 35 % к силе для отступников, приращивает здоровье при смерти врага.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:378",
@@ -14055,7 +13882,6 @@
     {
       "key": "aura_plus35health_to_avvar_dmg_resist_pct_10_50slow_resist_to_warriors_and_plus25pct_power_vs_inquisition_to_allies",
       "text": "+35% Health for Avvar allies. +10% damage resist and +50% slow resist for Warriors. +25% damage vs Inquisition for allies.",
-      "text_ru": "+35 % здоровья для союзников-авваров. +10 % сопротивления урону и +50 % сопротивления замедлению для воинов. +25 % урона против Инквизиции для союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2682",
@@ -14111,7 +13937,6 @@
     {
       "key": "aura_plus35health_to_blight_flank_hatred_warden_fear_morrigan",
       "text": "+35% Health for Blighted. More likely to attack the back row. More likely to attack Grey Wardens. Less likely to attack Morrigan.",
-      "text_ru": "+35 % здоровья для моровых героев. Чаще атакует заднюю шеренгу. Чаще атакует Серых Стражей. Реже атакует Морриган.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2878",
@@ -14172,7 +13997,6 @@
     {
       "key": "aura_plus35health_to_blighted_and_plus35bonushealth_to_nugly",
       "text": "+35% health to Blighted, +35% bonus health to Nugly Sweater Nugs",
-      "text_ru": "+35 % к здоровью для моровых героев; +35 % доп. здоровья и силы для нагов в нажьих свитерах",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2126",
@@ -14217,7 +14041,6 @@
     {
       "key": "aura_plus35health_to_chantry_and_plus15health_to_seekers_and_plus25power_to_regalyan_and_defender15_and_flank_and_minus25power_to_mages",
       "text": "+35% Health for Chantry, and extra +15% Health for Seekers. +25% Power for Regalyan. Absorbs 15% AoE damage for allies when attacked also. -25% Power to enemy Mages. More likely to attack the back row.",
-      "text_ru": "+35 % здоровья для церковников и дополнительно +15 % здоровья для Искателей. +25 % силы для Регальяна. Подвергнувшись атаке \"по области\", поглощает 15 % урона союзников. -25 % силы для вражеских магов. Чаще атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2706",
@@ -14355,7 +14178,6 @@
     {
       "key": "aura_plus35health_to_circle_and_plus25health_to_wynne_and_plus20health_to_allies_when_hero_attacked_and_gainspower_on_ally_death",
       "text": "+35% Health to Circle, and additional +25% Health to Wynne. Small Health gain to allies when hero is attacked. Gains Power when allies die.",
-      "text_ru": "+35 % здоровья для героев из Круга и дополнительно +25 % здоровья для Винн. Небольшой прирост здоровья для союзников, когда герой атакован. Приращивает силу при смерти союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2522",
@@ -14435,7 +14257,6 @@
     {
       "key": "aura_plus35health_to_dwarves",
       "text": "+35% health to Dwarves.",
-      "text_ru": "+35 % здоровья для гномов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1378",
@@ -14480,7 +14301,6 @@
     {
       "key": "aura_plus35health_to_dwarves_and_golems",
       "text": "35% health to Dwarves and Golems.",
-      "text_ru": "35 % к здоровью для гномов и големов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1990",
@@ -14529,7 +14349,6 @@
     {
       "key": "aura_plus35health_to_ferelden",
       "text": "35% health to Ferelden",
-      "text_ru": "35 % к здоровью для ферелденцев",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1486",
@@ -14574,7 +14393,6 @@
     {
       "key": "aura_plus35health_to_qunari_35powerdrainresist_to_allies_plus15pct_power_vs_mages_and_inquisition_and_strong_hatred_mage_plus_resist_saarath",
       "text": "+35% Health for Qunari. +35% power drain resist for allies. +15% Power vs Mages and Inquisition for allies (stacking). +75% stun and slow resist for Saarath Very likely to attack Mages.",
-      "text_ru": "+35 % здоровья для кунари. +35 % сопротивления вытягиванию силы для союзников. +15 % силы против магов и Инквизиции для союзников (бонусы суммируются). +75 % сопротивления оглушению и замедлению для Саирата. Гораздо чаще атакует магов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2674",
@@ -14640,7 +14458,6 @@
     {
       "key": "aura_plus35health_to_spirits_and_plus35power_vs_spirits_personal_and_power_on_ally_death_25",
       "text": "+35% Health for Spirits. +35% damage vs Spirits. Gains a small amount of Power on ally death.",
-      "text_ru": "+35 % здоровья для духов. +35 % урона против духов. Ненамного приращивает силу при смерти союзника.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:394",
@@ -14696,7 +14513,6 @@
     {
       "key": "aura_plus35health_to_tevinter",
       "text": "35% health to Tevinter",
-      "text_ru": "35 % к здоровью для тевинтерцев",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2158",
@@ -14741,7 +14557,6 @@
     {
       "key": "aura_plus35healthandpower_and_plus50stunandslowresist_to_blighted_and_powerdrainresist25_for_allies",
       "text": "+35% Health and Power and +50% slow and stun resist for Blighted. +25% power drain resist for allies.",
-      "text_ru": "+35 % здоровья и силы и +50 % сопротивления замедлению и оглушению для моровых героев. +25 % сопротивления вытягиванию силы для союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1946",
@@ -14798,7 +14613,6 @@
     {
       "key": "aura_plus35pct_power_vs_chantry_personal_and_aura_dmg_resist_pct_25_personal",
       "text": "Deals 35% bonus damage to Chantry, Takes 25% less damage.",
-      "text_ru": "Наносит 35 % дополнительного урона церковникам; получает на 25 % меньше урона.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2058",
@@ -14824,7 +14638,6 @@
     {
       "key": "aura_plus35pct_power_vs_inquisition_and_aura_plus25stunresist_to_orlesians_and_redlyrium",
       "text": "+35% Power vs Inquisition. +25% slow and stun resist for Orlesians and Red Lyrium.",
-      "text_ru": "+35 % силы против Инквизиции. +25 % сопротивления замедлению и оглушению для орлесианцев и краснолириумных героев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2826",
@@ -14855,7 +14668,6 @@
     {
       "key": "aura_plus35pct_power_vs_inquisition_personal_and_aura_personal_stun_resist_100_25hp_orlesian_rogue",
       "text": "+25% Health and Power for Orlesians and Rogues (stacking). Immune to stun. +35% damage vs Inquisition.",
-      "text_ru": "+25 % к здоровью и силе для орлесианцев и разбойников (бонусы суммируются). Не дает себя оглушить. +35 % к здоровью против Инквизиции.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2234",
@@ -14928,7 +14740,6 @@
     {
       "key": "aura_plus35pct_power_vs_qunari_and_plus25pct_power_to_outlaws_rogues_and_flank_and_stun_resist_100_and_plus10dr_to_outlaws_and_minus50stun_to_qunari",
       "text": "+35% damage vs Qunari. Immune to stun. +25% Power for Outlaws and Rogues. +10% damage resist for Outlaws. -50% stun resist to Qunari. More likely to attack the back row.",
-      "text_ru": "+35 % урона против кунари. Не дает себя оглушить. +25 % силы для изгоев и разбойников. +10 % сопротивления урону для изгоев. -50 % сопротивления оглушению для кунари. Чаще атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2070",
@@ -15010,7 +14821,6 @@
     {
       "key": "aura_plus35pct_power_vs_wardens_personal_and_aura_power_drain_resist_100_to_tevinter",
       "text": "+100% power drain resist for Tevinter. +35% damage vs Grey Wardens.",
-      "text_ru": "+100 % сопротивления вытягиванию силы для тевинтерцев. +35 % урона Серым Стражам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2246",
@@ -15041,7 +14851,6 @@
     {
       "key": "aura_plus35power",
       "text": "+35% power to allies.",
-      "text_ru": "+35 % силы для союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6104",
@@ -15077,7 +14886,6 @@
     {
       "key": "aura_plus35power_and_aura_plus25pct_power_vs_beasts_personal_and_aura_plus50health_to_blue_faction",
       "text": "+35% Power to allies. +50% Health to Blue Faction. Deals bonus damage to Creatures.",
-      "text_ru": "+35 % силы для союзников. +50 % здоровья для \"синих\" героев. Наносит дополнительный урон существам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2378",
@@ -15143,7 +14951,6 @@
     {
       "key": "aura_plus35power_and_aura_plus35health_and_aura_plus25pct_power_vs_beasts_personal",
       "text": "+35% health and power to allies. Deals bonus damage to Creatures.",
-      "text_ru": "+35 % к здоровью и силе для союзников. Наносит дополнительный урон существам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2342",
@@ -15186,7 +14993,6 @@
     {
       "key": "aura_plus35power_and_aura_plus50health_to_red_faction_and_aura_plus25pct_power_vs_beasts_personal",
       "text": "+35% Power to allies. +50% Health to Red Faction. Deals bonus damage to Creatures.",
-      "text_ru": "+35 % силы для союзников. +50 % здоровья для \"красных\" героев. Наносит дополнительный урон существам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2422",
@@ -15252,7 +15058,6 @@
     {
       "key": "aura_plus35power_and_plus10damres_for_mages_and_plus35health_for_inquisition_and_plus25pdresist_stack_for_mages_inq_immunity_self",
       "text": "+35% Power and +10% damage resist for Mages. +35% Health for Inquisition. +25% power drain resist for Mages and Inquisition (stacking), immunity for self.",
-      "text_ru": "+35 % к силе и +10 % к сопротивлению урону для магов. +35 % здоровья Инквизиции. +25 % к сопротивлению вытягиванию силы у магов и инквизиторов (суммируется), невосприимчивость для себя.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2958",
@@ -15327,7 +15132,6 @@
     {
       "key": "aura_plus35power_and_plus25health_to_apostates_and_allies_gainpower_on_selfattack_25",
       "text": "+35% Power to allies. +25% Health to Apostates. Allies gain a small amount of Power when hero is attacked.",
-      "text_ru": "+35 % силы для союзников. +25 % здоровья для отступников. Когда герой атакован, у союзников незначительно повышается сила.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1834",
@@ -15393,7 +15197,6 @@
     {
       "key": "aura_plus35power_and_plus50pdresist_and_plus75slowresist_to_inquisition_and_elves",
       "text": "+35% Power, +50% power drain resist, and +75% slow resist to Inquisition and Elves.",
-      "text_ru": "+35 % силы, +50 % сопротивления вытягиванию силы и +75 % сопротивления замедлению для Инквизиции и эльфов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2514",
@@ -15448,7 +15251,6 @@
     {
       "key": "aura_plus35power_to_beasts",
       "text": "+35% Power to Creatures",
-      "text_ru": "+35 % силы для существ",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2142",
@@ -15493,7 +15295,6 @@
     {
       "key": "aura_plus35power_to_blighted",
       "text": "+35% Power to Blighted",
-      "text_ru": "+35 % силы для моровых героев",
       "occurrences": [
         {
           "semantic_recipe_key": "440:314",
@@ -15571,7 +15372,6 @@
     {
       "key": "aura_plus35power_to_blighted_and_plus50slowresist_for_blighted_and_plus25_health_and_power_for_csq_and_snowball",
       "text": "+35% Power and +50% slow resist for Blighted. +25% Health and Power for Corrupted Spider Queen and Snowball.",
-      "text_ru": "+35 % силы и +50 % сопротивления замедлению для моровых героев. +25 % здоровья и силы для оскверненной паучихи и Снежка.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1966",
@@ -15651,7 +15451,6 @@
     {
       "key": "aura_plus35power_to_circle",
       "text": "+35% power to Circle",
-      "text_ru": "+35 % силы для Круга",
       "occurrences": [
         {
           "semantic_recipe_key": "440:390",
@@ -15707,7 +15506,6 @@
     {
       "key": "aura_plus35power_to_red_faction",
       "text": "+35% Power to Red Faction",
-      "text_ru": "+35 % силы для \"красной\" фракции",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1122",
@@ -15763,7 +15561,6 @@
     {
       "key": "aura_plus35power_to_red_faction_50h_p_ravager_on_death_and_25power_health_to_drake",
       "text": "+35% Power for Red faction. +25% Health and Power for Drake. +50% Health and Power for Highland Ravager when this unit dies.",
-      "text_ru": "+35 % силы для \"красных\" героев. +25 % здоровья и силы для драконов. +50 % здоровья и силы для нагорного губителя при смерти этого героя.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:302",
@@ -15839,7 +15636,6 @@
     {
       "key": "aura_plus35power_to_red_factiona_and_aura_dmg_resist_pct_10_and_power_gain_when_self_hit_50",
       "text": "+35% Power to Red Faction. Take 10% less damage. Gains power when attacked.",
-      "text_ru": "+35 % силы для \"красных\" героев. Получает на 10 % меньше урона. Приращивает силу, подвергнувшись атаке.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2402",
@@ -15901,7 +15697,6 @@
     {
       "key": "aura_plus35power_to_rogues_35stunresist_to_inquisition_flank",
       "text": "+35% Power for Rogues. +35% stun resist for Inquisition allies. More likely to attack the back row.",
-      "text_ru": "+35 % силы для разбойников. +35 % сопротивления оглушению для союзников из Инквизиции. Чаще атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2662",
@@ -15957,7 +15752,6 @@
     {
       "key": "aura_plus35power_to_tevinter_and_bm_powergain_allies_to_self_pct10_and_plus5pct_damres_stack_to_tev_bm_and_black_faction",
       "text": "+35% Power for Tevinter. +5% damage resist to Tevinter, Blood Mages, and black faction (bonuses stack). Converts 10% of damage received by allies into self Power.",
-      "text_ru": "+35 % силы для тевинтерцев. +5 % сопротивления урону для тевинтерцев, магов крови и \"черной\" фракции (бонусы суммируются). Переводит 10 % урона, полученного союзниками, в свою силу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2166",
@@ -16008,7 +15802,6 @@
     {
       "key": "aura_plus40_health_and_power_to_dwarves_and_plus10_health_and_power_to_shabrytol",
       "text": "+40% Health and Power for Dwarves, additional +10% for the Sha-brytol.",
-      "text_ru": "+40 % здоровья и силы для гномов и дополнительно +10 % для ша-бритолов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2898",
@@ -16099,7 +15892,6 @@
     {
       "key": "aura_plus50_powerdrain_reist_to_venatori_and_25_power_venatori",
       "text": "+50% power drain resist to allies. +25% Power to Venatori. More likely to attack back row.",
-      "text_ru": "+50 % сопротивляемости к вытягиванию силы для союзников. +25 % силы для венатори. Чаще всего атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2574",
@@ -16155,7 +15947,6 @@
     {
       "key": "aura_plus50_stun_slow_pdresist_to_self_cass_byron_and_heal50_all_on_allydeath_and_plus50power_vs_bloodmage",
       "text": "+50% stun, slow, and power drain resist for self, Cassandra, and Byron. Heals all living allies a medium amount when an ally dies. +50% damage vs Blood Mages.",
-      "text_ru": "+50 % сопротивления оглушению, замедлению и вытягиванию силы для себя, Кассандры и Байрона. При гибели союзника умеренно лечит всех живых союзников. +50 % урона против магов крови.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2702",
@@ -16191,7 +15982,6 @@
     {
       "key": "aura_plus50_stun_slow_resist_and_plus35_handp_to_orles_reaver_and_defender50_and_gainpower5_onhit_and_plus25_dam_and_damres_vs_inquis_squad",
       "text": "+50% stun and slow resist. +35% Health and Power for Orlesians and Reavers. Absorbs 50% AoE damage for allies when attacked also. Gains very small Power when hit. +25% damage and damage resist vs Inquisition for squad.",
-      "text_ru": "+50 % сопротивления оглушению и замедлению. +35 % здоровья и силы для орлесианцев и потрошителей. Подвергнувшись атаке \"по области\", поглощает 50 % урона союзников. Получив удар, очень незначительно приращивает силу. +25 % урона и сопротивления урону для членов Инквизиции в отряде.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2694",
@@ -16292,7 +16082,6 @@
     {
       "key": "aura_plus50health_for_tevinter_and_plus50power_for_venatori_and_selfslowimmune_and_flank",
       "text": "+50% Health for Tevinter. +25% Power for Venatori. Immune to slow. More likely to attack the back row.",
-      "text_ru": "+50 % здоровья для тевинтерцев. +25 % силы для венатори. Не дает себя замедлить. Чаще атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2910",
@@ -16384,7 +16173,6 @@
     {
       "key": "aura_plus50health_mages_spirits_and_plus25damage_vs_blight_and_plus35handp_pounce_and_minus50stunres_circle",
       "text": "+50% Health for Mages and Spirits. +25% damage vs Blight. +35% Health and Power for Ser Pounce-A-Lot. -50% stun resist to Circle.",
-      "text_ru": "+50 % здоровья для магов и духов. +25 % урона против моровых героев. +35 % здоровья и силы для сера Ланселапа. -50 % сопротивления оглушению для Круга.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:374",
@@ -16469,7 +16257,6 @@
     {
       "key": "aura_plus50health_to_beasts",
       "text": "+50% Health to Creatures",
-      "text_ru": "+50 % здоровья для существ",
       "occurrences": [
         {
           "semantic_recipe_key": "440:398",
@@ -16525,7 +16312,6 @@
     {
       "key": "aura_plus50health_to_beasts_and_aura_dmg_resist_pct_10_to_goats",
       "text": "Goats take 10% less damage. +50% Health to Creatures",
-      "text_ru": "Козы получают на 10 % меньше урона. +50 % к здоровью для существ.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2274",
@@ -16570,7 +16356,6 @@
     {
       "key": "aura_plus50health_to_beasts_and_aura_plus_100stunresist_to_goats",
       "text": "Grants Stun immunity to Goats. +50% Health to Creatures",
-      "text_ru": "Невосприимчивость к оглушению для коз. +50 % к здоровью для существ.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2282",
@@ -16621,7 +16406,6 @@
     {
       "key": "aura_plus50health_to_beasts_and_aura_power_drain_resist_100_to_goats",
       "text": "Grants power drain immunity to Goats. +50% Health for Creatures.",
-      "text_ru": "Невосприимчивость к вытягиванию силы для коз. +50 % к здоровью для существ.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2286",
@@ -16672,7 +16456,6 @@
     {
       "key": "aura_plus50health_to_beasts_power_gain_when_hit_15_plus50pct_damage_vs_dragons_to_allies_and_slow_targeting",
       "text": "+50% Health for Creatures. Gains 15% Power when hit. +50% damage vs. Dragons for allies. More likely to attack the slowest enemy.",
-      "text_ru": "+50 % здоровья для существ. Получает +15 % силы, подвергнувшись атаке. +50 % урона драконам для союзников. Чаще атакует врага с минимальной скоростью.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2618",
@@ -16733,7 +16516,6 @@
     {
       "key": "aura_plus50health_to_blight_and_plus15_dmg_vs_warden_for_blight_and_pdresist_for_blight_andplus35pct_power_vs_lc",
       "text": "+35% damage vs large creatures. +50% Health and +25% power drain resist for Blighted. +15% damage vs Grey Wardens for Blighted.",
-      "text_ru": "+35 % урона против крупных существ. +50 % здоровья и +25 % сопротивления вытягиванию силы для моровых героев. +15 % урона против Серых Стражей для моровых героев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:358",
@@ -16794,7 +16576,6 @@
     {
       "key": "aura_plus50health_to_blighted_and_taunt",
       "text": "+50% Health to Blighted.",
-      "text_ru": "+50 % здоровья для моровых героев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1238",
@@ -16850,7 +16631,6 @@
     {
       "key": "aura_plus50health_to_blood_mages_and_demons_and_powergain_on_ally_hit_and_personal_powerdrainresist",
       "text": "+50% Health to Blood Mages and Demons. Immune to power drain. Gains a small amount of power when allies are attacked.",
-      "text_ru": "+50 % здоровья для магов крови и демонов. Невосприимчивость к вытягиванию силы. Когда союзники атакованы, у героя незначительно повышается сила.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1250",
@@ -16922,7 +16702,6 @@
     {
       "key": "aura_plus50health_to_dwarves_and_rogues_and_plus75power_to_brogandace_and_plus15dmgresist",
       "text": "+15% damage resist. +50% Health for Dwarves and Rogues. +75% Power for Brogan Dace. +50% Slow Resistance to Jerrik Dace",
-      "text_ru": "+15 % сопротивления урону. +50 % здоровья для гномов и разбойников. +75 % силы для Брогана Дейса. +50 % сопротивления к замедлению для Джеррика Дейса.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1950",
@@ -17012,7 +16791,6 @@
     {
       "key": "aura_plus50health_to_ferelden",
       "text": "+50% health to Ferelden",
-      "text_ru": "+50 % здоровья для ферелденцев",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1298",
@@ -17057,7 +16835,6 @@
     {
       "key": "aura_plus50health_to_inquisition_60power_100resist_powerdrain_to_bianca_and_flank",
       "text": "+50% Health for Inquisition. +60% Power and +100% power drain resist for Bianca. More likely to attack the back row.",
-      "text_ru": "+50 % здоровья союзникам Инквизиции. +60 % силы и +100 % сопротивления вытягиванию силы для Бьянки. Чаще атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:226",
@@ -17137,7 +16914,6 @@
     {
       "key": "aura_plus50health_to_inquisition_and_aura_plus35power_to_red_faction_and_aura_personal_stun_resist_100_and_aura_personal_slow_resist",
       "text": "+50% Health to Inquisition and +35% Power to Red Faction. Immune to Stun and Slow.",
-      "text_ru": "+50 % здоровья для Инквизиции и +35 % силы для \"красных\" героев. Не дает себя оглушить и замедлить.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2382",
@@ -17236,7 +17012,6 @@
     {
       "key": "aura_plus50health_to_mages_and_aura_plus100stunresist_to_circle_and_aura_slow_resist_50_to_apostate",
       "text": "Grants Stun immunity to Circle and Slow immunity to Apostates. +50% Health to Mages.",
-      "text_ru": "Дает Кругу невосприимчивость к оглушению, а отступникам — к замедлению. +50 % к здоровью для магов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2258",
@@ -17287,7 +17062,6 @@
     {
       "key": "aura_plus50health_to_outlaws_and_aura_plus50health_to_elves_and_plus25power_to_allies_on_enemy_death_and_plus25powerdrainresist_to_outlaws",
       "text": "+50% Health to Outlaws and Elves. +25% power drain resist to Outlaws. +25% Power to allies on enemy death.",
-      "text_ru": "+50 % здоровья для изгоев и эльфов. +25 % сопротивления вытягиванию силы для изгоев. +25 % силы для союзников при смерти врага.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2226",
@@ -17347,7 +17121,6 @@
     {
       "key": "aura_plus50health_to_qunari",
       "text": "+50% health to Qunari allies.",
-      "text_ru": "+50 % здоровья для союзников-кунари.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1886",
@@ -17392,7 +17165,6 @@
     {
       "key": "aura_plus50health_to_qunari_and_aura_power_drain_resist_100_to_qunari",
       "text": "+50% Health to Qunari. Grants Power Drain immunity to Qunari.",
-      "text_ru": "+50 % здоровья для кунари. Невосприимчивость к вытягиванию силы для кунари.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1634",
@@ -17443,7 +17215,6 @@
     {
       "key": "aura_plus50health_to_red_lyrium_and_aura_plus25pct_power_vs_mages_personal",
       "text": "+50% health to Red Lyrium. Deals bonus damage to Mages.",
-      "text_ru": "+50 % к здоровью для краснолириумных героев. Наносит дополнительный урон магам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2358",
@@ -17494,7 +17265,6 @@
     {
       "key": "aura_plus50health_to_spirits",
       "text": "+50% health to Spirits.",
-      "text_ru": "+50 % здоровья для духов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2298",
@@ -17539,7 +17309,6 @@
     {
       "key": "aura_plus50health_to_templars",
       "text": "+50% health to Templars",
-      "text_ru": "+50 % здоровья для храмовников",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1426",
@@ -17584,7 +17353,6 @@
     {
       "key": "aura_plus50health_to_templars_and_plus25pct_vs_mages",
       "text": "+50% Health to Templars, +25% Damage vs Mages",
-      "text_ru": "+50 % здоровья для храмовников, +25 % урона против магов",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1322",
@@ -17635,7 +17403,6 @@
     {
       "key": "aura_plus50health_to_wardens_and_aura_plus50power_to_ferelden_and_aura_plus25pct_power_vs_blight_personal",
       "text": "50% health to Grey Wardens. 50% power to Ferelden. Deals bonus damage to Blighted.",
-      "text_ru": "50 % к здоровью для Серых Стражей. 50 % к силе для ферелденцев. Наносит дополнительный урон моровым героям.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1290",
@@ -17710,7 +17477,6 @@
     {
       "key": "aura_plus50health_to_wardens_and_bonus_damage_to_blighted",
       "text": "50% health to Wardens, Deals bonus damage to Blighted.",
-      "text_ru": "50 % к здоровью для Серых Стражей; наносит дополнительный урон моровым героям.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:354",
@@ -17772,7 +17538,6 @@
     {
       "key": "aura_plus50health_to_warriors_and_plus25_stunresist_to_inquisition_and_plus15_damage_vs_demon_for_squad_and_brave_targeting",
       "text": "+50% Health for Warriors. +25% stun resist for Inquisition. +15% damage vs Demons for allies. Much more likely to attack the highest power enemy.",
-      "text_ru": "+50 % здоровья для воинов. +25 % сопротивления оглушению для Инквизиции. +15 % урона против демонов для союзников. Гораздо чаще атакует самого сильного врага.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2690",
@@ -17833,7 +17598,6 @@
     {
       "key": "aura_plus50p_25h_to_qunari_plus75p_h_to_triumv_plus50_pd_stun__slow_resist_Tamassran_and_allies_gain_health_when_self_attacked_15",
       "text": "+25% Health and +50% Power for Qunari. +75% Health and Power for Triumvirate. +50% power drain, stun, and slow resist for Tamassran. Allies gain 15% Health when this unit is attacked.",
-      "text_ru": "+25 % здоровья и +50 % силы для кунари. +75 % силы и здоровья для Триумвирата. +50 % сопротивления вытягиванию силы, оглушению и замедлению для тамаззран. Подвергнувшись атаке, повышает здоровье союзников на 15 %.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2626",
@@ -17938,7 +17702,6 @@
     {
       "key": "aura_plus50power_50power_drain_resist_to_dwarf_damage15_resist_25power_vs_blighted_35health_to_renn",
       "text": "+50% Power and +50% power drain resist for Dwarves. +35% Health for Renn. +15% damage resist and +25% bonus damage vs Blighted for allies.",
-      "text_ru": "+50 % силы и +50 % сопротивления вытягиванию силы для гномов. +35 % здоровья для Ренна. +15 % сопротивления урону и +25 % дополнительного урона против моровых героев для союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2962",
@@ -18023,7 +17786,6 @@
     {
       "key": "aura_plus50power_and_plus50drainresist_to_wardens_and_plus15damage_vs_blighted_to_wardens_and_plus100damage_vs_rendonhowe",
       "text": "+50% Power and power drain resist to Grey Wardens. +15% damage to Grey Wardens against Blighted. +100% damage against Arl Rendon Howe.",
-      "text_ru": "+50 % силы и сопротивления вытягиванию силы для Серых Стражей. +15 % к урону против моровых героев для Серых Стражей. +100 % к урону против эрла Рендона Хоу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2518",
@@ -18079,7 +17841,6 @@
     {
       "key": "aura_plus50power_to_Orlesian_and_Nobility_aura_plus35_power_vs_EmpressCelene_aura_plus15power_to_warriors_aura_flank",
       "text": "+50% Power to Orlesians and Nobility. +35% damage vs. Empress Celene. +15% Power to Warriors. More likely to attack the back row.",
-      "text_ru": "+50 % силы для орлесианцев и знати. +35 % урона против императрицы Селины. +15 % силы для воинов. Чаще атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2538",
@@ -18163,7 +17924,6 @@
     {
       "key": "aura_plus50power_to_apostates_and_aura_plus35pct_power_vs_templars_personal",
       "text": "50% power to Apostates. Deals more damage vs Templars.",
-      "text_ru": "50 % к силе для отступников. Наносит больше урона храмовникам.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2370",
@@ -18214,7 +17974,6 @@
     {
       "key": "aura_plus50power_to_apostates_and_bonus_damage_vs_blighted",
       "text": "50% power to Apostates, Deals bonus damage to Blighted.",
-      "text_ru": "50 % к силе для отступников; наносит дополнительный урон моровым героям.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:342",
@@ -18276,7 +18035,6 @@
     {
       "key": "aura_plus50power_to_apostates_and_inquisition_and_plus35health_to_allies_and_minus30power_to_redlyrium_and_power_and_health_gain_on_enemy_death",
       "text": "+50% Power to Apostates and Inquisition. +35% Health to all allies. Gains Health and Power when enemy dies. -30% Power to Red Lyrium enemies.",
-      "text_ru": "+50 % силы для отступников и Инквизиции. +35 % здоровья для всех союзников. Приращивает силу и здоровье при смерти врага. -30 % силы для краснолириумных врагов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2506",
@@ -18369,7 +18127,6 @@
     {
       "key": "aura_plus50power_to_avvar_power_on_ally_death_20_health_on_enemy_death_15_minus15_power_to_mages_and_hatred_tevinter_personal",
       "text": "+50% Power for Avvar allies. Gains small Power on ally death. Allies gain small Health on enemy death. -15% Power to Mages. More likely to attack Tevinter heroes.",
-      "text_ru": "+50 % силы для союзников-авваров. Ненамного приращивает силу при смерти союзника. При смерти врага у союзников ненамного повышается здоровье. -15 % силы для магов. Чаще атакует тевинтерцев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2678",
@@ -18453,7 +18210,6 @@
     {
       "key": "aura_plus50power_to_beasts_and_aura_slow_resist_100_to_goats",
       "text": "Grants Slow immunity to Goats. +50% Power to Creatures",
-      "text_ru": "Дает козам невосприимчивость к замедлению. +50 % к силе для существ.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2278",
@@ -18504,7 +18260,6 @@
     {
       "key": "aura_plus50power_to_blighted_and_rl_and_aura_plus35pct_power_vs_wardens_and_inquisition_personal_and_health_on_ally_and_enemy_death_25_resist_deo",
       "text": "+50% Power to Blighted, Red Lyrium. Bonus damage to Wardens, Inquisition. Gain health on any hero death.+50% stun, slow, and powerdrain resist to Dragon of the Elder One",
-      "text_ru": "+50 % силы для моровых, краснолириумных героев. Дополнительный урон Серым Стражам, Инквизиции. Приращивает здоровье при смерти любого героя.+50 % сопротивления оглушению, замедлению и вытягиванию силы для Дракона Старшего",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2390",
@@ -18569,7 +18324,6 @@
     {
       "key": "aura_plus50power_to_blood_mages_and_flank_and_power_drain_immune",
       "text": "Immune to power drain. +50% Power to Blood Mages. Usually attacks the back row.",
-      "text_ru": "не дает вытянуть у себя силу. +50 % силы магам крови. Как правило, атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1934",
@@ -18637,7 +18391,6 @@
     {
       "key": "aura_plus50power_to_chantry",
       "text": "+50% power to Chantry allies.",
-      "text_ru": "+50 % силы для союзников-церковников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1314",
@@ -18693,7 +18446,6 @@
     {
       "key": "aura_plus50power_to_chantry_and_aura_dmg_resist_pct_10_and_plus50_stun_and_slow_resist_to_chantry_and_plus25_health_to_schmooples",
       "text": "+50% Power, stun and slow resist for Chantry. +25% Health for Schmooples. +10% damage resist for allies.",
-      "text_ru": "+50 % силы, сопротивления оглушению и замедлению для церковников. +25 % здоровья для Шмоплза. +10 % сопротивления урону для союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:334",
@@ -18768,7 +18520,6 @@
     {
       "key": "aura_plus50power_to_chantry_and_orlesian_and_aura_dmg_resist_pct_15",
       "text": "+50% power to Chantry and Orlesian, Allies take 15% less damage.",
-      "text_ru": "+50 % силы для церковников и орлесианцев; союзники получают на 15 % меньше урона.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6240",
@@ -18817,7 +18568,6 @@
     {
       "key": "aura_plus50power_to_darkspawn_and_dmg_resist_pct10_to_blighted",
       "text": "+50% Power and +10% damage resist for Blighted.",
-      "text_ru": "+50 % силы и +10 % сопротивления урону для моровых героев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1830",
@@ -18862,7 +18612,6 @@
     {
       "key": "aura_plus50power_to_demons",
       "text": "+50% power to Demons",
-      "text_ru": "+50 % к силе для демонов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1818",
@@ -18907,7 +18656,6 @@
     {
       "key": "aura_plus50power_to_demons_and_plus15power_vs_mages_and_spirits_and_minus25power_to_mages_and_spirits",
       "text": "+50% Power for Demons. +15% Power vs Mages and Spirits. -25% Power to Mages and Spirits.",
-      "text_ru": "+50 % силы для демонов. +15 % силы против магов и духов. -25 % силы для магов и духов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2338",
@@ -18985,7 +18733,6 @@
     {
       "key": "aura_plus50power_to_dwarves",
       "text": "+50% power to Dwarves.",
-      "text_ru": "+50 % к силе для гномов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1362",
@@ -19030,7 +18777,6 @@
     {
       "key": "aura_plus50power_to_dwarves_and_Flank_and_aura_plus50pct_power_vs_dwarves_personal",
       "text": "+50% Power to Dwarves. +50% damage vs Dwarves. Usually attacks the back row.",
-      "text_ru": "+50 % силы для гномов. +50 % к урону против гномов. Обычно атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1942",
@@ -19086,7 +18832,6 @@
     {
       "key": "aura_plus50power_to_dwarves_and_aura_plus50health_to_dwarves_and_aura_dmg_resist_pct_25_vs_mages_personal",
       "text": "+50% Health and Power to Dwarves. Takes less damage vs. Mages",
-      "text_ru": "+50 % здоровья и силы для гномов. Получает меньше урона от магов",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2418",
@@ -19143,7 +18888,6 @@
     {
       "key": "aura_plus50power_to_dwarves_and_power_gain_self_hit_30_and_heal_all_self_death_50",
       "text": "+50% Power for Dwarves. Small power gain when attacked. Heals all allies a medium amount on death.",
-      "text_ru": "+50% силы для гномов. Ненамного приращивает силу, подвергнувшись атаке. При смерти умеренно лечит всех союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1806",
@@ -19199,7 +18943,6 @@
     {
       "key": "aura_plus50power_to_elves",
       "text": "50% power to Elves",
-      "text_ru": "50 % силы для эльфов",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1374",
@@ -19244,7 +18987,6 @@
     {
       "key": "aura_plus50power_to_elves_power_on_ally_death_25_plus400health_power_to_drake_and_minus25_power_to_orlesian",
       "text": "+50% Power for Elves. +400% Health and Power for Drake. Gains 25% Power on ally death. -25% Power to Orlesian enemies.",
-      "text_ru": "+50 % силы для эльфов. +400 % здоровья и силы для героя \"Дракон\". Получает 25 % силы при смерти союзника. -25 % силы для врагов-орлесианцев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2614",
@@ -19343,7 +19085,6 @@
     {
       "key": "aura_plus50power_to_nugs_and_aura_plus50health_to_nugs",
       "text": "+50% Health and Power to Nugs.",
-      "text_ru": "+50 % здоровья и силы для нагов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2266",
@@ -19389,7 +19130,6 @@
     {
       "key": "aura_plus50power_to_outlaw_and_power_on_ally_and_enemy_death_50",
       "text": "+50% Power to Outlaws. Gains power when any hero dies.",
-      "text_ru": "+50 % силы для изгоев. Приращивает силу при смерти любого героя.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1502",
@@ -19440,7 +19180,6 @@
     {
       "key": "aura_plus50power_to_qunari",
       "text": "+50% power to Qunari allies.",
-      "text_ru": "+50 % силы для союзников-кунари.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:122",
@@ -19507,7 +19246,6 @@
     {
       "key": "aura_plus50power_to_qunari_outlaw_plus35health_personal_slowimmune_and_minus25_power_to_spirits_25resist_warrior_self_velusive",
       "text": "+50% Power for Qunari and Outlaws. +35% Health for allies. Immune to slow. +25% damage resist vs Warriors. -25% Power to Spirits.",
-      "text_ru": "+50 % силы для кунари и изгоев. +35 % здоровья для союзников. Не дает себя замедлить. +25 % сопротивления урону от воинов. -25 % силы для духов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2670",
@@ -19617,7 +19355,6 @@
     {
       "key": "aura_plus50power_to_tevinter",
       "text": "+50% Power to Tevinter",
-      "text_ru": "+50 % силы для тевинтерцев",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2394",
@@ -19662,7 +19399,6 @@
     {
       "key": "aura_plus50power_to_triumvirate_plus50health_to_qunari_allies_gain_power_on_self_death_50",
       "text": "+50% Power to the Triumvirate. +50% Health to Qunari. Allies gain 50% Power when this hero dies.",
-      "text_ru": "+50 % силы для Триумвирата. +50 % здоровья для кунари. При смерти этого героя сила союзников возрастает на 50 %.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2554",
@@ -19718,7 +19454,6 @@
     {
       "key": "aura_plus50power_to_wardens",
       "text": "+50% power to Grey Wardens.",
-      "text_ru": "+50 % силы для Серых Стражей.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1826",
@@ -19763,7 +19498,6 @@
     {
       "key": "aura_plus50slowres_allies_and_stealth_flank",
       "text": "+50% slow resist for allies. Stealth: Attacks without triggering on-hit effects. Usually attacks the back row.",
-      "text_ru": "+50 % сопротивления замедлению для союзников. Скрытность: атакует, не вызывая эффектов, возникающих при попадании. Обычно атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1434",
@@ -19805,7 +19539,6 @@
     {
       "key": "aura_plus50stunresist_outlaw_plus25_health_and_power_to_outlaw",
       "text": "Grants medium stun resist and 25% Health and Power to Outlaw allies.",
-      "text_ru": "Умеренное сопротивление оглушению и +25 % к здоровью и силе для союзников-изгоев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:330",
@@ -19857,7 +19590,6 @@
     {
       "key": "aura_plus50stunresist_to_allies",
       "text": "+50% ally stun resistance.",
-      "text_ru": "+50 % сопротивления оглушению для союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2190",
@@ -19883,7 +19615,6 @@
     {
       "key": "aura_plus50stunresist_to_qunari_and_Flank",
       "text": "Grants 50% Stun resistance to Qunari. Usually attacks the back row.",
-      "text_ru": "Дает кунари 50 % сопротивления к оглушению. Обычно атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2386",
@@ -19914,7 +19645,6 @@
     {
       "key": "aura_plus5health",
       "text": "+5% Health for allies.",
-      "text_ru": "+5% к здоровью союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1398",
@@ -19950,7 +19680,6 @@
     {
       "key": "aura_plus5power",
       "text": "+5% Power for allies.",
-      "text_ru": "+5% к силе союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1394",
@@ -19986,7 +19715,6 @@
     {
       "key": "aura_plus65power_to_qunari_power_gain_when_ally_hit_7_health_on_ally_death_25",
       "text": "+65% Power for Qunari. Gains small Power when allies are attacked. +25% Health and +10% damage resist to other Saarebas and handlers. Gains 25% Health on ally death.",
-      "text_ru": "+65 % силы кунари. Ненамного приращивает силу, если союзники атакованы. +25 % здоровья и +10 % сопротивления урону для других саирабазов и помощников. +25 % здоровья при смерти союзника.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2814",
@@ -20047,7 +19775,6 @@
     {
       "key": "aura_plus75health_to_spirits",
       "text": "+75% health to Spirits.",
-      "text_ru": "+75 % здоровья для духов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2294",
@@ -20092,7 +19819,6 @@
     {
       "key": "aura_plusstunresist50_and_plusslowresist50_to_allies_and_plus50health_to_beasts_and_spirits_and_minus35pdresist_to_enemies",
       "text": "+50% stun and slow resist to all allies. +50% Health to Creatures and Spirits.-35% power drain resist to enemies.",
-      "text_ru": "+50 % сопротивления оглушению и замедлению для всех союзников. +50 % здоровья для существ и духов.-35 % сопротивления вытягиванию силы для врагов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2470",
@@ -20152,7 +19878,6 @@
     {
       "key": "aura_power25_and_health25_to_rogues_and_power60_to_varric_and_minus10_power_to_red_lyrium_and_damage25_resist_for_self_versus_mages_and_flank_stealth",
       "text": "+25% Health and Power for Rogues. +60% Power for Varric. +25% damage resist vs Mages. Stealth: Attacks without triggering on-hit effects. -10% Power to Red Lyrium. More likely to attack the back row.",
-      "text_ru": "+25 % здоровья и силы для разбойников. +60 % силы для Варрика. +25 % сопротивления урону против магов. Скрытность: атакует, не вызывая эффектов, возникающих при попадании. -10 % силы для краснолириумных героев. Чаще атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2486",
@@ -20274,7 +19999,6 @@
     {
       "key": "aura_power25_to_nice_and_100_health_power_for_xmas",
       "text": "+25% Health and Power for heroes on the \"Nice\" list.",
-      "text_ru": "+25 % здоровья и силы для \"послушных\" героев.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2638",
@@ -20300,7 +20024,6 @@
     {
       "key": "aura_power35_to_elves_and_beasts_and_minus10_power_to_blight_and_demons_and_slow_resist75_to_allies",
       "text": "+35% power to Elves and Creatures. Large increase to ally slow resist. -10% power to Blighted and Demon enemies.",
-      "text_ru": "+35 % силы для эльфов и существ. Намного повышает сопротивление замедлению у союзников.-10 % к силе моровых врагов и врагов-демонов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2482",
@@ -20382,7 +20105,6 @@
     {
       "key": "aura_power35_to_shale_and_minus20_stun_slow_and_powerdrain_resist_to_mages_and_blighted_and_minus5_power_to_mages_and_blighted",
       "text": "+50% power to Shales. -35% stun, slow, and power drain resist to Mages and Blighted. -10% Power to Mages and Blighted.",
-      "text_ru": "+50 % силы для Шейл. -35 % сопротивления оглушению, замедлению и вытягиванию силы у магов и моровых героев. -10 % силы им же.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2494",
@@ -20441,7 +20163,6 @@
     {
       "key": "aura_power_drain_immune_for_inquisition_and_wounded_targeting_and_plus25power_and_dmg_resist_pct_15_to_inquisition",
       "text": "+50% power drain resist, +25% Power, and +15% damage resist for Inquisition. Much more likely to attack the enemy with the lowest percentage health remaining.",
-      "text_ru": "+50 % сопротивления вытягиванию силы, +25 % силы и +15 % сопротивления урону для Инквизиции. Гораздо чаще атакует врагов с наименьшим оставшимся здоровьем.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2598",
@@ -20497,7 +20218,6 @@
     {
       "key": "aura_power_drain_resist_50_and_aura_personal_stun_resist_100",
       "text": "Resists power drain and is immune to stun",
-      "text_ru": "Сопротивляемость к вытягиванию силы; не дает себя оглушить",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6156",
@@ -20536,7 +20256,6 @@
     {
       "key": "aura_power_drain_resist_50_and_dmg_resist_pct_10_to_dwarves_and_plus35power_jarvia_and_neg15_power_noble",
       "text": "+50% power drain resist to allies. +10% damage resist for Dwarves. +35% Power to Jarvia. -15% Power to Nobility.",
-      "text_ru": "+50 % сопротивления к вытягиванию силы для союзников. +10 % сопротивления урону для гномов. +35 % силы для Джарвии. -15 % силы для знати.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2562",
@@ -20610,7 +20329,6 @@
     {
       "key": "aura_power_drain_resist_50_to_demons",
       "text": "50% power drain reduction to Demon allies.",
-      "text_ru": "Снижение вытягивания силы на 50 % для союзников-демонов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1822",
@@ -20630,7 +20348,6 @@
     {
       "key": "aura_power_drain_resist_75_and_dmg_resist_pct5_to_nobility_and_dwarves",
       "text": "+75% power drain resist for allies. +5% damage resist for Nobility and Dwarves.",
-      "text_ru": "+75 % сопротивления вытягиванию силы для союзников. +5 % сопротивления урону для знати и гномов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1718",
@@ -20656,7 +20373,6 @@
     {
       "key": "aura_power_gain_when_ally_attacked_damage_pct_and_power_drain_immune",
       "text": "Gains Power when allies are attacked. Immune to power drain.",
-      "text_ru": "Приращивает силу, когда союзники атакованы. Не дает вытянуть у себя силу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:362",
@@ -20711,7 +20427,6 @@
     {
       "key": "aura_power_gain_when_ally_attacked_damage_pct_and_power_drain_immune_and_damage_reduction10_vs_blackfaction",
       "text": "+10% damage resist vs Black faction. Gains Power when allies are attacked. Immune to power drain.",
-      "text_ru": "На 10 % снижает урон от \"черной\" фракции. Приращивает силу, когда союзники атакованы. Не дает вытянуть у себя силу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1814",
@@ -20760,7 +20475,6 @@
     {
       "key": "aura_power_gain_when_ally_hit_and_personal_stun_resist_100",
       "text": "Gains power when allies are attacked. Immune to stun.",
-      "text_ru": "Приращивает силу, когда союзники атакованы. Не дает себя оглушить.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2038",
@@ -20815,7 +20529,6 @@
     {
       "key": "aura_power_gain_when_ally_hit_and_power_drain_immune",
       "text": "Gains power when allies are attacked, and is immune to power drain",
-      "text_ru": "Приращивает силу, когда союзники атакованы; не дает вытянуть у себя силу",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1930",
@@ -20846,7 +20559,6 @@
     {
       "key": "aura_power_gain_when_enemy_dies",
       "text": "Gains power when enemy dies.",
-      "text_ru": "Приращивает силу при смерти врага.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2018",
@@ -20883,7 +20595,6 @@
     {
       "key": "aura_power_gain_when_enemy_dies_and_plus25health_and_plus25power_to_reavers_and_flank_squad",
       "text": "+25% Health and Power for Reavers. Gains huge Power when enemy dies. Squad more likely to attack the back row.",
-      "text_ru": "+25 % здоровья и силы для потрошителей. Неимоверно приращивает силу при смерти врага. Весь отряд будет чаще атаковать заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2014",
@@ -20940,7 +20651,6 @@
     {
       "key": "aura_power_gain_when_enemy_dies_and_power_drain_resistance_to_reavers",
       "text": "Gains Power when enemy dies. +50% power drain resist for Reavers.",
-      "text_ru": "Приращивает силу при смерти врага. +50 % сопротивления вытягиванию силы для потрошителей.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2030",
@@ -20993,7 +20703,6 @@
     {
       "key": "aura_power_gain_when_enemy_dies_and_slow_resistance_to_reavers",
       "text": "Gains Power when enemy dies. +50% slow resist for Reavers.",
-      "text_ru": "Приращивает силу при смерти врага. +50 % сопротивления замедлению для потрошителей.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2022",
@@ -21046,7 +20755,6 @@
     {
       "key": "aura_power_gain_when_enemy_or_ally_dies_and_plusstunresist_to_reavers",
       "text": "Gains Power when enemies or allies die. +50% stun resist for Reavers.",
-      "text_ru": "Приращивает силу при смерти врагов или союзников. +50 % сопротивления оглушению для потрошителей.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2026",
@@ -21099,7 +20807,6 @@
     {
       "key": "aura_power_gain_when_self_hit_50_aura_25stunresist",
       "text": "Gains power when attacked, 25% stun resist to self.",
-      "text_ru": "Приращивает силу, подвергнувшись атаке; 25 % сопротивления к оглушению для себя.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:6308",
@@ -21141,7 +20848,6 @@
     {
       "key": "aura_power_on_ally_death_20_plus20power_to_warriors_and_outlaws_and_reavers_plus40_to_jaws_of_hakkon",
       "text": "Gains a small amount of Power on ally death. +20% Power to Warriors, Outlaws and Reavers. +40% Power to the Jaws of Hakkon.",
-      "text_ru": "Ненамного приращивает силу при смерти союзника. +20 % силы для воинов, изгоев и потрошителей. +40 % силы для \"Челюстей Гаккона\".",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2586",
@@ -21205,7 +20911,6 @@
     {
       "key": "aura_power_on_ally_death_25_power_on_enemy_death_25_and_plus50health_power_to_spirits_and_demons",
       "text": "Gains 25% Power on enemy or ally death. +50% Power and Health to Demons and Spirits.",
-      "text_ru": "+25 % силы при смерти врага или союзника. +50 % силы и здоровья для демонов и духов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2578",
@@ -21261,7 +20966,6 @@
     {
       "key": "aura_powerdrainresist50_and_plus35stunresist_and_plus35power_to_blight_and_flank",
       "text": "+50% power drain resist, +35% stun resist, and +35% Power for Blighted. Usually attacks the back row.",
-      "text_ru": "+50 % сопротивления вытягиванию силы, +35 % силы и сопротивления оглушению для моровых героев. Обычно атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1918",
@@ -21317,7 +21021,6 @@
     {
       "key": "aura_slow_resist_100_to_dwarves_and_aura_plus25pct_power_vs_red_lyrium_to_allies_and_aura_dmg_resist_pct_25_vs_mages_personal",
       "text": "+100% slow resist to Dwarves. +25% damage resist vs Mages. Allies deal +25% bonus damage to Red Lyrium.",
-      "text_ru": "+100 % сопротивления замедлению гномам. +25 % сопротивления урону против магов. Союзники наносят +25 % дополнительного урона краснолириумным героям.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2414",
@@ -21353,7 +21056,6 @@
     {
       "key": "aura_slow_resist_50_to_avvars_and_power_gain_when_self_hit_50",
       "text": "Grants 50% Slow immunity to Avvars. Gains power when attacked.",
-      "text_ru": "50 % невосприимчивости к замедлению для авваров. Приращивает силу, подвергнувшись атаке.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2406",
@@ -21384,7 +21086,6 @@
     {
       "key": "aura_slow_resist_50_to_templars_power_drain_resist_50_to_templars_flank_hatred_bloodmage",
       "text": "+50% slow and power drain resist to Templars. More likely to attack the back row. More likely to attack Blood Mages.",
-      "text_ru": "+50 % сопротивления замедлению и вытягиванию силы для храмовников. Чаще атакует заднюю шеренгу. Чаще атакует магов крови.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2534",
@@ -21420,7 +21121,6 @@
     {
       "key": "aura_slow_resist_self_and_powergain_when_ally_attacked_and_plus25power_to_ferelden_warden_and_allies_gain_power_on_death_and_stun_immune_to_alistair",
       "text": "+25% Power for Ferelden and Grey Wardens. Gains small Power when allies are attacked. Allies gain small Power when this hero dies. Immune to slow. Gives stun immunity to Alistair.",
-      "text_ru": "+25 % силы для ферелденцев и Серых Стражей. Ненамного приращивает силу, если союзники атакованы. При смерти этого героя у союзников ненамного прирастает сила. Не дает себя замедлить. Не дает оглушить Алистера.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1462",
@@ -21502,7 +21202,6 @@
     {
       "key": "aura_slow_resist_to_beasts_and_mages",
       "text": "Slow Resist to Creature and Mage allies",
-      "text_ru": "Сопротивление замедлению для дружественных существ и магов",
       "occurrences": [
         {
           "semantic_recipe_key": "440:446",
@@ -21561,7 +21260,6 @@
     {
       "key": "aura_stealth_flank_and_plus50damage_vs_templars_and_plus5dr_allies_plus5_inquisition",
       "text": "+50% damage vs Templars. +5% damage resist for allies, extra +5% for Inquisition. Stealth: Attacks without triggering on-hit effects. Usually attacks the back row.",
-      "text_ru": "+50 % урона против храмовников. +5 % сопротивления урону для всех союзников и дополнительно +5% для Инквизиции. Скрытность: атакует, не вызывая эффектов, возникающих при попадании. Обычно атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2830",
@@ -21603,7 +21301,6 @@
     {
       "key": "aura_strong_hatred_blighted_to_party_and_minus10_power_to_blighted_and_ally_damage_absorb_50_and_damage15_resist_vs_blighted",
       "text": "Allies very likely to attack Blighted. Absorbs ally AOE damage. Allies resist small damage from Blighted. -10% power to Blighted.",
-      "text_ru": "Союзники чаще атакуют моровых врагов. Поглощает урон по области вместо союзников; союзники получают чуть меньше урона от моровых врагов; снижает силу последних на 10 %.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2490",
@@ -21664,7 +21361,6 @@
     {
       "key": "aura_strong_hatred_warriors_and_red_lyrium_personal_stun_resist75_gain_power20_on_enemy_death",
       "text": "Very likely to attack Warriors and Red Lyrium enemies. High stun resist. Gains a small amount of power on enemy death.",
-      "text_ru": "Гораздо чаще атакует воинов и краснолириумных врагов. Высокое сопротивление оглушению. Ненамного приращивает силу при смерти врага.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2474",
@@ -21700,7 +21396,6 @@
     {
       "key": "aura_stun_resist_100_and_power_gain_when_self_hit_50_and_dmg_resist25_and_plus100power_to_large_creatures_and_plus15dr_to_snug",
       "text": "Immune to stun. Gains moderate Power when attacked. +25% damage resist. +100% damage vs large creatures. +15% damage resist for Snug the Bronto.",
-      "text_ru": "Не дает себя оглушить. Подвергнувшись атаке, умеренно приращивает силу. +25 % сопротивления урону. +100 % урона против крупных существ. +15 % сопротивления урону для бронто Снага.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:1642",
@@ -21760,7 +21455,6 @@
     {
       "key": "aura_stunresist50_slowresist50_50powertowarriors_50healthpowernugs_absorbpower50_healthonallydeath",
       "text": "+50% stun resist. +75% slow resist for allies. +50% Power for Warriors. +50% Health and Power for nugs. Absorbs 50% of AOE damage when attacked also. Gains 15% Health when allies are hit.",
-      "text_ru": "50 % сопротивления оглушению. 75 % сопротивления замедлению для союзников. 50 % силы для воинов. 50 % здоровья и силы для нагов. Подвергнувшись атаке \"по области\", поглощает 50 % урона. Получает +15 % к здоровью при попадании по союзнику.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2838",
@@ -21869,7 +21563,6 @@
     {
       "key": "aura_stunresist75_stun_and_slowresist35_to_wardens_handp30_to_wardens_powergain15_on_allyhit_and_50_on_allydeath",
       "text": "+40% stun resist. +30% Health and Power and +35% stun and slow resist for Grey Wardens. Gains a small amount of Power when allies are attacked, medium amount when they die.",
-      "text_ru": "+40 % сопротивления оглушению. +30 % здоровья и силы и +35 % сопротивления оглушению и замедлению для Серых Стражей. Ненамного приращивает силу, когда союзники атакованы, и умеренно — когда они умирают.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2890",
@@ -21943,7 +21636,6 @@
     {
       "key": "aura_stunresist_50_and_power_gain_when_self_hit_50_and_aura_dmg_resist_pct_25_vs_warriors_personal",
       "text": "Grants 50% Stun resistance to Allies. Gains power when attacked. Takes less damage vs. Warriors",
-      "text_ru": "Дает союзникам 50 % сопротивления к оглушению. Приращивает силу, подвергнувшись атаке. Получает меньше урона от воинов",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2426",
@@ -21984,7 +21676,6 @@
     {
       "key": "brave_targeting_aura_stunresist_100_and_aura_personal_power_drain_resist_and_aura_personal_slow100",
       "text": "+100% stun, slow, and power drain resist. Much more likely to attack the highest power enemy. Stealth: Attacks without triggering on-hit effects.",
-      "text_ru": "+100 % сопротивления к оглушению, замедлению и вытягиванию силы. Гораздо чаще атакует самого сильного врага. Скрытность: атакует, не вызывая эффектов, возникающих при попадании.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2654",
@@ -22057,7 +21748,6 @@
     {
       "key": "gordian_aura",
       "text": "+50% Power for Mages. +15% bonus damage and +10% damage resist for Venatori. +25% slow and stun resist for allies. -25% slow and stun resist to enemies.",
-      "text_ru": "+50 % силы для магов. +15 % дополнительного урона и +10 % сопротивления урону для венатори. +25 % сопротивления замедлению и оглушению для союзников. -25 % сопротивления замедлению и оглушению для врагов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2822",
@@ -22118,7 +21808,6 @@
     {
       "key": "health_on_ally_and_enemy_death_25_and_aura_plus75health_to_spirits_and_aura_plus25pct_power_vs_demons_personal",
       "text": "Gains health on any hero death. +75% health to Spirits. Deals bonus damage to Demons",
-      "text_ru": "Приращивает здоровье при смерти любого героя. +75 % к здоровью для духов. Наносит дополнительный урон демонам",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2322",
@@ -22174,7 +21863,6 @@
     {
       "key": "health_on_ally_death_25_and_aura_plus50health_to_spirits_and_aura_plus25pct_power_vs_demons_personal",
       "text": "Gains health on ally death. +50% health to Spirits. Deals bonus damage to Demons",
-      "text_ru": "Приращивает здоровье при смерти союзника. +50 % к здоровью для духов. Наносит дополнительный урон демонам",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2326",
@@ -22230,7 +21918,6 @@
     {
       "key": "minus20_power_to_mages_and_plus35health__plus50power_to_darkspawn_powerdrainresist50_to_darkspawn_aura_50slowresist_to_blighted_and_35stunresist",
       "text": "+35% health and power to Blighted. +35% power drain, stun, and slow resist to Blighted. -20% enemy mage power.",
-      "text_ru": "+35 % здоровья, силы; сопротивления вытягиванию силы, замедлению, оглушению моровым героям. - 20 % силы вражеских магов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2442",
@@ -22282,7 +21969,6 @@
     {
       "key": "plus15poweranddrainresist_to_allies_and_inquisitionstacking_and_plus50stunandslowresist_to_allies_and_alliesgain35power_on_selfdeath",
       "text": "+15% Power and +25% power drain resist for allies and Inquisition (stacking). +50% stun and slow resist for allies. Allies gain a medium amount of Power when this hero dies.",
-      "text_ru": "+15 % силы и +25 % сопротивления вытягиванию силы для союзников и Инквизиции (бонусы суммируются). +50% сопротивления оглушению и замедлению для союзников. При смерти этого героя союзники получают умеренное количество силы.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2918",
@@ -22358,7 +22044,6 @@
     {
       "key": "plus25health_to_allies_and_plus15power_to_allies_and_plus25powerdrainresist_to_allies_and_alliesgain25power_on_self_death",
       "text": "+25% Health, +15% Power, and +25% power drain resist for allies. Allies gain a small amount of Power on ally death.",
-      "text_ru": "+25 % здоровья, +15 % силы и +25 % сопротивления вытягиванию силы для союзников. Союзники получают небольшое количество силы при смерти союзника.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2922",
@@ -22420,7 +22105,6 @@
     {
       "key": "plus25health_to_warriors_and_plus25damageresist_to_self_and_plus15powerand15healthself_on_ally_hit_and_plus25power_to_dukeprosper_and_flank",
       "text": "+25% Health for Warriors. +25% damage resist. Gains small Health and Power when allies are attacked. +35% Power for Duke Prosper. More likely to attack the back row.",
-      "text_ru": "+25 % здоровья для воинов. +25 % сопротивления урону. Получает небольшое количество здоровья и силы, когда союзники атакованы. +35 % силы для герцога Проспера. Чаще атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2930",
@@ -22511,7 +22195,6 @@
     {
       "key": "plus35power_to_creatures_and_plus25powerdrainresist_to_allies",
       "text": "+35% Power for Creatures. +25% power drain resist for allies.",
-      "text_ru": "+35 % силы для существ. +25 % сопротивления вытягиванию силы для союзников.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2934",
@@ -22562,7 +22245,6 @@
     {
       "key": "plus35power_to_creaturesandblighted_and_plus60stunandslowresist_to_creaturesandblighted_and_healself50_on_ally_death_and_flank",
       "text": "+35% Power for Creatures and Blighted. +60% stun and slow resist for Creatures and Blighted. Heals a medium amount when an ally dies. More likely to attack the back row.",
-      "text_ru": "+35 % силы для существ и моровых героев. +60 % сопротивления оглушению и замедлению для существ и моровых героев. Умеренно восстанавливает здоровье при смерти союзника. Чаще атакует заднюю шеренгу.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2926",
@@ -22627,7 +22309,6 @@
     {
       "key": "plus50healthandpowerandpowerdrainresist_to_elves_and_self_gain_15power_on_ally_hit_and_minus_10power_to_enemies_and_minus_15stunresist_to_enemies",
       "text": "+50% Health and Power for Elves. +50% power drain resist for Elves. Gains a small amount of Power when allies are attacked. -10% Power to enemies. -15% stun resist to enemies.",
-      "text_ru": "+50 % здоровья и силы для эльфов. +50 % сопротивления вытягиванию силы для эльфов. Получает небольшое количество силы, когда союзники атакованы. -10 % силы для врагов. -15% сопротивления оглушению для врагов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2914",
@@ -22703,7 +22384,6 @@
     {
       "key": "power_gain_when_ally_hit_and_aura_plus30pct_power_vs_ferelden_tevinter_personal",
       "text": "Gains Power when allies are attacked. Deals 30% bonus damage to Ferelden and Tevinter. +35% damage vs. Gaspard de Chalons.",
-      "text_ru": "Приращивает силу, когда союзники атакованы. Наносит на 30 % больше урона ферелденцам и тевинтерцам. +35 % урона против Гаспара де Шалона.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2222",
@@ -22739,7 +22419,6 @@
     {
       "key": "power_gain_when_ally_hit_and_aura_plus50power_to_red_lyrium_and_aura_power_drain_resist_100_to_red_lyrium_and_hatred_mage",
       "text": "Gains power when allies are attacked. Grants Power Drain immunity and +50% Power to Red Lyrium. More likely to attack Mages.",
-      "text_ru": "Приращивает силу, когда союзники атакованы. Дает краснолириумным героям невосприимчивость к вытягиванию силы и +50 % к силе. Чаще атакует магов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2314",
@@ -22800,7 +22479,6 @@
     {
       "key": "power_gain_when_ally_hit_and_aura_plus50power_to_templar_and_hatred_mage",
       "text": "Gains power when allies are attacked. +50% Power to Templars. More likely to attack Mages.",
-      "text_ru": "Приращивает силу, когда союзники атакованы. +50 % к силе для храмовников. Чаще атакует магов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2262",
@@ -22856,7 +22534,6 @@
     {
       "key": "power_gain_when_ally_hit_and_aura_plus75power_to_red_lyrium_and_aura_plus100stunresist_to_red_lyrium_and_hatred_mage",
       "text": "Gains power when allies are attacked. Grants Stun immunity and +75% power to Red Lyrium. More likely to attack Mages.",
-      "text_ru": "Приращивает силу, когда союзники атакованы. Дает краснолириумным героям невосприимчивость к оглушению и +75 % к силе. Чаще атакует магов.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2310",
@@ -22917,7 +22594,6 @@
     {
       "key": "power_gain_when_self_hit_50_and_aura_plus25pct_power_vs_beasts_personal_and_aura_personal_stun_resist_100_and_aura_plus50health_to_red_lyrium",
       "text": "+50% health to Red Lyrium. Gains power when attacked. Deals bonus damage to Creatures. Immune to stun.",
-      "text_ru": "+50 % здоровья для краснолириумных героев. Приращивает силу, подвергнувшись атаке. Наносит дополнительный урон существам. Не дает себя оглушить.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2354",
@@ -22990,7 +22666,6 @@
     {
       "key": "powergain_on_selfhit50_and_plus25power_vs_beasts_and_stunresist100_and_plus50stunresist_and_plus50pdresist_to_outlaw_and_health_on_enemydeath_25",
       "text": "Gains medium Power when attacked. +25% damage vs Creatures. +100% stun resist. +50% stun and power drain resist for Outlaws. Allies gain a small amount of power when this hero is attacked.",
-      "text_ru": "Подвергнувшись атаке, умеренно приращивает силу. +25 % урона против существ. +100 % сопротивления оглушению. +50 % сопротивления оглушению и вытягиванию силы для изгоев. Когда герой атакован, у союников незначительно прирастает сила.",
       "occurrences": [
         {
           "semantic_recipe_key": "440:2350",
