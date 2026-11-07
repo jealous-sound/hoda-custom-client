@@ -117,9 +117,8 @@ static Rectangle MessagePopupDrawFrame(void) {
     return MessagePopupDrawFrameWith(GuiTex(GUI_STORE_OVERLAY));
 }
 
-static bool MessagePopupDrawAlert(
-    Texture2D frame, Font title_font, Font body_font, const char *title, const char *message, Button *button
-) {
+static Rectangle
+MessagePopupDrawMessage(Texture2D frame, Font title_font, Font body_font, const char *title, const char *message) {
     Rectangle popup = MessagePopupDrawFrameWith(frame);
     Rectangle content = MessagePopupContent(popup);
     UiDrawTextCentered(
@@ -132,6 +131,36 @@ static bool MessagePopupDrawAlert(
         MESSAGE_POPUP_MESSAGE_SIZE,
         MESSAGE_POPUP_TEXT_COLOR
     );
+    return popup;
+}
+
+static bool MessagePopupDrawAlert(
+    Texture2D frame, Font title_font, Font body_font, const char *title, const char *message, Button *button
+) {
+    Rectangle popup = MessagePopupDrawMessage(frame, title_font, body_font, title, message);
     bool pressed = ButtonDraw(button, MessagePopupOkButton(popup));
     return pressed || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER);
+}
+
+typedef enum {
+    MESSAGE_POPUP_CHOICE_NONE,
+    MESSAGE_POPUP_CHOICE_DECLINE,
+    MESSAGE_POPUP_CHOICE_ACCEPT,
+} MessagePopupChoice;
+
+static MessagePopupChoice MessagePopupDrawChoice(
+    Texture2D frame,
+    Font title_font,
+    Font body_font,
+    const char *title,
+    const char *message,
+    Button *decline,
+    Button *accept
+) {
+    Rectangle popup = MessagePopupDrawMessage(frame, title_font, body_font, title, message);
+    Rectangle row = MessagePopupChoiceRow(popup);
+    bool declined = ButtonDraw(decline, UiRect(row, 0.0f, 0.0f, 0.5f, 1.0f));
+    bool accepted = ButtonDraw(accept, UiRect(row, 1.0f, 0.0f, 0.5f, 1.0f));
+    if (accepted || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) return MESSAGE_POPUP_CHOICE_ACCEPT;
+    return declined ? MESSAGE_POPUP_CHOICE_DECLINE : MESSAGE_POPUP_CHOICE_NONE;
 }

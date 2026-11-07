@@ -131,6 +131,7 @@ BackendRequest(const char *method, const char *path, const char *body, long long
     response->status = reply.status;
     response->body = reply.body;
     response->revision = strtoll(reply.reply_header_value, NULL, 10);
+    ClientUpdateNoteRefusal(reply.status, reply.body);
     return true;
 }
 

@@ -38,6 +38,11 @@ typedef struct {
 #define DEBUG_MISSION_ROW_Y 141.0f
 #define DEBUG_MISSION_ROW_WIDTH 816.0f
 
+static const char DEBUG_UPDATE_AVAILABLE_RELEASE[] =
+    "{\"latest\":\"v9.9.0\",\"minimum\":\"\",\"download_url\":\"https://hodareborn.com/#download\"}";
+static const char DEBUG_UPDATE_REQUIRED_RELEASE[] =
+    "{\"latest\":\"v9.9.0\",\"minimum\":\"v9.0.0\",\"download_url\":\"https://hodareborn.com/#download\"}";
+
 static const Vector3 DEBUG_BFX_ORIGIN = {-0.526f, 1.87f, 15.886f};
 
 static DebugShot DebugShotFromEnvironment(void) {
@@ -854,12 +859,52 @@ static bool DebugPrepareNamePrompt(Game *game, DebugShot *shot) {
     return true;
 }
 
+static void DebugSeedClientRelease(const char *json) {
+    ClientRelease release;
+    ClientReleaseParse(json, &release);
+    ClientUpdateAdopt(&release, false);
+}
+
+static bool DebugPrepareClientUpdate(Game *game, DebugShot *shot) {
+    if (!DebugShotIs(shot, "update_required")) return false;
+    game->screen = SCREEN_HOME;
+    if (shot->frames_drawn == 0)
+        ClientUpdateNoteRefusal(CLIENT_UPDATE_HTTP_UPGRADE_REQUIRED, DEBUG_UPDATE_REQUIRED_RELEASE);
+    return true;
+}
+
+static bool DebugRenderPlayMode(const char *screen_name, const char *output) {
+    bool required = screen_name && strcmp(screen_name, "play_mode_update_required") == 0;
+    bool available = screen_name && strcmp(screen_name, "play_mode_update") == 0;
+    if (!required && !available) return false;
+    DebugSeedClientRelease(required ? DEBUG_UPDATE_REQUIRED_RELEASE : DEBUG_UPDATE_AVAILABLE_RELEASE);
+    PlayModeScreen screen = {0};
+    PlayModeScreenLoad(&screen);
+    int frames = EnvInt("HOD_SHOT_FRAMES", DEBUG_SHOT_DEFAULT_FRAMES);
+    for (int frame = 0; frame < frames && !WindowShouldClose(); frame++) {
+        BeginDrawing();
+        ClearBackground(BLACK);
+        UiFrameBegin();
+        PlayModeScreenDraw(&screen);
+        UiFrameEnd();
+        if (frame + 1 == frames && output) {
+            rlDrawRenderBatchActive();
+            TakeScreenshot(output);
+        }
+        EndDrawing();
+    }
+    PlayModeScreenUnload(&screen);
+    return true;
+}
+
 static bool DebugPrepareOptions(Game *game, DebugShot *shot) {
     bool audio = DebugShotIs(shot, "options_audio");
     bool language = DebugShotIs(shot, "options_language");
-    if (!audio && !language && !DebugShotIs(shot, "options")) return false;
+    bool update = DebugShotIs(shot, "options_update");
+    if (!audio && !language && !update && !DebugShotIs(shot, "options")) return false;
     game->screen = SCREEN_HOME;
     if (shot->frames_drawn > 0) return true;
+    if (update) DebugSeedClientRelease(DEBUG_UPDATE_AVAILABLE_RELEASE);
     OptionsPopupOpen(&game->options);
     if (audio) game->options.page = OPTIONS_PAGE_AUDIO;
     if (language) OptionsShowLanguages(&game->options);
@@ -1208,7 +1253,7 @@ static void DebugPrepareGuild(Game *game, DebugShot *shot) {
 
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
     if (DebugPrepareTutorial(game, shot) || DebugPrepareNamePrompt(game, shot)) return;
-    if (DebugPrepareOptions(game, shot)) return;
+    if (DebugPrepareOptions(game, shot) || DebugPrepareClientUpdate(game, shot)) return;
     if (DebugPrepareLiveGuildFlow(game, shot)) return;
     game->screen = shot->consume_opened ? SCREEN_CONSUME : SCREEN_HEROES;
     if (DebugShotIs(shot, "home")) game->screen = SCREEN_HOME;
