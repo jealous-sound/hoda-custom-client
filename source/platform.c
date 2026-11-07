@@ -1,4 +1,5 @@
 #include "platform.h"
+#include "client_version.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -19,7 +20,7 @@
 
 #define PLATFORM_MILLISECONDS_PER_SECOND 1000
 #define PLATFORM_DOWNLOAD_TIMEOUT_MILLISECONDS 30000
-#define PLATFORM_DOWNLOAD_USER_AGENT L"HeroesOfDragonAge"
+#define PLATFORM_DOWNLOAD_USER_AGENT L"HeroesOfDragonAge/" HOD_VERSION
 #define PLATFORM_DOWNLOAD_BUFFER_BYTES 65536
 #define PLATFORM_WIDE_URL_CAP 2048
 #define PLATFORM_HOST_CAP 256
@@ -357,7 +358,7 @@ bool PlatformPreferredLanguage(char *out, size_t capacity) {
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define PLATFORM_DOWNLOAD_USER_AGENT "HeroesOfDragonAge"
+#define PLATFORM_DOWNLOAD_USER_AGENT "HeroesOfDragonAge/" HOD_VERSION
 #define PLATFORM_HTTP_RANGE_NOT_SATISFIABLE 416
 #define PLATFORM_DIRECTORY_MODE 0755
 #define PLATFORM_HOME_ENV "HOME"

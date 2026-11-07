@@ -11,6 +11,7 @@
 #include <time.h>
 
 #include "platform.h"
+#include "client_version.h"
 
 #define APP_NAME "Heroes of Dragon Age"
 

@@ -88,6 +88,7 @@ render the screens.
 make run
 make play
 make test
+make ci-test
 make golden
 make format-check
 python3 tools/check_comments.py
@@ -135,10 +136,26 @@ depend on the compiler fusing multiply-adds.
 OS-specific calls (HTTP requests, positional reads, atomic file replace, CPU count, UTC time) live in
 `source/platform.c`, a separate translation unit so `<windows.h>` never meets raylib's names.
 
-`.github/workflows/build.yml` builds all three on every push to `master` (or by hand from the Actions tab) and
-attaches a universal macOS app, a Linux x86-64 binary and a Windows x86-64 executable to the run as artifacts. They
-carry no game data and download it on first launch. Pushing a tag such as `v0.2.0` runs the same builds and publishes the three packages as a GitHub
-Release named after the tag.
+`.github/workflows/build.yml` builds all three on every pull request and every push to `master` (or by hand from the
+Actions tab) and attaches a universal macOS app, a Linux x86-64 binary and a Windows x86-64 executable to the run as
+artifacts. They carry no game data and download it on first launch. The macOS and Linux jobs also run `make ci-test`,
+the part of `make test` that needs no local asset cache (the golden replay check, the content update test and the
+rule table validators), and the Linux job runs `tools/check_comments.py`.
+
+Merging to `master` publishes nothing. To release, tag the commit and push the tag:
+
+```sh
+git tag v0.4.0
+git push origin v0.4.0
+```
+
+The tag's run publishes the three packages as a GitHub Release named after the tag, and the website's download buttons
+follow `releases/latest`. A tag with a suffix, such as `v0.4.0-rc.1`, becomes a pre-release that `releases/latest`
+skips, for testers. Bump the minor version for new features and the patch version for fixes.
+
+Every build carries its version: `git describe --tags` (override with `CLIENT_VERSION=`) is compiled in as
+`HOD_VERSION`, shown in the settings popup above the player ID and sent as `User-Agent: HeroesOfDragonAge/<version>` on
+every server and download request. The macOS bundle's `CFBundleShortVersionString` is the latest tag's number.
 
 ## Language and settings
 

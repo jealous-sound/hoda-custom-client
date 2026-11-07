@@ -7,7 +7,9 @@ RAYLIB_LINK ?= -lraylib
 CONTENT_URL ?= https://cdn.hodareborn.com
 SERVER_URL ?= https://api.hodareborn.com
 CONTENT_BUCKET ?= hoda-assets
-CFLAGS  = -Wall -O2 -std=c99 -ffp-contract=off -I$(RAYLIB_DIR)/include -DHOD_CONTENT_URL='"$(CONTENT_URL)"' -DHOD_SERVER_URL='"$(SERVER_URL)"' $(PLATFORM_CFLAGS) $(EXTRA_CFLAGS)
+CLIENT_VERSION ?= $(shell git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo dev)
+BUNDLE_VERSION ?= $(shell git describe --tags --match 'v[0-9]*' --abbrev=0 2>/dev/null | sed 's/^v//;s/-.*//')
+CFLAGS  = -Wall -O2 -std=c99 -ffp-contract=off -I$(RAYLIB_DIR)/include -DHOD_CONTENT_URL='"$(CONTENT_URL)"' -DHOD_SERVER_URL='"$(SERVER_URL)"' -DHOD_VERSION='"$(CLIENT_VERSION)"' $(PLATFORM_CFLAGS) $(EXTRA_CFLAGS)
 LDFLAGS = -L$(RAYLIB_DIR)/lib
 SRC     = source/main.c source/platform.c
 DEPS    = $(wildcard source/*.c source/*.h source/vendors/*.c source/vendors/*.h)
@@ -35,6 +37,7 @@ $(TARGET): $(DEPS) $(APP_INFO) $(APP_ICON) Makefile
 	mkdir -p "$(APP_CONTENTS)/MacOS" "$(APP_CONTENTS)/Resources" $(ICONSET)
 	$(CC) $(CFLAGS) $(SRC) -o "$(APP_EXECUTABLE)" $(LDFLAGS) $(LIBS)
 	cp $(APP_INFO) "$(APP_CONTENTS)/Info.plist"
+	plutil -replace CFBundleShortVersionString -string "$(or $(BUNDLE_VERSION),0.0.0)" "$(APP_CONTENTS)/Info.plist"
 	for size in $(ICON_SIZES); do \
 		sips -z $$size $$size $(APP_ICON) --out $(ICONSET)/icon_$${size}x$${size}.png >/dev/null; \
 		sips -z $$((size * 2)) $$((size * 2)) $(APP_ICON) --out $(ICONSET)/icon_$${size}x$${size}@2x.png >/dev/null; \
@@ -84,20 +87,24 @@ golden: $(GOLDEN_TARGET)
 $(CONTENT_TEST_TARGET): tests/content_update_test.c $(DEPS) Makefile
 	$(CC) $(CFLAGS) tests/content_update_test.c source/platform.c -o $(CONTENT_TEST_TARGET) $(LDFLAGS) $(LIBS)
 
-test: $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(GOLDEN_TARGET)
+ci-test: $(CONTENT_TEST_TARGET) $(GOLDEN_TARGET)
+	python3 tools/validate_ability_recipes.py
+	python3 tools/validate_intrinsic_passives.py
+	python3 tools/build_hero_pool.py --check
+	python3 tools/validate_localization.py
+	./$(CONTENT_TEST_TARGET)
+	./$(GOLDEN_TARGET) --check $(GOLDEN_DIR)
+
+test: ci-test $(TEST_TARGET)
 	python3 client-additional-data/validate_characters.py
 	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py tests/test_build_dist.py tests/test_build_custom_heroes.py tests/test_content_packs.py
 	python3 tools/audit_character_models.py --deep
-	python3 tools/validate_ability_recipes.py
-	python3 tools/validate_intrinsic_passives.py
 	python3 tools/validate_unit_audio.py
 	python3 tools/validate_unit_vfx.py
 	python3 tools/validate_gear.py
 	python3 tools/build_store_catalog.py --check
-	python3 tools/build_hero_pool.py --check
 	python3 tools/build_custom_heroes.py --check
 	python3 tools/validate_cache_refs.py
-	python3 tools/validate_localization.py
 	python3 tools/build_campaign_node_layout.py --check
 	python3 tools/build_runes.py --check
 	python3 tools/build_missions.py --check
@@ -108,8 +115,6 @@ test: $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(GOLDEN_TARGET)
 	python3 tools/build_fortify_tables.py --check
 	python3 tools/build_consume_scene.py --check
 	./$(TEST_TARGET)
-	./$(CONTENT_TEST_TARGET)
-	./$(GOLDEN_TARGET) --check $(GOLDEN_DIR)
 
 run: $(TARGET)
 	"./$(APP_EXECUTABLE)"
@@ -132,4 +137,4 @@ format:
 format-check:
 	clang-format --dry-run --Werror source/*.c
 
-.PHONY: app run play dist content test golden clean format format-check
+.PHONY: app run play dist content ci-test test golden clean format format-check
