@@ -10,7 +10,7 @@ HODA_STORE_ROSTER_ADD_FAILED|Não foi possível adicionar os heróis ao seu elen
 HODA_STORE_SERVER_BUSY|O servidor está ocupado, tente novamente
 HODA_STORE_PRICE_CHANGED|O preço mudou, tente novamente
 HODA_STORE_PROFILE_CHANGED|Seu perfil foi alterado no servidor
-HODA_STORE_REAL_MONEY_OFFLINE|Compras com dinheiro real não estão disponíveis nesta versão
+HODA_STORE_PROCESSING_PAYMENT|Processando pagamento…
 HODA_STORE_GEM_TRADER_DEAD_TITLE|Retorno à Pedra
 HODA_STORE_GEM_TRADER_DEAD_BODY|Nosso mercador de joias, um anão da Guilda dos Mercadores, desceu às Passagens Profundas em busca de um último tesouro, mas a Prole Negra o encontrou primeiro. Sua banca está vazia, e nenhuma joia será vendida aqui novamente. Que a Pedra o acolha.
 HODA_TUTORIAL_CONSUME_PACK_NAME|Pacote Tutorial

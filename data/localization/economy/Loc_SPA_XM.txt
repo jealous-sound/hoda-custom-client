@@ -10,7 +10,7 @@ HODA_STORE_ROSTER_ADD_FAILED|No se pudieron añadir los héroes a tu lista
 HODA_STORE_SERVER_BUSY|El servidor está ocupado. Vuelve a intentarlo.
 HODA_STORE_PRICE_CHANGED|El precio cambió. Vuelve a intentarlo.
 HODA_STORE_PROFILE_CHANGED|Tu perfil cambió en el servidor
-HODA_STORE_REAL_MONEY_OFFLINE|Las compras con dinero real no están disponibles en esta versión
+HODA_STORE_PROCESSING_PAYMENT|Procesando el pago…
 HODA_STORE_GEM_TRADER_DEAD_TITLE|Devuelto a la Piedra
 HODA_STORE_GEM_TRADER_DEAD_BODY|Nuestro mercader de gemas, un enano del Gremio de Mercaderes, bajó a los Caminos de las Profundidades en busca de un último botín, pero los engendros tenebrosos lo encontraron primero. Su puesto está vacío y aquí ya nunca se venderán gemas. Que la Piedra lo acoja.
 HODA_TUTORIAL_CONSUME_PACK_NAME|Paquete tutorial

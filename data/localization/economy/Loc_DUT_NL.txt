@@ -10,7 +10,7 @@ HODA_STORE_ROSTER_ADD_FAILED|Kan de helden niet aan je selectie toevoegen
 HODA_STORE_SERVER_BUSY|De server is bezet. Probeer het opnieuw.
 HODA_STORE_PRICE_CHANGED|De prijs is gewijzigd. Probeer het opnieuw.
 HODA_STORE_PROFILE_CHANGED|Je profiel is op de server gewijzigd
-HODA_STORE_REAL_MONEY_OFFLINE|Aankopen met echt geld zijn niet beschikbaar in deze versie
+HODA_STORE_PROCESSING_PAYMENT|Betaling wordt verwerkt…
 HODA_STORE_GEM_TRADER_DEAD_TITLE|Terug naar de Steen
 HODA_STORE_GEM_TRADER_DEAD_BODY|Onze gemhandelaar, een dwerg van het Handelsgilde, daalde af in de Diepe Wegen voor een laatste buit, maar het duistergebroed vond hem eerst. Zijn kraam staat leeg en hier worden nooit meer gems verkocht. Moge de Steen hem omarmen.
 HODA_TUTORIAL_CONSUME_PACK_NAME|Trainingspakket

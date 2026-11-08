@@ -148,6 +148,8 @@ static void DebugPrepareStore(Game *game, DebugShot *shot) {
         "store",
         "store_heroes",
         "store_gems",
+        "store_gems_processing",
+        "store_gems_purchased",
         "store_items",
         "store_featured",
         "store_vault",
@@ -168,6 +170,11 @@ static void DebugPrepareStore(Game *game, DebugShot *shot) {
             game->store.view = STORE_VIEW_HEROES;
         } else if (DebugShotIs(shot, "store_gems")) {
             game->store.view = STORE_VIEW_GEMS;
+        } else if (DebugShotIs(shot, "store_gems_processing") || DebugShotIs(shot, "store_gems_purchased")) {
+            game->store.view = STORE_VIEW_GEMS;
+            StoreBeginGemPurchase(&game->store, Clamp(EnvInt("HOD_PACK", 2), 0, STORE_GEM_SKU_COUNT - 1));
+            if (DebugShotIs(shot, "store_gems_purchased"))
+                StoreAdvanceGemPurchase(&game->store, STORE_GEM_PAYMENT_SECONDS);
         } else if (DebugShotIs(shot, "store_items")) {
             game->store.view = STORE_VIEW_ITEMS;
         } else if (DebugShotIs(shot, "store_featured")) {

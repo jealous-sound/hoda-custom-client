@@ -10,7 +10,7 @@ HODA_STORE_ROSTER_ADD_FAILED|Impossible d'ajouter les héros à votre tableau de
 HODA_STORE_SERVER_BUSY|Le serveur est occupé, veuillez réessayer
 HODA_STORE_PRICE_CHANGED|Le prix a changé, veuillez réessayer
 HODA_STORE_PROFILE_CHANGED|Votre profil a été modifié sur le serveur
-HODA_STORE_REAL_MONEY_OFFLINE|Les achats en argent réel ne sont pas disponibles dans cette version
+HODA_STORE_PROCESSING_PAYMENT|Traitement du paiement…
 HODA_STORE_GEM_TRADER_DEAD_TITLE|Retour à la Pierre
 HODA_STORE_GEM_TRADER_DEAD_BODY|Notre marchand de gemmes, un nain de la Guilde des marchands, est descendu dans les Tréfonds pour une dernière expédition, mais les engeances l'ont trouvé les premières. Son étal reste vide et plus aucune gemme ne sera jamais vendue ici. Que la Pierre l'accueille.
 HODA_TUTORIAL_CONSUME_PACK_NAME|Pack d'entraînement

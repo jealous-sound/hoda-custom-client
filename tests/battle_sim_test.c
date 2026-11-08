@@ -5873,6 +5873,21 @@ static void TestPvpLeaderboardRanksThePlayer(void) {
     assert(PvpLeaderboardRank(entries, count) > 1);
 }
 
+static void TestGemPurchaseCreditsGemsAndRefreshesStamina(void) {
+    Player player = {.gems = 41, .stamina = 3, .stamina_max = 12, .stamina_regen_timer = 120.0f};
+    PlayerCreditGemPurchase(&player, 121);
+    assert(player.gems == 162);
+    assert(player.stamina == 12 && player.stamina_regen_timer == 0.0f);
+
+    player.stamina = 15;
+    PlayerCreditGemPurchase(&player, 22);
+    assert(player.gems == 184 && player.stamina == 15);
+
+    player.gems = INT_MAX - 10;
+    PlayerCreditGemPurchase(&player, 1600);
+    assert(player.gems == INT_MAX);
+}
+
 static void TestPvpTrophiesHeldNeedsAWeekAboveTheLine(void) {
     PlayerPvp pvp = {.trophies = 490};
     long long start = 1700000000;
@@ -7169,6 +7184,7 @@ int main(void) {
     TestPvpResolveBattlePaysAndMarksRevenge();
     TestPvpSpendsStaminaNotEnergy();
     TestPvpLeaderboardRanksThePlayer();
+    TestGemPurchaseCreditsGemsAndRefreshesStamina();
     TestPvpTrophiesHeldNeedsAWeekAboveTheLine();
     TestPvpAchievementsFollowTheLadder();
     TestPvpOpponentsAreDeterministic();
