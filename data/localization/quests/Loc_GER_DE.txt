@@ -1,0 +1,33 @@
+HODA_QUESTS_CHEST_FAILED|Die Truhe konnte nicht geöffnet werden. Versuche es erneut.
+HODA_QUESTS_DAILY_TITLE|Tägliche Quests
+HODA_QUESTS_LOCKED|Tägliche und wöchentliche Quests werden ab Spielerstufe {0} freigeschaltet.
+HODA_QUESTS_OPENING|Truhe wird geöffnet …
+HODA_QUESTS_RESETS_IN|Neue Quests in {0}
+HODA_QUESTS_ROSTER_FULL|Deine Heldenliste ist voll. Schaffe zuerst Platz für die Helden in dieser Truhe.
+HODA_QUESTS_SWAP|Tauschen
+HODA_QUESTS_TAB|Täglich
+HODA_QUESTS_WEEKLY_TITLE|Wöchentliche Quests
+HODA_QUEST_ACTIVE_DAYS_DESC|Kämpfe diese Woche an {0} verschiedenen Tagen
+HODA_QUEST_ACTIVE_DAYS_TITLE|Standhaft
+HODA_QUEST_BATTLE_WINS_DESC|Gewinne {0} Kämpfe beliebiger Art
+HODA_QUEST_BATTLE_WINS_TITLE|Kampferprobt
+HODA_QUEST_CAMPAIGN_WINS_DESC|Gewinne {0} Kampagnenkämpfe
+HODA_QUEST_CAMPAIGN_WINS_TITLE|Weg zum Sieg
+HODA_QUEST_CONSUMED_DESC|Löse {0} Helden auf
+HODA_QUEST_CONSUMED_TITLE|Stärker werden
+HODA_QUEST_CRITS_DESC|Lande {0} kritische Treffer
+HODA_QUEST_CRITS_TITLE|Kritisches Auge
+HODA_QUEST_DAILY_QUESTS_DESC|Schließe {0} tägliche Quests ab
+HODA_QUEST_DAILY_QUESTS_TITLE|Pflichtbewusst
+HODA_QUEST_EXPEDITIONS_RETURNED_DESC|Hole {0} heimgekehrte Expeditionen ab
+HODA_QUEST_EXPEDITIONS_RETURNED_TITLE|Sichere Heimkehr
+HODA_QUEST_EXPEDITIONS_SENT_DESC|Schicke {0} Expeditionen los
+HODA_QUEST_EXPEDITIONS_SENT_TITLE|Marschbefehl
+HODA_QUEST_FACTION_HITS_DESC|Lande in {0} Kämpfen einen Fraktionsbonus-Treffer
+HODA_QUEST_FACTION_HITS_TITLE|Kenne deinen Feind
+HODA_QUEST_PVP_BATTLES_DESC|Bestreite {0} PvP-Kämpfe
+HODA_QUEST_PVP_BATTLES_TITLE|In die Arena
+HODA_QUEST_PVP_WINS_DESC|Gewinne {0} PvP-Kämpfe
+HODA_QUEST_PVP_WINS_TITLE|Arenachampion
+HODA_QUEST_SUMMONED_DESC|Beschwöre {0} Helden aus Paketen
+HODA_QUEST_SUMMONED_TITLE|Neue Rekruten

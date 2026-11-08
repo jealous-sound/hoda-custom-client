@@ -10,8 +10,6 @@
 #define MISSIONS_BURST_TIME 1.3f
 #define MISSIONS_BURST_FADE 1.0f
 #define MISSIONS_TEXT_SIZE 256
-#define MISSIONS_BAR_INNER_WIDTH 0.79f
-#define MISSIONS_BAR_INNER_HEIGHT 0.4f
 #define MISSIONS_TABS_INSET_X 61.0f
 #define MISSIONS_TABS_TOP 76.0f
 #define MISSIONS_TABS_WIDTH 818.0f
@@ -40,6 +38,7 @@ typedef struct {
     bool icon_loaded[MISSION_CAPACITY];
     int order[MISSION_SERIES_CAPACITY];
     GoalsTabs tabs;
+    TimedQuestView quests;
     GoalsTab tab;
     GoalsScroll scroll;
     int claim_series;
@@ -70,6 +69,7 @@ void MissionsInitialize(MissionsScreen *s) {
     ButtonSetClickSound(&s->claim, SND_MISSION_COLLECT);
     s->claim_series = MISSION_NONE;
     GoalsTabsInitialize(&s->tabs);
+    TimedQuestViewInitialize(&s->quests);
 }
 
 static void MissionsSelectTab(MissionsScreen *s, Player *p, GoalsTab tab) {
@@ -83,7 +83,10 @@ static void MissionsSelectTab(MissionsScreen *s, Player *p, GoalsTab tab) {
 
 void MissionsOpen(MissionsScreen *s, Player *p, GoalsTab tab) {
     PvpEventSync(&p->pvp, ServerNow());
-    if (PvpEventUnclaimedCount(&p->pvp) > 0 && tab == GOALS_TAB_MISSIONS) tab = GOALS_TAB_EVENTS;
+    bool quests_waiting = tab == GOALS_TAB_DAILY && TimedQuestsClaimableCount(p) > 0;
+    if (PvpEventUnclaimedCount(&p->pvp) > 0 &&
+        (tab == GOALS_TAB_MISSIONS || (tab == GOALS_TAB_DAILY && !quests_waiting)))
+        tab = GOALS_TAB_EVENTS;
     PlayerMissions *m = &p->missions;
     int count = 0;
     for (int pass = 0; pass < 2; pass++) {
@@ -148,6 +151,13 @@ static void MissionsBeginClaim(MissionsScreen *s, Hud *hud, Player *p, int serie
     ServerActionSubmit(fields);
 }
 
+static void MissionsStartBurst(MissionsScreen *s, Vector2 from, bool gems) {
+    s->burst_start = from;
+    s->burst_active = true;
+    s->burst_gems = gems;
+    s->burst_time = 0.0f;
+}
+
 static void MissionsFinishClaim(MissionsScreen *s, Hud *hud, const Player *p) {
     s->claim_series = MISSION_NONE;
     s->burst_active = true;
@@ -189,8 +199,7 @@ static float MissionsFlashAlpha(float time) {
 static void MissionsDrawProgress(const MissionsScreen *s, long long value, long long target, Rectangle bar) {
     if (value > target) value = target;
     UiDrawTexture(GuiTex(GUI_MISSION_PROGRESS), bar, WHITE);
-    Rectangle trough =
-        UiRect(bar, 0.5f, 0.5f, bar.width * MISSIONS_BAR_INNER_WIDTH, bar.height * MISSIONS_BAR_INNER_HEIGHT);
+    Rectangle trough = UiRect(bar, 0.5f, 0.5f, bar.width * GOALS_BAR_INNER_WIDTH, bar.height * GOALS_BAR_INNER_HEIGHT);
     Rectangle fill = trough;
     fill.width *= (float)value / (float)target;
     UiDrawTexture(GuiTex(GUI_MISSION_PROGRESS_FILL), fill, WHITE);
@@ -319,7 +328,8 @@ static void MissionsDrawAchievements(MissionsScreen *s, Hud *hud, Player *p, Rec
     MissionsDrawSummary(s, &p->missions, summary);
 }
 
-MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, const GoalsGuildAward *award, float dt) {
+MissionsAction
+MissionsDraw(MissionsScreen *s, Hud *hud, Heroes *heroes, Player *p, const GoalsGuildAward *award, float dt) {
     Rectangle root = UiRoot();
     DrawRectangle(0, 0, root.width, root.height, (Color){0, 0, 0, 170});
     Rectangle panel = UiRect(root, 0.5f, 0.6f, 940.0f, 597.0f);
@@ -333,7 +343,8 @@ MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, const GoalsG
         if (s->claim_time >= MISSIONS_CLAIM_TIME) MissionsFinishClaim(s, hud, p);
     }
 
-    bool interactive = !UiInputBlocked() && s->claim_series == MISSION_NONE;
+    bool quests_blocking = TimedQuestViewBlocking(&s->quests);
+    bool interactive = !UiInputBlocked() && s->claim_series == MISSION_NONE && !quests_blocking;
     Rectangle bar = {
         panel.x + MISSIONS_TABS_INSET_X, panel.y + MISSIONS_TABS_TOP, MISSIONS_TABS_WIDTH, MISSIONS_TABS_HEIGHT
     };
@@ -351,6 +362,9 @@ MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, const GoalsG
     long long now = ServerNow();
     if (s->tab == GOALS_TAB_MISSIONS) {
         MissionsDrawAchievements(s, hud, p, content, interactive);
+    } else if (s->tab == GOALS_TAB_DAILY) {
+        TimedQuestViewAction paid = TimedQuestViewDraw(&s->quests, &s->scroll, heroes, p, content, interactive);
+        if (paid.kind == TIMED_QUEST_VIEW_PAID) MissionsStartBurst(s, paid.from, paid.gems);
     } else if (s->tab == GOALS_TAB_TROPHIES) {
         goal = GoalsDrawTrophies(&s->tabs, &s->scroll, p, content, interactive);
     } else if (s->tab == GOALS_TAB_BATTLES) {
@@ -377,15 +391,16 @@ MissionsAction MissionsDraw(MissionsScreen *s, Hud *hud, Player *p, const GoalsG
     Rectangle close = {
         panel.x + panel.width - close_size * 1.25f, panel.y + panel.height * 0.07f, close_size, close_size
     };
-    if (ButtonDrawEx(&s->close, close, !UiInputBlocked())) action = MISSIONS_CLOSE;
+    if (ButtonDrawEx(&s->close, close, !UiInputBlocked() && !quests_blocking)) action = MISSIONS_CLOSE;
 
     MissionsDrawBurst(s, dt);
+    TimedQuestViewDrawOverlay(&s->quests);
 
     Vector2 mouse = UiMouse();
     Rectangle top_ui = {0.0f, 0.0f, UiWidth(), 96.0f};
     bool scrim_hover = !CheckCollisionPointRec(mouse, panel) && !CheckCollisionPointRec(mouse, close) &&
                        !CheckCollisionPointRec(mouse, top_ui);
-    if (UiInputBlocked()) {
+    if (UiInputBlocked() || quests_blocking) {
         s->scrim_armed = false;
     } else if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         s->scrim_armed = scrim_hover;

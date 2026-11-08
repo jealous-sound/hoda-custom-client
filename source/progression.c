@@ -1177,6 +1177,12 @@ char *ProgressionSerialize(const Player *player) {
         goto save_json_failed;
     }
 
+    cJSON *timed_quests = TimedQuestsSave(&player->timed_quests);
+    if (!timed_quests || !cJSON_AddItemToObject(root, "timed_quests", timed_quests)) {
+        cJSON_Delete(timed_quests);
+        goto save_json_failed;
+    }
+
     cJSON *tutorial = cJSON_AddObjectToObject(root, "tutorial");
     if (!tutorial || !cJSON_AddBoolToObject(tutorial, "complete", player->tutorial.main_complete) ||
         !cJSON_AddBoolToObject(tutorial, "consume_complete", player->tutorial.consume_complete))
@@ -1776,6 +1782,9 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
     PlayerExpeditions loaded_expeditions;
     ExpeditionsLoad(cJSON_GetObjectItemCaseSensitive(root, "expeditions"), &loaded_expeditions);
 
+    static PlayerTimedQuests loaded_timed_quests;
+    TimedQuestsLoad(cJSON_GetObjectItemCaseSensitive(root, "timed_quests"), &loaded_timed_quests);
+
     PlayerGallery loaded_gallery = {0};
     if (valid && version >= 6)
         valid = ProgressionLoadGallery(cJSON_GetObjectItemCaseSensitive(root, "gallery"), &loaded_gallery);
@@ -1870,6 +1879,7 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
     player->gallery = loaded_gallery;
     player->missions = loaded_missions;
     player->expeditions = loaded_expeditions;
+    player->timed_quests = loaded_timed_quests;
     player->pvp = loaded_pvp;
     PvpHistorySanitize(&player->pvp);
     free(loaded_runes);

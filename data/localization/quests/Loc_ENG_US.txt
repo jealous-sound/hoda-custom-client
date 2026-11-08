@@ -1,0 +1,33 @@
+HODA_QUESTS_CHEST_FAILED|The chest could not be opened. Try again.
+HODA_QUESTS_DAILY_TITLE|Daily Quests
+HODA_QUESTS_LOCKED|Daily and weekly quests open at player level {0}.
+HODA_QUESTS_OPENING|Opening the chest…
+HODA_QUESTS_RESETS_IN|New quests in {0}
+HODA_QUESTS_ROSTER_FULL|Your roster is full. Make room for the heroes in this chest first.
+HODA_QUESTS_SWAP|Swap
+HODA_QUESTS_TAB|Daily
+HODA_QUESTS_WEEKLY_TITLE|Weekly Quests
+HODA_QUEST_ACTIVE_DAYS_DESC|Fight on {0} different days this week
+HODA_QUEST_ACTIVE_DAYS_TITLE|Steadfast
+HODA_QUEST_BATTLE_WINS_DESC|Win {0} battles of any kind
+HODA_QUEST_BATTLE_WINS_TITLE|Battle-Hardened
+HODA_QUEST_CAMPAIGN_WINS_DESC|Win {0} campaign battles
+HODA_QUEST_CAMPAIGN_WINS_TITLE|Road to Victory
+HODA_QUEST_CONSUMED_DESC|Consume {0} heroes
+HODA_QUEST_CONSUMED_TITLE|Grow Stronger
+HODA_QUEST_CRITS_DESC|Land {0} critical hits
+HODA_QUEST_CRITS_TITLE|Critical Eye
+HODA_QUEST_DAILY_QUESTS_DESC|Complete {0} daily quests
+HODA_QUEST_DAILY_QUESTS_TITLE|Dutiful
+HODA_QUEST_EXPEDITIONS_RETURNED_DESC|Collect {0} returned expeditions
+HODA_QUEST_EXPEDITIONS_RETURNED_TITLE|Safe Return
+HODA_QUEST_EXPEDITIONS_SENT_DESC|Send {0} expeditions
+HODA_QUEST_EXPEDITIONS_SENT_TITLE|Marching Orders
+HODA_QUEST_FACTION_HITS_DESC|Land a faction bonus hit in {0} battles
+HODA_QUEST_FACTION_HITS_TITLE|Know Your Enemy
+HODA_QUEST_PVP_BATTLES_DESC|Fight {0} PvP battles
+HODA_QUEST_PVP_BATTLES_TITLE|Into the Arena
+HODA_QUEST_PVP_WINS_DESC|Win {0} PvP battles
+HODA_QUEST_PVP_WINS_TITLE|Arena Champion
+HODA_QUEST_SUMMONED_DESC|Summon {0} heroes from packs
+HODA_QUEST_SUMMONED_TITLE|New Recruits

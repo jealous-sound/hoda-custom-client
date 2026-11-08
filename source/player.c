@@ -127,6 +127,7 @@ typedef struct {
     PlayerMissions missions;
     PlayerPvp pvp;
     PlayerExpeditions expeditions;
+    PlayerTimedQuests timed_quests;
 
     char name[PLAYER_NAME_CAPACITY];
     PlayerTutorial tutorial;
@@ -527,6 +528,7 @@ int PlayerConsumeUnits(Player *p, int target, const int *seeds, int count) {
         ch->crit_chance = outcome.crit_chance;
         GalleryRecordOwned(&p->gallery, ch->id, ch->tier, false);
         p->missions.counters[MISSION_STAT_CONSUMED] += count;
+        TimedQuestsCount(&p->timed_quests, TIMED_QUEST_STAT_CONSUMED, count, ServerNow());
         for (int i = 0; i < count; i++) {
             if (!strcmp(seed_units[i]->id, ch->id)) p->missions.counters[MISSION_STAT_COMBINED]++;
         }

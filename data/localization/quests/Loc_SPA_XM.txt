@@ -1,0 +1,33 @@
+HODA_QUESTS_CHEST_FAILED|No se pudo abrir el cofre. Inténtalo de nuevo.
+HODA_QUESTS_DAILY_TITLE|Misiones diarias
+HODA_QUESTS_LOCKED|Las misiones diarias y semanales se desbloquean en el nivel de jugador {0}.
+HODA_QUESTS_OPENING|Abriendo el cofre…
+HODA_QUESTS_RESETS_IN|Nuevas misiones en {0}
+HODA_QUESTS_ROSTER_FULL|Tu plantilla está llena. Haz sitio para los héroes de este cofre.
+HODA_QUESTS_SWAP|Cambiar
+HODA_QUESTS_TAB|Diarias
+HODA_QUESTS_WEEKLY_TITLE|Misiones semanales
+HODA_QUEST_ACTIVE_DAYS_DESC|Lucha en {0} días distintos esta semana
+HODA_QUEST_ACTIVE_DAYS_TITLE|Constante
+HODA_QUEST_BATTLE_WINS_DESC|Gana {0} batallas de cualquier tipo
+HODA_QUEST_BATTLE_WINS_TITLE|Curtido en batalla
+HODA_QUEST_CAMPAIGN_WINS_DESC|Gana {0} batallas de campaña
+HODA_QUEST_CAMPAIGN_WINS_TITLE|Camino a la victoria
+HODA_QUEST_CONSUMED_DESC|Consume {0} héroes
+HODA_QUEST_CONSUMED_TITLE|Más fuerte
+HODA_QUEST_CRITS_DESC|Asesta {0} golpes críticos
+HODA_QUEST_CRITS_TITLE|Ojo crítico
+HODA_QUEST_DAILY_QUESTS_DESC|Completa {0} misiones diarias
+HODA_QUEST_DAILY_QUESTS_TITLE|Diligente
+HODA_QUEST_EXPEDITIONS_RETURNED_DESC|Recoge {0} expediciones de vuelta
+HODA_QUEST_EXPEDITIONS_RETURNED_TITLE|Regreso seguro
+HODA_QUEST_EXPEDITIONS_SENT_DESC|Envía {0} expediciones
+HODA_QUEST_EXPEDITIONS_SENT_TITLE|Órdenes de marcha
+HODA_QUEST_FACTION_HITS_DESC|Logra un bonus de facción en {0} batallas
+HODA_QUEST_FACTION_HITS_TITLE|Conoce a tu enemigo
+HODA_QUEST_PVP_BATTLES_DESC|Libra {0} batallas JcJ
+HODA_QUEST_PVP_BATTLES_TITLE|A la arena
+HODA_QUEST_PVP_WINS_DESC|Gana {0} batallas JcJ
+HODA_QUEST_PVP_WINS_TITLE|Campeón de la arena
+HODA_QUEST_SUMMONED_DESC|Invoca {0} héroes de paquetes
+HODA_QUEST_SUMMONED_TITLE|Nuevos reclutas

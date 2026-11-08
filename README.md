@@ -106,6 +106,33 @@ into the original frame. They live in `client-additional-data/extra/gui/expediti
 `expeditions_recall`, `expeditions_reward`, `expeditions_home`, `expeditions_roster`, `expeditions_reveal_hero` and
 `expeditions_reveal_items` render the screens with three parties out.
 
+## Daily and weekly quests
+
+The game no longer sells gems, so quests are the steady free income next to Expeditions. The Daily tab of Goals (the
+default tab from player level 3, with the claimable count on the Goals badge) holds two sections:
+
+- Daily Quests: five quests a day, one from each slot of `data/timed_quests.json` (campaign, PvP, combat, heroes,
+  expeditions). The day's pick is the store xorshift seeded from the UTC day and the slot, so the client and the server
+  pick the same quests without storing them. One unfinished quest a day can be swapped for the next one in its slot,
+  after Hearthstone's daily reroll.
+- Weekly Quests: five larger goals each week, Monday 00:00 UTC to the next, including "complete 20 daily quests" and
+  "fight on 5 different days", so a week stays winnable after missed days.
+
+Each claimed quest pays its gold or gems and 20 points. Points fill a chest track: daily chests at 40, 80 and 100 points
+(gold; gems and a rune; gems and a hero, mostly Common to Rare), weekly chests at 60 and 100 (gold, gems and gear;
+gems, an Epic or Legendary hero and a rune). Chest heroes, gear and runes are revealed the way packs reveal them. The
+table pays about 15 gems a day from dailies and 70 a week from weeklies, about half a Champion Pack a day plus a
+weekly boost; the research behind those amounts is in the pull request.
+
+Counts are per UTC day and per week in the save's `timed_quests` section: battles and wins by mode, crits, faction
+bonus hits, consumes, summons, expeditions sent and returned, claimed daily quests and active days. The server owns the
+section; `quest_claim`, `quest_swap` and `quest_chest` are server actions, and chests wait for the server's roll as
+expedition claims do. The chests and the summon, crit, days, expedition and daily-quest icons were generated with the
+Codex CLI from the original pack icons and achievement badges (the icons keep the original hexagon's alpha) and live in
+`client-additional-data/extra/gui/quests/`; without them the screen falls back to the original pack icons and
+achievement badges named in the table. `HOD_SHOT_SCREEN=goals_daily`, `goals_daily_weekly` and `goals_daily_locked`
+render the tab.
+
 ## Commands
 
 ```sh

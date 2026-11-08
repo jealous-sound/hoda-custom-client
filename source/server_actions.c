@@ -11,6 +11,7 @@ typedef enum {
     SERVER_REPLY_BATTLE_START,
     SERVER_REPLY_PVP_MATCH,
     SERVER_REPLY_EXPEDITION_CLAIM,
+    SERVER_REPLY_QUEST_CHEST,
 } ServerReplyTag;
 
 typedef struct {

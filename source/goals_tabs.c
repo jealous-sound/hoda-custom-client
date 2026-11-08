@@ -15,8 +15,17 @@
 #define GOALS_TEXT_SIZE 256
 #define GOALS_MINUTE 60LL
 #define GOALS_HOUR 3600LL
+#define GOALS_BAR_INNER_WIDTH 0.79f
+#define GOALS_BAR_INNER_HEIGHT 0.4f
 
-typedef enum { GOALS_TAB_TROPHIES, GOALS_TAB_MISSIONS, GOALS_TAB_EVENTS, GOALS_TAB_BATTLES, GOALS_TAB_COUNT } GoalsTab;
+typedef enum {
+    GOALS_TAB_TROPHIES,
+    GOALS_TAB_DAILY,
+    GOALS_TAB_MISSIONS,
+    GOALS_TAB_EVENTS,
+    GOALS_TAB_BATTLES,
+    GOALS_TAB_COUNT
+} GoalsTab;
 
 typedef enum { GOALS_NONE = 0, GOALS_FIGHT_BOT, GOALS_REVENGE, GOALS_CLAIM_EVENT, GOALS_CLAIM_GUILD_EVENT } GoalsAction;
 
@@ -62,6 +71,8 @@ void GoalsTabsInitialize(GoalsTabs *t) {
     t->body = GuiFont(FNT_MENU);
     Vector2 centre = {0.5f, 0.5f};
     t->tabs[GOALS_TAB_TROPHIES] = ButtonLoad(GUI_GOALS_TAB_FEATURED, GUI_GOALS_TAB_FEATURED_ON);
+    t->tabs[GOALS_TAB_DAILY] =
+        ButtonLoadText(GUI_GOALS_TAB, GUI_GOALS_TAB_ON, LocGet("HODA_QUESTS_TAB"), t->font, centre, 0.36f);
     t->tabs[GOALS_TAB_MISSIONS] =
         ButtonLoadText(GUI_GOALS_TAB, GUI_GOALS_TAB_ON, LocGet("LEADERBOARD_MISSIONS_BUTTON"), t->font, centre, 0.36f);
     t->tabs[GOALS_TAB_EVENTS] =
@@ -120,8 +131,8 @@ void GoalsDrawEmpty(const GoalsTabs *t, const char *text, Rectangle area) {
 }
 
 GoalsTab GoalsDrawTabBar(GoalsTabs *t, GoalsTab selected, Rectangle bar, bool interactive) {
-    static const float widths[GOALS_TAB_COUNT] = {81.25f, 235.625f, 235.625f, 235.625f};
-    static const float gaps[GOALS_TAB_COUNT] = {12.75f, 9.375f, 8.375f, 0.0f};
+    static const float widths[GOALS_TAB_COUNT] = {81.25f, 174.5f, 174.5f, 174.5f, 174.5f};
+    static const float gaps[GOALS_TAB_COUNT] = {12.75f, 8.875f, 8.875f, 8.875f, 0.0f};
     float x = bar.x;
     GoalsTab pressed = selected;
     for (int tab = 0; tab < GOALS_TAB_COUNT; tab++) {
