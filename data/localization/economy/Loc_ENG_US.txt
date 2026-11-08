@@ -11,6 +11,8 @@ HODA_STORE_SERVER_BUSY|The server is busy, please try again
 HODA_STORE_PRICE_CHANGED|The price has changed, please try again
 HODA_STORE_PROFILE_CHANGED|Your profile changed on the server
 HODA_STORE_REAL_MONEY_OFFLINE|Real-money purchases are not available in this version
+HODA_STORE_GEM_TRADER_DEAD_TITLE|Returned to the Stone
+HODA_STORE_GEM_TRADER_DEAD_BODY|Our gem trader, a dwarf of the Merchants' Guild, went down into the Deep Roads for one last haul, and the darkspawn found him first. His stall stands empty, and no gems will ever be sold here again. May the Stone embrace him.
 HODA_TUTORIAL_CONSUME_PACK_NAME|Tutorial Pack
 HODA_GRAND_CHAMPION_PACK_NAME|Grand Champion Pack
 HODA_MERCENARY_PACK_NAME|Mercenary Pack

@@ -11,6 +11,8 @@ HODA_STORE_SERVER_BUSY|Il server è occupato, riprova
 HODA_STORE_PRICE_CHANGED|Il prezzo è cambiato, riprova
 HODA_STORE_PROFILE_CHANGED|Il tuo profilo è cambiato sul server
 HODA_STORE_REAL_MONEY_OFFLINE|Gli acquisti con denaro reale non sono disponibili in questa versione
+HODA_STORE_GEM_TRADER_DEAD_TITLE|Ritorno alla Pietra
+HODA_STORE_GEM_TRADER_DEAD_BODY|Il nostro mercante di gemme, un nano della Gilda dei Mercanti, è sceso nelle Vie Profonde per un ultimo bottino, ma la Prole Oscura l'ha trovato per prima. La sua bancarella è vuota e qui non si venderanno mai più gemme. Che la Pietra lo accolga.
 HODA_TUTORIAL_CONSUME_PACK_NAME|Pacchetto Tutorial
 HODA_GRAND_CHAMPION_PACK_NAME|Pacchetto Campione Supremo
 HODA_MERCENARY_PACK_NAME|Pacchetto Mercenario

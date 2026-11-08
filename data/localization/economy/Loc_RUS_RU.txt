@@ -11,6 +11,8 @@ HODA_STORE_SERVER_BUSY|Сервер занят, попробуйте ещё ра
 HODA_STORE_PRICE_CHANGED|Цена изменилась, попробуйте ещё раз
 HODA_STORE_PROFILE_CHANGED|Профиль изменился на сервере
 HODA_STORE_REAL_MONEY_OFFLINE|Покупки за реальные деньги недоступны в этой версии
+HODA_STORE_GEM_TRADER_DEAD_TITLE|Возвращение к Камню
+HODA_STORE_GEM_TRADER_DEAD_BODY|Наш торговец самоцветами, гном из Гильдии торговцев, спустился на Глубинные тропы за последней добычей, но порождения тьмы нашли его первыми. Его прилавок пуст, и самоцветов здесь больше никто не продаст. Да примет его Камень.
 HODA_TUTORIAL_CONSUME_PACK_NAME|Набор для обучения
 HODA_GRAND_CHAMPION_PACK_NAME|Большой набор защитника
 HODA_MERCENARY_PACK_NAME|Набор наемника
