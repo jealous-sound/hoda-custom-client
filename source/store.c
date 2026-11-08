@@ -54,7 +54,6 @@ static const Rectangle STORE_GEM_ICON = {0.5f, 0.19f, 0.85f, 0.7f};
 static const Rectangle STORE_GEM_QUANTITY = {0.26f, 1.05f, 0.35f, 0.27f};
 static const Rectangle STORE_GEM_COIN = {0.64f, 0.94f, 0.15f, 0.15f};
 static const Rectangle STORE_GEM_BUY = {0.0f, 1.27f, 1.0f, 0.22f};
-static const Rectangle STORE_GEM_PRICE = {0.5f, 1.35f, 0.95f, 0.27f};
 static const Rectangle STORE_GEM_BANNER = {0.5f, 0.73f, 0.85f, 0.28f};
 static const Rectangle STORE_GEM_QUEST_INFO = {0.64f, 1.39f, 1.0f, 0.44f};
 static const Rectangle STORE_PROCESSING_PAYMENT_ICON = {0.35f, 0.038f, 0.04f, 0.0855f};
@@ -121,6 +120,7 @@ static const Rectangle STORE_LANDING_TILES[STORE_TILE_COUNT] = {
 #define STORE_GEM_CELL_OF_GRID_HEIGHT 0.5f
 #define STORE_GEM_CARD_ASPECT 1.04f
 #define STORE_GEM_LABEL_TEXT_SIZE 27.0f
+#define STORE_GEM_PRICE_ROOM_OF_BAR 0.78f
 #define STORE_GEM_BANNER_TEXT_SIZE 21.0f
 #define STORE_GEM_QUEST_TEXT_SIZE 22.0f
 #define STORE_GEM_FOOTER_TEXT_SIZE 19.0f
@@ -2397,6 +2397,26 @@ static Rectangle StoreIgui(Rectangle parent, Rectangle part) {
     return UiRect(parent, part.x, part.y, part.width, part.height);
 }
 
+static Vector2 StoreInkSpan(Font font, const char *text, float size) {
+    float scale = size / (float)font.baseSize;
+    float top = INFINITY, bottom = -INFINITY;
+    for (const char *c = text; *c;) {
+        int bytes = 0;
+        int codepoint = GetCodepointNext(c, &bytes);
+        c += bytes > 0 ? bytes : 1;
+        if (codepoint == ' ') continue;
+        int glyph = GetGlyphIndex(font, codepoint);
+        top = fminf(top, font.glyphs[glyph].offsetY * scale);
+        bottom = fmaxf(bottom, (font.glyphs[glyph].offsetY + font.recs[glyph].height) * scale);
+    }
+    return top <= bottom ? (Vector2){top, bottom} : (Vector2){0.0f, size};
+}
+
+static void StoreDrawInkCentered(Font font, const char *text, Vector2 left_middle, float size, Color color) {
+    Vector2 ink = StoreInkSpan(font, text, size);
+    DrawTextEx(font, text, (Vector2){left_middle.x, left_middle.y - (ink.x + ink.y) * 0.5f}, size, 1.0f, color);
+}
+
 static void StoreDrawContained(Texture2D texture, Rectangle box, Color tint) {
     float fit = fminf(box.width / texture.width, box.height / texture.height);
     float width = texture.width * fit, height = texture.height * fit;
@@ -2481,8 +2501,17 @@ static void StoreDrawGemSkuCell(Store *store, Rectangle cell, int index) {
     StoreDrawTextureCover(store->gem_icons[sku->icon], StoreIgui(card, STORE_GEM_ICON), WHITE);
     char quantity[16];
     snprintf(quantity, sizeof(quantity), "%d", sku->gems);
-    UiDrawTextRight(store->title_font, quantity, StoreIgui(card, STORE_GEM_QUANTITY), STORE_GEM_LABEL_TEXT_SIZE, WHITE);
-    StoreDrawContained(store->gem_coin, StoreIgui(card, STORE_GEM_COIN), WHITE);
+    Rectangle label = StoreIgui(card, STORE_GEM_QUANTITY);
+    Rectangle coin = StoreIgui(card, STORE_GEM_COIN);
+    float label_width = MeasureTextEx(store->title_font, quantity, STORE_GEM_LABEL_TEXT_SIZE, 1.0f).x;
+    StoreDrawInkCentered(
+        store->title_font,
+        quantity,
+        (Vector2){label.x + label.width - label_width, coin.y + coin.height * 0.5f},
+        STORE_GEM_LABEL_TEXT_SIZE,
+        WHITE
+    );
+    StoreDrawContained(store->gem_coin, coin, WHITE);
     if (sku->banner) {
         Rectangle ribbon = StoreIgui(card, STORE_GEM_BANNER);
         UiDrawTexture(store->banner_tex, ribbon, WHITE);
@@ -2492,12 +2521,20 @@ static void StoreDrawGemSkuCell(Store *store, Rectangle cell, int index) {
     }
 
     float opacity = StoreGemPurchaseActive(store) ? STORE_GEM_BUSY_OPACITY : 1.0f;
-    UiDrawTexture(GuiTex(GUI_STORE_BUY), StoreIgui(card, STORE_GEM_BUY), Fade(WHITE, opacity));
-    StoreDrawCenteredFit(
+    Rectangle bar = StoreIgui(card, STORE_GEM_BUY);
+    UiDrawTexture(GuiTex(GUI_STORE_BUY), bar, Fade(WHITE, opacity));
+    float size = bar.height * STORE_PRICE_TEXT_OF_BAR;
+    float room = bar.width * STORE_GEM_PRICE_ROOM_OF_BAR;
+    float width = MeasureTextEx(store->title_font, sku->cost, size, 1.0f).x;
+    if (width > room) {
+        size *= room / width;
+        width = room;
+    }
+    StoreDrawInkCentered(
         store->title_font,
         sku->cost,
-        StoreIgui(card, STORE_GEM_PRICE),
-        STORE_GEM_LABEL_TEXT_SIZE,
+        (Vector2){bar.x + (bar.width - width) * 0.5f, bar.y + bar.height * 0.5f},
+        size,
         Fade(STORE_GEM_LABEL_COLOR, opacity)
     );
     if (StoreReleasedOn(store, cell)) StoreBeginGemPurchase(store, index);
@@ -2562,7 +2599,7 @@ static void StoreDrawSpinner(Rectangle box, float seconds, Color tint) {
 
 static float StoreDrawGemAmount(Store *store, const char *amount, Vector2 at, float size, Color tint) {
     Vector2 measured = MeasureTextEx(store->title_font, amount, size, 1.0f);
-    DrawTextEx(store->title_font, amount, (Vector2){at.x, at.y - measured.y * 0.5f}, size, 1.0f, tint);
+    StoreDrawInkCentered(store->title_font, amount, at, size, tint);
     float coin = size * STORE_GEM_AMOUNT_COIN_OF_TEXT;
     float coin_x = at.x + measured.x + size * STORE_GEM_AMOUNT_GAP_OF_TEXT;
     UiDrawTexture(store->gem_coin, (Rectangle){coin_x, at.y - coin * 0.5f, coin, coin}, tint);
@@ -2602,10 +2639,7 @@ static void StoreDrawPaymentProcessing(Store *store) {
     float x = summary.x + (summary.width - amount_width - gap - price_width) * 0.5f;
     float mid = summary.y + summary.height * 0.5f;
     x += StoreDrawGemAmount(store, amount, (Vector2){x, mid}, size, Fade(WHITE, fade)) + gap;
-    Vector2 price = MeasureTextEx(store->body_font, sku->cost, size, 1.0f);
-    DrawTextEx(
-        store->body_font, sku->cost, (Vector2){x, mid - price.y * 0.5f}, size, 1.0f, Fade(STORE_GEM_FOOTER_COLOR, fade)
-    );
+    StoreDrawInkCentered(store->body_font, sku->cost, (Vector2){x, mid}, size, Fade(STORE_GEM_FOOTER_COLOR, fade));
 }
 
 static bool StoreClaimGemPurchase(Store *store, Player *player) {
