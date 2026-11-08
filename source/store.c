@@ -98,6 +98,17 @@ static const Rectangle STORE_LANDING_TILES[STORE_TILE_COUNT] = {
 #define STORE_CURRENCY_SIZE_OF_BAR 0.8f
 #define STORE_TITLE_TEXT_OF_PLATE 0.088f
 #define STORE_GEM_SUBTEXT_HEIGHT 21.0f
+#define STORE_GEM_NOTICE_WIDTH_OF_LIST 0.64f
+#define STORE_PARAGRAPH_BALANCE_STEPS 8
+#define STORE_GEM_NOTICE_TITLE_SIZE 44.0f
+#define STORE_GEM_NOTICE_BODY_SIZE 25.0f
+#define STORE_GEM_NOTICE_BODY_MIN_SIZE 16.0f
+#define STORE_GEM_NOTICE_GAP 34.0f
+#define STORE_GEM_NOTICE_RULE_OF_WIDTH 0.42f
+#define STORE_GEM_NOTICE_RULE_THICKNESS 2.0f
+#define STORE_GEM_NOTICE_TITLE_COLOR ((Color){236, 206, 140, 255})
+#define STORE_GEM_NOTICE_RULE_COLOR ((Color){236, 206, 140, 110})
+#define STORE_GEM_NOTICE_BODY_COLOR ((Color){226, 222, 210, 255})
 #define STORE_REVEAL_RUNE_CARD_HEIGHT 480.0f
 #define STORE_REVEAL_RUNE_CARD_TOP 150.0f
 #define STORE_REVEAL_GEAR_CARD_SIZE 440.0f
@@ -2235,11 +2246,87 @@ static StoreAction StoreDrawVaultPage(Store *store) {
     return STORE_ACTION_NONE;
 }
 
+static bool StoreGemTraderDead(void) {
+    return BackendEnabled();
+}
+
+static float StoreParagraphHeight(Font font, const char *text, float width, float size) {
+    char lines[MESSAGE_POPUP_LINES][MESSAGE_POPUP_TEXT_CAP];
+    int count = MessagePopupWrap(font, text, width, size, lines, MESSAGE_POPUP_LINES);
+    return count < MESSAGE_POPUP_LINES ? count * size * MESSAGE_POPUP_LINE_SPACING : INFINITY;
+}
+
+static float StoreFitParagraphSize(Font font, const char *text, Vector2 box, float size, float min_size) {
+    while (size > min_size && StoreParagraphHeight(font, text, box.x, size) > box.y) size -= 0.5f;
+    return size;
+}
+
+static float StoreBalancedParagraphWidth(Font font, const char *text, float width, float size) {
+    float height = StoreParagraphHeight(font, text, width, size);
+    float too_narrow = width * 0.5f;
+    for (int step = 0; step < STORE_PARAGRAPH_BALANCE_STEPS; step++) {
+        float trial = (too_narrow + width) * 0.5f;
+        if (StoreParagraphHeight(font, text, trial, size) > height)
+            too_narrow = trial;
+        else
+            width = trial;
+    }
+    return width;
+}
+
+static void StoreDrawGemTraderNotice(Store *store, Rectangle area) {
+    const char *story = LocGet("HODA_STORE_GEM_TRADER_DEAD_BODY");
+    float width = area.width * STORE_GEM_NOTICE_WIDTH_OF_LIST;
+    float x = area.x + (area.width - width) * 0.5f;
+    Vector2 room = {width, area.height - STORE_GEM_NOTICE_TITLE_SIZE - STORE_GEM_NOTICE_GAP};
+    float size = StoreFitParagraphSize(
+        store->body_font, story, room, STORE_GEM_NOTICE_BODY_SIZE, STORE_GEM_NOTICE_BODY_MIN_SIZE
+    );
+    float body_height = fminf(StoreParagraphHeight(store->body_font, story, width, size), room.y);
+    float body_width = StoreBalancedParagraphWidth(store->body_font, story, width, size);
+    float top = area.y + (area.height - STORE_GEM_NOTICE_TITLE_SIZE - STORE_GEM_NOTICE_GAP - body_height) * 0.5f;
+
+    StoreDrawCenteredFit(
+        store->title_font,
+        LocGet("HODA_STORE_GEM_TRADER_DEAD_TITLE"),
+        (Rectangle){x, top, width, STORE_GEM_NOTICE_TITLE_SIZE},
+        STORE_GEM_NOTICE_TITLE_SIZE,
+        STORE_GEM_NOTICE_TITLE_COLOR
+    );
+    float rule_width = width * STORE_GEM_NOTICE_RULE_OF_WIDTH;
+    DrawRectangleRec(
+        (Rectangle){
+            x + (width - rule_width) * 0.5f,
+            top + STORE_GEM_NOTICE_TITLE_SIZE + (STORE_GEM_NOTICE_GAP - STORE_GEM_NOTICE_RULE_THICKNESS) * 0.5f,
+            rule_width,
+            STORE_GEM_NOTICE_RULE_THICKNESS
+        },
+        STORE_GEM_NOTICE_RULE_COLOR
+    );
+    MessagePopupDrawText(
+        store->body_font,
+        story,
+        (Rectangle){
+            x + (width - body_width) * 0.5f,
+            top + STORE_GEM_NOTICE_TITLE_SIZE + STORE_GEM_NOTICE_GAP,
+            body_width,
+            body_height
+        },
+        size,
+        STORE_GEM_NOTICE_BODY_COLOR
+    );
+}
+
 static StoreAction StoreDrawGemsPage(Store *store) {
     int chrome = StoreDrawPopupChrome(store, LocGet("BUTTON_STORE_GEMS_TAB"), true);
     if (chrome == 1) return STORE_ACTION_CLOSE;
     if (chrome == 2) {
         store->view = STORE_VIEW_LANDING;
+        return STORE_ACTION_NONE;
+    }
+    if (StoreGemTraderDead()) {
+        StoreDrawGemTraderNotice(store, StoreListRect());
+        StoreDrawToast(store);
         return STORE_ACTION_NONE;
     }
 

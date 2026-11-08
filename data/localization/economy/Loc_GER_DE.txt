@@ -11,6 +11,8 @@ HODA_STORE_SERVER_BUSY|Der Server ist ausgelastet. Versuche es bitte erneut.
 HODA_STORE_PRICE_CHANGED|Der Preis hat sich geändert. Versuche es bitte erneut.
 HODA_STORE_PROFILE_CHANGED|Dein Profil wurde auf dem Server geändert
 HODA_STORE_REAL_MONEY_OFFLINE|Käufe mit Echtgeld sind in dieser Version nicht verfügbar
+HODA_STORE_GEM_TRADER_DEAD_TITLE|Zum Stein zurückgekehrt
+HODA_STORE_GEM_TRADER_DEAD_BODY|Unser Edelsteinhändler, ein Zwerg der Händlergilde, stieg für eine letzte Ausbeute in die Tiefen Wege hinab, doch die Dunkle Brut fand ihn zuerst. Sein Stand bleibt leer, und hier werden nie wieder Edelsteine verkauft. Möge der Stein ihn aufnehmen.
 HODA_TUTORIAL_CONSUME_PACK_NAME|Tutorial-Pack
 HODA_GRAND_CHAMPION_PACK_NAME|Großchampion-Pack
 HODA_MERCENARY_PACK_NAME|Söldner-Pack
