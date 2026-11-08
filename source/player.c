@@ -681,6 +681,13 @@ bool PlayerSpendKeys(Player *p, int inventory_id, int count) {
     return true;
 }
 
+void PlayerCreditGemPurchase(Player *p, int gems) {
+    p->gems = gems > INT_MAX - p->gems ? INT_MAX : p->gems + gems;
+    if (p->stamina >= p->stamina_max) return;
+    p->stamina = p->stamina_max;
+    p->stamina_regen_timer = 0.0f;
+}
+
 bool PlayerRefillStamina(Player *p) {
     if (p->stamina >= p->stamina_max || p->gems < STAMINA_REFILL_GEM_COST) return false;
     p->gems -= STAMINA_REFILL_GEM_COST;

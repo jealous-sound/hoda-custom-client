@@ -49,6 +49,21 @@ static const Rectangle STORE_CELL_BULLET = {0.06f, 0.705f, 0.88f, 0.06f};
 static const Rectangle STORE_CELL_BUY = {0.0244f, 0.8219f, 0.953f, 0.1013f};
 static const Rectangle STORE_CELL_TAP_AREA = {0.0f, 0.0f, 1.0f, 0.81f};
 static const Rectangle STORE_CELL_TIMER = {0.2f, 0.135f, 0.6f, 0.065f};
+static const Rectangle STORE_GEM_CARD = {0.5f, 0.0f, 0.9f, 0.75f};
+static const Rectangle STORE_GEM_ICON = {0.5f, 0.19f, 0.85f, 0.7f};
+static const Rectangle STORE_GEM_QUANTITY = {0.26f, 1.05f, 0.35f, 0.27f};
+static const Rectangle STORE_GEM_COIN = {0.64f, 0.94f, 0.15f, 0.15f};
+static const Rectangle STORE_GEM_BUY = {0.0f, 1.27f, 1.0f, 0.22f};
+static const Rectangle STORE_GEM_PRICE = {0.5f, 1.35f, 0.95f, 0.27f};
+static const Rectangle STORE_GEM_BANNER = {0.5f, 0.73f, 0.85f, 0.28f};
+static const Rectangle STORE_GEM_QUEST_INFO = {0.64f, 1.39f, 1.0f, 0.44f};
+static const Rectangle STORE_PROCESSING_PAYMENT_ICON = {0.35f, 0.038f, 0.04f, 0.0855f};
+static const Rectangle STORE_GEM_PAYMENT_SPINNER = {0.4f, 0.16f, 0.2f, 0.36f};
+static const Rectangle STORE_GEM_PAYMENT_TITLE = {0.08f, 0.54f, 0.84f, 0.17f};
+static const Rectangle STORE_GEM_PAYMENT_SUMMARY = {0.08f, 0.71f, 0.84f, 0.14f};
+static const Rectangle STORE_GEM_CONGRATS_TITLE = {0.0f, 0.0f, 1.0f, 0.18f};
+static const Rectangle STORE_GEM_CONGRATS_REWARD = {0.0f, 0.22f, 1.0f, 0.36f};
+static const Rectangle STORE_GEM_CONGRATS_MESSAGE = {0.0f, 0.6f, 1.0f, 0.17f};
 #define STORE_TIMER_BANNER_COLOR ((Color){176, 28, 24, 255})
 #define STORE_SCROLL_LINE_GAP 4.0f
 
@@ -98,6 +113,41 @@ static const Rectangle STORE_LANDING_TILES[STORE_TILE_COUNT] = {
 #define STORE_CURRENCY_SIZE_OF_BAR 0.8f
 #define STORE_TITLE_TEXT_OF_PLATE 0.088f
 #define STORE_GEM_SUBTEXT_HEIGHT 21.0f
+#define STORE_PLATE_INNER_TOP_OF_PLATE 0.133f
+#define STORE_PLATE_INNER_BOTTOM_OF_PLATE 0.929f
+#define STORE_GEM_FRAME_MARGIN 8.0f
+#define STORE_GEM_CELLS_PER_ROW 4
+#define STORE_GEM_CELL_OF_GRID_WIDTH 0.245f
+#define STORE_GEM_CELL_OF_GRID_HEIGHT 0.5f
+#define STORE_GEM_CARD_ASPECT 1.04f
+#define STORE_GEM_LABEL_TEXT_SIZE 27.0f
+#define STORE_GEM_BANNER_TEXT_SIZE 21.0f
+#define STORE_GEM_QUEST_TEXT_SIZE 22.0f
+#define STORE_GEM_FOOTER_TEXT_SIZE 19.0f
+#define STORE_GEM_INFO_FRAME_BORDER 14.0f
+#define STORE_GEM_INFO_PADDING 16.0f
+#define STORE_GEM_BUSY_OPACITY 0.5f
+#define STORE_GEM_LABEL_COLOR ((Color){235, 232, 220, 255})
+#define STORE_GEM_FOOTER_COLOR ((Color){206, 202, 190, 255})
+#define STORE_GEM_STAMINA_NOTE_COLOR ((Color){255, 0, 255, 255})
+#define STORE_DIALOG_TITLE_COLOR ((Color){242, 236, 218, 255})
+#define STORE_SPINNER_DEGREES_PER_SECOND 360.0f
+#define STORE_GEM_PAYMENT_SECONDS 2.6f
+#define STORE_GEM_PAYMENT_FADE_SECONDS 0.25f
+#define STORE_GEM_PAYMENT_SCRIM_ALPHA 0.45f
+#define STORE_GEM_PAYMENT_PANEL_WIDTH 480.0f
+#define STORE_GEM_PAYMENT_PANEL_HEIGHT 225.0f
+#define STORE_GEM_PAYMENT_TITLE_SIZE 28.0f
+#define STORE_GEM_PAYMENT_SUMMARY_SIZE 24.0f
+#define STORE_GEM_PAYMENT_SUMMARY_GAP_OF_TEXT 1.0f
+#define STORE_GEM_AMOUNT_COIN_OF_TEXT 1.1f
+#define STORE_GEM_AMOUNT_GAP_OF_TEXT 0.15f
+#define STORE_GEM_CONGRATS_TITLE_SIZE 34.0f
+#define STORE_GEM_CONGRATS_AMOUNT_SIZE 44.0f
+#define STORE_GEM_CONGRATS_COUNT_SECONDS 0.8f
+#define STORE_GEM_CONGRATS_GAP 36.0f
+#define STORE_GEM_CONGRATS_BRUSH_PADDING 26.0f
+#define STORE_GEM_CONGRATS_BRUSH_OF_TEXT 1.7f
 #define STORE_GEM_NOTICE_WIDTH_OF_LIST 0.64f
 #define STORE_PARAGRAPH_BALANCE_STEPS 8
 #define STORE_GEM_NOTICE_TITLE_SIZE 44.0f
@@ -188,6 +238,12 @@ typedef enum {
     STORE_DIALOG_VOUCHER,
     STORE_DIALOG_CONFIRM_GEMS,
 } StoreDialog;
+
+typedef enum {
+    STORE_GEM_PURCHASE_IDLE,
+    STORE_GEM_PURCHASE_PROCESSING,
+    STORE_GEM_PURCHASE_COMPLETE,
+} StoreGemPurchase;
 
 typedef enum {
     STORE_KIND_HERO,
@@ -310,6 +366,7 @@ typedef struct {
     Button item_again;
     Button dialog_ok;
     Button dialog_cancel;
+    Button gem_claim;
     Button nav_train, nav_runes, nav_squad;
     bool nav_consume_clicked;
     Camera3D opening_camera;
@@ -332,6 +389,9 @@ typedef struct {
     float bullet_time;
     StoreDialog dialog;
     bool dialog_press_armed;
+    StoreGemPurchase gem_purchase;
+    int gem_purchase_sku;
+    float gem_purchase_time;
     StoreItemResult item_results[STORE_MAX_ITEM_RESULTS];
     int item_result_count;
     StorePackKind item_kind;
@@ -356,6 +416,10 @@ typedef struct {
     float status_time;
     char status[192];
 } Store;
+
+static bool StoreGemPurchaseActive(const Store *store) {
+    return store->gem_purchase != STORE_GEM_PURCHASE_IDLE;
+}
 
 #define STORE_OPEN_ROULETTE_END 3.06f
 #define STORE_OPEN_CAMERA_END 4.06f
@@ -827,6 +891,15 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
     store->dialog_cancel = ButtonLoadText(
         GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("FORTIFY_CANCEL_BUTTON"), store->title_font, (Vector2){0.5f, 0.5f}, 0.3f
     );
+    store->gem_claim = ButtonLoadText(
+        GUI_BTN_GOLD,
+        GUI_BTN_GOLD_ON,
+        LocGet("ALLY_CODE_INCENTIVE_CLAIM_BUTTON"),
+        store->title_font,
+        (Vector2){0.5f, 0.5f},
+        0.34f
+    );
+    ButtonDisableClickSound(&store->gem_claim);
     store->view = STORE_VIEW_LANDING;
     store->return_view = STORE_VIEW_HEROES;
     store->info_pack = -1;
@@ -856,6 +929,7 @@ void StoreOpen(Store *store) {
     store->drag_scrolled = false;
     store->bullet_time = 0.0f;
     store->dialog = STORE_DIALOG_NONE;
+    store->gem_purchase = STORE_GEM_PURCHASE_IDLE;
     store->info_pack = -1;
     PackHeroClear(&store->opening_hero);
     store->phase_time = 0.0f;
@@ -872,6 +946,7 @@ static void StoreEnterPage(Store *store, StoreView target) {
     store->scroll = 0.0f;
     store->info_pack = -1;
     store->dialog = STORE_DIALOG_NONE;
+    store->gem_purchase = STORE_GEM_PURCHASE_IDLE;
     store->status_time = 0.0f;
     store->item_details = -1;
 }
@@ -894,7 +969,7 @@ bool StoreShowsPackOpening(const Store *store) {
 }
 
 bool StoreDialogOpen(const Store *store) {
-    return store->dialog != STORE_DIALOG_NONE;
+    return store->dialog != STORE_DIALOG_NONE || StoreGemPurchaseActive(store);
 }
 
 bool StoreIsOnGemsPage(const Store *store) {
@@ -942,6 +1017,7 @@ static void StoreFinishCurrentResult(Store *store, Heroes *heroes, bool skipped)
 static StoreAction StoreFinishRewardStage(Store *store);
 
 StoreAction StoreHandleBack(Store *store, Heroes *heroes) {
+    if (StoreGemPurchaseActive(store)) return STORE_ACTION_NONE;
     if (store->dialog != STORE_DIALOG_NONE) {
         store->dialog = STORE_DIALOG_NONE;
         store->dialog_press_armed = false;
@@ -1606,7 +1682,7 @@ static bool StoreRequestPurchase(Store *store, Player *player, Heroes *heroes, i
 
 static bool StoreInputBlocked(const Store *store) {
     bool details_open = store->view == STORE_VIEW_ITEM_REVEAL && store->item_details >= 0;
-    return store->dialog != STORE_DIALOG_NONE || store->drag_scrolled || details_open;
+    return store->dialog != STORE_DIALOG_NONE || StoreGemPurchaseActive(store) || store->drag_scrolled || details_open;
 }
 
 static bool StoreReleasedOn(const Store *store, Rectangle rect) {
@@ -2317,6 +2393,139 @@ static void StoreDrawGemTraderNotice(Store *store, Rectangle area) {
     );
 }
 
+static Rectangle StoreIgui(Rectangle parent, Rectangle part) {
+    return UiRect(parent, part.x, part.y, part.width, part.height);
+}
+
+static void StoreDrawContained(Texture2D texture, Rectangle box, Color tint) {
+    float fit = fminf(box.width / texture.width, box.height / texture.height);
+    float width = texture.width * fit, height = texture.height * fit;
+    UiDrawTexture(
+        texture,
+        (Rectangle){box.x + (box.width - width) * 0.5f, box.y + (box.height - height) * 0.5f, width, height},
+        tint
+    );
+}
+
+typedef struct {
+    Rectangle grid;
+    Rectangle subtext;
+    Rectangle stamina_note;
+} StoreGemLayout;
+
+static StoreGemLayout StoreGemPageLayout(void) {
+    Rectangle plate = StorePlateRect();
+    Rectangle list = StoreListRect();
+    float inner_top = plate.y + plate.height * STORE_PLATE_INNER_TOP_OF_PLATE;
+    float inner_bottom = plate.y + plate.height * STORE_PLATE_INNER_BOTTOM_OF_PLATE;
+    float note_y = inner_bottom - STORE_GEM_FRAME_MARGIN - STORE_GEM_SUBTEXT_HEIGHT;
+    float subtext_y = note_y - STORE_GEM_SUBTEXT_HEIGHT;
+    float grid_y = inner_top + STORE_GEM_FRAME_MARGIN;
+    return (StoreGemLayout){
+        .grid = {list.x, grid_y, list.width, subtext_y - STORE_GEM_FRAME_MARGIN - grid_y},
+        .subtext = {list.x, subtext_y, list.width, STORE_GEM_SUBTEXT_HEIGHT},
+        .stamina_note = {list.x, note_y, list.width, STORE_GEM_SUBTEXT_HEIGHT},
+    };
+}
+
+static Rectangle StoreGemCell(Rectangle grid, int slot) {
+    float width = grid.width * STORE_GEM_CELL_OF_GRID_WIDTH;
+    float height = grid.height * STORE_GEM_CELL_OF_GRID_HEIGHT;
+    int column = slot % STORE_GEM_CELLS_PER_ROW, row = slot / STORE_GEM_CELLS_PER_ROW;
+    return (Rectangle){grid.x + column * width, grid.y + row * height, width, height};
+}
+
+static bool StoreDrawGemQuestCell(Store *store, Rectangle cell) {
+    Rectangle card = StoreIgui(cell, STORE_GEM_CARD);
+    UiDrawTexture(store->gem_card, card, WHITE);
+    StoreDrawTextureCover(store->gem_quest, StoreIgui(card, STORE_GEM_ICON), WHITE);
+    Rectangle info = StoreIgui(card, STORE_GEM_QUEST_INFO);
+    StoreDrawNineSlice(store->gem_info_frame, info, STORE_GEM_INFO_FRAME_BORDER, WHITE);
+    Rectangle label =
+        UiRect(info, 0.5f, 0.5f, info.width - STORE_GEM_INFO_PADDING, info.height - STORE_GEM_INFO_PADDING);
+    const char *text = LocGet("STORE_QUEST_FOR_GEMS");
+    float size = StoreFitParagraphSize(
+        store->body_font,
+        text,
+        (Vector2){label.width, label.height},
+        STORE_GEM_QUEST_TEXT_SIZE,
+        STORE_GEM_FOOTER_TEXT_SIZE
+    );
+    MessagePopupDrawText(store->body_font, text, label, size, STORE_GEM_LABEL_COLOR);
+    if (!StoreReleasedOn(store, cell)) return false;
+    GuiSoundPlay(SND_UI_TAB);
+    return true;
+}
+
+static void StoreBeginGemPurchase(Store *store, int sku) {
+    store->gem_purchase = STORE_GEM_PURCHASE_PROCESSING;
+    store->gem_purchase_sku = sku;
+    store->gem_purchase_time = 0.0f;
+    GuiSoundPlay(SND_GEM_PURCHASE);
+}
+
+static void StoreAdvanceGemPurchase(Store *store, float dt) {
+    if (!StoreGemPurchaseActive(store)) return;
+    store->gem_purchase_time += dt;
+    if (store->gem_purchase != STORE_GEM_PURCHASE_PROCESSING || store->gem_purchase_time < STORE_GEM_PAYMENT_SECONDS)
+        return;
+    store->gem_purchase = STORE_GEM_PURCHASE_COMPLETE;
+    store->gem_purchase_time = 0.0f;
+    GuiSoundPlay(SND_TALLY_GEM);
+}
+
+static void StoreDrawGemSkuCell(Store *store, Rectangle cell, int index) {
+    const StoreGemSku *sku = &store->gem_skus[index];
+    Rectangle card = StoreIgui(cell, STORE_GEM_CARD);
+    UiDrawTexture(store->gem_card, card, WHITE);
+    StoreDrawTextureCover(store->gem_icons[sku->icon], StoreIgui(card, STORE_GEM_ICON), WHITE);
+    char quantity[16];
+    snprintf(quantity, sizeof(quantity), "%d", sku->gems);
+    UiDrawTextRight(store->title_font, quantity, StoreIgui(card, STORE_GEM_QUANTITY), STORE_GEM_LABEL_TEXT_SIZE, WHITE);
+    StoreDrawContained(store->gem_coin, StoreIgui(card, STORE_GEM_COIN), WHITE);
+    if (sku->banner) {
+        Rectangle ribbon = StoreIgui(card, STORE_GEM_BANNER);
+        UiDrawTexture(store->banner_tex, ribbon, WHITE);
+        StoreDrawCenteredFit(
+            store->body_font, sku->banner, UiRect(ribbon, 0.5f, 0.45f, 0.86f, 0.5f), STORE_GEM_BANNER_TEXT_SIZE, WHITE
+        );
+    }
+
+    float opacity = StoreGemPurchaseActive(store) ? STORE_GEM_BUSY_OPACITY : 1.0f;
+    UiDrawTexture(GuiTex(GUI_STORE_BUY), StoreIgui(card, STORE_GEM_BUY), Fade(WHITE, opacity));
+    StoreDrawCenteredFit(
+        store->title_font,
+        sku->cost,
+        StoreIgui(card, STORE_GEM_PRICE),
+        STORE_GEM_LABEL_TEXT_SIZE,
+        Fade(STORE_GEM_LABEL_COLOR, opacity)
+    );
+    if (StoreReleasedOn(store, cell)) StoreBeginGemPurchase(store, index);
+}
+
+static void StoreDrawGemFooter(Store *store, const StoreGemLayout *layout) {
+    StoreDrawCenteredFit(
+        store->body_font,
+        LocGet("STORE_SUBTEXT_GEMS"),
+        layout->subtext,
+        STORE_GEM_FOOTER_TEXT_SIZE,
+        STORE_GEM_FOOTER_COLOR
+    );
+    const char *stamina_note = LocGet("GEM_STORE_STAMINA_REFRESH_DESC");
+    char stripped[256];
+    StrCopy(stripped, sizeof(stripped), stamina_note);
+    char *tag_open = strstr(stripped, ">");
+    char *tag_close = strstr(stripped, "</color>");
+    const char *display = stamina_note;
+    if (tag_open && tag_close) {
+        *tag_close = '\0';
+        display = tag_open + 1;
+    }
+    StoreDrawCenteredFit(
+        store->body_font, display, layout->stamina_note, STORE_GEM_FOOTER_TEXT_SIZE, STORE_GEM_STAMINA_NOTE_COLOR
+    );
+}
+
 static StoreAction StoreDrawGemsPage(Store *store) {
     int chrome = StoreDrawPopupChrome(store, LocGet("BUTTON_STORE_GEMS_TAB"), true);
     if (chrome == 1) return STORE_ACTION_CLOSE;
@@ -2330,119 +2539,149 @@ static StoreAction StoreDrawGemsPage(Store *store) {
         return STORE_ACTION_NONE;
     }
 
-    StoreAction action = STORE_ACTION_NONE;
-    Rectangle list = StoreListRect();
-    float cell_w = list.width * 0.245f;
-    float cell_h = list.height * 0.5f;
-    for (int i = 0; i < STORE_GEM_SKU_COUNT + 1; i++) {
-        Rectangle cell = {list.x + (i % 4) * cell_w, list.y + (i / 4) * cell_h, cell_w, cell_h};
-        Rectangle card = {cell.x + cell.width * 0.05f, cell.y, cell.width * 0.9f, cell.height * 0.72f};
-        UiDrawTexture(store->gem_card, card, WHITE);
-
-        if (i == 0) {
-            Rectangle window = {card.x + 14.0f, card.y + 12.0f, card.width - 28.0f, card.height - 24.0f};
-            float fit = fminf(window.width / store->gem_quest.width, window.height / store->gem_quest.height);
-            UiDrawTexture(
-                store->gem_quest,
-                (Rectangle){
-                    window.x + (window.width - store->gem_quest.width * fit) * 0.5f,
-                    window.y + (window.height - store->gem_quest.height * fit) * 0.5f,
-                    store->gem_quest.width * fit,
-                    store->gem_quest.height * fit
-                },
-                WHITE
-            );
-            Rectangle tip = {cell.x + 6.0f, card.y + card.height + 8.0f, cell.width - 12.0f, 52.0f};
-            StoreDrawNineSlice(store->gem_info_frame, tip, 14.0f, WHITE);
-            StoreDrawCenteredFit(
-                store->body_font,
-                LocGet("STORE_QUEST_FOR_GEMS"),
-                (Rectangle){tip.x + 8.0f, tip.y + 6.0f, tip.width - 16.0f, tip.height - 12.0f},
-                21.0f,
-                (Color){235, 232, 220, 255}
-            );
-            if (StoreReleasedOn(store, cell)) {
-                GuiSoundPlay(SND_UI_TAB);
-                action = STORE_ACTION_GOTO_MAP;
-            }
-            continue;
-        }
-
-        const StoreGemSku *sku = &store->gem_skus[i - 1];
-        StoreDrawTextureCover(
-            store->gem_icons[sku->icon],
-            (Rectangle){card.x + 16.0f, card.y + 10.0f, card.width - 32.0f, card.height - 52.0f},
-            WHITE
-        );
-        char quantity[16];
-        snprintf(quantity, sizeof(quantity), "%d", sku->gems);
-        float qty_size = 27.0f;
-        Vector2 measured = MeasureTextEx(store->title_font, quantity, qty_size, 1.0f);
-        float coin_size = 28.0f;
-        float qty_right = card.x + card.width * 0.61f;
-        DrawTextEx(
-            store->title_font,
-            quantity,
-            (Vector2){qty_right - measured.x, card.y + card.height - 38.0f},
-            qty_size,
-            1.0f,
-            WHITE
-        );
-        UiDrawTexture(
-            store->gem_coin, (Rectangle){qty_right + 4.0f, card.y + card.height - 40.0f, coin_size, coin_size}, WHITE
-        );
-        if (sku->banner) {
-            Rectangle ribbon = {
-                card.x + card.width * 0.075f, card.y + card.height * 0.56f, card.width * 0.85f, card.height * 0.28f
-            };
-            UiDrawTexture(store->banner_tex, ribbon, WHITE);
-            StoreDrawCenteredFit(
-                store->body_font,
-                sku->banner,
-                (Rectangle){
-                    ribbon.x + 10.0f, ribbon.y + ribbon.height * 0.22f, ribbon.width - 20.0f, ribbon.height * 0.5f
-                },
-                19.0f,
-                WHITE
-            );
-        }
-
-        Rectangle bar = {cell.x + 4.0f, card.y + card.height + 10.0f, cell.width - 8.0f, 36.0f};
-        UiDrawTexture(GuiTex(GUI_STORE_BUY), bar, WHITE);
-        StoreDrawCenteredFit(store->title_font, sku->cost, bar, 24.0f, (Color){235, 232, 220, 255});
-        if (StoreReleasedOn(store, cell)) {
-            StoreSetStatus(store, LocGet("HODA_STORE_REAL_MONEY_OFFLINE"));
-            GuiSoundPlay(SND_STORE_INFO);
-        }
-    }
-
-    StoreDrawCenteredFit(
-        store->body_font,
-        LocGet("STORE_SUBTEXT_GEMS"),
-        (Rectangle){list.x, list.y + list.height, list.width, STORE_GEM_SUBTEXT_HEIGHT},
-        19.0f,
-        (Color){206, 202, 190, 255}
-    );
-    const char *stamina_note = LocGet("GEM_STORE_STAMINA_REFRESH_DESC");
-    char stripped[256];
-    StrCopy(stripped, sizeof(stripped), stamina_note);
-    char *tag_open = strstr(stripped, ">");
-    char *tag_close = strstr(stripped, "</color>");
-    const char *display = stamina_note;
-    if (tag_open && tag_close) {
-        *tag_close = '\0';
-        display = tag_open + 1;
-    }
-    StoreDrawCenteredFit(
-        store->body_font,
-        display,
-        (Rectangle){list.x, list.y + list.height + STORE_GEM_SUBTEXT_HEIGHT, list.width, STORE_GEM_SUBTEXT_HEIGHT},
-        19.0f,
-        (Color){255, 0, 255, 255}
-    );
-
+    StoreGemLayout layout = StoreGemPageLayout();
+    bool quest = StoreDrawGemQuestCell(store, StoreGemCell(layout.grid, 0));
+    for (int i = 0; i < STORE_GEM_SKU_COUNT; i++) StoreDrawGemSkuCell(store, StoreGemCell(layout.grid, i + 1), i);
+    StoreDrawGemFooter(store, &layout);
     StoreDrawToast(store);
-    return action;
+    return quest ? STORE_ACTION_GOTO_MAP : STORE_ACTION_NONE;
+}
+
+static void StoreDrawSpinner(Rectangle box, float seconds, Color tint) {
+    Texture2D ring = GuiTex(GUI_LOADING_RING);
+    float size = fminf(box.width, box.height);
+    DrawTexturePro(
+        ring,
+        (Rectangle){0.0f, 0.0f, (float)ring.width, (float)ring.height},
+        (Rectangle){box.x + box.width * 0.5f, box.y + box.height * 0.5f, size, size},
+        (Vector2){size * 0.5f, size * 0.5f},
+        seconds * STORE_SPINNER_DEGREES_PER_SECOND,
+        tint
+    );
+}
+
+static float StoreDrawGemAmount(Store *store, const char *amount, Vector2 at, float size, Color tint) {
+    Vector2 measured = MeasureTextEx(store->title_font, amount, size, 1.0f);
+    DrawTextEx(store->title_font, amount, (Vector2){at.x, at.y - measured.y * 0.5f}, size, 1.0f, tint);
+    float coin = size * STORE_GEM_AMOUNT_COIN_OF_TEXT;
+    float coin_x = at.x + measured.x + size * STORE_GEM_AMOUNT_GAP_OF_TEXT;
+    UiDrawTexture(store->gem_coin, (Rectangle){coin_x, at.y - coin * 0.5f, coin, coin}, tint);
+    return coin_x + coin - at.x;
+}
+
+static float StoreGemAmountWidth(Store *store, const char *amount, float size) {
+    float coin = size * STORE_GEM_AMOUNT_COIN_OF_TEXT;
+    return MeasureTextEx(store->title_font, amount, size, 1.0f).x + size * STORE_GEM_AMOUNT_GAP_OF_TEXT + coin;
+}
+
+static void StoreDrawPaymentProcessing(Store *store) {
+    const StoreGemSku *sku = &store->gem_skus[store->gem_purchase_sku];
+    float time = store->gem_purchase_time;
+    float fade = fminf(1.0f, time / STORE_GEM_PAYMENT_FADE_SECONDS);
+    DrawRectangle(0, 72, (int)UiWidth(), (int)UiHeight() - 72, Fade(BLACK, STORE_GEM_PAYMENT_SCRIM_ALPHA * fade));
+    StoreDrawSpinner(StoreIgui(StorePlateRect(), STORE_PROCESSING_PAYMENT_ICON), time, WHITE);
+
+    Rectangle panel = UiRect(UiRoot(), 0.5f, 0.55f, STORE_GEM_PAYMENT_PANEL_WIDTH, STORE_GEM_PAYMENT_PANEL_HEIGHT);
+    UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), panel, Fade(WHITE, fade));
+    StoreDrawSpinner(StoreCellPart(panel, STORE_GEM_PAYMENT_SPINNER), time, Fade(WHITE, fade));
+    StoreDrawCenteredFit(
+        store->title_font,
+        LocGet("HODA_STORE_PROCESSING_PAYMENT"),
+        StoreCellPart(panel, STORE_GEM_PAYMENT_TITLE),
+        STORE_GEM_PAYMENT_TITLE_SIZE,
+        Fade(STORE_DIALOG_TITLE_COLOR, fade)
+    );
+
+    Rectangle summary = StoreCellPart(panel, STORE_GEM_PAYMENT_SUMMARY);
+    char amount[16];
+    snprintf(amount, sizeof(amount), "%d", sku->gems);
+    float size = STORE_GEM_PAYMENT_SUMMARY_SIZE;
+    float amount_width = StoreGemAmountWidth(store, amount, size);
+    float price_width = MeasureTextEx(store->body_font, sku->cost, size, 1.0f).x;
+    float gap = size * STORE_GEM_PAYMENT_SUMMARY_GAP_OF_TEXT;
+    float x = summary.x + (summary.width - amount_width - gap - price_width) * 0.5f;
+    float mid = summary.y + summary.height * 0.5f;
+    x += StoreDrawGemAmount(store, amount, (Vector2){x, mid}, size, Fade(WHITE, fade)) + gap;
+    Vector2 price = MeasureTextEx(store->body_font, sku->cost, size, 1.0f);
+    DrawTextEx(
+        store->body_font, sku->cost, (Vector2){x, mid - price.y * 0.5f}, size, 1.0f, Fade(STORE_GEM_FOOTER_COLOR, fade)
+    );
+}
+
+static bool StoreClaimGemPurchase(Store *store, Player *player) {
+    int old_gems = player->gems, old_stamina = player->stamina;
+    float old_regen = player->stamina_regen_timer;
+    PlayerCreditGemPurchase(player, store->gem_skus[store->gem_purchase_sku].gems);
+    store->gem_purchase = STORE_GEM_PURCHASE_IDLE;
+    if (!ProgressionSave(player)) {
+        player->gems = old_gems;
+        player->stamina = old_stamina;
+        player->stamina_regen_timer = old_regen;
+        StorePurchaseSaveFailed(store);
+        return false;
+    }
+    GuiSoundPlay(SND_STAMINA_REFRESH);
+    return true;
+}
+
+static float StoreEaseOutCubic(float t) {
+    float rest = 1.0f - Clamp(t, 0.0f, 1.0f);
+    return 1.0f - rest * rest * rest;
+}
+
+static bool StoreDrawGemPurchaseComplete(Store *store, Player *player) {
+    const StoreGemSku *sku = &store->gem_skus[store->gem_purchase_sku];
+    float time = store->gem_purchase_time;
+    Color tint = Fade(WHITE, Clamp(time / STORE_GEM_PAYMENT_FADE_SECONDS, 0.0f, 1.0f));
+    DrawRectangle(0, 0, (int)UiWidth(), (int)UiHeight(), (Color){0, 0, 0, 150});
+    Rectangle plate = MessagePopupRect();
+    UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), plate, tint);
+    Rectangle content = UiRect(plate, 0.5f, 0.5f, 0.8f, 0.8f);
+    StoreDrawCenteredFit(
+        store->title_font,
+        LocGet("ADD_ALLY_INCENTIVE_CONGRATS"),
+        StoreCellPart(content, STORE_GEM_CONGRATS_TITLE),
+        STORE_GEM_CONGRATS_TITLE_SIZE,
+        Fade(STORE_DIALOG_TITLE_COLOR, tint.a / 255.0f)
+    );
+
+    Rectangle reward = StoreCellPart(content, STORE_GEM_CONGRATS_REWARD);
+    char amount[16];
+    int shown = (int)lrintf(sku->gems * StoreEaseOutCubic(time / STORE_GEM_CONGRATS_COUNT_SECONDS));
+    snprintf(amount, sizeof(amount), "+%d", shown);
+    char final_amount[16];
+    snprintf(final_amount, sizeof(final_amount), "+%d", sku->gems);
+    float size = STORE_GEM_CONGRATS_AMOUNT_SIZE;
+    float card_width = reward.height * STORE_GEM_CARD_ASPECT;
+    float amount_width = StoreGemAmountWidth(store, final_amount, size);
+    float gap = STORE_GEM_CONGRATS_GAP;
+    float x = reward.x + (reward.width - card_width - gap - amount_width) * 0.5f;
+    Rectangle card = {x, reward.y, card_width, reward.height};
+    UiDrawTexture(store->gem_card, card, tint);
+    StoreDrawTextureCover(store->gem_icons[sku->icon], StoreIgui(card, STORE_GEM_ICON), tint);
+    float mid = reward.y + reward.height * 0.5f;
+    Rectangle brush = {
+        x + card_width + gap - STORE_GEM_CONGRATS_BRUSH_PADDING,
+        mid - size * STORE_GEM_CONGRATS_BRUSH_OF_TEXT * 0.5f,
+        amount_width + STORE_GEM_CONGRATS_BRUSH_PADDING * 2.0f,
+        size * STORE_GEM_CONGRATS_BRUSH_OF_TEXT,
+    };
+    UiDrawTexture(GuiTex(GUI_REWARD_BRUSH), brush, tint);
+    StoreDrawGemAmount(store, amount, (Vector2){x + card_width + gap, mid}, size, tint);
+
+    MessagePopupDrawText(
+        store->body_font,
+        LocGet("STORE_PURCHASE_SUCCESSFUL_MESSAGE"),
+        StoreCellPart(content, STORE_GEM_CONGRATS_MESSAGE),
+        STORE_CONFIRM_TEXT_SIZE,
+        tint
+    );
+    return ButtonDraw(&store->gem_claim, MessagePopupOkButton(plate)) && StoreClaimGemPurchase(store, player);
+}
+
+static bool StoreDrawGemPurchase(Store *store, Player *player) {
+    if (store->gem_purchase == STORE_GEM_PURCHASE_PROCESSING) StoreDrawPaymentProcessing(store);
+    return store->gem_purchase == STORE_GEM_PURCHASE_COMPLETE && StoreDrawGemPurchaseComplete(store, player);
 }
 
 static void StoreEnsureCurrentHero(Store *store, Heroes *heroes) {
@@ -2691,6 +2930,7 @@ StoreAction StoreDraw(Store *store, Player *player, Heroes *heroes, float dt) {
     if (dt < 0.0f) dt = 0.0f;
     bool server_purchased = StorePollServerPurchase(store, player, heroes);
     if (store->status_time > 0.0f) store->status_time = fmaxf(0.0f, store->status_time - dt);
+    StoreAdvanceGemPurchase(store, dt);
     if (store->view == STORE_VIEW_HEROES || store->view == STORE_VIEW_ITEMS || store->view == STORE_VIEW_FEATURED) {
         store->bullet_time += dt;
     } else {
@@ -2750,6 +2990,7 @@ StoreAction StoreDraw(Store *store, Player *player, Heroes *heroes, float dt) {
             action = StoreDrawItemReveal(store, player, heroes, dt);
             break;
     }
+    if (StoreDrawGemPurchase(store, player)) action = STORE_ACTION_PURCHASED;
     if (StoreDrawDialog(store, player, heroes) || server_purchased) action = STORE_ACTION_PURCHASED;
     return action;
 }
