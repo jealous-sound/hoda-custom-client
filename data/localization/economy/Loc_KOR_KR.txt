@@ -10,7 +10,7 @@ HODA_STORE_ROSTER_ADD_FAILED|영웅을 목록에 추가할 수 없습니다
 HODA_STORE_SERVER_BUSY|서버가 혼잡합니다. 다시 시도해 주세요
 HODA_STORE_PRICE_CHANGED|가격이 변경되었습니다. 다시 시도해 주세요
 HODA_STORE_PROFILE_CHANGED|서버에서 프로필이 변경되었습니다
-HODA_STORE_REAL_MONEY_OFFLINE|이 버전에서는 현금 구매를 이용할 수 없습니다
+HODA_STORE_PROCESSING_PAYMENT|결제 처리 중…
 HODA_STORE_GEM_TRADER_DEAD_TITLE|돌로 돌아간 자
 HODA_STORE_GEM_TRADER_DEAD_BODY|상인 길드 소속 드워프였던 우리 보석 상인은 마지막 한탕을 위해 딥 로드로 내려갔지만, 다크스폰이 먼저 그를 찾아냈습니다. 그의 가판대는 비어 있고, 이곳에서 다시는 보석을 팔지 않습니다. 돌이 그를 품어 주기를.
 HODA_TUTORIAL_CONSUME_PACK_NAME|튜토리얼 팩
