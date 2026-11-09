@@ -1,5 +1,8 @@
 #define TIMED_QUEST_VIEW_HEADER_HEIGHT 44.0f
-#define TIMED_QUEST_VIEW_TRACK_HEIGHT 122.0f
+#define TIMED_QUEST_VIEW_TRACK_HEIGHT 146.0f
+#define TIMED_QUEST_VIEW_TRACK_GAP 8.0f
+#define TIMED_QUEST_VIEW_CHEST_TOP 4.0f
+#define TIMED_QUEST_VIEW_BAR_FROM_FOOT 46.0f
 #define TIMED_QUEST_VIEW_ROW_HEIGHT 92.0f
 #define TIMED_QUEST_VIEW_ROW_GAP 6.0f
 #define TIMED_QUEST_VIEW_SECTION_GAP 22.0f
@@ -9,6 +12,12 @@
 #define TIMED_QUEST_VIEW_BUTTON_HEIGHT 40.0f
 #define TIMED_QUEST_VIEW_REWARD_ICON_SIZE 34.0f
 #define TIMED_QUEST_VIEW_STAR_SIZE 26.0f
+#define TIMED_QUEST_VIEW_ROW_INSET 24.0f
+#define TIMED_QUEST_VIEW_REWARD_TOP 10.0f
+#define TIMED_QUEST_VIEW_ICON_GAP 5.0f
+#define TIMED_QUEST_VIEW_GROUP_GAP 22.0f
+#define TIMED_QUEST_VIEW_AMOUNT_SIZE 26.0f
+#define TIMED_QUEST_VIEW_POINTS_SIZE 22.0f
 #define TIMED_QUEST_VIEW_TRACK_INSET 150.0f
 #define TIMED_QUEST_VIEW_TRACK_TRAIL 48.0f
 #define TIMED_QUEST_VIEW_BAR_HEIGHT 24.0f
@@ -191,13 +200,15 @@ static int TimedQuestViewDrawTrack(
     );
     float bar_x = track.x + TIMED_QUEST_VIEW_TRACK_INSET;
     float bar_width = track.width - TIMED_QUEST_VIEW_TRACK_INSET - TIMED_QUEST_VIEW_TRACK_TRAIL;
-    Rectangle bar = {bar_x, track.y + track.height - 44.0f, bar_width, TIMED_QUEST_VIEW_BAR_HEIGHT};
+    Rectangle bar = {
+        bar_x, track.y + track.height - TIMED_QUEST_VIEW_BAR_FROM_FOOT, bar_width, TIMED_QUEST_VIEW_BAR_HEIGHT
+    };
     TimedQuestViewDrawBar(bar, max_points > 0 ? (float)points / (float)max_points : 0.0f);
     int clicked = TIMED_QUEST_NONE;
     for (int i = 0; i < TimedQuestChestCount(period); i++) {
         const TimedQuestChest *chest = TimedQuestChestAt(period, i);
         float x = bar.x + bar.width * (float)chest->points / (float)max_points;
-        Vector2 centre = {x, track.y + 8.0f + TIMED_QUEST_VIEW_CHEST_SIZE * 0.5f};
+        Vector2 centre = {x, track.y + TIMED_QUEST_VIEW_CHEST_TOP + TIMED_QUEST_VIEW_CHEST_SIZE * 0.5f};
         if (TimedQuestViewDrawChest(v, p, period, i, centre, interactive)) {
             clicked = i;
             v->chest_from = centre;
@@ -263,28 +274,42 @@ static TimedQuestRowPress TimedQuestViewDrawRow(
     TimedQuestViewDrawBar(bar, (float)progress / (float)def->target);
     UiDrawTextCentered(v->body, TextFormat("%lld/%lld", progress, def->target), bar, 15.0f, TIMED_QUEST_VIEW_TEXT);
 
-    float right = row.x + row.width - 10.0f;
+    float right = row.x + row.width - TIMED_QUEST_VIEW_ROW_INSET;
+    Rectangle line = {row.x, row.y + TIMED_QUEST_VIEW_REWARD_TOP, 0.0f, TIMED_QUEST_VIEW_REWARD_ICON_SIZE};
     Rectangle star = {
-        right - TIMED_QUEST_VIEW_STAR_SIZE, row.y + 12.0f, TIMED_QUEST_VIEW_STAR_SIZE, TIMED_QUEST_VIEW_STAR_SIZE
+        right - TIMED_QUEST_VIEW_STAR_SIZE,
+        line.y + (line.height - TIMED_QUEST_VIEW_STAR_SIZE) * 0.5f,
+        TIMED_QUEST_VIEW_STAR_SIZE,
+        TIMED_QUEST_VIEW_STAR_SIZE,
     };
     TimedQuestViewDrawFit(GuiTex(GUI_MISSION_STAR), star, WHITE);
+    char points[16];
+    snprintf(points, sizeof(points), "+%d", def->points);
+    float points_width = MeasureTextEx(v->font, points, TIMED_QUEST_VIEW_POINTS_SIZE, 1.0f).x;
+    float points_x = star.x - TIMED_QUEST_VIEW_ICON_GAP - points_width;
     UiDrawTextRight(
         v->font,
-        TextFormat("+%d", def->points),
-        (Rectangle){star.x - 64.0f, star.y - 2.0f, 60.0f, star.height + 4.0f},
-        22.0f,
+        points,
+        (Rectangle){points_x, line.y, points_width, line.height},
+        TIMED_QUEST_VIEW_POINTS_SIZE,
         TIMED_QUEST_VIEW_TEXT
     );
     bool gems = def->gems > 0;
     *reward_icon = (Rectangle){
-        star.x - 112.0f, row.y + 8.0f, TIMED_QUEST_VIEW_REWARD_ICON_SIZE, TIMED_QUEST_VIEW_REWARD_ICON_SIZE
+        points_x - TIMED_QUEST_VIEW_GROUP_GAP - TIMED_QUEST_VIEW_REWARD_ICON_SIZE,
+        line.y,
+        TIMED_QUEST_VIEW_REWARD_ICON_SIZE,
+        TIMED_QUEST_VIEW_REWARD_ICON_SIZE,
     };
     TimedQuestViewDrawFit(GuiTex(gems ? GUI_MISSION_GEM : GUI_MISSION_GOLD), *reward_icon, WHITE);
+    char amount[16];
+    snprintf(amount, sizeof(amount), "+%d", gems ? def->gems : def->gold);
+    float amount_width = MeasureTextEx(v->font, amount, TIMED_QUEST_VIEW_AMOUNT_SIZE, 1.0f).x;
     UiDrawTextRight(
         v->font,
-        TextFormat("+%d", gems ? def->gems : def->gold),
-        (Rectangle){reward_icon->x - 104.0f, reward_icon->y, 100.0f, reward_icon->height},
-        26.0f,
+        amount,
+        (Rectangle){reward_icon->x - TIMED_QUEST_VIEW_ICON_GAP - amount_width, line.y, amount_width, line.height},
+        TIMED_QUEST_VIEW_AMOUNT_SIZE,
         TIMED_QUEST_VIEW_TEXT
     );
 
@@ -393,7 +418,9 @@ static TimedQuestViewAction TimedQuestViewDrawSection(
     PlayerTimedQuests *q = &p->timed_quests;
     Rectangle header = {list.x, top, list.width, TIMED_QUEST_VIEW_HEADER_HEIGHT};
     TimedQuestViewDrawHeader(v, period, header);
-    Rectangle track = {list.x, header.y + header.height, list.width, TIMED_QUEST_VIEW_TRACK_HEIGHT - 8.0f};
+    Rectangle track = {
+        list.x, header.y + header.height, list.width, TIMED_QUEST_VIEW_TRACK_HEIGHT - TIMED_QUEST_VIEW_TRACK_GAP
+    };
     int chest = TimedQuestViewDrawTrack(v, p, period, track, interactive);
     if (chest != TIMED_QUEST_NONE) TimedQuestViewOpenChest(v, heroes, p, period, chest);
 
@@ -451,7 +478,7 @@ TimedQuestViewAction TimedQuestViewDraw(
 void TimedQuestViewDrawOverlay(TimedQuestView *v) {
     if (!v->message_open) return;
     if (MessagePopupDrawAlert(
-            GuiTex(GUI_STORE_OVERLAY), v->font, v->body, LocGet("HODA_QUESTS_DAILY_TITLE"), v->message, &v->ok
+            GuiTex(GUI_STORE_OVERLAY), v->font, v->body, LocGet("HODA_QUESTS_TAB"), v->message, &v->ok
         ))
         v->message_open = false;
 }

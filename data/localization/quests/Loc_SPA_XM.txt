@@ -1,12 +1,12 @@
 HODA_QUESTS_CHEST_FAILED|No se pudo abrir el cofre. Inténtalo de nuevo.
-HODA_QUESTS_DAILY_TITLE|Misiones diarias
-HODA_QUESTS_LOCKED|Las misiones diarias y semanales se desbloquean en el nivel de jugador {0}.
+HODA_QUESTS_DAILY_TITLE|Encargos diarios
+HODA_QUESTS_LOCKED|Los encargos diarios y semanales se desbloquean en el nivel de jugador {0}.
 HODA_QUESTS_OPENING|Abriendo el cofre…
-HODA_QUESTS_RESETS_IN|Nuevas misiones en {0}
+HODA_QUESTS_RESETS_IN|Nuevos encargos en {0}
 HODA_QUESTS_ROSTER_FULL|Tu plantilla está llena. Haz sitio para los héroes de este cofre.
 HODA_QUESTS_SWAP|Cambiar
-HODA_QUESTS_TAB|Diarias
-HODA_QUESTS_WEEKLY_TITLE|Misiones semanales
+HODA_QUESTS_TAB|Encargos
+HODA_QUESTS_WEEKLY_TITLE|Encargos semanales
 HODA_QUEST_ACTIVE_DAYS_DESC|Lucha en {0} días distintos esta semana
 HODA_QUEST_ACTIVE_DAYS_TITLE|Constante
 HODA_QUEST_BATTLE_WINS_DESC|Gana {0} batallas de cualquier tipo
@@ -17,7 +17,7 @@ HODA_QUEST_CONSUMED_DESC|Consume {0} héroes
 HODA_QUEST_CONSUMED_TITLE|Más fuerte
 HODA_QUEST_CRITS_DESC|Asesta {0} golpes críticos
 HODA_QUEST_CRITS_TITLE|Ojo crítico
-HODA_QUEST_DAILY_QUESTS_DESC|Completa {0} misiones diarias
+HODA_QUEST_DAILY_QUESTS_DESC|Completa {0} encargos diarios
 HODA_QUEST_DAILY_QUESTS_TITLE|Diligente
 HODA_QUEST_EXPEDITIONS_RETURNED_DESC|Recoge {0} expediciones de vuelta
 HODA_QUEST_EXPEDITIONS_RETURNED_TITLE|Regreso seguro

@@ -1,12 +1,12 @@
 HODA_QUESTS_CHEST_FAILED|Le coffre n'a pas pu être ouvert. Réessayez.
-HODA_QUESTS_DAILY_TITLE|Quêtes quotidiennes
-HODA_QUESTS_LOCKED|Les quêtes quotidiennes et hebdomadaires s'ouvrent au niveau {0}.
+HODA_QUESTS_DAILY_TITLE|Contrats quotidiens
+HODA_QUESTS_LOCKED|Les contrats quotidiens et hebdomadaires s'ouvrent au niveau {0}.
 HODA_QUESTS_OPENING|Ouverture du coffre…
-HODA_QUESTS_RESETS_IN|Nouvelles quêtes dans {0}
+HODA_QUESTS_RESETS_IN|Nouveaux contrats dans {0}
 HODA_QUESTS_ROSTER_FULL|Votre effectif est complet. Libérez de la place pour les héros de ce coffre.
 HODA_QUESTS_SWAP|Changer
-HODA_QUESTS_TAB|Quotidien
-HODA_QUESTS_WEEKLY_TITLE|Quêtes hebdomadaires
+HODA_QUESTS_TAB|Contrats
+HODA_QUESTS_WEEKLY_TITLE|Contrats hebdomadaires
 HODA_QUEST_ACTIVE_DAYS_DESC|Combattez sur {0} jours différents cette semaine
 HODA_QUEST_ACTIVE_DAYS_TITLE|Inébranlable
 HODA_QUEST_BATTLE_WINS_DESC|Remportez {0} combats, tous modes confondus
@@ -17,7 +17,7 @@ HODA_QUEST_CONSUMED_DESC|Absorbez {0} héros
 HODA_QUEST_CONSUMED_TITLE|Toujours plus fort
 HODA_QUEST_CRITS_DESC|Réussissez {0} coups critiques
 HODA_QUEST_CRITS_TITLE|Œil critique
-HODA_QUEST_DAILY_QUESTS_DESC|Accomplissez {0} quêtes quotidiennes
+HODA_QUEST_DAILY_QUESTS_DESC|Accomplissez {0} contrats quotidiens
 HODA_QUEST_DAILY_QUESTS_TITLE|Dévoué
 HODA_QUEST_EXPEDITIONS_RETURNED_DESC|Récupérez {0} expéditions revenues
 HODA_QUEST_EXPEDITIONS_RETURNED_TITLE|Retour sain et sauf

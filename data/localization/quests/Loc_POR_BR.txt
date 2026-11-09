@@ -1,12 +1,12 @@
 HODA_QUESTS_CHEST_FAILED|Não foi possível abrir o baú. Tente novamente.
-HODA_QUESTS_DAILY_TITLE|Missões diárias
-HODA_QUESTS_LOCKED|As missões diárias e semanais são liberadas no nível de jogador {0}.
+HODA_QUESTS_DAILY_TITLE|Contratos diários
+HODA_QUESTS_LOCKED|Os contratos diários e semanais são liberados no nível de jogador {0}.
 HODA_QUESTS_OPENING|Abrindo o baú…
-HODA_QUESTS_RESETS_IN|Novas missões em {0}
+HODA_QUESTS_RESETS_IN|Novos contratos em {0}
 HODA_QUESTS_ROSTER_FULL|Seu elenco está cheio. Abra espaço para os heróis deste baú.
 HODA_QUESTS_SWAP|Trocar
-HODA_QUESTS_TAB|Diárias
-HODA_QUESTS_WEEKLY_TITLE|Missões semanais
+HODA_QUESTS_TAB|Contratos
+HODA_QUESTS_WEEKLY_TITLE|Contratos semanais
 HODA_QUEST_ACTIVE_DAYS_DESC|Lute em {0} dias diferentes nesta semana
 HODA_QUEST_ACTIVE_DAYS_TITLE|Firme
 HODA_QUEST_BATTLE_WINS_DESC|Vença {0} batalhas de qualquer tipo
@@ -17,7 +17,7 @@ HODA_QUEST_CONSUMED_DESC|Consuma {0} heróis
 HODA_QUEST_CONSUMED_TITLE|Mais forte
 HODA_QUEST_CRITS_DESC|Acerte {0} golpes críticos
 HODA_QUEST_CRITS_TITLE|Olho crítico
-HODA_QUEST_DAILY_QUESTS_DESC|Conclua {0} missões diárias
+HODA_QUEST_DAILY_QUESTS_DESC|Conclua {0} contratos diários
 HODA_QUEST_DAILY_QUESTS_TITLE|Dedicado
 HODA_QUEST_EXPEDITIONS_RETURNED_DESC|Colete {0} expedições que retornaram
 HODA_QUEST_EXPEDITIONS_RETURNED_TITLE|Retorno seguro

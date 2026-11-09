@@ -1,12 +1,12 @@
 HODA_QUESTS_CHEST_FAILED|Не удалось открыть сундук. Попробуйте ещё раз.
-HODA_QUESTS_DAILY_TITLE|Ежедневные задания
-HODA_QUESTS_LOCKED|Ежедневные и еженедельные задания откроются на уровне игрока {0}.
+HODA_QUESTS_DAILY_TITLE|Ежедневные поручения
+HODA_QUESTS_LOCKED|Ежедневные и еженедельные поручения откроются на уровне игрока {0}.
 HODA_QUESTS_OPENING|Открываем сундук…
-HODA_QUESTS_RESETS_IN|Новые задания через {0}
+HODA_QUESTS_RESETS_IN|Новые поручения через {0}
 HODA_QUESTS_ROSTER_FULL|В отряде нет места. Освободите место для героев из этого сундука.
 HODA_QUESTS_SWAP|Заменить
-HODA_QUESTS_TAB|Ежедневные
-HODA_QUESTS_WEEKLY_TITLE|Еженедельные задания
+HODA_QUESTS_TAB|Поручения
+HODA_QUESTS_WEEKLY_TITLE|Еженедельные поручения
 HODA_QUEST_ACTIVE_DAYS_DESC|Сражайтесь на этой неделе в разные дни: {0}
 HODA_QUEST_ACTIVE_DAYS_TITLE|Стойкий
 HODA_QUEST_BATTLE_WINS_DESC|Победите в боях любого типа: {0}
@@ -17,7 +17,7 @@ HODA_QUEST_CONSUMED_DESC|Поглотите героев: {0}
 HODA_QUEST_CONSUMED_TITLE|Сильнее с каждым днём
 HODA_QUEST_CRITS_DESC|Нанесите критических ударов: {0}
 HODA_QUEST_CRITS_TITLE|Меткий глаз
-HODA_QUEST_DAILY_QUESTS_DESC|Выполните ежедневных заданий: {0}
+HODA_QUEST_DAILY_QUESTS_DESC|Выполните ежедневных поручений: {0}
 HODA_QUEST_DAILY_QUESTS_TITLE|Исполнительный
 HODA_QUEST_EXPEDITIONS_RETURNED_DESC|Заберите награды за экспедиции: {0}
 HODA_QUEST_EXPEDITIONS_RETURNED_TITLE|С возвращением

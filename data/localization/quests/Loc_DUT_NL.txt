@@ -1,12 +1,12 @@
 HODA_QUESTS_CHEST_FAILED|De kist kon niet worden geopend. Probeer het opnieuw.
-HODA_QUESTS_DAILY_TITLE|Dagelijkse missies
-HODA_QUESTS_LOCKED|Dagelijkse en wekelijkse missies worden ontgrendeld op spelersniveau {0}.
+HODA_QUESTS_DAILY_TITLE|Dagelijkse opdrachten
+HODA_QUESTS_LOCKED|Dagelijkse en wekelijkse opdrachten worden ontgrendeld op spelersniveau {0}.
 HODA_QUESTS_OPENING|Kist wordt geopend…
-HODA_QUESTS_RESETS_IN|Nieuwe missies over {0}
+HODA_QUESTS_RESETS_IN|Nieuwe opdrachten over {0}
 HODA_QUESTS_ROSTER_FULL|Je selectie is vol. Maak eerst ruimte voor de helden in deze kist.
 HODA_QUESTS_SWAP|Wisselen
-HODA_QUESTS_TAB|Dagelijks
-HODA_QUESTS_WEEKLY_TITLE|Wekelijkse missies
+HODA_QUESTS_TAB|Opdrachten
+HODA_QUESTS_WEEKLY_TITLE|Wekelijkse opdrachten
 HODA_QUEST_ACTIVE_DAYS_DESC|Vecht deze week op {0} verschillende dagen
 HODA_QUEST_ACTIVE_DAYS_TITLE|Standvastig
 HODA_QUEST_BATTLE_WINS_DESC|Win {0} gevechten van elk type
@@ -17,7 +17,7 @@ HODA_QUEST_CONSUMED_DESC|Consumeer {0} helden
 HODA_QUEST_CONSUMED_TITLE|Sterker worden
 HODA_QUEST_CRITS_DESC|Deel {0} kritieke treffers uit
 HODA_QUEST_CRITS_TITLE|Kritiek oog
-HODA_QUEST_DAILY_QUESTS_DESC|Voltooi {0} dagelijkse missies
+HODA_QUEST_DAILY_QUESTS_DESC|Voltooi {0} dagelijkse opdrachten
 HODA_QUEST_DAILY_QUESTS_TITLE|Plichtsgetrouw
 HODA_QUEST_EXPEDITIONS_RETURNED_DESC|Haal {0} teruggekeerde expedities binnen
 HODA_QUEST_EXPEDITIONS_RETURNED_TITLE|Veilig thuis

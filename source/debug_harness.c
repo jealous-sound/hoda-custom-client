@@ -47,7 +47,7 @@ typedef struct {
 #define DEBUG_QUEST_WEEKLY_DAILIES 18
 #define DEBUG_QUEST_ACTIVE_DAYS 4
 #define DEBUG_QUEST_DAILY_CLAIMED 2
-#define DEBUG_QUEST_WEEKLY_SCROLL 620.0f
+#define DEBUG_QUEST_WEEKLY_SCROLL 644.0f
 
 static const char DEBUG_UPDATE_AVAILABLE_RELEASE[] =
     "{\"latest\":\"v9.9.0\",\"minimum\":\"\",\"download_url\":\"https://hodareborn.com/#download\"}";

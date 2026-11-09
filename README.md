@@ -106,16 +106,18 @@ into the original frame. They live in `client-additional-data/extra/gui/expediti
 `expeditions_recall`, `expeditions_reward`, `expeditions_home`, `expeditions_roster`, `expeditions_reveal_hero` and
 `expeditions_reveal_items` render the screens with three parties out.
 
-## Daily and weekly quests
+## Bounties
 
-The game no longer sells gems, so quests are the steady free income next to Expeditions. The Daily tab of Goals (the
-default tab from player level 3, with the claimable count on the Goals badge) holds two sections:
+The game no longer sells gems, so daily and weekly quests are the steady free income next to Expeditions. They are
+called bounties because the original text already names the campaign and Nexus hub "Quests" in every language. The
+Bounties tab of Goals (the default tab from player level 3, with the claimable count on the Goals badge) holds two
+sections:
 
-- Daily Quests: five quests a day, one from each slot of `data/timed_quests.json` (campaign, PvP, combat, heroes,
+- Daily Bounties: five a day, one from each slot of `data/timed_quests.json` (campaign, PvP, combat, heroes,
   expeditions). The day's pick is the store xorshift seeded from the UTC day and the slot, so the client and the server
   pick the same quests without storing them. One unfinished quest a day can be swapped for the next one in its slot,
   after Hearthstone's daily reroll.
-- Weekly Quests: five larger goals each week, Monday 00:00 UTC to the next, including "complete 20 daily quests" and
+- Weekly Bounties: five larger goals each week, Monday 00:00 UTC to the next, including "complete 20 daily quests" and
   "fight on 5 different days", so a week stays winnable after missed days.
 
 Each claimed quest pays its gold or gems and 20 points. Points fill a chest track: daily chests at 40, 80 and 100 points
