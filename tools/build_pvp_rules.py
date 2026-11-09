@@ -87,7 +87,7 @@ RULES = {
         "loss_share_pct": 50,
     },
     "battle": {
-        "stat_budget": False,
+        "stat_budget": True,
     },
 }
 

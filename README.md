@@ -89,14 +89,16 @@ server issues a seed, replays its Go port of `battle_sim.c`, and pays its own re
 
 ## Balance
 
-A battle whose enemy roster carries a stat budget levels both sides. PvP opponents carry it when `battle.stat_budget`
-in `data/pvp_rules.json` is on (set in `tools/build_pvp_rules.py`); it ships off. The backend replays PvP under the
-same rules and the same switch, so turn it on in both through the data sync, with a client release and a raised
+A battle whose enemy roster carries a stat budget levels both sides. PvP opponents carry it while `battle.stat_budget`
+in `data/pvp_rules.json` is on (set in `tools/build_pvp_rules.py`), as it ships. The backend replays PvP under the
+same rules and the same switch, so change it in both through the data sync, with a client release and a raised
 minimum client version on the backend.
 
 - `data/stat_budget.json` holds the rules: one stat cost per hero (`power x health_per_power + health`), a higher
   power cost for attacks that hit a row, a column or everyone, a budget cut for the health, power and bonus damage
-  a hero's passives hand out, and a cap on what auras and gear together add to one hero's health and power.
+  a hero's passives hand out, and a cap on what auras and gear together add to one hero's health and power. Every
+  hero adds the same formation bonus, event buffs stop at `changer_cap_pct`, and power, health, damage shield, damage
+  resist and retaliation runes do nothing; targeting, initiative, stealth, perception, dispel and resist runes work.
 - `data/stat_budget_heroes.json` holds one handicap per hero, a percent of the budget from 33 to 300. Below 100 it
   also cuts the hero's status chances (stun, slow, curse, levy, assassinate, mark) and what it grants allies by the
   same share. `./tests/balance_check --calibrate 16 --neutral --squads 48 --seeds 6` rewrites the whole table.
