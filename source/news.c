@@ -1,4 +1,9 @@
-#define NEWS_MAX_MESSAGES NEXUS_MAX_EVENTS
+#define NEWS_ANNOUNCEMENTS_PATH "data/announcements.json"
+#define NEWS_ANNOUNCEMENT_CAPACITY 8
+#define NEWS_NO_ANNOUNCEMENT 0
+#define NEWS_ANNOUNCEMENT_RANK -1
+#define NEWS_ANNOUNCEMENT_IMAGE GUI_PVP_BANNER
+#define NEWS_MAX_MESSAGES (NEXUS_MAX_EVENTS + NEWS_ANNOUNCEMENT_CAPACITY)
 #define NEWS_LOC_KEY_SIZE 96
 #define NEWS_FRAME_X 160.0f
 #define NEWS_FRAME_Y 72.0f
@@ -86,7 +91,14 @@ typedef struct {
 } NewsText;
 
 typedef struct {
+    NewsText text;
+    long long starts_at;
+    long long ends_at;
+} NewsAnnouncement;
+
+typedef struct {
     int event;
+    int announcement;
     NewsTiming timing;
     long long started_at;
     long long seconds;
@@ -94,6 +106,8 @@ typedef struct {
 
 typedef struct {
     NewsText text[NEXUS_MAX_EVENTS];
+    NewsAnnouncement announcements[NEWS_ANNOUNCEMENT_CAPACITY];
+    int announcement_count;
     NewsMessage messages[NEWS_MAX_MESSAGES];
     int message_count;
     int featured_count;
@@ -130,6 +144,33 @@ static Rectangle NewsDesignRect(float x, float y, float width, float height) {
     return (Rectangle){NewsLeft() + x, NewsTop() + y, width, height};
 }
 
+static void NewsTextLoad(NewsText *text, const cJSON *item) {
+    StrCopy(text->title, sizeof(text->title), JsonStr(item, "title"));
+    StrCopy(text->subtitle, sizeof(text->subtitle), JsonStr(item, "subtitle"));
+    StrCopy(text->summary, sizeof(text->summary), JsonStr(item, "summary"));
+    StrCopy(text->message, sizeof(text->message), JsonStr(item, "message"));
+}
+
+static long long NewsJsonTime(const cJSON *item, const char *key) {
+    const cJSON *value = cJSON_GetObjectItemCaseSensitive((cJSON *)item, key);
+    return cJSON_IsNumber(value) ? (long long)value->valuedouble : 0;
+}
+
+void NewsLoadAnnouncements(News *news, const char *path) {
+    news->announcement_count = 0;
+    if (!FileExists(path)) return;
+    cJSON *root = JsonLoadFile(path);
+    cJSON *item = NULL;
+    cJSON_ArrayForEach(item, root) {
+        if (news->announcement_count == NEWS_ANNOUNCEMENT_CAPACITY) break;
+        NewsAnnouncement *announcement = &news->announcements[news->announcement_count++];
+        NewsTextLoad(&announcement->text, item);
+        announcement->starts_at = NewsJsonTime(item, "starts_at");
+        announcement->ends_at = NewsJsonTime(item, "ends_at");
+    }
+    cJSON_Delete(root);
+}
+
 void NewsInitialize(News *news, const Nexus *nexus, const char *path) {
     memset(news, 0, sizeof(*news));
     news->target_event = -1;
@@ -146,16 +187,22 @@ void NewsInitialize(News *news, const Nexus *nexus, const char *path) {
     cJSON_ArrayForEach(item, root) {
         int event = NexusFindEvent(nexus, JsonStr(item, "event"));
         if (event < 0) TraceLog(LOG_FATAL, "News: unknown event %s", JsonStr(item, "event"));
-        NewsText *text = &news->text[event];
-        StrCopy(text->title, sizeof(text->title), JsonStr(item, "title"));
-        StrCopy(text->subtitle, sizeof(text->subtitle), JsonStr(item, "subtitle"));
-        StrCopy(text->summary, sizeof(text->summary), JsonStr(item, "summary"));
-        StrCopy(text->message, sizeof(text->message), JsonStr(item, "message"));
+        NewsTextLoad(&news->text[event], item);
         loaded++;
     }
     cJSON_Delete(root);
     if (loaded != NexusEventCount(nexus))
         TraceLog(LOG_FATAL, "News: %d of %d events have text", loaded, NexusEventCount(nexus));
+    NewsLoadAnnouncements(news, NEWS_ANNOUNCEMENTS_PATH);
+}
+
+static bool NewsIsAnnouncement(const NewsMessage *message) {
+    return message->announcement != NEWS_NO_ANNOUNCEMENT;
+}
+
+static const NewsText *NewsMessageText(const News *news, const NewsMessage *message) {
+    if (NewsIsAnnouncement(message)) return &news->announcements[message->announcement - 1].text;
+    return &news->text[message->event];
 }
 
 static int NewsRank(const NexusEvent *e, NewsTiming timing) {
@@ -164,11 +211,15 @@ static int NewsRank(const NexusEvent *e, NewsTiming timing) {
     return e->weekday != 0 ? 1 : 2;
 }
 
+static int NewsMessageRank(const Nexus *nexus, const NewsMessage *message) {
+    if (NewsIsAnnouncement(message)) return NEWS_ANNOUNCEMENT_RANK;
+    return NewsRank(NexusEventAt(nexus, message->event), message->timing);
+}
+
 static void NewsInsert(News *news, const Nexus *nexus, NewsMessage message) {
-    int rank = NewsRank(NexusEventAt(nexus, message.event), message.timing);
+    int rank = NewsMessageRank(nexus, &message);
     int at = news->message_count++;
-    while (at > 0 &&
-           NewsRank(NexusEventAt(nexus, news->messages[at - 1].event), news->messages[at - 1].timing) > rank) {
+    while (at > 0 && NewsMessageRank(nexus, &news->messages[at - 1]) > rank) {
         news->messages[at] = news->messages[at - 1];
         at--;
     }
@@ -178,6 +229,12 @@ static void NewsInsert(News *news, const Nexus *nexus, NewsMessage message) {
 static void NewsCollect(News *news, const Nexus *nexus, const Player *player, long long now) {
     news->message_count = 0;
     news->unseen_count = 0;
+    for (int i = 0; i < news->announcement_count; i++) {
+        const NewsAnnouncement *announcement = &news->announcements[i];
+        if (now < announcement->starts_at || now >= announcement->ends_at) continue;
+        NewsInsert(news, nexus, (NewsMessage){.announcement = i + 1, .started_at = announcement->starts_at});
+        if (announcement->starts_at > player->news_seen_at) news->unseen_count++;
+    }
     for (int event = 0; event < NexusEventCount(nexus); event++) {
         const NexusEvent *e = NexusEventAt(nexus, event);
         NewsMessage message = {.event = event, .timing = NEWS_TIMING_ACTIVE};
@@ -201,8 +258,7 @@ static void NewsCollect(News *news, const Nexus *nexus, const Player *player, lo
     }
     news->featured_count = 0;
     while (news->featured_count < news->message_count &&
-           NewsRank(NexusEventAt(nexus, news->messages[news->featured_count].event), NEWS_TIMING_ACTIVE) == 0 &&
-           news->messages[news->featured_count].timing == NEWS_TIMING_ACTIVE)
+           NewsMessageRank(nexus, &news->messages[news->featured_count]) <= 0)
         news->featured_count++;
     if (news->featured_count == 0 && news->message_count > 0) news->featured_count = 1;
 }
@@ -243,7 +299,7 @@ static void NewsOpenMessage(News *news, const NewsMessage *message, bool from_fe
 void NewsOpenEvent(News *news, const Nexus *nexus, const Player *player, int event) {
     NewsCollect(news, nexus, player, ServerNow());
     for (int i = 0; i < news->message_count; i++) {
-        if (news->messages[i].event == event) {
+        if (!NewsIsAnnouncement(&news->messages[i]) && news->messages[i].event == event) {
             NewsOpenMessage(news, &news->messages[i], false);
             return;
         }
@@ -268,15 +324,24 @@ bool NewsHandleBack(News *news) {
     return true;
 }
 
-static const char *NewsTitle(const News *news, const Nexus *nexus, int event) {
-    const char *title = news->text[event].title;
-    return title[0] ? LocGet(title) : NexusEventAt(nexus, event)->name;
+static const char *NewsTitle(const News *news, const Nexus *nexus, const NewsMessage *message) {
+    const char *title = NewsMessageText(news, message)->title;
+    if (title[0] || NewsIsAnnouncement(message)) return LocGet(title);
+    return NexusEventAt(nexus, message->event)->name;
+}
+
+static Texture2D NewsMessageImage(Quests *quests, const NewsMessage *message) {
+    return NewsIsAnnouncement(message) ? GuiTex(NEWS_ANNOUNCEMENT_IMAGE) : QuestsHubImage(quests, message->event);
+}
+
+static Color NewsMessageHighlight(const Nexus *nexus, const NewsMessage *message) {
+    return NewsIsAnnouncement(message) ? NEWS_TITLE_COLOR : NexusEventAt(nexus, message->event)->highlight;
 }
 
 static void
 NewsTitleWithState(char *out, size_t size, const News *news, const Nexus *nexus, const NewsMessage *message) {
     char time_text[48];
-    const char *title = NewsTitle(news, nexus, message->event);
+    const char *title = NewsTitle(news, nexus, message);
     if (message->timing == NEWS_TIMING_EXPIRED) {
         snprintf(out, size, "%s %s", title, LocGet("NEWSFEED_TITLE_DESCRIPTOR_EXPIRED"));
     } else if (message->timing == NEWS_TIMING_NEXT) {
@@ -402,7 +467,6 @@ static void NewsDrawImageFit(Texture2D texture, Rectangle dst, Color tint) {
 static bool NewsDrawFeaturedCell(
     News *news, Quests *quests, const Nexus *nexus, const NewsMessage *message, Rectangle cell, bool enabled
 ) {
-    const NexusEvent *e = NexusEventAt(nexus, message->event);
     Rectangle frame = {
         cell.x + NEWS_FEATURED_MARGIN,
         cell.y + NEWS_FEATURED_MARGIN,
@@ -416,15 +480,15 @@ static bool NewsDrawFeaturedCell(
         NEWS_FEATURED_IMAGE_SIZE,
         NEWS_FEATURED_IMAGE_SIZE
     };
-    NewsDrawImageFit(QuestsHubImage(quests, message->event), image, WHITE);
+    NewsDrawImageFit(NewsMessageImage(quests, message), image, WHITE);
     float text_x = image.x + image.width + 10.0f;
     float text_w = frame.x + frame.width - 10.0f - text_x;
     char title[256];
     NewsTitleWithState(title, sizeof(title), news, nexus, message);
     Rectangle title_box = {text_x, frame.y + 10.0f, text_w, 76.0f};
     NewsDrawRich(GuiFont(FNT_MENU), title, title_box, 18.0f, NEWS_TITLE_COLOR);
-    DrawRectangle((int)text_x, (int)(frame.y + 90.0f), (int)text_w, 2, e->highlight);
-    const char *summary = LocGet(news->text[message->event].summary);
+    DrawRectangle((int)text_x, (int)(frame.y + 90.0f), (int)text_w, 2, NewsMessageHighlight(nexus, message));
+    const char *summary = LocGet(NewsMessageText(news, message)->summary);
     Rectangle summary_box = {text_x, frame.y + 98.0f, text_w, frame.height - 106.0f};
     NewsDrawRich(GuiFont(FNT_MENU), summary, summary_box, 15.0f, NEWS_TEXT);
     return enabled && NewsCellTapped(news, frame);
@@ -457,7 +521,7 @@ static void NewsDrawFeatured(News *news, Quests *quests, const Nexus *nexus, boo
 static void NewsDrawRow(News *news, Quests *quests, const Nexus *nexus, const NewsMessage *message, Rectangle row) {
     UiDrawTexture(GuiTex(GUI_NEWS_ROW_LINE), (Rectangle){row.x, row.y, row.width, NEWS_ROW_LINE_H}, WHITE);
     Rectangle icon = {row.x, row.y + 12.0f, NEWS_ROW_ICON_SIZE, NEWS_ROW_ICON_SIZE};
-    NewsDrawImageFit(QuestsHubImage(quests, message->event), icon, WHITE);
+    NewsDrawImageFit(NewsMessageImage(quests, message), icon, WHITE);
     bool timed = message->timing != NEWS_TIMING_ACTIVE;
     float text_w = row.width - NEWS_ROW_TEXT_X - (timed ? NEWS_ROW_TIMER_W : 0.0f);
     char title[256];
@@ -466,7 +530,7 @@ static void NewsDrawRow(News *news, Quests *quests, const Nexus *nexus, const Ne
     NewsDrawRich(GuiFont(FNT_MENU), title, title_box, 18.0f, NEWS_TITLE_COLOR);
     const char *subtitle = message->timing == NEWS_TIMING_EXPIRED ? LocGet("ALLY_EXPIRED")
                            : message->timing == NEWS_TIMING_NEXT  ? ""
-                                                                  : LocGet(news->text[message->event].summary);
+                                                                  : LocGet(NewsMessageText(news, message)->summary);
     Rectangle subtitle_box = {row.x + NEWS_ROW_TEXT_X, row.y + 54.0f, text_w, row.height - 58.0f};
     NewsDrawRich(GuiFont(FNT_MENU), subtitle, subtitle_box, 15.0f, NEWS_TEXT_DIM);
     if (timed) {
@@ -536,7 +600,8 @@ static void NewsDrawFeed(News *news, Quests *quests, const Nexus *nexus) {
 
 static NewsAction NewsDrawMessage(News *news, Quests *quests, const Nexus *nexus) {
     const NewsMessage *message = &news->opened;
-    const NewsText *text = &news->text[message->event];
+    const NewsText *text = NewsMessageText(news, message);
+    bool announcement = NewsIsAnnouncement(message);
     NewsDrawFrame(NULL);
     char title[256];
     NewsTitleWithState(title, sizeof(title), news, nexus, message);
@@ -552,10 +617,10 @@ static NewsAction NewsDrawMessage(News *news, Quests *quests, const Nexus *nexus
     }
     Rectangle image =
         NewsDesignRect(NEWS_POPUP_IMAGE_X, NEWS_POPUP_IMAGE_Y, NEWS_POPUP_IMAGE_SIZE, NEWS_POPUP_IMAGE_SIZE);
-    NewsDrawImageFit(QuestsHubImage(quests, message->event), image, WHITE);
+    NewsDrawImageFit(NewsMessageImage(quests, message), image, WHITE);
     Rectangle body =
         NewsDesignRect(NEWS_POPUP_MESSAGE_X, NEWS_POPUP_MESSAGE_Y, NEWS_POPUP_MESSAGE_W, NEWS_POPUP_MESSAGE_H);
-    const BattleGameChanger *changer = NexusEventGameChanger(nexus, message->event);
+    const BattleGameChanger *changer = announcement ? NULL : NexusEventGameChanger(nexus, message->event);
     if (changer) {
         body.height -= NEWS_POPUP_CHANGER_H;
         Rectangle rule = {body.x, body.y + body.height, body.width, NEWS_POPUP_CHANGER_H};
@@ -564,7 +629,7 @@ static NewsAction NewsDrawMessage(News *news, Quests *quests, const Nexus *nexus
     NewsDrawRich(GuiFont(FNT_MENU), LocGet(text->message), body, 19.0f, NEWS_TEXT);
 
     NewsAction action = NEWS_NONE;
-    if (message->timing == NEWS_TIMING_ACTIVE) {
+    if (!announcement && message->timing == NEWS_TIMING_ACTIVE) {
         news->link.label = LocGet("INTERSTITIAL_BUTTON_GO");
         Rectangle link = NewsDesignRect(NEWS_POPUP_LINK_X, NEWS_POPUP_LINK_Y, NEWS_POPUP_LINK_W, NEWS_POPUP_LINK_H);
         if (ButtonDrawEx(&news->link, link, true)) {
@@ -641,16 +706,19 @@ static void NewsDrawTicker(News *news, Quests *quests, const Nexus *nexus, bool 
     Rectangle image = {
         frame.x + NEWS_TICKER_IMAGE_X, frame.y + NEWS_TICKER_IMAGE_Y, NEWS_TICKER_IMAGE_SIZE, NEWS_TICKER_IMAGE_SIZE
     };
-    NewsDrawImageFit(QuestsHubImage(quests, message->event), image, tint);
+    NewsDrawImageFit(NewsMessageImage(quests, message), image, tint);
     Rectangle title = {
         frame.x + NEWS_TICKER_TEXT_X, frame.y + NEWS_TICKER_TITLE_Y, NEWS_TICKER_TEXT_W, NEWS_TICKER_TITLE_H
     };
-    QuestsDrawFit(
-        GuiFont(FNT_COOL), LocGet("INTERSTITIAL_TICKER_TODAYS_EVENT"), title, 24.0f, Fade(NEWS_TEXT, tint.a / 255.0f)
-    );
+    bool announcement = NewsIsAnnouncement(message);
+    const char *heading = announcement ? LocGet("NEWSFEED_TITLE") : LocGet("INTERSTITIAL_TICKER_TODAYS_EVENT");
+    QuestsDrawFit(GuiFont(FNT_COOL), heading, title, 24.0f, Fade(NEWS_TEXT, tint.a / 255.0f));
     char time_text[48], timer[160];
     QuestsShortTime(time_text, sizeof(time_text), message->seconds);
-    snprintf(timer, sizeof(timer), "%s (%s)", NexusEventAt(nexus, message->event)->name, time_text);
+    if (announcement)
+        StrCopy(timer, sizeof(timer), NewsTitle(news, nexus, message));
+    else
+        snprintf(timer, sizeof(timer), "%s (%s)", NexusEventAt(nexus, message->event)->name, time_text);
     Rectangle timer_box = {title.x, frame.y + NEWS_TICKER_TIMER_Y, title.width, NEWS_TICKER_TIMER_H};
     NewsDrawTickerLine(GuiFont(FNT_MENU), timer, timer_box, 16.0f, Fade(NEWS_TITLE_COLOR, tint.a / 255.0f));
 

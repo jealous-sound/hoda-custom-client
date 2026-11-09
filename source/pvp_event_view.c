@@ -1,3 +1,4 @@
+#define PVP_EVENT_VIEW_RULE_CAPACITY 256
 #define PVP_EVENT_VIEW_POPUP_ASPECT 1.48f
 #define PVP_EVENT_VIEW_POPUP_HEIGHT 0.9f
 #define PVP_EVENT_VIEW_LABEL_SCALE 0.36f
@@ -401,6 +402,17 @@ static float PvpEventViewDrawRichMiddle(Font font, const char *text, Rectangle a
     return HeroesDrawRich(font, text, area, size, color);
 }
 
+void PvpEventViewRuleText(char *out, size_t size, const PvpEvent *event) {
+    const char *rule = NexusGameChangerText(&event->changer);
+    if (!PvpTableEnsure()->rules.stat_budget) {
+        StrCopy(out, size, rule);
+        return;
+    }
+    char cap[PVP_EVENT_VIEW_RULE_CAPACITY];
+    LocFormatInt(cap, sizeof(cap), "HODA_PVP_EVENT_BUFF_CAP", StatBudgetEnsure()->changer_cap_pct);
+    snprintf(out, size, "%s\n%s", rule, cap);
+}
+
 static PvpEventViewAction
 PvpEventViewDrawBottomBar(PvpEventView *v, const PvpEvent *event, Rectangle content, bool interactive) {
     Rectangle bar = PvpEventFit(content, 0.5f, 0.97f, 1.0f, 0.165f, 10.7f);
@@ -408,7 +420,9 @@ PvpEventViewDrawBottomBar(PvpEventView *v, const PvpEvent *event, Rectangle cont
     Rectangle gallery = PvpEventFit(bar, 0.005f, 0.5f, 1.0f, 0.9f, 2.0f);
     UiDrawTexture(GuiTex(GUI_EVENT_BANNER), PvpEventFit(gallery, 0.5f, 0.5f, 1.0f, 1.0f, 1.0f), WHITE);
     Rectangle rules = PvpEventFit(bar, 0.35f, 0.55f, 0.48f, 0.8f, 0.0f);
-    PvpEventViewDrawRichMiddle(v->body, NexusGameChangerText(&event->changer), rules, 18.0f, PVP_EVENT_VIEW_TEXT);
+    char rule[PVP_EVENT_VIEW_RULE_CAPACITY * 2];
+    PvpEventViewRuleText(rule, sizeof(rule), event);
+    PvpEventViewDrawRichMiddle(v->body, rule, rules, 18.0f, PVP_EVENT_VIEW_TEXT);
     if (ButtonDrawEx(&v->enter, PvpEventFit(bar, 0.99f, 0.5f, 1.0f, 0.873f, 4.0f), interactive))
         return PVP_EVENT_VIEW_ENTER;
     if (PvpEventViewTapped(v, gallery, interactive)) {

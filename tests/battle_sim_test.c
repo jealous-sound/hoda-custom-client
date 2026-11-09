@@ -6079,6 +6079,72 @@ static void TestPvpEveryPooledSquadFights(void) {
     }
 }
 
+static void TestNewsFeedLeadsWithAnnouncementsWhileTheyRun(void) {
+    static News news;
+    static Nexus no_events;
+    static Player player;
+    memset(&news, 0, sizeof(news));
+    memset(&no_events, 0, sizeof(no_events));
+    memset(&player, 0, sizeof(player));
+    NewsLoadAnnouncements(&news, "tests/no_such_announcements.json");
+    assert(news.announcement_count == 0);
+
+    NewsLoadAnnouncements(&news, NEWS_ANNOUNCEMENTS_PATH);
+    assert(news.announcement_count >= 1);
+    const NewsAnnouncement *first = &news.announcements[0];
+    assert(first->starts_at > 0 && first->ends_at > first->starts_at);
+
+    NewsCollect(&news, &no_events, &player, first->starts_at - 1);
+    assert(news.message_count == 0 && news.unseen_count == 0);
+
+    NewsCollect(&news, &no_events, &player, first->starts_at);
+    assert(news.message_count >= 1 && news.featured_count >= 1 && news.unseen_count >= 1);
+    assert(NewsIsAnnouncement(&news.messages[0]));
+    assert(NewsMessageText(&news, &news.messages[0]) == &first->text);
+
+    player.news_seen_at = first->starts_at;
+    NewsCollect(&news, &no_events, &player, first->starts_at + 1);
+    assert(news.message_count >= 1 && news.unseen_count == 0);
+
+    news.announcement_count = 1;
+    NewsCollect(&news, &no_events, &player, first->ends_at);
+    assert(news.message_count == 0);
+}
+
+static void TestAnnouncementsAndTheEventBuffCapReadInEveryLanguage(void) {
+    static const char *const languages[] = {
+        "Loc_ENG_US.txt", "Loc_FRE_FR.txt", "Loc_GER_DE.txt", "Loc_ITA_IT.txt", "Loc_SPA_XM.txt", "Loc_POR_BR.txt",
+        "Loc_DUT_NL.txt", "Loc_RUS_RU.txt", "Loc_JPN_JP.txt", "Loc_KOR_KR.txt", "Loc_CHS_CN.txt", "Loc_CHT_CN.txt",
+    };
+    static News news;
+    memset(&news, 0, sizeof(news));
+    NewsLoadAnnouncements(&news, NEWS_ANNOUNCEMENTS_PATH);
+    Loc saved = loc;
+    PvpTableEnsure();
+    bool shipped = pvp_table.rules.stat_budget;
+    const PvpEvent *event = &pvp_table.events.catalog[0];
+    for (int language = 0; language < (int)(sizeof(languages) / sizeof(languages[0])); language++) {
+        loc = (Loc){0};
+        LocLoad(TextFormat("%s/%s", ORIGINAL_LOCALIZATION_DIR, languages[language]));
+        for (int i = 0; i < news.announcement_count; i++) {
+            const NewsText *text = &news.announcements[i].text;
+            assert(LocGet(text->title)[0] && LocGet(text->subtitle)[0]);
+            assert(LocGet(text->summary)[0] && LocGet(text->message)[0]);
+        }
+        char plain[PVP_EVENT_VIEW_RULE_CAPACITY * 2], capped[PVP_EVENT_VIEW_RULE_CAPACITY * 2];
+        pvp_table.rules.stat_budget = false;
+        PvpEventViewRuleText(plain, sizeof(plain), event);
+        pvp_table.rules.stat_budget = true;
+        PvpEventViewRuleText(capped, sizeof(capped), event);
+        assert(!strcmp(plain, NexusGameChangerText(&event->changer)));
+        assert(strlen(capped) > strlen(plain));
+        assert(strstr(capped, TextFormat("+%d", StatBudgetEnsure()->changer_cap_pct)));
+        LocUnload();
+    }
+    pvp_table.rules.stat_budget = shipped;
+    loc = saved;
+}
+
 static void TestPvpOpponentsFightUnderTheStatBudgetOnlyWhenTheRuleIsOn(void) {
     PvpTableEnsure();
     bool shipped = pvp_table.rules.stat_budget;
@@ -7703,6 +7769,8 @@ int main(void) {
     TestPvpDefenseLogWaitsForFirstBattleAndCapsAttacks();
     TestPvpRevengeRebuildsTheSameOpponent();
     TestPvpEveryPooledSquadFights();
+    TestNewsFeedLeadsWithAnnouncementsWhileTheyRun();
+    TestAnnouncementsAndTheEventBuffCapReadInEveryLanguage();
     TestPvpOpponentsFightUnderTheStatBudgetOnlyWhenTheRuleIsOn();
     TestPvpOpponentRunesApplyToTheEnemySide();
     TestPvpSaveRoundTrip();

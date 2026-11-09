@@ -250,7 +250,8 @@ static void DebugPrepareNexus(Game *game, DebugShot *shot) {
 
 static void DebugPrepareNews(Game *game, DebugShot *shot) {
     bool event_popup = DebugShotIs(shot, "news_event");
-    if (!event_popup && !DebugShotIs(shot, "news")) return;
+    bool announcement_popup = DebugShotIs(shot, "news_announcement");
+    if (!event_popup && !announcement_popup && !DebugShotIs(shot, "news")) return;
     game->screen = SCREEN_HOME;
     if (EnvFlag("HOD_NEWS_ZOOM")) {
         game->news.zoom = NEWS_ZOOM_OPENING;
@@ -259,6 +260,10 @@ static void DebugPrepareNews(Game *game, DebugShot *shot) {
     if (shot->flow_started) return;
     if (event_popup) {
         NewsOpenEvent(&game->news, &game->nexus, &game->player, DebugNexusEvent(game));
+    } else if (announcement_popup) {
+        NewsCollect(&game->news, &game->nexus, &game->player, ServerNow());
+        if (game->news.message_count > 0 && NewsIsAnnouncement(&game->news.messages[0]))
+            NewsOpenMessage(&game->news, &game->news.messages[0], false);
     } else {
         NewsOpen(&game->news, &game->player);
     }
