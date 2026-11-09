@@ -1,327 +1,130 @@
 # Heroes of Dragon Age client
 
-Native raylib 5.5 client in C for Heroes of Dragon Age: home, heroes, campaign, Nexus, Store and quests, with a
-deterministic battle simulation.
+A native Heroes of Dragon Age client in C on raylib 5.5. It reads the original 4.4.0 game data, runs a
+deterministic battle simulation, and plays offline or against the Go server in `../hoda-custom-backend`.
+
+## Setup
+
+- raylib 5.5 (`brew install raylib`; set `RAYLIB_DIR=` for another install), Python 3, and `uv` for the bakers.
+- The original 4.4.0 data in `client-additional-data/` (git-ignored, never commit it):
+  - `Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/`: the Unity bundle cache (textures, audio, localization).
+  - `Heroes-of-Dragon-Age-v4-4-0-androidp1.com.apk`: the APK (fonts, boot UI).
+  - Derived files: `meshes/`, `char_pack/`, `characters.json`, `player_starter.json`,
+    `anim_tools/display_scales.json`.
+  - `extra/`: what the 4.4.0 data lacks, including generated art. It ships with `make content`.
+
+Without a local copy the game downloads its data on first launch (see [Content](#content)).
+
+## Commands
+
+| Command | |
+| --- | --- |
+| `make` | builds `Heroes of Dragon Age.app`; `PLATFORM=linux` or `PLATFORM=windows` (MinGW-w64) build into `build/` |
+| `make run` | builds and runs the game |
+| `make play` | runs the game against a local backend from `../hoda-custom-backend` (`BACKEND_DIR=`) |
+| `make test` | every check; needs the local asset cache |
+| `make ci-test` | the checks that need no asset cache: golden replays, content and update tests, table validators |
+| `make golden` | regenerates the battle corpus in `tests/golden/` |
+| `make format-check` | clang-format check; `make format` rewrites |
+| `make dist` | a playable copy in `../hoda-custom-dist` (`DIST_DIR=`, `DIST_BACKEND_URL=`) |
+| `make content` | publishes the data packs to R2 (`CONTENT_BUCKET=`, default `hoda-assets`; `npx wrangler login` once) |
+| `python3 tools/check_comments.py` | fails on any comment or docstring in owned code |
+
+Build variables: `SERVER_URL` (default `https://api.hodareborn.com`; empty means local play only), `CONTENT_URL`
+(default `https://cdn.hodareborn.com`), `CLIENT_VERSION` (default `git describe --tags`), and
+`RAYLIB_LINK=$RAYLIB_DIR/lib/libraylib.a` to link raylib statically. The game looks for `data/` and
+`client-additional-data/` next to the app bundle or executable.
 
 ## Layout
 
-- `source/`: game code; `main.c` is the single translation unit entry, `vendors/` holds cJSON.
-- `tests/`: battle simulation test and Python unit tests.
-- `tools/`: build and validation scripts for data tables.
-- `data/`: version-pinned rule tables and Nexus maps and rosters.
-- `client-additional-data/`: model and animation bakers; the rest of the directory is the git-ignored local asset cache.
+- `source/`: one module per screen or system. `main.c` is the single translation unit and `battle_sim.c` the
+  simulation. OS calls sit in `platform.c`, built separately so `<windows.h>` never meets raylib.
+- `tests/`: C tests, the golden battle corpus and Python unit tests.
+- `tools/`: `build_*.py` writes a table in `data/` (`--check`, run by `make test`, verifies it); `validate_*.py`
+  checks one.
+- `data/`: version-pinned rule tables, maps and rosters, `localization/` and `custom_heroes/`.
+- `client-additional-data/`: tracked bakers next to the ignored asset cache.
 
-## Game data
+## Running
 
-The client reads the original 4.4.0 files as shipped, from `client-additional-data/`:
+At launch the player picks Local Game, saved in `player_save.dat`, or Online Game against `SERVER_URL`, where the
+server owns the save and the clock. A first launch creates a guest account (`account.dat`) and runs the tutorial.
 
-- `Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/`: the Unity bundle cache. Textures, audio and localization load
-  from it directly.
-- `Heroes-of-Dragon-Age-v4-4-0-androidp1.com.apk`: the APK. Fonts and the boot UI textures load from it directly.
+| Variable | |
+| --- | --- |
+| `HOD_BACKEND_URL` | skips the choice and plays online against this server |
+| `HOD_LANGUAGE` | `en`, `fr`, `de`, `ja`, `zh-hant`, ...; overrides the system language and the saved choice |
+| `HOD_SKIP_TUTORIAL=1` | skips the tutorial |
+| `HOD_NEW_PLAYER` | a starting roster in place of `data/new_player.json`, such as `client-additional-data/player_starter.json` |
+| `HOD_SAVE_PATH`, `HOD_ACCOUNT_PATH` | the local save and the guest account file |
+| `HOD_CONTENT_URL`, `HOD_CONTENT_DIR` | the content server, and a data folder to download into even in a checkout |
+| `HOD_SHOT=<file.png>` `HOD_SHOT_SCREEN=<name>` | renders one screen with sample data and saves it; names in `source/debug_harness.c` |
 
-This directory used to be `heroes-of-dragons-cache/`. In an older clone, move the local files over once with
-`mv heroes-of-dragons-cache client-additional-data`.
+## Original assets
 
-Everything else it needs is derived or post-4.4:
+Name every original object with `CACHE_RESOURCE("name")`, `CACHE_BUNDLE_RESOURCE("bundle", "name")` or
+`APK_RESOURCE("name")`. Any other string is read as a file path and fails silently when it is missing;
+`tools/validate_cache_refs.py` rejects literal refs that miss the cache. Prefer an original object, and put anything
+the 4.4.0 data lacks in `client-additional-data/extra/`.
 
-- `meshes/`, `char_pack/`: scene geometry and baked unit models.
-- `characters.json`, `player_starter.json`, `anim_tools/display_scales.json`: derived catalogs.
-- `extra/`: files the 4.4.0 data lacks (post-4.4 portraits, the curse icons, the click sound).
+Text comes from the original `Loc_*.txt` tables. New strings go in `data/localization/<area>/Loc_*.txt`, one file per
+language for all twelve languages, with `HODA_` keys. `tools/validate_localization.py` checks keys and placeholders,
+checks that every key the C code looks up exists, and rejects Russian literals in C outside the debug harness.
 
-In code, `CACHE_RESOURCE("name")`, `CACHE_BUNDLE_RESOURCE("bundle", "name")` and `APK_RESOURCE("name")` name an
-original object; any other string is a file path.
+## Server sync
+
+Online, the server owns the economy and decides battles. Purchases and refills wait for its answer. Other actions apply
+at once and queue in `source/server_actions.c`, and the server's profile wins once the queue drains. For a battle, the
+server issues a seed, replays its Go port of `battle_sim.c`, and pays its own result.
+
+- The wire contract is `source/backend.c` here and `internal/api` in the backend; change both together.
+- The backend embeds copies of most `data/` tables and the golden corpus. After changing them, run
+  `scripts/sync-client-data.sh` in the backend; its tests fail on drift.
+- After changing the simulation or its inputs, run `make golden` and then the sync. `make test` fails while the corpus
+  is stale and names the first entry and field that differ. To find where two builds diverge, diff their
+  `./tests/battle_replay_golden --trace <battle name>` output.
+- Results must not depend on the compiler. Builds use `-ffp-contract=off`, and the corpus generator draws each random
+  value in its own statement, because GCC and clang evaluate function arguments in opposite orders.
 
 ## Custom heroes
 
-A custom hero is a new hero derived from a shipped one. Its spec lives in `data/custom_heroes/<name>.json`:
-`based_on` names the shipped hero, `character` overrides catalog fields (name, `obtainable`; the displayed name comes
-from `HODA_UNIT_<ID><tier>` in `data/localization/heroes/`),
-`stat_scale` scales power and health, and `look` describes the new model. `python3 tools/build_custom_heroes.py`
-writes the rows to `data/custom_heroes.json`, which the game appends to the hero catalog. A custom hero keeps its
-base hero's ability, passives, ability VFX, audio and XP tables, and has its own name, stats, models and portraits.
+A custom hero is a shipped hero with new stats, name, model and portraits. Its spec is
+`data/custom_heroes/<name>.json`; `veilwarden.json` is the worked example.
 
 ```sh
 python3 tools/build_custom_heroes.py
 uv run --offline --with numpy --with Pillow --with UnityPy python tools/bake_custom_heroes.py
 ```
 
-The baker starts from the base hero's runtime bake (`look.tiers.<tier>.source`) and writes the local, git-ignored
-assets: `char_pack/<prefab>/<prefab>_tN_rl.glb` with its textures, `extra/portraits/tex.<prefab>_tN_pt.png` in the
-base hero's rarity frame, `display_scales.json` entries, and `char_pack/<prefab>/<prefab>_bake.json`, the hash of the
-spec it baked. `python3 tools/build_custom_heroes.py --check` (part of `make test`) fails when a bake is missing or was
-made from an older spec. `look` holds:
+The first command writes `data/custom_heroes.json`. The second bakes the git-ignored models, portraits and scales into
+`client-additional-data/`. `build_custom_heroes.py --check` fails when a bake is missing or older than its spec.
 
-- `texture`: `recolor` maps a hue band to a new hue, optionally only on some bones; `gradient` tints by height;
-  `strokes` draws glowing lines on the front of a bone, such as face markings.
-- `halo`: a ring with optional shards on its own bone under `bone`, spinning a set number of turns per clip.
-- `clips`: each runtime clip (`idle` first) comes from a `clip` of the base bake, or of a `source` bake on the same
-  skeleton, with `speed`, `window` and `time_keys`, plus `layers` that rotate or move a bone in the body's frame by
-  keys or waves.
-- `portrait`: the camera and backdrop for the rendered portrait.
+## Content
 
-`data/custom_heroes/veilwarden.json`, Veilwarden Ithriel from Solas, is the worked example.
+When no `client-additional-data/` sits next to the game, the game keeps its data, saves and `account.dat` in a
+per-user folder: `~/Library/Application Support/Heroes of Dragon Age`, `~/.local/share/Heroes of Dragon Age` (or
+`$XDG_DATA_HOME`), or `%APPDATA%\Heroes of Dragon Age`. Each launch reads `manifest.json` from `CONTENT_URL` and
+downloads only the packs that changed.
 
-## Fortify
+`make content` packs the files `make dist` would ship into deterministic zips named by SHA-256, uploads only the
+changed packs, and uploads the manifest last. `python3 tools/publish_content.py --dry-run` builds the packs without
+uploading them. Whenever a data table changes shape, bump `CONTENT_MANIFEST_FORMAT` in `source/content_update.c`
+and `MANIFEST_FORMAT` in `tools/build_content_packs.py` together.
 
-The Fortify tab of the heroes screens is 5.4.4's `FortifyScreenState`, laid out from the 4.4.0 `FortifyScreenV`,
-`FortifySlotSmart`, `FortifyConfirmPopupV` and `FortifyCelebrationPopupV` prefabs. Drag a hero onto the pedestal, then
-drag other heroes into its ten slots; each slot is a health or power slot set by the hero's archetype, and slots open
-with the hero's consume level (two at first, ten at the end of the ladder). Confirm shows the rarity, faction and tier
-breakdown, and the celebration tallies the new stats. Squad members cannot be sacrificed, a hero with slotted heroes or
-gear asks first, and dropping a copy of the hero already in a slot combines them a tier up. Remove Fortifications
-(added in 5.4.4) gives slotted heroes back at level 1 for gems by rarity.
+## Releases
 
-A slot adds `round(max * cap * bonus[rarity][I]) + round(max * cap * (bonus[rarity][tier] - bonus[rarity][I]))` to the
-hero's power or health, plus 12.5% of that when the two heroes share a faction (or are both large), where `max` is the
-fortified hero's stat at its current tier's maximum level. The math runs in float32 with half-to-even rounding, as
-5.4.4's `FortifyBonusCalculatorDO` does, and the bonus counts in battle. `tools/build_fortify_tables.py` writes
-`data/fortify_tables.json` from the decoded 4.4.0 archetypes and bonus rows and the 5.4.4 `Config.cs` removal costs.
-4.4.0 has no Mythic row; its Tier IV value, 1.24, is the one that reproduces every 5.x `MaxFortify*Bonus` in
-`HoDA_character_info/UnitData.json`, and Tiers I-III follow the Legendary row's shape. Slots are saved on the hero as
-`fortify`, the server owns them, and `fortify` and `remove_fortify` are queued server actions. `HOD_SHOT_SCREEN=fortify`,
-`fortify_parent`, `fortify_pending`, `fortify_confirm`, `fortify_celebration`, `fortify_remove_mode` and `fortify_remove`
-render the screens.
-
-## Expeditions
-
-Expeditions are this client's passive farming, after the Dragon Age: Inquisition war table: the Expeditions button
-next to Goals (dimmed, with an unlock notice, below player level 3) opens a board of ten expeditions across Thedas, each with a party size, a
-duration from 15 minutes to 20 hours, optional requirements (a number of heroes of a rarity or better) and a bonus
-trait (a hero group, faction or large creature). Send picks the party from heroes in no squad, with Auto-fill
-choosing the cheapest heroes that meet the requirements and the bonus; heroes away on an expedition show a compass
-badge and cannot join a squad, be consumed, consume, fortify or be fortified until the party comes back. A party
-that meets the bonus trait returns with a Great Success: 50% more gold, gems and hero XP and every drop for sure.
-Rewards are gold, gems, hero XP for the party, gear, runes and heroes; Claim and Collect All pay returned parties,
-and Recall brings a party home early with nothing. New heroes, gear and runes are revealed in the store the way packs
-reveal them (the portal and hero card, then the gear and rune cards), and the board then sums up the gold, gems and
-XP. Party slots open at levels 3, 8, 15, 25 and 40.
-
-`data/expeditions.json` holds the expeditions, slot levels and the Great Success bonus; `data/hero_pool.json` carries
-each hero's groups so the server can check traits. Starts and recalls apply locally and are queued as the
-`expedition_start` and `expedition_recall` server actions; `expedition_claim` waits for the server's roll, as the
-Nexus recap does. The location paintings and the board backdrop were generated with the Codex CLI; the home button
-and the away tag are Codex edits of the original Quest button and in-squad tag, with the new compass glyph composited
-into the original frame. They live in `client-additional-data/extra/gui/expeditions/`, so they ship with
-`make content`; without them the screens fall back to plain panels and the stock grey button. `HOD_SHOT_SCREEN=expeditions`, `expeditions_party`,
-`expeditions_recall`, `expeditions_reward`, `expeditions_home`, `expeditions_roster`, `expeditions_reveal_hero` and
-`expeditions_reveal_items` render the screens with three parties out.
-
-## Bounties
-
-The game no longer sells gems, so daily and weekly quests are the steady free income next to Expeditions. They are
-called bounties because the original text already names the campaign and Nexus hub "Quests" in every language. The
-Bounties tab of Goals (the default tab from player level 3, with the claimable count on the Goals badge) holds two
-sections:
-
-- Daily Bounties: five a day, one from each slot of `data/timed_quests.json` (campaign, PvP, combat, heroes,
-  expeditions). The day's pick is the store xorshift seeded from the UTC day and the slot, so the client and the server
-  pick the same quests without storing them. One unfinished quest a day can be swapped for the next one in its slot,
-  after Hearthstone's daily reroll.
-- Weekly Bounties: five larger goals each week, Monday 00:00 UTC to the next, including "complete 20 daily quests" and
-  "fight on 5 different days", so a week stays winnable after missed days.
-
-Each claimed quest pays its gold or gems and 20 points. Points fill a chest track: daily chests at 40, 80 and 100 points
-(gold; gems and a rune; gems and a hero, mostly Common to Rare), weekly chests at 60 and 100 (gold, gems and gear;
-gems, an Epic or Legendary hero and a rune). Chest heroes, gear and runes are revealed the way packs reveal them. The
-table pays about 15 gems a day from dailies and 70 a week from weeklies, about half a Champion Pack a day plus a
-weekly boost; the research behind those amounts is in the pull request.
-
-Counts are per UTC day and per week in the save's `timed_quests` section: battles and wins by mode, crits, faction
-bonus hits, consumes, summons, expeditions sent and returned, claimed daily quests and active days. The server owns the
-section; `quest_claim`, `quest_swap` and `quest_chest` are server actions, and chests wait for the server's roll as
-expedition claims do. The chests and the summon, crit, days, expedition and daily-quest icons were generated with the
-Codex CLI from the original pack icons and achievement badges (the icons keep the original hexagon's alpha) and live in
-`client-additional-data/extra/gui/quests/`; without them the screen falls back to the original pack icons and
-achievement badges named in the table. `HOD_SHOT_SCREEN=goals_daily`, `goals_daily_weekly` and `goals_daily_locked`
-render the tab.
-
-## Commands
+`.github/workflows/build.yml` builds macOS, Linux and Windows packages, without game data, on every pull request and
+every push to `master`, and runs `make ci-test`. Merging publishes nothing. To release, push a tag:
 
 ```sh
-make run
-make play
-make test
-make ci-test
-make golden
-make format-check
-python3 tools/check_comments.py
+git tag v0.7.0
+git push origin v0.7.0
 ```
 
-After the game data is in place, the game shows the splash with two buttons: local play keeps the save in
-`player_save.dat`, online play connects to `SERVER_URL` (baked in at build time, default
-`https://api.hodareborn.com`), which then owns the save and the clock. Building with `SERVER_URL=` leaves the server
-out and starts local play without asking. `HOD_BACKEND_URL=<http or https URL>` skips the choice and plays online
-against that server; `make play` uses it to run the game against the Go backend in `../hoda-custom-backend`
-(override with `BACKEND_DIR=`). Requests to the server go through libcurl on macOS and Linux and WinHTTP on Windows,
-like the data download. `hoda-original-backend` is the separate Python server for the original Android client.
-
-Against the backend, the server owns the economy: gold, gems, vouchers, energy, level, potions, keys, tomes and which
-heroes, runes and gear exist. Store purchases and refills wait for the server's answer. Nexus awards, mission and
-event claims, gear sales, prestige slots, ascension, rune crafting, fortify, expedition starts and recalls and tutorial rewards are
-applied locally at once and queued in `source/server_actions.c`; the queue sends them in order and, once it is empty and the player is out of
-battle, loads the profile the server sends back, so the server's numbers win. A Nexus recap waits for the server so it
-shows the heroes the server rolled. `data/hero_pool.json` (`tools/build_hero_pool.py`) is the hero list the server
-rolls from; after changing it or `store_packs.json`, `runes.json`, `gear.json`, `tutorial_rewards.json`,
-`campaign_maps.json`, `nexus_maps.json`, `pvp_rules.json`, `missions.json`, `fortify_tables.json`, `expeditions.json` or
-`new_player.json`, run
-`scripts/sync-client-data.sh` in the backend. Store schedules use UTC dates.
-
-Battles are replayed on the server. FIGHT sends `battle_start` with the squad, its active runes, the enemy and the game
-changer exactly as `source/battle_replay.c` serializes them; the server checks them against its own copy, spends the
-energy or stamina and answers with a seed, and the battle plays from that seed (the corner spinner shows while it
-waits). The result goes back as `battle` with the battle id, and the server pays what its own replay of
-`battle_sim.c` says, not the client's claim. Online PvP opponents come from the server too: opening a ladder or event
-fight, picking a bot on a leaderboard, Next and Continue send `pvp_match`, the battle screen opens on the opponent
-the server answers, and FIGHT names that match. The server rolls the match seed, reads its own trophies, banners and
-clock, and counts the day's Next uses. Local play keeps picking its own seeds and opponents. The server's replay is a Go port
-of the simulation, so `make golden` regenerates `tests/golden/`: recorded battles that cover every hero twice, the
-campaign and Nexus rosters, game changers, PvP opponents and the built-in ability recipes. `make test` fails while the
-corpus is stale; after `make golden`, run `scripts/sync-client-data.sh` in the backend, whose tests replay the corpus
-and require the same outcome, crit count and action timeline. Builds use `-ffp-contract=off` so float results do not
-depend on the compiler fusing multiply-adds. A stale check names the first entry and field that differ. A changed
-battle input means the generator drew differently. A changed outcome means the sim played differently:
-`./tests/battle_replay_golden --trace <battle name>` prints that battle's actions as the text its `timeline` digest
-hashes, so diffing two builds' traces shows the first step that diverges. The generator draws each random value in a
-statement of its own, because C leaves the order of function arguments unspecified and GCC and clang evaluate them in
-opposite orders.
-
-`make` builds `Heroes of Dragon Age.app`, a macOS app bundle with its icon from `packaging/app_icon.png` and its
-`Info.plist` from `packaging/macos/`. The game runs from the folder that holds the bundle, so it finds `data/` and
-`client-additional-data/` next to it however it is launched.
-
-`make PLATFORM=linux` builds `build/linux/Heroes of Dragon Age`; `make PLATFORM=windows` cross-compiles
-`build/windows/Heroes of Dragon Age.exe` with MinGW-w64 and embeds `packaging/windows/app_icon.ico`. Point
-`RAYLIB_DIR=` at a raylib 5.5 release and set `RAYLIB_LINK=$RAYLIB_DIR/lib/libraylib.a` to link it statically.
-OS-specific calls (HTTP requests, positional reads, atomic file replace, CPU count, UTC time) live in
-`source/platform.c`, a separate translation unit so `<windows.h>` never meets raylib's names.
-
-`.github/workflows/build.yml` builds all three on every pull request and every push to `master` (or by hand from the
-Actions tab) and attaches a universal macOS app, a Linux x86-64 binary and a Windows x86-64 executable to the run as
-artifacts. They carry no game data and download it on first launch. The macOS and Linux jobs also run `make ci-test`,
-the part of `make test` that needs no local asset cache (the golden replay check, the content update test and the
-rule table validators), and the Linux job runs `tools/check_comments.py`.
-
-Merging to `master` publishes nothing. To release, tag the commit and push the tag:
-
-```sh
-git tag v0.4.0
-git push origin v0.4.0
-```
-
-The tag's run publishes the three packages as a GitHub Release named after the tag, and the website's download buttons
-follow `releases/latest`. A tag with a suffix, such as `v0.4.0-rc.1`, becomes a pre-release that `releases/latest`
-skips, for testers. Bump the minor version for new features and the patch version for fixes.
-
-Every build carries its version: `git describe --tags` (override with `CLIENT_VERSION=`) is compiled in as
-`HOD_VERSION`, shown in the settings popup above the player ID and sent as `User-Agent: HeroesOfDragonAge/<version>` on
-every server and download request. The macOS bundle's `CFBundleShortVersionString` is the latest tag's number.
-
-## Updates
-
-At launch the game asks the server for `GET /v1/client` (`latest`, `minimum`, `download_url`) in the background,
-whichever mode the player then picks, and compares them with its own version: release candidates sort before their
-release and `git describe` builds after it, and a build without a version tag (`dev`, a bare hash) never asks for an
-update. The server's `latest` follows the client repository's latest GitHub release, so pushing a release tag is all
-it takes; `minimum` is the server's `HOD_MIN_CLIENT_VERSION`, raised only when old clients can no longer play online.
-
-- A newer `latest` puts 5.4.4-style Update Available over the Local Game / Online Game choice, with Download and
-  Later. Later hides that version until a newer one appears (`skipped_update` in `settings.json`); the settings popup
-  keeps showing `<version> (<latest> available)` under the gear button.
-- A version below `minimum` shows Update Required on that screen instead and keeps Online Game from starting; Local
-  Game still works.
-- Online, any request the server answers with `426 Upgrade Required` (a minimum raised while the game runs, or one the
-  launch check missed) puts Update Required over the game with Download and Quit, and the game stops talking to the
-  server.
-- A newer manifest format on the content server (see below) shows its Update Required with Download and Quit.
-
-Download opens `download_url` in the browser, only when it is a plain `https://` address, and otherwise the website's
-download section. `HOD_SHOT_SCREEN=play_mode_update`, `play_mode_update_required`, `update_required` and
-`options_update` render the popups with a sample release.
-
-## Language and settings
-
-The game starts in the system language (macOS preferred languages, the Windows display language, or `LANGUAGE`,
-`LC_ALL`, `LC_MESSAGES` and `LANG` on Linux) when the original 4.4.0 cache has it: English, French, German, Italian,
-Spanish, Brazilian Portuguese, Dutch, Russian, Japanese, Korean and Simplified or Traditional Chinese. Anything else
-falls back to English, then Russian. `HOD_LANGUAGE=<code>` (`en`, `fr`, `de`, `ja`, `zh-hant`, ...) overrides
-both the system and the saved choice. The gear button in the top bar opens 4.4.0's `GameOptionsPopupV`: Audio
-Settings (music and sound effects on/off), Language (5.4.4's `SelectLanguagePopupV`; picking a language reloads the
-game in it) and Toggle Fullscreen. The choices live in `settings.json` next to the save.
-
-Text comes from the original `Loc_*.txt` tables. Strings the original game lacks live in
-`data/localization/<area>/Loc_*.txt`, one file per language with `HODA_`-prefixed keys; they load after the original
-table and win over it. `python3 tools/validate_localization.py` (part of `make test`) checks that every area has all
-twelve languages with the same keys and placeholders, that every key the C sources look up exists, and that no C
-literal outside the debug harness holds Russian text. `HOD_SHOT_SCREEN=options`, `options_audio` and
-`options_language` render the settings popup.
-
-The game's font, DAmFont, covers Latin, Cyrillic, Japanese and Korean but not every Chinese character; the rest come
-from a system CJK font (Hiragino Sans GB or STHeiti on macOS, Microsoft YaHei or JhengHei on Windows, Noto Sans CJK
-or WenQuanYi on Linux), merged into the same glyph atlas, as the original client fell back to the device font. Lines
-break between CJK characters.
-
-## Downloaded game data
-
-When no `client-additional-data/` sits next to the game (a CI build, or any copy without `make dist` data), the game
-keeps its data in a per-user folder: `~/Library/Application Support/Heroes of Dragon Age` on macOS,
-`$XDG_DATA_HOME` or `~/.local/share/Heroes of Dragon Age` on Linux, and `%APPDATA%\Heroes of Dragon Age` on
-Windows. Saves and `account.dat` live there too. On every launch it reads `manifest.json` from `CONTENT_URL` (baked
-in at build time; `HOD_CONTENT_URL` overrides it), downloads only the packs it doesn't have yet, checks their SHA-256,
-unpacks them and deletes files that later versions dropped. Interrupted downloads resume. Without a connection it
-starts with the data it already has, as long as that data has the manifest format this build reads
-(`CONTENT_MANIFEST_FORMAT`, `MANIFEST_FORMAT` in `tools/build_content_packs.py`; bump both whenever the data tables
-change shape). A newer format on the server asks the player to download the latest version; an older one is a
-server error. `HOD_CONTENT_DIR=<folder>` uses another folder and forces downloading even in a
-checkout. The window stays black until the APK and core packs are installed; from then on the download screen is 5.4.4's `LoadingScreenV` (splash, spinner, `loader_message` plate with the original messages in the player's language, red bar, megabyte counter and percentage) and errors use the game's connection and download-error popups. A failure before that art arrives retries every 5 seconds; Escape quits. Downloads use libcurl on macOS and Linux (loaded at runtime, so any distro's `libcurl.so.4` works) and
-WinHTTP on Windows.
-
-`make content` publishes the data from this checkout to the R2 bucket `CONTENT_BUCKET` (default `hoda-assets`)
-through Wrangler (`npx wrangler login` once). `tools/build_content_packs.py` groups the files `make dist` would ship
-into deterministic zip packs (rule tables, the APK, core files, and hashed buckets of heroes, scenes, Unity bundles
-and extras) named by their SHA-256. Packs whose files did not change keep their published entry, so a release
-uploads, and players download, only the packs that changed. The manifest goes up last with `Cache-Control:
-no-cache`; packs never change once uploaded and are cached for a year. `--dry-run` builds into `build/content`
-without uploading.
-
-`make dist` builds a playable copy in `../hoda-custom-dist` (override with `DIST_DIR=`): the app bundle with raylib
-in its `Frameworks`, `data/`, and only the parts of `client-additional-data` the game reads (about 2.1 GB of the
-local cache). Players open the app or run `play.sh`; `DIST_BACKEND_URL=http://host:port` makes that the default
-server for both.
-Rebuilding replaces only a folder this target made. Most of the copy is EA's original 4.4.0 game data.
-
-A first launch (no save, or no backend profile) creates a guest account and runs the 5.4.4 tutorial on the
-three-hero starter squad in `data/new_player.json`; the name prompt follows it. Against the backend the guest's id
-and secret live in `account.dat` (`HOD_ACCOUNT_PATH`). `HOD_SKIP_TUTORIAL=1` skips the tutorial and
-`HOD_NEW_PLAYER=<file>` starts from another roster, such as the full `client-additional-data/player_starter.json`.
-The script comes from the original prefab via `tools/build_ftue_script.py` (UnityPy venv); its reconstructed parts
-(intro battle, pack contents, giant, gem pack, parting gift) are marked in `data/tutorial_intro.json` and
-`data/tutorial_rewards.json`.
-
-Guilds and guild chat (5.4.4's only chat) need the backend. The Guild and Chat buttons sit under the news feed on the
-home screen; Guild unlocks at level 5 and Chat once you are in a guild. The screens follow the original `GuildFindV`,
-`GuildCreateV`, `GuildHomeV` and `GuildChatV` layouts and art from the 4.4.0 cache: find, search, create (10000 gold),
-settings, member ranks, applications, chat with its event log, and rank-change notices on the home screen. The client
-polls chat every 10 then 30 seconds while it is open and every 60 seconds otherwise, through its own request slot in
-`source/backend.c` so polling never waits on profile saves.
-
-Onslaught follows `GuildWarPopupView`: every fourth PvP event cycle is a guild event from `guild_catalog` in
-`data/pvp_rules.json` (Dangerous Purpose, War of Attrition, Ascension). The War tab shows the running, next (within 2
-days) or previous Onslaught, the leaderboard of guilds by summed member banners with a toggle to your own guild's
-members and a help text, the guild rank rewards from the original announcement tables (`tools/build_pvp_rules.py`
-parses them from the English localization), the minimum of 100 banners, Enter (opens the PvP event) and Claim (opens
-Goals → My Events, where the guild row shows `GUILD_EVENT_RANKING` and claims through the server). Banners count for
-the guild a player was in when the event started. The Duel button on member rows fetches the member's current squad
-and active runes and starts an ordinary PvP fight against it (1 stamina, trophies by the usual rules, no Next); the
-member's own trophies do not change, and the cached `GuildMemberSmart` puts Duel over the last-login column, so it sits
-in the rightmost action slot. Report Abuse (`ReportAbuseV`) sits in the footer of member and observed guilds and in
-the application review; reports go to the server's `runtime/reports.jsonl`.
-
-`HOD_SHOT_SCREEN=guild_find`, `guild_create`, `guild_home`, `guild_observe`, `guild_applications`, `guild_chat`,
-`guild_war` (running Onslaught), `guild_war_members`, `guild_war_help`, `guild_war_previous` (claim),
-`guild_war_next`, `guild_report`, `guild_report_application`, `guild_review`, `goals_guild_award` and
-`guild_home_buttons` render the screens with sample data and a pinned clock. `guild_live_home`, `guild_live_chat`,
-`guild_live_war`, `guild_live_duel`, `guild_live_report` and `guild_live_claim` drive them against a running
-backend.
+The tag's run publishes a GitHub Release. The website and the server's `GET /v1/client` follow the latest release,
+so players see an update prompt. A suffix such as `v0.7.0-rc.1` makes a pre-release that `releases/latest` skips.
+Bump the minor version for features and the patch version for fixes. To block old clients from online play, raise
+`HOD_MIN_CLIENT_VERSION` on the backend.
 
 ## License
 
