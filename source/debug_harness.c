@@ -729,7 +729,7 @@ static const Character *DebugConsumeDefinition(Game *game, const char *id, int *
 
 static int DebugGearHero(const Game *game) {
     for (int i = 0; i < game->player.roster_count; i++)
-        if (game->player.roster[i].gear_slots >= GEAR_PRESTIGE_MIN_SLOTS) return i;
+        if (GearHasTomeSlot(&game->player.roster[i])) return i;
     return 0;
 }
 

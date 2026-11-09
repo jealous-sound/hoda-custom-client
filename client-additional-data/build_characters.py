@@ -43,6 +43,7 @@ FACTION = {0: "Large", 2: "White", 4: "Red", 6: "White/Red", 8: "Blue",
            10: "White/Blue", 12: "Red/Blue", 17: "Black", 19: "White/Black",
            21: "Red/Black", 25: "Blue/Black", 31: "All"}
 TIERS = ["I", "II", "III", "IV"]
+GEAR_SLOTS_FOR_EVERY_WEARER = 4
 
 MODEL_OVERRIDES = {
     "UNIT_BEHEMOTH": "unit.c_behemoth_t4_pre",
@@ -50,6 +51,10 @@ MODEL_OVERRIDES = {
     "UNIT_GHASTBRUTE": "unit.c_ghastbrute_t4_pre",
     "UNIT_WILDSYLVAN": "unit.c_wildsylvan_t4_pre",
 }
+
+def levelled_gear_slots(u):
+    original = u.get("NumGearSlots", 0)
+    return max(original, GEAR_SLOTS_FOR_EVERY_WEARER) if original else 0
 
 def L(key, default=""):
     if not key:
@@ -178,7 +183,7 @@ for uid, u in units.items():
         "faction_en":  localized_faction(u, reference_loc_en),
         "specialties": u.get("Specialties", []),
 
-        "gear_slots":        u.get("NumGearSlots", 0),
+        "gear_slots":        levelled_gear_slots(u),
         "has_prestige_slot": bool(u.get("HasPrestigeSlot", False)),
         "obtainable":        bool(u.get("Obtainable", True)),
 

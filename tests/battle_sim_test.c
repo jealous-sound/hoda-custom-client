@@ -5077,7 +5077,7 @@ static void GearTestSwing(BattleSim *s, int actor) {
     SimAttack(s, actor, &SIM_RECIPE_DEFAULT, &(AttackRecipe){.target = RECIPE_TARGET_ABILITY}, true, false);
 }
 
-static void TestGearSlotsFollowRarity(void) {
+static void TestGearSlotCountDecidesPrestigeSlot(void) {
     Character ch = {.gear_slots = 4, .has_prestige_slot = true};
     assert(GearSlotCount(&ch) == 4 && GearHasPrestigeSlot(&ch));
     assert(!GearSlotIsPrestige(&ch, 2) && GearSlotIsPrestige(&ch, 3));
@@ -7810,7 +7810,7 @@ int main(void) {
     TestNexusGameChangerNarrowsByFactionAndUnit();
     TestNexusGameChangerTableAffectsRealRosters();
     TestGearCatalogIsComplete();
-    TestGearSlotsFollowRarity();
+    TestGearSlotCountDecidesPrestigeSlot();
     TestGearEquipRules();
     TestGearCategoriesUseOrAndAllSemantics();
     TestGearSellValueAndPrestigeUnlock();
