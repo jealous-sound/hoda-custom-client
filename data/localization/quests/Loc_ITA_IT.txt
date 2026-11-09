@@ -1,0 +1,33 @@
+HODA_QUESTS_CHEST_FAILED|Impossibile aprire il forziere. Riprova.
+HODA_QUESTS_DAILY_TITLE|Incarichi giornalieri
+HODA_QUESTS_LOCKED|Gli incarichi giornalieri e settimanali si sbloccano al livello giocatore {0}.
+HODA_QUESTS_OPENING|Apertura del forziere…
+HODA_QUESTS_RESETS_IN|Nuovi incarichi tra {0}
+HODA_QUESTS_ROSTER_FULL|La tua rosa è piena. Fai spazio per gli eroi di questo forziere.
+HODA_QUESTS_SWAP|Cambia
+HODA_QUESTS_TAB|Incarichi
+HODA_QUESTS_WEEKLY_TITLE|Incarichi settimanali
+HODA_QUEST_ACTIVE_DAYS_DESC|Combatti in {0} giorni diversi questa settimana
+HODA_QUEST_ACTIVE_DAYS_TITLE|Risoluto
+HODA_QUEST_BATTLE_WINS_DESC|Vinci {0} battaglie di qualsiasi tipo
+HODA_QUEST_BATTLE_WINS_TITLE|Temprato dalla battaglia
+HODA_QUEST_CAMPAIGN_WINS_DESC|Vinci {0} battaglie della campagna
+HODA_QUEST_CAMPAIGN_WINS_TITLE|Verso la vittoria
+HODA_QUEST_CONSUMED_DESC|Sacrifica {0} eroi
+HODA_QUEST_CONSUMED_TITLE|Sempre più forte
+HODA_QUEST_CRITS_DESC|Infliggi {0} colpi critici
+HODA_QUEST_CRITS_TITLE|Occhio critico
+HODA_QUEST_DAILY_QUESTS_DESC|Completa {0} incarichi giornalieri
+HODA_QUEST_DAILY_QUESTS_TITLE|Diligente
+HODA_QUEST_EXPEDITIONS_RETURNED_DESC|Riscuoti {0} spedizioni rientrate
+HODA_QUEST_EXPEDITIONS_RETURNED_TITLE|Ritorno sicuro
+HODA_QUEST_EXPEDITIONS_SENT_DESC|Invia {0} spedizioni
+HODA_QUEST_EXPEDITIONS_SENT_TITLE|Ordini di marcia
+HODA_QUEST_FACTION_HITS_DESC|Ottieni un bonus fazione in {0} battaglie
+HODA_QUEST_FACTION_HITS_TITLE|Conosci il nemico
+HODA_QUEST_PVP_BATTLES_DESC|Combatti {0} battaglie PvP
+HODA_QUEST_PVP_BATTLES_TITLE|Nell'arena
+HODA_QUEST_PVP_WINS_DESC|Vinci {0} battaglie PvP
+HODA_QUEST_PVP_WINS_TITLE|Campione dell'arena
+HODA_QUEST_SUMMONED_DESC|Evoca {0} eroi dai pacchetti
+HODA_QUEST_SUMMONED_TITLE|Nuove reclute

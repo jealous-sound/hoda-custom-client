@@ -1477,6 +1477,7 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
     player->store_rng_state = rng;
     player->store_opened_total++;
     player->missions.counters[MISSION_STAT_SUMMONED] += pack->hero_count;
+    TimedQuestsCount(&player->timed_quests, TIMED_QUEST_STAT_SUMMONED, pack->hero_count, ServerNow());
     player->store_opened_by_pack[counter]++;
     if (tracks_pity) player->champion_since_legendary = next_pity;
 

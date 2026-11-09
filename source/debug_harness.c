@@ -41,6 +41,13 @@ typedef struct {
 #define DEBUG_MISSION_ROW_X 234.0f
 #define DEBUG_MISSION_ROW_Y 141.0f
 #define DEBUG_MISSION_ROW_WIDTH 816.0f
+#define DEBUG_QUEST_CRITS 26
+#define DEBUG_QUEST_CAMPAIGN_WINS 6
+#define DEBUG_QUEST_CONSUMED 3
+#define DEBUG_QUEST_WEEKLY_DAILIES 18
+#define DEBUG_QUEST_ACTIVE_DAYS 4
+#define DEBUG_QUEST_DAILY_CLAIMED 2
+#define DEBUG_QUEST_WEEKLY_SCROLL 644.0f
 
 static const char DEBUG_UPDATE_AVAILABLE_RELEASE[] =
     "{\"latest\":\"v9.9.0\",\"minimum\":\"\",\"download_url\":\"https://hodareborn.com/#download\"}";
@@ -644,6 +651,38 @@ static void DebugSeedMissions(Game *game, DebugShot *shot) {
         Rectangle row = {DEBUG_MISSION_ROW_X, DEBUG_MISSION_ROW_Y, DEBUG_MISSION_ROW_WIDTH, MISSIONS_ROW_HEIGHT};
         MissionsBeginClaim(&game->missions, &game->hud, &game->player, game->missions.order[0], row);
     }
+}
+
+static void DebugSeedTimedQuests(Game *game, DebugShot *shot) {
+    static const char *const shots[] = {"goals_daily", "goals_daily_weekly", "goals_daily_locked"};
+    if (!DebugShotIsAny(shot, shots, 3) || shot->frames_drawn != 0) return;
+    Player *p = &game->player;
+    if (DebugShotIs(shot, "goals_daily_locked")) {
+        p->level = 1;
+        MissionsOpen(&game->missions, p, GOALS_TAB_DAILY);
+        return;
+    }
+    if (p->level < TimedQuestUnlockLevel()) p->level = TimedQuestUnlockLevel();
+    long long now = ServerNow();
+    PlayerTimedQuests *q = &p->timed_quests;
+    TimedQuestsLoad(NULL, q);
+    TimedQuestsRecordBattle(q, TIMED_QUEST_BATTLE_CAMPAIGN, true, DEBUG_QUEST_CRITS, true, now);
+    for (int i = 1; i < DEBUG_QUEST_CAMPAIGN_WINS; i++)
+        TimedQuestsRecordBattle(q, TIMED_QUEST_BATTLE_CAMPAIGN, true, 0, i % 2 == 0, now);
+    TimedQuestsRecordBattle(q, TIMED_QUEST_BATTLE_PVP, true, 0, false, now);
+    TimedQuestsCount(q, TIMED_QUEST_STAT_CONSUMED, DEBUG_QUEST_CONSUMED, now);
+    TimedQuestsCount(q, TIMED_QUEST_STAT_SUMMONED, DEBUG_QUEST_CONSUMED, now);
+    TimedQuestsCount(q, TIMED_QUEST_STAT_EXPEDITIONS_SENT, DEBUG_QUEST_CONSUMED, now);
+    TimedQuestsCount(q, TIMED_QUEST_STAT_EXPEDITIONS_RETURNED, 1, now);
+    TimedQuestsCount(q, TIMED_QUEST_STAT_DAILY_QUESTS, DEBUG_QUEST_WEEKLY_DAILIES, now);
+    TimedQuestsCount(q, TIMED_QUEST_STAT_ACTIVE_DAYS, DEBUG_QUEST_ACTIVE_DAYS, now);
+    int claimed = 0;
+    for (int slot = 0; slot < TimedQuestSlotCount() && claimed < DEBUG_QUEST_DAILY_CLAIMED; slot++)
+        claimed += TimedQuestClaimDaily(p, slot, now);
+    TimedQuestClaimWeekly(p, 0, now);
+    TimedQuestClaimWeekly(p, 1, now);
+    MissionsOpen(&game->missions, p, GOALS_TAB_DAILY);
+    if (DebugShotIs(shot, "goals_daily_weekly")) game->missions.scroll.offset = DEBUG_QUEST_WEEKLY_SCROLL;
 }
 
 static void DebugPrepareGallery(Game *game, DebugShot *shot) {
@@ -1371,8 +1410,17 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     if (DebugShotIs(shot, "quests")) game->screen = SCREEN_QUESTS;
     if (DebugShotIsAny(
             shot,
-            (const char *const[]){"missions", "missions_claim", "goals_trophies", "goals_battles", "goals_events"},
-            5
+            (const char *const[]){
+                "missions",
+                "missions_claim",
+                "goals_trophies",
+                "goals_battles",
+                "goals_events",
+                "goals_daily",
+                "goals_daily_weekly",
+                "goals_daily_locked"
+            },
+            8
         ))
         game->screen = SCREEN_MISSIONS;
     DebugActivateBattleRunes(game, shot);
@@ -1383,6 +1431,7 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
     DebugPrepareGallery(game, shot);
     DebugSeedGoals(game, shot);
     DebugSeedMissions(game, shot);
+    DebugSeedTimedQuests(game, shot);
     if (DebugShotIs(shot, "gallery_unit")) game->screen = SCREEN_GALLERY;
     DebugPrepareStore(game, shot);
     DebugPrepareNexus(game, shot);

@@ -339,6 +339,11 @@ static int GameGuildAwardBadge(const Game *g) {
     return award.shown && !award.claimed;
 }
 
+static GoalsTab GameGoalsHomeTab(const Game *g) {
+    if (GameGuildAwardBadge(g)) return GOALS_TAB_EVENTS;
+    return TimedQuestsUnlocked(g->player.level) ? GOALS_TAB_DAILY : GOALS_TAB_MISSIONS;
+}
+
 static void GameSubmitBattle(const Game *g, bool won) {
     cJSON *fields = ServerActionCreate("battle");
     if (!fields) return;
@@ -428,6 +433,16 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
     bool challenge =
         !g->battle_is_nexus && !g->battle_is_pvp && g->map.maps[g->battle_map_index].nodes[g->battle_node_index].grind;
     MissionsRecordBattle(&g->player, &g->battle_play.sim, crits, challenge, ServerNow());
+    TimedQuestsRecordBattle(
+        &g->player.timed_quests,
+        g->battle_is_pvp     ? TIMED_QUEST_BATTLE_PVP
+        : g->battle_is_nexus ? TIMED_QUEST_BATTLE_NEXUS
+                             : TIMED_QUEST_BATTLE_CAMPAIGN,
+        won,
+        crits,
+        MissionsBattleFacts(&g->battle_play.sim).faction_hit,
+        ServerNow()
+    );
     if (g->battle_is_pvp) {
         g->battle_reward = PvpResolveBattle(
             &g->player,
@@ -1150,6 +1165,7 @@ bool GameInitialize(Game *g) {
     LoadingScreenPresent();
     MissionCatalogLoad("data/missions.json");
     ExpeditionCatalogLoad(EXPEDITIONS_PATH);
+    TimedQuestCatalogLoad(TIMED_QUESTS_PATH);
 
     PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
     LoadingScreenPresent();
@@ -1615,6 +1631,10 @@ static void GameSyncServerActions(Game *g) {
         ExpeditionsTakeClaimReply(&g->expeditions, &g->heroes, &g->player, reply);
         cJSON_Delete(reply);
     }
+    if (g->missions.quests.chest_waiting && ServerActionsTakeReply(SERVER_REPLY_QUEST_CHEST, &reply)) {
+        TimedQuestViewTakeChestReply(&g->missions.quests, &g->heroes, &g->player, reply);
+        cJSON_Delete(reply);
+    }
     GamePollPvpMatch(g);
 }
 
@@ -1630,6 +1650,7 @@ void GameDraw(Game *g) {
     PlayerUpdate(&g->player, dt);
     if (g->screen != SCREEN_STORE) StorePollServerPurchase(&g->store, &g->player, &g->heroes);
     GameSyncServerActions(g);
+    TimedQuestsRoll(&g->player.timed_quests, ServerNow());
     g->home_ui.expeditions_shown = ExpeditionsAvailable();
     g->home_ui.expeditions_open = ExpeditionsHomeOpen(&g->player);
     g->home_ui.expeditions_badge = ExpeditionsHomeBadge(&g->player);
@@ -1659,6 +1680,7 @@ void GameDraw(Game *g) {
 
             int missions_badge = MissionUnseenClaimableCount(&g->player.missions);
             missions_badge += PvpEventUnclaimedCount(&g->player.pvp) + GameGuildAwardBadge(g);
+            missions_badge += TimedQuestsClaimableCount(&g->player);
             if (missions_badge == 0) missions_badge = abs(g->player.pvp.trophies - g->player.pvp.trophies_seen);
             bool guild_notice_open = popups_allowed && !news_open && GuildNoticePopupIsOpen(&g->guild_notice);
             if (guild_notice_open) home_interactive = false;
@@ -1695,7 +1717,7 @@ void GameDraw(Game *g) {
                 GameOpenQuests(g);
             } else if (pressed == HOME_HISTORY) {
                 MissionsSync(&g->player, &g->map);
-                MissionsOpen(&g->missions, &g->player, GameGuildAwardBadge(g) ? GOALS_TAB_EVENTS : GOALS_TAB_MISSIONS);
+                MissionsOpen(&g->missions, &g->player, GameGoalsHomeTab(g));
                 g->screen = SCREEN_MISSIONS;
             } else if (pressed == HOME_PVP) {
                 GameOpenPvpHub(g);
@@ -1968,9 +1990,12 @@ void GameDraw(Game *g) {
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
             HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
             GoalsGuildAward award = GameGuildAward(g);
-            MissionsAction pressed = MissionsDraw(&g->missions, &g->hud, &g->player, &award, dt);
+            MissionsAction pressed = MissionsDraw(&g->missions, &g->hud, &g->heroes, &g->player, &award, dt);
             UiFrameEnd();
-            if (pressed == MISSIONS_CLOSE) {
+            if (TimedQuestViewRevealRewards(&g->missions.quests, &g->store)) {
+                g->store_return_screen = SCREEN_MISSIONS;
+                g->screen = SCREEN_STORE;
+            } else if (pressed == MISSIONS_CLOSE) {
                 g->screen = SCREEN_HOME;
             } else if (pressed == MISSIONS_FIGHT_BOT) {
                 GameMatchPvp(g, false, g->missions.tabs.selected, false, SCREEN_MISSIONS);

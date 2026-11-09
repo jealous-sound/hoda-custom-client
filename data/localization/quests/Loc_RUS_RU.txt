@@ -1,0 +1,33 @@
+HODA_QUESTS_CHEST_FAILED|Не удалось открыть сундук. Попробуйте ещё раз.
+HODA_QUESTS_DAILY_TITLE|Ежедневные поручения
+HODA_QUESTS_LOCKED|Ежедневные и еженедельные поручения откроются на уровне игрока {0}.
+HODA_QUESTS_OPENING|Открываем сундук…
+HODA_QUESTS_RESETS_IN|Новые поручения через {0}
+HODA_QUESTS_ROSTER_FULL|В отряде нет места. Освободите место для героев из этого сундука.
+HODA_QUESTS_SWAP|Заменить
+HODA_QUESTS_TAB|Поручения
+HODA_QUESTS_WEEKLY_TITLE|Еженедельные поручения
+HODA_QUEST_ACTIVE_DAYS_DESC|Сражайтесь на этой неделе в разные дни: {0}
+HODA_QUEST_ACTIVE_DAYS_TITLE|Стойкий
+HODA_QUEST_BATTLE_WINS_DESC|Победите в боях любого типа: {0}
+HODA_QUEST_BATTLE_WINS_TITLE|Закалённый в боях
+HODA_QUEST_CAMPAIGN_WINS_DESC|Победите в боях кампании: {0}
+HODA_QUEST_CAMPAIGN_WINS_TITLE|Путь к победе
+HODA_QUEST_CONSUMED_DESC|Поглотите героев: {0}
+HODA_QUEST_CONSUMED_TITLE|Сильнее с каждым днём
+HODA_QUEST_CRITS_DESC|Нанесите критических ударов: {0}
+HODA_QUEST_CRITS_TITLE|Меткий глаз
+HODA_QUEST_DAILY_QUESTS_DESC|Выполните ежедневных поручений: {0}
+HODA_QUEST_DAILY_QUESTS_TITLE|Исполнительный
+HODA_QUEST_EXPEDITIONS_RETURNED_DESC|Заберите награды за экспедиции: {0}
+HODA_QUEST_EXPEDITIONS_RETURNED_TITLE|С возвращением
+HODA_QUEST_EXPEDITIONS_SENT_DESC|Отправьте экспедиций: {0}
+HODA_QUEST_EXPEDITIONS_SENT_TITLE|Приказ выступать
+HODA_QUEST_FACTION_HITS_DESC|Нанесите удар с бонусом фракции в боях: {0}
+HODA_QUEST_FACTION_HITS_TITLE|Знай врага
+HODA_QUEST_PVP_BATTLES_DESC|Проведите PvP-боёв: {0}
+HODA_QUEST_PVP_BATTLES_TITLE|На арену
+HODA_QUEST_PVP_WINS_DESC|Победите в PvP-боях: {0}
+HODA_QUEST_PVP_WINS_TITLE|Чемпион арены
+HODA_QUEST_SUMMONED_DESC|Призовите героев из наборов: {0}
+HODA_QUEST_SUMMONED_TITLE|Новобранцы

@@ -124,6 +124,7 @@ bool ExpeditionStart(Player *p, int def_index, const int *party, int count, long
         .ends_at = now + ExpeditionDurationSeconds(ExpeditionAt(def_index)),
     };
     for (int i = 0; i < count; i++) expedition->heroes[i] = p->roster[party[i]].instance_id;
+    TimedQuestsCount(&p->timed_quests, TIMED_QUEST_STAT_EXPEDITIONS_SENT, 1, now);
     return true;
 }
 
@@ -280,6 +281,7 @@ static void ExpeditionPayOne(Player *p, int active, const cJSON *catalog, long l
     }
     reward->expeditions++;
     reward->great_successes += great;
+    TimedQuestsCount(&p->timed_quests, TIMED_QUEST_STAT_EXPEDITIONS_RETURNED, 1, now);
     reward->gold = ProgressionSaturatingAdd(reward->gold, gold);
     reward->gems = ProgressionSaturatingAdd(reward->gems, gems);
     reward->hero_xp = hero_xp > reward->hero_xp ? hero_xp : reward->hero_xp;

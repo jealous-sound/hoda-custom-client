@@ -6906,6 +6906,199 @@ static int ExpeditionTestDef(const char *id) {
     return def;
 }
 
+#define TIMED_QUEST_TEST_DAY 20402LL
+#define TIMED_QUEST_TEST_NOON (TIMED_QUEST_TEST_DAY * TIMED_QUEST_SECONDS_PER_DAY + 43200LL)
+
+static int TimedQuestTestSlot(const char *id) {
+    for (int slot = 0; slot < TimedQuestSlotCount(); slot++)
+        if (!strcmp(TimedQuestSlotAt(slot)->id, id)) return slot;
+    assert(false);
+    return TIMED_QUEST_NONE;
+}
+
+static void TestTimedQuestCatalogFollowsTheTable(void) {
+    if (loc.count == 0) LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_RUS_RU.txt");
+    assert(TimedQuestCatalogLoad(TIMED_QUESTS_PATH) && TimedQuestsAvailable());
+    assert(TimedQuestUnlockLevel() == 3 && TimedQuestDailySwaps() == 1);
+    assert(TimedQuestSlotCount() == 5 && TimedQuestWeeklyCount() == 5);
+    assert(TimedQuestChestCount(TIMED_QUEST_DAILY) == 3 && TimedQuestChestCount(TIMED_QUEST_WEEKLY) == 2);
+    assert(TimedQuestMaxPoints(TIMED_QUEST_DAILY) == 100 && TimedQuestMaxPoints(TIMED_QUEST_WEEKLY) == 100);
+    int daily_points = 0;
+    for (int slot = 0; slot < TimedQuestSlotCount(); slot++) daily_points += TimedQuestSlotAt(slot)->quests[0].points;
+    assert(daily_points == TimedQuestMaxPoints(TIMED_QUEST_DAILY));
+    for (int period = 0; period < TIMED_QUEST_PERIOD_COUNT; period++)
+        for (int i = 0; i < TimedQuestChestCount((TimedQuestPeriod)period); i++) {
+            const TimedQuestChest *chest = TimedQuestChestAt((TimedQuestPeriod)period, i);
+            assert(ResourceExists(chest->fallback));
+        }
+    for (int stat = 0; stat < TIMED_QUEST_STAT_COUNT; stat++) {
+        const TimedQuestStatText *text = TimedQuestText((TimedQuestStat)stat);
+        if (!text->title_key[0]) continue;
+        assert(ResourceExists(text->icon));
+        assert(LocGet(text->title_key)[0] && LocGet(text->description_key)[0]);
+    }
+    assert(!TimedQuestCatalogLoad("data/missing_timed_quests.json") && !TimedQuestsAvailable());
+    assert(TimedQuestCatalogLoad(TIMED_QUESTS_PATH));
+}
+
+static void TestTimedQuestDaysTurnAtUtcMidnightAndWeeksOnMonday(void) {
+    assert(TimedQuestDay(86399) == 0 && TimedQuestDay(86400) == 1 && TimedQuestDay(-1) == -1);
+    assert(
+        TimedQuestWeek(3 * TIMED_QUEST_SECONDS_PER_DAY) == 0 && TimedQuestWeek(4 * TIMED_QUEST_SECONDS_PER_DAY) == 1
+    );
+    assert(TimedQuestResetIn(TIMED_QUEST_DAILY, TIMED_QUEST_TEST_NOON) == 43200);
+    assert(
+        TimedQuestWeek(TIMED_QUEST_TEST_NOON) != TimedQuestWeek(TIMED_QUEST_TEST_NOON - TIMED_QUEST_SECONDS_PER_DAY)
+    );
+    assert(TimedQuestResetIn(TIMED_QUEST_WEEKLY, TIMED_QUEST_TEST_NOON) == 6 * TIMED_QUEST_SECONDS_PER_DAY + 43200);
+    long long monday = TIMED_QUEST_TEST_DAY * TIMED_QUEST_SECONDS_PER_DAY;
+    assert(TimedQuestResetIn(TIMED_QUEST_WEEKLY, monday) == 7 * TIMED_QUEST_SECONDS_PER_DAY);
+}
+
+static void TestTimedQuestDailyPicksMatchTheServer(void) {
+    static const int expected[][5] = {{1, 1, 2, 1, 0}, {0, 1, 2, 2, 2}, {1, 0, 0, 1, 0}};
+    PlayerTimedQuests q = {0};
+    for (int day = 0; day < 3; day++) {
+        TimedQuestsRoll(&q, (20400LL + day) * TIMED_QUEST_SECONDS_PER_DAY);
+        for (int slot = 0; slot < 5; slot++) assert(TimedQuestDailyPool(&q, slot) == expected[day][slot]);
+    }
+    TimedQuestsRoll(&q, TIMED_QUEST_TEST_NOON);
+    assert(!strcmp(TimedQuestDailyAt(&q, TimedQuestTestSlot("campaign"))->id, "d_campaign_5"));
+    assert(!strcmp(TimedQuestDailyAt(&q, TimedQuestTestSlot("pvp"))->id, "d_pvp_fight_3"));
+}
+
+static void TestTimedQuestCountsResetDailyAndWeekly(void) {
+    PlayerTimedQuests q = {0};
+    long long monday = TIMED_QUEST_TEST_DAY * TIMED_QUEST_SECONDS_PER_DAY;
+    TimedQuestsRecordBattle(&q, TIMED_QUEST_BATTLE_PVP, true, 4, true, monday);
+    TimedQuestsRecordBattle(&q, TIMED_QUEST_BATTLE_CAMPAIGN, false, 1, false, monday + 60);
+    assert(q.counts[TIMED_QUEST_DAILY][TIMED_QUEST_STAT_PVP_WINS] == 1);
+    assert(q.counts[TIMED_QUEST_DAILY][TIMED_QUEST_STAT_PVP_BATTLES] == 1);
+    assert(q.counts[TIMED_QUEST_DAILY][TIMED_QUEST_STAT_BATTLE_WINS] == 1);
+    assert(q.counts[TIMED_QUEST_DAILY][TIMED_QUEST_STAT_CAMPAIGN_WINS] == 0);
+    assert(q.counts[TIMED_QUEST_DAILY][TIMED_QUEST_STAT_CRITS] == 5);
+    assert(q.counts[TIMED_QUEST_DAILY][TIMED_QUEST_STAT_FACTION_HITS] == 1);
+    assert(q.counts[TIMED_QUEST_WEEKLY][TIMED_QUEST_STAT_ACTIVE_DAYS] == 1);
+
+    long long tuesday = monday + TIMED_QUEST_SECONDS_PER_DAY;
+    TimedQuestsRecordBattle(&q, TIMED_QUEST_BATTLE_NEXUS, true, 0, false, tuesday);
+    assert(q.counts[TIMED_QUEST_DAILY][TIMED_QUEST_STAT_PVP_WINS] == 0);
+    assert(q.counts[TIMED_QUEST_DAILY][TIMED_QUEST_STAT_NEXUS_WINS] == 1);
+    assert(q.counts[TIMED_QUEST_WEEKLY][TIMED_QUEST_STAT_PVP_WINS] == 1);
+    assert(q.counts[TIMED_QUEST_WEEKLY][TIMED_QUEST_STAT_BATTLE_WINS] == 2);
+    assert(q.counts[TIMED_QUEST_WEEKLY][TIMED_QUEST_STAT_ACTIVE_DAYS] == 2);
+
+    TimedQuestsRoll(&q, monday + 7 * TIMED_QUEST_SECONDS_PER_DAY);
+    assert(q.counts[TIMED_QUEST_WEEKLY][TIMED_QUEST_STAT_BATTLE_WINS] == 0 && q.week == TimedQuestWeek(monday) + 1);
+}
+
+static Player TimedQuestTestPlayer(void) {
+    Player p = TestStarterPlayer();
+    p.level = TimedQuestUnlockLevel();
+    p.timed_quests = (PlayerTimedQuests){0};
+    GearCatalogEnsure();
+    RuneCatalogEnsure();
+    return p;
+}
+
+static void TestTimedQuestClaimsPayOnceAndFillTheChestTrack(void) {
+    Player p = TimedQuestTestPlayer();
+    PlayerTimedQuests *q = &p.timed_quests;
+    int campaign = TimedQuestTestSlot("campaign"), pvp = TimedQuestTestSlot("pvp");
+    p.level = TimedQuestUnlockLevel() - 1;
+    for (int i = 0; i < 5; i++)
+        TimedQuestsRecordBattle(q, TIMED_QUEST_BATTLE_CAMPAIGN, true, 0, false, TIMED_QUEST_TEST_NOON);
+    assert(!TimedQuestClaimDaily(&p, campaign, TIMED_QUEST_TEST_NOON) && TimedQuestsClaimableCount(&p) == 0);
+    p.level = TimedQuestUnlockLevel();
+    assert(TimedQuestDailyClaimable(q, campaign) && TimedQuestsClaimableCount(&p) == 1);
+    int gold = p.gold;
+    assert(TimedQuestClaimDaily(&p, campaign, TIMED_QUEST_TEST_NOON));
+    assert(p.gold == gold + 900 && TimedQuestDailyClaimed(q, campaign) && !TimedQuestDailyClaimable(q, campaign));
+    assert(!TimedQuestClaimDaily(&p, campaign, TIMED_QUEST_TEST_NOON) && p.gold == gold + 900);
+    assert(
+        TimedQuestPoints(q, TIMED_QUEST_DAILY) == 20 &&
+        q->counts[TIMED_QUEST_WEEKLY][TIMED_QUEST_STAT_DAILY_QUESTS] == 1
+    );
+    assert(!TimedQuestChestReached(q, TIMED_QUEST_DAILY, 0));
+    assert(!TimedQuestClaimDaily(&p, pvp, TIMED_QUEST_TEST_NOON));
+
+    int gems = p.gems;
+    for (int i = 0; i < 3; i++)
+        TimedQuestsRecordBattle(q, TIMED_QUEST_BATTLE_PVP, true, 0, false, TIMED_QUEST_TEST_NOON);
+    assert(TimedQuestClaimDaily(&p, pvp, TIMED_QUEST_TEST_NOON) && p.gems == gems + 2);
+    assert(TimedQuestChestOpenable(q, TIMED_QUEST_DAILY, 0) && TimedQuestsClaimableCount(&p) == 1);
+    ExpeditionReward reward = TimedQuestOpenChest(&p, TIMED_QUEST_DAILY, 0, TIMED_QUEST_TEST_NOON);
+    assert(reward.gold == 1000 && !ExpeditionRewardHasItems(&reward) && q->chests_opened[TIMED_QUEST_DAILY][0]);
+    assert(TimedQuestCheckChest(&p, TIMED_QUEST_DAILY, 0) == TIMED_QUEST_CHEST_OPENED);
+    assert(TimedQuestCheckChest(&p, TIMED_QUEST_DAILY, 1) == TIMED_QUEST_CHEST_LOCKED);
+
+    TimedQuestsRoll(q, TIMED_QUEST_TEST_NOON + TIMED_QUEST_SECONDS_PER_DAY);
+    assert(TimedQuestPoints(q, TIMED_QUEST_DAILY) == 0 && !q->chests_opened[TIMED_QUEST_DAILY][0]);
+    assert(q->counts[TIMED_QUEST_WEEKLY][TIMED_QUEST_STAT_DAILY_QUESTS] == 2);
+}
+
+static void TestTimedQuestSwapsOneUnfinishedQuestADay(void) {
+    Player p = TimedQuestTestPlayer();
+    PlayerTimedQuests *q = &p.timed_quests;
+    int campaign = TimedQuestTestSlot("campaign"), pvp = TimedQuestTestSlot("pvp");
+    TimedQuestsRoll(q, TIMED_QUEST_TEST_NOON);
+    const char *before = TimedQuestDailyAt(q, pvp)->id;
+    assert(TimedQuestSwap(&p, pvp, TIMED_QUEST_TEST_NOON));
+    assert(strcmp(TimedQuestDailyAt(q, pvp)->id, before) != 0 && q->swaps_used == 1);
+    assert(!TimedQuestCanSwap(q, campaign) && !TimedQuestSwap(&p, campaign, TIMED_QUEST_TEST_NOON));
+    cJSON *swap = TimedQuestSwapAction(pvp);
+    assert(!strcmp(JsonStr(swap, "action"), "quest_swap") && !strcmp(JsonStr(swap, "slot"), "pvp"));
+    cJSON_Delete(swap);
+
+    TimedQuestsRoll(q, TIMED_QUEST_TEST_NOON + TIMED_QUEST_SECONDS_PER_DAY);
+    for (int i = 0; i < 6; i++)
+        TimedQuestsRecordBattle(
+            q, TIMED_QUEST_BATTLE_CAMPAIGN, true, 0, false, TIMED_QUEST_TEST_NOON + TIMED_QUEST_SECONDS_PER_DAY
+        );
+    assert(TimedQuestDailyClaimable(q, campaign) && !TimedQuestCanSwap(q, campaign));
+}
+
+static void TestTimedQuestHeroChestsNeedRosterRoom(void) {
+    Player p = TimedQuestTestPlayer();
+    PlayerTimedQuests *q = &p.timed_quests;
+    TimedQuestsRoll(q, TIMED_QUEST_TEST_NOON);
+    for (int i = 0; i < TimedQuestWeeklyCount(); i++) q->weekly_claimed[i] = true;
+    int capacity = p.roster_capacity;
+    p.roster_capacity = p.roster_count;
+    assert(TimedQuestCheckChest(&p, TIMED_QUEST_WEEKLY, 1) == TIMED_QUEST_CHEST_ROSTER_FULL);
+    assert(TimedQuestOpenChest(&p, TIMED_QUEST_WEEKLY, 1, TIMED_QUEST_TEST_NOON).gems == 0);
+    p.roster_capacity = capacity;
+    int roster = p.roster_count, gems = p.gems;
+    ExpeditionReward reward = TimedQuestOpenChest(&p, TIMED_QUEST_WEEKLY, 1, TIMED_QUEST_TEST_NOON);
+    assert(reward.hero_count == 1 && reward.rune_count == 1 && p.roster_count == roster + 1 && p.gems == gems + 15);
+    Rarity rarity = p.roster[reward.heroes[0]].rarity;
+    assert(rarity == RARITY_EPIC || rarity == RARITY_LEGENDARY);
+    cJSON *chest = TimedQuestChestAction(TIMED_QUEST_WEEKLY, 1);
+    assert(!strcmp(JsonStr(chest, "action"), "quest_chest") && !strcmp(JsonStr(chest, "chest"), "weekly_chest_2"));
+    cJSON_Delete(chest);
+}
+
+static void TestTimedQuestsSurviveSaveAndLoad(void) {
+    Player p = TimedQuestTestPlayer();
+    PlayerTimedQuests *q = &p.timed_quests;
+    int heroes = TimedQuestTestSlot("heroes");
+    TimedQuestsCount(q, TIMED_QUEST_STAT_CONSUMED, 5, TIMED_QUEST_TEST_NOON);
+    TimedQuestsCount(q, TIMED_QUEST_STAT_SUMMONED, 2, TIMED_QUEST_TEST_NOON);
+    assert(TimedQuestClaimDaily(&p, heroes, TIMED_QUEST_TEST_NOON));
+    assert(TimedQuestSwap(&p, TimedQuestTestSlot("pvp"), TIMED_QUEST_TEST_NOON));
+    q->weekly_claimed[2] = true;
+    q->chests_opened[TIMED_QUEST_WEEKLY][0] = true;
+    cJSON *json = TimedQuestsSave(q);
+    PlayerTimedQuests loaded;
+    TimedQuestsLoad(json, &loaded);
+    assert(memcmp(&loaded, q, sizeof(loaded)) == 0);
+    cJSON *claimed = cJSON_GetObjectItemCaseSensitive(json, "daily_claimed");
+    cJSON_AddItemToArray(claimed, cJSON_CreateString("no_such_quest"));
+    TimedQuestsLoad(json, &loaded);
+    assert(memcmp(&loaded, q, sizeof(loaded)) == 0);
+    cJSON_Delete(json);
+}
+
 static void TestExpeditionCatalogFollowsTheTable(void) {
     assert(ExpeditionCatalogLoad(EXPEDITIONS_PATH) && ExpeditionsAvailable());
     assert(ExpeditionCount() == 10 && ExpeditionUnlockLevel() == 3);
@@ -7215,6 +7408,14 @@ int main(void) {
     TestExpeditionHeroDropsNeedRosterRoom();
     TestExpeditionsSurviveSaveAndLoad();
     TestExpeditionServerActionsNameTheHeroes();
+    TestTimedQuestCatalogFollowsTheTable();
+    TestTimedQuestDaysTurnAtUtcMidnightAndWeeksOnMonday();
+    TestTimedQuestDailyPicksMatchTheServer();
+    TestTimedQuestCountsResetDailyAndWeekly();
+    TestTimedQuestClaimsPayOnceAndFillTheChestTrack();
+    TestTimedQuestSwapsOneUnfinishedQuestADay();
+    TestTimedQuestHeroChestsNeedRosterRoom();
+    TestTimedQuestsSurviveSaveAndLoad();
     TestStoreRevealsExpeditionRewardsHeroesThenGearThenRunes();
     TestPlayerRemoveFortifyReturnsHeroesForGems();
     TestFortifySlotsTravelThroughSavesAndBattles();
