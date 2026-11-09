@@ -1,0 +1,11 @@
+[
+  {
+    "id": "level_arena",
+    "starts_at": 1794261600,
+    "ends_at": 1796860800,
+    "title": "HODA_NEWS_LEVEL_ARENA_TITLE",
+    "subtitle": "HODA_NEWS_LEVEL_ARENA_SUBTITLE",
+    "summary": "HODA_NEWS_LEVEL_ARENA_SUMMARY",
+    "message": "HODA_NEWS_LEVEL_ARENA_MESSAGE"
+  }
+]

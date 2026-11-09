@@ -1,0 +1,5 @@
+HODA_NEWS_LEVEL_ARENA_TITLE|竞技场已实现公平
+HODA_NEWS_LEVEL_ARENA_SUBTITLE|在PvP中，稀有度、级别和品级不再决定胜负。
+HODA_NEWS_LEVEL_ARENA_SUMMARY|现在所有英雄都以相同的综合实力进入PvP。点击查看变更内容。
+HODA_NEWS_LEVEL_ARENA_MESSAGE|现在，无论稀有度、品级、级别或强化如何，所有英雄都以相同的综合实力进入PvP。技能越强的英雄属性越低，最强的英雄造成击晕、减速和诅咒的几率也会低于卡牌上的说明。\n\n增加力量、生命值、伤害护盾、伤害抗性或反击的符文在PvP中无效。其他符文仍然有效。\n\n所有稀有度的阵营奖励相同，活动增益上限为<color=orange>+25%</color>。\n\n任务和Nexus没有变化。
+HODA_PVP_EVENT_BUFF_CAP|在公平竞技场中，此增益上限为+{0}%。

@@ -1,0 +1,5 @@
+HODA_NEWS_LEVEL_ARENA_TITLE|L'arena è alla pari
+HODA_NEWS_LEVEL_ARENA_SUBTITLE|In PvP rarità, livello e rango non decidono più lo scontro.
+HODA_NEWS_LEVEL_ARENA_SUMMARY|Ora ogni eroe entra in PvP con la stessa forza complessiva. Tocca per vedere cosa è cambiato.
+HODA_NEWS_LEVEL_ARENA_MESSAGE|Ora ogni eroe entra in PvP con la stessa forza complessiva, qualunque siano rarità, rango, livello o fortificazione. Gli eroi con abilità più forti hanno statistiche più basse, e i più forti stordiscono, rallentano e maledicono meno spesso di quanto indicato sulla carta.\n\nLe rune che aggiungono Potere, Salute, scudi ai danni, resistenza ai danni o ritorsione non hanno effetto in PvP. Le altre rune funzionano ancora.\n\nIl bonus fazione è uguale per ogni rarità, e i bonus degli eventi sono limitati a <color=orange>+25%</color>.\n\nMissioni e Nexus restano invariati.
+HODA_PVP_EVENT_BUFF_CAP|Nell'arena alla pari questo bonus è limitato a +{0}%.

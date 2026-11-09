@@ -1,0 +1,5 @@
+HODA_NEWS_LEVEL_ARENA_TITLE|La arena está nivelada
+HODA_NEWS_LEVEL_ARENA_SUBTITLE|En PvP, la rareza y el nivel ya no deciden el combate.
+HODA_NEWS_LEVEL_ARENA_SUMMARY|Ahora todos los héroes entran a PvP con la misma fuerza total. Toca para ver qué cambió.
+HODA_NEWS_LEVEL_ARENA_MESSAGE|Ahora todos los héroes entran a PvP con la misma fuerza total, sin importar su rareza, nivel o fortificación. Los héroes con habilidades más fuertes tienen estadísticas más bajas, y los más fuertes aturden, frenan y maldicen con menos frecuencia de lo que indica su carta.\n\nLas runas que añaden Fuerza, Salud, escudos de daño, resistencia al daño o represalia no tienen efecto en PvP. Las demás runas siguen funcionando.\n\nEl bonus de facción es igual para todas las rarezas, y los bonus de evento tienen un límite de <color=orange>+25%</color>.\n\nLas Misiones y el nexo no cambian.
+HODA_PVP_EVENT_BUFF_CAP|En la arena nivelada, este bonus tiene un límite de +{0}%.

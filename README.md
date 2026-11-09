@@ -72,6 +72,10 @@ Text comes from the original `Loc_*.txt` tables. New strings go in `data/localiz
 language for all twelve languages, with `HODA_` keys. `tools/validate_localization.py` checks keys and placeholders,
 checks that every key the C code looks up exists, and rejects Russian literals in C outside the debug harness.
 
+News that is not a Nexus event goes in `data/announcements.json`: `starts_at` and `ends_at` in Unix seconds and the
+`title`, `subtitle`, `summary` and `message` keys, with the text in `data/localization/news`. An announcement leads the
+What's New feed while it runs. Clients older than v0.9.0 ignore the file.
+
 ## Server sync
 
 Online, the server owns the economy and decides battles. Purchases and refills wait for its answer. Other actions apply

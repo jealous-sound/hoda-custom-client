@@ -1,0 +1,5 @@
+HODA_NEWS_LEVEL_ARENA_TITLE|Die Arena ist ausgeglichen
+HODA_NEWS_LEVEL_ARENA_SUBTITLE|Im PvP entscheiden Seltenheit und Stufe nicht mehr über den Kampf.
+HODA_NEWS_LEVEL_ARENA_SUMMARY|Alle Helden treten im PvP jetzt mit derselben Gesamtstärke an. Tippe, um zu sehen, was sich geändert hat.
+HODA_NEWS_LEVEL_ARENA_MESSAGE|Alle Helden treten im PvP jetzt mit derselben Gesamtstärke an, unabhängig von Seltenheit, Stufe oder Erhöhung. Helden mit stärkeren Fähigkeiten haben niedrigere Werte, und die stärksten betäuben, verlangsamen und verfluchen seltener, als auf ihrer Karte steht.\n\nRunen, die Stärke, Gesundheit, Schadensschild, Schadensresistenz oder Vergeltung verleihen, haben im PvP keine Wirkung. Andere Runen funktionieren weiterhin.\n\nDer Gruppierungsbonus ist für jede Seltenheit gleich, und Ereignisboni sind auf <color=orange>+25 %</color> begrenzt.\n\nQuests und der Nexus bleiben unverändert.
+HODA_PVP_EVENT_BUFF_CAP|In der ausgeglichenen Arena ist dieser Bonus auf +{0} % begrenzt.
