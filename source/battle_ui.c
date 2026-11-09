@@ -31,7 +31,7 @@ typedef struct {
     int pvp_nexts;
     int pvp_gain;
     GuiId pvp_stake_icon;
-    char pvp_player_name[64];
+    char player_name[64];
 
     char title[128];
     char mastery[64];
@@ -197,6 +197,7 @@ void BattleUiEnterNode(
     ui->xp = node ? node->xp : 0;
     ui->gems = node ? node->default_gems : 0;
     ui->new_map_on_win = false;
+    StrCopy(ui->player_name, sizeof(ui->player_name), player->name);
 
     ui->tactical = false;
     ui->detail_open = false;
@@ -260,7 +261,6 @@ void BattleUiEnterPvp(
     ui->gold = PvpGoldReward(opponent, true);
     ui->xp = PvpXpReward(opponent, true);
     StrCopy(ui->title, sizeof(ui->title), PvpOpponentName(opponent));
-    StrCopy(ui->pvp_player_name, sizeof(ui->pvp_player_name), player->name);
     snprintf(ui->next_label, sizeof(ui->next_label), "%s (%d)", LocGet("BUTTON_MATCHMAKING_NEXT"), nexts);
 }
 
@@ -508,6 +508,181 @@ static void BattleUiIntroText(const BpIntroEvent *event, char *dst, int cap) {
     HeroesFormat2(dst, cap, LocGet("FACTION_BONUS"), value, "");
 }
 
+typedef struct {
+    float x, y, width, height, aspect;
+} BattleSummaryAnchor;
+
+typedef struct {
+    const char *label_key;
+    GuiId icon;
+    BattleSummaryAnchor icon_anchor;
+    FontId value_font;
+} BattleSummaryStat;
+
+typedef struct {
+    int group;
+    BattleSummaryAnchor anchor;
+} BattleSummaryBand;
+
+enum { SUMMARY_SIDES = 2, SUMMARY_ROWS_PER_GROUP = 3, SUMMARY_STAT_COUNT = 6, SUMMARY_VALUE_CAPACITY = 64 };
+
+static const float SUMMARY_FADE_TIME = 0.20f;
+static const float SUMMARY_SCRIM_OPACITY = 0.7f;
+static const float SUMMARY_BAND_OPACITY = 0.7f;
+static const float SUMMARY_LABEL_STYLE_TINT = 0.9f;
+static const float INQUISITION_LINE_HEIGHT_PER_EM = 1.2f;
+static const float SUMMARY_NAME_FONT = 0.4f;
+static const float SUMMARY_VS_FONT = 0.35f;
+static const float SUMMARY_ROW_FONT = 0.45f;
+static const float SUMMARY_TAP_FONT = 0.45f;
+static const float SUMMARY_ROW_HEIGHT = 0.333f;
+static const float SUMMARY_VALUE_WIDTH = 0.45f;
+static const float SUMMARY_ROW_Y[SUMMARY_ROWS_PER_GROUP] = {0.0f, 0.5f, 1.0f};
+static const Color SUMMARY_WINNER_COLOR = {34, 204, 43, 255};
+static const Color SUMMARY_LOSER_COLOR = {255, 0, 0, 255};
+static const Color SUMMARY_STAT_NAME_COLOR = {191, 191, 191, 255};
+
+static const BattleSummaryAnchor SUMMARY_NAMES = {0.5f, 0.25f, 1.0f, 0.1f, 13.0f};
+static const BattleSummaryAnchor SUMMARY_PLAYER_NAME = {0.0f, 0.25f, 0.45f, 1.0f, 0.0f};
+static const BattleSummaryAnchor SUMMARY_OPPONENT_NAME = {1.0f, 0.25f, 0.45f, 1.0f, 0.0f};
+static const BattleSummaryAnchor SUMMARY_VS_IMAGE = {0.5f, 0.0f, 1.0f, 1.0f, 1.077f};
+static const BattleSummaryAnchor SUMMARY_VS_LABEL = {1.0f, 0.25f, 1.0f, 1.0f, 0.0f};
+static const BattleSummaryAnchor SUMMARY_BACKGROUND = {0.5f, 0.8f, 1.9f, 0.6f, 3.0f};
+static const BattleSummaryAnchor SUMMARY_LINES = {0.0f, 0.3f, 1.0f, 0.65f, 0.0f};
+static const BattleSummaryAnchor SUMMARY_LABELS = {0.5f, 0.0f, 1.0f, 1.0f, 3.2f};
+static const BattleSummaryAnchor SUMMARY_TAP = {0.5f, 0.92f, 1.0f, 0.12f, 0.0f};
+static const BattleSummaryAnchor SUMMARY_GROUPS[] = {
+    {0.0f, 0.0f, 1.0f, 0.5f, 0.0f},
+    {0.0f, 1.0f, 1.0f, 0.5f, 0.0f},
+};
+
+static const BattleSummaryBand SUMMARY_BANDS[] = {
+    {0, {0.5f, 0.0f, 1.0f, 0.333f, 0.0f}},
+    {0, {0.5f, 1.0f, 1.0f, 0.33f, 0.0f}},
+    {1, {0.0f, 0.5f, 1.0f, 0.333f, 0.0f}},
+};
+
+static const BattleSummaryStat SUMMARY_STATS[SUMMARY_STAT_COUNT] = {
+    {"BATTLE_SUMMARY_DAMAGE_DEALT", GUI_SUMMARY_DAMAGE, {0.5f, 0.035f, 1.0f, 0.28f, 1.0f}, FNT_COOL},
+    {"BATTLE_SUMMARY_STARTING_HEALTH", GUI_MM_HEALTH, {0.5f, 0.5f, 1.0f, 0.28f, 1.0f}, FNT_COOL},
+    {"BATTLE_SUMMARY_CRIT_HITS", GUI_DETAILS_CRIT, {0.5f, 0.965f, 1.0f, 0.28f, 1.0f}, FNT_COOL},
+    {"BATTLE_SUMMARY_FACTION_HITS", GUI_SUMMARY_FACTION, {0.5f, 0.05f, 1.0f, 0.25f, 1.0f}, FNT_COOL},
+    {"BATTLE_SUMMARY_MVP", GUI_SUMMARY_MVP, {0.5f, 0.5f, 1.0f, 0.28f, 1.0f}, FNT_MENU},
+    {"BATTLE_SUMMARY_SURVIVORS", GUI_SUMMARY_SURVIVORS, {0.5f, 0.965f, 1.0f, 0.28f, 1.0f}, FNT_COOL},
+};
+
+static Rectangle BattleSummaryRect(Rectangle parent, BattleSummaryAnchor anchor) {
+    return HudFitRect(parent, anchor.x, anchor.y, anchor.width, anchor.height, anchor.aspect);
+}
+
+static float BattleSummaryLineHeightPerEm(FontId font) {
+    return font == FNT_COOL && !LocIdeographic() ? INQUISITION_LINE_HEIGHT_PER_EM : 1.0f;
+}
+
+static float BattleSummaryFontSize(FontId font, Rectangle rect, float dynamic_size) {
+    return roundf(rect.height * dynamic_size) * BattleSummaryLineHeightPerEm(font);
+}
+
+static Color BattleSummaryTextColor(Color label_color, unsigned char alpha) {
+    return (Color){
+        (unsigned char)roundf(label_color.r * SUMMARY_LABEL_STYLE_TINT),
+        (unsigned char)roundf(label_color.g * SUMMARY_LABEL_STYLE_TINT),
+        (unsigned char)roundf(label_color.b * SUMMARY_LABEL_STYLE_TINT),
+        alpha,
+    };
+}
+
+static const char *BattleSummaryPlayerName(const BattleUi *ui) {
+    return TutorialRunning() || !ui->player_name[0] ? LocGet("BATTLE_SUMMARY_PLAYER") : ui->player_name;
+}
+
+static void
+BattleSummaryValues(const BattlePlay *bp, char values[SUMMARY_STAT_COUNT][SUMMARY_SIDES][SUMMARY_VALUE_CAPACITY]) {
+    BattleSummary sum;
+    BattlePlaySummary(bp, &sum);
+    for (int side = 0; side < SUMMARY_SIDES; side++) {
+        snprintf(values[0][side], SUMMARY_VALUE_CAPACITY, "%d", sum.dmg[side]);
+        snprintf(values[1][side], SUMMARY_VALUE_CAPACITY, "%ld", sum.start_hp[side]);
+        snprintf(values[2][side], SUMMARY_VALUE_CAPACITY, "%d", sum.crits[side]);
+        snprintf(values[3][side], SUMMARY_VALUE_CAPACITY, "%d", sum.fac_hits[side]);
+        snprintf(values[4][side], SUMMARY_VALUE_CAPACITY, "%s", sum.mvp[side]);
+        snprintf(values[5][side], SUMMARY_VALUE_CAPACITY, "%d", sum.survivors[side]);
+    }
+}
+
+static void BattleUiDrawSummaryNames(const BattleUi *ui, const BattlePlay *bp, Rectangle screen, unsigned char alpha) {
+    Font cool = GuiFont(FNT_COOL);
+    Rectangle names = BattleSummaryRect(screen, SUMMARY_NAMES);
+    Rectangle player = BattleSummaryRect(names, SUMMARY_PLAYER_NAME);
+    Rectangle opponent = BattleSummaryRect(names, SUMMARY_OPPONENT_NAME);
+    float name_size = BattleSummaryFontSize(FNT_COOL, player, SUMMARY_NAME_FONT);
+    Color winner = BattleSummaryTextColor(SUMMARY_WINNER_COLOR, alpha);
+    Color loser = BattleSummaryTextColor(SUMMARY_LOSER_COLOR, alpha);
+    UiDrawTextRight(cool, BattleSummaryPlayerName(ui), player, name_size, bp->won ? winner : loser);
+    UiDrawTextLeftMiddle(cool, ui->title, opponent, name_size, bp->won ? loser : winner);
+
+    UiDrawTexture(GuiTex(GUI_SUMMARY_VS), BattleSummaryRect(names, SUMMARY_VS_IMAGE), (Color){255, 255, 255, alpha});
+    Rectangle vs = BattleSummaryRect(names, SUMMARY_VS_LABEL);
+    UiDrawTextCentered(
+        cool,
+        LocGet("BATTLE_SUMMARY_VS"),
+        vs,
+        BattleSummaryFontSize(FNT_COOL, vs, SUMMARY_VS_FONT),
+        BattleSummaryTextColor(WHITE, alpha)
+    );
+}
+
+static void BattleUiDrawSummaryStats(const BattlePlay *bp, Rectangle background, unsigned char alpha) {
+    Rectangle lines = BattleSummaryRect(background, SUMMARY_LINES);
+    Color band = {0, 0, 0, (unsigned char)(SUMMARY_BAND_OPACITY * alpha)};
+    for (int i = 0; i < (int)(sizeof(SUMMARY_BANDS) / sizeof(SUMMARY_BANDS[0])); i++) {
+        Rectangle group = BattleSummaryRect(lines, SUMMARY_GROUPS[SUMMARY_BANDS[i].group]);
+        DrawRectangleRec(BattleSummaryRect(group, SUMMARY_BANDS[i].anchor), band);
+    }
+
+    char values[SUMMARY_STAT_COUNT][SUMMARY_SIDES][SUMMARY_VALUE_CAPACITY];
+    BattleSummaryValues(bp, values);
+    Font menu = GuiFont(FNT_MENU);
+    Color stat_name = BattleSummaryTextColor(SUMMARY_STAT_NAME_COLOR, alpha);
+    Color value = BattleSummaryTextColor(WHITE, alpha);
+    Rectangle labels = BattleSummaryRect(lines, SUMMARY_LABELS);
+    for (int i = 0; i < SUMMARY_STAT_COUNT; i++) {
+        const BattleSummaryStat *stat = &SUMMARY_STATS[i];
+        Rectangle group = BattleSummaryRect(labels, SUMMARY_GROUPS[i / SUMMARY_ROWS_PER_GROUP]);
+        float y = SUMMARY_ROW_Y[i % SUMMARY_ROWS_PER_GROUP];
+        Rectangle name = HudFitRect(group, 0.5f, y, 1.0f, SUMMARY_ROW_HEIGHT, 0.0f);
+        Rectangle player = HudFitRect(group, 0.0f, y, SUMMARY_VALUE_WIDTH, SUMMARY_ROW_HEIGHT, 0.0f);
+        Rectangle opponent = HudFitRect(group, 1.0f, y, SUMMARY_VALUE_WIDTH, SUMMARY_ROW_HEIGHT, 0.0f);
+        float name_size = BattleSummaryFontSize(FNT_MENU, name, SUMMARY_ROW_FONT);
+        float value_size = BattleSummaryFontSize(stat->value_font, player, SUMMARY_ROW_FONT);
+        Font value_font = GuiFont(stat->value_font);
+        UiDrawTextLeftMiddle(menu, LocGet(stat->label_key), name, name_size, stat_name);
+        UiDrawTexture(GuiTex(stat->icon), BattleSummaryRect(group, stat->icon_anchor), (Color){255, 255, 255, alpha});
+        UiDrawTextRight(value_font, values[i][0], player, value_size, value);
+        UiDrawTextLeftMiddle(value_font, values[i][1], opponent, value_size, value);
+    }
+}
+
+static void BattleUiDrawSummary(const BattleUi *ui, const BattlePlay *bp, float W, float H) {
+    unsigned char alpha = (unsigned char)(255.0f * Clamp(bp->t / SUMMARY_FADE_TIME, 0.0f, 1.0f));
+    Rectangle screen = {0.0f, 0.0f, W, H};
+    DrawRectangle(0, 0, (int)W + 1, (int)H + 1, (Color){0, 0, 0, (unsigned char)(SUMMARY_SCRIM_OPACITY * alpha)});
+    BattleUiDrawSummaryNames(ui, bp, screen, alpha);
+
+    Rectangle background = BattleSummaryRect(screen, SUMMARY_BACKGROUND);
+    UiDrawTexture(GuiTex(GUI_SUMMARY_PLAQUE), background, (Color){255, 255, 255, alpha});
+    BattleUiDrawSummaryStats(bp, background, alpha);
+
+    Rectangle tap = BattleSummaryRect(background, SUMMARY_TAP);
+    UiDrawTextCentered(
+        GuiFont(FNT_MENU),
+        LocGet("TAP_TO_CONTINUE"),
+        tap,
+        BattleSummaryFontSize(FNT_MENU, tap, SUMMARY_TAP_FONT),
+        BattleSummaryTextColor(WHITE, alpha)
+    );
+}
+
 static void BattleUiDrawIntroBanner(const BpIntroEvent *event, float cx, Font cool) {
     Texture2D bg = GuiTex(GUI_COMBAT_PREBATTLE_BG);
     UiDrawTexture(bg, (Rectangle){cx - 237.5f, 198.0f, 475.0f, 65.0f}, WHITE);
@@ -556,7 +731,7 @@ static float BattleUiRewardCoinAlpha(float age) {
 }
 
 static void BattleUiDrawCombat(BattleUi *ui, BattlePlay *bp) {
-    Font cool = GuiFont(FNT_COOL), menu = GuiFont(FNT_MENU);
+    Font cool = GuiFont(FNT_COOL);
     Color off_white = {230, 230, 230, 255};
     const Color style_red = {232, 43, 43, 255};
     float W = UiWidth(), H = UiHeight(), cx = W * 0.5f;
@@ -727,83 +902,7 @@ static void BattleUiDrawCombat(BattleUi *ui, BattlePlay *bp) {
     if (bp->state == BP_END_SPLASH || bp->state == BP_SUMMARY) {
         BattleUiResultSplash(ui, bp, W, H, cx, cool);
 
-        if (bp->state == BP_SUMMARY) {
-            BattleSummary sum;
-            BattlePlaySummary(bp, &sum);
-            float sfade = bp->t / 0.20f;
-            if (sfade > 1.0f) sfade = 1.0f;
-            if (sfade < 0.0f) sfade = 0.0f;
-            unsigned char summary_alpha = (unsigned char)(255.0f * sfade);
-            Color summary_white = {255, 255, 255, summary_alpha};
-            Color summary_off_white = off_white;
-            summary_off_white.a = summary_alpha;
-            DrawRectangle(0, 0, (int)W + 1, (int)H + 1, (Color){0, 0, 0, (unsigned char)(178.0f * sfade)});
-
-            Texture2D plaque = GuiTex(GUI_SUMMARY_PLAQUE);
-            Rectangle prect = {cx - 648.0f, 230.0f, 1296.0f, 432.0f};
-            UiDrawTexture(plaque, prect, summary_white);
-            for (int i = 0; i < 3; i++)
-                DrawRectangle(
-                    (int)(cx - 450.0f), 271 + i * 143, 900, 3, (Color){0, 0, 0, (unsigned char)(178.0f * sfade)}
-                );
-
-            const Color green = {34, 204, 43, summary_alpha}, red2 = {255, 0, 0, summary_alpha};
-            const char *pname = LocGet("BATTLE_SUMMARY_PLAYER");
-            float fs = 30.0f;
-            Vector2 psz = MeasureTextEx(cool, pname, fs, 1.0f);
-            DrawTextEx(cool, pname, (Vector2){cx - 80.0f - psz.x, 170.0f}, fs, 1.0f, bp->won ? green : red2);
-            DrawTextEx(cool, ui->title, (Vector2){cx + 80.0f, 170.0f}, fs, 1.0f, bp->won ? red2 : green);
-            Texture2D vs = GuiTex(GUI_SUMMARY_VS);
-            UiDrawTexture(vs, (Rectangle){cx - 38.7f, 162, 77.5f, 72}, summary_white);
-            const char *vs_text = LocGet("BATTLE_SUMMARY_VS");
-            Vector2 vtsz = MeasureTextEx(cool, vs_text, 22.0f, 1.0f);
-            DrawTextEx(cool, vs_text, (Vector2){cx - vtsz.x * 0.5f, 187.0f}, 22.0f, 1.0f, summary_off_white);
-
-            const char *labels[6] = {
-                LocGet("BATTLE_SUMMARY_DAMAGE_DEALT"),
-                LocGet("BATTLE_SUMMARY_STARTING_HEALTH"),
-                LocGet("BATTLE_SUMMARY_CRIT_HITS"),
-                LocGet("BATTLE_SUMMARY_FACTION_HITS"),
-                LocGet("BATTLE_SUMMARY_MVP"),
-                LocGet("BATTLE_SUMMARY_SURVIVORS")
-            };
-            const GuiId icons[6] = {
-                GUI_SUMMARY_DAMAGE,
-                GUI_MM_HEALTH,
-                GUI_DETAILS_CRIT,
-                GUI_SUMMARY_FACTION,
-                GUI_SUMMARY_MVP,
-                GUI_SUMMARY_SURVIVORS
-            };
-            char pv[6][64], ev[6][64];
-            snprintf(pv[0], 64, "%d", sum.dmg[0]);
-            snprintf(ev[0], 64, "%d", sum.dmg[1]);
-            snprintf(pv[1], 64, "%ld", sum.start_hp[0]);
-            snprintf(ev[1], 64, "%ld", sum.start_hp[1]);
-            snprintf(pv[2], 64, "%d", sum.crits[0]);
-            snprintf(ev[2], 64, "%d", sum.crits[1]);
-            snprintf(pv[3], 64, "%d", sum.fac_hits[0]);
-            snprintf(ev[3], 64, "%d", sum.fac_hits[1]);
-            snprintf(pv[4], 64, "%s", sum.mvp[0]);
-            snprintf(ev[4], 64, "%s", sum.mvp[1]);
-            snprintf(pv[5], 64, "%d", sum.survivors[0]);
-            snprintf(ev[5], 64, "%d", sum.survivors[1]);
-            for (int i = 0; i < 6; i++) {
-                float y = 276.0f + i * 47.0f;
-                DrawTextEx(
-                    menu, labels[i], (Vector2){cx - 449.0f, y}, 20.0f, 1.0f, (Color){191, 191, 191, summary_alpha}
-                );
-                Vector2 vsz = MeasureTextEx(cool, pv[i], 22.0f, 1.0f);
-                DrawTextEx(cool, pv[i], (Vector2){cx - 45.0f - vsz.x, y}, 22.0f, 1.0f, summary_off_white);
-                float icon_size = i == 3 ? 28.0f : 32.0f;
-                Texture2D icon = GuiTex(icons[i]);
-                UiDrawTexture(icon, (Rectangle){cx - icon_size * 0.5f, y - 3.0f, icon_size, icon_size}, summary_white);
-                DrawTextEx(cool, ev[i], (Vector2){cx + 46.0f, y}, 22.0f, 1.0f, summary_off_white);
-            }
-            const char *tap = LocGet("TAP_TO_CONTINUE");
-            Vector2 tsz = MeasureTextEx(menu, tap, 22.0f, 1.0f);
-            DrawTextEx(menu, tap, (Vector2){cx - tsz.x * 0.5f, 600.0f}, 22.0f, 1.0f, summary_off_white);
-        }
+        if (bp->state == BP_SUMMARY) BattleUiDrawSummary(ui, bp, W, H);
     }
 }
 
@@ -862,7 +961,7 @@ static void BattleUiDrawVsHeader(BattleUi *ui, Battle *battle, float cx, bool in
     BattleUiDrawVsPlate(BattleUiMatchmakingRect(cx, VS_PLAYER_PLATE));
     BattleUiDrawVsPlate(BattleUiMatchmakingRect(cx, VS_OPPONENT_PLATE));
     float name_size = VS_NAME_FONT * MM_SY;
-    const char *player_name = ui->pvp_player_name[0] ? ui->pvp_player_name : LocGet("BATTLE_SUMMARY_PLAYER");
+    const char *player_name = ui->player_name[0] ? ui->player_name : LocGet("BATTLE_SUMMARY_PLAYER");
     UiDrawTextCentered(font, player_name, BattleUiMatchmakingRect(cx, VS_PLAYER_NAME), name_size, off_white);
     UiDrawTextCentered(font, ui->title, BattleUiMatchmakingRect(cx, VS_OPPONENT_NAME), name_size, off_white);
 
