@@ -11,5 +11,6 @@
  },
  "aura_cost_pct": 500,
  "self_aura_share_pct": 20,
- "aura_matching_allies": 2
+ "aura_matching_allies": 2,
+ "aura_cap_pct": 50
 }

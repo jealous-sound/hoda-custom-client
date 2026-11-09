@@ -85,7 +85,7 @@ static void SimUnitInit(BattleSim *s, int side, int slot, const Character *ch) {
 }
 
 static void SimApplyBattleStartPassives(BattleSim *s) {
-    SimUnitsBattleStartPassives(s->units);
+    SimUnitsBattleStartPassives(s->units, NULL);
 }
 
 static void SimApplyFormationBonus(BattleSim *s, int side) {
@@ -1912,7 +1912,18 @@ static const StatBudget TEST_STAT_BUDGET = {
     .aura_cost_pct = 50,
     .self_aura_share_pct = 20,
     .aura_matching_allies = 2,
+    .aura_cap_pct = 100,
 };
+
+static void TestStatBudgetApply(bool giant, TargetPattern pattern, int aura_points, int *power, int *health) {
+    StatBudgetKit kit = {
+        .giant = giant,
+        .pattern = pattern,
+        .aura_points = aura_points,
+        .hero_pct = STAT_BUDGET_NEUTRAL_HERO_PCT,
+    };
+    StatBudgetApplyKit(&TEST_STAT_BUDGET, &kit, power, health);
+}
 
 static void TestStatBudgetScalesEveryHeroToOneCostAndKeepsItsShape(void) {
     int weak_power = 100, weak_health = 500;
@@ -1920,10 +1931,10 @@ static void TestStatBudgetScalesEveryHeroToOneCostAndKeepsItsShape(void) {
     int giant_power = 100, giant_health = 500;
     int statless_power = 0, statless_health = 0;
 
-    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ONE, 0, &weak_power, &weak_health);
-    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ONE, 0, &strong_power, &strong_health);
-    StatBudgetApplyKit(&TEST_STAT_BUDGET, true, TARGET_ONE, 0, &giant_power, &giant_health);
-    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ONE, 0, &statless_power, &statless_health);
+    TestStatBudgetApply(false, TARGET_ONE, 0, &weak_power, &weak_health);
+    TestStatBudgetApply(false, TARGET_ONE, 0, &strong_power, &strong_health);
+    TestStatBudgetApply(true, TARGET_ONE, 0, &giant_power, &giant_health);
+    TestStatBudgetApply(false, TARGET_ONE, 0, &statless_power, &statless_health);
 
     assert(weak_power == 300 && weak_health == 1500);
     assert(strong_power == 200 && strong_health == 2000);
@@ -1935,8 +1946,8 @@ static void TestStatBudgetChargesPowerMoreTheMoreEnemiesItHits(void) {
     int single_power = 100, single_health = 500;
     int everyone_power = 100, everyone_health = 500;
 
-    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ONE, 0, &single_power, &single_health);
-    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ALL, 0, &everyone_power, &everyone_health);
+    TestStatBudgetApply(false, TARGET_ONE, 0, &single_power, &single_health);
+    TestStatBudgetApply(false, TARGET_ALL, 0, &everyone_power, &everyone_health);
 
     assert(single_power == 300 && single_health == 1500);
     assert(everyone_power == 150 && everyone_health == 750);
@@ -1969,10 +1980,110 @@ static void TestStatBudgetChargesForAuras(void) {
 
     int plain_power = 100, plain_health = 500;
     int aura_power = 100, aura_health = 500;
-    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ONE, 0, &plain_power, &plain_health);
-    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ONE, 100, &aura_power, &aura_health);
+    TestStatBudgetApply(false, TARGET_ONE, 0, &plain_power, &plain_health);
+    TestStatBudgetApply(false, TARGET_ONE, 100, &aura_power, &aura_health);
     assert(plain_power == 300 && plain_health == 1500);
     assert(aura_power == 200 && aura_health == 1000);
+}
+
+static void TestStatBudgetHandicapScalesOneHero(void) {
+    static StatBudget budget;
+    budget = TEST_STAT_BUDGET;
+    budget.hero_count = 2;
+    StrCopy(budget.heroes[0].id, sizeof(budget.heroes[0].id), "UNIT_A");
+    StrCopy(budget.heroes[1].id, sizeof(budget.heroes[1].id), "UNIT_C");
+    budget.heroes[0].budget_pct = 80;
+    budget.heroes[1].budget_pct = 150;
+    assert(StatBudgetHeroPct(&budget, "UNIT_A") == 80);
+    assert(StatBudgetHeroPct(&budget, "UNIT_B") == STAT_BUDGET_NEUTRAL_HERO_PCT);
+    assert(StatBudgetHeroPct(&budget, "UNIT_C") == 150);
+
+    Character handicapped, unlisted;
+    Ability handicapped_ability, unlisted_ability;
+    TestCharacter(&handicapped, &handicapped_ability, "UNIT_C", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 500);
+    TestCharacter(&unlisted, &unlisted_ability, "UNIT_B", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 500);
+    int handicapped_power = 100, handicapped_health = 500;
+    int unlisted_power = 100, unlisted_health = 500;
+    StatBudgetApply(&budget, &handicapped, &handicapped_power, &handicapped_health);
+    StatBudgetApply(&budget, &unlisted, &unlisted_power, &unlisted_health);
+    assert(handicapped_power == 450 && handicapped_health == 2250);
+    assert(unlisted_power == 300 && unlisted_health == 1500);
+
+    Character weakened;
+    Ability weakened_ability;
+    TestCharacter(&weakened, &weakened_ability, "UNIT_A", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 500);
+    assert(StatBudgetPotencyCutPct(&budget, &weakened) == 20);
+    assert(StatBudgetPotencyCutPct(&budget, &handicapped) == 0);
+    assert(StatBudgetPotencyCutPct(&budget, &unlisted) == 0);
+}
+
+static void TestPotencyCutWeakensStatusChancesAndAllyGrantsOnly(void) {
+    Character stunner, drainer;
+    Ability stunner_ability, drainer_ability;
+    TestCharacter(&stunner, &stunner_ability, "stunner", "ABILITY_DAMAGE_HIGH_STUN_CHANCE", TARGET_ONE, 100, 500);
+    TestCharacter(&drainer, &drainer_ability, "drainer", "attack_all_drain65_crit7", TARGET_ALL, 100, 500);
+    SimUnit full_stunner = {.ch = &stunner};
+    SimUnit cut_stunner = {.ch = &stunner, .potency_cut_pct = 50};
+    SimUnit cut_drainer = {.ch = &drainer, .potency_cut_pct = 50};
+
+    assert(SimUnitRecipe(&full_stunner) == SimRecipe(&stunner));
+    assert(SimRecipe(&stunner)->hit.stun_pct == 75);
+    assert(SimUnitRecipe(&cut_stunner)->hit.stun_pct == 38);
+
+    const AbilityRecipe *cut = SimUnitRecipe(&cut_drainer);
+    assert(cut->hit.drain_pct == 65);
+    assert(SimRecipe(&drainer)->fx.ally_crit_pct == 7 && cut->fx.ally_crit_pct == 4);
+}
+
+static void TestStatBudgetHandicapTableIsSortedAndBounded(void) {
+    const StatBudget *budget = StatBudgetEnsure();
+    for (int i = 0; i < budget->hero_count; i++) {
+        assert(i == 0 || strcmp(budget->heroes[i - 1].id, budget->heroes[i].id) < 0);
+        assert(budget->heroes[i].budget_pct >= STAT_BUDGET_HERO_MIN_PCT);
+        assert(budget->heroes[i].budget_pct <= STAT_BUDGET_HERO_MAX_PCT);
+    }
+}
+
+static void TestStatBudgetCapsWhatAurasAdd(void) {
+    static StatBudget capped;
+    capped = TEST_STAT_BUDGET;
+    capped.aura_cap_pct = 50;
+    assert(StatBudgetCappedAuraPct(&capped, 85.0f) == 50.0f);
+    assert(StatBudgetCappedAuraPct(&capped, 20.0f) == 20.0f);
+    assert(StatBudgetCappedAuraPct(&capped, -30.0f) == -30.0f);
+
+    PassiveMatchTerm no_terms[1] = {0};
+    PassiveEffect effects[] = {
+        {.kind = PASSIVE_STAT_PERCENT,
+         .stats = PASSIVE_STAT_HEALTH | PASSIVE_STAT_POWER,
+         .value_pct = 90,
+         .recipient = {.scope = PASSIVE_SCOPE_ALLIES, .terms = no_terms}},
+    };
+    PassiveCharacter passives = {.effects = effects, .effect_count = 1};
+    assert(StatBudgetAuraPoints(&TEST_STAT_BUDGET, &passives) == 90);
+    assert(StatBudgetAuraPoints(&capped, &passives) == 50);
+
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    static Character abelas;
+    static Ability ability;
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    CharacterParse(CatalogFindCharacter((cJSON *)catalog, "UNIT_ABELAS"), &abelas, &ability);
+    abelas.tier = abelas.max_tier;
+    abelas.level = 1;
+    static SimUnit units[SIM_UNIT_COUNT];
+    PassiveManifestEnsure();
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        SimUnitsInit(units, 0, slot, slot == 0 ? &abelas : NULL, NULL);
+        SimUnitsInit(units, 1, slot, NULL, NULL);
+    }
+    int own_power = units[0].power;
+    SimUnitsBattleStartPassives(units, NULL);
+    assert(units[0].power > own_power * 3 / 2);
+
+    SimUnitsInit(units, 0, 0, &abelas, NULL);
+    SimUnitsBattleStartPassives(units, &capped);
+    assert(units[0].power == (int)lroundf(own_power * 1.5f));
+    cJSON_Delete(root);
 }
 
 static void TestStatBudgetOnTheEnemyRosterLevelsBothSides(void) {
@@ -5005,7 +5116,7 @@ static void TestGearStatAurasAddThenMultiply(void) {
     GearTestUnit(&s, &ally, &abilities[1], 0, 3, 10000);
     GearTestUnit(&s, &enemy, &abilities[2], 1, 2, 10000);
     float ally_crit = s.units[3].crit_pct;
-    SimUnitsBattleStartPassives(s.units);
+    SimUnitsBattleStartPassives(s.units, NULL);
 
     assert(s.units[2].power == 1200 && s.units[2].start_power == 1200);
     assert(s.units[3].power == 1000);
@@ -5032,7 +5143,7 @@ static void TestGearAuraRespectsGroupAndWearerFilters(void) {
     GearTestUnit(&s, &dwarf, &abilities[1], 0, 3, 10000);
     dwarf.group_count = 1;
     StrCopy(dwarf.groups[0], sizeof(dwarf.groups[0]), "Dwarf");
-    SimUnitsBattleStartPassives(s.units);
+    SimUnitsBattleStartPassives(s.units, NULL);
     assert(s.units[2].power == 1000 && s.units[3].power == 1500);
 
     int personal = GearTestDef(GEAR_STAT_POWER, 50, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
@@ -5043,7 +5154,7 @@ static void TestGearAuraRespectsGroupAndWearerFilters(void) {
     Ability human_ability;
     human.gear.defs[0] = (short)(personal + 1);
     GearTestUnit(&second, &human, &human_ability, 0, 2, 10000);
-    SimUnitsBattleStartPassives(second.units);
+    SimUnitsBattleStartPassives(second.units, NULL);
     assert(second.units[2].power == 1000);
     GearTestReset();
 }
@@ -5063,7 +5174,7 @@ static void TestGearDamageMitigationAndVersus(void) {
     target.gear.defs[1] = (short)(raw + 1);
     GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 10000);
     GearTestUnit(&s, &target, &abilities[1], 1, 2, 10000);
-    SimUnitsBattleStartPassives(s.units);
+    SimUnitsBattleStartPassives(s.units, NULL);
     s.units[2].crit_pct = 0.0f;
     s.rng = 11;
 
@@ -5096,7 +5207,7 @@ static void TestGearResistsScaleAilments(void) {
     target.gear.defs[0] = (short)(immune + 1);
     GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 10000);
     GearTestUnit(&s, &target, &abilities[1], 1, 2, 10000);
-    SimUnitsBattleStartPassives(s.units);
+    SimUnitsBattleStartPassives(s.units, NULL);
     assert(s.units[SQUAD_SLOT_COUNT + 2].gear.stun_resist_pct == 50);
     GearTestReset();
 }
@@ -5115,7 +5226,7 @@ static void TestGearOnHitReactionsAndStealth(void) {
     target.gear.defs[1] = (short)(convert + 1);
     GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 100000);
     GearTestUnit(&s, &target, &abilities[1], 1, 2, 100000);
-    SimUnitsBattleStartPassives(s.units);
+    SimUnitsBattleStartPassives(s.units, NULL);
     s.units[2].crit_pct = 0.0f;
     int idx = SQUAD_SLOT_COUNT + 2;
 
@@ -5206,7 +5317,7 @@ static void TestGearDefenderAbsorbsAoeShare(void) {
     GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 100000);
     GearTestUnit(&s, &tank, &abilities[1], 1, 2, 100000);
     GearTestUnit(&s, &squishy, &abilities[2], 1, 3, 100000);
-    SimUnitsBattleStartPassives(s.units);
+    SimUnitsBattleStartPassives(s.units, NULL);
     s.units[2].crit_pct = 0.0f;
     abilities[0].target = TARGET_ALL;
     GearTestSwing(&s, 2);
@@ -5228,7 +5339,7 @@ static void TestGearTargetPreferences(void) {
     GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 10000);
     GearTestUnit(&s, &back, &abilities[1], 1, 2, 10000);
     assert(SquadSlotIsBack(2));
-    SimUnitsBattleStartPassives(s.units);
+    SimUnitsBattleStartPassives(s.units, NULL);
     assert(SimFlankWeight(&s.units[2], &s.units[SQUAD_SLOT_COUNT + 2]) == SIM_GEAR_FLANK_WEIGHT);
     back.gear.defs[0] = (short)(reduce + 1);
     s.units[SQUAD_SLOT_COUNT + 2].gear.flank_reduction = true;
@@ -5267,7 +5378,7 @@ static void TestEveryCatalogItemFightsCleanly(void) {
         GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 100000);
         GearTestUnit(&s, &target, &abilities[1], 1, 2, 100000);
         GearTestUnit(&s, &ally, &abilities[2], 1, 3, 100000);
-        SimUnitsBattleStartPassives(s.units);
+        SimUnitsBattleStartPassives(s.units, NULL);
         for (int swing = 0; swing < 4; swing++) {
             GearTestSwing(&s, 2);
             GearTestSwing(&s, SQUAD_SLOT_COUNT + 2);
@@ -7638,6 +7749,10 @@ int main(void) {
     TestStatBudgetScalesEveryHeroToOneCostAndKeepsItsShape();
     TestStatBudgetChargesPowerMoreTheMoreEnemiesItHits();
     TestStatBudgetChargesForAuras();
+    TestStatBudgetHandicapScalesOneHero();
+    TestPotencyCutWeakensStatusChancesAndAllyGrantsOnly();
+    TestStatBudgetHandicapTableIsSortedAndBounded();
+    TestStatBudgetCapsWhatAurasAdd();
     TestStatBudgetOnTheEnemyRosterLevelsBothSides();
     TestStatBudgetTableLoads();
     TestCustomHeroesInheritTheirBaseHeroData();

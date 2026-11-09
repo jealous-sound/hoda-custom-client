@@ -63,6 +63,7 @@ typedef struct {
     int side, slot;
     int max_health, health;
     int power, start_power;
+    int potency_cut_pct;
     float crit_pct;
     float damage_bonus_pct;
     int init_class;
@@ -768,6 +769,43 @@ static float SimFormationBonus(Rarity r) {
     }
 }
 
+static short SimCutPct(short pct, int cut_pct) {
+    return (short)((pct * (100 - cut_pct) + 50) / 100);
+}
+
+static void SimCutAttackPotency(AttackRecipe *attack, int cut_pct) {
+    attack->stun_pct = SimCutPct(attack->stun_pct, cut_pct);
+    attack->slow_pct = SimCutPct(attack->slow_pct, cut_pct);
+    attack->curse_power_pct = SimCutPct(attack->curse_power_pct, cut_pct);
+    attack->curse_health_pct = SimCutPct(attack->curse_health_pct, cut_pct);
+    attack->levy_pct = SimCutPct(attack->levy_pct, cut_pct);
+    attack->assassinate_pct = SimCutPct(attack->assassinate_pct, cut_pct);
+    attack->mark_pct = SimCutPct(attack->mark_pct, cut_pct);
+}
+
+static void SimCutAllyEffectPotency(SecondaryEffects *fx, int cut_pct) {
+    fx->ally_heal_pct = SimCutPct(fx->ally_heal_pct, cut_pct);
+    fx->ally_power_pct = SimCutPct(fx->ally_power_pct, cut_pct);
+    fx->ally_crit_pct = SimCutPct(fx->ally_crit_pct, cut_pct);
+    fx->ally_damage_bonus_pct = SimCutPct(fx->ally_damage_bonus_pct, cut_pct);
+}
+
+static const AbilityRecipe *SimUnitRecipe(const SimUnit *u) {
+    const AbilityRecipe *recipe = SimRecipe(u->ch);
+    if (u->potency_cut_pct <= 0) return recipe;
+    static AbilityRecipe cut;
+    cut = *recipe;
+    SimCutAttackPotency(&cut.hit, u->potency_cut_pct);
+    SimCutAttackPotency(&cut.effect, u->potency_cut_pct);
+    SimCutAttackPotency(&cut.followup, u->potency_cut_pct);
+    SimCutAllyEffectPotency(&cut.fx, u->potency_cut_pct);
+    for (int step = 0; step < cut.generated_step_count; step++) {
+        SimCutAttackPotency(&cut.generated_steps[step].attack, u->potency_cut_pct);
+        SimCutAllyEffectPotency(&cut.generated_steps[step].fx, u->potency_cut_pct);
+    }
+    return &cut;
+}
+
 static void SimUnitsInit(SimUnit *units, int side, int slot, const Character *ch, const StatBudget *stat_budget) {
     SimUnit *u = &units[side * SQUAD_SLOT_COUNT + slot];
     memset(u, 0, sizeof(*u));
@@ -779,7 +817,10 @@ static void SimUnitsInit(SimUnit *units, int side, int slot, const Character *ch
     u->slot = slot;
     u->power = CharacterStatPower(ch);
     u->max_health = CharacterStatHealth(ch);
-    if (stat_budget) StatBudgetApply(stat_budget, ch, &u->power, &u->max_health);
+    if (stat_budget) {
+        StatBudgetApply(stat_budget, ch, &u->power, &u->max_health);
+        u->potency_cut_pct = StatBudgetPotencyCutPct(stat_budget, ch);
+    }
     u->start_power = u->power;
     u->crit_pct = (float)(ch->crit_chance > CONSUME_BASE_CRIT_CHANCE ? ch->crit_chance : CONSUME_BASE_CRIT_CHANCE);
     u->init_class = ch->speed == SPEED_QUICK  ? SIM_INIT_CLASS_FAST
@@ -1015,7 +1056,7 @@ static bool SimGearPrefersMatchedTarget(const SimUnit *attacker, const SimUnit *
     return false;
 }
 
-static void SimUnitsBattleStartPassives(SimUnit *units) {
+static void SimUnitsBattleStartPassives(SimUnit *units, const StatBudget *stat_budget) {
     float health_pct[SIM_UNIT_COUNT] = {0};
     float power_pct[SIM_UNIT_COUNT] = {0};
     SimUnitsGearAuras(units, health_pct, power_pct);
@@ -1049,6 +1090,10 @@ static void SimUnitsBattleStartPassives(SimUnit *units) {
     for (int i = 0; i < SIM_UNIT_COUNT; i++) {
         SimUnit *unit = &units[i];
         if (!unit->present) continue;
+        if (stat_budget) {
+            health_pct[i] = StatBudgetCappedAuraPct(stat_budget, health_pct[i]);
+            power_pct[i] = StatBudgetCappedAuraPct(stat_budget, power_pct[i]);
+        }
         if (health_pct[i] != 0.0f) {
             unit->max_health = (int)lroundf(unit->max_health * (1.0f + health_pct[i] / 100.0f));
             if (unit->max_health < 1) unit->max_health = 1;
@@ -1856,7 +1901,7 @@ static void SimTakeTurn(BattleSim *s, int actor_idx) {
         return;
     }
 
-    const AbilityRecipe *r = SimRecipe(u->ch);
+    const AbilityRecipe *r = SimUnitRecipe(u);
     bool no_attack = (u->ch->ability->mechanics & ABILITY_ATTACK_NONE) || SimHasSpec(u->ch, SPEC_ATTACKNONE);
     if (r->generated) {
         SimGeneratedTakeTurn(s, actor_idx, r, no_attack);
@@ -1995,7 +2040,7 @@ static void SimUnitsSetup(
         SimUnitsInit(units, 0, slot, player->chars[slot], rules->stat_budget);
         SimUnitsInit(units, 1, slot, enemy->chars[slot], rules->stat_budget);
     }
-    SimUnitsBattleStartPassives(units);
+    SimUnitsBattleStartPassives(units, rules->stat_budget);
     SimUnitsFormationBonus(units, 0, &faction[0], &bonus_pct[0]);
     SimUnitsFormationBonus(units, 1, &faction[1], &bonus_pct[1]);
     RuneBonus rune_bonus = RuneDefsBonus(player->rune_defs, player->rune_def_count);
