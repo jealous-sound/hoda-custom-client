@@ -4,13 +4,15 @@
 
 #define BALANCE_USAGE                                                                                                  \
     "usage: balance_check [--raw] [--seeds N] [--squads N] [--band LOW HIGH] [--all] [--hero UNIT_ID]...\n"            \
-    "Swaps every hero into reference squads, fights the unchanged squads from both sides and reports win rates.\n"     \
+    "Swaps every hero into reference squads of its faction, fights the unchanged squads from both sides and reports\n" \
+    "win rates.\n"                                                                                                     \
     "--raw fights with catalog stats instead of the stat budget. --all lists every hero, weakest first.\n"             \
     "--hero fights only that hero and fails when it leaves the band."
 #define BALANCE_HERO_CAPACITY 1024
 #define BALANCE_SQUAD_CAPACITY 64
 #define BALANCE_GATED_HERO_CAPACITY 32
-#define BALANCE_DEFAULT_SQUADS 12
+#define BALANCE_DEFAULT_SQUADS 32
+#define BALANCE_ANY_FACTION 15u
 #define BALANCE_DEFAULT_SEEDS 4
 #define BALANCE_DEFAULT_BAND_LOW_PCT 45.0f
 #define BALANCE_DEFAULT_BAND_HIGH_PCT 55.0f
@@ -27,6 +29,7 @@ typedef struct {
     Rarity rarity;
     int stars;
     bool giant;
+    unsigned faction_mask;
     const cJSON *def;
     int wins, battles;
 } BalanceHero;
@@ -47,6 +50,7 @@ typedef struct {
     BalanceHero heroes[BALANCE_HERO_CAPACITY];
     int hero_count;
     BattleRoster squads[BALANCE_SQUAD_CAPACITY];
+    unsigned squad_faction[BALANCE_SQUAD_CAPACITY];
     int squad_count;
     int mirror_player_wins, mirror_battles;
 } Balance;
@@ -74,6 +78,7 @@ static void BalanceLoadHeroes(Balance *b) {
         hero->rarity = ch.rarity;
         hero->stars = ch.stars;
         hero->giant = ch.giant;
+        hero->faction_mask = SimFactionMask(ch.faction);
         hero->def = row;
     }
 }
@@ -96,6 +101,17 @@ static void BalanceRosterFromSquad(Balance *b, BattleRoster *roster, const PvpSq
     roster->stat_budget = b->stat_budget;
 }
 
+static unsigned BalanceFormationFaction(const BattleRoster *roster) {
+    unsigned shared = BALANCE_ANY_FACTION;
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
+        if (roster->present[slot] && !roster->chars[slot].giant) shared &= SimFactionMask(roster->chars[slot].faction);
+    return shared ? shared : BALANCE_ANY_FACTION;
+}
+
+static bool BalanceHeroKeepsFormation(const Balance *b, const BalanceHero *hero, int squad) {
+    return hero->giant || (hero->faction_mask & b->squad_faction[squad]) != 0;
+}
+
 static void BalanceLoadSquads(Balance *b, int wanted) {
     const PvpTable *table = PvpTableEnsure();
     int full[PVP_SQUAD_CAPACITY];
@@ -105,7 +121,9 @@ static void BalanceLoadSquads(Balance *b, int wanted) {
     if (wanted > full_count) wanted = full_count;
     for (int i = 0; i < wanted; i++) {
         int evenly_spread = wanted > 1 ? i * (full_count - 1) / (wanted - 1) : full_count - 1;
-        BalanceRosterFromSquad(b, &b->squads[b->squad_count++], &table->squads[full[evenly_spread]]);
+        BalanceRosterFromSquad(b, &b->squads[b->squad_count], &table->squads[full[evenly_spread]]);
+        b->squad_faction[b->squad_count] = BalanceFormationFaction(&b->squads[b->squad_count]);
+        b->squad_count++;
     }
 }
 
@@ -127,6 +145,7 @@ static void BalanceFightHero(Balance *b, BalanceHero *hero, int seeds) {
     int last_slot = hero->giant ? SQUAD_SLOT_LARGE : SQUAD_SLOT_LARGE - 1;
     for (int q = 0; q < b->squad_count; q++) {
         const BattleRoster *squad = &b->squads[q];
+        if (!BalanceHeroKeepsFormation(b, hero, q)) continue;
         for (int slot = first_slot; slot <= last_slot; slot++) {
             BalanceRosterWithHero(&with_hero, squad, hero, slot);
             for (int seed = 1; seed <= seeds; seed++) {
@@ -251,7 +270,7 @@ static int BalanceGate(const Balance *b, const BalanceOptions *o) {
         for (int i = 0; i < b->hero_count; i++)
             if (!strcmp(b->heroes[i].id, o->gated[g])) hero = &b->heroes[i];
         if (!hero || !hero->battles) {
-            printf("Balance: %s is not a playable hero\n", o->gated[g]);
+            printf("Balance: %s is not a playable hero with a reference squad of its faction\n", o->gated[g]);
             status = BALANCE_EXIT_OUT_OF_BAND;
             continue;
         }

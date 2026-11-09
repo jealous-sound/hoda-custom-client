@@ -25,7 +25,7 @@ Without a local copy the game downloads its data on first launch (see [Content](
 | `make test` | every check; needs the local asset cache |
 | `make ci-test` | the checks that need no asset cache: golden replays, content and update tests, table validators |
 | `make golden` | regenerates the battle corpus in `tests/golden/` |
-| `make balance` | swaps every hero into reference PvP squads under `data/stat_budget.json` and reports win rates; `BALANCE_ARGS="--hero UNIT_ID"` fails when that hero leaves the 45-55% band |
+| `make balance` | swaps every hero into reference PvP squads of its faction under `data/stat_budget.json` (stats, attack pattern and aura costs) and reports win rates; `BALANCE_ARGS="--hero UNIT_ID"` fails when that hero leaves the 45-55% band |
 | `make format-check` | clang-format check; `make format` rewrites |
 | `make dist` | a playable copy in `../hoda-custom-dist` (`DIST_DIR=`, `DIST_BACKEND_URL=`) |
 | `make content` | publishes the data packs to R2 (`CONTENT_BUCKET=`, default `hoda-assets`; `npx wrangler login` once) |

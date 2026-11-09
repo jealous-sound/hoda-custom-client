@@ -1904,27 +1904,78 @@ static void TestCatalogStatGrowth(void) {
     cJSON_Delete(root);
 }
 
+static const StatBudget TEST_STAT_BUDGET = {
+    .budget = 3000,
+    .health_per_power = 5,
+    .giant_budget_pct = 150,
+    .pattern_power_cost_pct = {[TARGET_ONE] = 100, [TARGET_ROW] = 200, [TARGET_COLUMN] = 200, [TARGET_ALL] = 300},
+    .aura_cost_pct = 50,
+    .self_aura_share_pct = 20,
+    .aura_matching_allies = 2,
+};
+
 static void TestStatBudgetScalesEveryHeroToOneCostAndKeepsItsShape(void) {
-    const StatBudget budget = {.budget = 3000, .health_per_power = 5, .giant_budget_pct = 150};
     int weak_power = 100, weak_health = 500;
     int strong_power = 2000, strong_health = 20000;
     int giant_power = 100, giant_health = 500;
     int statless_power = 0, statless_health = 0;
 
-    StatBudgetApply(&budget, false, &weak_power, &weak_health);
-    StatBudgetApply(&budget, false, &strong_power, &strong_health);
-    StatBudgetApply(&budget, true, &giant_power, &giant_health);
-    StatBudgetApply(&budget, false, &statless_power, &statless_health);
+    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ONE, 0, &weak_power, &weak_health);
+    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ONE, 0, &strong_power, &strong_health);
+    StatBudgetApplyKit(&TEST_STAT_BUDGET, true, TARGET_ONE, 0, &giant_power, &giant_health);
+    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ONE, 0, &statless_power, &statless_health);
 
     assert(weak_power == 300 && weak_health == 1500);
     assert(strong_power == 200 && strong_health == 2000);
     assert(giant_power == 450 && giant_health == 2250);
     assert(statless_power == 0 && statless_health == 0);
-    assert(StatBudgetCost(&budget, weak_power, weak_health) == StatBudgetCost(&budget, strong_power, strong_health));
+}
+
+static void TestStatBudgetChargesPowerMoreTheMoreEnemiesItHits(void) {
+    int single_power = 100, single_health = 500;
+    int everyone_power = 100, everyone_health = 500;
+
+    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ONE, 0, &single_power, &single_health);
+    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ALL, 0, &everyone_power, &everyone_health);
+
+    assert(single_power == 300 && single_health == 1500);
+    assert(everyone_power == 150 && everyone_health == 750);
+}
+
+static void TestStatBudgetChargesForAuras(void) {
+    PassiveMatchTerm no_terms[1] = {0};
+    PassiveEffect effects[] = {
+        {.kind = PASSIVE_STAT_PERCENT,
+         .stats = PASSIVE_STAT_HEALTH | PASSIVE_STAT_POWER,
+         .value_pct = 40,
+         .recipient = {.scope = PASSIVE_SCOPE_ALLIES, .terms = no_terms}},
+        {.kind = PASSIVE_STAT_PERCENT,
+         .stats = PASSIVE_STAT_POWER,
+         .value_pct = 100,
+         .recipient = {.scope = PASSIVE_SCOPE_SELF, .terms = no_terms}},
+        {.kind = PASSIVE_STAT_PERCENT_PER_MATCHING_ALLY,
+         .stats = PASSIVE_STAT_HEALTH,
+         .value_pct = 10,
+         .recipient = {.scope = PASSIVE_SCOPE_ALLIES, .terms = no_terms}},
+        {.kind = PASSIVE_INCOMING_TARGET_WEIGHT, .value_pct = 500},
+    };
+    PassiveCharacter passives = {.effects = effects, .effect_count = 4};
+    assert(StatBudgetAuraPoints(&TEST_STAT_BUDGET, &passives) == (80 + 20 + 20) / 2);
+    assert(StatBudgetAuraPoints(&TEST_STAT_BUDGET, NULL) == 0);
+
+    effects[0].recipient.scope = PASSIVE_SCOPE_ENEMIES;
+    passives.effect_count = 1;
+    assert(StatBudgetAuraPoints(&TEST_STAT_BUDGET, &passives) == 0);
+
+    int plain_power = 100, plain_health = 500;
+    int aura_power = 100, aura_health = 500;
+    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ONE, 0, &plain_power, &plain_health);
+    StatBudgetApplyKit(&TEST_STAT_BUDGET, false, TARGET_ONE, 100, &aura_power, &aura_health);
+    assert(plain_power == 300 && plain_health == 1500);
+    assert(aura_power == 200 && aura_health == 1000);
 }
 
 static void TestStatBudgetOnTheEnemyRosterLevelsBothSides(void) {
-    static const StatBudget budget = {.budget = 3000, .health_per_power = 5, .giant_budget_pct = 150};
     static BattleRoster player, enemy;
     static BattleSim sim;
     memset(&player, 0, sizeof(player));
@@ -1936,7 +1987,7 @@ static void TestStatBudgetOnTheEnemyRosterLevelsBothSides(void) {
     BattleSimRunRosters(&sim, &player, &enemy, 1);
     assert(sim.units[0].start_power == 100 && sim.units[SQUAD_SLOT_COUNT].start_power == 2000);
 
-    enemy.stat_budget = &budget;
+    enemy.stat_budget = &TEST_STAT_BUDGET;
     BattleSimRunRosters(&sim, &player, &enemy, 1);
     assert(sim.units[0].start_power == 300 && sim.units[SQUAD_SLOT_COUNT].start_power == 200);
     assert(sim.units[0].max_health * 2000 == sim.units[SQUAD_SLOT_COUNT].max_health * 1500);
@@ -1944,7 +1995,8 @@ static void TestStatBudgetOnTheEnemyRosterLevelsBothSides(void) {
 
 static void TestStatBudgetTableLoads(void) {
     const StatBudget *budget = StatBudgetEnsure();
-    assert(budget->budget > 0 && budget->health_per_power > 0 && budget->giant_budget_pct >= 100);
+    assert(budget->budget > 0 && budget->giant_budget_pct >= 100);
+    assert(budget->pattern_power_cost_pct[TARGET_ALL] >= budget->pattern_power_cost_pct[TARGET_ONE]);
 }
 
 static void TestCustomHeroesInheritTheirBaseHeroData(void) {
@@ -7584,6 +7636,8 @@ int main(void) {
     TestLegendaryStars();
     TestCatalogStatGrowth();
     TestStatBudgetScalesEveryHeroToOneCostAndKeepsItsShape();
+    TestStatBudgetChargesPowerMoreTheMoreEnemiesItHits();
+    TestStatBudgetChargesForAuras();
     TestStatBudgetOnTheEnemyRosterLevelsBothSides();
     TestStatBudgetTableLoads();
     TestCustomHeroesInheritTheirBaseHeroData();

@@ -779,7 +779,7 @@ static void SimUnitsInit(SimUnit *units, int side, int slot, const Character *ch
     u->slot = slot;
     u->power = CharacterStatPower(ch);
     u->max_health = CharacterStatHealth(ch);
-    if (stat_budget) StatBudgetApply(stat_budget, ch->giant, &u->power, &u->max_health);
+    if (stat_budget) StatBudgetApply(stat_budget, ch, &u->power, &u->max_health);
     u->start_power = u->power;
     u->crit_pct = (float)(ch->crit_chance > CONSUME_BASE_CRIT_CHANCE ? ch->crit_chance : CONSUME_BASE_CRIT_CHANCE);
     u->init_class = ch->speed == SPEED_QUICK  ? SIM_INIT_CLASS_FAST
