@@ -60,6 +60,7 @@
 #include "home_background.c"
 #include "consume_background.c"
 #include "heroes_background.c"
+#include "stat_budget.c"
 #include "battle_squad.c"
 #include "battle_sim.c"
 #include "pvp.c"

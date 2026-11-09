@@ -1,0 +1,6 @@
+{
+ "version": 1,
+ "budget": 32000,
+ "health_per_power": 5,
+ "giant_budget_pct": 150
+}

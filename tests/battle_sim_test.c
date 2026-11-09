@@ -81,7 +81,7 @@ static void TestCharacter(
 }
 
 static void SimUnitInit(BattleSim *s, int side, int slot, const Character *ch) {
-    SimUnitsInit(s->units, side, slot, ch);
+    SimUnitsInit(s->units, side, slot, ch, NULL);
 }
 
 static void SimApplyBattleStartPassives(BattleSim *s) {
@@ -1904,6 +1904,49 @@ static void TestCatalogStatGrowth(void) {
     cJSON_Delete(root);
 }
 
+static void TestStatBudgetScalesEveryHeroToOneCostAndKeepsItsShape(void) {
+    const StatBudget budget = {.budget = 3000, .health_per_power = 5, .giant_budget_pct = 150};
+    int weak_power = 100, weak_health = 500;
+    int strong_power = 2000, strong_health = 20000;
+    int giant_power = 100, giant_health = 500;
+    int statless_power = 0, statless_health = 0;
+
+    StatBudgetApply(&budget, false, &weak_power, &weak_health);
+    StatBudgetApply(&budget, false, &strong_power, &strong_health);
+    StatBudgetApply(&budget, true, &giant_power, &giant_health);
+    StatBudgetApply(&budget, false, &statless_power, &statless_health);
+
+    assert(weak_power == 300 && weak_health == 1500);
+    assert(strong_power == 200 && strong_health == 2000);
+    assert(giant_power == 450 && giant_health == 2250);
+    assert(statless_power == 0 && statless_health == 0);
+    assert(StatBudgetCost(&budget, weak_power, weak_health) == StatBudgetCost(&budget, strong_power, strong_health));
+}
+
+static void TestStatBudgetOnTheEnemyRosterLevelsBothSides(void) {
+    static const StatBudget budget = {.budget = 3000, .health_per_power = 5, .giant_budget_pct = 150};
+    static BattleRoster player, enemy;
+    static BattleSim sim;
+    memset(&player, 0, sizeof(player));
+    memset(&enemy, 0, sizeof(enemy));
+    TestCharacter(&player.chars[0], &player.abilities[0], "weak", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 500);
+    TestCharacter(&enemy.chars[0], &enemy.abilities[0], "strong", "ABILITY_DAMAGE_ONE", TARGET_ONE, 2000, 20000);
+    player.present[0] = enemy.present[0] = true;
+
+    BattleSimRunRosters(&sim, &player, &enemy, 1);
+    assert(sim.units[0].start_power == 100 && sim.units[SQUAD_SLOT_COUNT].start_power == 2000);
+
+    enemy.stat_budget = &budget;
+    BattleSimRunRosters(&sim, &player, &enemy, 1);
+    assert(sim.units[0].start_power == 300 && sim.units[SQUAD_SLOT_COUNT].start_power == 200);
+    assert(sim.units[0].max_health * 2000 == sim.units[SQUAD_SLOT_COUNT].max_health * 1500);
+}
+
+static void TestStatBudgetTableLoads(void) {
+    const StatBudget *budget = StatBudgetEnsure();
+    assert(budget->budget > 0 && budget->health_per_power > 0 && budget->giant_budget_pct >= 100);
+}
+
 static void TestCustomHeroesInheritTheirBaseHeroData(void) {
     Battle *battle = calloc(1, sizeof(*battle));
     assert(battle);
@@ -1936,8 +1979,8 @@ static void TestCustomHeroesInheritTheirBaseHeroData(void) {
             assert(ConsumeProfileFor(&custom) == ConsumeProfileFor(&base));
 
             SimUnit units[2 * SQUAD_SLOT_COUNT];
-            SimUnitsInit(units, 0, 0, &custom);
-            SimUnitsInit(units, 1, 0, &base);
+            SimUnitsInit(units, 0, 0, &custom, NULL);
+            SimUnitsInit(units, 1, 0, &base, NULL);
             assert(units[0].passives == units[SQUAD_SLOT_COUNT].passives);
 
             assert(BattleAudioBindUnit(battle, 0, 0, &custom) == BattleAudioBindUnit(battle, 1, 0, &base));
@@ -3997,10 +4040,10 @@ static void TestSimUsesConsumedCritChance(void) {
     SimUnit units[SQUAD_SLOT_COUNT * 2];
     int front_slot = 1;
     assert(SquadSlotIsFront(front_slot));
-    SimUnitsInit(units, 0, front_slot, &ch);
+    SimUnitsInit(units, 0, front_slot, &ch, NULL);
     assert(units[front_slot].crit_pct == 12.0f);
     ch.crit_chance = 0;
-    SimUnitsInit(units, 0, front_slot, &ch);
+    SimUnitsInit(units, 0, front_slot, &ch, NULL);
     assert(units[front_slot].crit_pct == 1.0f);
 }
 
@@ -6753,7 +6796,7 @@ static void TestFortifySlotsTravelThroughSavesAndBattles(void) {
     for (unsigned seed = 1; seed <= 4; seed++) AssertBattleStartReplaysTheBattle(g, seed);
 
     SimUnit units[SIM_UNIT_COUNT];
-    SimUnitsInit(units, 0, 2, ch);
+    SimUnitsInit(units, 0, 2, ch, NULL);
     assert(units[2].start_power == CharacterLevelPower(ch) + FortifyBonusPower(ch));
     assert(units[2].max_health == CharacterLevelHealth(ch) + FortifyBonusHealth(ch));
     assert(FortifyBonusHealth(ch) > 0 && FortifyBonusPower(ch) > 0);
@@ -7540,6 +7583,9 @@ int main(void) {
     TestTimelineCapacity();
     TestLegendaryStars();
     TestCatalogStatGrowth();
+    TestStatBudgetScalesEveryHeroToOneCostAndKeepsItsShape();
+    TestStatBudgetOnTheEnemyRosterLevelsBothSides();
+    TestStatBudgetTableLoads();
     TestCustomHeroesInheritTheirBaseHeroData();
     TestBattlesGrantTheirXpToEverySquadHero();
     TestFxPresetLiveEmitterSizes();
