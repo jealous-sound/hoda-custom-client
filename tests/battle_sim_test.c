@@ -89,7 +89,7 @@ static void SimApplyBattleStartPassives(BattleSim *s) {
 }
 
 static void SimApplyFormationBonus(BattleSim *s, int side) {
-    SimUnitsFormationBonus(s->units, side, &s->formation_faction[side], &s->formation_bonus_pct[side]);
+    SimUnitsFormationBonus(s->units, side, &s->formation_faction[side], &s->formation_bonus_pct[side], NULL);
 }
 
 static void TestSquadSlotReferenceLayout(void) {
@@ -1913,6 +1913,8 @@ static const StatBudget TEST_STAT_BUDGET = {
     .self_aura_share_pct = 20,
     .aura_matching_allies = 2,
     .aura_cap_pct = 100,
+    .formation_bonus_pct_per_hero = 5,
+    .changer_cap_pct = 25,
 };
 
 static void TestStatBudgetApply(bool giant, TargetPattern pattern, int aura_points, int *power, int *health) {
@@ -2084,6 +2086,91 @@ static void TestStatBudgetCapsWhatAurasAdd(void) {
     SimUnitsBattleStartPassives(units, &capped);
     assert(units[0].power == (int)lroundf(own_power * 1.5f));
     cJSON_Delete(root);
+}
+
+static void TestStatBudgetDropsRuneStatBonusesAndKeepsTacticalRunes(void) {
+    RuneBonus bonus = {
+        .power_pct = 100,
+        .health_pct = 60,
+        .damage_shield = 10000,
+        .damage_resist_pct = 75,
+        .retaliation_pct = 5,
+        .initiative_steps = 1,
+        .stun_resist_pct = 60,
+        .slow_resist_pct = 50,
+        .drain_resist_pct = 40,
+        .gold_pct = 100,
+        .curse_power_immune = true,
+        .stealth = true,
+        .perceptive = true,
+    };
+    bonus.target_level[0] = 6;
+    StatBudgetLevelRunes(&bonus);
+    assert(bonus.power_pct == 0 && bonus.health_pct == 0);
+    assert(bonus.damage_shield == 0 && bonus.damage_resist_pct == 0 && bonus.retaliation_pct == 0);
+    assert(bonus.initiative_steps == 1 && bonus.target_level[0] == 6 && bonus.gold_pct == 100);
+    assert(bonus.stun_resist_pct == 60 && bonus.slow_resist_pct == 50 && bonus.drain_resist_pct == 40);
+    assert(bonus.curse_power_immune && bonus.stealth && bonus.perceptive);
+
+    int power_rune = -1;
+    for (int def = 0; def < RuneCatalogCount() && power_rune < 0; def++)
+        if (RuneDefAt(def)->buff == RUNE_BUFF_POWER) power_rune = def;
+    assert(power_rune >= 0);
+    static Player player;
+    static BattleRoster roster;
+    static SimUnit plain[SIM_UNIT_COUNT], runed[SIM_UNIT_COUNT];
+    memset(&player, 0, sizeof(player));
+    memset(&roster, 0, sizeof(roster));
+    for (int q = 0; q < PLAYER_MAX_SQUADS; q++)
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) player.squads[q][slot] = -1;
+    Ability ability = {0};
+    TestCharacter(&roster.chars[0], &ability, "UNIT_A", "ABILITY_DAMAGE", TARGET_ONE, 100, 500);
+    roster.present[0] = true;
+    roster.stat_budget = &TEST_STAT_BUDGET;
+    BattleSimPreview(plain, &player, &roster);
+    roster.rune_defs[0] = power_rune;
+    roster.rune_def_count = 1;
+    BattleSimPreview(runed, &player, &roster);
+    assert(runed[SQUAD_SLOT_COUNT].power == plain[SQUAD_SLOT_COUNT].power);
+}
+
+static void TestStatBudgetGivesEveryRarityTheSameFormationBonus(void) {
+    static SimUnit units[SIM_UNIT_COUNT];
+    Character commons[4];
+    Ability abilities[4];
+    for (int levelled = 0; levelled < 2; levelled++) {
+        memset(units, 0, sizeof(units));
+        for (int slot = 0; slot < 4; slot++) {
+            TestCharacter(&commons[slot], &abilities[slot], "common", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 1000);
+            commons[slot].rarity = RARITY_COMMON;
+            commons[slot].faction = FACTION_WHITE;
+            SimUnitsInit(units, 0, slot, &commons[slot], NULL);
+        }
+        unsigned faction = 0;
+        float bonus_pct = 0.0f;
+        SimUnitsFormationBonus(units, 0, &faction, &bonus_pct, levelled ? &TEST_STAT_BUDGET : NULL);
+        assert(fabsf(bonus_pct - (levelled ? 20.0f : 4.0f)) < 0.001f);
+        assert(units[0].power == (levelled ? 120 : 104));
+    }
+}
+
+static void TestStatBudgetCapsEventBuffs(void) {
+    static SimUnit units[SIM_UNIT_COUNT];
+    Character featured;
+    Ability ability;
+    BattleGameChanger changer = {.effect_count = 1, .effects[0] = {.health_pct = 300, .power_pct = 300}};
+    for (int levelled = 0; levelled < 2; levelled++) {
+        memset(units, 0, sizeof(units));
+        TestCharacter(&featured, &ability, "featured", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 1000);
+        featured.giant = true;
+        SimUnitsInit(units, 0, SQUAD_SLOT_LARGE, &featured, NULL);
+        SimUnitsGameChanger(units, &changer, levelled ? &TEST_STAT_BUDGET : NULL);
+        assert(units[SQUAD_SLOT_LARGE].power == (levelled ? 125 : 400));
+        assert(units[SQUAD_SLOT_LARGE].max_health == (levelled ? 1250 : 4000));
+        assert(units[SQUAD_SLOT_LARGE].game_changer_applied);
+    }
+    assert(StatBudgetCappedChangerPct(&TEST_STAT_BUDGET, 10) == 10);
+    assert(StatBudgetCappedChangerPct(&TEST_STAT_BUDGET, -50) == -50);
 }
 
 static void TestStatBudgetOnTheEnemyRosterLevelsBothSides(void) {
@@ -7772,6 +7859,9 @@ int main(void) {
     TestPotencyCutWeakensStatusChancesAndAllyGrantsOnly();
     TestStatBudgetHandicapTableIsSortedAndBounded();
     TestStatBudgetCapsWhatAurasAdd();
+    TestStatBudgetDropsRuneStatBonusesAndKeepsTacticalRunes();
+    TestStatBudgetGivesEveryRarityTheSameFormationBonus();
+    TestStatBudgetCapsEventBuffs();
     TestStatBudgetOnTheEnemyRosterLevelsBothSides();
     TestStatBudgetTableLoads();
     TestCustomHeroesInheritTheirBaseHeroData();

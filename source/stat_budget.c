@@ -1,5 +1,5 @@
 #define STAT_BUDGET_PATH "data/stat_budget.json"
-#define STAT_BUDGET_VERSION 2
+#define STAT_BUDGET_VERSION 3
 #define STAT_BUDGET_PATTERN_COUNT (TARGET_ALL + 1)
 #define STAT_BUDGET_AURA_STAT_COUNT 2
 #define STAT_BUDGET_HEROES_PATH "data/stat_budget_heroes.json"
@@ -37,6 +37,8 @@ typedef struct {
     int self_aura_share_pct;
     int aura_matching_allies;
     int aura_cap_pct;
+    int formation_bonus_pct_per_hero;
+    int changer_cap_pct;
     StatBudgetHero heroes[STAT_BUDGET_HERO_CAPACITY];
     int hero_count;
     bool loaded;
@@ -96,9 +98,12 @@ const StatBudget *StatBudgetEnsure(void) {
     b->self_aura_share_pct = JsonInt(root, "self_aura_share_pct");
     b->aura_matching_allies = JsonInt(root, "aura_matching_allies");
     b->aura_cap_pct = JsonInt(root, "aura_cap_pct");
+    b->formation_bonus_pct_per_hero = JsonInt(root, "formation_bonus_pct_per_hero");
+    b->changer_cap_pct = JsonInt(root, "changer_cap_pct");
     const cJSON *patterns = cJSON_GetObjectItemCaseSensitive(root, "pattern_power_cost_pct");
     bool valid = b->budget > 0 && b->health_per_power > 0 && b->giant_budget_pct > 0 && b->aura_cost_pct >= 0 &&
-                 b->self_aura_share_pct >= 0 && b->aura_matching_allies >= 0 && b->aura_cap_pct > 0;
+                 b->self_aura_share_pct >= 0 && b->aura_matching_allies >= 0 && b->aura_cap_pct > 0 &&
+                 b->formation_bonus_pct_per_hero >= 0 && b->changer_cap_pct >= 0;
     for (int pattern = 0; pattern < STAT_BUDGET_PATTERN_COUNT; pattern++) {
         b->pattern_power_cost_pct[pattern] = JsonInt(patterns, STAT_BUDGET_PATTERN_NAMES[pattern]);
         valid = valid && b->pattern_power_cost_pct[pattern] > 0;
@@ -149,6 +154,22 @@ int StatBudgetPotencyCutPct(const StatBudget *b, const Character *ch) {
 
 float StatBudgetCappedAuraPct(const StatBudget *b, float aura_pct) {
     return aura_pct > (float)b->aura_cap_pct ? (float)b->aura_cap_pct : aura_pct;
+}
+
+float StatBudgetFormationBonus(const StatBudget *b) {
+    return (float)b->formation_bonus_pct_per_hero / 100.0f;
+}
+
+int StatBudgetCappedChangerPct(const StatBudget *b, int changer_pct) {
+    return changer_pct > b->changer_cap_pct ? b->changer_cap_pct : changer_pct;
+}
+
+void StatBudgetLevelRunes(RuneBonus *bonus) {
+    bonus->power_pct = 0;
+    bonus->health_pct = 0;
+    bonus->damage_shield = 0;
+    bonus->damage_resist_pct = 0;
+    bonus->retaliation_pct = 0;
 }
 
 void StatBudgetApplyKit(const StatBudget *b, const StatBudgetKit *kit, int *power, int *health) {

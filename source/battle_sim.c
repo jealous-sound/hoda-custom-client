@@ -832,7 +832,8 @@ static void SimUnitsInit(SimUnit *units, int side, int slot, const Character *ch
     u->health = u->max_health;
 }
 
-static void SimUnitsFormationBonus(SimUnit *units, int side, unsigned *faction, float *bonus_pct) {
+static void
+SimUnitsFormationBonus(SimUnit *units, int side, unsigned *faction, float *bonus_pct, const StatBudget *stat_budget) {
     unsigned mask = 15u;
     float bonus = 0.0f;
     int count = 0;
@@ -841,7 +842,7 @@ static void SimUnitsFormationBonus(SimUnit *units, int side, unsigned *faction, 
         if (!u->present || u->ch->giant) continue;
         mask &= u->faction;
         if (mask == 0) return;
-        bonus += SimFormationBonus(u->ch->rarity);
+        bonus += stat_budget ? StatBudgetFormationBonus(stat_budget) : SimFormationBonus(u->ch->rarity);
         count++;
     }
     if (count < 4 || mask == 0) return;
@@ -1981,7 +1982,7 @@ static bool SimChangerEffectMatches(const BattleChangerEffect *effect, const Sim
     return false;
 }
 
-static void SimUnitsGameChanger(SimUnit *units, const BattleGameChanger *changer) {
+static void SimUnitsGameChanger(SimUnit *units, const BattleGameChanger *changer, const StatBudget *stat_budget) {
     if (!changer) return;
     for (int i = 0; i < SIM_UNIT_COUNT; i++) {
         SimUnit *u = &units[i];
@@ -1989,8 +1990,13 @@ static void SimUnitsGameChanger(SimUnit *units, const BattleGameChanger *changer
         for (int e = 0; e < changer->effect_count; e++) {
             const BattleChangerEffect *effect = &changer->effects[e];
             if (!SimChangerEffectMatches(effect, u)) continue;
-            u->power = u->start_power = (int)lroundf(u->power * (1.0f + effect->power_pct / 100.0f));
-            u->max_health = u->health = (int)lroundf(u->max_health * (1.0f + effect->health_pct / 100.0f));
+            int power_pct = effect->power_pct, health_pct = effect->health_pct;
+            if (stat_budget) {
+                power_pct = StatBudgetCappedChangerPct(stat_budget, power_pct);
+                health_pct = StatBudgetCappedChangerPct(stat_budget, health_pct);
+            }
+            u->power = u->start_power = (int)lroundf(u->power * (1.0f + power_pct / 100.0f));
+            u->max_health = u->health = (int)lroundf(u->max_health * (1.0f + health_pct / 100.0f));
             u->game_changer_applied = true;
         }
     }
@@ -2027,6 +2033,12 @@ static BattleSimRules SimRosterRules(const BattleRoster *enemy) {
     return (BattleSimRules){.changer = enemy->game_changer, .stat_budget = enemy->stat_budget};
 }
 
+static RuneBonus SimSideRuneBonus(const BattleSimSide *side, const StatBudget *stat_budget) {
+    RuneBonus bonus = RuneDefsBonus(side->rune_defs, side->rune_def_count);
+    if (stat_budget) StatBudgetLevelRunes(&bonus);
+    return bonus;
+}
+
 static void SimUnitsSetup(
     SimUnit *units,
     unsigned faction[2],
@@ -2041,13 +2053,13 @@ static void SimUnitsSetup(
         SimUnitsInit(units, 1, slot, enemy->chars[slot], rules->stat_budget);
     }
     SimUnitsBattleStartPassives(units, rules->stat_budget);
-    SimUnitsFormationBonus(units, 0, &faction[0], &bonus_pct[0]);
-    SimUnitsFormationBonus(units, 1, &faction[1], &bonus_pct[1]);
-    RuneBonus rune_bonus = RuneDefsBonus(player->rune_defs, player->rune_def_count);
+    SimUnitsFormationBonus(units, 0, &faction[0], &bonus_pct[0], rules->stat_budget);
+    SimUnitsFormationBonus(units, 1, &faction[1], &bonus_pct[1], rules->stat_budget);
+    RuneBonus rune_bonus = SimSideRuneBonus(player, rules->stat_budget);
     SimUnitsRuneBonus(units, 0, &rune_bonus);
-    RuneBonus enemy_rune_bonus = RuneDefsBonus(enemy->rune_defs, enemy->rune_def_count);
+    RuneBonus enemy_rune_bonus = SimSideRuneBonus(enemy, rules->stat_budget);
     SimUnitsRuneBonus(units, 1, &enemy_rune_bonus);
-    SimUnitsGameChanger(units, rules->changer);
+    SimUnitsGameChanger(units, rules->changer, rules->stat_budget);
 }
 
 static void BattleSimSetupSides(
@@ -2055,8 +2067,8 @@ static void BattleSimSetupSides(
 ) {
     memset(s, 0, sizeof(*s));
     SimUnitsSetup(s->units, s->formation_faction, s->formation_bonus_pct, player, enemy, rules);
-    s->rune_bonus[0] = RuneDefsBonus(player->rune_defs, player->rune_def_count);
-    s->rune_bonus[1] = RuneDefsBonus(enemy->rune_defs, enemy->rune_def_count);
+    s->rune_bonus[0] = SimSideRuneBonus(player, rules->stat_budget);
+    s->rune_bonus[1] = SimSideRuneBonus(enemy, rules->stat_budget);
     s->rune_def_count = player->rune_def_count;
     memcpy(s->rune_defs, player->rune_defs, sizeof(s->rune_defs));
 }
