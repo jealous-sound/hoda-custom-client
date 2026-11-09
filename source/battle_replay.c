@@ -229,6 +229,7 @@ bool BattleReplaySimulate(const cJSON *catalog, const cJSON *replay, BattleSim *
         (cJSON_IsObject(changer_json) && !BattleReplayChangerLoad(&changer, changer_json)))
         return false;
     enemy.game_changer = cJSON_IsObject(changer_json) ? &changer : NULL;
+    enemy.stat_budget = JsonBool(replay, "stat_budget") ? StatBudgetEnsure() : NULL;
     const cJSON *seed = cJSON_GetObjectItemCaseSensitive(replay, "seed");
     if (!cJSON_IsNumber(seed) || seed->valuedouble < 0 || seed->valuedouble > UINT32_MAX) return false;
     BattleSimRunRosters(sim, &player, &enemy, (unsigned)seed->valuedouble);

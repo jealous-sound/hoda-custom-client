@@ -101,6 +101,7 @@ typedef struct {
     int win_gold_base, win_gold_per_level, loss_gold_pct;
     int win_xp_base, win_xp_per_level, loss_xp_pct;
     int attack_interval_seconds, max_attacks_per_login, defense_win_pct, defense_loss_share_pct;
+    bool stat_budget;
 } PvpRules;
 
 typedef struct {
@@ -196,6 +197,7 @@ static void PvpRulesParse(PvpRules *r, const cJSON *root) {
     r->max_attacks_per_login = PvpSectionInt(root, "defense", "max_attacks_per_login");
     r->defense_win_pct = PvpSectionInt(root, "defense", "win_pct");
     r->defense_loss_share_pct = PvpSectionInt(root, "defense", "loss_share_pct");
+    r->stat_budget = JsonBool(cJSON_GetObjectItemCaseSensitive((cJSON *)root, "battle"), "stat_budget");
 }
 
 static void BattleChangerEffectLoad(BattleChangerEffect *effect, const cJSON *json) {
@@ -553,6 +555,7 @@ void PvpOpponentRoster(BattleRoster *roster, const PvpOpponent *o) {
     }
     cJSON_Delete(catalog_root);
     for (int i = 0; i < o->rune_count; i++) roster->rune_defs[roster->rune_def_count++] = o->rune_defs[i];
+    roster->stat_budget = PvpTableEnsure()->rules.stat_budget ? StatBudgetEnsure() : NULL;
 }
 
 int PvpNextsRemaining(const PlayerPvp *pvp, long long now) {

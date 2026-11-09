@@ -5992,6 +5992,23 @@ static void TestPvpEveryPooledSquadFights(void) {
     }
 }
 
+static void TestPvpOpponentsFightUnderTheStatBudgetOnlyWhenTheRuleIsOn(void) {
+    PvpTableEnsure();
+    bool shipped = pvp_table.rules.stat_budget;
+    PvpOpponent opponent = PvpOpponentFromBot(0, 10, 0, 0, 1);
+    static BattleRoster roster;
+
+    pvp_table.rules.stat_budget = false;
+    PvpOpponentRoster(&roster, &opponent);
+    assert(roster.stat_budget == NULL);
+
+    pvp_table.rules.stat_budget = true;
+    PvpOpponentRoster(&roster, &opponent);
+    assert(roster.stat_budget == StatBudgetEnsure());
+
+    pvp_table.rules.stat_budget = shipped;
+}
+
 static void TestPvpOpponentRunesApplyToTheEnemySide(void) {
     int power_rune = -1;
     for (int def = 0; def < RuneCatalogCount() && power_rune < 0; def++)
@@ -6681,6 +6698,7 @@ static void AssertBattleStartReplaysTheBattle(Game *g, unsigned seed) {
     cJSON_AddItemToObject(
         replay, "changer", cJSON_Duplicate(cJSON_GetObjectItemCaseSensitive(fields, "changer"), true)
     );
+    if (g->battle.enemy_roster.stat_budget) cJSON_AddBoolToObject(replay, "stat_budget", true);
     cJSON *catalog_root = BattleReplayCatalogLoad();
     BattleReplayOutcome outcome;
     assert(BattleReplayRun(cJSON_GetObjectItemCaseSensitive(catalog_root, "characters"), replay, &outcome));
@@ -7598,6 +7616,7 @@ int main(void) {
     TestPvpDefenseLogWaitsForFirstBattleAndCapsAttacks();
     TestPvpRevengeRebuildsTheSameOpponent();
     TestPvpEveryPooledSquadFights();
+    TestPvpOpponentsFightUnderTheStatBudgetOnlyWhenTheRuleIsOn();
     TestPvpOpponentRunesApplyToTheEnemySide();
     TestPvpSaveRoundTrip();
     TestBattleStartSendsTheBattleTheClientPlays();

@@ -89,8 +89,10 @@ server issues a seed, replays its Go port of `battle_sim.c`, and pays its own re
 
 ## Balance
 
-A battle whose enemy roster carries a stat budget levels both sides. Nothing sets it in live PvP yet: the backend's Go
-port of the simulation needs the same rules first.
+A battle whose enemy roster carries a stat budget levels both sides. PvP opponents carry it when `battle.stat_budget`
+in `data/pvp_rules.json` is on (set in `tools/build_pvp_rules.py`); it ships off. The backend replays PvP under the
+same rules and the same switch, so turn it on in both through the data sync, with a client release and a raised
+minimum client version on the backend.
 
 - `data/stat_budget.json` holds the rules: one stat cost per hero (`power x health_per_power + health`), a higher
   power cost for attacks that hit a row, a column or everyone, a budget cut for the health, power and bonus damage
