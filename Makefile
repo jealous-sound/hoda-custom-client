@@ -16,6 +16,8 @@ DEPS    = $(wildcard source/*.c source/*.h source/vendors/*.c source/vendors/*.h
 TEST_TARGET = tests/battle_sim_test
 GOLDEN_TARGET = tests/battle_replay_golden
 GOLDEN_DIR = tests/golden
+BALANCE_TARGET = tests/balance_check
+BALANCE_ARGS ?=
 CONTENT_TEST_TARGET = tests/content_update_test
 UPDATE_TEST_TARGET = tests/client_update_test
 BACKEND_DIR ?= ../hoda-custom-backend
@@ -85,6 +87,12 @@ $(GOLDEN_TARGET): tests/battle_replay_golden.c $(DEPS) Makefile
 golden: $(GOLDEN_TARGET)
 	./$(GOLDEN_TARGET) $(GOLDEN_DIR)
 
+$(BALANCE_TARGET): tests/balance_check.c $(DEPS) Makefile
+	$(CC) $(CFLAGS) tests/balance_check.c source/platform.c -o $(BALANCE_TARGET) $(LDFLAGS) $(LIBS)
+
+balance: $(BALANCE_TARGET)
+	./$(BALANCE_TARGET) $(BALANCE_ARGS)
+
 $(CONTENT_TEST_TARGET): tests/content_update_test.c $(DEPS) Makefile
 	$(CC) $(CFLAGS) tests/content_update_test.c source/platform.c -o $(CONTENT_TEST_TARGET) $(LDFLAGS) $(LIBS)
 
@@ -134,7 +142,7 @@ content:
 	python3 tools/publish_content.py --bucket "$(CONTENT_BUCKET)" --content-url "$(CONTENT_URL)"
 
 clean:
-	rm -rf "$(APP_NAME).app" build $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(GOLDEN_TARGET)
+	rm -rf "$(APP_NAME).app" build $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(GOLDEN_TARGET) $(BALANCE_TARGET)
 
 format:
 	clang-format -i source/*.c

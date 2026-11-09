@@ -25,6 +25,7 @@ Without a local copy the game downloads its data on first launch (see [Content](
 | `make test` | every check; needs the local asset cache |
 | `make ci-test` | the checks that need no asset cache: golden replays, content and update tests, table validators |
 | `make golden` | regenerates the battle corpus in `tests/golden/` |
+| `make balance` | PvP balance report from `tests/balance_check.c` (`BALANCE_ARGS=` passes options; see [Balance](#balance)) |
 | `make format-check` | clang-format check; `make format` rewrites |
 | `make dist` | a playable copy in `../hoda-custom-dist` (`DIST_DIR=`, `DIST_BACKEND_URL=`) |
 | `make content` | publishes the data packs to R2 (`CONTENT_BUCKET=`, default `hoda-assets`; `npx wrangler login` once) |
@@ -85,6 +86,26 @@ server issues a seed, replays its Go port of `battle_sim.c`, and pays its own re
   `./tests/battle_replay_golden --trace <battle name>` output.
 - Results must not depend on the compiler. Builds use `-ffp-contract=off`, and the corpus generator draws each random
   value in its own statement, because GCC and clang evaluate function arguments in opposite orders.
+
+## Balance
+
+A battle whose enemy roster carries a stat budget levels both sides. PvP opponents carry it when `battle.stat_budget`
+in `data/pvp_rules.json` is on (set in `tools/build_pvp_rules.py`); it ships off. The backend replays PvP under the
+same rules and the same switch, so turn it on in both through the data sync, with a client release and a raised
+minimum client version on the backend.
+
+- `data/stat_budget.json` holds the rules: one stat cost per hero (`power x health_per_power + health`), a higher
+  power cost for attacks that hit a row, a column or everyone, a budget cut for the health, power and bonus damage
+  a hero's passives hand out, and a cap on what auras and gear together add to one hero's health and power.
+- `data/stat_budget_heroes.json` holds one handicap per hero, a percent of the budget from 33 to 300. Below 100 it
+  also cuts the hero's status chances (stun, slow, curse, levy, assassinate, mark) and what it grants allies by the
+  same share. `./tests/balance_check --calibrate 16 --neutral --squads 48 --seeds 6` rewrites the whole table.
+- `./tests/balance_check` seats every hero in reference squads of its faction against a peer in the same seat and
+  prints win rates by class. `--holdout` uses squads and peers the calibration never saw, `--stacks` fields four
+  copies, `--squad-report` fights the reference squads against each other and `--search 3000` climbs to the strongest
+  squad it can find per faction.
+- A new hero: `./tests/balance_check --calibrate 12 --hero UNIT_ID` settles its handicap against the existing table,
+  and `./tests/balance_check --hero UNIT_ID` exits non-zero while it wins outside 45-55%.
 
 ## Custom heroes
 

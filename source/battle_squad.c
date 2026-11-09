@@ -23,6 +23,7 @@ typedef struct {
     Ability abilities[SQUAD_SLOT_COUNT];
     bool present[SQUAD_SLOT_COUNT];
     const BattleGameChanger *game_changer;
+    const StatBudget *stat_budget;
     int rune_defs[RUNE_SLOT_COUNT];
     int rune_def_count;
 } BattleRoster;

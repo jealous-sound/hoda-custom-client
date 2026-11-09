@@ -26,11 +26,12 @@
 #define GOLDEN_NOW_SPAN (86400LL * 400)
 #define GOLDEN_FORTIFIED_BATTLES 32
 #define GOLDEN_FORTIFY_SLOT_PCT 60
+#define GOLDEN_BUDGETED_BATTLES 96
 #define GOLDEN_BATTLES_SECTION "battles"
 #define GOLDEN_USAGE "usage: battle_replay_golden [--check | --trace BATTLE] [DIR]"
 #define GOLDEN_COUNT(array) ((int)(sizeof(array) / sizeof((array)[0])))
 
-static const char *const GOLDEN_BATTLE_INPUTS[] = {"name", "seed", "player", "enemy", "changer"};
+static const char *const GOLDEN_BATTLE_INPUTS[] = {"name", "seed", "player", "enemy", "changer", "stat_budget"};
 
 typedef struct {
     char id[64];
@@ -203,17 +204,32 @@ static cJSON *GoldenChanger(Golden *g) {
     return BattleReplayChangerJson(&g->changers[GoldenRange(g, 0, g->changer_count - 1)]);
 }
 
-static void GoldenAddBattle(Golden *g, const char *name, cJSON *player, cJSON *enemy, cJSON *changer) {
+static void
+GoldenAddBattleUnderRules(Golden *g, const char *name, cJSON *player, cJSON *enemy, cJSON *changer, bool stat_budget) {
     cJSON *entry = cJSON_CreateObject();
     cJSON_AddStringToObject(entry, "name", name);
     cJSON_AddNumberToObject(entry, "seed", GoldenRand(g));
     cJSON_AddItemToObject(entry, "player", player);
     cJSON_AddItemToObject(entry, "enemy", enemy);
     cJSON_AddItemToObject(entry, "changer", changer);
+    if (stat_budget) cJSON_AddBoolToObject(entry, "stat_budget", true);
     BattleReplayOutcome outcome;
     if (!BattleReplayRun(g->catalog, entry, &outcome)) TraceLog(LOG_FATAL, "Golden: battle %s does not load", name);
     BattleReplayOutcomeAdd(entry, &outcome);
     cJSON_AddItemToArray(g->battles, entry);
+}
+
+static void GoldenAddBattle(Golden *g, const char *name, cJSON *player, cJSON *enemy, cJSON *changer) {
+    GoldenAddBattleUnderRules(g, name, player, enemy, changer, false);
+}
+
+static void GoldenBudgetedBattles(Golden *g) {
+    for (int battle = 0; battle < GOLDEN_BUDGETED_BATTLES; battle++) {
+        cJSON *player = GoldenSide(g, true);
+        cJSON *enemy = GoldenSide(g, false);
+        cJSON *changer = GoldenChanger(g);
+        GoldenAddBattleUnderRules(g, TextFormat("budgeted-%03d", battle), player, enemy, changer, true);
+    }
 }
 
 static cJSON *GoldenFortifyChildren(Golden *g) {
@@ -675,6 +691,7 @@ int main(int argc, char **argv) {
     cJSON *nexus_changers = GoldenNexusChangers();
     cJSON *pvp_changers = GoldenPvpChangers(g);
     GoldenFortifiedBattles(g);
+    GoldenBudgetedBattles(g);
     cJSON *recipes = GoldenBuiltinRecipes();
 
     const GoldenSection replay_sections[] = {
