@@ -1001,13 +1001,16 @@ static const char *const DEBUG_GUILD_CHAT[] = {
 };
 
 static const char *const DEBUG_WORLD_CHAT[] = {
-    "{\"id\":1,\"time\":%lld,\"text\":\"Ищу гильдию для Натиска, 30 уровень\",\"player_name\":\"Isabela\","
+    "{\"id\":1,\"time\":%lld,\"text\":\"Ищу гильдию для Натиска, 30 "
+    "уровень\",\"player_id\":\"isabela\",\"player_name\":\"Isabela\","
     "\"player_level\":30,\"player_rank\":999}",
     "{\"id\":2,\"time\":%lld,\"text\":\"Защитники набирают игроков, заявки открыты. Нужны активные бойцы для "
-    "Натиска и арены, вступайте через поиск гильдий.\",\"player_name\":\"Hawke\",\"player_level\":24,"
+    "Натиска и арены, вступайте через поиск "
+    "гильдий.\",\"player_id\":\"hawke\",\"player_name\":\"Hawke\",\"player_level\":24,"
     "\"player_rank\":2,\"guild_name\":\"Защитники\"}",
     "{\"id\":3,\"time\":%lld,\"text\":\"Anyone beaten the level arena with a common squad?\","
-    "\"player_name\":\"Fenris\",\"player_level\":17,\"player_rank\":0,\"guild_name\":\"Tevinter Fugitives\"}",
+    "\"player_id\":\"fenris\",\"player_name\":\"Fenris\",\"player_level\":17,\"player_rank\":0,\"guild_name\":"
+    "\"Tevinter Fugitives\"}",
 };
 
 #define DEBUG_WORLD_CHAT_COUNT ((int)(sizeof(DEBUG_WORLD_CHAT) / sizeof(DEBUG_WORLD_CHAT[0])))
@@ -1278,6 +1281,7 @@ static void DebugPrepareGuild(Game *game, DebugShot *shot) {
         {"guild_chat", GUILD_PAGE_CHAT, GUILD_HOME_MEMBER},
         {"guild_world_chat", GUILD_PAGE_CHAT, GUILD_HOME_MEMBER},
         {"guild_world_chat_guest", GUILD_PAGE_CHAT, GUILD_HOME_MEMBER},
+        {"guild_world_chat_report", GUILD_PAGE_CHAT, GUILD_HOME_MEMBER},
     };
     bool live_chat = DebugShotIs(shot, "guild_live_chat");
     if (live_chat || DebugShotIs(shot, "guild_live_home")) {
@@ -1321,8 +1325,14 @@ static void DebugPrepareGuild(Game *game, DebugShot *shot) {
                 GuildViewShowChat(&game->guild_view, &game->guild);
             } else if (shots[match].page == GUILD_PAGE_CHAT) {
                 GuildViewShowChat(&game->guild_view, &game->guild);
-                if (DebugShotIs(shot, "guild_world_chat"))
+                bool report = DebugShotIs(shot, "guild_world_chat_report");
+                if (report || DebugShotIs(shot, "guild_world_chat"))
                     GuildViewShowChannel(&game->guild_view, &game->guild, GUILD_CHANNEL_WORLD);
+                const GuildChatLine *reported = &game->guild.channels[GUILD_CHANNEL_WORLD].lines[0];
+                if (report)
+                    GuildViewOpenReport(
+                        &game->guild_view, GUILD_REPORT_WORLD_LINE, "1", reported->title, reported->text
+                    );
                 TextFieldSet(&game->guild_view.chat_input, "Встречаемся у ворот");
             } else if (shots[match].page == GUILD_PAGE_HOME) {
                 GuildViewShowHome(&game->guild_view, shots[match].mode);

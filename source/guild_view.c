@@ -7,6 +7,9 @@
 #define GUILD_CHAT_ONE_LINE_FRACTION 0.121f
 #define GUILD_CHAT_TWO_LINE_FRACTION 0.181f
 #define GUILD_CHAT_WRAP_LINES 2
+#define GUILD_CHAT_REPORT_ICON_X 1058.0f
+#define GUILD_CHAT_REPORT_ICON_WIDTH 40.0f
+#define GUILD_CHAT_REPORT_ICON_ASPECT (47.0f / 56.0f)
 #define GUILD_EMBLEM_SLOT 72.0f
 #define GUILD_EMBLEM_GAP 6.0f
 #define GUILD_EMBLEM_SCROLL_STEP 5
@@ -147,7 +150,13 @@ typedef struct {
     long long shown;
 } GuildWarEvents;
 
-typedef enum { GUILD_REPORT_APPLICATION, GUILD_REPORT_GUILD } GuildReportState;
+typedef enum { GUILD_REPORT_APPLICATION, GUILD_REPORT_GUILD, GUILD_REPORT_WORLD_LINE } GuildReportState;
+
+static const char *const GUILD_REPORT_KINDS[] = {
+    [GUILD_REPORT_APPLICATION] = GUILD_REPORT_KIND_APPLICATION,
+    [GUILD_REPORT_GUILD] = GUILD_REPORT_KIND_GUILD,
+    [GUILD_REPORT_WORLD_LINE] = GUILD_REPORT_KIND_WORLD_LINE,
+};
 
 typedef struct {
     Font font;
@@ -1673,6 +1682,24 @@ static int GuildChatVisibleLines(const GuildChannel *channel, const GuildView *v
     return count;
 }
 
+static Rectangle GuildChatReportIcon(Rectangle row) {
+    float width = row.width * GUILD_CHAT_REPORT_ICON_WIDTH / GUILD_SMART_WIDTH;
+    float height = width * GUILD_CHAT_REPORT_ICON_ASPECT;
+    float x = row.x + row.width * GUILD_CHAT_REPORT_ICON_X / GUILD_SMART_WIDTH;
+    return (Rectangle){x, row.y + (row.height - height) * 0.5f, width, height};
+}
+
+static bool GuildChatReportPressed(const GuildView *v, Rectangle icon, Rectangle list, bool interactive) {
+    Vector2 mouse = UiMouse();
+    bool hover = interactive && CheckCollisionPointRec(mouse, icon) && CheckCollisionPointRec(mouse, list);
+    bool held = hover && CheckCollisionPointRec(v->press_point, icon);
+    bool down = held && IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+    UiDrawTexture(GuiTex(down ? GUI_GUILD_REPORT_ON : GUI_GUILD_REPORT), icon, WHITE);
+    bool clicked = held && !v->chat_scroll.drag_scrolled && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+    if (clicked) GuiSoundPlay(SND_UI_CLICK);
+    return clicked;
+}
+
 static void GuildViewDrawChatList(GuildView *v, Guild *g, bool interactive) {
     Rectangle list = GuildRect(84.0f, 158.0f, 1114.0f, 413.0f);
     GuildDrawPanel(list);
@@ -1726,9 +1753,10 @@ static void GuildViewDrawChatList(GuildView *v, Guild *g, bool interactive) {
         GuildFitText(
             v->body, ago, GuildSmart(row, smart, 1100.0f, 0.0f, 165.0f, smart), GUILD_SMALL_SIZE, GUILD_TEXT_DIM, true
         );
+        if (line->reportable && GuildChatReportPressed(v, GuildChatReportIcon(row), list, interactive))
+            GuildViewOpenReport(v, GUILD_REPORT_WORLD_LINE, TextFormat("%lld", line->id), line->title, line->text);
     }
     EndScissorMode();
-    (void)interactive;
 }
 
 static void GuildViewSend(GuildView *v, Guild *g) {
@@ -2136,10 +2164,7 @@ static void GuildViewSubmitReport(GuildView *v, Guild *g) {
         );
         return;
     }
-    bool guild = v->report_state == GUILD_REPORT_GUILD;
-    GuildRequestReport(
-        g, guild ? GUILD_REPORT_KIND_GUILD : GUILD_REPORT_KIND_APPLICATION, v->report_choice, v->report_target
-    );
+    GuildRequestReport(g, GUILD_REPORT_KINDS[v->report_state], v->report_choice, v->report_target);
     GuiSoundPlay(SND_UI_POPUP_CLOSE);
     v->report_open = false;
     GuildViewWait(v, GUILD_REQUEST_REPORT);

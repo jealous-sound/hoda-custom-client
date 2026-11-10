@@ -44,6 +44,7 @@
 #define GUILD_RUNE_ID_CAP 48
 #define GUILD_REPORT_KIND_GUILD "guild"
 #define GUILD_REPORT_KIND_APPLICATION "application"
+#define GUILD_REPORT_KIND_WORLD_LINE "world_message"
 #define GUILD_CODE_CANT_AFFORD "cant_afford"
 #define GUILD_CODE_NOT_FOUND "GUILD_NOT_FOUND"
 #define GUILD_CODE_NOT_IN_GUILD "NOT_IN_GUILD"
@@ -171,6 +172,7 @@ typedef struct {
     long long id;
     long long time;
     bool event;
+    bool reportable;
     char title[GUILD_LINE_TITLE_CAP];
     char text[GUILD_LINE_TEXT_CAP];
     Color text_color;
@@ -582,6 +584,7 @@ static void GuildAppendChat(Guild *g, GuildChannelId id, const cJSON *message) {
     } else if (id == GUILD_CHANNEL_WORLD) {
         GuildFormatWorldTitle(line->title, sizeof(line->title), message);
         StrCopy(line->text, sizeof(line->text), JsonStr(message, "text"));
+        line->reportable = strcmp(JsonStr(message, "player_id"), BackendPlayerId()) != 0;
     } else {
         GuildFormatPlayerTitle(line->title, sizeof(line->title), message);
         StrCopy(line->text, sizeof(line->text), JsonStr(message, "text"));
@@ -839,8 +842,10 @@ void GuildRequestReport(Guild *g, const char *kind, GuildAbuseType abuse, const 
     cJSON *body = cJSON_CreateObject();
     cJSON_AddStringToObject(body, "kind", kind);
     cJSON_AddStringToObject(body, "abuse_type", GUILD_ABUSE_NAMES[abuse]);
-    bool guild = !strcmp(kind, GUILD_REPORT_KIND_GUILD);
-    cJSON_AddStringToObject(body, guild ? "guild_id" : "applicant_id", target_id);
+    if (!strcmp(kind, GUILD_REPORT_KIND_WORLD_LINE))
+        cJSON_AddNumberToObject(body, "message_id", (double)strtoll(target_id, NULL, 10));
+    else
+        cJSON_AddStringToObject(body, !strcmp(kind, GUILD_REPORT_KIND_GUILD) ? "guild_id" : "applicant_id", target_id);
     GuildEnqueue(g, GUILD_REQUEST_REPORT, "POST", "reports", body);
 }
 
