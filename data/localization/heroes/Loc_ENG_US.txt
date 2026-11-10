@@ -526,6 +526,8 @@ HODA_AURA_STEALTH_PLUS50HDWARFDEMON_PLUS10CRITALL_PLUS10STUNSLOWRESALL_ONHIT_GAI
 HODA_AURA_STEALTH_PLUS50HPSLOWRES_CHA_EXPLODE15_5BNSDMG15DMGRES_WHITE_75HPALL_SELFDTH_STUNIMMDIVINE|<color=green>Stealth: Attacks without triggering on-hit effects. +50% health, power, and slow resist for Chantry. On enemy death, enemies take 15% of damage dealt. +5% bonus damage and +15% damage resist for White Faction. On death, allies gain +75% health and power. Stun immunity for the Divines.</color>
 HODA_AURA_STEALTH_PLUS50HSTUNRES5BONUSDMGVEN_2BNSDMG_ALLYHIT_GAIN5P7DMGRESALL_ANYDEATH_SLOWIMMUNE_MINUS35PDRESINQ|<color=green>Stealth: attacks without triggering on-hit effects. +50% health, stun resist, and +5% bonus damage for Venatori. When allies are hit, gains +2% bonus damage. On any death, allies gain +15% power and +7% damage resist. Immune to slow.</color> <color=red>-35% power drain resist for Inquisition.</color>
 HODA_AURA_STEALTH_PLUS60HPDSLOWRESNOBORL_CONV5PALLYATK_75PSTUNIMMLEOPOLD_FLANK_MINUS35SLOWRES|<color=green>Stealth: Attacks without triggering on-hit effects. +60% health, power drain, and slow resist for Orlesians and Nobility. Converts 5% of damage dealt by allies into power. +75% power and stun immunity for Leopold.</color> <color=orange>More likely to attack the back row.</color> <color=red>-35% slow resist.</color>
+HODA_CHAT_CHANNEL_GUILD|Guild
+HODA_CHAT_CHANNEL_WORLD|World
 HODA_CONSUME_FACTION_BUTTON_DESC|Same Faction
 HODA_CONSUME_FACTION_DESC|All heroes of the same rarity and faction.
 HODA_CONSUME_FACTION_TITLE|Consume by Faction
@@ -1350,3 +1352,5 @@ HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Removed heroes return to your roster at leve
 HODA_UI_CONFIRM_UNFORTIFY|Remove
 HODA_UI_UNFORTIFY_REMOVE_ALL|Remove All
 HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Removal cost
+HODA_WORLD_CHAT_LEVEL_HELPER|Reach level {0} to write
+HODA_WORLD_CHAT_TITLE|World Chat

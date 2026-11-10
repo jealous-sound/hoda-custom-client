@@ -526,6 +526,8 @@ HODA_AURA_STEALTH_PLUS50HDWARFDEMON_PLUS10CRITALL_PLUS10STUNSLOWRESALL_ONHIT_GAI
 HODA_AURA_STEALTH_PLUS50HPSLOWRES_CHA_EXPLODE15_5BNSDMG15DMGRES_WHITE_75HPALL_SELFDTH_STUNIMMDIVINE|<color=green>Stealth: Valt aan zonder treffereffecten te activeren. +50% energie, kracht en vertragingsweerstand voor Fundatie. Als een vijand doodgaat, krijgen vijanden 15% van de toegebrachte schade. +5% bonusschade en +15% schadeweerstand voor witte factie. Reisgezellen krijgen +75% energie en kracht als deze held doodgaat. Immuniteit tegen verlamming voor de Goddelijken.</color>
 HODA_AURA_STEALTH_PLUS50HSTUNRES5BONUSDMGVEN_2BNSDMG_ALLYHIT_GAIN5P7DMGRESALL_ANYDEATH_SLOWIMMUNE_MINUS35PDRESINQ|<color=green>Stealth: valt aan zonder treffereffecten te activeren. +50% energie, verlammingsweerstand en +5% bonusschade voor Venatori. Krijgt +2% bonusschade als reisgezellen worden geraakt. Reisgezellen krijgen +15% kracht en +7% schadeweerstand als een held doodgaat. Immuun voor vertraging.</color> <color=red>-35% krachtaftapweerstand voor Inquisitie.</color>
 HODA_AURA_STEALTH_PLUS60HPDSLOWRESNOBORL_CONV5PALLYATK_75PSTUNIMMLEOPOLD_FLANK_MINUS35SLOWRES|<color=green>Stealth: Valt aan zonder treffereffecten te activeren. +60% energie, krachtaftap- en vertragingsweerstand voor Orlesianen en adel. Zet 5% van de door reisgezellen toegebrachte schade om in kracht. +75% kracht en immuniteit tegen verlamming voor Leopold.</color> <color=orange>Valt eerder de achterste rij aan.</color> <color=red>-35% vertragingsweerstand.</color>
+HODA_CHAT_CHANNEL_GUILD|Guild
+HODA_CHAT_CHANNEL_WORLD|Wereld
 HODA_CONSUME_FACTION_BUTTON_DESC|Zelfde factie
 HODA_CONSUME_FACTION_DESC|Alle helden van dezelfde zeldzaamheid en factie.
 HODA_CONSUME_FACTION_TITLE|Consumeren op factie
@@ -1350,3 +1352,5 @@ HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Verwijderde helden keren terug naar je inven
 HODA_UI_CONFIRM_UNFORTIFY|Verwijderen
 HODA_UI_UNFORTIFY_REMOVE_ALL|Alles verwijderen
 HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Kosten voor verwijderen
+HODA_WORLD_CHAT_LEVEL_HELPER|Bereik level {0} om te schrijven
+HODA_WORLD_CHAT_TITLE|Wereldchat

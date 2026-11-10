@@ -1000,6 +1000,21 @@ static const char *const DEBUG_GUILD_CHAT[] = {
     "\"player_rank\":0}",
 };
 
+static const char *const DEBUG_WORLD_CHAT[] = {
+    "{\"id\":1,\"time\":%lld,\"text\":\"Ищу гильдию для Натиска, 30 "
+    "уровень\",\"player_id\":\"isabela\",\"player_name\":\"Isabela\","
+    "\"player_level\":30,\"player_rank\":999}",
+    "{\"id\":2,\"time\":%lld,\"text\":\"Защитники набирают игроков, заявки открыты. Нужны активные бойцы для "
+    "Натиска и арены, вступайте через поиск "
+    "гильдий.\",\"player_id\":\"hawke\",\"player_name\":\"Hawke\",\"player_level\":24,"
+    "\"player_rank\":2,\"guild_name\":\"Защитники\"}",
+    "{\"id\":3,\"time\":%lld,\"text\":\"Anyone beaten the level arena with a common squad?\","
+    "\"player_id\":\"fenris\",\"player_name\":\"Fenris\",\"player_level\":17,\"player_rank\":0,\"guild_name\":"
+    "\"Tevinter Fugitives\"}",
+};
+
+#define DEBUG_WORLD_CHAT_COUNT ((int)(sizeof(DEBUG_WORLD_CHAT) / sizeof(DEBUG_WORLD_CHAT[0])))
+#define DEBUG_WORLD_GUEST_LEVEL (GUILD_WORLD_SPEAKER_LEVEL - 2)
 #define DEBUG_GUILD_MEMBER_COUNT ((int)(sizeof(DEBUG_GUILD_MEMBERS) / sizeof(DEBUG_GUILD_MEMBERS[0])))
 #define DEBUG_GUILD_CHAT_COUNT ((int)(sizeof(DEBUG_GUILD_CHAT) / sizeof(DEBUG_GUILD_CHAT[0])))
 #define DEBUG_GUILD_CHAT_STEP_SECONDS 1700LL
@@ -1074,7 +1089,14 @@ static void DebugSeedGuild(Game *game) {
         cJSON *message = cJSON_Parse(
             TextFormat(DEBUG_GUILD_CHAT[i], now - (DEBUG_GUILD_CHAT_COUNT - i) * DEBUG_GUILD_CHAT_STEP_SECONDS)
         );
-        GuildAppendChat(g, message);
+        GuildAppendChat(g, GUILD_CHANNEL_GUILD, message);
+        cJSON_Delete(message);
+    }
+    for (int i = 0; i < DEBUG_WORLD_CHAT_COUNT; i++) {
+        cJSON *message = cJSON_Parse(
+            TextFormat(DEBUG_WORLD_CHAT[i], now - (DEBUG_WORLD_CHAT_COUNT - i) * DEBUG_GUILD_CHAT_STEP_SECONDS)
+        );
+        GuildAppendChat(g, GUILD_CHANNEL_WORLD, message);
         cJSON_Delete(message);
     }
     g->unread = 2;
@@ -1257,6 +1279,9 @@ static void DebugPrepareGuild(Game *game, DebugShot *shot) {
         {"guild_observe", GUILD_PAGE_HOME, GUILD_HOME_OBSERVE},
         {"guild_applications", GUILD_PAGE_HOME, GUILD_HOME_APPLICATIONS},
         {"guild_chat", GUILD_PAGE_CHAT, GUILD_HOME_MEMBER},
+        {"guild_world_chat", GUILD_PAGE_CHAT, GUILD_HOME_MEMBER},
+        {"guild_world_chat_guest", GUILD_PAGE_CHAT, GUILD_HOME_MEMBER},
+        {"guild_world_chat_report", GUILD_PAGE_CHAT, GUILD_HOME_MEMBER},
     };
     bool live_chat = DebugShotIs(shot, "guild_live_chat");
     if (live_chat || DebugShotIs(shot, "guild_live_home")) {
@@ -1294,8 +1319,20 @@ static void DebugPrepareGuild(Game *game, DebugShot *shot) {
                     game->player.gold = GUILD_CREATION_GOLD_COST;
                     GuildViewSubmitCreate(&game->guild_view, &game->guild, &game->player);
                 }
+            } else if (DebugShotIs(shot, "guild_world_chat_guest")) {
+                game->guild.rank = GUILD_RANK_NOT_MEMBER;
+                game->player.level = DEBUG_WORLD_GUEST_LEVEL;
+                GuildViewShowChat(&game->guild_view, &game->guild);
             } else if (shots[match].page == GUILD_PAGE_CHAT) {
                 GuildViewShowChat(&game->guild_view, &game->guild);
+                bool report = DebugShotIs(shot, "guild_world_chat_report");
+                if (report || DebugShotIs(shot, "guild_world_chat"))
+                    GuildViewShowChannel(&game->guild_view, &game->guild, GUILD_CHANNEL_WORLD);
+                const GuildChatLine *reported = &game->guild.channels[GUILD_CHANNEL_WORLD].lines[0];
+                if (report)
+                    GuildViewOpenReport(
+                        &game->guild_view, GUILD_REPORT_WORLD_LINE, "1", reported->title, reported->text
+                    );
                 TextFieldSet(&game->guild_view.chat_input, "Встречаемся у ворот");
             } else if (shots[match].page == GUILD_PAGE_HOME) {
                 GuildViewShowHome(&game->guild_view, shots[match].mode);

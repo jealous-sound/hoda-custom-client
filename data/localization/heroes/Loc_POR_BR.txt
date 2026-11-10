@@ -526,6 +526,8 @@ HODA_AURA_STEALTH_PLUS50HDWARFDEMON_PLUS10CRITALL_PLUS10STUNSLOWRESALL_ONHIT_GAI
 HODA_AURA_STEALTH_PLUS50HPSLOWRES_CHA_EXPLODE15_5BNSDMG15DMGRES_WHITE_75HPALL_SELFDTH_STUNIMMDIVINE|<color=green>Furtividade: Ataca sem desencadear efeitos de golpe. +50% de Saúde, Força e resistência a retardamento para a Capela. Quando um inimigo morre, inimigos recebem 15% do dano causado. +5% de dano extra e +15% de resistência a dano para a Facção Branca. Ao morrer, aliados ganham +75% de Saúde e Força. Imunidade a atordoamento para as Divinas.</color>
 HODA_AURA_STEALTH_PLUS50HSTUNRES5BONUSDMGVEN_2BNSDMG_ALLYHIT_GAIN5P7DMGRESALL_ANYDEATH_SLOWIMMUNE_MINUS35PDRESINQ|<color=green>Furtividade: ataques sem desencadear efeitos de golpe. +50% de Saúde, resistência a atordoamento e +5% de dano extra para Venatori. Quando aliados são atingidos, ganha +2% de dano extra. Com qualquer morte, aliados ganham +15% de Força e +7% de resistência a dano. Imune a retardamento.</color> <color=red>-35% de resistência a drenagem de Força para a Inquisição.</color>
 HODA_AURA_STEALTH_PLUS60HPDSLOWRESNOBORL_CONV5PALLYATK_75PSTUNIMMLEOPOLD_FLANK_MINUS35SLOWRES|<color=green>Furtividade: Ataca sem desencadear efeitos de golpe. +60% de Saúde e resistência a drenagem de Força e retardamento para Orlesianos e a Nobreza. Converte 5% do dano causado por aliados em Força. +75% de Força e imunidade a atordoamento para Leopold.</color> <color=orange>Mais chances de atacar a fileira de trás.</color> <color=red>-35% de resistência a retardamento.</color>
+HODA_CHAT_CHANNEL_GUILD|Guilda
+HODA_CHAT_CHANNEL_WORLD|Mundo
 HODA_CONSUME_FACTION_BUTTON_DESC|Mesma facção
 HODA_CONSUME_FACTION_DESC|Todos os heróis da mesma raridade e facção.
 HODA_CONSUME_FACTION_TITLE|Consumir por facção
@@ -1350,3 +1352,5 @@ HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Os heróis removidos voltam ao seu inventár
 HODA_UI_CONFIRM_UNFORTIFY|Remover
 HODA_UI_UNFORTIFY_REMOVE_ALL|Remover todos
 HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Custo da remoção
+HODA_WORLD_CHAT_LEVEL_HELPER|Alcance o nível {0} para escrever
+HODA_WORLD_CHAT_TITLE|Chat mundial

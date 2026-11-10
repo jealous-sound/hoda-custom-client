@@ -7,6 +7,9 @@
 #define GUILD_CHAT_ONE_LINE_FRACTION 0.121f
 #define GUILD_CHAT_TWO_LINE_FRACTION 0.181f
 #define GUILD_CHAT_WRAP_LINES 2
+#define GUILD_CHAT_REPORT_ICON_X 1058.0f
+#define GUILD_CHAT_REPORT_ICON_WIDTH 40.0f
+#define GUILD_CHAT_REPORT_ICON_ASPECT (47.0f / 56.0f)
 #define GUILD_EMBLEM_SLOT 72.0f
 #define GUILD_EMBLEM_GAP 6.0f
 #define GUILD_EMBLEM_SCROLL_STEP 5
@@ -44,6 +47,11 @@
 #define GUILD_UNREACHABLE_MESSAGE LocGet("CONNECTION_ERROR_MESSAGE")
 #define GUILD_BUSY_MESSAGE LocGet("HODA_GUILD_BUSY_MESSAGE")
 #define GUILD_PROFILE_CHANGED_MESSAGE LocGet("HODA_GUILD_PROFILE_CHANGED_MESSAGE")
+
+static const char *const GUILD_CHANNEL_BUTTON_KEYS[GUILD_CHANNEL_COUNT] = {
+    [GUILD_CHANNEL_GUILD] = "HODA_CHAT_CHANNEL_GUILD",
+    [GUILD_CHANNEL_WORLD] = "HODA_CHAT_CHANNEL_WORLD",
+};
 
 static const Color GUILD_TEXT = {235, 232, 220, 255};
 static const Color GUILD_TEXT_DIM = {182, 178, 168, 255};
@@ -142,7 +150,13 @@ typedef struct {
     long long shown;
 } GuildWarEvents;
 
-typedef enum { GUILD_REPORT_APPLICATION, GUILD_REPORT_GUILD } GuildReportState;
+typedef enum { GUILD_REPORT_APPLICATION, GUILD_REPORT_GUILD, GUILD_REPORT_WORLD_LINE } GuildReportState;
+
+static const char *const GUILD_REPORT_KINDS[] = {
+    [GUILD_REPORT_APPLICATION] = GUILD_REPORT_KIND_APPLICATION,
+    [GUILD_REPORT_GUILD] = GUILD_REPORT_KIND_GUILD,
+    [GUILD_REPORT_WORLD_LINE] = GUILD_REPORT_KIND_WORLD_LINE,
+};
 
 typedef struct {
     Font font;
@@ -151,6 +165,7 @@ typedef struct {
     GuildFindState find_state;
     GuildHomeMode home_mode;
     GuildChatMode chat_mode;
+    GuildChannelId chat_channel;
     bool settings_mode;
     TextField search;
     TextField name;
@@ -435,13 +450,25 @@ static void GuildViewShowHome(GuildView *v, GuildHomeMode mode) {
     GuildViewBlurFields(v);
 }
 
-static void GuildViewShowChat(GuildView *v, Guild *g) {
+static void GuildViewSyncChatVisibility(const GuildView *v, Guild *g) {
+    bool chat = v->page == GUILD_PAGE_CHAT;
+    GuildSetChatVisible(g, chat && v->chat_channel == GUILD_CHANNEL_GUILD);
+    GuildSetWorldChatVisible(g, chat && v->chat_channel == GUILD_CHANNEL_WORLD);
+}
+
+static void GuildViewShowChannel(GuildView *v, Guild *g, GuildChannelId channel) {
     v->page = GUILD_PAGE_CHAT;
+    v->chat_channel = channel;
     v->chat_mode = GUILD_CHAT_ALL;
     v->chat_follow = true;
     v->chat_seen_count = -1;
+    GoalsScrollReset(&v->chat_scroll);
     GuildViewBlurFields(v);
-    GuildSetChatVisible(g, true);
+    GuildViewSyncChatVisibility(v, g);
+}
+
+static void GuildViewShowChat(GuildView *v, Guild *g) {
+    GuildViewShowChannel(v, g, GuildIsMember(g) ? GUILD_CHANNEL_GUILD : GUILD_CHANNEL_WORLD);
 }
 
 static int GuildParseLevel(const char *text) {
@@ -497,21 +524,18 @@ void GuildViewOpen(GuildView *v, Guild *g, bool chat) {
     v->scrim_armed = false;
     v->report_open = false;
     v->pending = GUILD_VIEW_NONE;
-    if (GuildIsMember(g)) {
-        if (chat)
-            GuildViewShowChat(v, g);
-        else
-            GuildViewShowHome(v, GUILD_HOME_MEMBER);
-        GuildRefresh(g);
-        return;
-    }
-    GuildViewShowFind(v, g, GUILD_FIND_RECOMMENDED);
+    if (chat)
+        GuildViewShowChat(v, g);
+    else if (GuildIsMember(g))
+        GuildViewShowHome(v, GUILD_HOME_MEMBER);
+    else
+        GuildViewShowFind(v, g, GUILD_FIND_RECOMMENDED);
     GuildRefresh(g);
 }
 
 void GuildViewLeave(GuildView *v, Guild *g) {
     GuildViewBlurFields(v);
-    GuildSetChatVisible(g, false);
+    GuildHideChat(g);
     v->dialog = GUILD_DIALOG_NONE;
 }
 
@@ -522,6 +546,7 @@ static const char *GuildViewTitle(const GuildView *v) {
         case GUILD_PAGE_CREATE:
             return LocGet(v->settings_mode ? "GUILD_SETTINGS_TITLE" : "GUILD_CREATE_TITLE");
         case GUILD_PAGE_CHAT:
+            if (v->chat_channel == GUILD_CHANNEL_WORLD) return LocGet("HODA_WORLD_CHAT_TITLE");
             return LocGet("GUILD_CHAT_TITLE");
         case GUILD_PAGE_WAR:
             return LocGet("GUILD_WAR_TITLE");
@@ -1650,25 +1675,44 @@ static void GuildViewDrawHome(GuildView *v, Guild *g, const Player *p, bool inte
     GuildViewDrawHomeFooter(v, g, p, interactive);
 }
 
-static int GuildChatVisibleLines(const Guild *g, const GuildView *v, int *indices) {
+static int GuildChatVisibleLines(const GuildChannel *channel, const GuildView *v, int *indices) {
     int count = 0;
-    for (int i = 0; i < g->chat_count; i++)
-        if (v->chat_mode == GUILD_CHAT_ALL || g->chat[i].event) indices[count++] = i;
+    for (int i = 0; i < channel->count; i++)
+        if (v->chat_mode == GUILD_CHAT_ALL || channel->lines[i].event) indices[count++] = i;
     return count;
+}
+
+static Rectangle GuildChatReportIcon(Rectangle row) {
+    float width = row.width * GUILD_CHAT_REPORT_ICON_WIDTH / GUILD_SMART_WIDTH;
+    float height = width * GUILD_CHAT_REPORT_ICON_ASPECT;
+    float x = row.x + row.width * GUILD_CHAT_REPORT_ICON_X / GUILD_SMART_WIDTH;
+    return (Rectangle){x, row.y + (row.height - height) * 0.5f, width, height};
+}
+
+static bool GuildChatReportPressed(const GuildView *v, Rectangle icon, Rectangle list, bool interactive) {
+    Vector2 mouse = UiMouse();
+    bool hover = interactive && CheckCollisionPointRec(mouse, icon) && CheckCollisionPointRec(mouse, list);
+    bool held = hover && CheckCollisionPointRec(v->press_point, icon);
+    bool down = held && IsMouseButtonDown(MOUSE_BUTTON_LEFT);
+    UiDrawTexture(GuiTex(down ? GUI_GUILD_REPORT_ON : GUI_GUILD_REPORT), icon, WHITE);
+    bool clicked = held && !v->chat_scroll.drag_scrolled && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+    if (clicked) GuiSoundPlay(SND_UI_CLICK);
+    return clicked;
 }
 
 static void GuildViewDrawChatList(GuildView *v, Guild *g, bool interactive) {
     Rectangle list = GuildRect(84.0f, 158.0f, 1114.0f, 413.0f);
     GuildDrawPanel(list);
+    const GuildChannel *channel = &g->channels[v->chat_channel];
     int indices[GUILD_CHAT_CAPACITY];
-    int count = GuildChatVisibleLines(g, v, indices);
+    int count = GuildChatVisibleLines(channel, v, indices);
     float one = list.height * GUILD_CHAT_ONE_LINE_FRACTION, two = list.height * GUILD_CHAT_TWO_LINE_FRACTION;
     Rectangle message_width =
         GuildSmart((Rectangle){0.0f, 0.0f, list.width, one}, GUILD_CHAT_ONE_LINE_HEIGHT, 31.0f, 43.0f, 1025.0f, 44.0f);
     float heights[GUILD_CHAT_CAPACITY];
     float total = 0.0f;
     for (int i = 0; i < count; i++) {
-        float width = MeasureTextEx(v->body, g->chat[indices[i]].text, GUILD_BODY_SIZE, 1.0f).x;
+        float width = MeasureTextEx(v->body, channel->lines[indices[i]].text, GUILD_BODY_SIZE, 1.0f).x;
         heights[i] = width > message_width.width ? two : one;
         total += heights[i];
     }
@@ -1683,7 +1727,7 @@ static void GuildViewDrawChatList(GuildView *v, Guild *g, bool interactive) {
     float y = list.y - v->chat_scroll.offset;
     long long now = ServerNow();
     for (int i = 0; i < count; i++) {
-        const GuildChatLine *line = &g->chat[indices[i]];
+        const GuildChatLine *line = &channel->lines[indices[i]];
         Rectangle row = {list.x, y, list.width, heights[i]};
         y += heights[i];
         if (row.y + row.height < list.y || row.y > list.y + list.height) continue;
@@ -1709,9 +1753,10 @@ static void GuildViewDrawChatList(GuildView *v, Guild *g, bool interactive) {
         GuildFitText(
             v->body, ago, GuildSmart(row, smart, 1100.0f, 0.0f, 165.0f, smart), GUILD_SMALL_SIZE, GUILD_TEXT_DIM, true
         );
+        if (line->reportable && GuildChatReportPressed(v, GuildChatReportIcon(row), list, interactive))
+            GuildViewOpenReport(v, GUILD_REPORT_WORLD_LINE, TextFormat("%lld", line->id), line->title, line->text);
     }
     EndScissorMode();
-    (void)interactive;
 }
 
 static void GuildViewSend(GuildView *v, Guild *g) {
@@ -1722,41 +1767,62 @@ static void GuildViewSend(GuildView *v, Guild *g) {
     const char *start = text;
     while (*start && isspace((unsigned char)*start)) start++;
     if (!*start) return;
-    GuildSendChat(g, start);
+    GuildSendChat(g, v->chat_channel, start);
     TextFieldClear(&v->chat_input);
     v->chat_follow = true;
 }
 
-static void GuildViewDrawChat(GuildView *v, Guild *g, bool interactive) {
-    GuildSetChatVisible(g, true);
+static void GuildViewDrawChatInput(GuildView *v, Guild *g, bool can_write, bool interactive) {
+    char helper[GUILD_LINE_TITLE_CAP];
+    if (can_write)
+        StrCopy(helper, sizeof(helper), LocGet("GUILD_CHAT_TEXTFIELD_HELPER"));
+    else
+        LocFormatInt(helper, sizeof(helper), "HODA_WORLD_CHAT_LEVEL_HELPER", GUILD_WORLD_SPEAKER_LEVEL);
+    if (!can_write) TextFieldBlur(&v->chat_input);
+    TextFieldEvent event = TextFieldDraw(
+        &v->chat_input,
+        GuildRect(90.0f, 573.0f, 406.0f, 43.0f),
+        v->body,
+        GUILD_BODY_SIZE,
+        helper,
+        interactive && can_write
+    );
+    bool send = GuildTextButton(
+        v,
+        &v->gold,
+        LocGet("GUILD_CHAT_SEND_BUTTON"),
+        GuildRect(506.0f, 571.0f, 156.0f, 47.0f),
+        can_write && v->chat_input.text[0] != '\0',
+        interactive
+    );
+    if (!can_write) return;
+    if (send || event == TEXT_FIELD_SUBMITTED) GuildViewSend(v, g);
+    if (event == TEXT_FIELD_SUBMITTED) v->chat_input.focused = true;
+}
+
+static void GuildViewDrawChat(GuildView *v, Guild *g, const Player *p, bool interactive) {
+    GuildViewSyncChatVisibility(v, g);
     GuildViewDrawChatList(v, g, interactive);
-    if (v->chat_mode == GUILD_CHAT_ALL) {
-        TextFieldEvent event = TextFieldDraw(
-            &v->chat_input,
-            GuildRect(90.0f, 573.0f, 406.0f, 43.0f),
-            v->body,
-            GUILD_BODY_SIZE,
-            LocGet("GUILD_CHAT_TEXTFIELD_HELPER"),
-            interactive
-        );
-        bool send = GuildTextButton(
-            v,
-            &v->gold,
-            LocGet("GUILD_CHAT_SEND_BUTTON"),
-            GuildRect(506.0f, 571.0f, 156.0f, 47.0f),
-            v->chat_input.text[0] != '\0',
-            interactive
-        );
-        if (send || event == TEXT_FIELD_SUBMITTED) GuildViewSend(v, g);
-        if (event == TEXT_FIELD_SUBMITTED) v->chat_input.focused = true;
+    bool world = v->chat_channel == GUILD_CHANNEL_WORLD;
+    bool member = GuildIsMember(g);
+    if (v->chat_mode == GUILD_CHAT_ALL) GuildViewDrawChatInput(v, g, !world || GuildCanWriteToWorld(p), interactive);
+    GuildChannelId other = world ? GUILD_CHANNEL_GUILD : GUILD_CHANNEL_WORLD;
+    Rectangle channel_button = GuildRect(820.0f, 571.0f, 179.0f, 47.0f);
+    bool other_open = other == GUILD_CHANNEL_WORLD || member;
+    if (GuildTextButton(
+            v, &v->grey, LocGet(GUILD_CHANNEL_BUTTON_KEYS[other]), channel_button, other_open, interactive
+        )) {
+        GuildViewShowChannel(v, g, other);
+        return;
     }
+    Rectangle mode_button = GuildRect(1010.0f, 571.0f, 179.0f, 47.0f);
     const char *mode_key = v->chat_mode == GUILD_CHAT_ALL ? "GUILD_EVENT_MODE_BUTTON" : "GUILD_CHAT_MODE_BUTTON";
-    if (GuildTextButton(v, &v->grey, LocGet(mode_key), GuildRect(1010.0f, 571.0f, 179.0f, 47.0f), true, interactive)) {
+    if (!world && GuildTextButton(v, &v->grey, LocGet(mode_key), mode_button, true, interactive)) {
         v->chat_mode = v->chat_mode == GUILD_CHAT_ALL ? GUILD_CHAT_EVENTS : GUILD_CHAT_ALL;
         v->chat_follow = true;
         TextFieldBlur(&v->chat_input);
     }
-    GuildViewHandleFooter(v, g, GuildDrawFooter(v, g, GUILD_TAB_CHAT, true, false, interactive));
+    GuildViewHandleFooter(v, g, GuildDrawFooter(v, g, GUILD_TAB_CHAT, member, !member, interactive));
 }
 
 static void GuildDrawTitleBackground(Rectangle rect) {
@@ -2098,10 +2164,7 @@ static void GuildViewSubmitReport(GuildView *v, Guild *g) {
         );
         return;
     }
-    bool guild = v->report_state == GUILD_REPORT_GUILD;
-    GuildRequestReport(
-        g, guild ? GUILD_REPORT_KIND_GUILD : GUILD_REPORT_KIND_APPLICATION, v->report_choice, v->report_target
-    );
+    GuildRequestReport(g, GUILD_REPORT_KINDS[v->report_state], v->report_choice, v->report_target);
     GuiSoundPlay(SND_UI_POPUP_CLOSE);
     v->report_open = false;
     GuildViewWait(v, GUILD_REQUEST_REPORT);
@@ -2409,6 +2472,12 @@ static void GuildViewJoined(GuildView *v, Guild *g) {
     GuildRequestObserve(g, v->target_id);
 }
 
+static void GuildViewShowWorldLevel(GuildView *v) {
+    char message[GUILD_MESSAGE_CAP];
+    LocFormatInt(message, sizeof(message), "HODA_WORLD_CHAT_LEVEL_HELPER", GUILD_WORLD_SPEAKER_LEVEL);
+    GuildViewShowMessage(v, "HODA_WORLD_CHAT_TITLE", message);
+}
+
 static void GuildViewHandleResult(GuildView *v, Guild *g, const GuildResult *result) {
     if (result->kind == v->waiting_for) v->waiting_for = GUILD_REQUEST_NONE;
     if (result->kind == GUILD_REQUEST_REPORT) {
@@ -2464,7 +2533,14 @@ static void GuildViewHandleResult(GuildView *v, Guild *g, const GuildResult *res
                 GuildViewGeneralError(v, g);
             break;
         case GUILD_REQUEST_SEND:
-            if (!ok) GuildViewShowKeys(v, "ERROR_GENERAL_TITLE", "ERROR_GENERAL_MESSAGE");
+        case GUILD_REQUEST_WORLD_SEND:
+            if (ok) break;
+            if (!strcmp(result->code, GUILD_CODE_SENDING_TOO_FAST))
+                GuildViewShowMessage(v, "ERROR_GENERAL_TITLE", GUILD_BUSY_MESSAGE);
+            else if (!strcmp(result->code, GUILD_CODE_CHAT_LEVEL_TOO_LOW))
+                GuildViewShowWorldLevel(v);
+            else
+                GuildViewShowKeys(v, "ERROR_GENERAL_TITLE", "ERROR_GENERAL_MESSAGE");
             break;
         case GUILD_REQUEST_DUEL:
             if (ok)
@@ -2501,7 +2577,8 @@ static void GuildViewDrawWaiting(GuildView *v) {
 }
 
 static bool GuildViewPageValid(GuildView *v, Guild *g) {
-    bool member_page = v->page == GUILD_PAGE_CHAT || v->page == GUILD_PAGE_WAR ||
+    bool guild_chat = v->page == GUILD_PAGE_CHAT && v->chat_channel == GUILD_CHANNEL_GUILD;
+    bool member_page = guild_chat || v->page == GUILD_PAGE_WAR ||
                        (v->page == GUILD_PAGE_HOME && v->home_mode != GUILD_HOME_OBSERVE) ||
                        (v->page == GUILD_PAGE_CREATE && v->settings_mode);
     if (!member_page || GuildIsMember(g) || v->waiting_for != GUILD_REQUEST_NONE) return true;
@@ -2529,13 +2606,13 @@ GuildViewAction GuildViewDraw(GuildView *v, Guild *g, Player *p) {
             GuildViewDrawHome(v, g, p, interactive);
             break;
         case GUILD_PAGE_CHAT:
-            GuildViewDrawChat(v, g, interactive);
+            GuildViewDrawChat(v, g, p, interactive);
             break;
         case GUILD_PAGE_WAR:
             GuildViewDrawWar(v, g, interactive);
             break;
     }
-    if (v->page != GUILD_PAGE_CHAT) GuildSetChatVisible(g, false);
+    GuildViewSyncChatVisibility(v, g);
     if (v->report_open) GuildViewDrawReport(v, g, report_open_before_frame);
     if (v->dialog != GUILD_DIALOG_NONE) GuildViewDrawDialog(v, g, p);
     if (v->waiting_for != GUILD_REQUEST_NONE) GuildViewDrawWaiting(v);

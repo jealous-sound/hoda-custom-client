@@ -32,7 +32,11 @@
 #define GUILD_HTTP_OK 200
 #define GUILD_HTTP_REFUSED 422
 #define GUILD_HTTP_NOT_FOUND 404
+#define GUILD_HTTP_TOO_MANY_REQUESTS 429
+#define GUILD_WORLD_SPEAKER_LEVEL GUILD_LEVEL_UNLOCK
 #define GUILD_CREATE_ROUTE "guilds"
+#define GUILD_MESSAGES_ROUTE "guild/messages"
+#define GUILD_WORLD_MESSAGES_ROUTE "chat/world/messages"
 #define GUILD_ONSLAUGHT_CLAIM_ROUTE "guild/onslaught/claim"
 #define GUILD_ONSLAUGHT_LIMIT 100
 #define GUILD_ONSLAUGHT_MEMBER_CAP (GUILD_MAX_MEMBERS * 2)
@@ -40,13 +44,21 @@
 #define GUILD_RUNE_ID_CAP 48
 #define GUILD_REPORT_KIND_GUILD "guild"
 #define GUILD_REPORT_KIND_APPLICATION "application"
+#define GUILD_REPORT_KIND_WORLD_LINE "world_message"
 #define GUILD_CODE_CANT_AFFORD "cant_afford"
 #define GUILD_CODE_NOT_FOUND "GUILD_NOT_FOUND"
 #define GUILD_CODE_NOT_IN_GUILD "NOT_IN_GUILD"
 #define GUILD_CODE_PROFILE_CHANGED "profile_changed"
+#define GUILD_CODE_CHAT_LEVEL_TOO_LOW "CHAT_LEVEL_TOO_LOW"
+#define GUILD_CODE_SENDING_TOO_FAST "sending_too_fast"
 
 static const double GUILD_CHAT_ON_SCREEN_POLLS[] = {10.0, 30.0};
 static const double GUILD_CHAT_OFF_SCREEN_POLLS[] = {60.0};
+
+#define GUILD_CHAT_ON_SCREEN_POLL_COUNT                                                                                \
+    ((int)(sizeof(GUILD_CHAT_ON_SCREEN_POLLS) / sizeof(GUILD_CHAT_ON_SCREEN_POLLS[0])))
+#define GUILD_CHAT_OFF_SCREEN_POLL_COUNT                                                                               \
+    ((int)(sizeof(GUILD_CHAT_OFF_SCREEN_POLLS) / sizeof(GUILD_CHAT_OFF_SCREEN_POLLS[0])))
 
 static const Color GUILD_CHAT_TITLE_COLOR = {255, 166, 0, 255};
 static const Color GUILD_CHAT_LEADER_COLOR = {255, 235, 4, 255};
@@ -160,10 +172,22 @@ typedef struct {
     long long id;
     long long time;
     bool event;
+    bool reportable;
     char title[GUILD_LINE_TITLE_CAP];
     char text[GUILD_LINE_TEXT_CAP];
     Color text_color;
 } GuildChatLine;
+
+typedef enum { GUILD_CHANNEL_GUILD, GUILD_CHANNEL_WORLD, GUILD_CHANNEL_COUNT } GuildChannelId;
+
+typedef struct {
+    GuildChatLine lines[GUILD_CHAT_CAPACITY];
+    int count;
+    long long last_id;
+    bool visible;
+    int backoff;
+    double next_poll_at;
+} GuildChannel;
 
 typedef enum {
     GUILD_NOTICE_ACCEPTED,
@@ -196,6 +220,8 @@ typedef enum {
     GUILD_REQUEST_LEAVE,
     GUILD_REQUEST_MESSAGES,
     GUILD_REQUEST_SEND,
+    GUILD_REQUEST_WORLD_MESSAGES,
+    GUILD_REQUEST_WORLD_SEND,
     GUILD_REQUEST_CREATE,
     GUILD_REQUEST_ONSLAUGHT,
     GUILD_REQUEST_DUEL,
@@ -290,12 +316,7 @@ typedef struct {
     GuildInfo observed;
     bool observed_applied;
     bool observed_ready;
-    GuildChatLine chat[GUILD_CHAT_CAPACITY];
-    int chat_count;
-    long long chat_last_id;
-    long long chat_read_id;
-    bool chat_visible;
-    int chat_backoff;
+    GuildChannel channels[GUILD_CHANNEL_COUNT];
     GuildNotice notices[GUILD_NOTICE_CAPACITY];
     int notice_count;
     GuildRequest queue[GUILD_REQUEST_CAPACITY];
@@ -306,7 +327,6 @@ typedef struct {
     GuildResult results[GUILD_REQUEST_CAPACITY];
     int result_count;
     double next_state_at;
-    double next_chat_at;
     GuildOnslaught current;
     GuildOnslaught previous;
     long long onslaught_inflight;
@@ -332,6 +352,10 @@ bool GuildUnlocked(const Player *p) {
 
 bool GuildAvailable(void) {
     return BackendEnabled();
+}
+
+bool GuildCanWriteToWorld(const Player *p) {
+    return p->level >= GUILD_WORLD_SPEAKER_LEVEL;
 }
 
 const char *GuildRankKey(GuildRank rank) {
@@ -457,10 +481,13 @@ static GuildNoticeKind GuildNoticeKindFrom(const char *kind, bool *known) {
     return GUILD_NOTICE_ACCEPTED;
 }
 
+static void GuildClearChannel(GuildChannel *channel) {
+    channel->count = 0;
+    channel->last_id = 0;
+}
+
 static void GuildClearChat(Guild *g) {
-    g->chat_count = 0;
-    g->chat_last_id = 0;
-    g->chat_read_id = 0;
+    GuildClearChannel(&g->channels[GUILD_CHANNEL_GUILD]);
     g->unread = 0;
 }
 
@@ -496,7 +523,8 @@ static void GuildAdoptState(Guild *g, const cJSON *json) {
     }
     bool switched = strcmp(before_id, g->mine.summary.id) != 0;
     if (!GuildIsMember(g) || switched) GuildClearChat(g);
-    if (GuildIsMember(g) && (before == GUILD_RANK_NOT_MEMBER || switched)) g->next_chat_at = 0.0;
+    if (GuildIsMember(g) && (before == GUILD_RANK_NOT_MEMBER || switched))
+        g->channels[GUILD_CHANNEL_GUILD].next_poll_at = 0.0;
 }
 
 static void GuildFormatPlayerTitle(char *out, size_t size, const cJSON *message) {
@@ -527,54 +555,79 @@ static void GuildFormatEvent(GuildChatLine *line, const cJSON *message) {
     line->text_color = GuildEventTextColor(text_key);
 }
 
-static void GuildAppendChat(Guild *g, const cJSON *message) {
-    long long id = GuildJsonLong(message, "id");
-    if (id <= g->chat_last_id) return;
-    if (g->chat_count >= GUILD_CHAT_CAPACITY) {
-        memmove(&g->chat[0], &g->chat[1], sizeof(g->chat[0]) * (GUILD_CHAT_CAPACITY - 1));
-        g->chat_count--;
+static void GuildFormatWorldTitle(char *out, size_t size, const cJSON *message) {
+    const char *name = JsonStr(message, "player_name");
+    const char *guild = JsonStr(message, "guild_name");
+    int level = JsonInt(message, "player_level");
+    if (guild[0])
+        snprintf(out, size, "%s (%d) [%s]", name, level, guild);
+    else
+        snprintf(out, size, "%s (%d)", name, level);
+}
+
+static void GuildAppendChat(Guild *g, GuildChannelId id, const cJSON *message) {
+    GuildChannel *channel = &g->channels[id];
+    long long message_id = GuildJsonLong(message, "id");
+    if (message_id <= channel->last_id) return;
+    if (channel->count >= GUILD_CHAT_CAPACITY) {
+        memmove(&channel->lines[0], &channel->lines[1], sizeof(channel->lines[0]) * (GUILD_CHAT_CAPACITY - 1));
+        channel->count--;
     }
-    GuildChatLine *line = &g->chat[g->chat_count++];
+    GuildChatLine *line = &channel->lines[channel->count++];
     memset(line, 0, sizeof(*line));
-    line->id = id;
+    line->id = message_id;
     line->time = GuildJsonLong(message, "time");
     line->event = JsonStr(message, "title")[0] != '\0';
+    line->text_color = GUILD_CHAT_TEXT_COLOR;
     if (line->event) {
         GuildFormatEvent(line, message);
+    } else if (id == GUILD_CHANNEL_WORLD) {
+        GuildFormatWorldTitle(line->title, sizeof(line->title), message);
+        StrCopy(line->text, sizeof(line->text), JsonStr(message, "text"));
+        line->reportable = strcmp(JsonStr(message, "player_id"), BackendPlayerId()) != 0;
     } else {
         GuildFormatPlayerTitle(line->title, sizeof(line->title), message);
         StrCopy(line->text, sizeof(line->text), JsonStr(message, "text"));
         GuildRank rank = GuildRankFrom(JsonInt(message, "player_rank"));
-        line->text_color = rank == GUILD_RANK_LEADER ? GUILD_CHAT_LEADER_COLOR : GUILD_CHAT_TEXT_COLOR;
+        if (rank == GUILD_RANK_LEADER) line->text_color = GUILD_CHAT_LEADER_COLOR;
     }
-    g->chat_last_id = id;
+    channel->last_id = message_id;
+}
+
+static double GuildChannelInterval(const GuildChannel *channel) {
+    const double *polls = channel->visible ? GUILD_CHAT_ON_SCREEN_POLLS : GUILD_CHAT_OFF_SCREEN_POLLS;
+    int count = channel->visible ? GUILD_CHAT_ON_SCREEN_POLL_COUNT : GUILD_CHAT_OFF_SCREEN_POLL_COUNT;
+    return polls[channel->backoff < count ? channel->backoff : count - 1];
+}
+
+static void GuildAdoptChannelMessages(Guild *g, GuildChannelId id, const cJSON *json) {
+    GuildChannel *channel = &g->channels[id];
+    int before = channel->count;
+    long long last_before = channel->last_id;
+    const cJSON *message;
+    cJSON_ArrayForEach(message, cJSON_GetObjectItemCaseSensitive(json, "messages")) GuildAppendChat(g, id, message);
+    bool fresh = channel->last_id > last_before || channel->count != before;
+    channel->backoff = fresh ? 0 : channel->backoff + 1;
+    channel->next_poll_at = GetTime() + GuildChannelInterval(channel);
 }
 
 static void GuildAdoptMessages(Guild *g, const cJSON *json) {
-    int before = g->chat_count;
-    long long last_before = g->chat_last_id;
     g->rank = GuildRankFrom(JsonInt(json, "rank"));
     if (!GuildIsMember(g)) {
         GuildClearChat(g);
         g->next_state_at = 0.0;
         return;
     }
-    const cJSON *message;
-    cJSON_ArrayForEach(message, cJSON_GetObjectItemCaseSensitive(json, "messages")) GuildAppendChat(g, message);
-    g->unread = g->chat_visible ? 0 : JsonInt(json, "unread");
-    bool fresh = g->chat_last_id > last_before || g->chat_count != before;
-    int polls = g->chat_visible ? (int)(sizeof(GUILD_CHAT_ON_SCREEN_POLLS) / sizeof(GUILD_CHAT_ON_SCREEN_POLLS[0]))
-                                : (int)(sizeof(GUILD_CHAT_OFF_SCREEN_POLLS) / sizeof(GUILD_CHAT_OFF_SCREEN_POLLS[0]));
-    g->chat_backoff = fresh ? 0 : (g->chat_backoff + 1 < polls ? g->chat_backoff + 1 : polls - 1);
+    GuildAdoptChannelMessages(g, GUILD_CHANNEL_GUILD, json);
+    g->unread = g->channels[GUILD_CHANNEL_GUILD].visible ? 0 : JsonInt(json, "unread");
 }
 
-static double GuildChatInterval(const Guild *g) {
-    if (g->chat_visible) {
-        int count = (int)(sizeof(GUILD_CHAT_ON_SCREEN_POLLS) / sizeof(GUILD_CHAT_ON_SCREEN_POLLS[0]));
-        return GUILD_CHAT_ON_SCREEN_POLLS[g->chat_backoff < count ? g->chat_backoff : count - 1];
-    }
-    int count = (int)(sizeof(GUILD_CHAT_OFF_SCREEN_POLLS) / sizeof(GUILD_CHAT_OFF_SCREEN_POLLS[0]));
-    return GUILD_CHAT_OFF_SCREEN_POLLS[g->chat_backoff < count ? g->chat_backoff : count - 1];
+static void GuildAdoptWorldMessages(Guild *g, const cJSON *json) {
+    GuildChannel *world = &g->channels[GUILD_CHANNEL_WORLD];
+    bool server_history_restarted = GuildJsonLong(json, "last_message_id") < world->last_id;
+    if (server_history_restarted) GuildClearChannel(world);
+    GuildAdoptChannelMessages(g, GUILD_CHANNEL_WORLD, json);
+    if (server_history_restarted) world->next_poll_at = 0.0;
 }
 
 static bool GuildQueued(const Guild *g, GuildRequestKind kind) {
@@ -789,16 +842,20 @@ void GuildRequestReport(Guild *g, const char *kind, GuildAbuseType abuse, const 
     cJSON *body = cJSON_CreateObject();
     cJSON_AddStringToObject(body, "kind", kind);
     cJSON_AddStringToObject(body, "abuse_type", GUILD_ABUSE_NAMES[abuse]);
-    bool guild = !strcmp(kind, GUILD_REPORT_KIND_GUILD);
-    cJSON_AddStringToObject(body, guild ? "guild_id" : "applicant_id", target_id);
+    if (!strcmp(kind, GUILD_REPORT_KIND_WORLD_LINE))
+        cJSON_AddNumberToObject(body, "message_id", (double)strtoll(target_id, NULL, 10));
+    else
+        cJSON_AddStringToObject(body, !strcmp(kind, GUILD_REPORT_KIND_GUILD) ? "guild_id" : "applicant_id", target_id);
     GuildEnqueue(g, GUILD_REQUEST_REPORT, "POST", "reports", body);
 }
 
-static cJSON *GuildMessagesBody(const Guild *g, const char *text) {
+static cJSON *GuildMessagesBody(const Guild *g, GuildChannelId id, const char *text) {
+    const GuildChannel *channel = &g->channels[id];
     cJSON *body = cJSON_CreateObject();
-    cJSON_AddNumberToObject(body, "after", (double)g->chat_last_id);
+    cJSON_AddNumberToObject(body, "after", (double)channel->last_id);
     if (text) cJSON_AddStringToObject(body, "text", text);
-    if (g->chat_visible) cJSON_AddNumberToObject(body, "read_through", (double)g->chat_last_id);
+    if (id == GUILD_CHANNEL_GUILD && channel->visible)
+        cJSON_AddNumberToObject(body, "read_through", (double)channel->last_id);
     return body;
 }
 
@@ -915,19 +972,37 @@ void GuildRequestLeave(Guild *g) {
     GuildEnqueue(g, GUILD_REQUEST_LEAVE, "POST", "guild/leave", cJSON_CreateObject());
 }
 
-void GuildSendChat(Guild *g, const char *text) {
-    GuildEnqueue(g, GUILD_REQUEST_SEND, "POST", "guild/messages", GuildMessagesBody(g, text));
-    g->chat_backoff = 0;
+void GuildSendChat(Guild *g, GuildChannelId id, const char *text) {
+    bool world = id == GUILD_CHANNEL_WORLD;
+    GuildEnqueue(
+        g,
+        world ? GUILD_REQUEST_WORLD_SEND : GUILD_REQUEST_SEND,
+        "POST",
+        world ? GUILD_WORLD_MESSAGES_ROUTE : GUILD_MESSAGES_ROUTE,
+        GuildMessagesBody(g, id, text)
+    );
+    g->channels[id].backoff = 0;
+}
+
+static bool GuildChannelSetVisible(GuildChannel *channel, bool visible) {
+    if (channel->visible == visible) return false;
+    channel->visible = visible;
+    channel->backoff = 0;
+    if (visible) channel->next_poll_at = 0.0;
+    return true;
 }
 
 void GuildSetChatVisible(Guild *g, bool visible) {
-    if (g->chat_visible == visible) return;
-    g->chat_visible = visible;
-    g->chat_backoff = 0;
-    if (visible) {
-        g->unread = 0;
-        g->next_chat_at = 0.0;
-    }
+    if (GuildChannelSetVisible(&g->channels[GUILD_CHANNEL_GUILD], visible) && visible) g->unread = 0;
+}
+
+void GuildSetWorldChatVisible(Guild *g, bool visible) {
+    GuildChannelSetVisible(&g->channels[GUILD_CHANNEL_WORLD], visible);
+}
+
+void GuildHideChat(Guild *g) {
+    GuildSetChatVisible(g, false);
+    GuildSetWorldChatVisible(g, false);
 }
 
 static void GuildHandleList(Guild *g, const cJSON *json) {
@@ -952,7 +1027,16 @@ static void GuildHandleAnswer(Guild *g, GuildRequestKind kind, int status, const
         if (kind == GUILD_REQUEST_RECOMMENDED || kind == GUILD_REQUEST_SEARCH) g->list_ready = true;
         if (!strcmp(code, GUILD_CODE_NOT_IN_GUILD) || !strcmp(code, GUILD_CODE_NOT_FOUND)) g->next_state_at = 0.0;
         if (kind == GUILD_REQUEST_MESSAGES) {
-            g->next_chat_at = GetTime() + GUILD_RETRY_SECONDS;
+            g->channels[GUILD_CHANNEL_GUILD].next_poll_at = GetTime() + GUILD_RETRY_SECONDS;
+            return;
+        }
+        if (kind == GUILD_REQUEST_WORLD_MESSAGES) {
+            g->channels[GUILD_CHANNEL_WORLD].next_poll_at = GetTime() + GUILD_RETRY_SECONDS;
+            return;
+        }
+        if (status == GUILD_HTTP_TOO_MANY_REQUESTS &&
+            (kind == GUILD_REQUEST_SEND || kind == GUILD_REQUEST_WORLD_SEND)) {
+            GuildPushResult(g, kind, GUILD_OUTCOME_REFUSED, GUILD_CODE_SENDING_TOO_FAST);
             return;
         }
         if (kind == GUILD_REQUEST_STATE) {
@@ -984,6 +1068,10 @@ static void GuildHandleAnswer(Guild *g, GuildRequestKind kind, int status, const
         case GUILD_REQUEST_SEND:
             GuildAdoptMessages(g, json);
             break;
+        case GUILD_REQUEST_WORLD_MESSAGES:
+        case GUILD_REQUEST_WORLD_SEND:
+            GuildAdoptWorldMessages(g, json);
+            break;
         case GUILD_REQUEST_ONSLAUGHT:
             GuildHandleOnslaught(g, json);
             return;
@@ -996,9 +1084,8 @@ static void GuildHandleAnswer(Guild *g, GuildRequestKind kind, int status, const
             GuildAdoptState(g, json);
             break;
     }
-    if (kind == GUILD_REQUEST_MESSAGES || kind == GUILD_REQUEST_SEND)
-        g->next_chat_at = GetTime() + GuildChatInterval(g);
-    if (kind != GUILD_REQUEST_MESSAGES && kind != GUILD_REQUEST_STATE) GuildPushResult(g, kind, GUILD_OUTCOME_OK, "");
+    if (kind != GUILD_REQUEST_MESSAGES && kind != GUILD_REQUEST_WORLD_MESSAGES && kind != GUILD_REQUEST_STATE)
+        GuildPushResult(g, kind, GUILD_OUTCOME_OK, "");
 }
 
 static void GuildPollInflight(Guild *g) {
@@ -1013,7 +1100,9 @@ static void GuildPollInflight(Guild *g) {
     if (state == BACKEND_QUERY_ANSWERED) {
         GuildHandleAnswer(g, kind, status, json);
     } else if (kind == GUILD_REQUEST_MESSAGES) {
-        g->next_chat_at = GetTime() + GUILD_RETRY_SECONDS;
+        g->channels[GUILD_CHANNEL_GUILD].next_poll_at = GetTime() + GUILD_RETRY_SECONDS;
+    } else if (kind == GUILD_REQUEST_WORLD_MESSAGES) {
+        g->channels[GUILD_CHANNEL_WORLD].next_poll_at = GetTime() + GUILD_RETRY_SECONDS;
     } else if (kind == GUILD_REQUEST_STATE) {
         g->next_state_at = GetTime() + GUILD_RETRY_SECONDS;
     } else if (kind == GUILD_REQUEST_ONSLAUGHT) {
@@ -1067,10 +1156,19 @@ void GuildUpdate(Guild *g, Player *p) {
     double now = GetTime();
     bool engaged = GuildUnlocked(p) || GuildIsMember(g) || g->has_application;
     if (engaged && now >= g->next_state_at) GuildRefresh(g);
-    if (GuildIsMember(g) && now >= g->next_chat_at && !GuildQueued(g, GUILD_REQUEST_MESSAGES) &&
+    GuildChannel *guild = &g->channels[GUILD_CHANNEL_GUILD];
+    if (GuildIsMember(g) && now >= guild->next_poll_at && !GuildQueued(g, GUILD_REQUEST_MESSAGES) &&
         !GuildQueued(g, GUILD_REQUEST_SEND)) {
-        GuildEnqueue(g, GUILD_REQUEST_MESSAGES, "POST", "guild/messages", GuildMessagesBody(g, NULL));
-        g->next_chat_at = now + GuildChatInterval(g);
+        cJSON *body = GuildMessagesBody(g, GUILD_CHANNEL_GUILD, NULL);
+        GuildEnqueue(g, GUILD_REQUEST_MESSAGES, "POST", GUILD_MESSAGES_ROUTE, body);
+        guild->next_poll_at = now + GuildChannelInterval(guild);
+    }
+    GuildChannel *world = &g->channels[GUILD_CHANNEL_WORLD];
+    if (world->visible && now >= world->next_poll_at && !GuildQueued(g, GUILD_REQUEST_WORLD_MESSAGES) &&
+        !GuildQueued(g, GUILD_REQUEST_WORLD_SEND)) {
+        cJSON *body = GuildMessagesBody(g, GUILD_CHANNEL_WORLD, NULL);
+        GuildEnqueue(g, GUILD_REQUEST_WORLD_MESSAGES, "POST", GUILD_WORLD_MESSAGES_ROUTE, body);
+        world->next_poll_at = now + GuildChannelInterval(world);
     }
     GuildStartNext(g);
 }
