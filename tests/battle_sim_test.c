@@ -5724,6 +5724,46 @@ static void TestFlashPacksRotateOnePerPeriod(void) {
     assert(active == 1);
 }
 
+static void TestLegendaryPackRollsSkipHeroesAlreadyOwned(void) {
+    static Store store;
+    memset(&store, 0, sizeof(store));
+    store.catalog_root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
+    store.catalog = cJSON_GetObjectItemCaseSensitive(store.catalog_root, "characters");
+    StoreBuildRarityPools(&store);
+    const cJSON **legends = store.rarity_pool[RARITY_LEGENDARY];
+    int legend_count = store.rarity_pool_count[RARITY_LEGENDARY];
+    assert(legend_count > 2);
+
+    StorePackDef pack = {0};
+    StorePackDef wisp_pack = {.pool_tag = "WISP"};
+    assert(StorePackSparesDuplicates(&pack, RARITY_LEGENDARY));
+    assert(!StorePackSparesDuplicates(&pack, RARITY_EPIC) && !StorePackSparesDuplicates(&wisp_pack, RARITY_LEGENDARY));
+
+    Player player = TestStarterPlayer();
+    const cJSON *missing = legends[legend_count - 1];
+    int first = -1;
+    assert(PlayerRosterAppendDefinitions(&player, legends, legend_count - 1, &first));
+    const cJSON *rolled[STORE_MAX_RESULTS] = {0};
+    for (uint32_t seed = 1; seed <= 40; seed++) {
+        uint32_t rng = seed;
+        assert(StoreRollPackDefinition(&store, &pack, &player, RARITY_LEGENDARY, rolled, 0, &rng) == missing);
+    }
+
+    rolled[0] = missing;
+    bool repeated_an_owned_legend = false;
+    for (uint32_t seed = 1; seed <= 40; seed++) {
+        uint32_t rng = seed;
+        const cJSON *again = StoreRollPackDefinition(&store, &pack, &player, RARITY_LEGENDARY, rolled, 1, &rng);
+        assert(again && RarityFromString(JsonStr(again, "rarity")) == RARITY_LEGENDARY);
+        repeated_an_owned_legend |= again != missing;
+    }
+    assert(repeated_an_owned_legend);
+
+    PlayerUnloadRoster(&player);
+    for (int rarity = RARITY_COMMON; rarity <= RARITY_LEGENDARY; rarity++) MemFree((void *)store.rarity_pool[rarity]);
+    cJSON_Delete(store.catalog_root);
+}
+
 static void TestStoreDialogTextFitsRussianPackNames(void) {
     char header[STORE_DIALOG_TEXT_CAPACITY];
     StoreFormatPackName(header, sizeof(header), "{0}: недоступно", "Усилитель \"черных\" и \"белых\" героев");
@@ -6539,8 +6579,9 @@ static void TestPvpEventClaimPaysWholeBundleOnce(void) {
     PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
     const PvpEvent *event = TestPvpEventNamed("PVP_AVVAR_AND_DRAGONS_JUN_27_TITLE_KEY");
     const PvpReward *top = &event->rank_rewards[0].reward;
-    assert(top->prize_count == 4 && PvpRewardUnitCount(top) == 4 && top->gems == 175 && top->gold == 100000);
-    const char *id = top->prizes[0].id;
+    assert(top->prize_count == 4 && PvpRewardUnitCount(top) == 3 && top->gems == 175 && top->gold == 100000);
+    assert(top->prizes[0].kind == PVP_PRIZE_VOUCHER && top->prizes[1].kind == PVP_PRIZE_UNIT);
+    const char *id = top->prizes[1].id;
     int owned = TestRosterCount(&player, id);
     player.gold = 0;
     player.gems = 0;
@@ -6553,10 +6594,10 @@ static void TestPvpEventClaimPaysWholeBundleOnce(void) {
     assert(!PvpEventClaim(&player, 0) && !player.pvp.event_results[0].claimed && player.gold == 0);
     player.roster_count = roster;
     assert(PvpEventClaim(&player, 0));
-    assert(player.roster_count == roster + 4);
+    assert(player.roster_count == roster + 3);
     assert(TestRosterCount(&player, id) == owned + 1);
     assert(player.gold == top->gold && player.gems == top->gems);
-    assert(!PvpEventClaim(&player, 0) && player.roster_count == roster + 4);
+    assert(!PvpEventClaim(&player, 0) && player.roster_count == roster + 3);
     PlayerUnloadRoster(&player);
 }
 
@@ -7864,6 +7905,7 @@ int main(void) {
     TestFlashPacksRotateOnePerPeriod();
     TestVoucherOfferWinsOnlyWhenOwned();
     TestStoreDialogTextFitsRussianPackNames();
+    TestLegendaryPackRollsSkipHeroesAlreadyOwned();
     TestAscendedHeroLoadsAboveTheOldLevelCap();
     TestHeroLevelTableCoversAscendedCap();
     TestMissionSeriesPicksTheClaimableTier();

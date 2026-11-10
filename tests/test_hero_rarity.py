@@ -58,6 +58,36 @@ class HeroRarityTable(unittest.TestCase):
         stale = validate_hero_rarity.unapplied(table(), CATALOG)
         self.assertEqual(stale, ["UNIT_YOUNG: the catalog ships Legendary, the table says Epic"])
 
+    def test_no_reward_from_play_hands_out_a_legendary(self):
+        self.assertEqual(validate_hero_rarity.shipped_play_reward_problems(validate_hero_rarity.catalog_heroes()), [])
+        nexus = [{"difficulties": [{"id": "Hard_Map", "nodes": [{"step": 2, "reward_rarity": [4, 5]}]}]}]
+        pvp = {
+            "events": {
+                "catalog": [
+                    {
+                        "rank_rewards": [
+                            {
+                                "prizes": [
+                                    {"kind": "unit", "id": "UNIT_GODDESS"},
+                                    {"kind": "unit", "id": "UNIT_GRUNT"},
+                                    {"kind": "voucher", "id": "bloodstone"},
+                                    {"kind": "voucher", "id": "iron"},
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            }
+        }
+        self.assertEqual(
+            validate_hero_rarity.play_reward_problems(nexus, pvp, CATALOG),
+            [
+                "Hard_Map step 2: the Nexus rolls a Legendary hero",
+                "UNIT_GODDESS: a PvP prize hands out a Legendary hero",
+                "a PvP prize hands out a bloodstone voucher",
+            ],
+        )
+
     def test_every_hero_needs_exactly_one_row(self):
         missing = table()
         missing["heroes"] = [entry for entry in missing["heroes"] if entry["id"] != "UNIT_GRUNT"]

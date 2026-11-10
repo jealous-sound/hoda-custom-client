@@ -53,7 +53,7 @@ HODA_MERCHANT_GEAR_PACK_NAME|Pack d'équipement de marchand
 HODA_MASTERWORK_GEAR_PACK_NAME|Pack d'équipement de maître
 HODA_ARMORY_GEAR_PACK_NAME|Pack d'équipement de l'armurerie
 HODA_TUTORIAL_CONSUME_PACK_INFO|Deux héros gratuits pour apprendre l'absorption.
-HODA_GRAND_CHAMPION_PACK_INFO|10 packs de héraut : 2 héros légendaires et 3 héros épiques garantis.
+HODA_GRAND_CHAMPION_PACK_INFO|10 packs de héraut : 3 héros épiques garantis.
 HODA_PRESTIGE_RUNE_PACK_INFO|Une rune de prestige pour l'emplacement spécial de l'équipe.
 HODA_STORE_HERO_PACK_INFO_1_UNCOMMON|Donne 1 héros. Singulier ou supérieur garanti.
 HODA_STORE_HERO_PACK_INFO_1_RARE|Donne 1 héros. Rare ou supérieur garanti.
@@ -67,8 +67,7 @@ HODA_STORE_GEAR_PACK_INFO_1|Donne 1 pièce d'équipement.
 HODA_STORE_GEAR_PACK_INFO_2|Donne 2 pièces d'équipement.
 HODA_STORE_GEAR_PACK_INFO_3|Donne 3 pièces d'équipement.
 HODA_STORE_GEAR_PACK_INFO_5|Donne 5 pièces d'équipement.
-HODA_STORE_BULLET_LEGENDARY_BY_FOURTH|Légendaire d'ici le 4e pack
-HODA_STORE_BULLET_GRAND_CHAMPION|2 légendaires et 3 épiques garantis
+HODA_STORE_BULLET_GRAND_CHAMPION|3 épiques garantis
 HODA_STORE_BULLET_CHANCE_AT|Possib. de
 HODA_STORE_BULLET_GIFT|Cadeau
 HODA_STORE_BULLET_NUGS|Attention ! Contient des cochards !

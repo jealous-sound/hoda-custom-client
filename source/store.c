@@ -19,6 +19,7 @@ static void CampaignDrawWrapped(
 #define STORE_RUNE_SLOT_FAMILIES 4
 #define STORE_POOL_TAG_CAPACITY 16
 #define STORE_UNIQUE_HERO_REROLLS 32
+#define STORE_NO_DUPLICATE_RARITY RARITY_LEGENDARY
 #define STORE_DEFAULT_POOL_EXCLUDED_TAG "WISP"
 #define STORE_NEVER_SOLD_TAG "BANNER"
 #define STORE_MAX_ITEM_RESULTS                                                                                         \
@@ -1083,25 +1084,70 @@ static const cJSON *StoreRandomTaggedDefinition(const Store *store, const char *
     return NULL;
 }
 
-static const cJSON *StorePackDefinition(Store *store, const StorePackDef *pack, Rarity rarity, uint32_t *rng) {
-    return pack->pool_tag[0] ? StoreRandomTaggedDefinition(store, pack->pool_tag, rarity, rng)
-                             : StoreRandomDefinition(store, rarity, rng);
-}
-
 static bool StoreDefinitionAlreadyRolled(const cJSON *definition, const cJSON *const *definitions, int count) {
     for (int i = 0; i < count; i++)
         if (definitions[i] == definition) return true;
     return false;
 }
 
-static const cJSON *StoreRollPackDefinition(
-    Store *store, const StorePackDef *pack, Rarity rarity, const cJSON *const *rolled, int count, uint32_t *rng
+static bool
+StoreHeroOwnedOrRolled(const Player *player, const cJSON *definition, const cJSON *const *rolled, int rolled_count) {
+    if (StoreDefinitionAlreadyRolled(definition, rolled, rolled_count)) return true;
+    const char *id = JsonStr(definition, "id");
+    for (int i = 0; i < player->roster_count; i++)
+        if (!strcmp(player->roster[i].id, id)) return true;
+    return false;
+}
+
+static bool StorePackSparesDuplicates(const StorePackDef *pack, Rarity rarity) {
+    return rarity == STORE_NO_DUPLICATE_RARITY && !pack->pool_tag[0];
+}
+
+static const cJSON *StoreRandomUnownedDefinition(
+    Store *store, const Player *player, Rarity rarity, const cJSON *const *rolled, int rolled_count, uint32_t *rng
 ) {
-    const cJSON *definition = StorePackDefinition(store, pack, rarity, rng);
+    int unowned = 0;
+    for (int i = 0; i < store->rarity_pool_count[rarity]; i++)
+        unowned += !StoreHeroOwnedOrRolled(player, store->rarity_pool[rarity][i], rolled, rolled_count);
+    if (unowned == 0) return StoreRandomDefinition(store, rarity, rng);
+    int pick = StoreRngRange(rng, unowned);
+    for (int i = 0; i < store->rarity_pool_count[rarity]; i++) {
+        const cJSON *definition = store->rarity_pool[rarity][i];
+        if (StoreHeroOwnedOrRolled(player, definition, rolled, rolled_count)) continue;
+        if (pick-- == 0) return definition;
+    }
+    return NULL;
+}
+
+static const cJSON *StorePackDefinition(
+    Store *store,
+    const StorePackDef *pack,
+    const Player *player,
+    Rarity rarity,
+    const cJSON *const *rolled,
+    int rolled_count,
+    uint32_t *rng
+) {
+    if (pack->pool_tag[0]) return StoreRandomTaggedDefinition(store, pack->pool_tag, rarity, rng);
+    if (StorePackSparesDuplicates(pack, rarity))
+        return StoreRandomUnownedDefinition(store, player, rarity, rolled, rolled_count, rng);
+    return StoreRandomDefinition(store, rarity, rng);
+}
+
+static const cJSON *StoreRollPackDefinition(
+    Store *store,
+    const StorePackDef *pack,
+    const Player *player,
+    Rarity rarity,
+    const cJSON *const *rolled,
+    int count,
+    uint32_t *rng
+) {
+    const cJSON *definition = StorePackDefinition(store, pack, player, rarity, rolled, count, rng);
     for (int attempt = 0; pack->unique_heroes && attempt < STORE_UNIQUE_HERO_REROLLS &&
                           StoreDefinitionAlreadyRolled(definition, rolled, count);
          attempt++)
-        definition = StorePackDefinition(store, pack, rarity, rng);
+        definition = StorePackDefinition(store, pack, player, rarity, rolled, count, rng);
     return definition;
 }
 
@@ -1446,7 +1492,7 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
         } else {
             bool pity = tracks_pity && next_pity >= pack->legendary_pity - 1;
             rarities[i] = StorePackSlotRarity(pack, i - pack->fixed_hero_count, pity, &rng);
-            definitions[i] = StoreRollPackDefinition(store, pack, rarities[i], definitions, i, &rng);
+            definitions[i] = StoreRollPackDefinition(store, pack, player, rarities[i], definitions, i, &rng);
         }
         if (!definitions[i]) {
             StoreSetStatus(store, LocGet("HODA_STORE_PACK_UNAVAILABLE"));

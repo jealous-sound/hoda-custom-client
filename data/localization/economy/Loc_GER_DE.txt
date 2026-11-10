@@ -53,7 +53,7 @@ HODA_MERCHANT_GEAR_PACK_NAME|Händler-Ausrüstungspack
 HODA_MASTERWORK_GEAR_PACK_NAME|Meisterwerk-Ausrüstungspack
 HODA_ARMORY_GEAR_PACK_NAME|Arsenal-Ausrüstungspack
 HODA_TUTORIAL_CONSUME_PACK_INFO|Ein kostenloses Heldenpaar, mit dem du das Auflösen lernst.
-HODA_GRAND_CHAMPION_PACK_INFO|10 Champion-Packs: 2 Legendäre und 3 Epische Helden garantiert.
+HODA_GRAND_CHAMPION_PACK_INFO|10 Champion-Packs: 3 Epische Helden garantiert.
 HODA_PRESTIGE_RUNE_PACK_INFO|Eine Prestige-Rune für das besondere Gruppenfeld.
 HODA_STORE_HERO_PACK_INFO_1_UNCOMMON|Enthält 1 Helden. Garantiert Außergewöhnlich oder besser.
 HODA_STORE_HERO_PACK_INFO_1_RARE|Enthält 1 Helden. Garantiert Selten oder besser.
@@ -67,8 +67,7 @@ HODA_STORE_GEAR_PACK_INFO_1|Enthält 1 Ausrüstungsgegenstand.
 HODA_STORE_GEAR_PACK_INFO_2|Enthält 2 Ausrüstungsgegenstände.
 HODA_STORE_GEAR_PACK_INFO_3|Enthält 3 Ausrüstungsgegenstände.
 HODA_STORE_GEAR_PACK_INFO_5|Enthält 5 Ausrüstungsgegenstände.
-HODA_STORE_BULLET_LEGENDARY_BY_FOURTH|Legendär spätestens im 4. Pack
-HODA_STORE_BULLET_GRAND_CHAMPION|2 Legendäre und 3 Epische garantiert
+HODA_STORE_BULLET_GRAND_CHAMPION|3 Epische garantiert
 HODA_STORE_BULLET_CHANCE_AT|Chance auf
 HODA_STORE_BULLET_GIFT|Geschenk
 HODA_STORE_BULLET_NUGS|Warnung! Enthält Nugs!

@@ -10,9 +10,12 @@ ROOT = Path(__file__).resolve().parent.parent
 TABLE = ROOT / "data/hero_rarity.json"
 CHARACTERS = ROOT / "client-additional-data/characters.json"
 CUSTOM_HEROES = ROOT / "data/custom_heroes.json"
+NEXUS_MAPS = ROOT / "data/nexus_maps.json"
+PVP_RULES = ROOT / "data/pvp_rules.json"
 CLI_DESCRIPTION = (
     "Check the hero rarity table: every hero has one row, Legendary stays under its cap, no character "
-    "holds more than one Legendary form, and the shipped catalog carries the same rarities."
+    "holds more than one Legendary form, the shipped catalog carries the same rarities, and no reward "
+    "from play hands out a Legendary."
 )
 
 RARITIES = ("Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic")
@@ -20,6 +23,8 @@ SUPPORTED_VERSION = 1
 BORN_ONLY_RARITY = "Mythic"
 CAPPED_RARITY = "Legendary"
 MIN_FORMS_PER_CHARACTER = 2
+UPGRADE_MATERIAL_GROUP = "Wisp"
+GUARANTEED_LEGENDARY_VOUCHER = "bloodstone"
 
 
 def catalog_heroes():
@@ -93,6 +98,40 @@ def unapplied(table, catalog):
     ]
 
 
+def prizes_in(node):
+    if isinstance(node, dict):
+        if "kind" in node and "id" in node:
+            yield node
+        for value in node.values():
+            yield from prizes_in(value)
+    elif isinstance(node, list):
+        for value in node:
+            yield from prizes_in(value)
+
+
+def play_reward_problems(nexus_maps, pvp_rules, catalog):
+    found = []
+    capped_number = RARITIES.index(CAPPED_RARITY) + 1
+    for event in nexus_maps:
+        for difficulty in event["difficulties"]:
+            for node in difficulty["nodes"]:
+                if capped_number in node.get("reward_rarity", []):
+                    found.append(f"{difficulty['id']} step {node['step']}: the Nexus rolls a {CAPPED_RARITY} hero")
+    for prize in prizes_in(pvp_rules.get("events", {})):
+        hero = catalog.get(prize["id"]) if prize["kind"] == "unit" else None
+        if hero and hero["rarity"] == CAPPED_RARITY and UPGRADE_MATERIAL_GROUP not in hero.get("groups", []):
+            found.append(f"{prize['id']}: a PvP prize hands out a {CAPPED_RARITY} hero")
+        if prize["kind"] == "voucher" and prize["id"] == GUARANTEED_LEGENDARY_VOUCHER:
+            found.append(f"a PvP prize hands out a {GUARANTEED_LEGENDARY_VOUCHER} voucher")
+    return found
+
+
+def shipped_play_reward_problems(catalog):
+    nexus_maps = json.loads(NEXUS_MAPS.read_text(encoding="utf-8"))
+    pvp_rules = json.loads(PVP_RULES.read_text(encoding="utf-8"))
+    return play_reward_problems(nexus_maps, pvp_rules, catalog)
+
+
 def summary(table):
     counts = collections.Counter(row["rarity"] for row in table["heroes"])
     return ", ".join(f"{rarity} {counts[rarity]}" for rarity in RARITIES)
@@ -102,7 +141,7 @@ def main():
     argparse.ArgumentParser(description=CLI_DESCRIPTION).parse_args()
     table = json.loads(TABLE.read_text(encoding="utf-8"))
     catalog = catalog_heroes()
-    found = problems(table, catalog) or unapplied(table, catalog)
+    found = problems(table, catalog) or unapplied(table, catalog) or shipped_play_reward_problems(catalog)
     if found:
         for problem in found:
             print(f"hero rarity: {problem}", file=sys.stderr)

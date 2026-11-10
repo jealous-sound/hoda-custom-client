@@ -53,7 +53,7 @@ HODA_MERCHANT_GEAR_PACK_NAME|Набор снаряжения торговца
 HODA_MASTERWORK_GEAR_PACK_NAME|Шедевральный набор снаряжения
 HODA_ARMORY_GEAR_PACK_NAME|Набор "Арсенал"
 HODA_TUTORIAL_CONSUME_PACK_INFO|Бесплатная пара героев, чтобы научиться поглощению.
-HODA_GRAND_CHAMPION_PACK_INFO|10 наборов защитника: 2 легендарных и 3 эпических героя гарантированы.
+HODA_GRAND_CHAMPION_PACK_INFO|10 наборов защитника: 3 эпических героя гарантированы.
 HODA_PRESTIGE_RUNE_PACK_INFO|Одна престижная руна для особой ячейки отряда.
 HODA_STORE_HERO_PACK_INFO_1_UNCOMMON|Дает 1 героя. Как минимум необычный боец.
 HODA_STORE_HERO_PACK_INFO_1_RARE|Дает 1 героя. Как минимум редкий боец.
@@ -67,8 +67,7 @@ HODA_STORE_GEAR_PACK_INFO_1|Дает 1 предмет снаряжения.
 HODA_STORE_GEAR_PACK_INFO_2|Дает 2 предмета снаряжения.
 HODA_STORE_GEAR_PACK_INFO_3|Дает 3 предмета снаряжения.
 HODA_STORE_GEAR_PACK_INFO_5|Дает 5 предметов снаряжения.
-HODA_STORE_BULLET_LEGENDARY_BY_FOURTH|Легендарный не позже 4-го
-HODA_STORE_BULLET_GRAND_CHAMPION|2 легендарных и 3 эпических гарантировано
+HODA_STORE_BULLET_GRAND_CHAMPION|3 эпических гарантировано
 HODA_STORE_BULLET_CHANCE_AT|Шанс на
 HODA_STORE_BULLET_GIFT|Подарок
 HODA_STORE_BULLET_NUGS|Осторожно, наги!

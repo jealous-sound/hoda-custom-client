@@ -70,18 +70,21 @@ BLUE = 'cache:tex.Store_HeaderBGBlueGreenPack'
 FEATURED = 'cache:tex.Store_HeaderBGFeaturedPack'
 PURPLE_TINT_OVER_SILVER = '#B070FF'
 
-COMMON_TIER = {'Common': 7500, 'Uncommon': 2000, 'Rare': 400, 'Epic': 90, 'Legendary': 10}
-UNCOMMON_TIER = {'Common': 0, 'Uncommon': 7000, 'Rare': 2200, 'Epic': 700, 'Legendary': 100}
-RARE_TIER = {'Common': 0, 'Uncommon': 0, 'Rare': 6600, 'Epic': 2700, 'Legendary': 700}
-BULK_TIER = {'Common': 0, 'Uncommon': 0, 'Rare': 6000, 'Epic': 3200, 'Legendary': 800}
-EPIC_TIER = {'Common': 0, 'Uncommon': 0, 'Rare': 0, 'Epic': 8500, 'Legendary': 1500}
+COMMON_TIER = {'Common': 5500, 'Uncommon': 3800, 'Rare': 650, 'Epic': 50, 'Legendary': 0}
+UNCOMMON_TIER = {'Common': 0, 'Uncommon': 6000, 'Rare': 3600, 'Epic': 400, 'Legendary': 0}
+RARE_TIER = {'Common': 0, 'Uncommon': 0, 'Rare': 8400, 'Epic': 1500, 'Legendary': 100}
+BULK_TIER = {'Common': 0, 'Uncommon': 0, 'Rare': 8000, 'Epic': 1850, 'Legendary': 150}
+EPIC_TIER = {'Common': 0, 'Uncommon': 0, 'Rare': 0, 'Epic': 9700, 'Legendary': 300}
+WISP_TIER = {'Common': 0, 'Uncommon': 0, 'Rare': 6600, 'Epic': 2700, 'Legendary': 700}
 LEGENDARY_TIER = {'Common': 0, 'Uncommon': 0, 'Rare': 0, 'Epic': 0, 'Legendary': 10000}
 UNCOMMON_ONLY_TIER = {'Common': 0, 'Uncommon': 10000, 'Rare': 0, 'Epic': 0, 'Legendary': 0}
 RARE_ONLY_TIER = {'Common': 0, 'Uncommon': 0, 'Rare': 10000, 'Epic': 0, 'Legendary': 0}
 MINIMUM = {id(COMMON_TIER): 'Common', id(UNCOMMON_TIER): 'Uncommon', id(RARE_TIER): 'Rare', id(BULK_TIER): 'Rare',
+           id(WISP_TIER): 'Rare',
            id(EPIC_TIER): 'Epic', id(LEGENDARY_TIER): 'Legendary', id(UNCOMMON_ONLY_TIER): 'Uncommon',
            id(RARE_ONLY_TIER): 'Rare'}
 
+RARITY_NUMBER = {'Common': 1, 'Uncommon': 2, 'Rare': 3, 'Epic': 4, 'Legendary': 5}
 WISP_POOL = 'WISP'
 GOAT_POOL = 'GOAT'
 BEASTS_STARTER_HEROES = ['UNIT_BARKSPAWN', 'UNIT_VARTERRAL']
@@ -195,12 +198,12 @@ def hero_packs():
         hero('soldier', 'ITEM_SILVER_IDENTIFIER', 20, 'UNITS', SILVER, icon + 'SilverPack',
              gold(1500) + [voucher('silver')], UNCOMMON_TIER, opened_counter=1, rune_pct=30, rune=(2, 3)),
         hero('champion', 'ITEM_GOLD_IDENTIFIER', 30, 'UNITS', CHAMPION_GOLD, icon + 'GoldPack',
-             gems(30) + [voucher('champion')], RARE_TIER, opened_counter=2, pity=4, rune_pct=100, rune=(3, 5),
-             bullets=[bullet('HODA_STORE_BULLET_LEGENDARY_BY_FOURTH', 5)]),
+             gems(30) + [voucher('champion')], RARE_TIER, opened_counter=2, rune_pct=100, rune=(3, 5),
+             bullets=[bullet(chance, 5)]),
         hero('grand_champion', 'GRAND_CHAMPION', 40, 'UNITS', 'cache:tex.Store_HeaderGrandChampionPack',
-             icon + 'LegendaryPack', gems(270), BULK_TIER, count=10, opened_counter=3, legendary=2, epic=3,
+             icon + 'LegendaryPack', gems(270), BULK_TIER, count=10, opened_counter=3, epic=3,
              rune_pct=100, rune=(3, 5), rune_count=10,
-             bullets=[bullet(TEN_FOR_THE_PRICE_OF_NINE), bullet('HODA_STORE_BULLET_GRAND_CHAMPION', 5)],
+             bullets=[bullet(TEN_FOR_THE_PRICE_OF_NINE), bullet('HODA_STORE_BULLET_GRAND_CHAMPION', 4)],
              info='HODA_GRAND_CHAMPION_PACK_INFO'),
         hero('mercenary', 'MERCENARY', 50, 'UNITS', SILVER, icon + 'WarriorPack', gold(5000), UNCOMMON_TIER,
              header_tint=PURPLE_TINT_OVER_SILVER, opened_counter=1, rune_pct=20, rune=(1, 3), bullets=[bullet(chance, 3)]),
@@ -209,10 +212,10 @@ def hero_packs():
         hero('commander', 'COMMANDER', 70, 'UNITS', GOLD, icon + 'CommanderDuhaime', gems(60), RARE_TIER,
              opened_counter=2, rune_pct=100, rune=(3, 5), gear_pct=20, gear=(2, 4), bullets=[bullet(chance, 5)]),
         hero('elite', 'ELITE', 80, 'UNITS', SILVER, icon + 'GreyWardenFiona', gems(1280), EPIC_TIER, count=10,
-             header_tint=PURPLE_TINT_OVER_SILVER, opened_counter=3, legendary=3, rune_pct=100, rune=(4, 5), rune_count=10, gear_pct=50, gear=(3, 5),
+             header_tint=PURPLE_TINT_OVER_SILVER, opened_counter=3, legendary=1, rune_pct=100, rune=(4, 5), rune_count=10, gear_pct=50, gear=(3, 5),
              bullets=[bullet(GUARANTEED, 5)]),
         hero('iron', 'IRON', 90, 'UNITS', GOLD, 'cache:tex.Store_IronPack', [voucher('iron')], RARE_TIER,
-             opened_counter=2, pity=6, rune_pct=50, rune=(2, 4), bullets=[bullet(GUARANTEED, 5)]),
+             opened_counter=2, rune_pct=50, rune=(2, 4), bullets=[bullet(chance, 5)]),
         hero('bloodstone', 'BLOODSTONE', 100, 'UNITS', GOLD, icon + 'BloodstonePack', [voucher('bloodstone')],
              LEGENDARY_TIER, opened_counter=2, rune_pct=50, rune=(3, 5), bullets=[bullet(GUARANTEED, 5)]),
         hero('lyrium_vein', 'LYRIUM_MINE', 110, 'UNITS', GREEN, 'gui/store/tex.Voucher_LyriumMine.png',
@@ -224,9 +227,9 @@ def hero_packs():
         hero('starter_beasts', 'STARTER_PACK_BEASTS', 130, 'UNITS', BRONZE, icon + 'Dragonling', gems(275),
              RARE_ONLY_TIER, count=5, opened_counter=2, fixed=BEASTS_STARTER_HEROES, rune_pct=100, rune=(5, 5),
              rune_count=5),
-        hero('wisp', 'WISP', 140, 'UNITS', GREEN, icon + 'RuneWIsp', gold(800), RARE_TIER,
+        hero('wisp', 'WISP', 140, 'UNITS', GREEN, icon + 'RuneWIsp', gold(800), WISP_TIER,
              count=10, epic=1, pool=WISP_POOL, bullets=[bullet(TRAINING)]),
-        hero('divine_wisp', 'DIVINE_WISP', 150, 'UNITS', GREEN, icon + 'DivineWisp', gems(40), RARE_TIER,
+        hero('divine_wisp', 'DIVINE_WISP', 150, 'UNITS', GREEN, icon + 'DivineWisp', gems(40), WISP_TIER,
              count=10, legendary=1, epic=2, pool=WISP_POOL, opened_counter=2, bullets=[bullet(TRAINING, 4)]),
         hero('training', 'ITEM_CONSUME_IDENTIFIER', 160, 'UNITS', GREEN, icon + 'RuneWIsp', gold(300), UNCOMMON_ONLY_TIER,
              count=2, rare=1, bullets=[bullet(TRAINING)]),
@@ -267,14 +270,15 @@ def hero_packs():
     paid = (
         ('heroic', 'MTX_PACK_HEROIC', icon + 'GoldPack', 150, 5, RARE_TIER, 0, 1),
         ('legendary', 'MTX_PACK_LEGENDARY', icon + 'LegendaryPack', 360, 5, BULK_TIER, 1, 1),
-        ('ultra', 'MTX_PACK_ULTRA', 'cache:tex.PackPromo_Darkspawn', 720, 5, EPIC_TIER, 2, 2),
-        ('ultimate', 'ITEM_ULTIMATE_IDENTIFIER_V2', 'cache:tex.PackPromo_SebastianVael', 1600, 10, EPIC_TIER, 4, 2),
-        ('special', 'SPECIAL', 'cache:tex.flashpack', 275, 3, RARE_TIER, 1, 0),
+        ('ultra', 'MTX_PACK_ULTRA', 'cache:tex.PackPromo_Darkspawn', 720, 5, EPIC_TIER, 1, 2),
+        ('ultimate', 'ITEM_ULTIMATE_IDENTIFIER_V2', 'cache:tex.PackPromo_SebastianVael', 1600, 10, EPIC_TIER, 2, 2),
+        ('special', 'SPECIAL', 'cache:tex.flashpack', 275, 3, RARE_TIER, 0, 1),
     )
     for index, (key, loc, art, price, count, tier, legendary, epic) in enumerate(paid):
         rows.append(hero(key, loc, 400 + index * 10, 'FEATURED', FEATURED, art, gems(price), tier, count=count,
                          opened_counter=3, legendary=legendary, epic=epic, rune_pct=100, rune=(3, 5),
-                         rune_count=count, gear_pct=40, gear=(2, 5), bullets=[bullet(GUARANTEED, 5)]))
+                         rune_count=count, gear_pct=40, gear=(2, 5),
+                         bullets=[bullet(GUARANTEED, RARITY_NUMBER['Legendary' if legendary else 'Epic'])]))
     flash = ('FLASH', 'FLASH_BLACK_FRIDAY', 'FLASH_DRAGON_HUNT', 'FLASH_EXCLUSIVELY', 'FLASH_FINE_DWARVEN_CRAFTS',
              'FLASH_FIREWORKS', 'FLASH_GOOD_COMPANY', 'FLASH_STAR_STRUCK', 'FLASH_STOCKING_STUFFERS',
              'FLASH_UNIVERSITY_SUPPLIES', 'FLASH_VALENTINES_GIFTS')
