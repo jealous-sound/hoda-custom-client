@@ -5613,10 +5613,31 @@ static void TestAscensionRequiresFilledSlotsAndTome(void) {
     assert(GearCanAscend(&legend));
     gear.tomes = 0;
     assert(!GearAscend(&gear, &legend) && legend.rarity == RARITY_LEGENDARY);
+}
 
-    Character epic = legend;
-    epic.rarity = RARITY_EPIC;
-    assert(!GearHasTomeSlot(&epic));
+static void TestEveryGearWearerBelowMythicAscends(void) {
+    GearTestReset();
+    for (int rarity = RARITY_COMMON; rarity <= RARITY_LEGENDARY; rarity++) {
+        Character hero;
+        GearTestLegend(&hero);
+        hero.rarity = (Rarity)rarity;
+        for (int slot = 0; slot < GEAR_NORMAL_SLOT_MAX; slot++) hero.gear.defs[slot] = (short)(slot + 1);
+        PlayerGear gear = {.tomes = 1};
+        assert(GearHasTomeSlot(&hero) && GearAscend(&gear, &hero));
+        assert(gear.tomes == 0 && hero.rarity == RARITY_MYTHIC && GearSlotCount(&hero) == 5);
+    }
+
+    Character born_mythic;
+    GearTestLegend(&born_mythic);
+    born_mythic.rarity = RARITY_MYTHIC;
+    born_mythic.gear_slots = 5;
+    assert(!GearHasTomeSlot(&born_mythic));
+
+    Character wisp;
+    GearTestLegend(&wisp);
+    wisp.gear_slots = 0;
+    wisp.has_prestige_slot = false;
+    assert(!GearHasTomeSlot(&wisp));
 }
 
 static void TestAscensionPromotesHeroAndMovesPrestigeGear(void) {
@@ -7834,6 +7855,7 @@ int main(void) {
     TestGearViewEquipFlow();
     TestBoardIgnoresClicksBehindGearAndDetails();
     TestAscensionRequiresFilledSlotsAndTome();
+    TestEveryGearWearerBelowMythicAscends();
     TestAscensionPromotesHeroAndMovesPrestigeGear();
     TestAscensionSurvivesSave();
     TestGearPackBundlesATome();

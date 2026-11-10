@@ -576,7 +576,7 @@ Texture2D GearTomeIconLoad(void) {
 }
 
 bool GearHasTomeSlot(const Character *ch) {
-    return !ch->ascended && ch->rarity == RARITY_LEGENDARY && GearHasPrestigeSlot(ch);
+    return ch->rarity < RARITY_MYTHIC && GearHasPrestigeSlot(ch);
 }
 
 int GearNormalSlotsFilled(const Character *ch) {
