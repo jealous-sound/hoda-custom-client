@@ -11,8 +11,8 @@ TABLE = ROOT / "data/hero_rarity.json"
 CHARACTERS = ROOT / "client-additional-data/characters.json"
 CUSTOM_HEROES = ROOT / "data/custom_heroes.json"
 CLI_DESCRIPTION = (
-    "Check the proposed hero rarity table: every hero has one row, Legendary stays under its cap "
-    "and no character holds more than one Legendary form."
+    "Check the hero rarity table: every hero has one row, Legendary stays under its cap, no character "
+    "holds more than one Legendary form, and the shipped catalog carries the same rarities."
 )
 
 RARITIES = ("Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic")
@@ -85,6 +85,14 @@ def problems(table, catalog):
     return found
 
 
+def unapplied(table, catalog):
+    return [
+        f"{row['id']}: the catalog ships {catalog[row['id']]['rarity']}, the table says {row['rarity']}"
+        for row in table.get("heroes", [])
+        if row.get("id") in catalog and catalog[row["id"]]["rarity"] != row.get("rarity")
+    ]
+
+
 def summary(table):
     counts = collections.Counter(row["rarity"] for row in table["heroes"])
     return ", ".join(f"{rarity} {counts[rarity]}" for rarity in RARITIES)
@@ -93,7 +101,8 @@ def summary(table):
 def main():
     argparse.ArgumentParser(description=CLI_DESCRIPTION).parse_args()
     table = json.loads(TABLE.read_text(encoding="utf-8"))
-    found = problems(table, catalog_heroes())
+    catalog = catalog_heroes()
+    found = problems(table, catalog) or unapplied(table, catalog)
     if found:
         for problem in found:
             print(f"hero rarity: {problem}", file=sys.stderr)

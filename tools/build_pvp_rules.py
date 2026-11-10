@@ -59,9 +59,9 @@ RULES = {
         "level_spread": 2,
     },
     "squads": {
-        "rating_base": 1500,
-        "rating_per_level": 350,
-        "rating_per_level_squared": 6,
+        "rating_base": 4000,
+        "rating_per_level": 265,
+        "rating_per_level_squared": 0,
         "rating_max_shift_pct": 25,
         "trophies_per_shift_pct": 10,
         "candidates": 6,

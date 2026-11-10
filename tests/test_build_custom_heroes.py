@@ -81,6 +81,24 @@ class CatalogRowTest(unittest.TestCase):
         self.assertEqual(tier["max_fortify_health"], 2755)
         self.assertEqual(tier["max_level"], 20)
 
+    def test_a_hero_placed_above_its_base_takes_that_band(self):
+        bands = {
+            "Legendary": {"costs": {"hero": {tier: 1000 for tier in "I II III IV".split()}}},
+            "Mythic": {
+                "costs": {"hero": {tier: 2000 for tier in "I II III IV".split()}},
+                "level_caps": {tier: 11 for tier in "I II III IV".split()},
+            },
+        }
+        plain = build_custom_heroes.catalog_row(spec(), shipped_base())
+        raised = build_custom_heroes.catalog_row(spec(), shipped_base(), {spec()["id"]: "Mythic"}, bands)
+        self.assertEqual(raised["rarity"], "Mythic")
+        for tier, stats in raised["tiers"].items():
+            self.assertEqual(stats["max_level"], 11)
+            self.assertEqual(stats["base_power"], plain["tiers"][tier]["base_power"] * 2)
+            self.assertEqual(stats["max_power"], stats["base_power"] + 10 * stats["power_per_level"])
+        same = build_custom_heroes.catalog_row(spec(), shipped_base(), {spec()["id"]: "Legendary"}, bands)
+        self.assertEqual(same, plain)
+
     def test_the_base_catalog_is_left_untouched(self):
         shipped = shipped_base()
         before = json.dumps(shipped, sort_keys=True)

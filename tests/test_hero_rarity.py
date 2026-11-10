@@ -52,6 +52,12 @@ class HeroRarityTable(unittest.TestCase):
         shipped = validate_hero_rarity.json.loads(validate_hero_rarity.TABLE.read_text(encoding="utf-8"))
         self.assertEqual(validate_hero_rarity.problems(shipped, validate_hero_rarity.catalog_heroes()), [])
 
+    def test_the_shipped_catalog_carries_the_table(self):
+        shipped = validate_hero_rarity.json.loads(validate_hero_rarity.TABLE.read_text(encoding="utf-8"))
+        self.assertEqual(validate_hero_rarity.unapplied(shipped, validate_hero_rarity.catalog_heroes()), [])
+        stale = validate_hero_rarity.unapplied(table(), CATALOG)
+        self.assertEqual(stale, ["UNIT_YOUNG: the catalog ships Legendary, the table says Epic"])
+
     def test_every_hero_needs_exactly_one_row(self):
         missing = table()
         missing["heroes"] = [entry for entry in missing["heroes"] if entry["id"] != "UNIT_GRUNT"]

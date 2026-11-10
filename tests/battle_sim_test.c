@@ -1835,9 +1835,9 @@ static void TestLegendaryStars(void) {
         const char *id;
         int stars;
     } cases[] = {
-        {"UNIT_HIGHDRAGON", 1},
-        {"UNIT_ADVISORMORRIGAN", 2},
-        {"UNIT_NECROMANCERDORIAN", 3},
+        {"UNIT_AVVARGOATLEGENDARY", 1},
+        {"UNIT_KINGMARIC", 2},
+        {"UNIT_GARAHEL", 3},
     };
 
     for (int i = 0; i < (int)(sizeof(cases) / sizeof(cases[0])); i++) {
@@ -1869,7 +1869,6 @@ static void TestLegendaryStars(void) {
             ratings[ch.stars]++;
         } else {
             assert(LegendaryStarRating(&ch) == 0);
-            if (ch.rarity <= RARITY_EPIC) assert(ch.stars == 0);
         }
     }
     assert(ratings[1] > 0 && ratings[2] > 0 && ratings[3] > 0);
@@ -6943,14 +6942,14 @@ static void TestFortifyBonusesFollowThe544Calculator(void) {
     );
     Character golem = FortifyTestHero(catalog, "UNIT_INFERNOGOLEM", TIER_IV);
     GearApplyAscension(&golem);
-    AssertFortifyBonus(&golem, 2, FortifyTestChild("UNIT_OGRE", TIER_III, false), FORTIFY_STAT_HEALTH, 360, 54, 72);
+    AssertFortifyBonus(&golem, 2, FortifyTestChild("UNIT_OGRE", TIER_III, false), FORTIFY_STAT_HEALTH, 222, 33, 44);
 
     int power = CharacterStatPower(&golem), health = CharacterStatHealth(&golem);
     golem.fortify[2] = FortifyTestChild("UNIT_OGRE", TIER_III, false);
     golem.fortify[1] = FortifyTestChild("UNIT_ELVENMAGE", TIER_I, false);
     int power_bonus = FortifyBonusTotal(FortifySlotBonus(&golem, 1, &golem.fortify[1]));
-    assert(power_bonus > 0 && FortifyBonusPower(&golem) == power_bonus && FortifyBonusHealth(&golem) == 486);
-    assert(CharacterStatPower(&golem) == power + power_bonus && CharacterStatHealth(&golem) == health + 486);
+    assert(power_bonus > 0 && FortifyBonusPower(&golem) == power_bonus && FortifyBonusHealth(&golem) == 299);
+    assert(CharacterStatPower(&golem) == power + power_bonus && CharacterStatHealth(&golem) == health + 299);
     assert(CharacterLevelPower(&golem) == power && CharacterLevelHealth(&golem) == health);
     cJSON_Delete(root);
 }

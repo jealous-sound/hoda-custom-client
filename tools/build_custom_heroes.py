@@ -6,6 +6,8 @@ import json
 import sys
 from pathlib import Path
 
+import hero_retier
+
 ROOT = Path(__file__).resolve().parent.parent
 SPEC_DIR = ROOT / "data/custom_heroes"
 OUTPUT = ROOT / "data/custom_heroes.json"
@@ -102,7 +104,14 @@ def scaled_tiers(tiers, stat_scale):
     return out
 
 
-def catalog_row(spec, shipped):
+def placed_in_band(row, base_rarity, rarity, bands):
+    if rarity == base_rarity:
+        return row
+    source_costs = bands[base_rarity]["costs"][hero_retier.kind_of(row)]
+    return hero_retier.retiered(row, rarity, source_costs, bands[rarity])
+
+
+def catalog_row(spec, shipped, rarities=None, bands=None):
     base = shipped.get(spec["based_on"])
     if base is None:
         raise SystemExit(f"{spec['id']}: based_on {spec['based_on']!r} is not a shipped hero")
@@ -115,6 +124,8 @@ def catalog_row(spec, shipped):
     merged["tiers"] = scaled_tiers(base["tiers"], spec.get("stat_scale", {}))
     merged.pop("id")
     row = {"id": spec["id"], "based_on": spec["based_on"], **merged}
+    if rarities and spec["id"] in rarities:
+        row = placed_in_band(row, base["rarity"], rarities[spec["id"]], bands)
     for field, capacity in (
         ("id", RUNTIME_ID_CAPACITY),
         ("name", RUNTIME_NAME_CAPACITY),
@@ -124,12 +135,13 @@ def catalog_row(spec, shipped):
     return row
 
 
-def build(specs, shipped):
-    return {"version": CATALOG_VERSION, "characters": [catalog_row(spec, shipped) for spec in specs]}
+def build(specs, shipped, rarities=None, bands=None):
+    rows = [catalog_row(spec, shipped, rarities, bands) for spec in specs]
+    return {"version": CATALOG_VERSION, "characters": rows}
 
 
-def render(specs, shipped):
-    return json.dumps(build(specs, shipped), ensure_ascii=False, indent=1) + "\n"
+def render(specs, shipped, rarities=None, bands=None):
+    return json.dumps(build(specs, shipped, rarities, bands), ensure_ascii=False, indent=1) + "\n"
 
 
 def main():
@@ -137,7 +149,7 @@ def main():
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     specs = load_specs()
-    text = render(specs, shipped_rows())
+    text = render(specs, shipped_rows(), hero_retier.proposed_rarities(), hero_retier.load_bands())
     if args.check:
         if not OUTPUT.exists() or OUTPUT.read_text(encoding="utf-8") != text:
             print(f"{OUTPUT.relative_to(ROOT)} is stale", file=sys.stderr)
