@@ -576,7 +576,7 @@ Texture2D GearTomeIconLoad(void) {
 }
 
 bool GearHasTomeSlot(const Character *ch) {
-    return ch->rarity < RARITY_MYTHIC && GearHasPrestigeSlot(ch);
+    return !ch->ascended && ch->rarity < RARITY_MYTHIC && GearHasPrestigeSlot(ch);
 }
 
 int GearNormalSlotsFilled(const Character *ch) {
@@ -593,7 +593,6 @@ bool GearCanAscend(const Character *ch) {
 void GearApplyAscension(Character *ch) {
     if (ch->ascended) return;
     ch->ascended = true;
-    ch->rarity = RARITY_MYTHIC;
     ch->gear_slots += GEAR_ASCENSION_BONUS_SLOTS;
     for (int tier = 0; tier < TIER_COUNT; tier++) ch->stats[tier].max_level += GEAR_ASCENSION_BONUS_LEVELS;
 }

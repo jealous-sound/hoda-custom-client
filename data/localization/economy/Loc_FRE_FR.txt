@@ -131,8 +131,8 @@ HODA_GEAR_SHOW_PREVIOUS|{0} précédents
 HODA_GEAR_SHOW_NEXT|{0} suivants
 HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|Remplissez tous les emplacements d'équipement pour débloquer le tome d'ascension.
 HODA_EVO_TOME_REQUIRED_MESSAGE|Il vous faut un tome d'ascension. Vous pouvez en acheter un à la boutique.
-HODA_EVO_TOME_USE_CONFIRM|Utiliser un tome d'ascension pour élever ce héros à la rareté mythique ?
-HODA_EVO_TOME_EXPLAIN_DESC|Les héros mythiques obtiennent <color=#ffa500ff>+5 niveaux max.</color> et <color=#ffa500ff>un emplacement d'équipement supplémentaire</color> !
+HODA_EVO_TOME_USE_CONFIRM|Utiliser un tome d'ascension sur ce héros ?
+HODA_EVO_TOME_EXPLAIN_DESC|Le héros obtient <color=#ffa500ff>+5 niveaux max.</color> et <color=#ffa500ff>un emplacement d'équipement supplémentaire</color> !
 HODA_EVO_TOME_COUNT|Tomes : {0}
 HODA_TOME_POPUP_TITLE|Tome d'ascension
 HODA_RARITY_MYTHIC|Mythique

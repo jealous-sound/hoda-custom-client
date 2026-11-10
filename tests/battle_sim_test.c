@@ -5615,7 +5615,7 @@ static void TestAscensionRequiresFilledSlotsAndTome(void) {
     assert(!GearAscend(&gear, &legend) && legend.rarity == RARITY_LEGENDARY);
 }
 
-static void TestEveryGearWearerBelowMythicAscends(void) {
+static void TestEveryGearWearerAscendsAndKeepsItsRarity(void) {
     GearTestReset();
     for (int rarity = RARITY_COMMON; rarity <= RARITY_LEGENDARY; rarity++) {
         Character hero;
@@ -5624,7 +5624,8 @@ static void TestEveryGearWearerBelowMythicAscends(void) {
         for (int slot = 0; slot < GEAR_NORMAL_SLOT_MAX; slot++) hero.gear.defs[slot] = (short)(slot + 1);
         PlayerGear gear = {.tomes = 1};
         assert(GearHasTomeSlot(&hero) && GearAscend(&gear, &hero));
-        assert(gear.tomes == 0 && hero.rarity == RARITY_MYTHIC && GearSlotCount(&hero) == 5);
+        assert(gear.tomes == 0 && hero.ascended && hero.rarity == (Rarity)rarity && GearSlotCount(&hero) == 5);
+        assert(!GearHasTomeSlot(&hero));
     }
 
     Character born_mythic;
@@ -5640,7 +5641,7 @@ static void TestEveryGearWearerBelowMythicAscends(void) {
     assert(!GearHasTomeSlot(&wisp));
 }
 
-static void TestAscensionPromotesHeroAndMovesPrestigeGear(void) {
+static void TestAscensionRaisesLevelCapAndMovesPrestigeGear(void) {
     GearTestReset();
     Character legend;
     GearTestLegend(&legend);
@@ -5649,7 +5650,7 @@ static void TestAscensionPromotesHeroAndMovesPrestigeGear(void) {
     for (int slot = 0; slot < 4; slot++) legend.gear.defs[slot] = (short)(slot + 1);
 
     assert(GearAscend(&gear, &legend));
-    assert(gear.tomes == 1 && legend.ascended && legend.rarity == RARITY_MYTHIC);
+    assert(gear.tomes == 1 && legend.ascended && legend.rarity == RARITY_LEGENDARY);
     assert(GearSlotCount(&legend) == 5 && !GearHasTomeSlot(&legend));
     assert(legend.stats[TIER_I].max_level == 85 && legend.stats[TIER_IV].max_level == 95);
     assert(GearSlotIsPrestige(&legend, 4) && !GearSlotIsPrestige(&legend, 3));
@@ -5676,7 +5677,7 @@ static void TestAscensionSurvivesSave(void) {
     saved.gear.tomes = 0;
     ProgressionLoadGear(json, &saved);
     cJSON_Delete(json);
-    assert(saved.gear.tomes == 2 && roster[0].ascended && roster[0].rarity == RARITY_MYTHIC);
+    assert(saved.gear.tomes == 2 && roster[0].ascended && roster[0].rarity == RARITY_LEGENDARY);
     assert(roster[0].stats[TIER_I].max_level == 85);
 }
 
@@ -5782,7 +5783,7 @@ static void TestAscendedHeroLoadsAboveTheOldLevelCap(void) {
     PlayerLoadRoster(&loaded, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
     assert(ProgressionLoadFromPath(&loaded, path));
     const Character *restored = &loaded.roster[index];
-    assert(restored->ascended && restored->rarity == RARITY_MYTHIC && GearSlotCount(restored) == 5);
+    assert(restored->ascended && restored->rarity == RARITY_LEGENDARY && GearSlotCount(restored) == 5);
     assert(restored->level == saved_level && restored->stats[restored->tier].max_level == old_cap + 5);
     assert(restored->gear.defs[0] == 1);
     cJSON_Delete(catalog_root);
@@ -6932,9 +6933,10 @@ static void TestFortifyBonusesFollowThe544Calculator(void) {
         &elven_mage, 0, FortifyTestChild("UNIT_REDIRONMAGE", TIER_II, false), FORTIFY_STAT_HEALTH, 68, 0, 7
     );
     elven_mage = FortifyTestHero(catalog, "UNIT_ELVENMAGE", TIER_II);
-    AssertFortifyBonus(
-        &elven_mage, 1, FortifyTestChild("UNIT_ELVENMAGE", TIER_IV, true), FORTIFY_STAT_POWER, 150, 24, 46
-    );
+    for (int ascended = 0; ascended <= 1; ascended++)
+        AssertFortifyBonus(
+            &elven_mage, 1, FortifyTestChild("UNIT_ELVENMAGE", TIER_IV, ascended), FORTIFY_STAT_POWER, 16, 3, 5
+        );
     Character wanderer = FortifyTestHero(catalog, "UNIT_APOSTATEWANDERER", TIER_III);
     AssertFortifyBonus(
         &wanderer, 3, FortifyTestChild("UNIT_CASSANDRAPENTAGHAST", TIER_I, false), FORTIFY_STAT_POWER, 49, 0, 0
@@ -6991,15 +6993,15 @@ static void TestFortifyMergesTiersLikeThe544Slot(void) {
     FortifyChild replaced = FortifyMergedChild(&parent, 0, &other);
     assert(!strcmp(replaced.id, "UNIT_OGRE") && replaced.tier == TIER_II);
 
-    parent.fortify[0].tier = TIER_IV;
-    assert(FortifyReplacementBlocked(&parent, 0, &same));
     Character ascended = same;
     GearApplyAscension(&ascended);
-    assert(!FortifyReplacementBlocked(&parent, 0, &ascended));
-    FortifyChild promoted = FortifyMergedChild(&parent, 0, &ascended);
-    assert(promoted.tier == TIER_IV && promoted.ascended);
-    parent.fortify[0] = promoted;
-    assert(FortifyReplacementBlocked(&parent, 0, &ascended) && FortifyReplacementBlocked(&parent, 0, &same));
+    FortifyChild merged = FortifyMergedChild(&parent, 0, &ascended);
+    assert(merged.tier == TIER_III && merged.ascended);
+    parent.fortify[0] = merged;
+    assert(FortifyMergedChild(&parent, 0, &same).ascended);
+
+    parent.fortify[0].tier = TIER_IV;
+    assert(FortifyReplacementBlocked(&parent, 0, &same) && FortifyReplacementBlocked(&parent, 0, &ascended));
     assert(!FortifyReplacementBlocked(&parent, 0, &other));
     cJSON_Delete(root);
 }
@@ -7073,17 +7075,17 @@ static void TestPlayerRemoveFortifyReturnsHeroesForGems(void) {
     Character *ch = ConsumeTestAdd(&player, catalog, "UNIT_ELVENMAGE", &parent);
     ch->fortify[0] = FortifyTestChild("UNIT_REDIRONMAGE", TIER_II, false);
     ch->fortify[3] = FortifyTestChild("UNIT_OGRE", TIER_III, true);
-    assert(FortifyRemoveCost(ch, 0) == 5 && FortifyRemoveCost(ch, 3) == 30);
-    assert(FortifyRemoveCost(ch, FORTIFY_REMOVE_ALL) == 35);
+    assert(FortifyRemoveCost(ch, 0) == 5 && FortifyRemoveCost(ch, 3) == 5);
+    assert(FortifyRemoveCost(ch, FORTIFY_REMOVE_ALL) == 10);
 
     cJSON *action = FortifyRemoveServerAction(&player, parent, FORTIFY_REMOVE_ALL);
     assert(!strcmp(JsonStr(action, "action"), "remove_fortify") && JsonInt(action, "index") == FORTIFY_REMOVE_ALL);
     cJSON_Delete(action);
 
-    player.gems = 34;
+    player.gems = 9;
     int roster_before = player.roster_count;
     assert(PlayerRemoveFortify(&player, parent, FORTIFY_REMOVE_ALL, NULL) == 0);
-    assert(player.gems == 34 && player.roster_count == roster_before && FortifyFilledCount(ch) == 2);
+    assert(player.gems == 9 && player.roster_count == roster_before && FortifyFilledCount(ch) == 2);
     assert(PlayerRemoveFortify(&player, parent, 5, NULL) == 0);
 
     uint64_t next_instance = player.next_instance_id;
@@ -7092,7 +7094,7 @@ static void TestPlayerRemoveFortifyReturnsHeroesForGems(void) {
     assert(player.gems == 4 && player.roster_count == roster_before + 1 && first == roster_before);
     const Character *returned = &player.roster[first];
     assert(!strcmp(returned->id, "UNIT_OGRE") && returned->tier == TIER_III && returned->ascended);
-    assert(returned->rarity == RARITY_MYTHIC && returned->level == 1 && returned->instance_id == next_instance);
+    assert(returned->rarity == RARITY_UNCOMMON && returned->level == 1 && returned->instance_id == next_instance);
     assert(ConsumeProgressionLevelOfTier(ConsumeProfileFor(returned), TIER_III) + 1 <= returned->consume_level);
     assert(!FortifySlotFilled(&player.roster[parent], 3) && FortifySlotFilled(&player.roster[parent], 0));
 
@@ -7855,8 +7857,8 @@ int main(void) {
     TestGearViewEquipFlow();
     TestBoardIgnoresClicksBehindGearAndDetails();
     TestAscensionRequiresFilledSlotsAndTome();
-    TestEveryGearWearerBelowMythicAscends();
-    TestAscensionPromotesHeroAndMovesPrestigeGear();
+    TestEveryGearWearerAscendsAndKeepsItsRarity();
+    TestAscensionRaisesLevelCapAndMovesPrestigeGear();
     TestAscensionSurvivesSave();
     TestGearPackBundlesATome();
     TestSeasonalPackFollowsTheCalendar();

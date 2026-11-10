@@ -131,8 +131,8 @@ HODA_GEAR_SHOW_PREVIOUS|Vorherige {0}
 HODA_GEAR_SHOW_NEXT|Nächste {0}
 HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|Fülle alle Ausrüstungsfelder, um den Folianten des Aufstiegs freizuschalten.
 HODA_EVO_TOME_REQUIRED_MESSAGE|Du brauchst einen Folianten des Aufstiegs. Du kannst ihn im Laden kaufen.
-HODA_EVO_TOME_USE_CONFIRM|Einen Folianten des Aufstiegs verwenden, um diesen Helden auf die Seltenheit Mythisch zu erheben?
-HODA_EVO_TOME_EXPLAIN_DESC|Mythische Helden erhalten <color=#ffa500ff>+5 max. Stufe</color> und <color=#ffa500ff>ein zusätzliches Ausrüstungsfeld</color>!
+HODA_EVO_TOME_USE_CONFIRM|Einen Folianten des Aufstiegs für diesen Helden verwenden?
+HODA_EVO_TOME_EXPLAIN_DESC|Der Held erhält <color=#ffa500ff>+5 max. Stufe</color> und <color=#ffa500ff>ein zusätzliches Ausrüstungsfeld</color>!
 HODA_EVO_TOME_COUNT|Folianten: {0}
 HODA_TOME_POPUP_TITLE|Foliant des Aufstiegs
 HODA_RARITY_MYTHIC|Mythisch

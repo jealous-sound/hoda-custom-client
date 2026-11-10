@@ -131,8 +131,8 @@ HODA_GEAR_SHOW_PREVIOUS|上{0}个
 HODA_GEAR_SHOW_NEXT|下{0}个
 HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|填满所有装备槽即可解锁升华秘典。
 HODA_EVO_TOME_REQUIRED_MESSAGE|您需要一本升华秘典。可在商店中购买。
-HODA_EVO_TOME_USE_CONFIRM|是否使用升华秘典将此英雄提升至神话稀有度？
-HODA_EVO_TOME_EXPLAIN_DESC|神话英雄可获得<color=#ffa500ff>最高等级+5</color>和<color=#ffa500ff>一个额外装备槽</color>！
+HODA_EVO_TOME_USE_CONFIRM|是否对此英雄使用升华秘典？
+HODA_EVO_TOME_EXPLAIN_DESC|该英雄可获得<color=#ffa500ff>最高等级+5</color>和<color=#ffa500ff>一个额外装备槽</color>！
 HODA_EVO_TOME_COUNT|秘典：{0}
 HODA_TOME_POPUP_TITLE|升华秘典
 HODA_RARITY_MYTHIC|神话

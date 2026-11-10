@@ -178,7 +178,6 @@ FortifyChild FortifyChildOf(const Character *unit) {
 }
 
 Rarity FortifyChildRarity(const FortifyChild *child) {
-    if (child->ascended) return RARITY_MYTHIC;
     const FortifyHero *hero = FortifyHeroFind(child->id);
     return hero ? hero->rarity : RARITY_COMMON;
 }
@@ -264,7 +263,8 @@ FortifyChild FortifyMergedChild(const Character *parent, int slot, const Charact
     if (!existing->id[0] || strcmp(existing->id, unit->id) != 0) return incoming;
     int combined_tiers = (int)unit->tier + (int)existing->tier + 1;
     int target = combined_tiers < 1 ? 1 : combined_tiers > TIER_COUNT ? TIER_COUNT : combined_tiers;
-    FortifyChild merged = unit->rarity <= FortifyChildRarity(existing) ? *existing : incoming;
+    FortifyChild merged = *existing;
+    merged.ascended = existing->ascended || incoming.ascended;
     for (int promotion = (int)merged.tier; promotion < target; promotion++)
         merged.tier = FortifyNextPresentTier(unit, merged.tier);
     return merged;
@@ -272,8 +272,7 @@ FortifyChild FortifyMergedChild(const Character *parent, int slot, const Charact
 
 bool FortifyReplacementBlocked(const Character *parent, int slot, const Character *unit) {
     const FortifyChild *existing = &parent->fortify[slot];
-    return existing->id[0] && !strcmp(existing->id, unit->id) && existing->tier == unit->max_tier &&
-           FortifyChildRarity(existing) >= unit->rarity;
+    return existing->id[0] && !strcmp(existing->id, unit->id) && existing->tier == unit->max_tier;
 }
 
 int FortifyRemoveCostOf(const FortifyChild *child) {
