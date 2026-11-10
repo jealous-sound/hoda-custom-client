@@ -2,10 +2,15 @@
 import json
 import os
 import re
+import sys
 
 from ability_metadata import infer_ability_mechanics, normalize_text
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "..", "tools"))
+
+import hero_retier
+
 INFO = os.path.join(HERE, "HoDA_character_info")
 REFERENCE_CHARACTERS = os.path.join(
     HERE, "..", ".claude", "skills", "hoda-reference", "data", "characters.json"
@@ -204,6 +209,12 @@ for uid, u in units.items():
         "tiers":     tier_stats(u, uid),
     })
     characters[-1]["max_tier"] = (list(characters[-1]["tiers"]) or ["IV"])[-1]
+
+power_weight = hero_retier.health_per_power()
+characters, stat_bands = hero_retier.apply_table(characters, hero_retier.proposed_rarities_of_shipped(characters), power_weight)
+with open(hero_retier.BANDS, "w", encoding="utf-8") as bands_file:
+    json.dump(hero_retier.bands_document(stat_bands, power_weight), bands_file, indent=1)
+    bands_file.write("\n")
 
 out = {
     "version": 2,

@@ -110,11 +110,12 @@ ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(GOLDEN_TARGET)
 
 test: ci-test $(TEST_TARGET)
 	python3 client-additional-data/validate_characters.py
-	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py tests/test_build_dist.py tests/test_build_custom_heroes.py tests/test_content_packs.py
+	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py tests/test_build_dist.py tests/test_build_custom_heroes.py tests/test_content_packs.py tests/test_hero_rarity.py
 	python3 tools/audit_character_models.py --deep
 	python3 tools/validate_unit_audio.py
 	python3 tools/validate_unit_vfx.py
 	python3 tools/validate_gear.py
+	python3 tools/validate_hero_rarity.py
 	python3 tools/build_store_catalog.py --check
 	python3 tools/build_custom_heroes.py --check
 	python3 tools/validate_cache_refs.py

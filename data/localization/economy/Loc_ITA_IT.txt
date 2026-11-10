@@ -53,7 +53,7 @@ HODA_MERCHANT_GEAR_PACK_NAME|Pacchetto Equipaggiamento Mercante
 HODA_MASTERWORK_GEAR_PACK_NAME|Pacchetto Equipaggiamento Capolavoro
 HODA_ARMORY_GEAR_PACK_NAME|Pacchetto Equipaggiamento Armeria
 HODA_TUTORIAL_CONSUME_PACK_INFO|Una coppia di eroi gratuita per imparare a sacrificare.
-HODA_GRAND_CHAMPION_PACK_INFO|10 Pacchetti Campione: 2 eroi Leggendari e 3 Epici garantiti.
+HODA_GRAND_CHAMPION_PACK_INFO|10 Pacchetti Campione: 3 eroi Epici garantiti.
 HODA_PRESTIGE_RUNE_PACK_INFO|Una Runa Prestigio per lo slot speciale della squadra.
 HODA_STORE_HERO_PACK_INFO_1_UNCOMMON|Contiene 1 eroe. Non comune o superiore garantito.
 HODA_STORE_HERO_PACK_INFO_1_RARE|Contiene 1 eroe. Raro o superiore garantito.
@@ -67,8 +67,7 @@ HODA_STORE_GEAR_PACK_INFO_1|Contiene 1 oggetto di equipaggiamento.
 HODA_STORE_GEAR_PACK_INFO_2|Contiene 2 oggetti di equipaggiamento.
 HODA_STORE_GEAR_PACK_INFO_3|Contiene 3 oggetti di equipaggiamento.
 HODA_STORE_GEAR_PACK_INFO_5|Contiene 5 oggetti di equipaggiamento.
-HODA_STORE_BULLET_LEGENDARY_BY_FOURTH|Leggendario entro il 4° pacchetto
-HODA_STORE_BULLET_GRAND_CHAMPION|2 Leggendari e 3 Epici garantiti
+HODA_STORE_BULLET_GRAND_CHAMPION|3 Epici garantiti
 HODA_STORE_BULLET_CHANCE_AT|Puoi trovare
 HODA_STORE_BULLET_GIFT|Regalo
 HODA_STORE_BULLET_NUGS|Attenzione! Contiene nug!

@@ -53,7 +53,7 @@ HODA_MERCHANT_GEAR_PACK_NAME|Paquete de equipo de mercader
 HODA_MASTERWORK_GEAR_PACK_NAME|Paquete de equipo magistral
 HODA_ARMORY_GEAR_PACK_NAME|Paquete Arsenal
 HODA_TUTORIAL_CONSUME_PACK_INFO|Un par de héroes gratis para aprender a consumir.
-HODA_GRAND_CHAMPION_PACK_INFO|10 paquetes de campeones: 2 héroes legendarios y 3 épicos garantizados.
+HODA_GRAND_CHAMPION_PACK_INFO|10 paquetes de campeones: 3 héroes épicos garantizados.
 HODA_PRESTIGE_RUNE_PACK_INFO|Una runa de prestigio para el espacio especial del pelotón.
 HODA_STORE_HERO_PACK_INFO_1_UNCOMMON|Da 1 héroe. Infrecuente o mejor garantizado.
 HODA_STORE_HERO_PACK_INFO_1_RARE|Da 1 héroe. Raro o mejor garantizado.
@@ -67,8 +67,7 @@ HODA_STORE_GEAR_PACK_INFO_1|Da 1 pieza de equipo.
 HODA_STORE_GEAR_PACK_INFO_2|Da 2 piezas de equipo.
 HODA_STORE_GEAR_PACK_INFO_3|Da 3 piezas de equipo.
 HODA_STORE_GEAR_PACK_INFO_5|Da 5 piezas de equipo.
-HODA_STORE_BULLET_LEGENDARY_BY_FOURTH|Legendario a más tardar en el 4.º
-HODA_STORE_BULLET_GRAND_CHAMPION|2 legendarios y 3 épicos garantizados
+HODA_STORE_BULLET_GRAND_CHAMPION|3 épicos garantizados
 HODA_STORE_BULLET_CHANCE_AT|Posibilidad de
 HODA_STORE_BULLET_GIFT|Regalo
 HODA_STORE_BULLET_NUGS|¡Atención! ¡Contiene nugs!

@@ -59,9 +59,9 @@ RULES = {
         "level_spread": 2,
     },
     "squads": {
-        "rating_base": 1500,
-        "rating_per_level": 350,
-        "rating_per_level_squared": 6,
+        "rating_base": 2000,
+        "rating_per_level": 365,
+        "rating_per_level_squared": -1,
         "rating_max_shift_pct": 25,
         "trophies_per_shift_pct": 10,
         "candidates": 6,
@@ -267,6 +267,12 @@ def normalized(name):
     return re.sub(r"[^a-z0-9]", "", name.lower().replace("'s", "s"))
 
 
+PACK_ONLY_RARITY = "Legendary"
+GUARANTEED_PACK_ONLY_VOUCHER = "bloodstone"
+PACK_FOR_A_PACK_ONLY_PRIZE = "iron"
+UPGRADE_MATERIAL_GROUP = "Wisp"
+
+
 class PrizeCatalog:
     def __init__(self, characters):
         self.units = {normalized(character["name"]): character for character in characters.values()}
@@ -276,11 +282,18 @@ class PrizeCatalog:
         store = json.loads(STORE_PACKS.read_text(encoding="utf-8"))
         self.vouchers = {row["id"]: (index, row["icon"]) for index, row in enumerate(store["vouchers"])}
 
+    def voucher(self, pack, count):
+        index, icon = self.vouchers[pack]
+        return {"kind": "voucher", "id": pack, "count": count, "icon": icon, "index": index}
+
     def resolve(self, name, count):
         key = PRIZE_NAME_ALIASES.get(name.lower(), name)
         lookup = normalized(key)
         if lookup in self.units:
-            return self.unit(self.units[lookup], count)
+            character = self.units[lookup]
+            if character["rarity"] == PACK_ONLY_RARITY and UPGRADE_MATERIAL_GROUP not in character["groups"]:
+                return self.voucher(PACK_FOR_A_PACK_ONLY_PRIZE, count)
+            return self.unit(character, count)
         for candidate in (lookup, normalized(re.sub(r"^the ", "", key, flags=re.I))):
             if candidate in self.gear:
                 item = self.gear[candidate]
@@ -290,8 +303,7 @@ class PrizeCatalog:
             return {"kind": "tome", "id": "tome", "count": count, "icon": ""}
         if singular in VOUCHER_PACKS:
             pack = VOUCHER_PACKS[singular]
-            index, icon = self.vouchers[pack]
-            return {"kind": "voucher", "id": pack, "count": count, "icon": icon, "index": index}
+            return self.voucher(PACK_FOR_A_PACK_ONLY_PRIZE if pack == GUARANTEED_PACK_ONLY_VOUCHER else pack, count)
         raise ValueError(f"unmapped PvP prize {name!r}")
 
     def unit(self, character, count):

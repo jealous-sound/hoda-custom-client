@@ -53,7 +53,7 @@ HODA_MERCHANT_GEAR_PACK_NAME|Pacote Equip. de Mercador
 HODA_MASTERWORK_GEAR_PACK_NAME|Pacote Equip. Primoroso
 HODA_ARMORY_GEAR_PACK_NAME|Pacote Equip. do Arsenal
 HODA_TUTORIAL_CONSUME_PACK_INFO|Um par de heróis grátis para aprender a consumir.
-HODA_GRAND_CHAMPION_PACK_INFO|10 Pacotes de Campeão: 2 heróis Lendários e 3 Épicos garantidos.
+HODA_GRAND_CHAMPION_PACK_INFO|10 Pacotes de Campeão: 3 heróis Épicos garantidos.
 HODA_PRESTIGE_RUNE_PACK_INFO|Uma runa de prestígio para o espaço especial do esquadrão.
 HODA_STORE_HERO_PACK_INFO_1_UNCOMMON|Concede 1 herói. Incomum ou superior garantido.
 HODA_STORE_HERO_PACK_INFO_1_RARE|Concede 1 herói. Raro ou superior garantido.
@@ -67,8 +67,7 @@ HODA_STORE_GEAR_PACK_INFO_1|Concede 1 peça de equipamento.
 HODA_STORE_GEAR_PACK_INFO_2|Concede 2 peças de equipamento.
 HODA_STORE_GEAR_PACK_INFO_3|Concede 3 peças de equipamento.
 HODA_STORE_GEAR_PACK_INFO_5|Concede 5 peças de equipamento.
-HODA_STORE_BULLET_LEGENDARY_BY_FOURTH|Lendário até o 4º pacote
-HODA_STORE_BULLET_GRAND_CHAMPION|2 Lendários e 3 Épicos garantidos
+HODA_STORE_BULLET_GRAND_CHAMPION|3 Épicos garantidos
 HODA_STORE_BULLET_CHANCE_AT|Chance de
 HODA_STORE_BULLET_GIFT|Presente
 HODA_STORE_BULLET_NUGS|Advertência! Contém Nugs!
