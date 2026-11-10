@@ -131,8 +131,8 @@ HODA_GEAR_SHOW_PREVIOUS|Предыдущие {0}
 HODA_GEAR_SHOW_NEXT|Следующие {0}
 HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|Заполните все ячейки снаряжения, чтобы открыть том вознесения.
 HODA_EVO_TOME_REQUIRED_MESSAGE|Нужен том вознесения. Его можно купить в магазине.
-HODA_EVO_TOME_USE_CONFIRM|Использовать том вознесения, чтобы повысить героя до мифической редкости?
-HODA_EVO_TOME_EXPLAIN_DESC|Мифические герои получают <color=#ffa500ff>+5 к макс. уровню</color> и <color=#ffa500ff>доп. ячейку снаряжения</color>!
+HODA_EVO_TOME_USE_CONFIRM|Использовать том вознесения на этом герое?
+HODA_EVO_TOME_EXPLAIN_DESC|Герой получит <color=#ffa500ff>+5 к макс. уровню</color> и <color=#ffa500ff>доп. ячейку снаряжения</color>!
 HODA_EVO_TOME_COUNT|Томов: {0}
 HODA_TOME_POPUP_TITLE|Том вознесения
 HODA_RARITY_MYTHIC|Мифический

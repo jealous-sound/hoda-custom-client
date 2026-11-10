@@ -131,8 +131,8 @@ HODA_GEAR_SHOW_PREVIOUS|上{0}個
 HODA_GEAR_SHOW_NEXT|下{0}個
 HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|填滿所有裝備欄位即可解鎖升華之書。
 HODA_EVO_TOME_REQUIRED_MESSAGE|你需要一本升華之書。可在商店購買。
-HODA_EVO_TOME_USE_CONFIRM|要使用升華之書將此英雄提升至神話稀有度嗎？
-HODA_EVO_TOME_EXPLAIN_DESC|神話英雄可獲得<color=#ffa500ff>最高等級+5</color>和<color=#ffa500ff>一個額外裝備欄位</color>！
+HODA_EVO_TOME_USE_CONFIRM|要對此英雄使用升華之書嗎？
+HODA_EVO_TOME_EXPLAIN_DESC|該英雄可獲得<color=#ffa500ff>最高等級+5</color>和<color=#ffa500ff>一個額外裝備欄位</color>！
 HODA_EVO_TOME_COUNT|升華之書：{0}
 HODA_TOME_POPUP_TITLE|升華之書
 HODA_RARITY_MYTHIC|神話

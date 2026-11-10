@@ -131,8 +131,8 @@ HODA_GEAR_SHOW_PREVIOUS|Previous {0}
 HODA_GEAR_SHOW_NEXT|Next {0}
 HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|Fill all gear slots to unlock the Tome of Ascension.
 HODA_EVO_TOME_REQUIRED_MESSAGE|You need a Tome of Ascension. You can buy one in the store.
-HODA_EVO_TOME_USE_CONFIRM|Use a Tome of Ascension to raise this hero to Mythic rarity?
-HODA_EVO_TOME_EXPLAIN_DESC|Mythic heroes gain <color=#ffa500ff>+5 max level</color> and <color=#ffa500ff>an extra gear slot</color>!
+HODA_EVO_TOME_USE_CONFIRM|Use a Tome of Ascension on this hero?
+HODA_EVO_TOME_EXPLAIN_DESC|The hero gains <color=#ffa500ff>+5 max level</color> and <color=#ffa500ff>an extra gear slot</color>!
 HODA_EVO_TOME_COUNT|Tomes: {0}
 HODA_TOME_POPUP_TITLE|Tome of Ascension
 HODA_RARITY_MYTHIC|Mythic

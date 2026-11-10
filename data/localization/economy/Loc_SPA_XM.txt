@@ -131,8 +131,8 @@ HODA_GEAR_SHOW_PREVIOUS|{0} anteriores
 HODA_GEAR_SHOW_NEXT|{0} siguientes
 HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|Llena todos los espacios de equipo para desbloquear el Tomo de Ascensión.
 HODA_EVO_TOME_REQUIRED_MESSAGE|Necesitas un Tomo de Ascensión. Puedes comprarlo en la tienda.
-HODA_EVO_TOME_USE_CONFIRM|¿Usar un Tomo de Ascensión para elevar a este héroe a rareza mítica?
-HODA_EVO_TOME_EXPLAIN_DESC|¡Los héroes míticos obtienen <color=#ffa500ff>+5 al nivel máximo</color> y <color=#ffa500ff>un espacio de equipo adicional</color>!
+HODA_EVO_TOME_USE_CONFIRM|¿Usar un Tomo de Ascensión en este héroe?
+HODA_EVO_TOME_EXPLAIN_DESC|¡El héroe obtiene <color=#ffa500ff>+5 al nivel máximo</color> y <color=#ffa500ff>un espacio de equipo adicional</color>!
 HODA_EVO_TOME_COUNT|Tomos: {0}
 HODA_TOME_POPUP_TITLE|Tomo de Ascensión
 HODA_RARITY_MYTHIC|Mítico

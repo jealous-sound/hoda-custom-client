@@ -131,8 +131,8 @@ HODA_GEAR_SHOW_PREVIOUS|前の{0}件
 HODA_GEAR_SHOW_NEXT|次の{0}件
 HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|昇華の書をアンロックするには、全ての装備スロットを埋めてください。
 HODA_EVO_TOME_REQUIRED_MESSAGE|昇華の書が必要です。ストアで購入できます。
-HODA_EVO_TOME_USE_CONFIRM|昇華の書を使って、このユニットをミシックに昇格させますか？
-HODA_EVO_TOME_EXPLAIN_DESC|ミシックのユニットは<color=#ffa500ff>最大レベル+5</color>と<color=#ffa500ff>追加の装備スロット</color>を獲得！
+HODA_EVO_TOME_USE_CONFIRM|このユニットに昇華の書を使いますか？
+HODA_EVO_TOME_EXPLAIN_DESC|ユニットは<color=#ffa500ff>最大レベル+5</color>と<color=#ffa500ff>追加の装備スロット</color>を獲得！
 HODA_EVO_TOME_COUNT|昇華の書: {0}
 HODA_TOME_POPUP_TITLE|昇華の書
 HODA_RARITY_MYTHIC|ミシック

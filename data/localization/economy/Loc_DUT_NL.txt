@@ -131,8 +131,8 @@ HODA_GEAR_SHOW_PREVIOUS|Vorige {0}
 HODA_GEAR_SHOW_NEXT|Volgende {0}
 HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|Vul alle uitrustingsslots om het Boek van Verheffing vrij te spelen.
 HODA_EVO_TOME_REQUIRED_MESSAGE|Je hebt een Boek van Verheffing nodig. Je kunt er een kopen in de winkel.
-HODA_EVO_TOME_USE_CONFIRM|Een Boek van Verheffing gebruiken om deze held tot mythische zeldzaamheid te verheffen?
-HODA_EVO_TOME_EXPLAIN_DESC|Mythische helden krijgen <color=#ffa500ff>+5 max. niveau</color> en <color=#ffa500ff>een extra uitrustingsslot</color>!
+HODA_EVO_TOME_USE_CONFIRM|Een Boek van Verheffing op deze held gebruiken?
+HODA_EVO_TOME_EXPLAIN_DESC|De held krijgt <color=#ffa500ff>+5 max. niveau</color> en <color=#ffa500ff>een extra uitrustingsslot</color>!
 HODA_EVO_TOME_COUNT|Boeken: {0}
 HODA_TOME_POPUP_TITLE|Boek van Verheffing
 HODA_RARITY_MYTHIC|Mythisch

@@ -131,8 +131,8 @@ HODA_GEAR_SHOW_PREVIOUS|{0} precedenti
 HODA_GEAR_SHOW_NEXT|{0} successivi
 HODA_EVO_TOME_SLOT_LOCKED_MESSAGE|Riempi tutti gli slot equipaggiamento per sbloccare il Tomo dell'Ascensione.
 HODA_EVO_TOME_REQUIRED_MESSAGE|Ti serve un Tomo dell'Ascensione. Puoi acquistarne uno nel Negozio.
-HODA_EVO_TOME_USE_CONFIRM|Usare un Tomo dell'Ascensione per portare questo eroe alla rarità Mitica?
-HODA_EVO_TOME_EXPLAIN_DESC|Gli eroi Mitici ottengono <color=#ffa500ff>+5 al livello massimo</color> e <color=#ffa500ff>uno slot equipaggiamento aggiuntivo</color>!
+HODA_EVO_TOME_USE_CONFIRM|Usare un Tomo dell'Ascensione su questo eroe?
+HODA_EVO_TOME_EXPLAIN_DESC|L'eroe ottiene <color=#ffa500ff>+5 al livello massimo</color> e <color=#ffa500ff>uno slot equipaggiamento aggiuntivo</color>!
 HODA_EVO_TOME_COUNT|Tomi: {0}
 HODA_TOME_POPUP_TITLE|Tomo dell'Ascensione
 HODA_RARITY_MYTHIC|Mitica

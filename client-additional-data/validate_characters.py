@@ -36,6 +36,7 @@ LANGUAGE_FILES = (
 RUSSIAN_FILE = "Loc_RUS_RU.txt"
 PROJECT_KEY_PREFIX = "HODA_"
 TIERS = ("I", "II", "III", "IV")
+GEAR_SLOTS_FOR_EVERY_WEARER = 4
 DESCRIPTION_CAPACITY = 1280
 INFO_CAPACITY = 320
 FACTIONS_CAPACITY = 128
@@ -225,6 +226,12 @@ for row in characters:
     if ("ATTACK" in mechanics) == ("ATTACK_NONE" in mechanics):
         fail(f"{uid}: ability must either attack or explicitly not attack")
     mechanic_counts.update(mechanics)
+
+    wears_gear = source.get("NumGearSlots", 0) > 0
+    if wears_gear and row.get("gear_slots", 0) < GEAR_SLOTS_FOR_EVERY_WEARER:
+        fail(f"{uid}: wears gear with fewer than {GEAR_SLOTS_FOR_EVERY_WEARER} slots")
+    if not wears_gear and row.get("gear_slots", 0) != 0:
+        fail(f"{uid}: has gear slots but the original unit wears no gear")
 
     for tier_name, stats in row.get("tiers", {}).items():
         for field in ("power_per_level", "health_per_level"):
