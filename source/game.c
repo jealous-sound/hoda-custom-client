@@ -666,9 +666,7 @@ static void GameHandleGuildButton(Game *g, HomeButton pressed) {
         LocFormatArgs(message, sizeof(message), "GUILD_NOT_AVAILABLE_MESSAGE", args, 1);
         GuildNoticePopupShow(&g->guild_notice, LocGet("GUILD_NOT_AVAILABLE_TITLE"), message);
     } else if (pressed == HOME_GUILD_CHAT_LOCKED) {
-        GuildNoticePopupShow(
-            &g->guild_notice, LocGet("GUILD_CHAT_JOIN_GUILD_TITLE"), LocGet("GUILD_CHAT_JOIN_GUILD_MESSAGE")
-        );
+        GuildNoticePopupShow(&g->guild_notice, LocGet("GUILD_CHAT_TITLE"), GUILD_OFFLINE_MESSAGE);
     } else if (!GuildAvailable()) {
         GuildNoticePopupShow(&g->guild_notice, LocGet("GUILD_FIND_TITLE"), GUILD_OFFLINE_MESSAGE);
     } else {
@@ -1654,7 +1652,7 @@ void GameDraw(Game *g) {
     g->home_ui.expeditions_shown = ExpeditionsAvailable();
     g->home_ui.expeditions_open = ExpeditionsHomeOpen(&g->player);
     g->home_ui.expeditions_badge = ExpeditionsHomeBadge(&g->player);
-    if (g->screen != SCREEN_GUILD) GuildSetChatVisible(&g->guild, false);
+    if (g->screen != SCREEN_GUILD) GuildHideChat(&g->guild);
     GuildUpdate(&g->guild, &g->player);
     if (g->player.roster_count != g->player.gallery.synced_roster_count) PlayerGallerySync(&g->player);
 
@@ -1690,8 +1688,8 @@ void GameDraw(Game *g) {
                     &g->home_ui,
                     home_interactive && !resource_modal,
                     GuildUnlocked(&g->player),
-                    GuildIsMember(&g->guild),
-                    g->guild.unread
+                    GuildAvailable(),
+                    GuildIsMember(&g->guild) ? g->guild.unread : 0
                 );
                 if (guild_pressed != HOME_NONE) pressed = guild_pressed;
             }

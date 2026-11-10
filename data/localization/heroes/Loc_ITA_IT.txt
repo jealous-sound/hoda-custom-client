@@ -526,6 +526,8 @@ HODA_AURA_STEALTH_PLUS50HDWARFDEMON_PLUS10CRITALL_PLUS10STUNSLOWRESALL_ONHIT_GAI
 HODA_AURA_STEALTH_PLUS50HPSLOWRES_CHA_EXPLODE15_5BNSDMG15DMGRES_WHITE_75HPALL_SELFDTH_STUNIMMDIVINE|<color=green>Furtività: attacca senza innescare effetti in seguito al colpo subito. +50% Salute, Potere e resistenza al rallentamento per la Chiesa. Alla morte di un nemico, i nemici subiscono il 15% dei danni inflitti. +5% danni extra e +15% resistenza ai danni per la fazione bianca. Alla morte, gli alleati ottengono +75% Salute e Potere. Immunità allo stordimento per le Divine.</color>
 HODA_AURA_STEALTH_PLUS50HSTUNRES5BONUSDMGVEN_2BNSDMG_ALLYHIT_GAIN5P7DMGRESALL_ANYDEATH_SLOWIMMUNE_MINUS35PDRESINQ|<color=green>Furtività: attacca senza innescare effetti in seguito al colpo subito. +50% Salute, resistenza allo stordimento e +5% danni extra per i venatori. Quando gli alleati subiscono un colpo, ottiene +2% danni extra. Alla morte di qualsiasi eroe, gli alleati ottengono +15% Potere e +7% resistenza ai danni. Immune al rallentamento.</color> <color=red>-35% resistenza all'assorbimento del Potere per Inquisition.</color>
 HODA_AURA_STEALTH_PLUS60HPDSLOWRESNOBORL_CONV5PALLYATK_75PSTUNIMMLEOPOLD_FLANK_MINUS35SLOWRES|<color=green>Furtività: attacca senza innescare effetti in seguito al colpo subito. +60% Salute, resistenza all'assorbimento del Potere e al rallentamento per orlesiani e nobili. Converte il 5% dei danni inflitti dagli alleati in Potere. +75% Potere e immunità allo stordimento per Leopold.</color> <color=orange>Più incline ad attaccare le retrovie.</color> <color=red>-35% resistenza al rallentamento.</color>
+HODA_CHAT_CHANNEL_GUILD|Gilda
+HODA_CHAT_CHANNEL_WORLD|Mondo
 HODA_CONSUME_FACTION_BUTTON_DESC|Stessa fazione
 HODA_CONSUME_FACTION_DESC|Tutti gli eroi della stessa rarità e fazione.
 HODA_CONSUME_FACTION_TITLE|Sacrifica per fazione
@@ -1350,3 +1352,5 @@ HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Gli eroi rimossi tornano nell'inventario al 
 HODA_UI_CONFIRM_UNFORTIFY|Rimuovi
 HODA_UI_UNFORTIFY_REMOVE_ALL|Rimuovi tutti
 HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Costo di rimozione
+HODA_WORLD_CHAT_LEVEL_HELPER|Raggiungi il livello {0} per scrivere
+HODA_WORLD_CHAT_TITLE|Chat mondiale

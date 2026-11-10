@@ -526,6 +526,8 @@ HODA_AURA_STEALTH_PLUS50HDWARFDEMON_PLUS10CRITALL_PLUS10STUNSLOWRESALL_ONHIT_GAI
 HODA_AURA_STEALTH_PLUS50HPSLOWRES_CHA_EXPLODE15_5BNSDMG15DMGRES_WHITE_75HPALL_SELFDTH_STUNIMMDIVINE|<color=green>은신: 타격 시 효과를 일으키지 않고 공격합니다. 교단의 체력, 힘 및 감속 저항 50% 증가. 적이 죽으면 적이 가한 대미지의 15%를 받습니다. 흰색 세력의 추가 대미지 5% 증가 및 대미지 저항 15% 증가. 죽으면 동료의 체력과 힘 75% 증가. 디바인은 기절 면역.</color>
 HODA_AURA_STEALTH_PLUS50HSTUNRES5BONUSDMGVEN_2BNSDMG_ALLYHIT_GAIN5P7DMGRESALL_ANYDEATH_SLOWIMMUNE_MINUS35PDRESINQ|<color=green>은신: 타격 시 효과를 일으키지 않고 공격합니다. 베나토리의 체력과 기절 저항 50% 증가 및 추가 대미지 5% 증가. 동료가 공격받으면 추가 대미지 2%를 획득합니다. 누가 죽든 동료의 힘 15% 증가 및 대미지 저항 7% 증가. 감속 면역.</color> <color=red>인퀴지션의 파워 드레인 저항 35% 감소.</color>
 HODA_AURA_STEALTH_PLUS60HPDSLOWRESNOBORL_CONV5PALLYATK_75PSTUNIMMLEOPOLD_FLANK_MINUS35SLOWRES|<color=green>은신: 타격 시 효과를 일으키지 않고 공격합니다. 올레이와 귀족의 체력, 파워 드레인 및 감속 저항 60% 증가. 동료가 가한 대미지의 5%를 힘으로 전환합니다. 레오폴드는 힘 75% 증가 및 기절 면역.</color> <color=orange>뒷줄을 공격할 확률이 더 높습니다.</color> <color=red>감속 저항 35% 감소.</color>
+HODA_CHAT_CHANNEL_GUILD|길드
+HODA_CHAT_CHANNEL_WORLD|월드
 HODA_CONSUME_FACTION_BUTTON_DESC|같은 진영
 HODA_CONSUME_FACTION_DESC|같은 희귀도와 진영의 모든 영웅.
 HODA_CONSUME_FACTION_TITLE|진영별 소모
@@ -1350,3 +1352,5 @@ HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|제거된 영웅은 레벨 1로 인벤토리
 HODA_UI_CONFIRM_UNFORTIFY|제거
 HODA_UI_UNFORTIFY_REMOVE_ALL|모두 제거
 HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|제거 비용
+HODA_WORLD_CHAT_LEVEL_HELPER|레벨 {0}부터 채팅할 수 있습니다
+HODA_WORLD_CHAT_TITLE|월드 채팅

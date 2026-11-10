@@ -526,6 +526,8 @@ HODA_AURA_STEALTH_PLUS50HDWARFDEMON_PLUS10CRITALL_PLUS10STUNSLOWRESALL_ONHIT_GAI
 HODA_AURA_STEALTH_PLUS50HPSLOWRES_CHA_EXPLODE15_5BNSDMG15DMGRES_WHITE_75HPALL_SELFDTH_STUNIMMDIVINE|<color=green>Скрытность: атакует, не вызывая эффектов, возникающих при попадании. +50 % здоровья, силы и сопр. замедл. для Церкви. После смерти врага враги получают 15 % нанесенного урона. +5 % доп. урона и +15 % сопр. урону для "белой" фракции. При смерти союзники получают +75 % здоровья и силы. Невоспр. к оглушению для Верховных жриц.</color>
 HODA_AURA_STEALTH_PLUS50HSTUNRES5BONUSDMGVEN_2BNSDMG_ALLYHIT_GAIN5P7DMGRESALL_ANYDEATH_SLOWIMMUNE_MINUS35PDRESINQ|<color=green>Скрытность: атакует, не вызывая эффектов, возникающих при попадании. +50 % здоровья и сопр. оглушению, а также +5 % доп. урона для венатори. Дает +2 % доп. урона при попадании по союзникам. При смерти любого героя союзники получают +15 % силы и +7 % сопр. урону. Невосприимчивость к замедлению.</color> <color=red>-35 % сопр. вытягиванию силы для Инквизиции.</color>
 HODA_AURA_STEALTH_PLUS60HPDSLOWRESNOBORL_CONV5PALLYATK_75PSTUNIMMLEOPOLD_FLANK_MINUS35SLOWRES|<color=green>Скрытность: атакует, не вызывая эффектов, возникающих при попадании. +60  % здоровья, вытягивания силы и сопротивления замедлению для орлесианцев и знати. Обращает 5  % нанесенного союзниками урона в силу. +75  % силы и невосприимчивость к оглушению для Леопольда.</color> <color=orange>Чаще атакует заднюю шеренгу.</color> <color=red>-35  % сопротивления замедлению.</color>
+HODA_CHAT_CHANNEL_GUILD|Гильдия
+HODA_CHAT_CHANNEL_WORLD|Мир
 HODA_CONSUME_FACTION_BUTTON_DESC|Та же фракция
 HODA_CONSUME_FACTION_DESC|Все герои той же редкости и фракции.
 HODA_CONSUME_FACTION_TITLE|Поглотить по фракции
@@ -1350,3 +1352,5 @@ HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Убранные герои вернутся
 HODA_UI_CONFIRM_UNFORTIFY|Убрать
 HODA_UI_UNFORTIFY_REMOVE_ALL|Убрать всех
 HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Стоимость удаления
+HODA_WORLD_CHAT_LEVEL_HELPER|Писать можно с {0} уровня
+HODA_WORLD_CHAT_TITLE|Мировой чат

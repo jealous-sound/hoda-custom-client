@@ -526,6 +526,8 @@ HODA_AURA_STEALTH_PLUS50HDWARFDEMON_PLUS10CRITALL_PLUS10STUNSLOWRESALL_ONHIT_GAI
 HODA_AURA_STEALTH_PLUS50HPSLOWRES_CHA_EXPLODE15_5BNSDMG15DMGRES_WHITE_75HPALL_SELFDTH_STUNIMMDIVINE|<color=green>ステルス: 攻撃命中時の 効果を 発動させずに 攻撃。 教会の 体力、 パワーと スロウ耐性 +50%。 敵が 倒れると 敵全員は 与えた ダメージの 15%を 受ける。 白い派閥の 追加ダメージ +5%、 ダメージ耐性 +15%。 倒れると 味方は 体力と パワー 75%を 得る。 教皇は 気絶しない</color>
 HODA_AURA_STEALTH_PLUS50HSTUNRES5BONUSDMGVEN_2BNSDMG_ALLYHIT_GAIN5P7DMGRESALL_ANYDEATH_SLOWIMMUNE_MINUS35PDRESINQ|<color=green>ステルス: 攻撃命中時の 効果を 発動させずに 攻撃。 ヴェナトリの 体力と 気絶耐性 +50%、 追加ダメージ +5%。 味方が 攻撃されると 追加ダメージ +2%。 ユニットが 倒れると 味方は パワー 15%を 得る、 ダメージ耐性 +7%。 スロウ状態にならない。</color> <color=red>審問会の パワー吸収耐性 -35%</color>
 HODA_AURA_STEALTH_PLUS60HPDSLOWRESNOBORL_CONV5PALLYATK_75PSTUNIMMLEOPOLD_FLANK_MINUS35SLOWRES|<color=green>ステルス: 攻撃命中時の 効果を 発動させずに 攻撃。 オーレイと 貴族の 体力、 パワー吸収耐性と スロウ耐性 +60%。 味方が 与えた ダメージの 5%を パワーに 変換。 ﾚｵﾎﾟﾙﾄﾞの パワー +75%。 ﾚｵﾎﾟﾙﾄﾞは 気絶しない。</color> <color=orange>高確率で 後列を 攻撃。</color> <color=red>スロウ耐性 -35%</color>
+HODA_CHAT_CHANNEL_GUILD|ギルド
+HODA_CHAT_CHANNEL_WORLD|ワールド
 HODA_CONSUME_FACTION_BUTTON_DESC|同じ派閥
 HODA_CONSUME_FACTION_DESC|同じレア度と派閥の 全てのユニット
 HODA_CONSUME_FACTION_TITLE|派閥で強化
@@ -1350,3 +1352,5 @@ HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|外したユニットはレベル1でリス�
 HODA_UI_CONFIRM_UNFORTIFY|解除
 HODA_UI_UNFORTIFY_REMOVE_ALL|すべて解除
 HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|解除コスト
+HODA_WORLD_CHAT_LEVEL_HELPER|レベル{0}で書き込めます
+HODA_WORLD_CHAT_TITLE|ワールドチャット

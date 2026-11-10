@@ -103,15 +103,15 @@ static void HomeUIDrawGuildBadge(Rectangle button, int count) {
     UiDrawTextCentered(GuiFont(FNT_MENU), text, badge, 20.0f, WHITE);
 }
 
-HomeButton HomeUIDrawGuild(HomeUI *hui, bool interactive, bool unlocked, bool member, int chat_badge) {
+HomeButton HomeUIDrawGuild(HomeUI *hui, bool interactive, bool unlocked, bool chat_open, int chat_badge) {
     HomeButton clicked = HOME_NONE;
     Rectangle guild = {HOME_GUILD_BUTTON_X, HOME_GUILD_BUTTON_Y, HOME_GUILD_BUTTON_SIZE, HOME_GUILD_BUTTON_SIZE};
     Rectangle chat = {HOME_GUILD_BUTTON_X, HOME_GUILD_CHAT_BUTTON_Y, HOME_GUILD_BUTTON_SIZE, HOME_GUILD_BUTTON_SIZE};
     if (ButtonDrawEx(unlocked ? &hui->guild : &hui->guild_locked, guild, interactive))
         clicked = unlocked ? HOME_GUILD : HOME_GUILD_LOCKED;
-    if (ButtonDrawEx(member ? &hui->guild_chat : &hui->guild_chat_locked, chat, interactive))
-        clicked = member ? HOME_GUILD_CHAT : HOME_GUILD_CHAT_LOCKED;
-    if (member) HomeUIDrawGuildBadge(chat, chat_badge);
+    if (ButtonDrawEx(chat_open ? &hui->guild_chat : &hui->guild_chat_locked, chat, interactive))
+        clicked = chat_open ? HOME_GUILD_CHAT : HOME_GUILD_CHAT_LOCKED;
+    if (chat_open) HomeUIDrawGuildBadge(chat, chat_badge);
     return clicked;
 }
 

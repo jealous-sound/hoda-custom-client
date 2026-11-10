@@ -526,6 +526,8 @@ HODA_AURA_STEALTH_PLUS50HDWARFDEMON_PLUS10CRITALL_PLUS10STUNSLOWRESALL_ONHIT_GAI
 HODA_AURA_STEALTH_PLUS50HPSLOWRES_CHA_EXPLODE15_5BNSDMG15DMGRES_WHITE_75HPALL_SELFDTH_STUNIMMDIVINE|<color=green>Verstohlenheit: Greift an, ohne Treffereffekte auszulösen. +50 % Gesundheit, Stärke und Verlangsamungsresistenz für die Kirche. Wenn ein Gegner stirbt, erleiden Gegner 15 % des verursachten Schadens. +5 % Bonusschaden und +15 % Schadensresistenz für die weiße Gruppierung. Beim Tod gewinnen Verbündete +75 % Gesundheit & Stärke. Betäubungsimmunität für die Göttlichen.</color>
 HODA_AURA_STEALTH_PLUS50HSTUNRES5BONUSDMGVEN_2BNSDMG_ALLYHIT_GAIN5P7DMGRESALL_ANYDEATH_SLOWIMMUNE_MINUS35PDRESINQ|<color=green>Verstohlenheit: Greift an, ohne Treffereffekte auszulösen. +50 % Gesundheit, Betäubungsresistenz und +5 % Bonusschaden für Venatori. Wenn Verbündete getroffen werden, gewinnt er +2 % Bonusschaden. Wenn ein beliebiger Held stirbt, gewinnen Verbündete +15 % Stärke und +7 % Schadensresistenz. Immun gegen Verlangsamung.</color> <color=red>-35 % Stärkeentzug-Resistenz für Inquisitionshelden.</color>
 HODA_AURA_STEALTH_PLUS60HPDSLOWRESNOBORL_CONV5PALLYATK_75PSTUNIMMLEOPOLD_FLANK_MINUS35SLOWRES|<color=green>Verstohlenheit: Greift an, ohne Treffereffekte auszulösen. +60 % Gesundheit, Stärkeentzug- und Verlangsamungsresistenz für Orlaisianer und Adel. Wandelt 5 % des von Verbündeten verursachten Schadens in Stärke um. +75 % Stärke und Betäubungsimmunität für Leopold.</color> <color=orange>Greift häufiger die hintere Reihe an.</color> <color=red>-35 % Verlangsamungsresistenz.</color>
+HODA_CHAT_CHANNEL_GUILD|Gilde
+HODA_CHAT_CHANNEL_WORLD|Welt
 HODA_CONSUME_FACTION_BUTTON_DESC|Gleiche Gruppierung
 HODA_CONSUME_FACTION_DESC|Alle Helden gleicher Seltenheit und Gruppierung.
 HODA_CONSUME_FACTION_TITLE|Nach Gruppierung auflösen
@@ -1350,3 +1352,5 @@ HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Entfernte Helden kehren mit Stufe 1 in dein 
 HODA_UI_CONFIRM_UNFORTIFY|Entfernen
 HODA_UI_UNFORTIFY_REMOVE_ALL|Alle entfernen
 HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Kosten für das Entfernen
+HODA_WORLD_CHAT_LEVEL_HELPER|Erreiche Stufe {0}, um zu schreiben
+HODA_WORLD_CHAT_TITLE|Weltchat

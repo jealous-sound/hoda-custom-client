@@ -526,6 +526,8 @@ HODA_AURA_STEALTH_PLUS50HDWARFDEMON_PLUS10CRITALL_PLUS10STUNSLOWRESALL_ONHIT_GAI
 HODA_AURA_STEALTH_PLUS50HPSLOWRES_CHA_EXPLODE15_5BNSDMG15DMGRES_WHITE_75HPALL_SELFDTH_STUNIMMDIVINE|<color=green>Sigilo: ataca sin activar los efectos al golpear. +50% a la Salud, Fuerza y resistencia a Frenar para la Capilla. Cuando muere un enemigo, los enemigos reciben un 15% del daño infligido. +5% de daño adicional y +15% de resistencia al daño para la facción blanca. Al morir, los aliados ganan +75% de Salud y Fuerza. Inmunidad a Aturdir para las Divinas.</color>
 HODA_AURA_STEALTH_PLUS50HSTUNRES5BONUSDMGVEN_2BNSDMG_ALLYHIT_GAIN5P7DMGRESALL_ANYDEATH_SLOWIMMUNE_MINUS35PDRESINQ|<color=green>Sigilo: los ataques no activan los efectos al golpear. +50% a la Salud, resistencia a Aturdir y +5% de daño adicional para los venatori. Cuando golpean a los aliados, gana +2% de daño adicional. Cuando muere cualquiera, los aliados ganan +15% de Fuerza y +7% de resistencia al daño. Inmune a Frenar.</color> <color=red>-35% de resistencia a Drenaje de fuerza de la Inquisición.</color>
 HODA_AURA_STEALTH_PLUS60HPDSLOWRESNOBORL_CONV5PALLYATK_75PSTUNIMMLEOPOLD_FLANK_MINUS35SLOWRES|<color=green>Sigilo: ataca sin activar los efectos al golpear. +60% a la Salud y resistencia a Drenaje de fuerza y Frenar para orlesianos y nobleza. Convierte un 5% del daño infligido por los aliados en Fuerza. +75% de Fuerza e inmunidad a Aturdir para Leopold.</color> <color=orange>Más probable que ataque la retaguardia.</color> <color=red>-35% de resistencia a Frenar.</color>
+HODA_CHAT_CHANNEL_GUILD|Gremio
+HODA_CHAT_CHANNEL_WORLD|Mundo
 HODA_CONSUME_FACTION_BUTTON_DESC|Misma facción
 HODA_CONSUME_FACTION_DESC|Todos los héroes de la misma rareza y facción.
 HODA_CONSUME_FACTION_TITLE|Consumir por facción
@@ -1350,3 +1352,5 @@ HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Los héroes quitados vuelven a tu inventario
 HODA_UI_CONFIRM_UNFORTIFY|Quitar
 HODA_UI_UNFORTIFY_REMOVE_ALL|Quitar todos
 HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Coste de retirada
+HODA_WORLD_CHAT_LEVEL_HELPER|Alcanza el nivel {0} para escribir
+HODA_WORLD_CHAT_TITLE|Chat mundial

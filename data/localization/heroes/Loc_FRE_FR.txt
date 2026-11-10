@@ -526,6 +526,8 @@ HODA_AURA_STEALTH_PLUS50HDWARFDEMON_PLUS10CRITALL_PLUS10STUNSLOWRESALL_ONHIT_GAI
 HODA_AURA_STEALTH_PLUS50HPSLOWRES_CHA_EXPLODE15_5BNSDMG15DMGRES_WHITE_75HPALL_SELFDTH_STUNIMMDIVINE|<color=green>Furtivité : attaque sans déclencher d'effets à l'impact. Chantrie : Santé, Puissance et résistance au ralentissement +50 %. À la mort d'un ennemi, les ennemis subissent 15 % des dégâts infligés. Faction blanche : dégâts supplémentaires +5 % et résistance aux dégâts +15 %. À sa mort, les alliés gagnent +75 % de Santé et de Puissance. Divines : immunité à l'assommement.</color>
 HODA_AURA_STEALTH_PLUS50HSTUNRES5BONUSDMGVEN_2BNSDMG_ALLYHIT_GAIN5P7DMGRESALL_ANYDEATH_SLOWIMMUNE_MINUS35PDRESINQ|<color=green>Furtivité : attaque sans déclencher d'effets à l'impact. Venatori : Santé, résistance à l'assommement +50 % et dégâts supplémentaires +5 %. Quand des alliés sont touchés, gagne +2 % de dégâts supplémentaires. À la mort de n'importe quel héros, les alliés gagnent +15 % de Puissance et +7 % de résistance aux dégâts. Immunisé contre le ralentissement.</color> <color=red>Inquisition : résistance au drain de Puissance -35 %.</color>
 HODA_AURA_STEALTH_PLUS60HPDSLOWRESNOBORL_CONV5PALLYATK_75PSTUNIMMLEOPOLD_FLANK_MINUS35SLOWRES|<color=green>Furtivité : attaque sans déclencher d'effets à l'impact. Orlésiens et nobles : Santé, résistance au drain de Puissance et au ralentissement +60 %. Convertit 5 % des dégâts infligés par les alliés en Puissance. Léopold : Puissance +75 % et immunité à l'assommement.</color> <color=orange>Plus de chances d'attaquer les combattants arrière.</color> <color=red>Résistance au ralentissement -35 %.</color>
+HODA_CHAT_CHANNEL_GUILD|Guilde
+HODA_CHAT_CHANNEL_WORLD|Monde
 HODA_CONSUME_FACTION_BUTTON_DESC|Même faction
 HODA_CONSUME_FACTION_DESC|Tous les héros de même rareté et de même faction.
 HODA_CONSUME_FACTION_TITLE|Absorber par faction
@@ -1350,3 +1352,5 @@ HODA_UI_UNFORTIFY_CONFIRM_DESC_NOTE|Les héros retirés reviennent dans votre in
 HODA_UI_CONFIRM_UNFORTIFY|Retirer
 HODA_UI_UNFORTIFY_REMOVE_ALL|Tout retirer
 HODA_UI_CONFIRM_UNFORTIFY_COST_HEADER|Coût du retrait
+HODA_WORLD_CHAT_LEVEL_HELPER|Atteignez le niveau {0} pour écrire
+HODA_WORLD_CHAT_TITLE|Chat mondial
