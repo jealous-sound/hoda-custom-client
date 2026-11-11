@@ -18,6 +18,7 @@ static void CampaignDrawWrapped(
 #define STORE_RUNE_PACK_SLOTS 3
 #define STORE_RUNE_SLOT_FAMILIES 4
 #define STORE_POOL_TAG_CAPACITY 16
+#define STORE_ROTATION_GROUP_CAPACITY 16
 #define STORE_UNIQUE_HERO_REROLLS 32
 #define STORE_NO_DUPLICATE_RARITY RARITY_LEGENDARY
 #define STORE_DEFAULT_POOL_EXCLUDED_TAG "WISP"
@@ -286,7 +287,9 @@ typedef struct {
     int voucher;
     int schedule_start;
     int schedule_end;
-    int flash_index;
+    char rotation_group[STORE_ROTATION_GROUP_CAPACITY];
+    int rotation_index;
+    int rotation_count;
     int opened_counter;
     int hero_count;
     Rarity minimum_rarity;
@@ -329,8 +332,7 @@ typedef struct {
     int pack_count;
     const char *voucher_icons[PLAYER_VOUCHER_CAPACITY];
     int voucher_count;
-    int flash_days;
-    int flash_count;
+    int rotation_days;
     StoreGemSku gem_skus[STORE_GEM_SKU_COUNT];
     PackScene opening_scene;
     PackFx opening_fx;
@@ -523,12 +525,12 @@ static int StoreParseMonthDay(const char *text) {
     return sscanf(text, "%d-%d", &month, &day) == 2 ? month * 100 + day : 0;
 }
 
-long long StorePackSecondsLeft(const StorePackDef *pack, int flash_days, int flash_count, long long now) {
-    if (pack->flash_index >= 0) {
-        if (flash_days <= 0 || flash_count <= 0) return STORE_PACK_UNAVAILABLE;
-        long long span = flash_days * STORE_SECONDS_PER_DAY;
+long long StorePackSecondsLeft(const StorePackDef *pack, int rotation_days, long long now) {
+    if (pack->rotation_count > 0) {
+        if (rotation_days <= 0) return STORE_PACK_UNAVAILABLE;
+        long long span = rotation_days * STORE_SECONDS_PER_DAY;
         long long period = now / span;
-        if ((int)(period % flash_count) != pack->flash_index) return STORE_PACK_UNAVAILABLE;
+        if ((int)(period % pack->rotation_count) != pack->rotation_index) return STORE_PACK_UNAVAILABLE;
         return (period + 1) * span - now;
     }
     if (!pack->schedule_start) return STORE_PACK_ALWAYS;
@@ -684,7 +686,6 @@ static void StoreLoadPack(Store *store, StorePackDef *pack, const cJSON *json) {
     pack->tutorial_only = JsonBool(json, "tutorial_only");
     StoreLoadOffers(store, pack, json);
 
-    pack->flash_index = -1;
     pack->gear_pack = -1;
     const cJSON *schedule = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "schedule");
     if (cJSON_IsObject(schedule)) {
@@ -693,8 +694,8 @@ static void StoreLoadPack(Store *store, StorePackDef *pack, const cJSON *json) {
     }
     const cJSON *rotation = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "rotation");
     if (cJSON_IsObject(rotation)) {
-        pack->flash_index = JsonInt(rotation, "index");
-        store->flash_count++;
+        StrCopy(pack->rotation_group, sizeof(pack->rotation_group), JsonStr(rotation, "group"));
+        pack->rotation_index = JsonInt(rotation, "index");
     }
 
     const char *description_key = JsonStr(json, "description_key");
@@ -797,11 +798,20 @@ static void StoreBuildRarityPools(Store *store) {
     }
 }
 
+static void StoreCountRotations(Store *store) {
+    for (int i = 0; i < store->pack_count; i++) {
+        StorePackDef *pack = &store->packs[i];
+        if (!pack->rotation_group[0]) continue;
+        for (int other = 0; other < store->pack_count; other++)
+            if (strcmp(store->packs[other].rotation_group, pack->rotation_group) == 0) pack->rotation_count++;
+    }
+}
+
 void StoreInitialize(Store *store, const char *config_path, const char *catalog_path) {
     memset(store, 0, sizeof(*store));
     store->config_root = JsonLoadFile(config_path);
     if (JsonInt(store->config_root, "version") != 3) TraceLog(LOG_FATAL, "Store: unsupported config version");
-    store->flash_days = JsonInt(store->config_root, "flash_days");
+    store->rotation_days = JsonInt(store->config_root, "flash_days");
     const cJSON *voucher = NULL;
     cJSON_ArrayForEach(voucher, cJSON_GetObjectItemCaseSensitive(store->config_root, "vouchers")) {
         if (store->voucher_count >= PLAYER_VOUCHER_CAPACITY) TraceLog(LOG_FATAL, "Store: too many vouchers");
@@ -813,6 +823,7 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
         if (store->pack_count >= STORE_PACK_CAPACITY) TraceLog(LOG_FATAL, "Store: too many packs in %s", config_path);
         StoreLoadPack(store, &store->packs[store->pack_count++], pack);
     }
+    StoreCountRotations(store);
     const cJSON *gem_skus = cJSON_GetObjectItemCaseSensitive(store->config_root, "gem_skus");
     if (!cJSON_IsArray(gem_skus) || cJSON_GetArraySize(gem_skus) != STORE_GEM_SKU_COUNT)
         TraceLog(LOG_FATAL, "Store: expected %d gem skus in %s", STORE_GEM_SKU_COUNT, config_path);
@@ -2285,7 +2296,7 @@ static void StoreRefreshVisible(Store *store, StoreView page) {
         const StorePackDef *pack = &store->packs[i];
         if (pack->page != page) continue;
         if (pack->tutorial_only && !TutorialScriptedPack(pack->id)) continue;
-        if (StorePackSecondsLeft(pack, store->flash_days, store->flash_count, now) == STORE_PACK_UNAVAILABLE) continue;
+        if (StorePackSecondsLeft(pack, store->rotation_days, now) == STORE_PACK_UNAVAILABLE) continue;
         store->visible[store->visible_count++] = i;
     }
 }
@@ -2340,7 +2351,7 @@ static StoreAction StoreDrawPackPage(Store *store, Player *player, Heroes *heroe
         if (cell_x + stride < list.x || cell_x > list.x + list.width) continue;
         Rectangle card = {cell_x, list.y, stride, list.height};
         int pack = store->visible[slot];
-        long long left = StorePackSecondsLeft(&store->packs[pack], store->flash_days, store->flash_count, now);
+        long long left = StorePackSecondsLeft(&store->packs[pack], store->rotation_days, now);
         if (StoreDrawPackCard(store, player, heroes, pack, card, left)) {
             action = STORE_ACTION_PURCHASED;
             break;
