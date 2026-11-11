@@ -107,7 +107,8 @@ jobs:
             macos)
               ditto -c -k --keepParent "Heroes of Dragon Age.app" "package/${{ matrix.package }}" ;;
             linux)
-              tar -czf "package/${{ matrix.package }}" -C build/linux "Heroes of Dragon Age" ;;
+              tar -czf "package/${{ matrix.package }}" -C build/linux "Heroes of Dragon Age"
+              (cd build/linux && zip -q "../../package/Heroes-of-Dragon-Age-linux-x86_64.zip" "Heroes of Dragon Age") ;;
             windows)
               (cd build/windows && zip -q "../../package/${{ matrix.package }}" "Heroes of Dragon Age.exe") ;;
           esac
@@ -115,7 +116,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Heroes-of-Dragon-Age-${{ matrix.platform }}
-          path: package/${{ matrix.package }}
+          path: package/
           if-no-files-found: error
 
   release:
@@ -126,10 +127,30 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: release
           merge-multiple: true
+
+      - name: Sign the update manifest
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [ -z "$RELEASE_SIGNING_KEY" ]; then
+            echo "::error::The RELEASE_SIGNING_KEY secret is not set, so the update manifest cannot be signed."
+            exit 1
+          fi
+          key="$RUNNER_TEMP/release-signing-key.pem"
+          trap 'rm -f "$key"' EXIT
+          (umask 077 && printf '%s\n' "$RELEASE_SIGNING_KEY" > "$key")
+          python3 tools/build_release_manifest.py \
+            --version "$TAG" \
+            --directory release \
+            --signing-key "$key" \
+            --public-key "$(make -s release-public-key)"
 
       - name: Publish GitHub release
         env:

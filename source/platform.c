@@ -34,6 +34,8 @@
 #define PLATFORM_APP_DATA_ENV "APPDATA"
 #define PLATFORM_WINDOWS_DIR_ENV "WINDIR"
 #define PLATFORM_WINDOWS_DIR_DEFAULT "C:\\Windows"
+#define PLATFORM_PATH_CAP 1024
+#define PLATFORM_COMMAND_CAP 1100
 
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size) {
     HANDLE handle = (HANDLE)_get_osfhandle(_fileno(file));
@@ -348,19 +350,75 @@ bool PlatformPreferredLanguage(char *out, size_t capacity) {
     return WideCharToMultiByte(CP_UTF8, 0, name, -1, out, (int)capacity, NULL, NULL) > 0;
 }
 
+bool PlatformMakeExecutable(const char *path) {
+    (void)path;
+    return true;
+}
+
+static bool PlatformRemoveEntry(const char *path, DWORD attributes) {
+    if (attributes & FILE_ATTRIBUTE_READONLY) SetFileAttributesA(path, attributes & ~(DWORD)FILE_ATTRIBUTE_READONLY);
+    return attributes & FILE_ATTRIBUTE_DIRECTORY ? RemoveDirectoryA(path) != 0 : DeleteFileA(path) != 0;
+}
+
+bool PlatformRemoveTree(const char *path) {
+    DWORD attributes = GetFileAttributesA(path);
+    if (attributes == INVALID_FILE_ATTRIBUTES) {
+        DWORD error = GetLastError();
+        return error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND;
+    }
+    bool walkable = (attributes & FILE_ATTRIBUTE_DIRECTORY) && !(attributes & FILE_ATTRIBUTE_REPARSE_POINT);
+    if (!walkable) return PlatformRemoveEntry(path, attributes);
+    char pattern[PLATFORM_PATH_CAP];
+    if ((size_t)snprintf(pattern, sizeof(pattern), "%s\\*", path) >= sizeof(pattern)) return false;
+    bool emptied = true;
+    WIN32_FIND_DATAA found;
+    HANDLE search = FindFirstFileA(pattern, &found);
+    if (search != INVALID_HANDLE_VALUE) {
+        do {
+            if (!strcmp(found.cFileName, ".") || !strcmp(found.cFileName, "..")) continue;
+            char child[PLATFORM_PATH_CAP];
+            bool named = (size_t)snprintf(child, sizeof(child), "%s\\%s", path, found.cFileName) < sizeof(child);
+            emptied = named && PlatformRemoveTree(child) && emptied;
+        } while (FindNextFileA(search, &found));
+        FindClose(search);
+    }
+    return PlatformRemoveEntry(path, attributes) && emptied;
+}
+
+bool PlatformStartProgram(const char *executable) {
+    char command[PLATFORM_COMMAND_CAP];
+    if ((size_t)snprintf(command, sizeof(command), "\"%s\"", executable) >= sizeof(command)) return false;
+    STARTUPINFOA startup = {.cb = sizeof(startup)};
+    PROCESS_INFORMATION process;
+    if (!CreateProcessA(executable, command, NULL, NULL, FALSE, 0, NULL, NULL, &startup, &process)) return false;
+    CloseHandle(process.hThread);
+    CloseHandle(process.hProcess);
+    return true;
+}
+
+bool PlatformContinueAs(const char *executable) {
+    return PlatformStartProgram(executable);
+}
+
 #else
 #include <ctype.h>
 #include <curl/curl.h>
+#include <dirent.h>
 #include <dlfcn.h>
 #include <errno.h>
 #include <pthread.h>
+#include <spawn.h>
 #include <strings.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
+extern char **environ;
+
 #define PLATFORM_DOWNLOAD_USER_AGENT "HeroesOfDragonAge/" HOD_VERSION
 #define PLATFORM_HTTP_RANGE_NOT_SATISFIABLE 416
 #define PLATFORM_DIRECTORY_MODE 0755
+#define PLATFORM_EXECUTABLE_MODE 0755
+#define PLATFORM_PATH_CAP 1024
 #define PLATFORM_HOME_ENV "HOME"
 #define PLATFORM_XDG_DATA_ENV "XDG_DATA_HOME"
 #define PLATFORM_HTTP_NO_EXPECT_HEADER "Expect:"
@@ -697,5 +755,38 @@ int PlatformProcessorCount(void) {
 
 time_t PlatformTimeFromUtc(struct tm *utc) {
     return timegm(utc);
+}
+
+bool PlatformMakeExecutable(const char *path) {
+    return chmod(path, PLATFORM_EXECUTABLE_MODE) == 0;
+}
+
+bool PlatformRemoveTree(const char *path) {
+    struct stat info;
+    if (lstat(path, &info) != 0) return errno == ENOENT;
+    if (!S_ISDIR(info.st_mode)) return unlink(path) == 0;
+    DIR *directory = opendir(path);
+    if (!directory) return false;
+    bool emptied = true;
+    for (struct dirent *entry = readdir(directory); entry; entry = readdir(directory)) {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) continue;
+        char child[PLATFORM_PATH_CAP];
+        bool named = (size_t)snprintf(child, sizeof(child), "%s/%s", path, entry->d_name) < sizeof(child);
+        emptied = named && PlatformRemoveTree(child) && emptied;
+    }
+    closedir(directory);
+    return rmdir(path) == 0 && emptied;
+}
+
+bool PlatformStartProgram(const char *executable) {
+    char *arguments[] = {(char *)executable, NULL};
+    pid_t child;
+    return posix_spawn(&child, executable, NULL, NULL, arguments, environ) == 0;
+}
+
+bool PlatformContinueAs(const char *executable) {
+    char *arguments[] = {(char *)executable, NULL};
+    execv(executable, arguments);
+    return false;
 }
 #endif

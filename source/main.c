@@ -11,6 +11,7 @@
 #include <time.h>
 
 #include "platform.h"
+#include "release_signature.h"
 #include "client_version.h"
 
 #define APP_NAME "Heroes of Dragon Age"
@@ -31,6 +32,7 @@
 #include "settings.c"
 #include "content_update.c"
 #include "client_update.c"
+#include "client_install.c"
 #include "backend.c"
 #include "server_actions.c"
 #include "ui.c"
@@ -68,6 +70,7 @@
 #include "music_player.c"
 #include "heroes.c"
 #include "message_popup.c"
+#include "client_install_prompt.c"
 #include "content_screen.c"
 #include "play_mode_screen.c"
 #include "name_prompt.c"
@@ -154,6 +157,7 @@ static void RunSelectedMode(void) {
 
 int main(void) {
     AppBundleEnterParentDirectory();
+    if (ClientInstallHandOver()) return 0;
     bool screenshot_mode = EnvFlag("HOD_SHOT");
     if (screenshot_mode) SetTraceLogLevel(LOG_WARNING);
     int win_w = config.game_width, win_h = config.game_height;
@@ -168,11 +172,13 @@ int main(void) {
     InitAudioDevice();
     if (screenshot_mode || EnvFlag("HOD_MUTE")) SetMasterVolume(0.0f);
     SetTargetFPS(144);
+    ClientInstallConfirmLaunch();
 
     if (!screenshot_mode) ClientUpdateCheckStart(BackendUrlOverride() ? BackendUrlOverride() : BackendDefaultUrl());
     if (ContentScreenRun()) RunSelectedMode();
 
     CloseAudioDevice();
     CloseWindow();
+    ClientInstallRestart();
     return 0;
 }

@@ -23,7 +23,7 @@ Without a local copy the game downloads its data on first launch (see [Content](
 | `make run` | builds and runs the game |
 | `make play` | runs the game against a local backend from `../hoda-custom-backend` (`BACKEND_DIR=`) |
 | `make test` | every check; needs the local asset cache |
-| `make ci-test` | the checks that need no asset cache: golden replays, content and update tests, table validators |
+| `make ci-test` | the checks that need no asset cache: golden replays, content, update and install tests, table validators |
 | `make golden` | regenerates the battle corpus in `tests/golden/` |
 | `make balance` | PvP balance report from `tests/balance_check.c` (`BALANCE_ARGS=` passes options; see [Balance](#balance)) |
 | `make format-check` | clang-format check; `make format` rewrites |
@@ -33,13 +33,15 @@ Without a local copy the game downloads its data on first launch (see [Content](
 
 Build variables: `SERVER_URL` (default `https://api.hodareborn.com`; empty means local play only), `CONTENT_URL`
 (default `https://cdn.hodareborn.com`), `CLIENT_VERSION` (default `git describe --tags`), and
-`RAYLIB_LINK=$RAYLIB_DIR/lib/libraylib.a` to link raylib statically. The game looks for `data/` and
+`RAYLIB_LINK=$RAYLIB_DIR/lib/libraylib.a` to link raylib statically, plus `RELEASE_URL` and `RELEASE_PUBLIC_KEY`
+for [self-update](#self-update). The game looks for `data/` and
 `client-additional-data/` next to the app bundle or executable.
 
 ## Layout
 
 - `source/`: one module per screen or system. `main.c` is the single translation unit and `battle_sim.c` the
-  simulation. OS calls sit in `platform.c`, built separately so `<windows.h>` never meets raylib.
+  simulation. OS calls sit in `platform.c`, built separately so `<windows.h>` never meets raylib, and
+  `release_signature.c` wraps the vendored TweetNaCl (`vendors/tweetnacl.c`, public domain) the same way.
 - `tests/`: C tests, the golden battle corpus and Python unit tests.
 - `tools/`: `build_*.py` writes a table in `data/` (`--check`, run by `make test`, verifies it); `validate_*.py`
   checks one.
@@ -59,7 +61,10 @@ server owns the save and the clock. A first launch creates a guest account (`acc
 | `HOD_NEW_PLAYER` | a starting roster in place of `data/new_player.json`, such as `client-additional-data/player_starter.json` |
 | `HOD_SAVE_PATH`, `HOD_ACCOUNT_PATH` | the local save and the guest account file |
 | `HOD_CONTENT_URL`, `HOD_CONTENT_DIR` | the content server, and a data folder to download into even in a checkout |
+| `HOD_RELEASE_URL` | where a release's `client-update.json` and zips are fetched from, in place of the GitHub releases |
+| `HOD_NO_SELF_UPDATE=1` | never downloads a build or hands over to a downloaded one; update prompts open the website |
 | `HOD_SHOT=<file.png>` `HOD_SHOT_SCREEN=<name>` | renders one screen with sample data and saves it; names in `source/debug_harness.c` |
+| `HOD_SHOT_INSTALL=<state>` | with an update screen: `offer`, `downloading`, `restarting` or `failed` previews the self-update popup, `live` installs for real |
 
 ## Original assets
 
@@ -156,6 +161,23 @@ Bump the minor version for features and the patch version for fixes. To block ol
 The same endpoint announces a server restart. Online players get a popup and a countdown in its last half hour, and
 battles cannot start from 3 minutes before it until the server is back; `scripts/schedule-maintenance.sh` in the
 backend sets the time.
+
+### Self-update
+
+The update prompt's **Update** button installs the new release without the website. The installed app stays where
+the player put it and acts as the launcher: new builds are unpacked into `client/<version>/` in the game's data
+folder, and every launch hands over to the newest one there (`source/client_install.c`).
+
+- The tag's run writes `client-update.json` (`tools/build_release_manifest.py`: each platform zip's size, SHA-256
+  and executable) and signs it with the Ed25519 key in the `RELEASE_SIGNING_KEY` secret; the run fails without it.
+  The matching public key is `RELEASE_PUBLIC_KEY` in the `Makefile`. To replace the key, change both, and note that
+  builds carrying the old public key can only update through the website.
+- The game accepts a manifest only if the signature matches, its version is the tag it asked for and that tag is
+  newer than the running build; the zip must match the manifest's size and SHA-256.
+- A downloaded build that fails to open a window on two launches in a row is dropped and the installed app runs
+  instead. Any failure to install falls back to the website button.
+- Only tagged builds update themselves; a `git describe` build with commits past its tag, a run from a checkout
+  and `HOD_NO_SELF_UPDATE=1` never do.
 
 ## License
 

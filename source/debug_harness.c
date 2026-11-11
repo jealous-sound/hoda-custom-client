@@ -50,6 +50,24 @@ typedef struct {
 #define DEBUG_QUEST_WEEKLY_SCROLL 644.0f
 #define DEBUG_MAINTENANCE_ANNOUNCED_SECONDS 754
 #define DEBUG_MAINTENANCE_HOLDING_SECONDS 95
+#define DEBUG_INSTALL_ENV "HOD_SHOT_INSTALL"
+#define DEBUG_INSTALL_LIVE "live"
+#define DEBUG_INSTALL_LIVE_FRAME_LIMIT 36000
+#define DEBUG_INSTALL_PREVIEW_ROOT "build/update-preview"
+#define DEBUG_INSTALL_PREVIEW_TOTAL_BYTES 100
+#define DEBUG_INSTALL_PREVIEW_RECEIVED_BYTES 42
+
+typedef struct {
+    const char *name;
+    ClientInstallPhase phase;
+} DebugInstallPreview;
+
+static const DebugInstallPreview debug_install_previews[] = {
+    {"offer", CLIENT_INSTALL_IDLE},
+    {"downloading", CLIENT_INSTALL_DOWNLOADING},
+    {"restarting", CLIENT_INSTALL_READY},
+    {"failed", CLIENT_INSTALL_FAILED},
+};
 
 static const char DEBUG_UPDATE_AVAILABLE_RELEASE[] =
     "{\"latest\":\"v9.9.0\",\"minimum\":\"\",\"download_url\":\"https://hodareborn.com/#download\"}";
@@ -930,11 +948,56 @@ static void DebugSeedClientRelease(const char *json) {
     ClientUpdateAdopt(&release, false);
 }
 
+static bool DebugInstallIs(const char *name) {
+    const char *wanted = getenv(DEBUG_INSTALL_ENV);
+    return wanted && strcmp(wanted, name) == 0;
+}
+
+static void DebugSeedInstallPreview(void) {
+    for (size_t i = 0; i < sizeof(debug_install_previews) / sizeof(debug_install_previews[0]); i++) {
+        if (!DebugInstallIs(debug_install_previews[i].name)) continue;
+        client_install_site = (ClientInstallSite){.supported = true};
+        StrCopy(client_install_site.root, sizeof(client_install_site.root), DEBUG_INSTALL_PREVIEW_ROOT);
+        client_install.progress = (ClientInstallProgress){
+            .phase = debug_install_previews[i].phase,
+            .total_bytes = DEBUG_INSTALL_PREVIEW_TOTAL_BYTES,
+            .received_bytes = DEBUG_INSTALL_PREVIEW_RECEIVED_BYTES,
+        };
+        StrCopy(
+            client_install.progress.version,
+            sizeof(client_install.progress.version),
+            ClientUpdateCurrentRelease().latest
+        );
+    }
+}
+
+static void DebugClearInstallPreview(void) {
+    client_install.progress = (ClientInstallProgress){0};
+}
+
+static bool DebugClientUpdateAnswered(void) {
+    pthread_mutex_lock(&client_update.lock);
+    bool answered = client_update.answered;
+    pthread_mutex_unlock(&client_update.lock);
+    return answered;
+}
+
+static bool DebugLiveInstallSettled(bool *started) {
+    if (*started) return ClientInstallRestartPending() || !ClientInstallBusy();
+    if (!DebugClientUpdateAnswered()) return false;
+    if (!ClientInstallOffered()) return true;
+    ClientInstallStart();
+    *started = true;
+    return false;
+}
+
 static bool DebugPrepareClientUpdate(Game *game, DebugShot *shot) {
     if (!DebugShotIs(shot, "update_required")) return false;
     game->screen = SCREEN_HOME;
-    if (shot->frames_drawn == 0)
+    if (shot->frames_drawn == 0) {
         ClientUpdateNoteRefusal(CLIENT_UPDATE_HTTP_UPGRADE_REQUIRED, DEBUG_UPDATE_REQUIRED_RELEASE);
+        DebugSeedInstallPreview();
+    }
     return true;
 }
 
@@ -963,23 +1026,33 @@ static bool DebugRenderPlayMode(const char *screen_name, const char *output) {
     bool required = screen_name && strcmp(screen_name, "play_mode_update_required") == 0;
     bool available = screen_name && strcmp(screen_name, "play_mode_update") == 0;
     if (!required && !available) return false;
-    DebugSeedClientRelease(required ? DEBUG_UPDATE_REQUIRED_RELEASE : DEBUG_UPDATE_AVAILABLE_RELEASE);
+    bool live = DebugInstallIs(DEBUG_INSTALL_LIVE);
+    if (live) {
+        ClientUpdateCheckStart(BackendUrlOverride() ? BackendUrlOverride() : BackendDefaultUrl());
+    } else {
+        DebugSeedClientRelease(required ? DEBUG_UPDATE_REQUIRED_RELEASE : DEBUG_UPDATE_AVAILABLE_RELEASE);
+        DebugSeedInstallPreview();
+    }
     PlayModeScreen screen = {0};
     PlayModeScreenLoad(&screen);
-    int frames = EnvInt("HOD_SHOT_FRAMES", DEBUG_SHOT_DEFAULT_FRAMES);
+    int frames = live ? DEBUG_INSTALL_LIVE_FRAME_LIMIT : EnvInt("HOD_SHOT_FRAMES", DEBUG_SHOT_DEFAULT_FRAMES);
+    bool install_started = false;
     for (int frame = 0; frame < frames && !WindowShouldClose(); frame++) {
+        bool last = frame + 1 == frames || (live && DebugLiveInstallSettled(&install_started));
         BeginDrawing();
         ClearBackground(BLACK);
         UiFrameBegin();
         PlayModeScreenDraw(&screen);
         UiFrameEnd();
-        if (frame + 1 == frames && output) {
+        if (last && output) {
             rlDrawRenderBatchActive();
             TakeScreenshot(output);
         }
         EndDrawing();
+        if (last) break;
     }
     PlayModeScreenUnload(&screen);
+    if (!live) DebugClearInstallPreview();
     return true;
 }
 

@@ -172,8 +172,7 @@ static int LocPlaceholderLength(const char *c, int *slot) {
     return close ? (int)(close - c) + 1 : 0;
 }
 
-void LocFormatArgs(char *out, size_t size, const char *key, const char *const *args, int arg_count) {
-    const char *format = LocGet(key);
+void LocFormatTextArgs(char *out, size_t size, const char *format, const char *const *args, int arg_count) {
     size_t written = 0;
     for (const char *c = format; *c && written + 1 < size;) {
         int slot = -1;
@@ -186,6 +185,10 @@ void LocFormatArgs(char *out, size_t size, const char *key, const char *const *a
         c += length;
     }
     out[written] = '\0';
+}
+
+void LocFormatArgs(char *out, size_t size, const char *key, const char *const *args, int arg_count) {
+    LocFormatTextArgs(out, size, LocGet(key), args, arg_count);
 }
 
 void LocFormat1(char *out, size_t size, const char *key, const char *first) {
