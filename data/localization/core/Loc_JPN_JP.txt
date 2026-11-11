@@ -15,3 +15,6 @@ HODA_UPDATE_DOWNLOAD|ダウンロード
 HODA_UPDATE_LATER|後で
 HODA_UPDATE_QUIT|終了
 HODA_OPTIONS_VERSION_UPDATE|{0}（{1}が利用可能）
+HODA_MAINTENANCE_TITLE|サーバー再起動
+HODA_MAINTENANCE_MESSAGE|アップデートのため、まもなくサーバーが再起動します。再起動の数分前から新しいバトルは一時停止され、再起動後は新しいバージョンのダウンロードが必要になる場合があります。
+HODA_MAINTENANCE_HOLD_MESSAGE|アップデートのためサーバーを再起動しています。復旧するまでバトルは一時停止されます。

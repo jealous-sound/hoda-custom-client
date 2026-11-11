@@ -48,6 +48,8 @@ typedef struct {
 #define DEBUG_QUEST_ACTIVE_DAYS 4
 #define DEBUG_QUEST_DAILY_CLAIMED 2
 #define DEBUG_QUEST_WEEKLY_SCROLL 644.0f
+#define DEBUG_MAINTENANCE_ANNOUNCED_SECONDS 754
+#define DEBUG_MAINTENANCE_HOLDING_SECONDS 95
 
 static const char DEBUG_UPDATE_AVAILABLE_RELEASE[] =
     "{\"latest\":\"v9.9.0\",\"minimum\":\"\",\"download_url\":\"https://hodareborn.com/#download\"}";
@@ -936,6 +938,27 @@ static bool DebugPrepareClientUpdate(Game *game, DebugShot *shot) {
     return true;
 }
 
+static void DebugSeedMaintenance(Game *game, long long seconds_ahead) {
+    ClientRelease release = {.server_time = (long long)time(NULL)};
+    release.maintenance_at = release.server_time + seconds_ahead;
+    ClientUpdateAdopt(&release, false);
+    game->maintenance.offline_preview = true;
+}
+
+static bool DebugPrepareMaintenance(Game *game, DebugShot *shot) {
+    bool strip = DebugShotIs(shot, "maintenance_strip");
+    bool hold = DebugShotIs(shot, "maintenance_hold");
+    bool live = DebugShotIs(shot, "maintenance_live");
+    if (!strip && !hold && !live && !DebugShotIs(shot, "maintenance_notice")) return false;
+    game->screen = SCREEN_HOME;
+    if (live)
+        ClientUpdateCheckStart(BackendUrlOverride());
+    else if (shot->frames_drawn == 0)
+        DebugSeedMaintenance(game, hold ? DEBUG_MAINTENANCE_HOLDING_SECONDS : DEBUG_MAINTENANCE_ANNOUNCED_SECONDS);
+    if (strip) MaintenanceNoticeClose(&game->maintenance);
+    return true;
+}
+
 static bool DebugRenderPlayMode(const char *screen_name, const char *output) {
     bool required = screen_name && strcmp(screen_name, "play_mode_update_required") == 0;
     bool available = screen_name && strcmp(screen_name, "play_mode_update") == 0;
@@ -1454,6 +1477,7 @@ static void DebugPrepareExpeditions(Game *game, DebugShot *shot) {
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
     if (DebugPrepareTutorial(game, shot) || DebugPrepareNamePrompt(game, shot)) return;
     if (DebugPrepareOptions(game, shot) || DebugPrepareClientUpdate(game, shot)) return;
+    if (DebugPrepareMaintenance(game, shot)) return;
     if (DebugPrepareLiveGuildFlow(game, shot)) return;
     game->screen = shot->consume_opened ? SCREEN_CONSUME : SCREEN_HEROES;
     if (DebugShotIs(shot, "home")) game->screen = SCREEN_HOME;

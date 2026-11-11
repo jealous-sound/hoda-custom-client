@@ -153,6 +153,10 @@ so players see an update prompt. A suffix such as `v0.7.0-rc.1` makes a pre-rele
 Bump the minor version for features and the patch version for fixes. To block old clients from online play, raise
 `HOD_MIN_CLIENT_VERSION` on the backend.
 
+The same endpoint announces a server restart. Online players get a popup and a countdown in its last half hour, and
+battles cannot start from 3 minutes before it until the server is back; `scripts/schedule-maintenance.sh` in the
+backend sets the time.
+
 ## License
 
 The code in this repository is licensed under the GNU General Public License v3.0 (GPL-3.0-only); see `LICENSE`.

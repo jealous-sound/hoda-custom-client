@@ -15,3 +15,6 @@ HODA_UPDATE_DOWNLOAD|Скачать
 HODA_UPDATE_LATER|Позже
 HODA_UPDATE_QUIT|Выйти
 HODA_OPTIONS_VERSION_UPDATE|{0} (доступна {1})
+HODA_MAINTENANCE_TITLE|Перезапуск сервера
+HODA_MAINTENANCE_MESSAGE|Скоро сервер будет перезапущен для обновления. За несколько минут до этого новые бои будут приостановлены, а после перезапуска может потребоваться скачать новую версию.
+HODA_MAINTENANCE_HOLD_MESSAGE|Сервер перезапускается для обновления. Бои приостановлены, пока он не вернётся.

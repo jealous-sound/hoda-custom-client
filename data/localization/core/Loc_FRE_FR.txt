@@ -15,3 +15,6 @@ HODA_UPDATE_DOWNLOAD|Télécharger
 HODA_UPDATE_LATER|Plus tard
 HODA_UPDATE_QUIT|Quitter
 HODA_OPTIONS_VERSION_UPDATE|{0} ({1} disponible)
+HODA_MAINTENANCE_TITLE|Redémarrage du serveur
+HODA_MAINTENANCE_MESSAGE|Le serveur va bientôt redémarrer pour une mise à jour. Les nouveaux combats seront suspendus quelques minutes avant, et vous devrez peut-être télécharger une nouvelle version ensuite.
+HODA_MAINTENANCE_HOLD_MESSAGE|Le serveur redémarre pour une mise à jour. Les combats sont suspendus jusqu'à son retour.

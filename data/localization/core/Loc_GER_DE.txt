@@ -15,3 +15,6 @@ HODA_UPDATE_DOWNLOAD|Herunterladen
 HODA_UPDATE_LATER|Später
 HODA_UPDATE_QUIT|Beenden
 HODA_OPTIONS_VERSION_UPDATE|{0} ({1} verfügbar)
+HODA_MAINTENANCE_TITLE|Serverneustart
+HODA_MAINTENANCE_MESSAGE|Der Server wird in Kürze für ein Update neu gestartet. Neue Kämpfe werden einige Minuten vorher pausiert, und danach musst du möglicherweise eine neue Version herunterladen.
+HODA_MAINTENANCE_HOLD_MESSAGE|Der Server wird für ein Update neu gestartet. Kämpfe sind pausiert, bis er wieder da ist.

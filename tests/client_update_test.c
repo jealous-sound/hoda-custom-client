@@ -8,6 +8,8 @@
 #define TEST_PATH_CAP 1024
 #define TEST_TEMPORARY_TEMPLATE "hod-update-XXXXXX"
 #define TEST_FAR_FUTURE_VERSION "v999.0.0"
+#define TEST_SERVER_TIME 1800000000LL
+#define TEST_RECEIVED_AT 5000LL
 
 static ClientVersion TestVersion(const char *text) {
     ClientVersion version;
@@ -181,6 +183,71 @@ static void TestUpgradeRequiredBlocksOnlineAndKeepsTheServerRelease(void) {
     assert(ClientUpdateOnlineRefused());
 }
 
+static void TestReadsTheAnnouncedRestart(void) {
+    ClientRelease release;
+    assert(
+        ClientReleaseParse("{\"latest\":\"v0.5.1\",\"server_time\":1800000000,\"maintenance_at\":1800001800}", &release)
+    );
+    assert(release.server_time == TEST_SERVER_TIME && release.maintenance_at == TEST_SERVER_TIME + 1800);
+
+    assert(ClientReleaseParse("{\"latest\":\"v0.5.1\",\"server_time\":1800000000}", &release));
+    assert(release.server_time == TEST_SERVER_TIME && release.maintenance_at == 0);
+
+    assert(ClientReleaseParse("{\"server_time\":\"soon\",\"maintenance_at\":-5}", &release));
+    assert(release.server_time == 0 && release.maintenance_at == 0);
+}
+
+static ClientMaintenance TestMaintenance(long long restart_in, long long seconds_since_reply) {
+    ClientRelease release = {.server_time = TEST_SERVER_TIME, .maintenance_at = TEST_SERVER_TIME + restart_in};
+    return ClientMaintenanceFor(&release, TEST_RECEIVED_AT, TEST_RECEIVED_AT + seconds_since_reply);
+}
+
+static void TestRestartIsAnnouncedOnlyInItsLastHalfHour(void) {
+    assert(TestMaintenance(CLIENT_MAINTENANCE_NOTICE_SECONDS + 1, 0).phase == CLIENT_MAINTENANCE_NONE);
+    ClientMaintenance announced = TestMaintenance(CLIENT_MAINTENANCE_NOTICE_SECONDS, 0);
+    assert(announced.phase == CLIENT_MAINTENANCE_ANNOUNCED);
+    assert(announced.seconds_left == CLIENT_MAINTENANCE_NOTICE_SECONDS);
+    assert(announced.at == TEST_SERVER_TIME + CLIENT_MAINTENANCE_NOTICE_SECONDS);
+
+    ClientRelease quiet = {.server_time = TEST_SERVER_TIME};
+    assert(ClientMaintenanceFor(&quiet, TEST_RECEIVED_AT, TEST_RECEIVED_AT).phase == CLIENT_MAINTENANCE_NONE);
+    ClientRelease clockless = {.maintenance_at = TEST_SERVER_TIME + 60};
+    assert(ClientMaintenanceFor(&clockless, TEST_RECEIVED_AT, TEST_RECEIVED_AT).phase == CLIENT_MAINTENANCE_NONE);
+}
+
+static void TestCountdownFollowsTheTimeSinceTheReply(void) {
+    long long restart_in = 2 * 60 * 60;
+    assert(TestMaintenance(restart_in, 0).phase == CLIENT_MAINTENANCE_NONE);
+    long long waited = restart_in - 600;
+    ClientMaintenance later = TestMaintenance(restart_in, waited);
+    assert(later.phase == CLIENT_MAINTENANCE_ANNOUNCED && later.seconds_left == 600);
+    assert(TestMaintenance(restart_in, waited + 1).seconds_left == 599);
+}
+
+static void TestBattlesAreHeldFromTheLeadUntilTheOverrunEnds(void) {
+    long long lead = CLIENT_MAINTENANCE_BATTLE_LEAD_SECONDS;
+    assert(TestMaintenance(lead + 1, 0).phase == CLIENT_MAINTENANCE_ANNOUNCED);
+    ClientMaintenance holding = TestMaintenance(lead, 0);
+    assert(holding.phase == CLIENT_MAINTENANCE_HOLDING_BATTLES && holding.seconds_left == lead);
+
+    ClientMaintenance overdue = TestMaintenance(lead, lead + 30);
+    assert(overdue.phase == CLIENT_MAINTENANCE_HOLDING_BATTLES && overdue.seconds_left == 0);
+    long long overrun = CLIENT_MAINTENANCE_OVERRUN_SECONDS;
+    assert(TestMaintenance(lead, lead + overrun - 1).phase == CLIENT_MAINTENANCE_HOLDING_BATTLES);
+    assert(TestMaintenance(lead, lead + overrun).phase == CLIENT_MAINTENANCE_NONE);
+}
+
+static void TestTheLatestReplyDecidesTheAnnouncement(void) {
+    ClientRelease release = {.server_time = TEST_SERVER_TIME, .maintenance_at = TEST_SERVER_TIME + 600};
+    ClientUpdateAdopt(&release, false);
+    ClientMaintenance announced = ClientMaintenanceNow();
+    assert(announced.phase == CLIENT_MAINTENANCE_ANNOUNCED && announced.at == release.maintenance_at);
+
+    ClientRelease cancelled = {.server_time = TEST_SERVER_TIME};
+    ClientUpdateAdopt(&cancelled, false);
+    assert(ClientMaintenanceNow().phase == CLIENT_MAINTENANCE_NONE);
+}
+
 int main(void) {
     SetTraceLogLevel(LOG_WARNING);
     TestParsesTagsAndDescribeOutput();
@@ -190,6 +257,11 @@ int main(void) {
     TestReadsTheServerRelease();
     TestStatusComparesTheRunningBuild();
     TestLaterHidesOnlyTheSkippedRelease();
+    TestReadsTheAnnouncedRestart();
+    TestRestartIsAnnouncedOnlyInItsLastHalfHour();
+    TestCountdownFollowsTheTimeSinceTheReply();
+    TestBattlesAreHeldFromTheLeadUntilTheOverrunEnds();
+    TestTheLatestReplyDecidesTheAnnouncement();
     TestUpgradeRequiredBlocksOnlineAndKeepsTheServerRelease();
     printf("client update: ok\n");
     return 0;
