@@ -34,8 +34,34 @@ typedef struct {
     const char *limits;
     const char *description;
 } GearInfoText;
-#define GEAR_VIEW_DETAILS_FONT_MAX 15.0f
+#define GEAR_VIEW_DETAILS_FONT_MAX 12.5f
 #define GEAR_VIEW_DETAILS_FONT_MIN 9.0f
+#define GEAR_VIEW_SELECT_GLOW_FILL 1.16f
+#define GEAR_DETAILS_PAD_X 0.1f
+#define GEAR_DETAILS_TITLE_BAND 30.0f
+#define GEAR_DETAILS_BAND_PAD 5.0f
+#define GEAR_DETAILS_TITLE_TEXT 15.0f
+#define GEAR_DETAILS_RARITY_TEXT 12.5f
+#define GEAR_DETAILS_LIMITS_TEXT 11.5f
+#define GEAR_DETAILS_BUTTON_ROW 38.0f
+#define GEAR_DETAILS_BUTTON_GAP 4.0f
+#define GEAR_DETAILS_CLOSE_RESERVE 20.0f
+#define GEAR_DETAILS_HELP_TEXT 10.5f
+#define GEAR_VIEW_FOOTER_HINT_TEXT 12.5f
+#define GEAR_VIEW_FOOTER_STORE_WIDTH 0.46f
+#define GEAR_DIALOG_TILE_TOP 0.08f
+#define GEAR_DIALOG_TILE_SIZE 0.2f
+#define GEAR_DIALOG_TITLE_TOP 0.3f
+#define GEAR_DIALOG_TITLE_HEIGHT 0.08f
+#define GEAR_DIALOG_TITLE_TEXT 22.0f
+#define GEAR_DIALOG_MESSAGE_TOP 0.39f
+#define GEAR_DIALOG_MESSAGE_BOTTOM 0.72f
+#define GEAR_DIALOG_PRICED_MESSAGE_BOTTOM 0.6f
+#define GEAR_DIALOG_MESSAGE_WIDTH 0.84f
+#define GEAR_DIALOG_MESSAGE_TEXT 22.0f
+#define GEAR_DIALOG_PRICE_TEXT 22.0f
+#define GEAR_DIALOG_PRICE_AMOUNT_TEXT 26.0f
+#define GEAR_DIALOG_PRICE_LABEL_GAP 12.0f
 
 typedef enum {
     GEAR_FILTER_ALL,
@@ -91,7 +117,7 @@ static void GearViewLoadButtons(void) {
     );
     GearViewLoadButton(&gear_view.equip, GUI_STORE_BUY, GUI_STORE_BUY_ON, LocGet("HODA_GEAR_EQUIP_BUTTON_TEXT"), 0.34f);
     GearViewLoadButton(&gear_view.sell, GUI_STORE_BUY, GUI_STORE_BUY_ON, LocGet("HODA_GEAR_SELL_BUTTON_TEXT"), 0.34f);
-    GearViewLoadButton(&gear_view.store, GUI_STORE_BUY, GUI_STORE_BUY_ON, LocGet("STORE_TITLE"), 0.3f);
+    GearViewLoadButton(&gear_view.store, GUI_STORE_BUY, GUI_STORE_BUY_ON, LocGet("STORE_TITLE"), 0.34f);
     GearViewLoadButton(&gear_view.prev, GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", 0.32f);
     GearViewLoadButton(&gear_view.next, GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", 0.32f);
     GearViewLoadButton(&gear_view.yes, GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("MAIN_MESSAGE_DIALOG_OK"), 0.34f);
@@ -164,12 +190,13 @@ Color GearRarityColor(int rarity) {
 }
 
 void GearDrawTile(const GearDef *def, Rectangle r, bool selected) {
+    Rectangle glow = UiRect(r, 0.5f, 0.5f, GEAR_VIEW_SELECT_GLOW_FILL, GEAR_VIEW_SELECT_GLOW_FILL);
+    if (selected) UiDrawTexture(GuiTex(GUI_CARD_SELECT), glow, WHITE);
     DrawRectangleRec(UiRect(r, 0.5f, 0.5f, 0.92f, 0.92f), BLACK);
     Texture2D icon = GearIconLoad(def);
     Rectangle inner = UiRect(r, 0.5f, 0.5f, GEAR_VIEW_ICON_FILL, GEAR_VIEW_ICON_FILL);
     if (icon.id != 0) UiDrawTexture(icon, inner, WHITE);
     UiDrawTexture(GearRarityFrame(def->rarity), r, WHITE);
-    if (selected) UiDrawTexture(GuiTex(GUI_CARD_SELECT), r, WHITE);
 }
 
 static void GearViewDrawNormalSlot(const GearDef *worn, Rectangle r, bool selected) {
@@ -278,14 +305,7 @@ static void GearViewRequestEquip(Player *p) {
 }
 
 static void GearViewRequestSell(void) {
-    snprintf(
-        gear_view.message,
-        sizeof(gear_view.message),
-        "%s\n%s %d",
-        LocGet("HODA_GEAR_SELL_MAIN_CONFIRM"),
-        LocGet("HODA_GEAR_SELL_RECEIVE_CONFIRM"),
-        GearSellValue(GearDefAt(gear_view.selected))
-    );
+    StrCopy(gear_view.message, sizeof(gear_view.message), LocGet("HODA_GEAR_SELL_MAIN_CONFIRM"));
     gear_view.dialog = GEAR_VIEW_DIALOG_SELL;
 }
 
@@ -345,30 +365,73 @@ static void GearViewDrawAscendBody(const Player *p, Rectangle content) {
     HeroesDrawRich(GuiFont(FNT_MENU), LocGet("HODA_EVO_TOME_EXPLAIN_DESC"), bonus, 17.0f, WHITE);
 }
 
-static void GearViewDrawPrestigeDialog(Player *p, Rectangle popup) {
-    Rectangle text = UiRect(popup, 0.5f, 0.2f, 0.84f, 0.5f);
-    MessagePopupDrawText(GuiFont(FNT_MENU), LocGet("HODA_GEAR_PRESTIGE_MESSAGE"), text, 22.0f, WHITE);
+static void GearViewDrawPriceRow(Rectangle popup, const char *label, GuiId icon, int amount) {
     Rectangle currency = UiRect(popup, 0.62f, 0.68f, 0.2f, 0.11f);
+    float middle = currency.y + currency.height * 0.5f;
     UiDrawTextRight(
         GuiFont(FNT_MENU),
-        LocGet("REFRESH_COST"),
-        (Rectangle){0.0f, currency.y + currency.height * 0.5f, currency.x - 12.0f, 0.0f},
-        22.0f,
+        label,
+        (Rectangle){0.0f, middle, currency.x - GEAR_DIALOG_PRICE_LABEL_GAP, 0.0f},
+        GEAR_DIALOG_PRICE_TEXT,
         WHITE
     );
     UiDrawTexture(GuiTex(GUI_REWARD_BRUSH), currency, WHITE);
-    Rectangle gem = UiRect(currency, 0.9f, 0.4f, currency.height * 0.9f, currency.height * 0.9f);
-    UiDrawTexture(GuiTex(GUI_MAP_GEMS), gem, WHITE);
+    Rectangle coin = UiRect(currency, 0.9f, 0.4f, currency.height * 0.9f, currency.height * 0.9f);
+    UiDrawTexture(GuiTex(icon), coin, WHITE);
     UiDrawTextRight(
         GuiFont(FNT_COOL),
-        TextFormat("%d", GearPrestigeSlotGemCost()),
-        (Rectangle){0.0f, currency.y + currency.height * 0.5f, gem.x - GEAR_VIEW_PRICE_GEM_GAP, 0.0f},
-        26.0f,
+        TextFormat("%d", amount),
+        (Rectangle){0.0f, middle, coin.x - GEAR_VIEW_PRICE_GEM_GAP, 0.0f},
+        GEAR_DIALOG_PRICE_AMOUNT_TEXT,
         WHITE
     );
+}
+
+static void GearViewDrawChoice(Player *p, Rectangle popup, Button *accept) {
     Rectangle row = MessagePopupChoiceRow(popup);
     if (ButtonDraw(&gear_view.no, UiRect(row, 0.0f, 0.0f, 0.5f, 1.0f))) gear_view.dialog = GEAR_VIEW_DIALOG_NONE;
-    if (ButtonDraw(&gear_view.unlock, UiRect(row, 1.0f, 0.0f, 0.5f, 1.0f))) GearViewConfirm(p);
+    if (ButtonDraw(accept, UiRect(row, 1.0f, 0.0f, 0.5f, 1.0f))) GearViewConfirm(p);
+}
+
+static void GearViewDrawPrestigeDialog(Player *p, Rectangle popup) {
+    Rectangle text = UiRect(popup, 0.5f, 0.2f, 0.84f, 0.5f);
+    MessagePopupDrawText(GuiFont(FNT_MENU), LocGet("HODA_GEAR_PRESTIGE_MESSAGE"), text, 22.0f, WHITE);
+    GearViewDrawPriceRow(popup, LocGet("REFRESH_COST"), GUI_MAP_GEMS, GearPrestigeSlotGemCost());
+    GearViewDrawChoice(p, popup, &gear_view.unlock);
+}
+
+static float GearViewFittedTextSize(Font font, const char *text, float size, float width) {
+    float measured = MeasureTextEx(font, text, size, 1.0f).x;
+    return measured > width ? size * width / measured : size;
+}
+
+static void GearViewDrawItemDialog(Player *p, Rectangle popup) {
+    const GearDef *def = GearDefAt(gear_view.selected);
+    bool selling = gear_view.dialog == GEAR_VIEW_DIALOG_SELL;
+    Font title_font = GuiFont(FNT_COOL);
+    float side = popup.height * GEAR_DIALOG_TILE_SIZE;
+    Rectangle tile = {popup.x + (popup.width - side) * 0.5f, popup.y + popup.height * GEAR_DIALOG_TILE_TOP, side, side};
+    GearDrawTile(def, tile, false);
+    Rectangle title = {
+        popup.x + popup.width * (1.0f - GEAR_DIALOG_MESSAGE_WIDTH) * 0.5f,
+        popup.y + popup.height * GEAR_DIALOG_TITLE_TOP,
+        popup.width * GEAR_DIALOG_MESSAGE_WIDTH,
+        popup.height * GEAR_DIALOG_TITLE_HEIGHT,
+    };
+    float title_size = GearViewFittedTextSize(title_font, GearTitle(def), GEAR_DIALOG_TITLE_TEXT, title.width);
+    UiDrawTextCentered(title_font, GearTitle(def), title, title_size, GearRarityColor(def->rarity));
+
+    float message_bottom = selling ? GEAR_DIALOG_PRICED_MESSAGE_BOTTOM : GEAR_DIALOG_MESSAGE_BOTTOM;
+    Rectangle message = {
+        title.x,
+        popup.y + popup.height * GEAR_DIALOG_MESSAGE_TOP,
+        title.width,
+        popup.height * (message_bottom - GEAR_DIALOG_MESSAGE_TOP),
+    };
+    MessagePopupDrawText(GuiFont(FNT_MENU), gear_view.message, message, GEAR_DIALOG_MESSAGE_TEXT, WHITE);
+    if (selling)
+        GearViewDrawPriceRow(popup, LocGet("HODA_GEAR_SELL_RECEIVE_CONFIRM"), GUI_HUD_GOLD, GearSellValue(def));
+    GearViewDrawChoice(p, popup, &gear_view.yes);
 }
 
 static void GearViewDrawDialog(Player *p) {
@@ -376,23 +439,19 @@ static void GearViewDrawDialog(Player *p) {
     Rectangle content = MessagePopupContent(popup);
     if (gear_view.dialog == GEAR_VIEW_DIALOG_ASCEND) {
         GearViewDrawAscendBody(p, content);
-        Rectangle row = MessagePopupChoiceRow(popup);
-        if (ButtonDraw(&gear_view.no, UiRect(row, 0.0f, 0.0f, 0.5f, 1.0f))) gear_view.dialog = GEAR_VIEW_DIALOG_NONE;
-        if (ButtonDraw(&gear_view.yes, UiRect(row, 1.0f, 0.0f, 0.5f, 1.0f))) GearViewConfirm(p);
+        GearViewDrawChoice(p, popup, &gear_view.yes);
         return;
     }
     if (gear_view.dialog == GEAR_VIEW_DIALOG_PRESTIGE) {
         GearViewDrawPrestigeDialog(p, popup);
         return;
     }
-    MessagePopupDrawText(GuiFont(FNT_MENU), gear_view.message, content, 24.0f, WHITE);
     if (gear_view.dialog == GEAR_VIEW_DIALOG_MESSAGE) {
+        MessagePopupDrawText(GuiFont(FNT_MENU), gear_view.message, content, 24.0f, WHITE);
         if (ButtonDraw(&gear_view.yes, MessagePopupOkButton(popup))) gear_view.dialog = GEAR_VIEW_DIALOG_NONE;
         return;
     }
-    Rectangle row = MessagePopupChoiceRow(popup);
-    if (ButtonDraw(&gear_view.no, UiRect(row, 0.0f, 0.0f, 0.5f, 1.0f))) gear_view.dialog = GEAR_VIEW_DIALOG_NONE;
-    if (ButtonDraw(&gear_view.yes, UiRect(row, 1.0f, 0.0f, 0.5f, 1.0f))) GearViewConfirm(p);
+    GearViewDrawItemDialog(p, popup);
 }
 
 static bool GearViewMatchesFilter(const Player *p, GearFilter filter, int def_index) {
@@ -556,9 +615,7 @@ void GearDrawRevealCard(const GearDef *def, Rectangle panel) {
         side * GEAR_CARD_TEXT_WIDTH,
         side * (GEAR_CARD_IMAGE_BAND_TOP - GEAR_CARD_TITLE_BAND_TOP)
     };
-    float title_size = side * GEAR_CARD_TITLE_TEXT;
-    float title_width = MeasureTextEx(title_font, info.title, title_size, 1.0f).x;
-    if (title_width > title.width) title_size *= title.width / title_width;
+    float title_size = GearViewFittedTextSize(title_font, info.title, side * GEAR_CARD_TITLE_TEXT, title.width);
     UiDrawTextCentered(title_font, info.title, title, title_size, WHITE);
 
     float icon_size = side * GEAR_CARD_ICON_SIZE;
@@ -584,29 +641,64 @@ void GearDrawRevealCard(const GearDef *def, Rectangle panel) {
     GearViewDrawFittedDescription(info.description, description, side * GEAR_CARD_DESCRIPTION_TEXT);
 }
 
+static float GearViewDrawBoxBand(Rectangle panel, float source_top, float source_bottom, float y, float height) {
+    Texture2D box = GearUiTexture("Gear_Details_Box");
+    Rectangle source = {0.0f, box.height * source_top, (float)box.width, box.height * (source_bottom - source_top)};
+    Rectangle band = {panel.x, y, panel.width, height};
+    DrawTexturePro(box, source, band, (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
+    return y + height;
+}
+
+static void GearViewDrawMiddleText(const char *text, Rectangle area, float size, Color color) {
+    Font body = GuiFont(FNT_MENU);
+    float height = HeroesRichLayout(body, text, area, size, color, false);
+    Rectangle lines = {area.x, area.y + fmaxf(0.0f, (area.height - height) * 0.5f), area.width, height};
+    HeroesDrawRich(body, text, lines, size, color);
+}
+
 static void GearViewDrawDetails(Player *p, bool input) {
     const GearDef *def = GearDefAt(gear_view.selected);
-    Font body = GuiFont(FNT_MENU);
+    Font body = GuiFont(FNT_MENU), title_font = GuiFont(FNT_COOL);
     Rectangle panel = RosterPx(8.0f, 461.0f, 378.0f, 359.0f);
     DrawRectangleRec(panel, BLACK);
-    UiDrawTexture(GearUiTexture("Gear_Details_Box"), panel, WHITE);
-    Rectangle inner = UiRect(panel, 0.5f, 0.5f, 0.87f, 0.9f);
 
-    float footer = 42.0f;
     char limits[192] = "";
     char text[GEAR_VIEW_DETAILS_CAPACITY];
     GearInfoText info = GearViewInfoTextFor(def, limits, sizeof(limits), text, sizeof(text));
-    Rectangle title = {inner.x, inner.y, inner.width - 22.0f, 40.0f};
-    float y = title.y + HeroesDrawRich(GuiFont(FNT_COOL), info.title, title, 16.0f, WHITE) + 2.0f;
-    y = GearViewDrawRarityAndLimits(&info, body, 13.0f, 13.0f, (Rectangle){inner.x, y, inner.width, 0.0f});
-    Rectangle area = {inner.x, y, inner.width, inner.y + inner.height - footer - 4.0f - y};
+    const char *rarity = GearViewRarityText(info.rarity);
+    float pad = panel.width * GEAR_DETAILS_PAD_X;
+    Rectangle column = {panel.x + pad, panel.y, panel.width - pad * 2.0f, 0.0f};
+    float rarity_height = HeroesRichLayout(body, rarity, column, GEAR_DETAILS_RARITY_TEXT, WHITE, false);
+    float limits_height = HeroesRichLayout(body, info.limits, column, GEAR_DETAILS_LIMITS_TEXT, LIGHTGRAY, false);
+    float summary_height = rarity_height + limits_height + GEAR_DETAILS_BAND_PAD * 2.0f;
+    float border_top = panel.height * GEAR_CARD_TITLE_BAND_TOP;
+    float border_bottom = panel.height * (1.0f - GEAR_CARD_TEXT_BAND_BOTTOM);
+    float text_bottom = panel.y + panel.height - border_bottom;
+
+    float y = GearViewDrawBoxBand(panel, 0.0f, GEAR_CARD_TITLE_BAND_TOP, panel.y, border_top);
+    Rectangle title = {column.x, y, column.width - GEAR_DETAILS_CLOSE_RESERVE, GEAR_DETAILS_TITLE_BAND};
+    y = GearViewDrawBoxBand(panel, GEAR_CARD_TITLE_BAND_TOP, GEAR_CARD_IMAGE_BAND_TOP, y, GEAR_DETAILS_TITLE_BAND);
+    Rectangle summary = {column.x, y + GEAR_DETAILS_BAND_PAD, column.width, rarity_height};
+    y = GearViewDrawBoxBand(panel, GEAR_CARD_IMAGE_BAND_TOP, GEAR_CARD_TEXT_BAND_TOP, y, summary_height);
+    GearViewDrawBoxBand(panel, GEAR_CARD_TEXT_BAND_TOP, GEAR_CARD_TEXT_BAND_BOTTOM, y, text_bottom - y);
+    GearViewDrawBoxBand(panel, GEAR_CARD_TEXT_BAND_BOTTOM, 1.0f, text_bottom, border_bottom);
+
+    float title_size = GearViewFittedTextSize(title_font, info.title, GEAR_DETAILS_TITLE_TEXT, title.width);
+    UiDrawTextLeftMiddle(title_font, info.title, title, title_size, WHITE);
+    HeroesDrawRich(body, rarity, summary, GEAR_DETAILS_RARITY_TEXT, WHITE);
+    Rectangle limited = {column.x, summary.y + rarity_height, column.width, limits_height};
+    HeroesDrawRich(body, info.limits, limited, GEAR_DETAILS_LIMITS_TEXT, LIGHTGRAY);
+
+    Rectangle row = {column.x, text_bottom - GEAR_DETAILS_BUTTON_ROW, column.width, GEAR_DETAILS_BUTTON_ROW};
+    float description_top = y + GEAR_DETAILS_BAND_PAD;
+    Rectangle area = {column.x, description_top, column.width, row.y - GEAR_DETAILS_BUTTON_GAP - description_top};
     GearViewDrawFittedDescription(info.description, area, GEAR_VIEW_DETAILS_FONT_MAX);
 
-    Rectangle row = {inner.x, inner.y + inner.height - footer, inner.width, footer};
-    if (gear_view.slot >= 0) {
-        if (ButtonDrawEx(&gear_view.equip, UiRect(row, 0.0f, 0.0f, 0.49f, 1.0f), input)) GearViewRequestEquip(p);
-    } else {
-        HeroesDrawRich(body, LocGet("HODA_GEAR_SELECT_HERO_HELP"), UiRect(row, 0.0f, 0.5f, 0.49f, 1.0f), 11.0f, WHITE);
+    Rectangle left = UiRect(row, 0.0f, 0.0f, 0.49f, 1.0f);
+    if (gear_view.slot < 0) {
+        GearViewDrawMiddleText(LocGet("HODA_GEAR_SELECT_HERO_HELP"), left, GEAR_DETAILS_HELP_TEXT, LIGHTGRAY);
+    } else if (ButtonDrawEx(&gear_view.equip, left, input)) {
+        GearViewRequestEquip(p);
     }
     if (ButtonDrawEx(&gear_view.sell, UiRect(row, 1.0f, 0.0f, 0.49f, 1.0f), input)) GearViewRequestSell();
 
@@ -616,9 +708,9 @@ static void GearViewDrawDetails(Player *p, bool input) {
 
 static void GearViewDrawFooter(bool input) {
     Rectangle footer = RosterPx(16.0f, 764.0f, 372.0f, 56.0f);
-    Rectangle hint = UiRect(footer, 0.0f, 0.5f, 0.62f, 1.0f);
-    HeroesDrawRich(GuiFont(FNT_MENU), LocGet("HODA_GEAR_INVENTORY_FOOTER_TEXT"), hint, 12.0f, WHITE);
-    if (ButtonDrawEx(&gear_view.store, UiRect(footer, 1.0f, 0.0f, 0.36f, 1.0f), input))
+    Rectangle hint = UiRect(footer, 0.0f, 0.0f, 1.0f - GEAR_VIEW_FOOTER_STORE_WIDTH - 0.04f, 1.0f);
+    GearViewDrawMiddleText(LocGet("HODA_GEAR_INVENTORY_FOOTER_TEXT"), hint, GEAR_VIEW_FOOTER_HINT_TEXT, LIGHTGRAY);
+    if (ButtonDrawEx(&gear_view.store, UiRect(footer, 1.0f, 0.0f, GEAR_VIEW_FOOTER_STORE_WIDTH, 1.0f), input))
         gear_view.store_requested = true;
 }
 

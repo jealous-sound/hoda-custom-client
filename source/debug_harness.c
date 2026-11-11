@@ -783,6 +783,14 @@ static void DebugPrepareGear(Game *game, DebugShot *shot) {
         GearViewOpenInventory();
         return;
     }
+    if (DebugShotIs(shot, "gear_inventory_item") || DebugShotIs(shot, "gear_sell")) {
+        game->heroes.selected = -1;
+        GearViewOpenInventory();
+        int owned[GEAR_CATALOG_CAPACITY];
+        if (GearViewFilteredItems(player, gear_view.filter, false, owned) > 0) gear_view.selected = owned[0];
+        if (DebugShotIs(shot, "gear_sell")) GearViewRequestSell();
+        return;
+    }
     GearViewShow(hero, 1);
     int items[GEAR_CATALOG_CAPACITY];
     if (DebugShotIs(shot, "gear_list")) return;
