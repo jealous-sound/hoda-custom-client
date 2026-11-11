@@ -71,6 +71,7 @@
 #include "content_screen.c"
 #include "play_mode_screen.c"
 #include "name_prompt.c"
+#include "maintenance_notice.c"
 #include "runes.c"
 #include "gear_view.c"
 #include "consume_view.c"

@@ -15,3 +15,6 @@ HODA_UPDATE_DOWNLOAD|Descargar
 HODA_UPDATE_LATER|Más tarde
 HODA_UPDATE_QUIT|Salir
 HODA_OPTIONS_VERSION_UPDATE|{0} ({1} disponible)
+HODA_MAINTENANCE_TITLE|Reinicio del servidor
+HODA_MAINTENANCE_MESSAGE|El servidor se reiniciará pronto para una actualización. Los nuevos combates se pausarán unos minutos antes, y puede que después tengas que descargar una nueva versión.
+HODA_MAINTENANCE_HOLD_MESSAGE|El servidor se está reiniciando para una actualización. Los combates están en pausa hasta que vuelva.

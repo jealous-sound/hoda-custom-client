@@ -12,6 +12,10 @@
 #define CLIENT_VERSION_DESCRIBE_MARK "-g"
 #define CLIENT_VERSION_PARTS 3
 #define CLIENT_VERSION_NUMBER_LIMIT 1000000000L
+#define CLIENT_UPDATE_RECHECK_SECONDS 60.0
+#define CLIENT_MAINTENANCE_NOTICE_SECONDS (30 * 60)
+#define CLIENT_MAINTENANCE_BATTLE_LEAD_SECONDS (3 * 60)
+#define CLIENT_MAINTENANCE_OVERRUN_SECONDS (10 * 60)
 
 typedef struct {
     int core[CLIENT_VERSION_PARTS];
@@ -23,6 +27,8 @@ typedef struct {
     char latest[CLIENT_UPDATE_VERSION_CAP];
     char minimum[CLIENT_UPDATE_VERSION_CAP];
     char download_url[CLIENT_UPDATE_URL_CAP];
+    long long server_time;
+    long long maintenance_at;
 } ClientRelease;
 
 typedef enum {
@@ -31,14 +37,28 @@ typedef enum {
     CLIENT_UPDATE_REQUIRED,
 } ClientUpdateStatus;
 
+typedef enum {
+    CLIENT_MAINTENANCE_NONE,
+    CLIENT_MAINTENANCE_ANNOUNCED,
+    CLIENT_MAINTENANCE_HOLDING_BATTLES,
+} ClientMaintenancePhase;
+
+typedef struct {
+    ClientMaintenancePhase phase;
+    long long at;
+    long long seconds_left;
+} ClientMaintenance;
+
 typedef struct {
     pthread_mutex_t lock;
-    pthread_t thread;
-    bool started;
+    bool configured;
+    bool checking;
+    double next_check_at;
     bool answered;
     bool refused;
     char request_url[CLIENT_UPDATE_REQUEST_URL_CAP];
     ClientRelease release;
+    long long received_at;
 } ClientUpdateState;
 
 static ClientUpdateState client_update = {.lock = PTHREAD_MUTEX_INITIALIZER};
@@ -175,6 +195,11 @@ static bool ClientUpdateSafeUrl(const char *url) {
     return true;
 }
 
+static long long ClientReleaseWhole(const cJSON *json, const char *key) {
+    const cJSON *item = cJSON_GetObjectItemCaseSensitive(json, key);
+    return cJSON_IsNumber(item) && item->valuedouble > 0 ? (long long)item->valuedouble : 0;
+}
+
 static void ClientReleaseCopyVersion(char *out, size_t capacity, const char *text) {
     ClientVersion parsed;
     StrCopy(out, capacity, ClientVersionParse(text, &parsed) ? text : "");
@@ -191,6 +216,8 @@ static bool ClientReleaseParse(const char *json_text, ClientRelease *out) {
         const char *url = JsonStr(json, "download_url");
         if (ClientUpdateSafeUrl(url)) StrCopy(out->download_url, sizeof(out->download_url), url);
         if (!out->latest[0] && out->minimum[0]) StrCopy(out->latest, sizeof(out->latest), out->minimum);
+        out->server_time = ClientReleaseWhole(json, "server_time");
+        out->maintenance_at = ClientReleaseWhole(json, "maintenance_at");
     }
     cJSON_Delete(json);
     return parsed;
@@ -202,9 +229,32 @@ static ClientUpdateStatus ClientUpdateStatusFor(const char *running, const Clien
     return CLIENT_UPDATE_CURRENT;
 }
 
+static ClientRelease ClientUpdateCurrentRelease(void) {
+    pthread_mutex_lock(&client_update.lock);
+    ClientRelease release = client_update.release;
+    pthread_mutex_unlock(&client_update.lock);
+    return release;
+}
+
+static ClientMaintenance
+ClientMaintenanceFor(const ClientRelease *release, long long received_at, long long local_now) {
+    ClientMaintenance none = {.phase = CLIENT_MAINTENANCE_NONE};
+    if (release->maintenance_at <= 0 || release->server_time <= 0) return none;
+    long long server_now = release->server_time + (local_now - received_at);
+    long long left = release->maintenance_at - server_now;
+    if (left > CLIENT_MAINTENANCE_NOTICE_SECONDS || left <= -CLIENT_MAINTENANCE_OVERRUN_SECONDS) return none;
+    bool holding = left <= CLIENT_MAINTENANCE_BATTLE_LEAD_SECONDS;
+    return (ClientMaintenance){
+        .phase = holding ? CLIENT_MAINTENANCE_HOLDING_BATTLES : CLIENT_MAINTENANCE_ANNOUNCED,
+        .at = release->maintenance_at,
+        .seconds_left = left > 0 ? left : 0,
+    };
+}
+
 static void ClientUpdateAdopt(const ClientRelease *release, bool refused) {
     pthread_mutex_lock(&client_update.lock);
     client_update.release = *release;
+    client_update.received_at = (long long)time(NULL);
     client_update.answered = true;
     client_update.refused = client_update.refused || refused;
     pthread_mutex_unlock(&client_update.lock);
@@ -218,25 +268,63 @@ static void ClientUpdateNoteRefusal(int status, const char *body) {
     TraceLog(LOG_WARNING, "Update: the server refused client %s, %s is required", HOD_VERSION, release.minimum);
 }
 
-static void *ClientUpdateCheckRun(void *argument) {
-    (void)argument;
+static bool ClientReleaseDiffers(const ClientRelease *a, const ClientRelease *b) {
+    return strcmp(a->latest, b->latest) != 0 || strcmp(a->minimum, b->minimum) != 0 ||
+           a->maintenance_at != b->maintenance_at;
+}
+
+static void ClientUpdateCheckOnce(void) {
     PlatformHttpRequest request = {
         .method = "GET", .url = client_update.request_url, .timeout_seconds = CLIENT_UPDATE_TIMEOUT_SECONDS
     };
     PlatformHttpResponse reply = {0};
-    if (!PlatformHttpSend(&request, &reply)) return NULL;
+    if (!PlatformHttpSend(&request, &reply)) return;
     ClientRelease release;
     if (reply.status == CLIENT_UPDATE_HTTP_OK && ClientReleaseParse(reply.body, &release)) {
+        ClientRelease previous = ClientUpdateCurrentRelease();
         ClientUpdateAdopt(&release, false);
-        TraceLog(LOG_INFO, "Update: running %s, latest %s, minimum %s", HOD_VERSION, release.latest, release.minimum);
+        if (ClientReleaseDiffers(&previous, &release))
+            TraceLog(
+                LOG_INFO,
+                "Update: running %s, latest %s, minimum %s, restart in %llds",
+                HOD_VERSION,
+                release.latest,
+                release.minimum,
+                release.maintenance_at > 0 ? release.maintenance_at - release.server_time : 0
+            );
     }
     ClientUpdateNoteRefusal(reply.status, reply.body);
     free(reply.body);
+}
+
+static void ClientUpdateCheckFinished(void) {
+    pthread_mutex_lock(&client_update.lock);
+    client_update.checking = false;
+    pthread_mutex_unlock(&client_update.lock);
+}
+
+static void *ClientUpdateCheckRun(void *argument) {
+    (void)argument;
+    ClientUpdateCheckOnce();
+    ClientUpdateCheckFinished();
     return NULL;
 }
 
+static void ClientUpdateCheckBegin(void) {
+    pthread_mutex_lock(&client_update.lock);
+    bool idle = client_update.configured && !client_update.checking;
+    if (idle) client_update.checking = true;
+    pthread_mutex_unlock(&client_update.lock);
+    if (!idle) return;
+    pthread_t thread;
+    if (pthread_create(&thread, NULL, ClientUpdateCheckRun, NULL) == 0)
+        pthread_detach(thread);
+    else
+        ClientUpdateCheckFinished();
+}
+
 static void ClientUpdateCheckStart(const char *server_url) {
-    if (client_update.started || !server_url || !server_url[0]) return;
+    if (client_update.configured || !server_url || !server_url[0]) return;
     size_t length = strlen(server_url);
     while (length > 0 && server_url[length - 1] == '/') length--;
     int written = snprintf(
@@ -248,15 +336,25 @@ static void ClientUpdateCheckStart(const char *server_url) {
         CLIENT_UPDATE_PATH
     );
     if (written <= 0 || written >= (int)sizeof(client_update.request_url)) return;
-    client_update.started = pthread_create(&client_update.thread, NULL, ClientUpdateCheckRun, NULL) == 0;
-    if (client_update.started) pthread_detach(client_update.thread);
+    client_update.configured = true;
+    client_update.next_check_at = GetTime() + CLIENT_UPDATE_RECHECK_SECONDS;
+    ClientUpdateCheckBegin();
 }
 
-static ClientRelease ClientUpdateCurrentRelease(void) {
+static void ClientUpdateKeepFresh(void) {
+    if (!client_update.configured || GetTime() < client_update.next_check_at) return;
+    client_update.next_check_at = GetTime() + CLIENT_UPDATE_RECHECK_SECONDS;
+    ClientUpdateCheckBegin();
+}
+
+static ClientMaintenance ClientMaintenanceNow(void) {
     pthread_mutex_lock(&client_update.lock);
+    bool answered = client_update.answered;
     ClientRelease release = client_update.release;
+    long long received_at = client_update.received_at;
     pthread_mutex_unlock(&client_update.lock);
-    return release;
+    if (!answered) return (ClientMaintenance){.phase = CLIENT_MAINTENANCE_NONE};
+    return ClientMaintenanceFor(&release, received_at, (long long)time(NULL));
 }
 
 static ClientUpdateStatus ClientUpdateStatusNow(void) {

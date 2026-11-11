@@ -15,3 +15,6 @@ HODA_UPDATE_DOWNLOAD|Scarica
 HODA_UPDATE_LATER|Più tardi
 HODA_UPDATE_QUIT|Esci
 HODA_OPTIONS_VERSION_UPDATE|{0} ({1} disponibile)
+HODA_MAINTENANCE_TITLE|Riavvio del server
+HODA_MAINTENANCE_MESSAGE|Il server verrà riavviato a breve per un aggiornamento. Le nuove battaglie verranno sospese qualche minuto prima, e in seguito potrebbe essere necessario scaricare una nuova versione.
+HODA_MAINTENANCE_HOLD_MESSAGE|Il server è in fase di riavvio per un aggiornamento. Le battaglie sono sospese finché non torna online.

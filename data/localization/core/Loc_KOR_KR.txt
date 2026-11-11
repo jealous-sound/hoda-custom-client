@@ -15,3 +15,6 @@ HODA_UPDATE_DOWNLOAD|다운로드
 HODA_UPDATE_LATER|나중에
 HODA_UPDATE_QUIT|종료
 HODA_OPTIONS_VERSION_UPDATE|{0} ({1} 사용 가능)
+HODA_MAINTENANCE_TITLE|서버 재시작
+HODA_MAINTENANCE_MESSAGE|업데이트를 위해 곧 서버가 재시작됩니다. 재시작 몇 분 전부터 새 전투가 일시 중지되며, 이후 새 버전을 다운로드해야 할 수 있습니다.
+HODA_MAINTENANCE_HOLD_MESSAGE|업데이트를 위해 서버를 재시작하는 중입니다. 서버가 돌아올 때까지 전투가 일시 중지됩니다.

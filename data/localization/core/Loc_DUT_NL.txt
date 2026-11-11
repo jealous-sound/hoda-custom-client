@@ -15,3 +15,6 @@ HODA_UPDATE_DOWNLOAD|Downloaden
 HODA_UPDATE_LATER|Later
 HODA_UPDATE_QUIT|Afsluiten
 HODA_OPTIONS_VERSION_UPDATE|{0} ({1} beschikbaar)
+HODA_MAINTENANCE_TITLE|Server wordt herstart
+HODA_MAINTENANCE_MESSAGE|De server wordt binnenkort herstart voor een update. Nieuwe gevechten worden een paar minuten van tevoren gepauzeerd, en daarna moet je mogelijk een nieuwe versie downloaden.
+HODA_MAINTENANCE_HOLD_MESSAGE|De server wordt herstart voor een update. Gevechten zijn gepauzeerd tot hij terug is.

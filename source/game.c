@@ -96,6 +96,7 @@ typedef struct {
     Guild guild;
     GuildView guild_view;
     GuildNoticePopup guild_notice;
+    MaintenanceNotice maintenance;
     bool battle_is_pvp;
     bool pvp_event;
     bool pvp_can_next;
@@ -237,6 +238,14 @@ static cJSON *GamePvpMatchFields(const GamePvpMatchRequest *request) {
 
 static bool GameBattlesOnServer(const Game *g);
 
+static bool GameBattleHeld(const Game *g) {
+    return GameBattlesOnServer(g) && MaintenanceNoticeHoldsBattles(&g->maintenance);
+}
+
+static void GameExplainHeldBattle(Game *g) {
+    if (GameBattleHeld(g)) MaintenanceNoticeExplain(&g->maintenance);
+}
+
 static void GameMatchPvp(Game *g, bool event, int bot, bool next, Screen return_screen) {
     if (g->pvp_match_waiting) return;
     GamePvpMatchRequest request = {
@@ -270,7 +279,10 @@ static void GamePollPvpMatch(Game *g) {
     PvpOpponent opponent;
     GamePvpMatch issued = {.id = GameJsonWhole(match, "id"), .at = GameJsonWhole(match, "at")};
     bool matched = issued.id > 0 && PvpOpponentFromServerMatch(match, g->player.pvp.trophies, &opponent);
-    if (!matched) TraceLog(LOG_WARNING, "Server: no PvP opponent was matched");
+    if (!matched) {
+        TraceLog(LOG_WARNING, "Server: no PvP opponent was matched");
+        GameExplainHeldBattle(g);
+    }
     if (g->screen == request->screen && matched) {
         GameEnterMatchedPvp(g, opponent, issued, request);
     } else if (g->screen == SCREEN_BATTLE && request->screen == SCREEN_BATTLE && !request->next) {
@@ -763,6 +775,7 @@ static void GamePollBattleStart(Game *g) {
     if (!cJSON_IsNumber(id) || !cJSON_IsNumber(seed) || id->valuedouble <= 0) {
         TraceLog(LOG_WARNING, "Server: the battle could not start");
         cJSON_Delete(reply);
+        GameExplainHeldBattle(g);
         GameExitBattleTo(g, GameBattleReturnScreen(g));
         return;
     }
@@ -1070,6 +1083,14 @@ static void GameDrawClientUpdate(Game *g) {
     if (choice == MESSAGE_POPUP_CHOICE_DECLINE) g->quit_requested = true;
 }
 
+static void GameDrawMaintenance(Game *g) {
+    if (BackendEnabled()) ClientUpdateKeepFresh();
+    bool interruptible =
+        g->screen != SCREEN_BATTLE && !TutorialActive(&g->tutorial) && !NamePromptIsOpen(&g->name_prompt);
+    MaintenanceNoticeUpdate(&g->maintenance, interruptible);
+    if (!ClientUpdateOnlineRefused()) MaintenanceNoticeDraw(&g->maintenance);
+}
+
 static void GameAwaitClientUpdate(Game *g) {
     while (!g->quit_requested && !WindowShouldClose() && !IsKeyPressed(KEY_ESCAPE)) {
         BeginDrawing();
@@ -1207,6 +1228,7 @@ bool GameInitialize(Game *g) {
     GuildInitialize(&g->guild);
     GuildViewInitialize(&g->guild_view);
     GuildNoticePopupInitialize(&g->guild_notice);
+    MaintenanceNoticeInitialize(&g->maintenance);
     MissionsSync(&g->player, &g->map);
     CampaignProgressSync(&g->map, &g->player.campaign_progress);
     NexusInitialize(&g->nexus, "data/nexus_maps.json");
@@ -1249,6 +1271,10 @@ static EnergyDialog *GameTopResourceDialog(Game *g) {
 
 bool GameHandlePopupBack(Game *g) {
     if (ClientUpdateOnlineRefused()) return false;
+    if (MaintenanceNoticeClose(&g->maintenance)) {
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+        return true;
+    }
     if (OptionsPopupBack(&g->options)) return true;
     EnergyDialog *top = GameTopResourceDialog(g);
     if (top) {
@@ -1639,7 +1665,9 @@ static void GameSyncServerActions(Game *g) {
 void GameDraw(Game *g) {
     float dt = GetFrameTime();
     TutorialHooksBeginFrame();
-    if (NamePromptIsOpen(&g->name_prompt) || ClientUpdateOnlineRefused()) UiSetInputWindow(true, (Rectangle){0});
+    bool overlay_owns_input =
+        NamePromptIsOpen(&g->name_prompt) || ClientUpdateOnlineRefused() || MaintenanceNoticeIsOpen(&g->maintenance);
+    if (overlay_owns_input) UiSetInputWindow(true, (Rectangle){0});
     Screen screen_at_frame_start = g->screen;
     bool pvp_battle = g->screen == SCREEN_BATTLE && g->battle_is_pvp;
     g->hud.show_banners = g->screen == SCREEN_PVP_EVENT || (pvp_battle && g->pvp_event);
@@ -2214,7 +2242,9 @@ void GameDraw(Game *g) {
                 }
             } else {
                 bool starting = g->battle_start_waiting || g->battle_start_dropped || g->pvp_match_waiting;
-                if (ba == BATTLE_UI_FIGHT && !combat && !starting) {
+                if (ba == BATTLE_UI_FIGHT && !combat && !starting && GameBattleHeld(g)) {
+                    MaintenanceNoticeExplain(&g->maintenance);
+                } else if (ba == BATTLE_UI_FIGHT && !combat && !starting) {
                     bool paid = g->battle_energy_spent ||
                                 (g->battle_is_pvp ? PlayerSpendStamina(&g->player, g->battle_energy_cost)
                                                   : PlayerSpendEnergy(&g->player, g->battle_energy_cost));
@@ -2329,6 +2359,7 @@ void GameDraw(Game *g) {
     }
     GameDrawTutorial(g, dt);
     GameDrawNamePrompt(g, dt);
+    GameDrawMaintenance(g);
     GameDrawClientUpdate(g);
     GameStopUnseenWispLoops(g);
 }

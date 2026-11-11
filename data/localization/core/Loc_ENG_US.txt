@@ -15,3 +15,6 @@ HODA_UPDATE_DOWNLOAD|Download
 HODA_UPDATE_LATER|Later
 HODA_UPDATE_QUIT|Quit
 HODA_OPTIONS_VERSION_UPDATE|{0} ({1} available)
+HODA_MAINTENANCE_TITLE|Server Restart
+HODA_MAINTENANCE_MESSAGE|The server will restart soon for an update. New battles pause a few minutes before it, and you may need to download a new version afterwards.
+HODA_MAINTENANCE_HOLD_MESSAGE|The server is restarting for an update. Battles are paused until it is back.
