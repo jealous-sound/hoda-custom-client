@@ -5697,16 +5697,29 @@ static void TestGearPackBundlesATome(void) {
 }
 
 static void TestSeasonalPackFollowsTheCalendar(void) {
-    StorePackDef winter = {.flash_index = -1, .schedule_start = 1210, .schedule_end = 115};
+    StorePackDef winter = {.schedule_start = 1210, .schedule_end = 115};
     struct tm inside = {.tm_year = 126, .tm_mon = 11, .tm_mday = 20, .tm_hour = 12, .tm_isdst = -1};
     struct tm january = {.tm_year = 127, .tm_mon = 0, .tm_mday = 10, .tm_hour = 12, .tm_isdst = -1};
     struct tm outside = {.tm_year = 126, .tm_mon = 5, .tm_mday = 1, .tm_hour = 12, .tm_isdst = -1};
-    long long december_left = StorePackSecondsLeft(&winter, 7, 12, (long long)mktime(&inside));
+    long long december_left = StorePackSecondsLeft(&winter, 7, (long long)mktime(&inside));
     assert(december_left > 26 * STORE_SECONDS_PER_DAY && december_left < 28 * STORE_SECONDS_PER_DAY);
-    assert(StorePackSecondsLeft(&winter, 7, 12, (long long)mktime(&january)) > 0);
-    assert(StorePackSecondsLeft(&winter, 7, 12, (long long)mktime(&outside)) == STORE_PACK_UNAVAILABLE);
-    StorePackDef always = {.flash_index = -1};
-    assert(StorePackSecondsLeft(&always, 7, 12, (long long)mktime(&outside)) == STORE_PACK_ALWAYS);
+    assert(StorePackSecondsLeft(&winter, 7, (long long)mktime(&january)) > 0);
+    assert(StorePackSecondsLeft(&winter, 7, (long long)mktime(&outside)) == STORE_PACK_UNAVAILABLE);
+    StorePackDef always = {0};
+    assert(StorePackSecondsLeft(&always, 7, (long long)mktime(&outside)) == STORE_PACK_ALWAYS);
+}
+
+static void TestLimitedPackSellsOutAtItsLimit(void) {
+    enum { OWN_COUNTER = PLAYER_STORE_SHARED_PACK_COUNT };
+    StorePackDef starter = {.opened_counter = OWN_COUNTER, .purchase_limit = 1};
+    StorePackDef unlimited = {.opened_counter = 0};
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    player.store_opened_by_pack[0] = 5;
+    assert(!StorePackSoldOut(&starter, &player));
+    assert(!StorePackSoldOut(&unlimited, &player));
+    player.store_opened_by_pack[OWN_COUNTER] = 1;
+    assert(StorePackSoldOut(&starter, &player));
 }
 
 static void TestFlashPacksRotateOnePerPeriod(void) {
@@ -5714,8 +5727,8 @@ static void TestFlashPacksRotateOnePerPeriod(void) {
     long long now = span * 25 + 100;
     int active = 0;
     for (int index = 0; index < 12; index++) {
-        StorePackDef flash = {.flash_index = index};
-        long long left = StorePackSecondsLeft(&flash, 7, 12, now);
+        StorePackDef flash = {.rotation_index = index, .rotation_count = 12};
+        long long left = StorePackSecondsLeft(&flash, 7, now);
         if (left != STORE_PACK_UNAVAILABLE) {
             active++;
             assert(left == span - 100);
@@ -7903,6 +7916,7 @@ int main(void) {
     TestGearPackBundlesATome();
     TestSeasonalPackFollowsTheCalendar();
     TestFlashPacksRotateOnePerPeriod();
+    TestLimitedPackSellsOutAtItsLimit();
     TestVoucherOfferWinsOnlyWhenOwned();
     TestStoreDialogTextFitsRussianPackNames();
     TestLegendaryPackRollsSkipHeroesAlreadyOwned();

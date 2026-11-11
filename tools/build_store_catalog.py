@@ -92,6 +92,12 @@ BEASTS_STARTER_HEROES = ['UNIT_BARKSPAWN', 'UNIT_VARTERRAL']
 RUNE_FAMILIES = ['rune-power', 'rune-health', 'rune-initiative', 'rune-stun']
 
 WEEKLY_FLASH_DAYS = 7
+FLASH_ROTATION = 'flash'
+BOOSTER_ROTATION = 'booster'
+SHARED_OPENED_COUNTERS = 4
+STARTER_CONVERSION_COUNTER = 4
+STARTER_BEASTS_COUNTER = 5
+BUY_ONCE = 1
 
 CHANCE_AT = 'HODA_STORE_BULLET_CHANCE_AT'
 GUARANTEED = 'FEATURED_INTERSTITIAL_GUARANTEED'
@@ -130,9 +136,9 @@ def voucher(name):
 
 def hero(key, loc, order, category, header, icon, offers, tier, count=1, bullets=(), info=None, opened_counter=0,
          schedule=None, rotation=None, epic=0, legendary=0, pity=0, rune_pct=0, rune=(1, 2), rune_count=1,
-         gear_pct=0, gear=(1, 3), rare=0, fixed=(), pool=None, unique=False, header_tint=None):
+         gear_pct=0, gear=(1, 3), rare=0, fixed=(), pool=None, unique=False, header_tint=None, purchase_limit=0):
     optional = {'guaranteed_rare': rare, 'fixed_heroes': list(fixed), 'pool_tag': pool, 'unique_heroes': unique,
-                'header_tint': header_tint}
+                'header_tint': header_tint, 'purchase_limit': purchase_limit}
     return {
         'id': key, 'kind': 'hero', **pack_text(loc, info or hero_info(count, tier)), 'category': category,
         'order': order, 'header': header, 'icon': icon, 'offers': offers, 'bullets': list(bullets), 'schedule': schedule,
@@ -173,8 +179,8 @@ def slot(families, low, high):
     return {'families': families, 'min_rarity': low, 'max_rarity': high}
 
 
-def weekly(index):
-    return {'group': 'flash', 'index': index}
+def weekly(group, index):
+    return {'group': group, 'index': index}
 
 
 TUTORIAL_CONSUME_ICON = 'cache:tex.Store_IconGreyWardenKnight'
@@ -209,11 +215,6 @@ def hero_packs():
              header_tint=PURPLE_TINT_OVER_SILVER, opened_counter=1, rune_pct=20, rune=(1, 3), bullets=[bullet(chance, 3)]),
         hero('knight', 'KNIGHT', 60, 'UNITS', SILVER, icon + 'GreyWardenKnight', gold(25000), RARE_TIER,
              opened_counter=1, rune_pct=100, rune=(2, 5), bullets=[bullet(chance, 5)]),
-        hero('commander', 'COMMANDER', 70, 'UNITS', GOLD, icon + 'CommanderDuhaime', gems(60), RARE_TIER,
-             opened_counter=2, rune_pct=100, rune=(3, 5), gear_pct=20, gear=(2, 4), bullets=[bullet(chance, 5)]),
-        hero('elite', 'ELITE', 80, 'UNITS', SILVER, icon + 'GreyWardenFiona', gems(1280), EPIC_TIER, count=10,
-             header_tint=PURPLE_TINT_OVER_SILVER, opened_counter=3, legendary=1, rune_pct=100, rune=(4, 5), rune_count=10, gear_pct=50, gear=(3, 5),
-             bullets=[bullet(GUARANTEED, 5)]),
         hero('iron', 'IRON', 90, 'UNITS', GOLD, 'cache:tex.Store_IronPack', [voucher('iron')], RARE_TIER,
              opened_counter=2, rune_pct=50, rune=(2, 4), bullets=[bullet(chance, 5)]),
         hero('bloodstone', 'BLOODSTONE', 100, 'UNITS', GOLD, icon + 'BloodstonePack', [voucher('bloodstone')],
@@ -222,10 +223,11 @@ def hero_packs():
              [voucher('lyrium_mine')], RARE_TIER, opened_counter=2, rune_pct=40, rune=(3, 4),
              bullets=[bullet(chance, 5)]),
         hero('starter_conversion', 'MINNOW_CONVERSION_V2', 120, 'UNITS', BRONZE, icon + 'SerJory', gems(121),
-             RARE_TIER, count=3, opened_counter=2, epic=1, rune_pct=100, rune=(3, 4), rune_count=3,
+             RARE_TIER, count=3, opened_counter=STARTER_CONVERSION_COUNTER, purchase_limit=BUY_ONCE, epic=1, rune_pct=100, rune=(3, 4), rune_count=3,
              bullets=[bullet(SPECIAL_OFFER)]),
         hero('starter_beasts', 'STARTER_PACK_BEASTS', 130, 'UNITS', BRONZE, icon + 'Dragonling', gems(275),
-             RARE_ONLY_TIER, count=5, opened_counter=2, fixed=BEASTS_STARTER_HEROES, rune_pct=100, rune=(5, 5),
+             RARE_ONLY_TIER, count=5, opened_counter=STARTER_BEASTS_COUNTER, purchase_limit=BUY_ONCE,
+             fixed=BEASTS_STARTER_HEROES, rune_pct=100, rune=(5, 5),
              rune_count=5),
         hero('wisp', 'WISP', 140, 'UNITS', GREEN, icon + 'RuneWIsp', gold(800), WISP_TIER,
              count=10, epic=1, pool=WISP_POOL, bullets=[bullet(TRAINING)]),
@@ -236,13 +238,17 @@ def hero_packs():
         hero('free_wisp', 'ITEM_FREE_WISP_PROMO', 170, 'UNITS', GREEN, icon + 'Snowball', [offer('gold', 0)],
              RARE_ONLY_TIER, count=4, pool=WISP_POOL, unique=True, rune_pct=100, rune=(3, 3), rune_count=4, schedule=season('01-01', '01-07'), bullets=[bullet('HODA_STORE_BULLET_GIFT')]),
         hero('booster_blackwhite', 'HERO_BOOSTER_BLACKWHITE', 180, 'UNITS', BLUE, 'cache:tex.Store_BlackWhitePack',
-             gems(45), RARE_TIER, opened_counter=2, bullets=[bullet(chance, 4)]),
+             gems(45), RARE_TIER, opened_counter=2, rotation=weekly(BOOSTER_ROTATION, 0),
+             bullets=[bullet(chance, 4), bullet(THIS_WEEK_ONLY)]),
         hero('booster_redblue', 'HERO_BOOSTER_REDBLUE', 190, 'UNITS', BLUE, 'cache:tex.Store_BlueRedPack', gems(45),
-             RARE_TIER, opened_counter=2, bullets=[bullet(chance, 4)]),
+             RARE_TIER, opened_counter=2, rotation=weekly(BOOSTER_ROTATION, 1),
+             bullets=[bullet(chance, 4), bullet(THIS_WEEK_ONLY)]),
         hero('booster_giant', 'HERO_BOOSTER_GIANT', 200, 'UNITS', BLUE, icon + 'AbyssalHighDragon', gems(45),
-             RARE_TIER, opened_counter=2, bullets=[bullet(chance, 4)]),
+             RARE_TIER, opened_counter=2, rotation=weekly(BOOSTER_ROTATION, 2),
+             bullets=[bullet(chance, 4), bullet(THIS_WEEK_ONLY)]),
         hero('booster_prestige', 'HERO_BOOSTER_PRESTIGE', 210, 'UNITS', BLUE, icon + 'SpiritofFaith', gems(90),
-             EPIC_TIER, opened_counter=2, bullets=[bullet(chance, 5)]),
+             EPIC_TIER, opened_counter=2, rotation=weekly(BOOSTER_ROTATION, 3),
+             bullets=[bullet(chance, 5), bullet(THIS_WEEK_ONLY)]),
     ]
     seasonal = (
         ('goat', 'GOAT', 'cache:tex.Voucher_Goat', 'goat', ('04-01', '04-14'), None),
@@ -268,14 +274,11 @@ def hero_packs():
     rows.append(hero('new_release', 'NEW_RELEASE', 390, 'UNITS', GREEN, icon + 'FlashPack', gems(75), RARE_TIER,
                      opened_counter=2, schedule=season('05-01', '05-21'), bullets=[bullet(chance, 5)]))
     paid = (
-        ('heroic', 'MTX_PACK_HEROIC', icon + 'GoldPack', 150, 5, RARE_TIER, 0, 1),
-        ('legendary', 'MTX_PACK_LEGENDARY', icon + 'LegendaryPack', 360, 5, BULK_TIER, 1, 1),
-        ('ultra', 'MTX_PACK_ULTRA', 'cache:tex.PackPromo_Darkspawn', 720, 5, EPIC_TIER, 1, 2),
-        ('ultimate', 'ITEM_ULTIMATE_IDENTIFIER_V2', 'cache:tex.PackPromo_SebastianVael', 1600, 10, EPIC_TIER, 2, 2),
-        ('special', 'SPECIAL', 'cache:tex.flashpack', 275, 3, RARE_TIER, 0, 1),
+        ('legendary', 'MTX_PACK_LEGENDARY', 410, icon + 'LegendaryPack', 360, 5, BULK_TIER, 1, 1),
+        ('ultimate', 'ITEM_ULTIMATE_IDENTIFIER_V2', 430, 'cache:tex.PackPromo_SebastianVael', 1600, 10, EPIC_TIER, 2, 2),
     )
-    for index, (key, loc, art, price, count, tier, legendary, epic) in enumerate(paid):
-        rows.append(hero(key, loc, 400 + index * 10, 'FEATURED', FEATURED, art, gems(price), tier, count=count,
+    for key, loc, order, art, price, count, tier, legendary, epic in paid:
+        rows.append(hero(key, loc, order, 'FEATURED', FEATURED, art, gems(price), tier, count=count,
                          opened_counter=3, legendary=legendary, epic=epic, rune_pct=100, rune=(3, 5),
                          rune_count=count, gear_pct=40, gear=(2, 5),
                          bullets=[bullet(GUARANTEED, RARITY_NUMBER['Legendary' if legendary else 'Epic'])]))
@@ -284,7 +287,7 @@ def hero_packs():
              'FLASH_UNIVERSITY_SUPPLIES', 'FLASH_VALENTINES_GIFTS')
     for index, loc in enumerate(flash):
         rows.append(hero(loc.lower(), loc, 500 + index, 'FEATURED', FEATURED, icon + 'FlashPack', gems(90), RARE_TIER,
-                         count=2, opened_counter=2, epic=1, rotation=weekly(index), rune_pct=100, rune=(3, 4),
+                         count=2, opened_counter=2, epic=1, rotation=weekly(FLASH_ROTATION, index), rune_pct=100, rune=(3, 4),
                          rune_count=2, gear_pct=25, gear=(2, 4), bullets=[bullet(THIS_WEEK_ONLY, 4)]))
     return rows
 
@@ -365,8 +368,18 @@ def validate(catalog):
                 errors.append(f"{pack['id']}: fixed hero {unit} is not in the catalog")
         if pack['kind'] == 'hero' and sum(pack['weights'].values()) != 10000:
             errors.append(f"{pack['id']}: weights do not total 10000")
+        if pack.get('purchase_limit') and pack['opened_counter'] < SHARED_OPENED_COUNTERS:
+            errors.append(f"{pack['id']}: a limited pack needs its own opened counter")
         if not pack['bullets'] and 'description_key' not in pack:
             errors.append(f"{pack['id']}: needs a description or a bullet")
+    limited = [pack['opened_counter'] for pack in catalog['packs'] if pack.get('purchase_limit')]
+    if len(limited) != len(set(limited)):
+        errors.append('limited packs share an opened counter')
+    for group in {pack['rotation']['group'] for pack in catalog['packs'] if pack['rotation']}:
+        indexes = sorted(pack['rotation']['index'] for pack in catalog['packs']
+                         if pack['rotation'] and pack['rotation']['group'] == group)
+        if indexes != list(range(len(indexes))):
+            errors.append(f'rotation {group} indexes are not 0..{len(indexes) - 1}')
     errors += [f'unknown localization key {key}' for key in economy.unknown_keys(text_keys(catalog))]
     return errors
 
