@@ -45,8 +45,6 @@ typedef struct {
 #define GEAR_DETAILS_LIMITS_TEXT 11.5f
 #define GEAR_DETAILS_BUTTON_ROW 38.0f
 #define GEAR_DETAILS_BUTTON_GAP 4.0f
-#define GEAR_DETAILS_CLOSE_RESERVE 20.0f
-#define GEAR_DETAILS_HELP_TEXT 10.5f
 #define GEAR_VIEW_FOOTER_HINT_TEXT 12.5f
 #define GEAR_VIEW_FOOTER_STORE_WIDTH 0.46f
 #define GEAR_DIALOG_TILE_TOP 0.08f
@@ -84,7 +82,7 @@ typedef enum {
 } GearViewDialog;
 
 typedef struct {
-    Button category, sort, equip, sell, store, prev, next, yes, no, close, unlock;
+    Button category, sort, equip, sell, store, prev, next, yes, no, unlock;
     char prev_label[GEAR_VIEW_PAGE_LABEL_CAPACITY];
     char next_label[GEAR_VIEW_PAGE_LABEL_CAPACITY];
     bool open;
@@ -122,7 +120,6 @@ static void GearViewLoadButtons(void) {
     GearViewLoadButton(&gear_view.next, GUI_CONSUME_CATEGORY, GUI_CONSUME_CATEGORY_ON, "", 0.32f);
     GearViewLoadButton(&gear_view.yes, GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("MAIN_MESSAGE_DIALOG_OK"), 0.34f);
     GearViewLoadButton(&gear_view.no, GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("RUNES_CANCEL"), 0.34f);
-    GearViewLoadButton(&gear_view.close, GUI_BTN_CLOSE, GUI_BTN_CLOSE, NULL, 0.0f);
     GearViewLoadButton(&gear_view.unlock, GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("HODA_GEAR_PRESTIGE_UNLOCK"), 0.26f);
 }
 
@@ -511,12 +508,13 @@ static void GearViewDrawFilterList(const Player *p, bool input) {
     }
 }
 
-static void GearViewDrawGrid(const Player *p, const int *items, int count, Rectangle view, bool input) {
+static bool GearViewDrawGrid(const Player *p, const int *items, int count, Rectangle view, bool input) {
     if (count == 0) {
         Rectangle text = UiRect(view, 0.5f, 0.3f, 0.9f, 0.4f);
         HeroesDrawRich(GuiFont(FNT_MENU), LocGet("HODA_GEAR_EMPTY_INVENTORY_MESSAGE"), text, 17.0f, LIGHTGRAY);
-        return;
+        return false;
     }
+    bool tile_tapped = false;
     int first = gear_view.page * GEAR_VIEW_PAGE_SIZE;
     int shown = count - first < GEAR_VIEW_PAGE_SIZE ? count - first : GEAR_VIEW_PAGE_SIZE;
     float cell = view.width / GEAR_VIEW_GRID_COLUMNS;
@@ -549,9 +547,11 @@ static void GearViewDrawGrid(const Player *p, const int *items, int count, Recta
         if (over && GearViewClicked(tile)) {
             GuiClickSoundPlay();
             gear_view.selected = item == gear_view.selected ? -1 : item;
+            tile_tapped = true;
         }
     }
     EndScissorMode();
+    return tile_tapped;
 }
 
 static const char *GearViewRarityText(int rarity) {
@@ -656,10 +656,14 @@ static void GearViewDrawMiddleText(const char *text, Rectangle area, float size,
     HeroesDrawRich(body, text, lines, size, color);
 }
 
+static Rectangle GearViewDetailsPanel(void) {
+    return RosterPx(8.0f, 461.0f, 378.0f, 359.0f);
+}
+
 static void GearViewDrawDetails(Player *p, bool input) {
     const GearDef *def = GearDefAt(gear_view.selected);
     Font body = GuiFont(FNT_MENU), title_font = GuiFont(FNT_COOL);
-    Rectangle panel = RosterPx(8.0f, 461.0f, 378.0f, 359.0f);
+    Rectangle panel = GearViewDetailsPanel();
     DrawRectangleRec(panel, BLACK);
 
     char limits[192] = "";
@@ -676,7 +680,7 @@ static void GearViewDrawDetails(Player *p, bool input) {
     float text_bottom = panel.y + panel.height - border_bottom;
 
     float y = GearViewDrawBoxBand(panel, 0.0f, GEAR_CARD_TITLE_BAND_TOP, panel.y, border_top);
-    Rectangle title = {column.x, y, column.width - GEAR_DETAILS_CLOSE_RESERVE, GEAR_DETAILS_TITLE_BAND};
+    Rectangle title = {column.x, y, column.width, GEAR_DETAILS_TITLE_BAND};
     y = GearViewDrawBoxBand(panel, GEAR_CARD_TITLE_BAND_TOP, GEAR_CARD_IMAGE_BAND_TOP, y, GEAR_DETAILS_TITLE_BAND);
     Rectangle summary = {column.x, y + GEAR_DETAILS_BAND_PAD, column.width, rarity_height};
     y = GearViewDrawBoxBand(panel, GEAR_CARD_IMAGE_BAND_TOP, GEAR_CARD_TEXT_BAND_TOP, y, summary_height);
@@ -694,16 +698,11 @@ static void GearViewDrawDetails(Player *p, bool input) {
     Rectangle area = {column.x, description_top, column.width, row.y - GEAR_DETAILS_BUTTON_GAP - description_top};
     GearViewDrawFittedDescription(info.description, area, GEAR_VIEW_DETAILS_FONT_MAX);
 
-    Rectangle left = UiRect(row, 0.0f, 0.0f, 0.49f, 1.0f);
-    if (gear_view.slot < 0) {
-        GearViewDrawMiddleText(LocGet("HODA_GEAR_SELECT_HERO_HELP"), left, GEAR_DETAILS_HELP_TEXT, LIGHTGRAY);
-    } else if (ButtonDrawEx(&gear_view.equip, left, input)) {
+    bool equipping = gear_view.slot >= 0;
+    if (equipping && ButtonDrawEx(&gear_view.equip, UiRect(row, 0.0f, 0.0f, 0.49f, 1.0f), input))
         GearViewRequestEquip(p);
-    }
-    if (ButtonDrawEx(&gear_view.sell, UiRect(row, 1.0f, 0.0f, 0.49f, 1.0f), input)) GearViewRequestSell();
-
-    Rectangle close = RosterPx(348.0f, 436.0f, 62.0f, 50.0f);
-    if (ButtonDrawEx(&gear_view.close, close, input)) gear_view.selected = -1;
+    Rectangle sell = UiRect(row, equipping ? 1.0f : 0.5f, 0.0f, 0.49f, 1.0f);
+    if (ButtonDrawEx(&gear_view.sell, sell, input)) GearViewRequestSell();
 }
 
 static void GearViewDrawFooter(bool input) {
@@ -777,7 +776,11 @@ void GearViewDrawPanel(Player *p) {
             1
         );
     }
-    GearViewDrawGrid(p, items, count, RosterPx(8.0f, top, 378.0f, bottom - top), input);
+    bool tile_tapped = GearViewDrawGrid(p, items, count, RosterPx(8.0f, top, 378.0f, bottom - top), input);
+    bool tapped_away = input && !tile_tapped && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) &&
+                       !CheckCollisionPointRec(UiMouse(), GearViewDetailsPanel());
+    if (details && tapped_away) gear_view.selected = -1;
+    if (gear_view.selected < 0) details = false;
     if (details)
         GearViewDrawDetails(p, input);
     else
