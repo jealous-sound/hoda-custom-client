@@ -3,6 +3,7 @@
 #define PVP_BOT_CAPACITY 256
 #define PVP_SQUAD_CAPACITY 640
 #define PVP_NAME_CAP 32
+#define PVP_BOT_NAME_FORMAT "[BOT] %s"
 #define PVP_UNIT_ID_CAP 48
 #define PVP_LOCAL_MAX_LEVEL 100
 #define PVP_STAMINA_COST 1
@@ -315,7 +316,7 @@ static void PvpBotsParse(PvpTable *t, const cJSON *root) {
     cJSON_ArrayForEach(entry, cJSON_GetObjectItemCaseSensitive((cJSON *)root, "bots")) {
         if (t->bot_count == PVP_BOT_CAPACITY) TraceLog(LOG_FATAL, "Pvp: more than %d bots", PVP_BOT_CAPACITY);
         PvpBot *bot = &t->bots[t->bot_count++];
-        StrCopy(bot->name, sizeof(bot->name), JsonStr(entry, "name"));
+        snprintf(bot->name, sizeof(bot->name), PVP_BOT_NAME_FORMAT, JsonStr(entry, "name"));
         StrCopy(bot->avatar, sizeof(bot->avatar), JsonStr(entry, "avatar"));
         bot->trophies = JsonInt(entry, "trophies");
     }
