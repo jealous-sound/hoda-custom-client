@@ -905,10 +905,6 @@ static cJSON *ProgressionSaveGallery(const PlayerGallery *gallery) {
     return NULL;
 }
 
-static bool ProgressionStoreCounterCountValid(int saved_count) {
-    return saved_count == PLAYER_STORE_SHARED_PACK_COUNT || saved_count == PLAYER_STORE_PACK_COUNT;
-}
-
 char *ProgressionSerialize(const Player *player) {
     if (!player) return NULL;
     bool managed_roster = player->roster && player->roster_abilities && player->roster_capacity > 0;
@@ -1565,11 +1561,10 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
         valid = cJSON_IsObject(store) && ProgressionJsonU64(store, "rng_state", 0, UINT32_MAX, &rng_value) &&
                 ProgressionJsonInt(store, "opened_total", 0, INT_MAX, &loaded_opened_total) &&
                 ProgressionJsonInt(store, "champion_since_legendary", 0, INT_MAX, &loaded_champion_since) &&
-                cJSON_IsArray(opened) && ProgressionStoreCounterCountValid(cJSON_GetArraySize(opened));
+                cJSON_IsArray(opened) && cJSON_GetArraySize(opened) == PLAYER_STORE_PACK_COUNT;
         loaded_rng = (uint32_t)rng_value;
         int opened_sum = 0;
-        memset(loaded_opened, 0, sizeof(loaded_opened));
-        for (int pack = 0; valid && pack < cJSON_GetArraySize(opened); pack++) {
+        for (int pack = 0; pack < PLAYER_STORE_PACK_COUNT && valid; pack++) {
             valid = ProgressionJsonArrayInt(opened, pack, 0, INT_MAX, &loaded_opened[pack]) &&
                     opened_sum <= INT_MAX - loaded_opened[pack];
             if (valid) opened_sum += loaded_opened[pack];

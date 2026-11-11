@@ -291,7 +291,6 @@ typedef struct {
     int rotation_index;
     int rotation_count;
     int opened_counter;
-    int purchase_limit;
     int hero_count;
     Rarity minimum_rarity;
     int guaranteed_legendary;
@@ -550,10 +549,6 @@ long long StorePackSecondsLeft(const StorePackDef *pack, int rotation_days, long
     return (long long)PlatformTimeFromUtc(&end) - now;
 }
 
-bool StorePackSoldOut(const StorePackDef *pack, const Player *player) {
-    return pack->purchase_limit > 0 && player->store_opened_by_pack[pack->opened_counter] >= pack->purchase_limit;
-}
-
 static StoreOffer StoreActiveOffer(const StorePackDef *pack, const Player *player) {
     if (pack->voucher >= 0 && (player->pack_vouchers[pack->voucher] > 0 || !pack->has_paid_offer))
         return (StoreOffer){.voucher = pack->voucher, .price = 1};
@@ -692,7 +687,6 @@ static void StoreLoadPack(Store *store, StorePackDef *pack, const cJSON *json) {
     StoreLoadOffers(store, pack, json);
 
     pack->gear_pack = -1;
-    pack->purchase_limit = JsonInt(json, "purchase_limit");
     const cJSON *schedule = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "schedule");
     if (cJSON_IsObject(schedule)) {
         pack->schedule_start = StoreParseMonthDay(JsonStr(schedule, "start"));
@@ -1473,11 +1467,6 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
     const StorePackDef *pack = &store->packs[pack_index];
     StoreOffer offer = StoreActiveOffer(pack, player);
     int counter = pack->opened_counter;
-    if (StorePackSoldOut(pack, player)) {
-        StoreSetStatus(store, LocGet("HODA_STORE_PACK_UNAVAILABLE"));
-        GuiSoundPlay(SND_STORE_ERROR);
-        return false;
-    }
     if (!PlayerRosterHasCapacity(player, pack->hero_count)) {
         StoreOpenDialog(store, STORE_DIALOG_ROSTER_FULL);
         return false;
@@ -2300,14 +2289,13 @@ static void StoreUpdateScrollInput(Store *store) {
     store->scroll = Clamp(store->scroll, 0.0f, StoreMaxScroll(store));
 }
 
-static void StoreRefreshVisible(Store *store, const Player *player, StoreView page) {
+static void StoreRefreshVisible(Store *store, StoreView page) {
     store->visible_count = 0;
     long long now = StoreNow(store);
     for (int i = 0; i < store->pack_count; i++) {
         const StorePackDef *pack = &store->packs[i];
         if (pack->page != page) continue;
         if (pack->tutorial_only && !TutorialScriptedPack(pack->id)) continue;
-        if (StorePackSoldOut(pack, player)) continue;
         if (StorePackSecondsLeft(pack, store->rotation_days, now) == STORE_PACK_UNAVAILABLE) continue;
         store->visible[store->visible_count++] = i;
     }
@@ -2332,7 +2320,7 @@ static StoreAction StoreDrawPackPage(Store *store, Player *player, Heroes *heroe
     }
 
     StoreView page = store->view;
-    StoreRefreshVisible(store, player, page);
+    StoreRefreshVisible(store, page);
     StoreUpdateScrollInput(store);
 
     Rectangle list = StoreListRect();

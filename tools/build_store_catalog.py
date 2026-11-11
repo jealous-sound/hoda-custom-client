@@ -87,22 +87,16 @@ MINIMUM = {id(COMMON_TIER): 'Common', id(UNCOMMON_TIER): 'Uncommon', id(RARE_TIE
 RARITY_NUMBER = {'Common': 1, 'Uncommon': 2, 'Rare': 3, 'Epic': 4, 'Legendary': 5}
 WISP_POOL = 'WISP'
 GOAT_POOL = 'GOAT'
-BEASTS_STARTER_HEROES = ['UNIT_BARKSPAWN', 'UNIT_VARTERRAL']
 
 RUNE_FAMILIES = ['rune-power', 'rune-health', 'rune-initiative', 'rune-stun']
 
 WEEKLY_FLASH_DAYS = 7
 FLASH_ROTATION = 'flash'
 BOOSTER_ROTATION = 'booster'
-SHARED_OPENED_COUNTERS = 4
-STARTER_CONVERSION_COUNTER = 4
-STARTER_BEASTS_COUNTER = 5
-BUY_ONCE = 1
 
 CHANCE_AT = 'HODA_STORE_BULLET_CHANCE_AT'
 GUARANTEED = 'FEATURED_INTERSTITIAL_GUARANTEED'
 TRAINING = 'ROSTER_FILTER_TUTORIAL'
-SPECIAL_OFFER = 'INTERSTITIAL_SQUAD_PACK_5_15_2014_TITLE'
 TEN_FOR_THE_PRICE_OF_NINE = 'gcp_rotating_text_3'
 THIS_WEEK_ONLY = 'HODA_STORE_BULLET_THIS_WEEK_ONLY'
 
@@ -136,9 +130,9 @@ def voucher(name):
 
 def hero(key, loc, order, category, header, icon, offers, tier, count=1, bullets=(), info=None, opened_counter=0,
          schedule=None, rotation=None, epic=0, legendary=0, pity=0, rune_pct=0, rune=(1, 2), rune_count=1,
-         gear_pct=0, gear=(1, 3), rare=0, fixed=(), pool=None, unique=False, header_tint=None, purchase_limit=0):
+         gear_pct=0, gear=(1, 3), rare=0, fixed=(), pool=None, unique=False, header_tint=None):
     optional = {'guaranteed_rare': rare, 'fixed_heroes': list(fixed), 'pool_tag': pool, 'unique_heroes': unique,
-                'header_tint': header_tint, 'purchase_limit': purchase_limit}
+                'header_tint': header_tint}
     return {
         'id': key, 'kind': 'hero', **pack_text(loc, info or hero_info(count, tier)), 'category': category,
         'order': order, 'header': header, 'icon': icon, 'offers': offers, 'bullets': list(bullets), 'schedule': schedule,
@@ -222,13 +216,6 @@ def hero_packs():
         hero('lyrium_vein', 'LYRIUM_MINE', 110, 'UNITS', GREEN, 'gui/store/tex.Voucher_LyriumMine.png',
              [voucher('lyrium_mine')], RARE_TIER, opened_counter=2, rune_pct=40, rune=(3, 4),
              bullets=[bullet(chance, 5)]),
-        hero('starter_conversion', 'MINNOW_CONVERSION_V2', 120, 'UNITS', BRONZE, icon + 'SerJory', gems(121),
-             RARE_TIER, count=3, opened_counter=STARTER_CONVERSION_COUNTER, purchase_limit=BUY_ONCE, epic=1, rune_pct=100, rune=(3, 4), rune_count=3,
-             bullets=[bullet(SPECIAL_OFFER)]),
-        hero('starter_beasts', 'STARTER_PACK_BEASTS', 130, 'UNITS', BRONZE, icon + 'Dragonling', gems(275),
-             RARE_ONLY_TIER, count=5, opened_counter=STARTER_BEASTS_COUNTER, purchase_limit=BUY_ONCE,
-             fixed=BEASTS_STARTER_HEROES, rune_pct=100, rune=(5, 5),
-             rune_count=5),
         hero('wisp', 'WISP', 140, 'UNITS', GREEN, icon + 'RuneWIsp', gold(800), WISP_TIER,
              count=10, epic=1, pool=WISP_POOL, bullets=[bullet(TRAINING)]),
         hero('divine_wisp', 'DIVINE_WISP', 150, 'UNITS', GREEN, icon + 'DivineWisp', gems(40), WISP_TIER,
@@ -368,13 +355,8 @@ def validate(catalog):
                 errors.append(f"{pack['id']}: fixed hero {unit} is not in the catalog")
         if pack['kind'] == 'hero' and sum(pack['weights'].values()) != 10000:
             errors.append(f"{pack['id']}: weights do not total 10000")
-        if pack.get('purchase_limit') and pack['opened_counter'] < SHARED_OPENED_COUNTERS:
-            errors.append(f"{pack['id']}: a limited pack needs its own opened counter")
         if not pack['bullets'] and 'description_key' not in pack:
             errors.append(f"{pack['id']}: needs a description or a bullet")
-    limited = [pack['opened_counter'] for pack in catalog['packs'] if pack.get('purchase_limit')]
-    if len(limited) != len(set(limited)):
-        errors.append('limited packs share an opened counter')
     for group in {pack['rotation']['group'] for pack in catalog['packs'] if pack['rotation']}:
         indexes = sorted(pack['rotation']['index'] for pack in catalog['packs']
                          if pack['rotation'] and pack['rotation']['group'] == group)

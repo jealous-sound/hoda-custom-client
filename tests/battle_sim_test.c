@@ -5709,19 +5709,6 @@ static void TestSeasonalPackFollowsTheCalendar(void) {
     assert(StorePackSecondsLeft(&always, 7, (long long)mktime(&outside)) == STORE_PACK_ALWAYS);
 }
 
-static void TestLimitedPackSellsOutAtItsLimit(void) {
-    enum { OWN_COUNTER = PLAYER_STORE_SHARED_PACK_COUNT };
-    StorePackDef starter = {.opened_counter = OWN_COUNTER, .purchase_limit = 1};
-    StorePackDef unlimited = {.opened_counter = 0};
-    static Player player;
-    memset(&player, 0, sizeof(player));
-    player.store_opened_by_pack[0] = 5;
-    assert(!StorePackSoldOut(&starter, &player));
-    assert(!StorePackSoldOut(&unlimited, &player));
-    player.store_opened_by_pack[OWN_COUNTER] = 1;
-    assert(StorePackSoldOut(&starter, &player));
-}
-
 static void TestFlashPacksRotateOnePerPeriod(void) {
     long long span = 7 * STORE_SECONDS_PER_DAY;
     long long now = span * 25 + 100;
@@ -7916,7 +7903,6 @@ int main(void) {
     TestGearPackBundlesATome();
     TestSeasonalPackFollowsTheCalendar();
     TestFlashPacksRotateOnePerPeriod();
-    TestLimitedPackSellsOutAtItsLimit();
     TestVoucherOfferWinsOnlyWhenOwned();
     TestStoreDialogTextFitsRussianPackNames();
     TestLegendaryPackRollsSkipHeroesAlreadyOwned();
