@@ -14,6 +14,13 @@ HODA_UPDATE_REQUIRED_ONLINE_MESSAGE|O jogo online precisa de uma versão mais re
 HODA_UPDATE_DOWNLOAD|Baixar
 HODA_UPDATE_LATER|Mais tarde
 HODA_UPDATE_QUIT|Sair
+HODA_UPDATE_INSTALL|Atualizar
+HODA_UPDATE_AVAILABLE_INSTALL_MESSAGE|Heroes of Dragon Age {0} foi lançado. Atualize agora para ter os heróis e correções mais recentes.
+HODA_UPDATE_REQUIRED_INSTALL_MESSAGE|Esta versão não pode mais jogar online. Atualize para Heroes of Dragon Age {0} para continuar jogando online.
+HODA_UPDATE_REQUIRED_ONLINE_INSTALL_MESSAGE|O jogo online precisa de uma versão mais recente. Atualize para Heroes of Dragon Age {0} para jogar online ou comece um jogo local.
+HODA_UPDATE_INSTALLING_MESSAGE|Baixando Heroes of Dragon Age {0}... {1}%
+HODA_UPDATE_RESTARTING_MESSAGE|Heroes of Dragon Age {0} foi instalado. Reiniciando...
+HODA_UPDATE_FAILED_MESSAGE|Não foi possível instalar a atualização. Baixe Heroes of Dragon Age {0} no site.
 HODA_OPTIONS_VERSION_UPDATE|{0} ({1} disponível)
 HODA_MAINTENANCE_TITLE|Reinício do servidor
 HODA_MAINTENANCE_MESSAGE|O servidor será reiniciado em breve para uma atualização. Novas batalhas serão pausadas alguns minutos antes, e depois talvez seja preciso baixar uma nova versão.

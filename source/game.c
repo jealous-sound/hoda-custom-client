@@ -1045,8 +1045,6 @@ static bool GameAwaitServerRetry(void) {
     return false;
 }
 
-#define GAME_UPDATE_TEXT_CAP 512
-
 static void GameDrawClientUpdate(Game *g) {
     if (!ClientUpdateOnlineRefused()) return;
     if (!g->update_buttons_ready) {
@@ -1063,24 +1061,24 @@ static void GameDrawClientUpdate(Game *g) {
             0.34f
         );
     }
-    char message[GAME_UPDATE_TEXT_CAP];
-    LocFormat1(message, sizeof(message), "HODA_UPDATE_REQUIRED_MESSAGE", ClientUpdateCurrentRelease().latest);
+    ClientInstallPrompt prompt = {
+        .frame = GuiTex(GUI_STORE_OVERLAY),
+        .title_font = GuiFont(FNT_COOL),
+        .body_font = GuiFont(FNT_MENU),
+        .title = LocGet("HODA_UPDATE_REQUIRED_TITLE"),
+        .occasion = CLIENT_INSTALL_OCCASION_REQUIRED,
+        .decline_label = LocGet("HODA_UPDATE_QUIT"),
+        .decline = &g->update_quit,
+        .accept = &g->update_download,
+    };
     UiSetInputBlocked(false);
     UiSetInputSuspended(false);
     UiSetInputWindow(false, (Rectangle){0});
     UiFrameBegin();
-    MessagePopupChoice choice = MessagePopupDrawChoice(
-        GuiTex(GUI_STORE_OVERLAY),
-        GuiFont(FNT_COOL),
-        GuiFont(FNT_MENU),
-        LocGet("HODA_UPDATE_REQUIRED_TITLE"),
-        message,
-        &g->update_quit,
-        &g->update_download
-    );
+    ClientInstallPromptResult result = ClientInstallPromptDraw(&prompt);
     UiFrameEnd();
-    if (choice == MESSAGE_POPUP_CHOICE_ACCEPT) ClientUpdateOpenDownload();
-    if (choice == MESSAGE_POPUP_CHOICE_DECLINE) g->quit_requested = true;
+    bool staying = result == CLIENT_INSTALL_PROMPT_OPEN || result == CLIENT_INSTALL_PROMPT_WEBSITE;
+    if (!staying) g->quit_requested = true;
 }
 
 static void GameDrawMaintenance(Game *g) {

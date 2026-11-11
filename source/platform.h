@@ -49,5 +49,9 @@ bool PlatformUserDataDirectory(const char *app_name, char *out, size_t capacity)
 bool PlatformMakeDirectory(const char *path);
 bool PlatformPreferredLanguage(char *out, size_t capacity);
 int PlatformFallbackFonts(char paths[][PLATFORM_FONT_PATH_CAP], int capacity);
+bool PlatformMakeExecutable(const char *path);
+bool PlatformRemoveTree(const char *path);
+bool PlatformStartProgram(const char *executable);
+bool PlatformContinueAs(const char *executable);
 
 #endif

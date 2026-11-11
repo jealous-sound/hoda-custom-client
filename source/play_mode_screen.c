@@ -15,7 +15,6 @@
 #define PLAY_MODE_NOTICE_FRAME APK_RESOURCE("Bg_Overlay_Short")
 #define PLAY_MODE_NOTICE_DECLINE APK_RESOURCE("Btn_Default_grey")
 #define PLAY_MODE_NOTICE_DECLINE_ACTIVE APK_RESOURCE("Btn_Default_grey_active")
-#define PLAY_MODE_NOTICE_TEXT_CAP 512
 
 typedef enum {
     PLAY_MODE_UNDECIDED,
@@ -115,28 +114,24 @@ static void PlayModeRaiseNotice(PlayModeScreen *screen) {
     }
 }
 
-static void PlayModeDrawNotice(PlayModeScreen *screen) {
+static bool PlayModeNoticeRestarts(PlayModeScreen *screen) {
     bool required = screen->notice == PLAY_MODE_NOTICE_UPDATE_REQUIRED;
-    char message[PLAY_MODE_NOTICE_TEXT_CAP];
-    LocFormat1(
-        message,
-        sizeof(message),
-        required ? "HODA_UPDATE_REQUIRED_ONLINE_MESSAGE" : "HODA_UPDATE_AVAILABLE_MESSAGE",
-        ClientUpdateCurrentRelease().latest
-    );
-    screen->notice_decline.label = LocGet(required ? "MAIN_MESSAGE_DIALOG_OK" : "HODA_UPDATE_LATER");
-    MessagePopupChoice choice = MessagePopupDrawChoice(
-        screen->notice_frame,
-        screen->title_font,
-        screen->menu_font,
-        LocGet(required ? "HODA_UPDATE_REQUIRED_TITLE" : "HODA_UPDATE_AVAILABLE_TITLE"),
-        message,
-        &screen->notice_decline,
-        &screen->notice_download
-    );
-    if (choice == MESSAGE_POPUP_CHOICE_ACCEPT) ClientUpdateOpenDownload();
-    if (choice == MESSAGE_POPUP_CHOICE_DECLINE && !required) ClientUpdateSkipOffered();
-    if (choice != MESSAGE_POPUP_CHOICE_NONE || IsKeyPressed(KEY_ESCAPE)) screen->notice = PLAY_MODE_NOTICE_NONE;
+    ClientInstallPrompt prompt = {
+        .frame = screen->notice_frame,
+        .title_font = screen->title_font,
+        .body_font = screen->menu_font,
+        .title = LocGet(required ? "HODA_UPDATE_REQUIRED_TITLE" : "HODA_UPDATE_AVAILABLE_TITLE"),
+        .occasion = required ? CLIENT_INSTALL_OCCASION_REQUIRED_FOR_ONLINE : CLIENT_INSTALL_OCCASION_AVAILABLE,
+        .decline_label = LocGet(required ? "MAIN_MESSAGE_DIALOG_OK" : "HODA_UPDATE_LATER"),
+        .decline = &screen->notice_decline,
+        .accept = &screen->notice_download,
+    };
+    ClientInstallPromptResult result = ClientInstallPromptDraw(&prompt);
+    if (result == CLIENT_INSTALL_PROMPT_DECLINED && !required) ClientUpdateSkipOffered();
+    bool escaped = !ClientInstallBusy() && IsKeyPressed(KEY_ESCAPE);
+    if (escaped) ClientInstallAcknowledgeFailure();
+    if (ClientInstallPromptAnswered(result) || escaped) screen->notice = PLAY_MODE_NOTICE_NONE;
+    return result == CLIENT_INSTALL_PROMPT_RESTART;
 }
 
 static PlayModeChoice PlayModeScreenDraw(PlayModeScreen *screen) {
@@ -158,10 +153,7 @@ static PlayModeChoice PlayModeScreenDraw(PlayModeScreen *screen) {
     bool interactive = screen->notice == PLAY_MODE_NOTICE_NONE;
     bool local_chosen = ButtonDrawEx(&screen->local, local, interactive);
     bool online_chosen = ButtonDrawEx(&screen->online, online, interactive);
-    if (!interactive) {
-        PlayModeDrawNotice(screen);
-        return PLAY_MODE_UNDECIDED;
-    }
+    if (!interactive) return PlayModeNoticeRestarts(screen) ? PLAY_MODE_QUIT : PLAY_MODE_UNDECIDED;
     if (local_chosen) return PLAY_MODE_LOCAL;
     if (online_chosen && ClientUpdateStatusNow() == CLIENT_UPDATE_REQUIRED) {
         screen->notice = PLAY_MODE_NOTICE_UPDATE_REQUIRED;

@@ -298,20 +298,20 @@ ContentDrawProgressLabels(const ContentArt *art, const ContentProgress *progress
 }
 
 static ContentScreenChoice ContentDrawDownloadAlert(ContentArt *art, const ContentAlert *alert) {
-    art->alert_button.label = LocGet("HODA_UPDATE_DOWNLOAD");
-    art->alert_decline.label = LocGet(alert->button_key);
-    MessagePopupChoice choice = MessagePopupDrawChoice(
-        art->alert_frame,
-        art->title_font,
-        art->menu_font,
-        LocGet(alert->title_key),
-        LocGet(alert->message_key),
-        &art->alert_decline,
-        &art->alert_button
-    );
-    if (choice == MESSAGE_POPUP_CHOICE_ACCEPT) ClientUpdateOpenDownload();
-    if (choice == MESSAGE_POPUP_CHOICE_DECLINE || IsKeyPressed(KEY_ESCAPE)) return CONTENT_SCREEN_QUIT;
-    return CONTENT_SCREEN_WAIT;
+    ClientInstallPrompt prompt = {
+        .frame = art->alert_frame,
+        .title_font = art->title_font,
+        .body_font = art->menu_font,
+        .title = LocGet(alert->title_key),
+        .fixed_message = LocGet(alert->message_key),
+        .decline_label = LocGet(alert->button_key),
+        .decline = &art->alert_decline,
+        .accept = &art->alert_button,
+    };
+    ClientInstallPromptResult result = ClientInstallPromptDraw(&prompt);
+    bool escaped = !ClientInstallBusy() && IsKeyPressed(KEY_ESCAPE);
+    bool staying = result == CLIENT_INSTALL_PROMPT_OPEN || result == CLIENT_INSTALL_PROMPT_WEBSITE;
+    return staying && !escaped ? CONTENT_SCREEN_WAIT : CONTENT_SCREEN_QUIT;
 }
 
 static ContentScreenChoice ContentDrawArt(ContentArt *art, const ContentProgress *progress) {

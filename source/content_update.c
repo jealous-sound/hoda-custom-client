@@ -106,17 +106,19 @@ static bool ContentMakeDirectories(const char *path) {
     return ContentMakeParents(path) && PlatformMakeDirectory(path);
 }
 
-static bool ContentEnterInstallDirectory(char *directory, size_t capacity) {
+static bool ContentInstallDirectory(char *directory, size_t capacity) {
     const char *forced = getenv(CONTENT_DIR_ENV);
-    bool named = forced && forced[0] ? (size_t)snprintf(directory, capacity, "%s", forced) < capacity
-                                     : PlatformUserDataDirectory(APP_NAME, directory, capacity);
-    return named && ContentMakeDirectories(directory) && ChangeDirectory(directory);
+    return forced && forced[0] ? (size_t)snprintf(directory, capacity, "%s", forced) < capacity
+                               : PlatformUserDataDirectory(APP_NAME, directory, capacity);
 }
 
-static bool ContentEntryPathSafe(const char *path) {
-    bool rooted = strncmp(path, CONTENT_RULES_ROOT, strlen(CONTENT_RULES_ROOT)) == 0 ||
-                  strncmp(path, HOD_CACHE, strlen(HOD_CACHE)) == 0;
-    if (!rooted || strchr(path, '\\') || strchr(path, ':')) return false;
+static bool ContentEnterInstallDirectory(char *directory, size_t capacity) {
+    return ContentInstallDirectory(directory, capacity) && ContentMakeDirectories(directory) &&
+           ChangeDirectory(directory);
+}
+
+static bool ContentRelativePathSafe(const char *path) {
+    if (strchr(path, '\\') || strchr(path, ':')) return false;
     if (strlen(path) + strlen(CONTENT_PARTIAL_SUFFIX) >= CONTENT_PATH_CAP) return false;
     for (const char *segment = path;;) {
         size_t length = strcspn(segment, "/");
@@ -125,6 +127,12 @@ static bool ContentEntryPathSafe(const char *path) {
         if (segment[length] == '\0') return true;
         segment += length + 1;
     }
+}
+
+static bool ContentEntryPathSafe(const char *path) {
+    bool rooted = strncmp(path, CONTENT_RULES_ROOT, strlen(CONTENT_RULES_ROOT)) == 0 ||
+                  strncmp(path, HOD_CACHE, strlen(HOD_CACHE)) == 0;
+    return rooted && ContentRelativePathSafe(path);
 }
 
 static bool ContentPackNameSafe(const char *name) {

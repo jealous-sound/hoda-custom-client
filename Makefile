@@ -7,11 +7,14 @@ RAYLIB_LINK ?= -lraylib
 CONTENT_URL ?= https://cdn.hodareborn.com
 SERVER_URL ?= https://api.hodareborn.com
 CONTENT_BUCKET ?= hoda-assets
+RELEASE_URL ?= https://github.com/jealous-sound/hoda-custom-client/releases/download
+RELEASE_PUBLIC_KEY ?= ce5d7dc891a76fa5e7b306d8023d327f46ff106e764b66e7721f3898dc0e7459
 CLIENT_VERSION ?= $(shell git describe --tags --match 'v[0-9]*' --always --dirty 2>/dev/null || echo dev)
 BUNDLE_VERSION ?= $(shell git describe --tags --match 'v[0-9]*' --abbrev=0 2>/dev/null | sed 's/^v//;s/-.*//')
-CFLAGS  = -Wall -O2 -std=c99 -ffp-contract=off -I$(RAYLIB_DIR)/include -DHOD_CONTENT_URL='"$(CONTENT_URL)"' -DHOD_SERVER_URL='"$(SERVER_URL)"' -DHOD_VERSION='"$(CLIENT_VERSION)"' $(PLATFORM_CFLAGS) $(EXTRA_CFLAGS)
+CFLAGS  = -Wall -O2 -std=c99 -ffp-contract=off -I$(RAYLIB_DIR)/include -DHOD_CONTENT_URL='"$(CONTENT_URL)"' -DHOD_SERVER_URL='"$(SERVER_URL)"' -DHOD_VERSION='"$(CLIENT_VERSION)"' -DHOD_RELEASE_URL='"$(RELEASE_URL)"' -DHOD_RELEASE_PUBLIC_KEY='"$(RELEASE_PUBLIC_KEY)"' $(PLATFORM_CFLAGS) $(EXTRA_CFLAGS)
 LDFLAGS = -L$(RAYLIB_DIR)/lib
-SRC     = source/main.c source/platform.c
+SUPPORT_SRC = source/platform.c source/release_signature.c
+SRC     = source/main.c $(SUPPORT_SRC)
 DEPS    = $(wildcard source/*.c source/*.h source/vendors/*.c source/vendors/*.h)
 TEST_TARGET = tests/battle_sim_test
 GOLDEN_TARGET = tests/battle_replay_golden
@@ -20,6 +23,7 @@ BALANCE_TARGET = tests/balance_check
 BALANCE_ARGS ?=
 CONTENT_TEST_TARGET = tests/content_update_test
 UPDATE_TEST_TARGET = tests/client_update_test
+INSTALL_TEST_TARGET = tests/client_install_test
 BACKEND_DIR ?= ../hoda-custom-backend
 DIST_DIR ?= ../hoda-custom-dist
 DIST_BACKEND_URL ?=
@@ -79,33 +83,38 @@ endif
 app: $(TARGET)
 
 $(TEST_TARGET): tests/battle_sim_test.c $(DEPS) Makefile
-	$(CC) $(CFLAGS) tests/battle_sim_test.c source/platform.c -o $(TEST_TARGET) $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) tests/battle_sim_test.c $(SUPPORT_SRC) -o $(TEST_TARGET) $(LDFLAGS) $(LIBS)
 
 $(GOLDEN_TARGET): tests/battle_replay_golden.c $(DEPS) Makefile
-	$(CC) $(CFLAGS) tests/battle_replay_golden.c source/platform.c -o $(GOLDEN_TARGET) $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) tests/battle_replay_golden.c $(SUPPORT_SRC) -o $(GOLDEN_TARGET) $(LDFLAGS) $(LIBS)
 
 golden: $(GOLDEN_TARGET)
 	./$(GOLDEN_TARGET) $(GOLDEN_DIR)
 
 $(BALANCE_TARGET): tests/balance_check.c $(DEPS) Makefile
-	$(CC) $(CFLAGS) tests/balance_check.c source/platform.c -o $(BALANCE_TARGET) $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) tests/balance_check.c $(SUPPORT_SRC) -o $(BALANCE_TARGET) $(LDFLAGS) $(LIBS)
 
 balance: $(BALANCE_TARGET)
 	./$(BALANCE_TARGET) $(BALANCE_ARGS)
 
-$(CONTENT_TEST_TARGET): tests/content_update_test.c $(DEPS) Makefile
-	$(CC) $(CFLAGS) tests/content_update_test.c source/platform.c -o $(CONTENT_TEST_TARGET) $(LDFLAGS) $(LIBS)
+$(CONTENT_TEST_TARGET): tests/content_update_test.c tests/zip_fixture.h $(DEPS) Makefile
+	$(CC) $(CFLAGS) tests/content_update_test.c $(SUPPORT_SRC) -o $(CONTENT_TEST_TARGET) $(LDFLAGS) $(LIBS)
 
 $(UPDATE_TEST_TARGET): tests/client_update_test.c $(DEPS) Makefile
-	$(CC) $(CFLAGS) tests/client_update_test.c source/platform.c -o $(UPDATE_TEST_TARGET) $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) tests/client_update_test.c $(SUPPORT_SRC) -o $(UPDATE_TEST_TARGET) $(LDFLAGS) $(LIBS)
 
-ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(GOLDEN_TARGET)
+$(INSTALL_TEST_TARGET): tests/client_install_test.c tests/zip_fixture.h $(DEPS) Makefile
+	$(CC) $(CFLAGS) tests/client_install_test.c $(SUPPORT_SRC) -o $(INSTALL_TEST_TARGET) $(LDFLAGS) $(LIBS)
+
+ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(GOLDEN_TARGET)
 	python3 tools/validate_ability_recipes.py
 	python3 tools/validate_intrinsic_passives.py
 	python3 tools/build_hero_pool.py --check
 	python3 tools/validate_localization.py
+	python3 -m unittest tests/test_release_manifest.py
 	./$(CONTENT_TEST_TARGET)
 	./$(UPDATE_TEST_TARGET)
+	./$(INSTALL_TEST_TARGET)
 	./$(GOLDEN_TARGET) --check $(GOLDEN_DIR)
 
 test: ci-test $(TEST_TARGET)
@@ -143,7 +152,7 @@ content:
 	python3 tools/publish_content.py --bucket "$(CONTENT_BUCKET)" --content-url "$(CONTENT_URL)"
 
 clean:
-	rm -rf "$(APP_NAME).app" build $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(GOLDEN_TARGET) $(BALANCE_TARGET)
+	rm -rf "$(APP_NAME).app" build $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(GOLDEN_TARGET) $(BALANCE_TARGET)
 
 format:
 	clang-format -i source/*.c
@@ -151,4 +160,7 @@ format:
 format-check:
 	clang-format --dry-run --Werror source/*.c
 
-.PHONY: app run play dist content ci-test test golden clean format format-check
+release-public-key:
+	@echo $(RELEASE_PUBLIC_KEY)
+
+.PHONY: app run play dist content ci-test test golden clean format format-check release-public-key
