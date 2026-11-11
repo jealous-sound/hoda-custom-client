@@ -3,7 +3,7 @@
     "The server will restart soon for an update. New battles pause a few minutes before it, and you may need to "      \
     "download a new version afterwards."
 #define MAINTENANCE_HOLD_MESSAGE_FALLBACK "The server is restarting for an update. Battles are paused until it is back."
-#define MAINTENANCE_CLOCK_CAP 16
+#define MAINTENANCE_CLOCK_CAP 48
 #define MAINTENANCE_STRIP_TEXT_CAP 160
 #define MAINTENANCE_STRIP_HEIGHT 30.0f
 #define MAINTENANCE_STRIP_FONT_SIZE 20.0f
