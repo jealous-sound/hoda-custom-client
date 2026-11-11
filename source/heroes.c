@@ -503,6 +503,8 @@ void HeroesDestroy(Heroes *h) {
     h->card_capacity = 0;
 }
 
+#define HEROES_RICH_GREEN_ON_DARK ((Color){51, 204, 51, 255})
+
 static Color HeroesRichColor(const char *name, Color base) {
     if (name[0] == '#') {
         unsigned value = 0;
@@ -513,7 +515,7 @@ static Color HeroesRichColor(const char *name, Color base) {
         }
         return base;
     }
-    if (!strcasecmp(name, "green")) return (Color){51, 204, 51, 255};
+    if (!strcasecmp(name, "green")) return HEROES_RICH_GREEN_ON_DARK;
     if (!strcasecmp(name, "red")) return (Color){255, 0, 0, 255};
     if (!strcasecmp(name, "orange")) return (Color){255, 165, 0, 255};
     if (!strcasecmp(name, "grey") || !strcasecmp(name, "gray")) return (Color){128, 128, 128, 255};

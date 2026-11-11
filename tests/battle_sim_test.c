@@ -2549,7 +2549,7 @@ static void TestRichText(const char *text) {
 static void TestRichTextParserFallback(void) {
     HeroesRichToken token = HeroesRichNextToken("<Color=green>text</Color>", WHITE);
     assert(token.kind == HEROES_RICH_COLOR_OPEN && token.bytes == 13);
-    assert(token.color.g == 128 && token.color.r == 0);
+    assert(ColorIsEqual(token.color, HEROES_RICH_GREEN_ON_DARK));
     token = HeroesRichNextToken("<color=\"orange\">text", WHITE);
     assert(token.kind == HEROES_RICH_COLOR_OPEN && token.color.r == 255 && token.color.g == 165);
     token = HeroesRichNextToken("<unknown>", WHITE);
