@@ -96,8 +96,7 @@ typedef struct {
     int base_gain, base_loss, points_per_step;
     int min_gain, max_gain, min_loss, max_loss;
     int window_below, window_above, daily_nexts, bot_daily_drift, level_spread;
-    int rating_base, rating_per_level, rating_per_level_squared;
-    int rating_max_shift_pct, trophies_per_shift_pct, squad_candidates;
+    int squad_candidates;
     int first_rune_level, levels_per_rune, levels_per_rarity, max_rune_rarity;
     int win_gold_base, win_gold_per_level, loss_gold_pct;
     int win_xp_base, win_xp_per_level, loss_xp_pct;
@@ -119,7 +118,7 @@ typedef struct {
 } PvpSquadCell;
 
 typedef struct {
-    int rating;
+    int strength;
     PvpSquadCell cells[SQUAD_SLOT_COUNT];
 } PvpSquad;
 
@@ -129,6 +128,7 @@ typedef struct {
     PvpBot bots[PVP_BOT_CAPACITY];
     int bot_count;
     PvpSquad squads[PVP_SQUAD_CAPACITY];
+    int squads_weakest_first[PVP_SQUAD_CAPACITY];
     int squad_count;
     bool loaded;
 } PvpTable;
@@ -178,11 +178,6 @@ static void PvpRulesParse(PvpRules *r, const cJSON *root) {
     r->daily_nexts = PvpSectionInt(root, "matchmaking", "daily_nexts");
     r->bot_daily_drift = PvpSectionInt(root, "matchmaking", "bot_daily_drift");
     r->level_spread = PvpSectionInt(root, "matchmaking", "level_spread");
-    r->rating_base = PvpSectionInt(root, "squads", "rating_base");
-    r->rating_per_level = PvpSectionInt(root, "squads", "rating_per_level");
-    r->rating_per_level_squared = PvpSectionInt(root, "squads", "rating_per_level_squared");
-    r->rating_max_shift_pct = PvpSectionInt(root, "squads", "rating_max_shift_pct");
-    r->trophies_per_shift_pct = PvpSectionInt(root, "squads", "trophies_per_shift_pct");
     r->squad_candidates = PvpSectionInt(root, "squads", "candidates");
     r->first_rune_level = PvpSectionInt(root, "runes", "first_rune_level");
     r->levels_per_rune = PvpSectionInt(root, "runes", "levels_per_rune");
@@ -327,7 +322,7 @@ static void PvpSquadsParse(PvpTable *t, const cJSON *root) {
     cJSON_ArrayForEach(entry, cJSON_GetObjectItemCaseSensitive((cJSON *)root, "squad_pool")) {
         if (t->squad_count == PVP_SQUAD_CAPACITY) TraceLog(LOG_FATAL, "Pvp: more than %d squads", PVP_SQUAD_CAPACITY);
         PvpSquad *squad = &t->squads[t->squad_count++];
-        squad->rating = JsonInt(entry, "rating");
+        squad->strength = JsonInt(entry, "strength");
         int slot = 0;
         const cJSON *cell = NULL;
         cJSON_ArrayForEach(cell, cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "cells")) {
@@ -342,6 +337,15 @@ static void PvpSquadsParse(PvpTable *t, const cJSON *root) {
     }
 }
 
+static void PvpSquadsRankByStrength(PvpTable *t) {
+    for (int squad = 0; squad < t->squad_count; squad++) {
+        int rank = squad;
+        for (; rank > 0 && t->squads[squad].strength < t->squads[t->squads_weakest_first[rank - 1]].strength; rank--)
+            t->squads_weakest_first[rank] = t->squads_weakest_first[rank - 1];
+        t->squads_weakest_first[rank] = squad;
+    }
+}
+
 const PvpTable *PvpTableEnsure(void) {
     if (pvp_table.loaded) return &pvp_table;
     cJSON *root = JsonLoadFile(PVP_RULES_PATH);
@@ -349,6 +353,7 @@ const PvpTable *PvpTableEnsure(void) {
     PvpEventsParse(&pvp_table.events, root);
     PvpBotsParse(&pvp_table, root);
     PvpSquadsParse(&pvp_table, root);
+    PvpSquadsRankByStrength(&pvp_table);
     cJSON_Delete(root);
     if (pvp_table.bot_count == 0 || pvp_table.squad_count == 0) TraceLog(LOG_FATAL, "Pvp: empty ladder");
     pvp_table.loaded = true;
@@ -412,24 +417,18 @@ static int PvpPickBot(int trophies, long long day, unsigned seed) {
     return closest;
 }
 
-int PvpTargetRating(int level, int trophy_lead) {
-    const PvpRules *r = &PvpTableEnsure()->rules;
-    long long base = r->rating_base + (long long)r->rating_per_level * level +
-                     (long long)r->rating_per_level_squared * level * level;
-    int shift = trophy_lead / r->trophies_per_shift_pct;
-    shift = Clamp(shift, -r->rating_max_shift_pct, r->rating_max_shift_pct);
-    return (int)(base * (100 + shift) / 100);
+int PvpBotStrengthRank(int bot) {
+    const PvpTable *t = PvpTableEnsure();
+    return t->bot_count > 1 ? (int)((long long)bot * (t->squad_count - 1) / (t->bot_count - 1)) : 0;
 }
 
-static int PvpPickSquad(int rating, unsigned seed) {
+static int PvpPickSquad(int bot, unsigned seed) {
     const PvpTable *t = PvpTableEnsure();
-    int nearest = 0;
-    for (int i = 1; i < t->squad_count; i++)
-        if (abs(t->squads[i].rating - rating) < abs(t->squads[nearest].rating - rating)) nearest = i;
     int candidates = t->rules.squad_candidates;
-    int first = Clamp(nearest - candidates / 2, 0, t->squad_count > candidates ? t->squad_count - candidates : 0);
+    int weakest = PvpBotStrengthRank(bot) - candidates / 2;
+    weakest = Clamp(weakest, 0, t->squad_count > candidates ? t->squad_count - candidates : 0);
     int span = candidates < t->squad_count ? candidates : t->squad_count;
-    return first + PvpRoll(seed, PVP_SQUAD_SALT, span);
+    return t->squads_weakest_first[weakest + PvpRoll(seed, PVP_SQUAD_SALT, span)];
 }
 
 static void PvpPickRunes(PvpOpponent *o) {
@@ -465,7 +464,7 @@ PvpOpponent PvpOpponentFromBot(int bot, int level, int trophies, long long day, 
     o.trophies = PvpBotTrophies(bot, day);
     int spread = t->rules.level_spread;
     o.level = Clamp(level + PvpRoll(o.seed, PVP_LEVEL_SALT, spread * 2 + 1) - spread, 1, PVP_LOCAL_MAX_LEVEL);
-    o.squad = PvpPickSquad(PvpTargetRating(level, o.trophies - trophies), o.seed);
+    o.squad = PvpPickSquad(bot, o.seed);
     PvpOpponentDerive(&o, trophies);
     return o;
 }
