@@ -75,3 +75,4 @@ androguard.log
 settings.json
 settings.json.tmp
 tests/balance_check
+tests/pvp_squad_strength

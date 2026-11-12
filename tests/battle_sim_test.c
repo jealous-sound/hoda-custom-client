@@ -4,6 +4,8 @@
 
 #include <assert.h>
 
+#include "squad_meta.h"
+
 static HomeSquadUnit PooledTestUnit(const char *path) {
     HomeSquadUnit unit = {.active = true, .phase = 7, .frame_time = 3.0f};
     StrCopy(unit.path, sizeof(unit.path), path);
@@ -2194,6 +2196,49 @@ static void TestStatBudgetTableLoads(void) {
     const StatBudget *budget = StatBudgetEnsure();
     assert(budget->budget > 0 && budget->giant_budget_pct >= 100);
     assert(budget->pattern_power_cost_pct[TARGET_ALL] >= budget->pattern_power_cost_pct[TARGET_ONE]);
+}
+
+#define TEST_SQUAD_META_SQUADS 3
+#define TEST_SQUAD_META_WEIGHT_TOLERANCE 0.03
+
+static SquadMeta test_squad_meta;
+
+static void TestSquadMetaSolveCycle(float first_beats_second, float second_beats_third, float third_beats_first) {
+    memset(&test_squad_meta, 0, sizeof(test_squad_meta));
+    for (int squad = 0; squad < TEST_SQUAD_META_SQUADS; squad++) SquadMetaAdd(&test_squad_meta);
+    SquadMetaRecord(&test_squad_meta, 0, 1, first_beats_second);
+    SquadMetaRecord(&test_squad_meta, 1, 2, second_beats_third);
+    SquadMetaRecord(&test_squad_meta, 2, 0, third_beats_first);
+    SquadMetaSolve(&test_squad_meta);
+}
+
+static bool TestSquadMetaWeighs(int squad, double weight) {
+    return fabs(test_squad_meta.weight[squad] - weight) < TEST_SQUAD_META_WEIGHT_TOLERANCE;
+}
+
+static void TestSquadMetaSplitsEvenlyWhenEverySquadHasAnEqualCounter(void) {
+    TestSquadMetaSolveCycle(1.0f, 1.0f, 1.0f);
+    assert(TestSquadMetaWeighs(0, 1.0 / 3.0) && TestSquadMetaWeighs(1, 1.0 / 3.0) && TestSquadMetaWeighs(2, 1.0 / 3.0));
+    assert(SquadMetaBestWinShare(&test_squad_meta) <= SQUAD_META_EVEN_SHARE + SQUAD_META_SOLVER_TOLERANCE);
+}
+
+static void TestSquadMetaLeansOnTheCounterOfTheMostLopsidedMatchup(void) {
+    TestSquadMetaSolveCycle(0.9f, 0.6f, 0.6f);
+    assert(TestSquadMetaWeighs(0, 1.0 / 6.0) && TestSquadMetaWeighs(1, 1.0 / 6.0) && TestSquadMetaWeighs(2, 2.0 / 3.0));
+    assert(SquadMetaBestWinShare(&test_squad_meta) <= SQUAD_META_EVEN_SHARE + SQUAD_META_SOLVER_TOLERANCE);
+}
+
+static void TestSquadMetaSettlesOnASquadNothingBeats(void) {
+    TestSquadMetaSolveCycle(0.8f, 0.5f, 0.3f);
+    assert(TestSquadMetaWeighs(0, 1.0) && TestSquadMetaWeighs(1, 0.0) && TestSquadMetaWeighs(2, 0.0));
+}
+
+static void TestSquadMetaWeighsEvenlyOverTheFirstSquadsOnly(void) {
+    TestSquadMetaSolveCycle(1.0f, 1.0f, 1.0f);
+    SquadMetaWeighEvenly(&test_squad_meta, 2);
+    assert(test_squad_meta.weight[0] == 0.5 && test_squad_meta.weight[1] == 0.5 && test_squad_meta.weight[2] == 0.0);
+    assert(fabs(SquadMetaWinShare(&test_squad_meta, 2) - 0.5) < 1e-9);
+    assert(fabs(SquadMetaWinShare(&test_squad_meta, 0) - 0.75) < 1e-9);
 }
 
 static void TestCustomHeroesInheritTheirBaseHeroData(void) {
@@ -5996,25 +6041,40 @@ static void TestPvpOpponentsAreDeterministic(void) {
     assert(varied);
 }
 
-static double PvpTestMeanSquadRating(int level) {
+static double PvpTestMeanSquadStrength(int level, int trophies) {
     const PvpTable *table = PvpTableEnsure();
     double total = 0.0;
     for (unsigned seed = 1; seed <= 200; seed++)
-        total += table->squads[PvpOpponentGenerate(level, 0, 20000, seed).squad].rating;
+        total += table->squads[PvpOpponentGenerate(level, trophies, 20000, seed).squad].strength;
     return total / 200.0;
 }
 
-static void TestPvpOpponentsScaleWithLevel(void) {
-    double previous = 0.0;
-    int levels[] = {1, 10, 25, 50, 100};
-    for (int i = 0; i < 5; i++) {
-        double rating = PvpTestMeanSquadRating(levels[i]);
-        assert(rating > previous);
-        previous = rating;
+static void TestPvpSquadsRankFromWeakestToStrongest(void) {
+    const PvpTable *table = PvpTableEnsure();
+    bool ranked[PVP_SQUAD_CAPACITY] = {0};
+    for (int rank = 0; rank < table->squad_count; rank++) {
+        int squad = table->squads_weakest_first[rank];
+        assert(!ranked[squad]);
+        ranked[squad] = true;
+        if (rank == 0) continue;
+        int weaker = table->squads_weakest_first[rank - 1];
+        int gap = table->squads[squad].strength - table->squads[weaker].strength;
+        assert(gap > 0 || (gap == 0 && squad > weaker));
     }
-    assert(PvpTargetRating(20, 200) > PvpTargetRating(20, 0));
-    assert(PvpTargetRating(20, -200) < PvpTargetRating(20, 0));
-    assert(PvpTargetRating(20, 1000000) == PvpTargetRating(20, 2000000));
+    assert(PvpBotStrengthRank(0) == 0);
+    assert(PvpBotStrengthRank(table->bot_count - 1) == table->squad_count - 1);
+}
+
+static void TestPvpOpponentsGrowStrongerUpTheLadder(void) {
+    double previous = -1.0;
+    int trophies[] = {0, 500, 1500, 3000, 6000};
+    for (int i = 0; i < 5; i++) {
+        double strength = PvpTestMeanSquadStrength(30, trophies[i]);
+        assert(strength > previous);
+        previous = strength;
+    }
+    for (unsigned seed = 1; seed <= 40; seed++)
+        assert(PvpOpponentGenerate(1, 1500, 20000, seed).squad == PvpOpponentGenerate(100, 1500, 20000, seed).squad);
     PvpOpponent o = PvpOpponentGenerate(1, 0, 20000, 7);
     assert(o.level >= 1 && o.level <= 3 && o.rune_count == 0);
     PvpOpponent veteran = PvpOpponentGenerate(100, 3000, 20000, 7);
@@ -7822,7 +7882,8 @@ int main(void) {
     TestPvpAchievementsFollowTheLadder();
     TestPvpOpponentsAreDeterministic();
     TestPvpEventLeaderboardMatchesRank();
-    TestPvpOpponentsScaleWithLevel();
+    TestPvpSquadsRankFromWeakestToStrongest();
+    TestPvpOpponentsGrowStrongerUpTheLadder();
     TestPvpMatchingStaysInTheTrophyWindow();
     TestPvpTrophyBounds();
     TestPvpNextsResetDaily();
@@ -7997,6 +8058,10 @@ int main(void) {
     TestStatBudgetCapsEventBuffs();
     TestStatBudgetOnTheEnemyRosterLevelsBothSides();
     TestStatBudgetTableLoads();
+    TestSquadMetaSplitsEvenlyWhenEverySquadHasAnEqualCounter();
+    TestSquadMetaLeansOnTheCounterOfTheMostLopsidedMatchup();
+    TestSquadMetaSettlesOnASquadNothingBeats();
+    TestSquadMetaWeighsEvenlyOverTheFirstSquadsOnly();
     TestCustomHeroesInheritTheirBaseHeroData();
     TestBattlesGrantTheirXpToEverySquadHero();
     TestFxPresetLiveEmitterSizes();
