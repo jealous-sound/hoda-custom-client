@@ -1006,9 +1006,6 @@ static void GameDrawNamePrompt(Game *g, float dt) {
 #define GAME_BUSY_OVERLAY_DELAY_SECONDS 1.0f
 #define GAME_BUSY_DIM_OPACITY 0.7f
 #define GAME_BUSY_SPINNER_HEIGHT 0.2f
-#define GAME_BUSY_CORNER_X 0.98f
-#define GAME_BUSY_CORNER_Y 0.97f
-#define GAME_BUSY_CORNER_HEIGHT 0.1f
 
 static bool GameDrawConnectionError(Button *retry) {
     return MessagePopupDrawAlert(
@@ -1113,40 +1110,23 @@ static ProgressionLoadResult GameFetchProgression(Game *g, bool *window_closed) 
     return ProgressionLoad(&g->player);
 }
 
-typedef enum {
-    GAME_BUSY_HIDDEN,
-    GAME_BUSY_DIMMED,
-    GAME_BUSY_CORNER,
-} GameBusyOverlay;
-
-static GameBusyOverlay game_busy_overlay = GAME_BUSY_HIDDEN;
+static bool game_busy_overlay_shown = false;
 
 bool GameBusyOverlayUpdate(const Game *g, float dt) {
     static float busy_seconds = 0.0f;
     busy_seconds = BackendBusy() && !ClientUpdateOnlineRefused() ? busy_seconds + dt : 0.0f;
     bool slow = busy_seconds >= GAME_BUSY_OVERLAY_DELAY_SECONDS;
-    if (!slow)
-        game_busy_overlay = GAME_BUSY_HIDDEN;
-    else
-        game_busy_overlay = g->screen == SCREEN_BATTLE ? GAME_BUSY_CORNER : GAME_BUSY_DIMMED;
-    bool blocking = game_busy_overlay == GAME_BUSY_DIMMED;
-    UiSetInputSuspended(blocking);
-    return blocking;
+    game_busy_overlay_shown = slow && g->screen != SCREEN_BATTLE;
+    UiSetInputSuspended(game_busy_overlay_shown);
+    return game_busy_overlay_shown;
 }
 
 void GameBusyOverlayDraw(void) {
-    if (game_busy_overlay == GAME_BUSY_HIDDEN) return;
+    if (!game_busy_overlay_shown) return;
     UiFrameBegin();
     Rectangle root = UiRoot();
-    Texture2D ring = GuiTex(GUI_LOADING_RING);
-    if (game_busy_overlay == GAME_BUSY_DIMMED) {
-        DrawRectangleRec(root, Fade(BLACK, GAME_BUSY_DIM_OPACITY));
-        LoadingIndicatorDraw(ring, LoadingIndicatorBox(root, 0.5f, 0.5f, GAME_BUSY_SPINNER_HEIGHT));
-    } else {
-        LoadingIndicatorDraw(
-            ring, LoadingIndicatorBox(root, GAME_BUSY_CORNER_X, GAME_BUSY_CORNER_Y, GAME_BUSY_CORNER_HEIGHT)
-        );
-    }
+    DrawRectangleRec(root, Fade(BLACK, GAME_BUSY_DIM_OPACITY));
+    LoadingIndicatorDraw(GuiTex(GUI_LOADING_RING), LoadingIndicatorBox(root, 0.5f, 0.5f, GAME_BUSY_SPINNER_HEIGHT));
     UiFrameEnd();
 }
 
