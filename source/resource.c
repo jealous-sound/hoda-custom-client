@@ -171,7 +171,7 @@ static void *ResourceBundleWorker(void *argument) {
 static void ResourceIndexBundles(void) {
     int worker_count = ResourceWorkerCount((int)resource_bundle_files.count);
     int next = 0;
-    ResourceBundleJob jobs[RESOURCE_WORKERS_MAX] = {0};
+    ResourceBundleJob *jobs = MemAlloc(sizeof(*jobs) * RESOURCE_WORKERS_MAX);
     pthread_t threads[RESOURCE_WORKERS_MAX];
     bool threaded[RESOURCE_WORKERS_MAX] = {0};
     for (int i = 0; i < worker_count; i++) jobs[i].next = &next;
@@ -185,6 +185,7 @@ static void ResourceIndexBundles(void) {
         }
         MemFree(jobs[i].catalog.entries);
     }
+    MemFree(jobs);
 }
 
 static void ResourceIndexCache(void) {

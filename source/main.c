@@ -23,6 +23,7 @@
 #endif
 
 #include "config.c"
+#include "window.c"
 #include "vendors/cJSON.c"
 #include "unity_texture.c"
 #include "unity_asset.c"
@@ -113,31 +114,35 @@
 #include "game.c"
 #include "debug_harness.c"
 
-static bool RunGameSession(void) {
-    Game game = {0};
-    if (!GameInitialize(&game)) return false;
-
+static bool RunLoadedGame(Game *game) {
     DebugShot shot = DebugShotFromEnvironment();
     float mouse_x = 0.0f, mouse_y = 0.0f;
     bool mouse_override = DebugMousePosition(&mouse_x, &mouse_y);
 
     while (!WindowShouldClose()) {
-        bool server_wait = GameBusyOverlayUpdate(&game, GetFrameTime());
-        if (!server_wait && IsKeyPressed(KEY_ESCAPE) && !GameHandlePopupBack(&game)) break;
+        bool server_wait = GameBusyOverlayUpdate(game, GetFrameTime());
+        if (!server_wait && IsKeyPressed(KEY_ESCAPE) && !GameHandlePopupBack(game)) break;
         if (mouse_override) SetMousePosition((int)(mouse_x * UiScale()), (int)(mouse_y * UiScale()));
-        if (shot.output) DebugShotPrepare(&game, &shot);
+        if (shot.output) DebugShotPrepare(game, &shot);
 
         BeginDrawing();
-        GameDraw(&game);
+        GameDraw(game);
         GameBusyOverlayDraw();
         bool captured = shot.output && DebugShotCapture(&shot);
         EndDrawing();
 
-        if (captured || game.restart_requested || game.quit_requested) break;
+        if (captured || game->restart_requested || game->quit_requested) break;
     }
 
-    bool restart = game.restart_requested;
-    GameDestroy(&game);
+    bool restart = game->restart_requested;
+    GameDestroy(game);
+    return restart;
+}
+
+static bool RunGameSession(void) {
+    Game *game = MemAlloc(sizeof(*game));
+    bool restart = GameInitialize(game) && RunLoadedGame(game);
+    MemFree(game);
     return restart;
 }
 
@@ -166,10 +171,11 @@ int main(void) {
     const char *win = getenv("HOD_WINDOW");
     if (win) sscanf(win, "%dx%d", &win_w, &win_h);
 
-    unsigned int flags = FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | FLAG_WINDOW_HIGHDPI;
+    unsigned int flags = FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | WINDOW_PIXEL_DENSITY_FLAGS;
     if (screenshot_mode) flags |= FLAG_WINDOW_HIDDEN | FLAG_WINDOW_UNFOCUSED;
     SetConfigFlags(flags);
     InitWindow(win_w, win_h, APP_NAME);
+    if (!win && !screenshot_mode) WindowGrowToMonitorDensity();
     SetExitKey(KEY_NULL);
     InitAudioDevice();
     if (screenshot_mode || EnvFlag("HOD_MUTE")) SetMasterVolume(0.0f);

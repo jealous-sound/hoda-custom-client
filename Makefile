@@ -28,9 +28,12 @@ BACKEND_DIR ?= ../hoda-custom-backend
 DIST_DIR ?= ../hoda-custom-dist
 DIST_BACKEND_URL ?=
 APP_ICON = packaging/app_icon.png
+STACK_FRAME_LIMIT = 262144
+WINDOWS_STACK_RESERVE = 8388608
 .DEFAULT_GOAL := app
 
 ifeq ($(PLATFORM),macos)
+STACK_FRAME_GUARD = -Wframe-larger-than=$(STACK_FRAME_LIMIT) -Werror=frame-larger-than
 LIBS    = $(RAYLIB_LINK) -framework Cocoa -framework CoreFoundation -framework IOKit -framework OpenGL -framework CoreAudio -framework CoreVideo
 APP_BUNDLE = $(APP_NAME).app
 APP_CONTENTS = $(APP_BUNDLE)/Contents
@@ -42,7 +45,7 @@ ICON_SIZES = 16 32 128 256 512
 
 $(TARGET): $(DEPS) $(APP_INFO) $(APP_ICON) Makefile
 	mkdir -p "$(APP_CONTENTS)/MacOS" "$(APP_CONTENTS)/Resources" $(ICONSET)
-	$(CC) $(CFLAGS) $(SRC) -o "$(APP_EXECUTABLE)" $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) $(STACK_FRAME_GUARD) $(SRC) -o "$(APP_EXECUTABLE)" $(LDFLAGS) $(LIBS)
 	cp $(APP_INFO) "$(APP_CONTENTS)/Info.plist"
 	plutil -replace CFBundleShortVersionString -string "$(or $(BUNDLE_VERSION),0.0.0)" "$(APP_CONTENTS)/Info.plist"
 	for size in $(ICON_SIZES); do \
@@ -55,19 +58,21 @@ endif
 
 ifeq ($(PLATFORM),linux)
 PLATFORM_CFLAGS = -D_DEFAULT_SOURCE
+STACK_FRAME_GUARD = -Werror=frame-larger-than=$(STACK_FRAME_LIMIT)
 LIBS    = $(RAYLIB_LINK) -lGL -lm -lpthread -ldl -lrt -lX11
 APP_EXECUTABLE = build/linux/$(APP_NAME)
 TARGET  = build/linux/Heroes\ of\ Dragon\ Age
 
 $(TARGET): $(DEPS) Makefile
 	mkdir -p build/linux
-	$(CC) $(CFLAGS) $(SRC) -o "$(APP_EXECUTABLE)" $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) $(STACK_FRAME_GUARD) $(SRC) -o "$(APP_EXECUTABLE)" $(LDFLAGS) $(LIBS)
 endif
 
 ifeq ($(PLATFORM),windows)
 CC      = x86_64-w64-mingw32-gcc
 WINDRES ?= x86_64-w64-mingw32-windres
-LIBS    = $(RAYLIB_LINK) -lopengl32 -lgdi32 -lwinmm -lwinhttp -lpthread -static -mwindows
+STACK_FRAME_GUARD = -Werror=frame-larger-than=$(STACK_FRAME_LIMIT)
+LIBS    = $(RAYLIB_LINK) -lopengl32 -lgdi32 -lwinmm -lwinhttp -lpthread -static -mwindows -Wl,--stack,$(WINDOWS_STACK_RESERVE)
 APP_EXECUTABLE = build/windows/$(APP_NAME).exe
 TARGET  = build/windows/Heroes\ of\ Dragon\ Age.exe
 WINDOWS_RESOURCES = build/windows/app_resources.o
@@ -77,7 +82,7 @@ $(WINDOWS_RESOURCES): packaging/windows/app.rc packaging/windows/app_icon.ico
 	$(WINDRES) packaging/windows/app.rc -O coff -o $(WINDOWS_RESOURCES)
 
 $(TARGET): $(DEPS) $(WINDOWS_RESOURCES) Makefile
-	$(CC) $(CFLAGS) $(SRC) $(WINDOWS_RESOURCES) -o "$(APP_EXECUTABLE)" $(LDFLAGS) $(LIBS)
+	$(CC) $(CFLAGS) $(STACK_FRAME_GUARD) $(SRC) $(WINDOWS_RESOURCES) -o "$(APP_EXECUTABLE)" $(LDFLAGS) $(LIBS)
 endif
 
 app: $(TARGET)
