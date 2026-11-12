@@ -1244,6 +1244,10 @@ static void ImageSwapGreenBlue(Image *image) {
     }
 }
 
+static bool AssetsPlayableSoundMissing(Sound sound) {
+    return IsAudioDeviceReady() && sound.frameCount == 0;
+}
+
 void AssetsLoad(void) {
     Image gui_images[GUI_COUNT] = {0};
     ResourceLoadImages(gui_paths, GUI_COUNT, gui_images);
@@ -1263,7 +1267,7 @@ void AssetsLoad(void) {
     }
     for (int i = 0; i < SND_COUNT; i++) {
         gui_sounds[i] = ResourceLoadSound(sound_paths[i]);
-        if (gui_sounds[i].frameCount == 0) TraceLog(LOG_FATAL, "Assets: failed to load %s", sound_paths[i]);
+        if (AssetsPlayableSoundMissing(gui_sounds[i])) TraceLog(LOG_FATAL, "Assets: failed to load %s", sound_paths[i]);
     }
 }
 
