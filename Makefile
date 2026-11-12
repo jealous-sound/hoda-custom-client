@@ -87,7 +87,7 @@ endif
 
 app: $(TARGET)
 
-$(TEST_TARGET): tests/battle_sim_test.c $(DEPS) Makefile
+$(TEST_TARGET): tests/battle_sim_test.c tests/squad_meta.h $(DEPS) Makefile
 	$(CC) $(CFLAGS) tests/battle_sim_test.c $(SUPPORT_SRC) -o $(TEST_TARGET) $(LDFLAGS) $(LIBS)
 
 $(GOLDEN_TARGET): tests/battle_replay_golden.c $(DEPS) Makefile
@@ -96,7 +96,7 @@ $(GOLDEN_TARGET): tests/battle_replay_golden.c $(DEPS) Makefile
 golden: $(GOLDEN_TARGET)
 	./$(GOLDEN_TARGET) $(GOLDEN_DIR)
 
-$(BALANCE_TARGET): tests/balance_check.c $(DEPS) Makefile
+$(BALANCE_TARGET): tests/balance_check.c tests/squad_meta.h $(DEPS) Makefile
 	$(CC) $(CFLAGS) tests/balance_check.c $(SUPPORT_SRC) -o $(BALANCE_TARGET) $(LDFLAGS) $(LIBS)
 
 balance: $(BALANCE_TARGET)
