@@ -23,8 +23,9 @@ Without a local copy the game downloads its data on first launch (see [Content](
 | `make run` | builds and runs the game |
 | `make play` | runs the game against a local backend from `../hoda-custom-backend` (`BACKEND_DIR=`) |
 | `make test` | every check; needs the local asset cache |
-| `make ci-test` | the checks that need no asset cache: golden replays, content, update and install tests, table validators |
+| `make ci-test` | the checks that need no asset cache: golden replays, squad strengths, content, update and install tests, table validators |
 | `make golden` | regenerates the battle corpus in `tests/golden/` |
+| `make squad-strength` | re-measures the PvP opponent squads into `data/pvp_squad_strength.json` and `data/pvp_rules.json` |
 | `make balance` | PvP balance report from `tests/balance_check.c` (`BALANCE_ARGS=` passes options; see [Balance](#balance)) |
 | `make format-check` | clang-format check; `make format` rewrites |
 | `make dist` | a playable copy in `../hoda-custom-dist` (`DIST_DIR=`, `DIST_BACKEND_URL=`) |
@@ -90,9 +91,9 @@ server issues a seed, replays its Go port of `battle_sim.c`, and pays its own re
 - The wire contract is `source/backend.c` here and `internal/api` in the backend; change both together.
 - The backend embeds copies of most `data/` tables and the golden corpus. After changing them, run
   `scripts/sync-client-data.sh` in the backend; its tests fail on drift.
-- After changing the simulation or its inputs, run `make golden` and then the sync. `make test` fails while the corpus
-  is stale and names the first entry and field that differ. To find where two builds diverge, diff their
-  `./tests/battle_replay_golden --trace <battle name>` output.
+- After changing the simulation or its inputs, run `make squad-strength`, then `make golden` and then the sync.
+  `make test` fails while the squad strengths or the corpus are stale and names the first corpus entry and field that
+  differ. To find where two builds diverge, diff their `./tests/battle_replay_golden --trace <battle name>` output.
 - Results must not depend on the compiler. Builds use `-ffp-contract=off`, and the corpus generator draws each random
   value in its own statement, because GCC and clang evaluate function arguments in opposite orders.
 
@@ -117,6 +118,14 @@ minimum client version on the backend.
   squad it can find per faction.
 - A new hero: `./tests/balance_check --calibrate 12 --hero UNIT_ID` settles its handicap against the existing table,
   and `./tests/balance_check --hero UNIT_ID` exits non-zero while it wins outside 45-55%.
+- Every squad in `squad_pool` carries a `strength`: its wins per 10000 battles against the rest of the pool, attacking
+  and defending once against each, fielded as the ladder fields it. A bot's place on the ladder picks its squads: the
+  lowest bot draws from the weakest squads and the top bot from the strongest, so opponents get harder as trophies
+  rise, whatever the player's level. `make squad-strength` measures them again after a change to the simulation, the
+  handicaps or the pool, and `./tests/pvp_squad_strength --report` prints the spread and the strength met at each
+  trophy count. The strengths hold for the `battle.stat_budget` switch they were measured under, so measure again
+  after flipping it. The pool keeps its order, so a squad index stored in a save or a pending match still names the
+  same squad.
 
 ## Custom heroes
 

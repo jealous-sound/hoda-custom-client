@@ -5996,25 +5996,40 @@ static void TestPvpOpponentsAreDeterministic(void) {
     assert(varied);
 }
 
-static double PvpTestMeanSquadRating(int level) {
+static double PvpTestMeanSquadStrength(int level, int trophies) {
     const PvpTable *table = PvpTableEnsure();
     double total = 0.0;
     for (unsigned seed = 1; seed <= 200; seed++)
-        total += table->squads[PvpOpponentGenerate(level, 0, 20000, seed).squad].rating;
+        total += table->squads[PvpOpponentGenerate(level, trophies, 20000, seed).squad].strength;
     return total / 200.0;
 }
 
-static void TestPvpOpponentsScaleWithLevel(void) {
-    double previous = 0.0;
-    int levels[] = {1, 10, 25, 50, 100};
-    for (int i = 0; i < 5; i++) {
-        double rating = PvpTestMeanSquadRating(levels[i]);
-        assert(rating > previous);
-        previous = rating;
+static void TestPvpSquadsRankFromWeakestToStrongest(void) {
+    const PvpTable *table = PvpTableEnsure();
+    bool ranked[PVP_SQUAD_CAPACITY] = {0};
+    for (int rank = 0; rank < table->squad_count; rank++) {
+        int squad = table->squads_weakest_first[rank];
+        assert(!ranked[squad]);
+        ranked[squad] = true;
+        if (rank == 0) continue;
+        int weaker = table->squads_weakest_first[rank - 1];
+        int gap = table->squads[squad].strength - table->squads[weaker].strength;
+        assert(gap > 0 || (gap == 0 && squad > weaker));
     }
-    assert(PvpTargetRating(20, 200) > PvpTargetRating(20, 0));
-    assert(PvpTargetRating(20, -200) < PvpTargetRating(20, 0));
-    assert(PvpTargetRating(20, 1000000) == PvpTargetRating(20, 2000000));
+    assert(PvpBotStrengthRank(0) == 0);
+    assert(PvpBotStrengthRank(table->bot_count - 1) == table->squad_count - 1);
+}
+
+static void TestPvpOpponentsGrowStrongerUpTheLadder(void) {
+    double previous = -1.0;
+    int trophies[] = {0, 500, 1500, 3000, 6000};
+    for (int i = 0; i < 5; i++) {
+        double strength = PvpTestMeanSquadStrength(30, trophies[i]);
+        assert(strength > previous);
+        previous = strength;
+    }
+    for (unsigned seed = 1; seed <= 40; seed++)
+        assert(PvpOpponentGenerate(1, 1500, 20000, seed).squad == PvpOpponentGenerate(100, 1500, 20000, seed).squad);
     PvpOpponent o = PvpOpponentGenerate(1, 0, 20000, 7);
     assert(o.level >= 1 && o.level <= 3 && o.rune_count == 0);
     PvpOpponent veteran = PvpOpponentGenerate(100, 3000, 20000, 7);
@@ -7822,7 +7837,8 @@ int main(void) {
     TestPvpAchievementsFollowTheLadder();
     TestPvpOpponentsAreDeterministic();
     TestPvpEventLeaderboardMatchesRank();
-    TestPvpOpponentsScaleWithLevel();
+    TestPvpSquadsRankFromWeakestToStrongest();
+    TestPvpOpponentsGrowStrongerUpTheLadder();
     TestPvpMatchingStaysInTheTrophyWindow();
     TestPvpTrophyBounds();
     TestPvpNextsResetDaily();

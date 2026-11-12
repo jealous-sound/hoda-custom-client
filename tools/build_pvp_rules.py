@@ -14,6 +14,7 @@ STORE_PACKS = ROOT / "data/store_packs.json"
 RESEARCH = ROOT / "data/pvp_rewards_research.json"
 RESEARCH_SHA256 = "2378ab802a2e76bf318a77b1828524aa831fee3ad9f943bdaf654bc3047d256f"
 ROSTER_SOURCES = [ROOT / "data/campaign_rosters.json", ROOT / "data/nexus_rosters.json"]
+SQUAD_STRENGTH = ROOT / "data/pvp_squad_strength.json"
 CHARACTERS = ROOT / "client-additional-data/characters.json"
 LOCALIZATION_DIR = (
     ROOT / "client-additional-data/Heroes-of-Dragon-Age-v4-4-0-cache-androidp1/com.ea.game.dragonage_row/cache/Localization"
@@ -25,6 +26,7 @@ CLI_DESCRIPTION = "Build the tunable PvP rule table, bot ladder and opponent squ
 SQUAD_CELLS = 5
 GIANT_CELL = 4
 MIN_SQUAD_UNITS = 4
+UNMEASURED_STRENGTH = 0
 BOT_COUNT = 240
 BOT_SEED = 1604
 BOT_TOP_TROPHIES = 6000
@@ -59,11 +61,6 @@ RULES = {
         "level_spread": 2,
     },
     "squads": {
-        "rating_base": 2000,
-        "rating_per_level": 365,
-        "rating_per_level_squared": -1,
-        "rating_max_shift_pct": 25,
-        "trophies_per_shift_pct": 10,
         "candidates": 6,
     },
     "runes": {
@@ -447,7 +444,7 @@ def resolve_ladders(characters):
     return {**EVENTS, "catalog": entries, "guild_every_cycles": GUILD_EVERY_CYCLES, "guild_catalog": guild_entries}
 
 
-def rating(characters, roster):
+def catalog_stat_total(characters, roster):
     total = 0
     for cell in roster:
         if cell is None:
@@ -457,6 +454,11 @@ def rating(characters, roster):
         total += stats["base_power"] + stats["power_per_level"] * steps
         total += stats["base_health"] + stats["health_per_level"] * steps
     return total
+
+
+def measured_strengths(squad_count):
+    measured = json.loads(SQUAD_STRENGTH.read_text(encoding="utf-8"))["strength"] if SQUAD_STRENGTH.exists() else []
+    return measured if len(measured) == squad_count else [UNMEASURED_STRENGTH] * squad_count
 
 
 def clean_cell(characters, cell, index):
@@ -480,8 +482,10 @@ def build_squads(characters):
                 if sum(cell is not None for cell in cells) < MIN_SQUAD_UNITS:
                     continue
                 squads[json.dumps(cells, sort_keys=True)] = cells
-    table = [{"rating": rating(characters, cells), "cells": cells} for cells in squads.values()]
-    return sorted(table, key=lambda squad: (squad["rating"], json.dumps(squad["cells"], sort_keys=True)))
+    pool = sorted(
+        squads.values(), key=lambda cells: (catalog_stat_total(characters, cells), json.dumps(cells, sort_keys=True))
+    )
+    return [{"strength": strength, "cells": cells} for strength, cells in zip(measured_strengths(len(pool)), pool)]
 
 
 def build_bots(characters):
