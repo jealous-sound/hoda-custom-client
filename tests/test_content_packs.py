@@ -108,6 +108,15 @@ class ContentPacksTest(unittest.TestCase):
             self.build("out")
         self.assertIn("unity_14:grass.ply", str(raised.exception))
 
+    def test_paths_too_long_for_a_windows_install_stop_the_build(self) -> None:
+        self.assertEqual(build_content_packs.WINDOWS_ENTRY_PATH_LIMIT, 210)
+        prefix = f"{build_dist.MESH_DIR}/scene/"
+        fitting = prefix + "f" * (build_content_packs.WINDOWS_ENTRY_PATH_LIMIT - len(prefix))
+        build_content_packs.require_portable([fitting])
+        with self.assertRaises(SystemExit) as raised:
+            build_content_packs.require_portable([fitting + "x"])
+        self.assertIn(fitting + "x", str(raised.exception))
+
     def test_unchanged_packs_reuse_the_published_entry(self) -> None:
         published, _ = self.build("first")
         manifest, written = self.build("second", published)

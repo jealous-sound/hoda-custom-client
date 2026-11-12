@@ -2,6 +2,7 @@
 #include "../source/main.c"
 #undef main
 
+#include <limits.h>
 #include <unistd.h>
 
 #include "zip_fixture.h"
@@ -312,7 +313,7 @@ static void TestInstalledDataOfAnotherFormatIsNotPlayedOffline(void) {
     assert(TestRunUpdate(site.url).phase == CONTENT_PHASE_READY);
     cJSON *state = ContentStateLoad();
     cJSON_ReplaceItemInObjectCaseSensitive(state, "format", cJSON_CreateNumber(CONTENT_MANIFEST_FORMAT - 1));
-    assert(ContentStateSave(state));
+    assert(ContentStateSave(state) == CONTENT_ERROR_NONE);
     cJSON_Delete(state);
     char missing[TEST_PATH_CAP];
     TestFormat(missing, sizeof(missing), "%s/nowhere", site.url);
@@ -405,7 +406,55 @@ static void TestLoaderMessageFollowsTheOriginalModes(void) {
 static void TestErrorsUseTheOriginalPopups(void) {
     assert(strcmp(ContentAlertFor(CONTENT_ERROR_OFFLINE).title_key, "CONNECTION_ERROR_TITLE") == 0);
     assert(strcmp(ContentAlertFor(CONTENT_ERROR_CORRUPT).title_key, "ASSET_DOWNLOAD_ERROR_TITLE_TU5") == 0);
-    assert(strcmp(ContentAlertFor(CONTENT_ERROR_DISK).message_key, "ERROR_INSUFFICIENT_DEVICE_STORAGE") == 0);
+    assert(strcmp(ContentAlertFor(CONTENT_ERROR_DISK_FULL).message_key, "ERROR_INSUFFICIENT_DEVICE_STORAGE") == 0);
+    assert(strcmp(ContentAlertFor(CONTENT_ERROR_DISK).title_key, "ASSET_DOWNLOAD_ERROR_TITLE_TU5") == 0);
+}
+
+static void TestUnpackingStagesEveryFileUnderOneShortName(void) {
+    TestSite site = TestSiteCreate();
+    char deep[CONTENT_PATH_CAP];
+    size_t used = (size_t)snprintf(deep, sizeof(deep), "%sbundles/", HOD_CACHE);
+    size_t name_length = (size_t)NAME_MAX - strlen(CONTENT_PARTIAL_SUFFIX) + 1;
+    memset(deep + used, 'n', name_length);
+    deep[used + name_length] = '\0';
+    assert(strlen(GetFileName(deep)) + strlen(CONTENT_PARTIAL_SUFFIX) > (size_t)NAME_MAX);
+    TestEntry entries[] = {{deep, "bundle"}};
+    ContentPack packs[] = {TestPublishPack(&site, "deep", entries, 1)};
+    TestPublishManifest(&site, CONTENT_MANIFEST_FORMAT, "v1", packs, 1);
+    ContentProgress progress = TestRunUpdate(site.url);
+    assert(progress.phase == CONTENT_PHASE_READY);
+    assert(TestFileHolds(deep, "bundle"));
+    assert(!FileExists(CONTENT_UNPACKING_PATH));
+}
+
+static void TestFolderInThePlaceOfAFileIsAWriteFailureNotAFullDisk(void) {
+    TestSite site = TestSiteCreate();
+    assert(ContentMakeDirectories(rules_v1[0].name));
+    ContentPack packs[] = {TestPublishPack(&site, "rules", rules_v1, 2)};
+    TestPublishManifest(&site, CONTENT_MANIFEST_FORMAT, "v1", packs, 1);
+    ContentProgress progress = TestRunUpdate(site.url);
+    assert(progress.phase == CONTENT_PHASE_FAILED && progress.error == CONTENT_ERROR_DISK);
+    assert(!FileExists(CONTENT_UNPACKING_PATH));
+}
+
+static void TestEarlierInstallIsAdoptedExceptTheLauncherBuilds(void) {
+    TestSite site = TestSiteCreate();
+    char earlier[TEST_PATH_CAP], save[TEST_PATH_CAP], build[TEST_PATH_CAP], kept[TEST_PATH_CAP], bundle[TEST_PATH_CAP];
+    TestFormat(earlier, sizeof(earlier), "%s/earlier", site.root);
+    TestFormat(save, sizeof(save), "%s/player_save.dat", earlier);
+    TestFormat(kept, sizeof(kept), "%s/settings.json", earlier);
+    TestFormat(bundle, sizeof(bundle), "%s/%sbundle", earlier, HOD_CACHE);
+    TestFormat(build, sizeof(build), "%s/%s/v1/game", earlier, CONTENT_LAUNCHER_ENTRY);
+    assert(ContentWriteFile(save, "save", 4) && ContentWriteFile(kept, "old", 3));
+    assert(ContentWriteFile(bundle, "data", 4) && ContentWriteFile(build, "exe", 3));
+    assert(ContentWriteFile("settings.json", "new", 3));
+    ContentAdoptEarlierInstall(earlier, site.install);
+    assert(TestFileHolds("player_save.dat", "save") && !FileExists(save));
+    assert(TestFileHolds(HOD_CACHE "bundle", "data") && !FileExists(bundle));
+    assert(TestFileHolds("settings.json", "new") && FileExists(kept));
+    assert(FileExists(build));
+    ContentAdoptEarlierInstall(site.install, site.install);
+    assert(TestFileHolds("player_save.dat", "save"));
 }
 
 static void TestFirstInstallIsReportedOnlyBeforeAnythingIsInstalled(void) {
@@ -447,6 +496,9 @@ int main(void) {
     TestMegabytesUseTheLocalizedDecimalSeparator();
     TestLoaderMessageFollowsTheOriginalModes();
     TestErrorsUseTheOriginalPopups();
+    TestUnpackingStagesEveryFileUnderOneShortName();
+    TestFolderInThePlaceOfAFileIsAWriteFailureNotAFullDisk();
+    TestEarlierInstallIsAdoptedExceptTheLauncherBuilds();
     TestFirstInstallIsReportedOnlyBeforeAnythingIsInstalled();
 
     char cleanup[TEST_PATH_CAP + 16];

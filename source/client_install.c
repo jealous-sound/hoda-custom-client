@@ -1,4 +1,4 @@
-#define CLIENT_INSTALL_DIRECTORY "client"
+#define CLIENT_INSTALL_DIRECTORY CONTENT_LAUNCHER_ENTRY
 #define CLIENT_INSTALL_STATE_FILE "state.json"
 #define CLIENT_INSTALL_DOWNLOADS "downloads"
 #define CLIENT_INSTALL_MANIFEST_FILE "client-update.json"
@@ -218,6 +218,7 @@ static ClientInstallError ClientInstallDownloadError(PlatformDownloadResult resu
         case PLATFORM_DOWNLOAD_OK:
             return CLIENT_INSTALL_ERROR_NONE;
         case PLATFORM_DOWNLOAD_FILE_ERROR:
+        case PLATFORM_DOWNLOAD_DISK_FULL:
             return CLIENT_INSTALL_ERROR_DISK;
         case PLATFORM_DOWNLOAD_CANCELLED:
             return CLIENT_INSTALL_ERROR_CANCELLED;
@@ -547,7 +548,7 @@ static bool ClientInstallPathAbsolute(const char *path) {
 static void ClientInstallLocate(ClientInstallSite *site) {
     *site = (ClientInstallSite){0};
     char data[CONTENT_PATH_CAP];
-    if (!ClientInstallSupportedHere() || !ContentInstallDirectory(data, sizeof(data))) return;
+    if (!ClientInstallSupportedHere() || !ContentLauncherDirectory(data, sizeof(data))) return;
     int length =
         ClientInstallPathAbsolute(data)
             ? snprintf(site->root, sizeof(site->root), "%s/%s", data, CLIENT_INSTALL_DIRECTORY)

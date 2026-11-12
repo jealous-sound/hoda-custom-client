@@ -39,6 +39,12 @@ BUCKET_HASH_BYTES = 4
 VERSION_FORMAT = "%Y%m%dT%H%M%SZ"
 DEFAULT_PACK = "core"
 BOOT_PACKS = ("apk", "core")
+WINDOWS_PATH_LIMIT = 259
+WINDOWS_PROFILE_NAME_ALLOWANCE = 20
+WINDOWS_INSTALL_ROOT = "C:\\Users\\{profile}\\AppData\\Local\\HoDA\\"
+WINDOWS_ENTRY_PATH_LIMIT = WINDOWS_PATH_LIMIT - len(
+    WINDOWS_INSTALL_ROOT.format(profile="p" * WINDOWS_PROFILE_NAME_ALLOWANCE)
+)
 
 
 @dataclass(frozen=True)
@@ -147,6 +153,13 @@ def require_portable(files: list[str]) -> None:
     if unportable:
         listing = "\n  ".join(unportable)
         raise SystemExit(f"these paths cannot exist on Windows; rename or exclude them:\n  {listing}")
+    overlong = [relative for relative in files if len(relative) > WINDOWS_ENTRY_PATH_LIMIT]
+    if overlong:
+        listing = "\n  ".join(overlong)
+        raise SystemExit(
+            f"these paths are longer than the {WINDOWS_ENTRY_PATH_LIMIT} characters a Windows install "
+            f"can hold; shorten or exclude them:\n  {listing}"
+        )
 
 
 def build(

@@ -10,6 +10,9 @@
 #define CONTENT_MANIFEST_DOWNLOAD CONTENT_DOWNLOAD_DIR "/" CONTENT_MANIFEST_FILE
 #define CONTENT_PACK_EXTENSION ".zip"
 #define CONTENT_PARTIAL_SUFFIX ".partial"
+#define CONTENT_UNPACKING_PATH CONTENT_DOWNLOAD_DIR "/unpacking"
+#define CONTENT_LAUNCHER_ENTRY "client"
+#define CONTENT_LOG_FILE "game.log"
 #define CONTENT_RULES_ROOT "data/"
 #define CONTENT_PACK_ATTEMPTS 3
 #define CONTENT_URL_CAP 1024
@@ -34,6 +37,7 @@ typedef enum {
     CONTENT_ERROR_CLIENT_TOO_OLD,
     CONTENT_ERROR_CORRUPT,
     CONTENT_ERROR_DISK,
+    CONTENT_ERROR_DISK_FULL,
     CONTENT_ERROR_CANCELLED,
 } ContentError;
 
@@ -106,15 +110,46 @@ static bool ContentMakeDirectories(const char *path) {
     return ContentMakeParents(path) && PlatformMakeDirectory(path);
 }
 
-static bool ContentInstallDirectory(char *directory, size_t capacity) {
+static bool ContentForcedDirectory(char *directory, size_t capacity, bool *fits) {
     const char *forced = getenv(CONTENT_DIR_ENV);
-    return forced && forced[0] ? (size_t)snprintf(directory, capacity, "%s", forced) < capacity
-                               : PlatformUserDataDirectory(APP_NAME, directory, capacity);
+    if (!forced || !forced[0]) return false;
+    *fits = (size_t)snprintf(directory, capacity, "%s", forced) < capacity;
+    return true;
+}
+
+static bool ContentLauncherDirectory(char *directory, size_t capacity) {
+    bool fits = false;
+    if (ContentForcedDirectory(directory, capacity, &fits)) return fits;
+    return PlatformUserDataDirectory(APP_NAME, directory, capacity);
+}
+
+static bool ContentInstallDirectory(char *directory, size_t capacity) {
+    bool fits = false;
+    if (ContentForcedDirectory(directory, capacity, &fits)) return fits;
+    return PlatformCompactDataDirectory(APP_COMPACT_NAME, directory, capacity) ||
+           PlatformUserDataDirectory(APP_NAME, directory, capacity);
+}
+
+static void ContentAdoptEarlierInstall(const char *earlier, const char *directory) {
+    if (strcmp(earlier, directory) == 0 || !DirectoryExists(earlier)) return;
+    FilePathList entries = LoadDirectoryFiles(earlier);
+    for (unsigned int i = 0; i < entries.count; i++) {
+        const char *name = GetFileName(entries.paths[i]);
+        char target[CONTENT_PATH_CAP];
+        bool named = (size_t)snprintf(target, sizeof(target), "%s/%s", directory, name) < sizeof(target);
+        if (!named || strcmp(name, CONTENT_LAUNCHER_ENTRY) == 0) continue;
+        if (FileExists(target) || DirectoryExists(target)) continue;
+        if (!PlatformMoveEntry(entries.paths[i], target))
+            TraceLog(LOG_WARNING, "Content: could not adopt %s (code %ld)", entries.paths[i], PlatformLastFailure());
+    }
+    UnloadDirectoryFiles(entries);
 }
 
 static bool ContentEnterInstallDirectory(char *directory, size_t capacity) {
-    return ContentInstallDirectory(directory, capacity) && ContentMakeDirectories(directory) &&
-           ChangeDirectory(directory);
+    if (!ContentInstallDirectory(directory, capacity) || !ContentMakeDirectories(directory)) return false;
+    char earlier[CONTENT_PATH_CAP];
+    if (ContentLauncherDirectory(earlier, sizeof(earlier))) ContentAdoptEarlierInstall(earlier, directory);
+    return ChangeDirectory(directory);
 }
 
 static bool ContentRelativePathSafe(const char *path) {
@@ -174,18 +209,28 @@ static bool ContentFileMatches(const char *path, const ContentPack *pack) {
     return ContentFileDigest(path, &size, hex) && size == pack->size && strcmp(hex, pack->sha256) == 0;
 }
 
+static ContentError ContentWriteFailure(const char *step, const char *path) {
+    ContentError error = PlatformDiskFull() ? CONTENT_ERROR_DISK_FULL : CONTENT_ERROR_DISK;
+    TraceLog(LOG_WARNING, "Content: could not %s %s (code %ld)", step, path, PlatformLastFailure());
+    return error;
+}
+
+static ContentError ContentWriteThrough(const char *staging, const char *path, const void *data, size_t size) {
+    if (!ContentMakeParents(path)) return ContentWriteFailure("make folders for", path);
+    FILE *file = fopen(staging, "wb");
+    if (!file) return ContentWriteFailure("create", staging);
+    ContentError error = fwrite(data, 1, size, file) == size ? CONTENT_ERROR_NONE : ContentWriteFailure("fill", path);
+    if (fclose(file) != 0 && error == CONTENT_ERROR_NONE) error = ContentWriteFailure("finish", path);
+    if (error == CONTENT_ERROR_NONE && !PlatformReplaceFile(staging, path)) error = ContentWriteFailure("place", path);
+    if (error != CONTENT_ERROR_NONE) remove(staging);
+    return error;
+}
+
 static bool ContentWriteFile(const char *path, const void *data, size_t size) {
     char partial[CONTENT_PATH_CAP];
     if ((size_t)snprintf(partial, sizeof(partial), "%s%s", path, CONTENT_PARTIAL_SUFFIX) >= sizeof(partial))
         return false;
-    if (!ContentMakeParents(path)) return false;
-    FILE *file = fopen(partial, "wb");
-    if (!file) return false;
-    bool written = fwrite(data, 1, size, file) == size;
-    if (fclose(file) != 0) written = false;
-    if (written && PlatformReplaceFile(partial, path)) return true;
-    remove(partial);
-    return false;
+    return ContentWriteThrough(partial, path, data, size) == CONTENT_ERROR_NONE;
 }
 
 static cJSON *ContentLoadJson(const char *path) {
@@ -278,6 +323,8 @@ static ContentError ContentDownloadError(PlatformDownloadResult result) {
             return CONTENT_ERROR_SERVER;
         case PLATFORM_DOWNLOAD_FILE_ERROR:
             return CONTENT_ERROR_DISK;
+        case PLATFORM_DOWNLOAD_DISK_FULL:
+            return CONTENT_ERROR_DISK_FULL;
         case PLATFORM_DOWNLOAD_CANCELLED:
             return CONTENT_ERROR_CANCELLED;
         case PLATFORM_DOWNLOAD_NETWORK_ERROR:
@@ -347,7 +394,7 @@ static ContentError ContentExtractPack(const char *path, cJSON **installed) {
             error = CONTENT_ERROR_CORRUPT;
             break;
         }
-        if (!ContentWriteFile(entry->name, data, size)) error = CONTENT_ERROR_DISK;
+        error = ContentWriteThrough(CONTENT_UNPACKING_PATH, entry->name, data, size);
         MemFree(data);
         cJSON_AddItemToArray(files, cJSON_CreateString(entry->name));
     }
@@ -373,12 +420,13 @@ static cJSON *ContentStateLoad(void) {
     return state;
 }
 
-static bool ContentStateSave(cJSON *state) {
+static ContentError ContentStateSave(cJSON *state) {
     char *text = cJSON_PrintUnformatted(state);
-    if (!text) return false;
-    bool saved = ContentWriteFile(CONTENT_STATE_PATH, text, strlen(text));
+    if (!text) return CONTENT_ERROR_DISK;
+    ContentError error =
+        ContentWriteThrough(CONTENT_STATE_PATH CONTENT_PARTIAL_SUFFIX, CONTENT_STATE_PATH, text, strlen(text));
     cJSON_free(text);
-    return saved;
+    return error;
 }
 
 static cJSON *ContentStateFind(cJSON *state, const char *name) {
@@ -483,7 +531,7 @@ static ContentError ContentInstallPack(
     remove(path);
     if (error != CONTENT_ERROR_NONE) return error;
     ContentStateRecord(state, pack, files);
-    return ContentStateSave(state) ? CONTENT_ERROR_NONE : CONTENT_ERROR_DISK;
+    return ContentStateSave(state);
 }
 
 static ContentError
@@ -517,7 +565,7 @@ ContentApplyManifest(ContentUpdate *update, ContentProgress *progress, cJSON *st
     cJSON_AddStringToObject(state, "version", manifest->version);
     cJSON_DeleteItemFromObjectCaseSensitive(state, "format");
     cJSON_AddNumberToObject(state, "format", manifest->format);
-    return ContentStateSave(state) ? CONTENT_ERROR_NONE : CONTENT_ERROR_DISK;
+    return ContentStateSave(state);
 }
 
 static const char *ContentErrorName(ContentError error) {
@@ -538,6 +586,8 @@ static const char *ContentErrorName(ContentError error) {
             return "damaged pack";
         case CONTENT_ERROR_DISK:
             return "disk write failed";
+        case CONTENT_ERROR_DISK_FULL:
+            return "disk full";
         case CONTENT_ERROR_CANCELLED:
             return "cancelled";
     }

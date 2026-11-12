@@ -16,6 +16,7 @@ typedef enum {
     PLATFORM_DOWNLOAD_NETWORK_ERROR,
     PLATFORM_DOWNLOAD_SERVER_ERROR,
     PLATFORM_DOWNLOAD_FILE_ERROR,
+    PLATFORM_DOWNLOAD_DISK_FULL,
     PLATFORM_DOWNLOAD_CANCELLED,
 } PlatformDownloadResult;
 
@@ -46,7 +47,12 @@ PlatformDownloadResult PlatformDownload(
     const char *url, const char *path, bool resume, PlatformDownloadProgress progress, void *context
 );
 bool PlatformUserDataDirectory(const char *app_name, char *out, size_t capacity);
+bool PlatformCompactDataDirectory(const char *compact_name, char *out, size_t capacity);
 bool PlatformMakeDirectory(const char *path);
+bool PlatformMoveEntry(const char *source, const char *target);
+bool PlatformDiskFull(void);
+long PlatformLastFailure(void);
+void PlatformKeepLog(const char *path);
 bool PlatformPreferredLanguage(char *out, size_t capacity);
 int PlatformFallbackFonts(char paths[][PLATFORM_FONT_PATH_CAP], int capacity);
 bool PlatformMakeExecutable(const char *path);

@@ -2,6 +2,7 @@
 #include "raymath.h"
 #include "rlgl.h"
 #include <ctype.h>
+#include <errno.h>
 #include <math.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -15,6 +16,7 @@
 #include "client_version.h"
 
 #define APP_NAME "Heroes of Dragon Age"
+#define APP_COMPACT_NAME "HoDA"
 
 #ifndef HOD_CACHE
 #define HOD_CACHE "client-additional-data/"

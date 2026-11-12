@@ -111,7 +111,7 @@ static ContentAlert ContentAlertFor(ContentError error) {
         case CONTENT_ERROR_OFFLINE:
         case CONTENT_ERROR_DOWNLOAD_UNAVAILABLE:
             return (ContentAlert){"CONNECTION_ERROR_TITLE", "CONNECTION_ERROR_MESSAGE", "CONNECTION_ERROR_TRY_AGAIN"};
-        case CONTENT_ERROR_DISK:
+        case CONTENT_ERROR_DISK_FULL:
             return (ContentAlert){
                 "ERROR_INSUFFICIENT_DEVICE_STORAGE_TITLE",
                 "ERROR_INSUFFICIENT_DEVICE_STORAGE",
@@ -129,6 +129,7 @@ static ContentAlert ContentAlertFor(ContentError error) {
         case CONTENT_ERROR_NOT_CONFIGURED:
         case CONTENT_ERROR_SERVER:
         case CONTENT_ERROR_CORRUPT:
+        case CONTENT_ERROR_DISK:
         case CONTENT_ERROR_CANCELLED:
             break;
     }
@@ -359,7 +360,10 @@ static ContentScreenChoice ContentScreenDraw(ContentScreen *screen, const Conten
 
 static bool ContentScreenStart(ContentScreen *screen, ContentUpdate *update) {
     screen->failure_seen = false;
-    if (!screen->entered) screen->entered = ContentEnterInstallDirectory(screen->directory, sizeof(screen->directory));
+    if (!screen->entered) {
+        screen->entered = ContentEnterInstallDirectory(screen->directory, sizeof(screen->directory));
+        if (screen->entered) PlatformKeepLog(CONTENT_LOG_FILE);
+    }
     if (!screen->entered) return false;
     ContentArtLoadWhenInstalled(&screen->art);
     ContentUpdateStart(update, ContentBaseUrl());
