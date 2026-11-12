@@ -752,7 +752,7 @@ static int BalanceSquadMeanBudgetShare(const Balance *b, const BattleRoster *squ
 }
 
 static void BalancePrintSquadNames(const BattleRoster *squad) {
-    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) printf("%s%s", slot ? ", " : " ", squad->chars[slot].name);
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) printf("%s%s", slot ? "; " : " ", squad->chars[slot].name);
     printf("\n");
 }
 
@@ -1246,7 +1246,7 @@ static void BalancePrintMetaSquads(const BalancePool *pool, const BalanceOptions
     }
     qsort(ranked, (size_t)pool->meta.count, sizeof(ranked[0]), BalanceRankedByShare);
     printf(
-        "\nMeta after %d rounds: %d of %d pooled squads carry %.0f%% or more. It wins %.1f%% against the reference "
+        "\nMeta after round %d: %d of %d pooled squads carry %.0f%% or more. It wins %.1f%% against the reference "
         "pool, and no pooled squad wins more than %.1f%% against it.\n",
         o->adversarial_rounds,
         BalanceMetaShownSquads(pool),
