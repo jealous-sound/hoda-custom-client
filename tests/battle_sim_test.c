@@ -4,6 +4,8 @@
 
 #include <assert.h>
 
+#include "squad_meta.h"
+
 static HomeSquadUnit PooledTestUnit(const char *path) {
     HomeSquadUnit unit = {.active = true, .phase = 7, .frame_time = 3.0f};
     StrCopy(unit.path, sizeof(unit.path), path);
@@ -2194,6 +2196,49 @@ static void TestStatBudgetTableLoads(void) {
     const StatBudget *budget = StatBudgetEnsure();
     assert(budget->budget > 0 && budget->giant_budget_pct >= 100);
     assert(budget->pattern_power_cost_pct[TARGET_ALL] >= budget->pattern_power_cost_pct[TARGET_ONE]);
+}
+
+#define TEST_SQUAD_META_SQUADS 3
+#define TEST_SQUAD_META_WEIGHT_TOLERANCE 0.03
+
+static SquadMeta test_squad_meta;
+
+static void TestSquadMetaSolveCycle(float first_beats_second, float second_beats_third, float third_beats_first) {
+    memset(&test_squad_meta, 0, sizeof(test_squad_meta));
+    for (int squad = 0; squad < TEST_SQUAD_META_SQUADS; squad++) SquadMetaAdd(&test_squad_meta);
+    SquadMetaRecord(&test_squad_meta, 0, 1, first_beats_second);
+    SquadMetaRecord(&test_squad_meta, 1, 2, second_beats_third);
+    SquadMetaRecord(&test_squad_meta, 2, 0, third_beats_first);
+    SquadMetaSolve(&test_squad_meta);
+}
+
+static bool TestSquadMetaWeighs(int squad, double weight) {
+    return fabs(test_squad_meta.weight[squad] - weight) < TEST_SQUAD_META_WEIGHT_TOLERANCE;
+}
+
+static void TestSquadMetaSplitsEvenlyWhenEverySquadHasAnEqualCounter(void) {
+    TestSquadMetaSolveCycle(1.0f, 1.0f, 1.0f);
+    assert(TestSquadMetaWeighs(0, 1.0 / 3.0) && TestSquadMetaWeighs(1, 1.0 / 3.0) && TestSquadMetaWeighs(2, 1.0 / 3.0));
+    assert(SquadMetaBestWinShare(&test_squad_meta) <= SQUAD_META_EVEN_SHARE + SQUAD_META_SOLVER_TOLERANCE);
+}
+
+static void TestSquadMetaLeansOnTheCounterOfTheMostLopsidedMatchup(void) {
+    TestSquadMetaSolveCycle(0.9f, 0.6f, 0.6f);
+    assert(TestSquadMetaWeighs(0, 1.0 / 6.0) && TestSquadMetaWeighs(1, 1.0 / 6.0) && TestSquadMetaWeighs(2, 2.0 / 3.0));
+    assert(SquadMetaBestWinShare(&test_squad_meta) <= SQUAD_META_EVEN_SHARE + SQUAD_META_SOLVER_TOLERANCE);
+}
+
+static void TestSquadMetaSettlesOnASquadNothingBeats(void) {
+    TestSquadMetaSolveCycle(0.8f, 0.5f, 0.3f);
+    assert(TestSquadMetaWeighs(0, 1.0) && TestSquadMetaWeighs(1, 0.0) && TestSquadMetaWeighs(2, 0.0));
+}
+
+static void TestSquadMetaWeighsEvenlyOverTheFirstSquadsOnly(void) {
+    TestSquadMetaSolveCycle(1.0f, 1.0f, 1.0f);
+    SquadMetaWeighEvenly(&test_squad_meta, 2);
+    assert(test_squad_meta.weight[0] == 0.5 && test_squad_meta.weight[1] == 0.5 && test_squad_meta.weight[2] == 0.0);
+    assert(fabs(SquadMetaWinShare(&test_squad_meta, 2) - 0.5) < 1e-9);
+    assert(fabs(SquadMetaWinShare(&test_squad_meta, 0) - 0.75) < 1e-9);
 }
 
 static void TestCustomHeroesInheritTheirBaseHeroData(void) {
@@ -8013,6 +8058,10 @@ int main(void) {
     TestStatBudgetCapsEventBuffs();
     TestStatBudgetOnTheEnemyRosterLevelsBothSides();
     TestStatBudgetTableLoads();
+    TestSquadMetaSplitsEvenlyWhenEverySquadHasAnEqualCounter();
+    TestSquadMetaLeansOnTheCounterOfTheMostLopsidedMatchup();
+    TestSquadMetaSettlesOnASquadNothingBeats();
+    TestSquadMetaWeighsEvenlyOverTheFirstSquadsOnly();
     TestCustomHeroesInheritTheirBaseHeroData();
     TestBattlesGrantTheirXpToEverySquadHero();
     TestFxPresetLiveEmitterSizes();

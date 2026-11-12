@@ -116,6 +116,19 @@ minimum client version on the backend.
   prints win rates by class. `--holdout` uses squads and peers the calibration never saw, `--stacks` fields four
   copies, `--squad-report` fights the reference squads against each other and `--search 3000` climbs to the strongest
   squad it can find per faction.
+- `./tests/balance_check --adversarial 8` measures what the reference squads cannot: how far a squad built to win
+  gets. Each round it climbs, by single swaps and seat changes, to the squads that best beat the current meta, one
+  climb from the strongest pooled squad and one from a random squad for every faction and for squads across
+  factions, in parallel. It adds them to the pool and solves the meta again: the mix of pooled squads that no pooled
+  squad beats. Round 1's meta is the reference pool, so its row is how hard the ladder's squads can be farmed. The
+  report ends on the meta's squads, its faction shares and its most fielded heroes; a level game has a wide meta
+  with every faction in it. It changes no table. `--swaps N` sets the length of a climb and `--unique` forbids
+  copies of a hero.
+- `./tests/balance_check --adversarial 2 --swaps 1000 --calibrate 40`, run after the seat calibration, rewrites the
+  handicaps against that meta. It runs 40 passes of the search and carries the squads it found from pass to pass.
+  Each pass lowers a hero's handicap by its share of the meta and lets it recover toward the handicap it started
+  with, so a hero pays for the squads it wins in rather than for its average squad. The table written is the mean
+  of the last half of the passes.
 - A new hero: `./tests/balance_check --calibrate 12 --hero UNIT_ID` settles its handicap against the existing table,
   and `./tests/balance_check --hero UNIT_ID` exits non-zero while it wins outside 45-55%.
 - Every squad in `squad_pool` carries a `strength`: its wins per 10000 battles against the rest of the pool, attacking
