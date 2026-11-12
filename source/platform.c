@@ -32,6 +32,7 @@
 #define PLATFORM_HTTP_PARTIAL_CONTENT 206
 #define PLATFORM_HTTP_RANGE_NOT_SATISFIABLE 416
 #define PLATFORM_APP_DATA_ENV "APPDATA"
+#define PLATFORM_LOCAL_APP_DATA_ENV "LOCALAPPDATA"
 #define PLATFORM_WINDOWS_DIR_ENV "WINDIR"
 #define PLATFORM_WINDOWS_DIR_DEFAULT "C:\\Windows"
 #define PLATFORM_PATH_CAP 1024
@@ -47,6 +48,23 @@ bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size) {
 
 bool PlatformReplaceFile(const char *source, const char *target) {
     return MoveFileExA(source, target, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
+}
+
+bool PlatformMoveEntry(const char *source, const char *target) {
+    return MoveFileExA(source, target, MOVEFILE_COPY_ALLOWED) != 0;
+}
+
+bool PlatformDiskFull(void) {
+    DWORD error = GetLastError();
+    return errno == ENOSPC || error == ERROR_DISK_FULL || error == ERROR_HANDLE_DISK_FULL;
+}
+
+long PlatformLastFailure(void) {
+    return (long)GetLastError();
+}
+
+void PlatformKeepLog(const char *path) {
+    if (freopen(path, "w", stdout)) setvbuf(stdout, NULL, _IONBF, 0);
 }
 
 int PlatformProcessorCount(void) {
@@ -90,7 +108,7 @@ static PlatformDownloadResult PlatformReceiveBody(
             break;
         }
         if (fwrite(buffer, 1, read, file) != read) {
-            result = PLATFORM_DOWNLOAD_FILE_ERROR;
+            result = PlatformDiskFull() ? PLATFORM_DOWNLOAD_DISK_FULL : PLATFORM_DOWNLOAD_FILE_ERROR;
             break;
         }
         written += read;
@@ -317,6 +335,13 @@ bool PlatformUserDataDirectory(const char *app_name, char *out, size_t capacity)
     return length > 0 && (size_t)length < capacity;
 }
 
+bool PlatformCompactDataDirectory(const char *compact_name, char *out, size_t capacity) {
+    const char *base = getenv(PLATFORM_LOCAL_APP_DATA_ENV);
+    if (!base || !base[0]) return false;
+    int length = snprintf(out, capacity, "%s/%s", base, compact_name);
+    return length > 0 && (size_t)length < capacity;
+}
+
 bool PlatformMakeDirectory(const char *path) {
     return _mkdir(path) == 0 || errno == EEXIST;
 }
@@ -452,6 +477,7 @@ typedef struct {
     void *context;
     bool cancelled;
     bool write_failed;
+    bool disk_full;
 } PlatformTransferState;
 
 static PlatformCurl platform_curl;
@@ -486,6 +512,7 @@ static size_t PlatformTransferWrite(char *data, size_t size, size_t count, void 
     size_t length = size * count;
     if (fwrite(data, 1, length, transfer->file) == length) return length;
     transfer->write_failed = true;
+    transfer->disk_full = PlatformDiskFull();
     return 0;
 }
 
@@ -549,6 +576,7 @@ static PlatformDownloadResult PlatformTransfer(
     if (fclose(transfer.file) != 0) transfer.write_failed = true;
 
     if (transfer.cancelled) return PLATFORM_DOWNLOAD_CANCELLED;
+    if (transfer.disk_full) return PLATFORM_DOWNLOAD_DISK_FULL;
     if (transfer.write_failed) return PLATFORM_DOWNLOAD_FILE_ERROR;
     if (code == CURLE_OK) return PLATFORM_DOWNLOAD_OK;
     if (offset > 0 && PlatformResumeRejected(code, status)) *resume_rejected = true;
@@ -681,8 +709,31 @@ bool PlatformUserDataDirectory(const char *app_name, char *out, size_t capacity)
     return length > 0 && (size_t)length < capacity;
 }
 
+bool PlatformCompactDataDirectory(const char *compact_name, char *out, size_t capacity) {
+    (void)compact_name;
+    (void)out;
+    (void)capacity;
+    return false;
+}
+
 bool PlatformMakeDirectory(const char *path) {
     return mkdir(path, PLATFORM_DIRECTORY_MODE) == 0 || errno == EEXIST;
+}
+
+bool PlatformMoveEntry(const char *source, const char *target) {
+    return rename(source, target) == 0;
+}
+
+bool PlatformDiskFull(void) {
+    return errno == ENOSPC || errno == EDQUOT;
+}
+
+long PlatformLastFailure(void) {
+    return (long)errno;
+}
+
+void PlatformKeepLog(const char *path) {
+    (void)path;
 }
 
 #ifdef __APPLE__
