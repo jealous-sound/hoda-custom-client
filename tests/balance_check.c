@@ -28,6 +28,9 @@
     "random squad, each of N swaps (default 2000). It prints the squads, factions and heroes the meta ends on.\n"      \
     "--nudge fights each hero with its own handicap raised by PCT percent, to show how steep the win rate is.\n"       \
     "--calibrate moves the handicaps toward an even win rate for ROUNDS rounds and writes them back.\n"                \
+    "With --adversarial it instead runs ROUNDS passes of that search, keeping the squads found, and each pass "        \
+    "lowers\n"                                                                                                         \
+    "a hero's handicap by its share of the meta and lets it recover toward the handicap it started with.\n"            \
     "--hero limits the run to that hero and fails when it ends outside the band."
 #define BALANCE_HERO_CAPACITY STAT_BUDGET_HERO_CAPACITY
 #define BALANCE_SQUAD_CAPACITY 64
@@ -74,7 +77,15 @@
 #define BALANCE_CLIMB_TARGET_COUNT (BALANCE_FACTION_COUNT + 1)
 #define BALANCE_CLIMBS_PER_TARGET 2
 #define BALANCE_CLIMB_COUNT (BALANCE_CLIMB_TARGET_COUNT * BALANCE_CLIMBS_PER_TARGET)
-#define BALANCE_ADVERSARIAL_ROUND_LIMIT ((SQUAD_META_CAPACITY - BALANCE_SQUAD_CAPACITY) / BALANCE_CLIMB_COUNT)
+#define BALANCE_KEPT_SQUAD_CAPACITY 96
+#define BALANCE_JOB_CAPACITY 16
+#define BALANCE_PAYOFF_JOB_COUNT 12
+#define BALANCE_PAYOFF_ROWS_PER_JOB ((SQUAD_META_CAPACITY + BALANCE_PAYOFF_JOB_COUNT - 1) / BALANCE_PAYOFF_JOB_COUNT)
+#define BALANCE_KEPT_ROUND -1
+#define BALANCE_ADVERSARIAL_ROUND_LIMIT                                                                                \
+    ((SQUAD_META_CAPACITY - BALANCE_SQUAD_CAPACITY - BALANCE_KEPT_SQUAD_CAPACITY) / BALANCE_CLIMB_COUNT)
+#define BALANCE_DEMAND_GAIN 0.5
+#define BALANCE_DEMAND_RECOVERY 0.1
 #define BALANCE_ADVERSARIAL_SEED_BASE 900000
 #define BALANCE_PAYOFF_SEED_BASE 1100000
 #define BALANCE_PAYOFF_SEED_FACTOR 8
@@ -170,6 +181,24 @@ typedef struct {
     int index;
     double share;
 } BalanceRanked;
+
+typedef void (*BalanceJob)(void *context, int job, void *result);
+
+typedef struct {
+    Balance *b;
+    const BalanceOptions *o;
+    const BalancePool *pool;
+    int round;
+} BalanceClimbRun;
+
+typedef struct {
+    const BalancePool *pool;
+    int first;
+} BalancePayoffRun;
+
+typedef struct {
+    float win_share[BALANCE_PAYOFF_ROWS_PER_JOB][SQUAD_META_CAPACITY];
+} BalancePayoffRows;
 
 static float BalanceTallyPct(BalanceTally tally) {
     return tally.battles ? 100.0f * tally.wins / tally.battles : 0.0f;
@@ -929,20 +958,82 @@ static void BalanceSearch(Balance *b, const BalanceOptions *o) {
     BalancePrintFactionMatrix("Searched squads against each other, row against column", duels);
 }
 
-static void BalancePoolFight(BalancePool *pool, int squad, int rival) {
+#ifdef _WIN32
+static void BalanceRunJobs(BalanceJob run, void *context, int jobs, void *results, size_t result_size) {
+    for (int job = 0; job < jobs; job++) run(context, job, (char *)results + job * result_size);
+}
+#else
+static bool BalanceReadWhole(int reader, void *out, size_t size) {
+    size_t received = 0;
+    while (received < size) {
+        ssize_t part = read(reader, (char *)out + received, size - received);
+        if (part <= 0) return false;
+        received += (size_t)part;
+    }
+    return true;
+}
+
+static void BalanceRunJobs(BalanceJob run, void *context, int jobs, void *results, size_t result_size) {
+    int readers[BALANCE_JOB_CAPACITY];
+    pid_t workers[BALANCE_JOB_CAPACITY];
+    fflush(stdout);
+    for (int job = 0; job < jobs; job++) {
+        void *result = (char *)results + job * result_size;
+        int ends[2];
+        if (pipe(ends) != 0) TraceLog(LOG_FATAL, "Balance: no pipe for job %d", job);
+        workers[job] = fork();
+        if (workers[job] < 0) TraceLog(LOG_FATAL, "Balance: could not start job %d", job);
+        if (workers[job] == 0) {
+            close(ends[0]);
+            run(context, job, result);
+            _exit(write(ends[1], result, result_size) == (ssize_t)result_size ? 0 : 1);
+        }
+        close(ends[1]);
+        readers[job] = ends[0];
+    }
+    for (int job = 0; job < jobs; job++) {
+        bool reported = BalanceReadWhole(readers[job], (char *)results + job * result_size, result_size);
+        close(readers[job]);
+        waitpid(workers[job], NULL, 0);
+        if (!reported) TraceLog(LOG_FATAL, "Balance: job %d did not report", job);
+    }
+}
+#endif
+
+static float BalancePoolFight(const BalancePool *pool, int squad, int rival) {
     int wins = 0;
     for (int seed = 1; seed <= pool->payoff_seeds; seed++) {
         unsigned battle_seed = BalanceSeed(squad, rival, BALANCE_PAYOFF_SEED_BASE + seed);
         wins += BalanceWinsFromBothSides(&pool->squads[squad], &pool->squads[rival], battle_seed);
     }
-    SquadMetaRecord(&pool->meta, squad, rival, (float)wins / (float)(BALANCE_SIDES * pool->payoff_seeds));
+    return (float)wins / (float)(BALANCE_SIDES * pool->payoff_seeds);
+}
+
+static void BalancePayoffJob(void *context, int job, void *result) {
+    const BalancePayoffRun *run = context;
+    BalancePayoffRows *rows = result;
+    int row = 0;
+    for (int squad = run->first + job; squad < run->pool->meta.count; squad += BALANCE_PAYOFF_JOB_COUNT, row++)
+        for (int rival = 0; rival < squad; rival++)
+            rows->win_share[row][rival] = BalancePoolFight(run->pool, squad, rival);
+}
+
+static void BalancePoolFightFrom(BalancePool *pool, int first) {
+    static BalancePayoffRows rows[BALANCE_PAYOFF_JOB_COUNT];
+    BalancePayoffRun run = {.pool = pool, .first = first};
+    BalanceRunJobs(BalancePayoffJob, &run, BALANCE_PAYOFF_JOB_COUNT, rows, sizeof(rows[0]));
+    for (int job = 0; job < BALANCE_PAYOFF_JOB_COUNT; job++) {
+        int row = 0;
+        for (int squad = first + job; squad < pool->meta.count; squad += BALANCE_PAYOFF_JOB_COUNT, row++)
+            for (int rival = 0; rival < squad; rival++)
+                SquadMetaRecord(&pool->meta, squad, rival, rows[job].win_share[row][rival]);
+    }
 }
 
 static int BalancePoolAdd(BalancePool *pool, const BattleRoster *roster, int round) {
     int squad = SquadMetaAdd(&pool->meta);
     BalanceRosterCopy(&pool->squads[squad], roster);
     pool->found_in_round[squad] = round;
-    for (int rival = 0; rival < squad; rival++) BalancePoolFight(pool, squad, rival);
     return squad;
 }
 
@@ -967,6 +1058,13 @@ static double BalancePoolReferenceShare(const BalancePool *pool, int squad) {
     for (int reference = 0; reference < pool->reference_count; reference++)
         share += pool->meta.win_share[squad][reference];
     return share / pool->reference_count;
+}
+
+static double BalanceMetaReferenceShare(const BalancePool *pool) {
+    double share = 0.0;
+    for (int squad = 0; squad < pool->meta.count; squad++)
+        share += pool->meta.weight[squad] * BalancePoolReferenceShare(pool, squad);
+    return share;
 }
 
 static int BalanceRankedByShare(const void *a, const void *b) {
@@ -1130,49 +1228,10 @@ static void BalanceClimb(
     found->win_share = best_share;
 }
 
-#ifdef _WIN32
-static void
-BalanceRunClimbs(Balance *b, const BalanceOptions *o, const BalancePool *pool, int round, BalanceClimbResult *found) {
-    for (int climb = 0; climb < BALANCE_CLIMB_COUNT; climb++) BalanceClimb(b, o, pool, round, climb, &found[climb]);
+static void BalanceClimbJob(void *context, int job, void *result) {
+    const BalanceClimbRun *run = context;
+    BalanceClimb(run->b, run->o, run->pool, run->round, job, result);
 }
-#else
-static bool BalanceReadWhole(int reader, void *out, size_t size) {
-    size_t received = 0;
-    while (received < size) {
-        ssize_t part = read(reader, (char *)out + received, size - received);
-        if (part <= 0) return false;
-        received += (size_t)part;
-    }
-    return true;
-}
-
-static void
-BalanceRunClimbs(Balance *b, const BalanceOptions *o, const BalancePool *pool, int round, BalanceClimbResult *found) {
-    int readers[BALANCE_CLIMB_COUNT];
-    pid_t workers[BALANCE_CLIMB_COUNT];
-    fflush(stdout);
-    for (int climb = 0; climb < BALANCE_CLIMB_COUNT; climb++) {
-        int ends[2];
-        if (pipe(ends) != 0) TraceLog(LOG_FATAL, "Balance: no pipe for climb %d", climb);
-        workers[climb] = fork();
-        if (workers[climb] < 0) TraceLog(LOG_FATAL, "Balance: could not start climb %d", climb);
-        if (workers[climb] == 0) {
-            close(ends[0]);
-            BalanceClimb(b, o, pool, round, climb, &found[climb]);
-            bool sent = write(ends[1], &found[climb], sizeof(found[climb])) == (ssize_t)sizeof(found[climb]);
-            _exit(sent ? 0 : 1);
-        }
-        close(ends[1]);
-        readers[climb] = ends[0];
-    }
-    for (int climb = 0; climb < BALANCE_CLIMB_COUNT; climb++) {
-        bool reported = BalanceReadWhole(readers[climb], &found[climb], sizeof(found[climb]));
-        close(readers[climb]);
-        waitpid(workers[climb], NULL, 0);
-        if (!reported) TraceLog(LOG_FATAL, "Balance: climb %d did not report a squad", climb);
-    }
-}
-#endif
 
 static int BalanceMetaShownSquads(const BalancePool *pool) {
     int shown = 0;
@@ -1181,23 +1240,34 @@ static int BalanceMetaShownSquads(const BalancePool *pool) {
     return shown;
 }
 
-static void BalanceAdversarialRound(Balance *b, const BalanceOptions *o, BalancePool *pool, int round) {
+static void BalancePoolSearch(Balance *b, const BalanceOptions *o, BalancePool *pool, int round, double *best) {
     static BalanceClimbResult found[BALANCE_CLIMB_COUNT];
     static BattleRoster admitted;
-    double best[BALANCE_CLIMB_TARGET_COUNT];
-    int meta_squads = BalanceMetaShownSquads(pool);
+    int admitted_as[BALANCE_CLIMB_COUNT], pooled = pool->meta.count;
+    BalanceClimbRun run = {.b = b, .o = o, .pool = pool, .round = round};
     BalancePoolPickRivals(pool, o->seeds * pool->reference_count);
-    BalanceRunClimbs(b, o, pool, round, found);
-    for (int target = 0; target < BALANCE_CLIMB_TARGET_COUNT; target++) best[target] = BALANCE_NO_WIN_SHARE;
+    BalanceRunJobs(BalanceClimbJob, &run, BALANCE_CLIMB_COUNT, found, sizeof(found[0]));
     for (int climb = 0; climb < BALANCE_CLIMB_COUNT; climb++) {
+        admitted_as[climb] = BALANCE_NO_SQUAD;
         if (found[climb].win_share < 0.0f) continue;
         BalanceRosterFromClimb(b, &admitted, &found[climb]);
-        int squad = BalancePoolFind(pool, &admitted);
-        if (squad == BALANCE_NO_SQUAD) squad = BalancePoolAdd(pool, &admitted, round);
-        double share = SquadMetaWinShare(&pool->meta, squad);
+        admitted_as[climb] = BalancePoolFind(pool, &admitted);
+        if (admitted_as[climb] == BALANCE_NO_SQUAD) admitted_as[climb] = BalancePoolAdd(pool, &admitted, round);
+    }
+    BalancePoolFightFrom(pool, pooled);
+    for (int target = 0; target < BALANCE_CLIMB_TARGET_COUNT; target++) best[target] = BALANCE_NO_WIN_SHARE;
+    for (int climb = 0; climb < BALANCE_CLIMB_COUNT; climb++) {
+        if (admitted_as[climb] == BALANCE_NO_SQUAD) continue;
+        double share = SquadMetaWinShare(&pool->meta, admitted_as[climb]);
         double *target_best = &best[climb / BALANCE_CLIMBS_PER_TARGET];
         if (share > *target_best) *target_best = share;
     }
+}
+
+static void BalanceAdversarialRound(Balance *b, const BalanceOptions *o, BalancePool *pool, int round) {
+    double best[BALANCE_CLIMB_TARGET_COUNT];
+    int meta_squads = BalanceMetaShownSquads(pool);
+    BalancePoolSearch(b, o, pool, round, best);
     printf("%5d %12d", round, meta_squads);
     for (int target = 0; target < BALANCE_CLIMB_TARGET_COUNT; target++) {
         if (best[target] < 0.0)
@@ -1214,7 +1284,9 @@ static void BalancePrintMetaSquad(const BalancePool *pool, int squad) {
     printf(
         "  %5.1f%%  %-9s  %-6s  %5.1f%% ",
         100.0 * pool->meta.weight[squad],
-        round == BALANCE_REFERENCE_ROUND ? "reference" : TextFormat("round %d", round),
+        round == BALANCE_REFERENCE_ROUND ? "reference"
+        : round == BALANCE_KEPT_ROUND    ? "kept"
+                                         : TextFormat("round %d", round),
         BalanceFactionName(BalancePoolFactionIndex(pool, squad)),
         100.0 * BalancePoolReferenceShare(pool, squad)
     );
@@ -1239,11 +1311,9 @@ static void BalancePrintStrongestFound(const BalancePool *pool) {
 
 static void BalancePrintMetaSquads(const BalancePool *pool, const BalanceOptions *o) {
     static BalanceRanked ranked[SQUAD_META_CAPACITY];
-    double against_reference = 0.0, least = o->list_all ? 0.0 : BALANCE_META_SHOWN_WEIGHT;
-    for (int squad = 0; squad < pool->meta.count; squad++) {
+    double least = o->list_all ? 0.0 : BALANCE_META_SHOWN_WEIGHT;
+    for (int squad = 0; squad < pool->meta.count; squad++)
         ranked[squad] = (BalanceRanked){.index = squad, .share = pool->meta.weight[squad]};
-        against_reference += pool->meta.weight[squad] * BalancePoolReferenceShare(pool, squad);
-    }
     qsort(ranked, (size_t)pool->meta.count, sizeof(ranked[0]), BalanceRankedByShare);
     printf(
         "\nMeta after round %d: %d of %d pooled squads carry %.0f%% or more. It wins %.1f%% against the reference "
@@ -1252,7 +1322,7 @@ static void BalancePrintMetaSquads(const BalancePool *pool, const BalanceOptions
         BalanceMetaShownSquads(pool),
         pool->meta.count,
         100.0 * BALANCE_META_SHOWN_WEIGHT,
-        100.0 * against_reference,
+        100.0 * BalanceMetaReferenceShare(pool),
         100.0 * SquadMetaBestWinShare(&pool->meta)
     );
     printf("\nMeta squads (weight, found in, faction, win rate against the reference pool):\n");
@@ -1310,8 +1380,104 @@ static void BalancePrintMetaHeroes(const Balance *b, const BalanceOptions *o, co
     }
 }
 
-static void BalanceAdversarial(Balance *b, const BalanceOptions *o) {
-    static BalancePool pool;
+static void BalancePoolOpen(
+    const Balance *b, const BalanceOptions *o, BalancePool *pool, const BattleRoster *kept, int kept_count
+) {
+    pool->meta.count = 0;
+    pool->payoff_seeds = o->seeds * BALANCE_PAYOFF_SEED_FACTOR;
+    pool->reference_count = b->squad_count;
+    for (int q = 0; q < b->squad_count; q++) BalancePoolAdd(pool, &b->squads[q], BALANCE_REFERENCE_ROUND);
+    for (int i = 0; i < kept_count; i++) BalancePoolAdd(pool, &kept[i], BALANCE_KEPT_ROUND);
+    BalancePoolFightFrom(pool, 0);
+    SquadMetaWeighEvenly(&pool->meta, pool->reference_count);
+    if (kept_count) SquadMetaSolve(&pool->meta);
+}
+
+static int BalancePoolKeepFound(const BalancePool *pool, BattleRoster *kept) {
+    static BalanceRanked ranked[SQUAD_META_CAPACITY];
+    int found = 0, count = 0;
+    for (int squad = pool->reference_count; squad < pool->meta.count; squad++)
+        ranked[found++] = (BalanceRanked){.index = squad, .share = pool->meta.weight[squad]};
+    qsort(ranked, (size_t)found, sizeof(ranked[0]), BalanceRankedByShare);
+    while (count < found && count < BALANCE_KEPT_SQUAD_CAPACITY && ranked[count].share > 0.0) {
+        BalanceRosterCopy(&kept[count], &pool->squads[ranked[count].index]);
+        count++;
+    }
+    return count;
+}
+
+static int BalanceDemandStep(Balance *b, const BalancePool *pool, const int *settled, int *fielded, double *most) {
+    int lowered = 0;
+    *fielded = 0;
+    *most = 0.0;
+    for (int i = 0; i < b->hero_count; i++) {
+        double share = BalanceMetaHeroShare(pool, b->heroes[i].id);
+        int *pct = &b->budget.heroes[i].budget_pct;
+        double recovered = *pct * pow((double)settled[i] / *pct, BALANCE_DEMAND_RECOVERY);
+        int stepped = BalanceClampHandicap((float)(recovered * exp(-BALANCE_DEMAND_GAIN * share)));
+        lowered += stepped < *pct;
+        *fielded += share >= BALANCE_META_SHOWN_WEIGHT;
+        if (share > *most) *most = share;
+        *pct = stepped;
+    }
+    return lowered;
+}
+
+static void BalanceDemandPass(Balance *b, const BalanceOptions *o, BalancePool *pool, int pass, const int *settled) {
+    static BattleRoster kept[BALANCE_KEPT_SQUAD_CAPACITY];
+    static int kept_count;
+    double best[BALANCE_CLIMB_TARGET_COUNT], most = 0.0;
+    int fielded = 0;
+    BalancePoolOpen(b, o, pool, kept, kept_count);
+    for (int round = 1; round <= o->adversarial_rounds; round++) {
+        BalancePoolSearch(b, o, pool, round, best);
+        SquadMetaSolve(&pool->meta);
+    }
+    kept_count = BalancePoolKeepFound(pool, kept);
+    double against_reference = BalanceMetaReferenceShare(pool);
+    int meta_squads = BalanceMetaShownSquads(pool);
+    int lowered = BalanceDemandStep(b, pool, settled, &fielded, &most);
+    printf(
+        "%4d %12.1f%% %11d %11d %10.1f%% %7d\n",
+        pass,
+        100.0 * against_reference,
+        meta_squads,
+        fielded,
+        100.0 * most,
+        lowered
+    );
+    fflush(stdout);
+}
+
+static void BalanceDemandCalibrate(Balance *b, const BalanceOptions *o, BalancePool *pool) {
+    static int settled[BALANCE_HERO_CAPACITY];
+    for (int i = 0; i < b->hero_count; i++) settled[i] = b->budget.heroes[i].budget_pct;
+    printf(
+        "Calibration against the meta: %d passes of %d search rounds. Each pass lowers a hero's handicap by its "
+        "share of the meta\nand lets it recover toward the handicap it started with. The table written is the "
+        "mean of the last %d passes.\n",
+        o->calibrate_rounds,
+        o->adversarial_rounds,
+        o->calibrate_rounds - o->calibrate_rounds / 2
+    );
+    printf(
+        "%4s %13s %11s %11s %11s %7s\n", "pass", "vs reference", "meta squads", "meta heroes", "top hero", "lowered"
+    );
+    static double log_sum[BALANCE_HERO_CAPACITY];
+    int averaged_passes = o->calibrate_rounds - o->calibrate_rounds / 2;
+    for (int i = 0; i < b->hero_count; i++) log_sum[i] = 0.0;
+    for (int pass = 1; pass <= o->calibrate_rounds; pass++) {
+        BalanceDemandPass(b, o, pool, pass, settled);
+        if (pass <= o->calibrate_rounds - averaged_passes) continue;
+        for (int i = 0; i < b->hero_count; i++) log_sum[i] += log((double)b->budget.heroes[i].budget_pct);
+    }
+    for (int i = 0; i < b->hero_count; i++)
+        b->budget.heroes[i].budget_pct = BalanceClampHandicap((float)exp(log_sum[i] / averaged_passes));
+    BalanceWriteHandicaps(b);
+    printf("Balance: handicaps written to %s\n\n", STAT_BUDGET_HEROES_PATH);
+}
+
+static void BalanceAdversarial(Balance *b, const BalanceOptions *o, BalancePool *pool) {
     BalancePrintHeader(b, o);
     printf(
         "Adversarial search: %d rounds of %d climbs, %d swaps a climb, %s\n",
@@ -1320,10 +1486,7 @@ static void BalanceAdversarial(Balance *b, const BalanceOptions *o) {
         o->swaps,
         o->unique ? "one copy of a hero per squad" : "copies allowed"
     );
-    pool.payoff_seeds = o->seeds * BALANCE_PAYOFF_SEED_FACTOR;
-    pool.reference_count = b->squad_count;
-    for (int q = 0; q < b->squad_count; q++) BalancePoolAdd(&pool, &b->squads[q], BALANCE_REFERENCE_ROUND);
-    SquadMetaWeighEvenly(&pool.meta, pool.reference_count);
+    BalancePoolOpen(b, o, pool, NULL, 0);
     printf(
         "\nBest squad found each round against that round's meta, on fresh seeds. Round 1's meta is the reference "
         "pool.\n"
@@ -1332,13 +1495,13 @@ static void BalanceAdversarial(Balance *b, const BalanceOptions *o) {
     for (int target = 0; target < BALANCE_CLIMB_TARGET_COUNT; target++) printf("%8s", BalanceTargetName(target));
     printf("\n");
     for (int round = 1; round <= o->adversarial_rounds; round++) {
-        BalanceAdversarialRound(b, o, &pool, round);
-        SquadMetaSolve(&pool.meta);
+        BalanceAdversarialRound(b, o, pool, round);
+        SquadMetaSolve(&pool->meta);
     }
-    BalancePrintStrongestFound(&pool);
-    BalancePrintMetaSquads(&pool, o);
-    BalancePrintMetaFactions(&pool);
-    BalancePrintMetaHeroes(b, o, &pool);
+    BalancePrintStrongestFound(pool);
+    BalancePrintMetaSquads(pool, o);
+    BalancePrintMetaFactions(pool);
+    BalancePrintMetaHeroes(b, o, pool);
 }
 
 static int BalanceGate(const Balance *b, const BalanceOptions *o) {
@@ -1416,11 +1579,10 @@ static bool BalanceParseOptions(BalanceOptions *o, int argc, char **argv) {
         }
     }
     bool one_mode = o->stacks + o->squad_report + (o->search_tries > 0) + (o->adversarial_rounds > 0) <= 1;
-    bool calibration_fits =
-        !o->calibrate_rounds || (!o->raw && !o->holdout && one_mode && !o->stacks && !o->squad_report &&
-                                 !o->search_tries && !o->adversarial_rounds && !o->nudge_pct);
-    bool adversarial_fits =
-        o->adversarial_rounds >= 0 && o->adversarial_rounds <= BALANCE_ADVERSARIAL_ROUND_LIMIT && o->swaps > 0;
+    bool calibration_fits = !o->calibrate_rounds || (!o->raw && !o->holdout && one_mode && !o->stacks &&
+                                                     !o->squad_report && !o->search_tries && !o->nudge_pct);
+    bool adversarial_fits = o->adversarial_rounds >= 0 && o->adversarial_rounds <= BALANCE_ADVERSARIAL_ROUND_LIMIT &&
+                            o->swaps > 0 && !(o->adversarial_rounds && o->gated_count);
     return adversarial_fits && o->seeds > 0 && o->seeds <= BALANCE_SEED_CAPACITY && o->squads > 0 &&
            o->squads <= BALANCE_SQUAD_CAPACITY && o->band_low_pct <= o->band_high_pct && o->calibrate_rounds >= 0 &&
            calibration_fits && !(o->raw && o->neutral) && one_mode && o->search_tries >= 0 && o->nudge_pct > -100 &&
@@ -1451,7 +1613,9 @@ int main(int argc, char **argv) {
     } else if (options.search_tries) {
         BalanceSearch(b, &options);
     } else if (options.adversarial_rounds) {
-        BalanceAdversarial(b, &options);
+        static BalancePool pool;
+        if (options.calibrate_rounds) BalanceDemandCalibrate(b, &options, &pool);
+        BalanceAdversarial(b, &options, &pool);
     } else {
         if (options.calibrate_rounds) BalanceCalibrate(b, &options);
         BalanceFightHeroes(b, &options, seed_base);

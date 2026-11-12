@@ -123,6 +123,11 @@ minimum client version on the backend.
   report ends on the meta's squads, its faction shares and its most fielded heroes; a level game has a wide meta
   with every faction in it. It changes no table. `--swaps N` sets the length of a climb and `--unique` forbids
   copies of a hero.
+- `./tests/balance_check --adversarial 2 --swaps 1000 --calibrate 40`, run after the seat calibration, rewrites the
+  handicaps against that meta. It runs 40 passes of the search and carries the squads it found from pass to pass.
+  Each pass lowers a hero's handicap by its share of the meta and lets it recover toward the handicap it started
+  with, so a hero pays for the squads it wins in rather than for its average squad. The table written is the mean
+  of the last half of the passes.
 - A new hero: `./tests/balance_check --calibrate 12 --hero UNIT_ID` settles its handicap against the existing table,
   and `./tests/balance_check --hero UNIT_ID` exits non-zero while it wins outside 45-55%.
 
