@@ -111,7 +111,8 @@ ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(G
 	python3 tools/validate_intrinsic_passives.py
 	python3 tools/build_hero_pool.py --check
 	python3 tools/validate_localization.py
-	python3 -m unittest tests/test_release_manifest.py
+	python3 tools/validate_roster_levels.py
+	python3 -m unittest tests/test_release_manifest.py tests/test_roster_levels.py
 	./$(CONTENT_TEST_TARGET)
 	./$(UPDATE_TEST_TARGET)
 	./$(INSTALL_TEST_TARGET)
