@@ -40,6 +40,7 @@ typedef struct {
     char id[64];
     bool giant;
     bool consumable;
+    bool trimmed;
     unsigned faction_mask;
     bool has_tier[TIER_COUNT];
     int max_level[TIER_COUNT];
@@ -54,6 +55,7 @@ typedef struct {
     int character_count;
     BattleGameChanger changers[GOLDEN_CHANGER_CAPACITY];
     int changer_count;
+    bool trimmed_lead;
     cJSON *battles;
 } Golden;
 
@@ -97,6 +99,7 @@ static void GoldenLoadCharacters(Golden *g) {
         GoldenCharacter *entry = &g->characters[g->character_count++];
         StrCopy(entry->id, sizeof(entry->id), ch.id);
         entry->giant = ch.giant;
+        entry->trimmed = StatBudgetHeroPct(StatBudgetEnsure(), ch.id) != STAT_BUDGET_NEUTRAL_HERO_PCT;
         entry->faction_mask = SimFactionMask(ch.faction);
         for (int t = 0; t < TIER_COUNT; t++) {
             entry->has_tier[t] = ch.has_tier[t];
@@ -137,12 +140,13 @@ static Tier GoldenTier(Golden *g, const GoldenCharacter *ch) {
     return tiers[GoldenRange(g, 0, count - 1)];
 }
 
-static GoldenCharacter *GoldenPick(Golden *g, bool giant, bool player_side, const bool *taken) {
+static GoldenCharacter *GoldenPickAmong(Golden *g, bool giant, bool player_side, const bool *taken, bool trimmed_only) {
     GoldenCharacter *best = NULL;
     int ties = 0;
     for (int i = 0; i < g->character_count; i++) {
         GoldenCharacter *ch = &g->characters[i];
         if (ch->giant != giant || taken[i] || (player_side && !ch->consumable)) continue;
+        if (trimmed_only && !ch->trimmed) continue;
         if (!best || ch->uses < best->uses) {
             best = ch;
             ties = 1;
@@ -151,6 +155,15 @@ static GoldenCharacter *GoldenPick(Golden *g, bool giant, bool player_side, cons
         }
     }
     return best;
+}
+
+static GoldenCharacter *GoldenPick(Golden *g, bool giant, bool player_side, const bool *taken) {
+    return GoldenPickAmong(g, giant, player_side, taken, false);
+}
+
+static GoldenCharacter *GoldenPickLead(Golden *g, bool player_side, const bool *taken) {
+    GoldenCharacter *trimmed = g->trimmed_lead ? GoldenPickAmong(g, false, player_side, taken, true) : NULL;
+    return trimmed ? trimmed : GoldenPick(g, false, player_side, taken);
 }
 
 static cJSON *GoldenUnit(Golden *g, GoldenCharacter *ch, int slot, bool player_side) {
@@ -188,8 +201,9 @@ static cJSON *GoldenSide(Golden *g, bool player_side) {
     cJSON *side = cJSON_CreateObject();
     cJSON *units = cJSON_AddArrayToObject(side, "units");
     for (int slot = 0; slot < GOLDEN_STANDARD_SLOTS; slot++) {
-        if (cJSON_GetArraySize(units) > 0 && GoldenChance(g, GOLDEN_EMPTY_SLOT_PCT)) continue;
-        GoldenCharacter *ch = GoldenPick(g, false, player_side, taken);
+        bool lead = cJSON_GetArraySize(units) == 0;
+        if (!lead && GoldenChance(g, GOLDEN_EMPTY_SLOT_PCT)) continue;
+        GoldenCharacter *ch = lead ? GoldenPickLead(g, player_side, taken) : GoldenPick(g, false, player_side, taken);
         if (!ch) continue;
         taken[ch - g->characters] = true;
         cJSON_AddItemToArray(units, GoldenUnit(g, ch, slot, player_side));
@@ -227,12 +241,14 @@ static void GoldenAddBattle(Golden *g, const char *name, cJSON *player, cJSON *e
 }
 
 static void GoldenBudgetedBattles(Golden *g) {
+    g->trimmed_lead = true;
     for (int battle = 0; battle < GOLDEN_BUDGETED_BATTLES; battle++) {
         cJSON *player = GoldenSide(g, true);
         cJSON *enemy = GoldenSide(g, false);
         cJSON *changer = GoldenChanger(g);
         GoldenAddBattleUnderRules(g, TextFormat("budgeted-%03d", battle), player, enemy, changer, true);
     }
+    g->trimmed_lead = false;
 }
 
 static cJSON *GoldenFortifyChildren(Golden *g) {
@@ -272,12 +288,14 @@ static void GoldenFortifiedBattles(Golden *g) {
 }
 
 static void GoldenBudgetedFortifiedBattles(Golden *g) {
+    g->trimmed_lead = true;
     for (int battle = 0; battle < GOLDEN_BUDGETED_FORTIFIED_BATTLES; battle++) {
         cJSON *player = GoldenFortifiedSide(g);
         cJSON *enemy = GoldenSide(g, false);
         cJSON *changer = GoldenChanger(g);
         GoldenAddBattleUnderRules(g, TextFormat("budgeted-fortified-%03d", battle), player, enemy, changer, true);
     }
+    g->trimmed_lead = false;
 }
 
 static cJSON *GoldenRivalSide(Golden *g) {
@@ -287,11 +305,13 @@ static cJSON *GoldenRivalSide(Golden *g) {
 }
 
 static void GoldenDuelBattles(Golden *g, const char *name_format, int count, bool stat_budget) {
+    g->trimmed_lead = stat_budget;
     for (int battle = 0; battle < count; battle++) {
         cJSON *player = GoldenFortifiedSide(g);
         cJSON *enemy = GoldenRivalSide(g);
         GoldenAddBattleUnderRules(g, TextFormat(name_format, battle), player, enemy, cJSON_CreateNull(), stat_budget);
     }
+    g->trimmed_lead = false;
 }
 
 static bool GoldenHeroesCovered(const Golden *g) {
