@@ -405,12 +405,13 @@ static float PvpEventViewDrawRichMiddle(Font font, const char *text, Rectangle a
 
 void PvpEventViewRuleText(char *out, size_t size, const PvpEvent *event) {
     const char *rule = NexusGameChangerText(&event->changer);
-    if (!PvpTableEnsure()->rules.stat_budget) {
+    const StatBudget *scaling = PvpTableEnsure()->rules.stat_budget ? StatBudgetIfScaling(StatBudgetEnsure()) : NULL;
+    if (!scaling) {
         StrCopy(out, size, rule);
         return;
     }
     char cap[PVP_EVENT_VIEW_RULE_CAPACITY];
-    LocFormatInt(cap, sizeof(cap), "HODA_PVP_EVENT_BUFF_CAP", StatBudgetEnsure()->changer_cap_pct);
+    LocFormatInt(cap, sizeof(cap), "HODA_PVP_EVENT_BUFF_CAP", scaling->changer_cap_pct);
     snprintf(out, size, "%s\n%s", rule, cap);
 }
 

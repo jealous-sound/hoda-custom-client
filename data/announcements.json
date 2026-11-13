@@ -1,11 +1,11 @@
 [
   {
-    "id": "pvp_progress",
-    "starts_at": 1794261600,
-    "ends_at": 1797120000,
-    "title": "HODA_NEWS_PVP_PROGRESS_TITLE",
-    "subtitle": "HODA_NEWS_PVP_PROGRESS_SUBTITLE",
-    "summary": "HODA_NEWS_PVP_PROGRESS_SUMMARY",
-    "message": "HODA_NEWS_PVP_PROGRESS_MESSAGE"
+    "id": "pvp_original",
+    "starts_at": 1794528000,
+    "ends_at": 1797379200,
+    "title": "HODA_NEWS_PVP_ORIGINAL_TITLE",
+    "subtitle": "HODA_NEWS_PVP_ORIGINAL_SUBTITLE",
+    "summary": "HODA_NEWS_PVP_ORIGINAL_SUMMARY",
+    "message": "HODA_NEWS_PVP_ORIGINAL_MESSAGE"
   }
 ]

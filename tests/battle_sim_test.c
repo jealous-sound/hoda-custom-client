@@ -1906,6 +1906,7 @@ static void TestCatalogStatGrowth(void) {
 }
 
 static const StatBudget TEST_STAT_BUDGET = {
+    .scale_stats = true,
     .budget = 3000,
     .health_per_power = 5,
     .giant_budget_pct = 150,
@@ -2307,6 +2308,79 @@ static void TestStatBudgetOnTheEnemyRosterLevelsBothSides(void) {
     BattleSimRunRosters(&sim, &player, &enemy, 1);
     assert(sim.units[0].start_power == 300 && sim.units[SQUAD_SLOT_COUNT].start_power == 200);
     assert(sim.units[0].max_health * 2000 == sim.units[SQUAD_SLOT_COUNT].max_health * 1500);
+}
+
+static void TestOriginalStatsRulesTrimOnlyTheListedHeroes(void) {
+    static StatBudget rules;
+    rules = TEST_STAT_BUDGET;
+    rules.scale_stats = false;
+    rules.hero_count = 1;
+    StrCopy(rules.heroes[0].id, sizeof(rules.heroes[0].id), "trimmed");
+    rules.heroes[0].budget_pct = 80;
+    assert(!StatBudgetIfScaling(&rules) && !StatBudgetIfScaling(NULL));
+    assert(StatBudgetIfScaling(&TEST_STAT_BUDGET) == &TEST_STAT_BUDGET);
+
+    static BattleRoster player, enemy;
+    static BattleSim sim;
+    memset(&player, 0, sizeof(player));
+    memset(&enemy, 0, sizeof(enemy));
+    TestCharacter(&player.chars[0], &player.abilities[0], "trimmed", "ABILITY_DAMAGE_ONE", TARGET_ONE, 105, 505);
+    TestCharacter(&enemy.chars[0], &enemy.abilities[0], "strong", "ABILITY_DAMAGE_ONE", TARGET_ONE, 2000, 20000);
+    player.present[0] = enemy.present[0] = true;
+
+    int power = 105, health = 505;
+    StatBudgetApply(&rules, &player.chars[0], &power, &health);
+    assert(power == 84 && health == 404);
+    power = 2000;
+    health = 20000;
+    StatBudgetApply(&rules, &enemy.chars[0], &power, &health);
+    assert(power == 2000 && health == 20000);
+
+    enemy.stat_budget = &rules;
+    BattleSimRunRosters(&sim, &player, &enemy, 1);
+    const SimUnit *trimmed = &sim.units[0], *strong = &sim.units[SQUAD_SLOT_COUNT];
+    assert(trimmed->start_power == 84 && strong->start_power == 2000);
+    assert(trimmed->potency_cut_pct == 20 && trimmed->passive_cut_pct == 20);
+    assert(strong->potency_cut_pct == 0 && strong->passive_cut_pct == 0);
+    assert(!sim.stat_budget);
+
+    PassiveEffect aura = {.value_pct = 50.0f};
+    assert(SimPassiveValuePct(strong, &aura) == 50.0f && SimPassiveValuePct(trimmed, &aura) == 40.0f);
+    rules.scale_stats = true;
+    assert(StatBudgetPassiveCutPct(&rules, &player.chars[0]) == 0);
+    assert(StatBudgetPotencyCutPct(&rules, &player.chars[0]) == 20);
+}
+
+static void TestOriginalStatsRulesLeaveRunesAurasAndEventBuffsAlone(void) {
+    static StatBudget rules;
+    rules = TEST_STAT_BUDGET;
+    rules.scale_stats = false;
+    int shield_rune = -1;
+    for (int def = 0; def < RuneCatalogCount() && shield_rune < 0; def++)
+        if (RuneDefAt(def)->buff == RUNE_BUFF_DAMAGE_SHIELD) shield_rune = def;
+    assert(shield_rune >= 0);
+
+    static Player player;
+    static BattleRoster roster;
+    static BattleSim original, plain;
+    memset(&player, 0, sizeof(player));
+    memset(&roster, 0, sizeof(roster));
+    for (int q = 0; q < PLAYER_MAX_SQUADS; q++)
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) player.squads[q][slot] = -1;
+    Ability ability = {0};
+    TestCharacter(&roster.chars[0], &ability, "UNIT_A", "ABILITY_DAMAGE", TARGET_ONE, 100, 500);
+    roster.chars[0].rarity = RARITY_LEGENDARY;
+    roster.present[0] = true;
+    roster.rune_defs[0] = shield_rune;
+    roster.rune_def_count = 1;
+
+    BattleSimSetup(&plain, &player, &roster);
+    roster.stat_budget = &rules;
+    BattleSimSetup(&original, &player, &roster);
+    assert(original.rune_bonus[1].damage_shield == RuneDefAt(shield_rune)->value);
+    assert(original.formation_bonus_pct[1] == plain.formation_bonus_pct[1]);
+    assert(original.units[SQUAD_SLOT_COUNT].power == plain.units[SQUAD_SLOT_COUNT].power);
+    assert(original.units[SQUAD_SLOT_COUNT].max_health == plain.units[SQUAD_SLOT_COUNT].max_health);
 }
 
 static void TestStatBudgetTableLoads(void) {
@@ -6387,7 +6461,8 @@ static void TestAnnouncementsAndTheEventBuffCapReadInEveryLanguage(void) {
     NewsLoadAnnouncements(&news, NEWS_ANNOUNCEMENTS_PATH);
     Loc saved = loc;
     PvpTableEnsure();
-    bool shipped = pvp_table.rules.stat_budget;
+    StatBudgetEnsure();
+    bool shipped = pvp_table.rules.stat_budget, shipped_scaling = stat_budget_table.scale_stats;
     const PvpEvent *event = &pvp_table.events.catalog[0];
     for (int language = 0; language < (int)(sizeof(languages) / sizeof(languages[0])); language++) {
         loc = (Loc){0};
@@ -6398,16 +6473,21 @@ static void TestAnnouncementsAndTheEventBuffCapReadInEveryLanguage(void) {
             assert(LocGet(text->summary)[0] && LocGet(text->message)[0]);
         }
         char plain[PVP_EVENT_VIEW_RULE_CAPACITY * 2], capped[PVP_EVENT_VIEW_RULE_CAPACITY * 2];
+        char original[PVP_EVENT_VIEW_RULE_CAPACITY * 2];
         pvp_table.rules.stat_budget = false;
         PvpEventViewRuleText(plain, sizeof(plain), event);
         pvp_table.rules.stat_budget = true;
+        stat_budget_table.scale_stats = false;
+        PvpEventViewRuleText(original, sizeof(original), event);
+        stat_budget_table.scale_stats = true;
         PvpEventViewRuleText(capped, sizeof(capped), event);
-        assert(!strcmp(plain, NexusGameChangerText(&event->changer)));
+        assert(!strcmp(plain, NexusGameChangerText(&event->changer)) && !strcmp(original, plain));
         assert(strlen(capped) > strlen(plain));
         assert(strstr(capped, TextFormat("+%d", StatBudgetEnsure()->changer_cap_pct)));
         LocUnload();
     }
     pvp_table.rules.stat_budget = shipped;
+    stat_budget_table.scale_stats = shipped_scaling;
     loc = saved;
 }
 
@@ -8797,6 +8877,8 @@ int main(void) {
     TestStatBudgetGivesEveryRarityTheSameFormationBonus();
     TestStatBudgetCapsEventBuffs();
     TestStatBudgetOnTheEnemyRosterLevelsBothSides();
+    TestOriginalStatsRulesTrimOnlyTheListedHeroes();
+    TestOriginalStatsRulesLeaveRunesAurasAndEventBuffsAlone();
     TestStatBudgetTableLoads();
     TestSquadMetaSplitsEvenlyWhenEverySquadHasAnEqualCounter();
     TestSquadMetaLeansOnTheCounterOfTheMostLopsidedMatchup();

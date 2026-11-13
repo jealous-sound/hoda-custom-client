@@ -13,7 +13,7 @@
     "usage: balance_check [--raw | --neutral] [--holdout] [--seeds N] [--squads N] [--band LOW HIGH] [--all]\n"        \
     "                     [--stacks | --squad-report | --progress | --search TRIES | --adversarial ROUNDS "            \
     "[--swaps N]] [--unique]\n"                                                                                        \
-    "                     [--nudge PCT] [--calibrate ROUNDS] [--hero UNIT_ID]...\n"                                    \
+    "                     [--nudge PCT] [--calibrate ROUNDS [--ceiling PCT]] [--hero UNIT_ID]...\n"                    \
     "Seats every hero in reference squads of its faction, fights the same squad with a peer in that seat from both\n"  \
     "sides and reports the win rate in the hero's better row. SEEDS is the number of peers per seat.\n"                \
     "--raw fights with catalog stats, --neutral with the stat budget but without the per-hero handicaps.\n"            \
@@ -32,6 +32,8 @@
     "random squad, each of N swaps (default 2000). It prints the squads, factions and heroes the meta ends on.\n"      \
     "--nudge fights each hero with its own handicap raised by PCT percent, to show how steep the win rate is.\n"       \
     "--calibrate moves the handicaps toward an even win rate for ROUNDS rounds and writes them back.\n"                \
+    "--ceiling lowers only the heroes that win more than PCT percent and writes just those, as the PvP trim list;\n"   \
+    "a trim smaller than 3 percent is left out.\n"                                                                     \
     "With --adversarial it instead runs ROUNDS passes of that search, keeping the squads found, and each pass "        \
     "lowers\n"                                                                                                         \
     "a hero's handicap by its share of the meta and lets it recover toward the handicap it started with.\n"            \
@@ -68,6 +70,7 @@
 #define BALANCE_CALIBRATION_GAIN 2.0f
 #define BALANCE_CALIBRATION_FIRST_STEP_LIMIT 0.4f
 #define BALANCE_CALIBRATION_STEP_LIMIT_DECAY 0.9f
+#define BALANCE_SMALLEST_TRIM_PCT 3
 #define BALANCE_SEARCH_SEED_BASE 700000
 #define BALANCE_SEARCH_RNG_SEED 0x5EA4C4EDu
 #define BALANCE_SEARCH_DUEL_SEED_FACTOR 50
@@ -140,6 +143,7 @@ typedef struct {
     int swaps;
     int nudge_pct;
     int calibrate_rounds;
+    int ceiling_pct;
     int seeds;
     int squads;
     float band_low_pct, band_high_pct;
@@ -574,23 +578,47 @@ static int BalanceFoughtCount(const Balance *b, const BalanceOptions *o) {
     return fought;
 }
 
-static void BalanceWriteHandicaps(const Balance *b) {
+static bool BalanceHandicapIsListed(const BalanceOptions *o, const StatBudgetHero *handicap) {
+    return !o->ceiling_pct || handicap->budget_pct <= STAT_BUDGET_NEUTRAL_HERO_PCT - BALANCE_SMALLEST_TRIM_PCT;
+}
+
+static void BalanceDropUnlistedHandicaps(Balance *b, const BalanceOptions *o) {
+    for (int i = 0; i < b->hero_count; i++) {
+        StatBudgetHero *handicap = &b->budget.heroes[i];
+        if (!BalanceHandicapIsListed(o, handicap)) handicap->budget_pct = STAT_BUDGET_NEUTRAL_HERO_PCT;
+    }
+}
+
+static void BalanceWriteHandicaps(const Balance *b, const BalanceOptions *o) {
     FILE *file = fopen(STAT_BUDGET_HEROES_PATH, "w");
     if (!file) TraceLog(LOG_FATAL, "Balance: could not write %s", STAT_BUDGET_HEROES_PATH);
     fprintf(file, "{\n \"version\": %d,\n", STAT_BUDGET_HEROES_VERSION);
-    fprintf(file, " \"heroes\": {\n");
+    fprintf(file, " \"heroes\": {");
+    const char *separator = "\n";
     for (int i = 0; i < b->hero_count; i++) {
         const StatBudgetHero *handicap = &b->budget.heroes[i];
-        fprintf(file, "  \"%s\": %d%s\n", handicap->id, handicap->budget_pct, i + 1 < b->hero_count ? "," : "");
+        if (!BalanceHandicapIsListed(o, handicap)) continue;
+        fprintf(file, "%s  \"%s\": %d", separator, handicap->id, handicap->budget_pct);
+        separator = ",\n";
     }
-    fprintf(file, " }\n}\n");
+    fprintf(file, "\n }\n}\n");
     fclose(file);
 }
 
-static float BalanceCalibrationStep(int round, float win_pct) {
+static float BalanceCalibrationTargetPct(const BalanceOptions *o) {
+    return o->ceiling_pct ? (float)o->ceiling_pct : BALANCE_EVEN_WIN_PCT;
+}
+
+static float BalanceCalibrationStep(int round, float win_pct, float target_pct) {
     float limit = BALANCE_CALIBRATION_FIRST_STEP_LIMIT * powf(BALANCE_CALIBRATION_STEP_LIMIT_DECAY, (float)(round - 1));
-    float step = BALANCE_CALIBRATION_GAIN * (win_pct - BALANCE_EVEN_WIN_PCT) / 100.0f;
+    float step = BALANCE_CALIBRATION_GAIN * (win_pct - target_pct) / 100.0f;
     return step > limit ? limit : step < -limit ? -limit : step;
+}
+
+static int BalanceCalibratedHandicap(const BalanceOptions *o, int round, int pct, float win_pct) {
+    int moved =
+        BalanceClampHandicap(pct * expf(-BalanceCalibrationStep(round, win_pct, BalanceCalibrationTargetPct(o))));
+    return o->ceiling_pct && moved > STAT_BUDGET_NEUTRAL_HERO_PCT ? STAT_BUDGET_NEUTRAL_HERO_PCT : moved;
 }
 
 static void BalanceCalibrate(Balance *b, const BalanceOptions *o) {
@@ -601,9 +629,9 @@ static void BalanceCalibrate(Balance *b, const BalanceOptions *o) {
             const BalanceHero *hero = &b->heroes[i];
             if (!BalanceIsGated(o, hero) || !BalanceFought(hero)) continue;
             int *pct = &b->budget.heroes[i].budget_pct;
-            *pct = BalanceClampHandicap(*pct * expf(-BalanceCalibrationStep(round, BalanceWinPct(hero))));
+            *pct = BalanceCalibratedHandicap(o, round, *pct, BalanceWinPct(hero));
         }
-        if (!o->gated_count) {
+        if (!o->gated_count && !o->ceiling_pct) {
             BalanceCentreHandicaps(b, false);
             BalanceCentreHandicaps(b, true);
         }
@@ -618,7 +646,8 @@ static void BalanceCalibrate(Balance *b, const BalanceOptions *o) {
         );
         fflush(stdout);
     }
-    BalanceWriteHandicaps(b);
+    BalanceDropUnlistedHandicaps(b, o);
+    BalanceWriteHandicaps(b, o);
     printf("Balance: handicaps written to %s\n\n", STAT_BUDGET_HEROES_PATH);
 }
 
@@ -686,9 +715,11 @@ static float BalanceLopsidedMatchupPct(const Balance *b) {
     return matchups ? 100.0f * lopsided / matchups : 0.0f;
 }
 
-static const char *BalanceStatsName(const BalanceOptions *o) {
+static const char *BalanceStatsName(const Balance *b, const BalanceOptions *o) {
     if (o->raw) return "catalog stats";
-    return o->neutral && !o->calibrate_rounds ? "stat budget without handicaps" : "stat budget with handicaps";
+    bool handicapped = !o->neutral || o->calibrate_rounds;
+    if (!b->budget.scale_stats) return handicapped ? "original stats with the PvP trims" : "original stats";
+    return handicapped ? "stat budget with handicaps" : "stat budget without handicaps";
 }
 
 static void BalancePrintHeader(const Balance *b, const BalanceOptions *o) {
@@ -698,7 +729,7 @@ static void BalancePrintHeader(const Balance *b, const BalanceOptions *o) {
         b->squad_count,
         o->holdout ? "holdout" : "reference",
         o->seeds,
-        BalanceStatsName(o),
+        BalanceStatsName(b, o),
         o->stacks ? ", four copies of each hero" : ""
     );
 }
@@ -1487,7 +1518,7 @@ static void BalanceDemandCalibrate(Balance *b, const BalanceOptions *o, BalanceP
     }
     for (int i = 0; i < b->hero_count; i++)
         b->budget.heroes[i].budget_pct = BalanceClampHandicap((float)exp(log_sum[i] / averaged_passes));
-    BalanceWriteHandicaps(b);
+    BalanceWriteHandicaps(b, o);
     printf("Balance: handicaps written to %s\n\n", STAT_BUDGET_HEROES_PATH);
 }
 
@@ -1802,10 +1833,10 @@ static void BalanceProgress(Balance *b, const BalanceOptions *o) {
         "Progress: %d reference squads, %d seeds, %s; each row fights a changed squad against itself from both sides\n",
         b->squad_count,
         o->seeds,
-        BalanceStatsName(o)
+        BalanceStatsName(b, o)
     );
     BalanceProgressGrowth(b);
-    BalanceProgressRarity(b);
+    if (b->budget.scale_stats) BalanceProgressRarity(b);
     BalanceProgressFortify(b);
     BalanceProgressRunes(b, o);
     BalanceProgressGear(b, o, false);
@@ -1875,6 +1906,8 @@ static bool BalanceParseOptions(BalanceOptions *o, int argc, char **argv) {
             o->nudge_pct = atoi(argv[++i]);
         } else if (!strcmp(argv[i], "--calibrate") && values_left >= 1) {
             o->calibrate_rounds = atoi(argv[++i]);
+        } else if (!strcmp(argv[i], "--ceiling") && values_left >= 1) {
+            o->ceiling_pct = atoi(argv[++i]);
         } else if (!strcmp(argv[i], "--seeds") && values_left >= 1) {
             o->seeds = atoi(argv[++i]);
         } else if (!strcmp(argv[i], "--squads") && values_left >= 1) {
@@ -1893,9 +1926,11 @@ static bool BalanceParseOptions(BalanceOptions *o, int argc, char **argv) {
     bool calibration_fits =
         !o->calibrate_rounds || (!o->raw && !o->holdout && one_mode && !o->stacks && !o->squad_report && !o->progress &&
                                  !o->search_tries && !o->nudge_pct);
+    bool ceiling_fits = o->ceiling_pct >= 0 && o->ceiling_pct < 100 &&
+                        (!o->ceiling_pct || (o->calibrate_rounds && !o->adversarial_rounds && !o->gated_count));
     bool adversarial_fits = o->adversarial_rounds >= 0 && o->adversarial_rounds <= BALANCE_ADVERSARIAL_ROUND_LIMIT &&
                             o->swaps > 0 && !(o->adversarial_rounds && o->gated_count);
-    return adversarial_fits && o->seeds > 0 && o->seeds <= BALANCE_SEED_CAPACITY && o->squads > 0 &&
+    return adversarial_fits && ceiling_fits && o->seeds > 0 && o->seeds <= BALANCE_SEED_CAPACITY && o->squads > 0 &&
            o->squads <= BALANCE_SQUAD_CAPACITY && o->band_low_pct <= o->band_high_pct && o->calibrate_rounds >= 0 &&
            calibration_fits && !(o->raw && o->neutral) && one_mode && o->search_tries >= 0 && o->nudge_pct > -100 &&
            !(o->raw && o->nudge_pct) && !(o->progress && (o->gated_count || o->nudge_pct));

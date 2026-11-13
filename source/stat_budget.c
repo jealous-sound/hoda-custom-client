@@ -1,5 +1,5 @@
 #define STAT_BUDGET_PATH "data/stat_budget.json"
-#define STAT_BUDGET_VERSION 5
+#define STAT_BUDGET_VERSION 6
 #define STAT_BUDGET_PATTERN_COUNT (TARGET_ALL + 1)
 #define STAT_BUDGET_RARITY_COUNT (RARITY_MYTHIC + 1)
 #define STAT_BUDGET_NEUTRAL_RARITY_PCT 100
@@ -48,6 +48,7 @@ typedef struct {
 } StatBudgetStats;
 
 typedef struct {
+    bool scale_stats;
     int budget;
     int health_per_power;
     int giant_budget_pct;
@@ -117,6 +118,8 @@ const StatBudget *StatBudgetEnsure(void) {
     cJSON *root = JsonLoadFile(STAT_BUDGET_PATH);
     if (JsonInt(root, "version") != STAT_BUDGET_VERSION)
         TraceLog(LOG_FATAL, "StatBudget: %s has version %d", STAT_BUDGET_PATH, JsonInt(root, "version"));
+    const cJSON *scale_stats = cJSON_GetObjectItemCaseSensitive(root, "scale_stats");
+    b->scale_stats = cJSON_IsTrue(scale_stats);
     b->budget = JsonInt(root, "budget");
     b->health_per_power = JsonInt(root, "health_per_power");
     b->giant_budget_pct = JsonInt(root, "giant_budget_pct");
@@ -134,11 +137,11 @@ const StatBudget *StatBudgetEnsure(void) {
     b->gear_trigger_cap_pct = JsonInt(root, "gear_trigger_cap_pct");
     const cJSON *patterns = cJSON_GetObjectItemCaseSensitive(root, "pattern_power_cost_pct");
     const cJSON *rarities = cJSON_GetObjectItemCaseSensitive(root, "rarity_budget_pct");
-    bool valid = b->budget > 0 && b->health_per_power > 0 && b->giant_budget_pct > 0 && b->aura_cost_pct >= 0 &&
-                 b->self_aura_share_pct >= 0 && b->aura_matching_allies >= 0 && b->aura_cap_pct > 0 &&
-                 b->gear_cap_pct >= 0 && b->formation_bonus_pct_per_hero >= 0 && b->changer_cap_pct >= 0 &&
-                 b->rune_stat_share_pct >= 0 && b->rune_initiative_share_pct >= 0 && b->flat_resist_per_pct > 0 &&
-                 b->gear_item_cap_pct >= 0 && b->gear_trigger_cap_pct >= 0;
+    bool valid = cJSON_IsBool(scale_stats) && b->budget > 0 && b->health_per_power > 0 && b->giant_budget_pct > 0 &&
+                 b->aura_cost_pct >= 0 && b->self_aura_share_pct >= 0 && b->aura_matching_allies >= 0 &&
+                 b->aura_cap_pct > 0 && b->gear_cap_pct >= 0 && b->formation_bonus_pct_per_hero >= 0 &&
+                 b->changer_cap_pct >= 0 && b->rune_stat_share_pct >= 0 && b->rune_initiative_share_pct >= 0 &&
+                 b->flat_resist_per_pct > 0 && b->gear_item_cap_pct >= 0 && b->gear_trigger_cap_pct >= 0;
     for (int pattern = 0; pattern < STAT_BUDGET_PATTERN_COUNT; pattern++) {
         b->pattern_power_cost_pct[pattern] = JsonInt(patterns, STAT_BUDGET_PATTERN_NAMES[pattern]);
         valid = valid && b->pattern_power_cost_pct[pattern] > 0;
@@ -186,9 +189,21 @@ static int StatBudgetAuraChargePct(const StatBudget *b, int aura_points) {
     return 100 + aura_points * b->aura_cost_pct / 100;
 }
 
+const StatBudget *StatBudgetIfScaling(const StatBudget *b) {
+    return b && b->scale_stats ? b : NULL;
+}
+
 int StatBudgetPotencyCutPct(const StatBudget *b, const Character *ch) {
     int hero_pct = StatBudgetHeroPct(b, ch->id);
     return hero_pct < STAT_BUDGET_NEUTRAL_HERO_PCT ? STAT_BUDGET_NEUTRAL_HERO_PCT - hero_pct : 0;
+}
+
+int StatBudgetPassiveCutPct(const StatBudget *b, const Character *ch) {
+    return b->scale_stats ? 0 : StatBudgetPotencyCutPct(b, ch);
+}
+
+static int StatBudgetTrimmedStat(int stat, int hero_pct) {
+    return (int)(((long long)stat * hero_pct + STAT_BUDGET_NEUTRAL_HERO_PCT / 2) / STAT_BUDGET_NEUTRAL_HERO_PCT);
 }
 
 float StatBudgetCappedAuraPct(const StatBudget *b, float aura_pct) {
@@ -284,6 +299,12 @@ void StatBudgetApplyKit(const StatBudget *b, const StatBudgetKit *kit, StatBudge
 }
 
 void StatBudgetApply(const StatBudget *b, const Character *ch, int *power, int *health) {
+    if (!b->scale_stats) {
+        int hero_pct = StatBudgetHeroPct(b, ch->id);
+        *power = StatBudgetTrimmedStat(*power, hero_pct);
+        *health = StatBudgetTrimmedStat(*health, hero_pct);
+        return;
+    }
     PassiveManifestEnsure();
     StatBudgetKit kit = {
         .giant = ch->giant,

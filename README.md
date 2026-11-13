@@ -103,72 +103,86 @@ server issues a seed, replays its Go port of `battle_sim.c`, and pays its own re
 
 ## Balance
 
-A battle whose enemy roster carries a stat budget balances the heroes against each other and keeps what a player
-has built. PvP opponents carry it while `battle.stat_budget` in `data/pvp_rules.json` is on (set in
-`tools/build_pvp_rules.py`), as it ships. The backend replays PvP under the same rules and the same switch, so change
-it in both through the data sync, with a client release and a raised minimum client version on the backend.
+PvP fights on the heroes' original stats: the numbers on a hero's card are the numbers in battle, and runes, gear,
+passives, formation bonuses and event buffs work as they do in PvE. A battle whose enemy roster carries the PvP rules
+reads them from `data/stat_budget.json` and `data/stat_budget_heroes.json`. PvP opponents carry them while
+`battle.stat_budget` in `data/pvp_rules.json` is on (set in `tools/build_pvp_rules.py`), as it ships. The backend
+replays PvP under the same rules and the same switches, so change them in both through the data sync, with a client
+release and a raised minimum client version on the backend.
 
-- `data/stat_budget.json` holds the rules: one stat cost per hero (`power x health_per_power + health`), a higher
-  power cost for attacks that hit a row, a column or everyone, and a budget cut for the health, power and bonus damage
-  a hero's passives hand out. The cost is priced on the hero fully grown: its top tier at that tier's level cap,
+- `scale_stats` in `data/stat_budget.json` picks the mode and ships `false`. The one PvP rule left is then the trim list
+  in `data/stat_budget_heroes.json`: a listed hero fights with that percent of its stats, and its status chances (stun,
+  slow, curse, levy, assassinate, mark), what its ability grants allies and what its passives give or take are cut by
+  the same share. A hero that is not listed fights as in PvE. The golden corpus records this mode and leads each side of
+  a battle under the rules with a trimmed hero.
+- `./tests/balance_check --calibrate 10 --ceiling 90 --squads 64 --seeds 12` rewrites the trim list. It lowers only the
+  heroes that win more than 90% against a peer in the same seat, until they stop, and writes only those. It starts from
+  the list in the file, so run it again after adding a hero that dominates, then run `make squad-strength` and
+  `make golden`.
+- With `scale_stats` set to `true` the stat budget scales every hero to one cost instead, and
+  `data/stat_budget_heroes.json` becomes a handicap for every hero. That mode is switched off as it ships; the unit
+  tests cover it and the golden corpus does not. The rules below, down to the handicap table, apply only to it.
+- `data/stat_budget.json` holds the scaling rules: one stat cost per hero (`power x health_per_power + health`), a
+  higher power cost for attacks that hit a row, a column or everyone, and a budget cut for the health, power and bonus
+  damage a hero's passives hand out. The cost is priced on the hero fully grown: its top tier at that tier's level cap,
   before ascension and fortify. The same scale is then applied to the stats the hero really has, so a hero missing
   levels or a tier fights with that share of its budget, and ascension levels and fortify add on top.
-  `rarity_budget_pct` is each rarity's share of the budget. Auras stop at `aura_cap_pct` and the health and power
-  that gear adds to a hero or takes from it stop at `gear_cap_pct`, each on its own. Every hero adds the same
-  formation bonus and event buffs stop at `changer_cap_pct`. Every rune works except the flat damage shield, which is
-  larger than a PvP hit.
-- The same file keeps one item or one rune from deciding a fight on its own. `data/gear.json` and `data/runes.json`
-  stay as the original game had them and a battle without the stat budget reads none of these keys, so PvE is
-  untouched. Runes of power, health and damage resist count `rune_stat_share_pct` percent of their value, and a rune
-  of speed moves initiative by `rune_initiative_share_pct` percent of a class step. Flat damage resist, sized for PvE
-  hits, becomes percent resist at `flat_resist_per_pct` points per percent. What one item hands out when the battle
-  starts (power, health, double damage chance, bonus damage and damage resist, summed over every hero it touches on
-  either side) is scaled down to `gear_item_cap_pct` percent of a hero. What one item's triggers give during the
-  battle (healing that restores missing health, power gained or drained, damage and the same stat points, each as a
-  share of the receiving hero's stat) is metered against `gear_trigger_cap_pct` percent of a hero: the firing that
-  would pass it is scaled to what is left, and later firings of those effects give nothing. Status resists,
-  initiative and targeting effects are not limited.
-- A new key in `data/stat_budget.json` raises `STAT_BUDGET_VERSION` in `source/stat_budget.c` and `statBudgetVersion`
-  in the backend, and a client built for the old version refuses the file. Release the client and raise the minimum
-  client version on the backend before publishing content that carries the new file.
-- `data/stat_budget_heroes.json` holds one handicap per hero, a percent of the budget from 33 to 300. Below 100 it
-  also cuts the hero's status chances (stun, slow, curse, levy, assassinate, mark) and what it grants allies by the
-  same share. `./tests/balance_check --calibrate 16 --neutral --squads 48 --seeds 6` rewrites the whole table.
-- `./tests/balance_check` seats every hero in reference squads of its faction against a peer in the same seat and
-  prints win rates by class. `--holdout` uses squads and peers the calibration never saw, `--stacks` fields four
-  copies, `--squad-report` fights the reference squads against each other and `--search 3000` climbs to the strongest
-  squad it can find per faction.
-- `./tests/balance_check --adversarial 8` measures what the reference squads cannot: how far a squad built to win
-  gets. Each round it climbs, by single swaps and seat changes, to the squads that best beat the current meta, one
-  climb from the strongest pooled squad and one from a random squad for every faction and for squads across
-  factions, in parallel. It adds them to the pool and solves the meta again: the mix of pooled squads that no pooled
-  squad beats. Round 1's meta is the reference pool, so its row is how hard the ladder's squads can be farmed. The
-  report ends on the meta's squads, its faction shares and its most fielded heroes; a level game has a wide meta
-  with every faction in it. It changes no table. `--swaps N` sets the length of a climb and `--unique` forbids
-  copies of a hero.
-- `./tests/balance_check --adversarial 2 --swaps 1000 --calibrate 40`, run after the seat calibration, rewrites the
-  handicaps against that meta. It runs 40 passes of the search and carries the squads it found from pass to pass.
-  Each pass lowers a hero's handicap by its share of the meta and lets it recover toward the handicap it started
-  with, so a hero pays for the squads it wins in rather than for its average squad. The table written is the mean
-  of the last half of the passes.
-- A new hero: `./tests/balance_check --calibrate 12 --hero UNIT_ID` settles its handicap against the existing table,
-  and `./tests/balance_check --hero UNIT_ID` exits non-zero while it wins outside 45-55%.
-- `./tests/balance_check --progress` measures what a player's work is worth: reference squads fight themselves with
-  one side changed, and the report lists the win rate of each growth stage, rarity, fortify load, rune and gear item.
-  Runes and items are ranked from the strongest with the battles behind each win rate and the mean win rate of each
-  rarity, which should rise with rarity; `--all` lists every rune and item instead of the first twelve. An item only
-  one reference squad can wear fights few battles, so read its row with `--seeds 16` and with that in mind. The
-  limits above aim at no single rune and no single item on one hero winning more than about 65%. Every other mode
-  judges fully grown heroes at one rarity share, so the handicaps stay a measure of the kit alone.
+  `rarity_budget_pct` is each rarity's share of the budget. Auras stop at `aura_cap_pct` and the health and power that
+  gear adds to a hero or takes from it stop at `gear_cap_pct`, each on its own. Every hero adds the same formation bonus
+  and event buffs stop at `changer_cap_pct`. Every rune works except the flat damage shield, which is larger than a PvP
+  hit.
+- The same file keeps one item or one rune from deciding a fight on its own. `data/gear.json` and `data/runes.json` stay
+  as the original game had them and a battle without the stat budget reads none of these keys, so PvE is untouched.
+  Runes of power, health and damage resist count `rune_stat_share_pct` percent of their value, and a rune of speed moves
+  initiative by `rune_initiative_share_pct` percent of a class step. Flat damage resist, sized for PvE hits, becomes
+  percent resist at `flat_resist_per_pct` points per percent. What one item hands out when the battle starts (power,
+  health, double damage chance, bonus damage and damage resist, summed over every hero it touches on either side) is
+  scaled down to `gear_item_cap_pct` percent of a hero. What one item's triggers give during the battle (healing that
+  restores missing health, power gained or drained, damage and the same stat points, each as a share of the receiving
+  hero's stat) is metered against `gear_trigger_cap_pct` percent of a hero: the firing that would pass it is scaled to
+  what is left, and later firings of those effects give nothing. Status resists, initiative and targeting effects are
+  not limited.
+- A new key in `data/stat_budget.json` raises `STAT_BUDGET_VERSION` in `source/stat_budget.c` and `statBudgetVersion` in
+  the backend, and a client built for the old version refuses the file. Release the client and raise the minimum client
+  version on the backend before publishing content that carries the new file.
+- Under scaling, `data/stat_budget_heroes.json` holds one handicap per hero, a percent of the budget from 33 to 300.
+  Below 100 it also cuts the hero's status chances and what it grants allies by the same share. `./tests/balance_check
+  --calibrate 16 --neutral --squads 48 --seeds 6` rewrites the whole table.
+- `./tests/balance_check` seats every hero in reference squads of its faction against a peer in the same seat and prints
+  win rates by class. `--holdout` uses squads and peers the calibration never saw, `--stacks` fields four copies,
+  `--squad-report` fights the reference squads against each other and `--search 3000` climbs to the strongest squad it
+  can find per faction.
+- `./tests/balance_check --adversarial 8` measures what the reference squads cannot: how far a squad built to win gets.
+  Each round it climbs, by single swaps and seat changes, to the squads that best beat the current meta, one climb from
+  the strongest pooled squad and one from a random squad for every faction and for squads across factions, in parallel.
+  It adds them to the pool and solves the meta again: the mix of pooled squads that no pooled squad beats. Round 1's
+  meta is the reference pool, so its row is how hard the ladder's squads can be farmed. The report ends on the meta's
+  squads, its faction shares and its most fielded heroes; a level game has a wide meta with every faction in it. It
+  changes no table. `--swaps N` sets the length of a climb and `--unique` forbids copies of a hero.
+- Under scaling, `./tests/balance_check --adversarial 2 --swaps 1000 --calibrate 40`, run after the seat calibration,
+  rewrites the handicaps against that meta. It runs 40 passes of the search and carries the squads it found from pass to
+  pass. Each pass lowers a hero's handicap by its share of the meta and lets it recover toward the handicap it started
+  with, so a hero pays for the squads it wins in rather than for its average squad. The table written is the mean of the
+  last half of the passes.
+- A new hero under scaling: `./tests/balance_check --calibrate 12 --hero UNIT_ID` settles its handicap against the
+  existing table, and `./tests/balance_check --hero UNIT_ID` exits non-zero while it wins outside 45-55%. On original
+  stats a new hero needs no entry unless it wins more than the ceiling.
+- `./tests/balance_check --progress` measures what a player's work is worth: reference squads fight themselves with one
+  side changed, and the report lists the win rate of each growth stage, rarity, fortify load, rune and gear item. Runes
+  and items are ranked from the strongest with the battles behind each win rate and the mean win rate of each rarity,
+  which should rise with rarity; `--all` lists every rune and item instead of the first twelve. An item only one
+  reference squad can wear fights few battles, so read its row with `--seeds 16` and with that in mind. The limits above
+  aim at no single rune and no single item on one hero winning more than about 65%. Every other mode judges fully grown
+  heroes at one rarity share, so the handicaps stay a measure of the kit alone.
 - Every squad in `squad_pool` carries a `strength`: its wins per 10000 battles against the rest of the pool, attacking
   and defending once against each, fielded as the ladder fields it. A bot's trophies pick its squads: a bot at zero
-  draws from the weakest squads and the top bot from the strongest, so opponents get harder as trophies rise,
-  whatever the player's level. Pooled squads fight at the tier and level of their PvE roster, and the three-hero
-  rosters are what a new account meets. `make squad-strength` measures them again after a change to the simulation, the
-  handicaps or the pool, and `./tests/pvp_squad_strength --report` prints the spread and the strength met at each
-  trophy count. The strengths hold for the `battle.stat_budget` switch they were measured under, so measure again
-  after flipping it. The pool keeps its order, with the three-hero squads after the rest, so a squad index stored in a
-  save or a pending match still names the same squad.
+  draws from the weakest squads and the top bot from the strongest, so opponents get harder as trophies rise, whatever
+  the player's level. Pooled squads fight at the tier and level of their PvE roster, and the three-hero rosters are what
+  a new account meets. `make squad-strength` measures them again after a change to the simulation, the handicaps or the
+  pool, and `./tests/pvp_squad_strength --report` prints the spread and the strength met at each trophy count. The
+  strengths hold for the `battle.stat_budget` switch they were measured under, so measure again after flipping it. The
+  pool keeps its order, with the three-hero squads after the rest, so a squad index stored in a save or a pending match
+  still names the same squad.
 
 ## Custom heroes
 

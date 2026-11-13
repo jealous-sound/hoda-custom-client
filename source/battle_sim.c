@@ -64,6 +64,7 @@ typedef struct {
     int max_health, health;
     int power, start_power;
     int potency_cut_pct;
+    int passive_cut_pct;
     float crit_pct;
     float damage_bonus_pct;
     int init_class;
@@ -808,7 +809,7 @@ static const AbilityRecipe *SimUnitRecipe(const SimUnit *u) {
     return &cut;
 }
 
-static void SimUnitsInit(SimUnit *units, int side, int slot, const Character *ch, const StatBudget *stat_budget) {
+static void SimUnitsInit(SimUnit *units, int side, int slot, const Character *ch, const StatBudget *hero_rules) {
     SimUnit *u = &units[side * SQUAD_SLOT_COUNT + slot];
     memset(u, 0, sizeof(*u));
     if (!ch) return;
@@ -819,9 +820,10 @@ static void SimUnitsInit(SimUnit *units, int side, int slot, const Character *ch
     u->slot = slot;
     u->power = CharacterStatPower(ch);
     u->max_health = CharacterStatHealth(ch);
-    if (stat_budget) {
-        StatBudgetApply(stat_budget, ch, &u->power, &u->max_health);
-        u->potency_cut_pct = StatBudgetPotencyCutPct(stat_budget, ch);
+    if (hero_rules) {
+        StatBudgetApply(hero_rules, ch, &u->power, &u->max_health);
+        u->potency_cut_pct = StatBudgetPotencyCutPct(hero_rules, ch);
+        u->passive_cut_pct = StatBudgetPassiveCutPct(hero_rules, ch);
     }
     u->start_power = u->power;
     u->crit_pct = (float)(ch->crit_chance > CONSUME_BASE_CRIT_CHANCE ? ch->crit_chance : CONSUME_BASE_CRIT_CHANCE);
@@ -1109,6 +1111,11 @@ static bool SimGearPrefersMatchedTarget(const SimUnit *attacker, const SimUnit *
     return false;
 }
 
+static float SimPassiveValuePct(const SimUnit *source, const PassiveEffect *effect) {
+    if (source->passive_cut_pct <= 0) return effect->value_pct;
+    return effect->value_pct * (float)(100 - source->passive_cut_pct) / 100.0f;
+}
+
 static void SimUnitsBattleStartPassives(SimUnit *units, const StatBudget *stat_budget) {
     float gear_health_pct[SIM_UNIT_COUNT] = {0};
     float gear_power_pct[SIM_UNIT_COUNT] = {0};
@@ -1139,7 +1146,7 @@ static void SimUnitsBattleStartPassives(SimUnit *units, const StatBudget *stat_b
                 SimUnit *recipient = &units[recipient_idx];
                 int multiplier = SimPassiveFilterMatchCount(&effect->recipient, source, recipient);
                 if (multiplier <= 0) continue;
-                float value = effect->value_pct * multiplier * composition_count;
+                float value = SimPassiveValuePct(source, effect) * multiplier * composition_count;
                 if (effect->stats & PASSIVE_STAT_HEALTH) health_pct[recipient_idx] += value;
                 if (effect->stats & PASSIVE_STAT_POWER) power_pct[recipient_idx] += value;
             }
@@ -1226,7 +1233,7 @@ static float SimPassiveBonusDamagePct(const BattleSim *s, const SimUnit *attacke
             int recipients = SimPassiveFilterMatchCount(&effect->recipient, source, attacker);
             if (recipients <= 0) continue;
             int targets = effect->has_target ? SimPassiveFilterMatchCount(&effect->target, source, target) : 1;
-            if (targets > 0) bonus += effect->value_pct * recipients * targets;
+            if (targets > 0) bonus += SimPassiveValuePct(source, effect) * recipients * targets;
         }
     }
     return bonus;
@@ -1434,7 +1441,8 @@ static void SimApplyEnemyDeathPassives(BattleSim *s, BattleSimAction *action, in
                 int recipient_multiplier = SimPassiveFilterMatchCount(&effect->recipient, source, recipient);
                 if (recipient_multiplier <= 0) continue;
                 int amount = (int)lroundf(
-                    recipient->max_health * (effect->value_pct * recipient_multiplier * target_multiplier / 100.0f)
+                    recipient->max_health *
+                    (SimPassiveValuePct(source, effect) * recipient_multiplier * target_multiplier / 100.0f)
                 );
                 SimRecordPassiveHeal(s, action, recipient_idx, amount);
             }
@@ -2170,10 +2178,15 @@ static BattleSimSide SimRosterSide(const BattleRoster *roster) {
 typedef struct {
     const BattleGameChanger *changer;
     const StatBudget *stat_budget;
+    const StatBudget *hero_rules;
 } BattleSimRules;
 
 static BattleSimRules SimRosterRules(const BattleRoster *enemy) {
-    return (BattleSimRules){.changer = enemy->game_changer, .stat_budget = enemy->stat_budget};
+    return (BattleSimRules){
+        .changer = enemy->game_changer,
+        .stat_budget = StatBudgetIfScaling(enemy->stat_budget),
+        .hero_rules = enemy->stat_budget,
+    };
 }
 
 static RuneBonus SimSideRuneBonus(const BattleSimSide *side, const StatBudget *stat_budget) {
@@ -2192,8 +2205,8 @@ static void SimUnitsSetup(
 ) {
     PassiveManifestEnsure();
     for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
-        SimUnitsInit(units, 0, slot, player->chars[slot], rules->stat_budget);
-        SimUnitsInit(units, 1, slot, enemy->chars[slot], rules->stat_budget);
+        SimUnitsInit(units, 0, slot, player->chars[slot], rules->hero_rules);
+        SimUnitsInit(units, 1, slot, enemy->chars[slot], rules->hero_rules);
     }
     SimUnitsBattleStartPassives(units, rules->stat_budget);
     SimUnitsFormationBonus(units, 0, &faction[0], &bonus_pct[0], rules->stat_budget);
