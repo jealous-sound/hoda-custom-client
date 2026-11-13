@@ -52,6 +52,7 @@ tests/battle_replay_golden
 tests/content_update_test
 tests/client_update_test
 tests/client_install_test
+tests/server_actions_test
 .wrangler/
 player_save.dat
 player_save.dat.tmp

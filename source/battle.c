@@ -3576,6 +3576,14 @@ static void BattleEnterLoadedRoster(Battle *b, const Player *player) {
     b->cam = b->cam_matchmaking;
 }
 
+void BattleSwapPlayerSquad(Battle *b, const Player *player) {
+    if (!b->squads_loaded) return;
+    BattleAudioCacheClear(b);
+    BattleSquadsDestroy(&b->squads);
+    BattleAudioBindSquads(b, player, &b->enemy_roster);
+    BattleSquadsLoad(&b->squads, player, &b->enemy_roster, HOD_CACHE "meshes", HOD_CACHE "char_pack");
+}
+
 void BattleEnterPvp(Battle *b, const Player *player, const PvpOpponent *opponent) {
     BattleExitNode(b);
     PvpOpponentRoster(&b->enemy_roster, opponent);
