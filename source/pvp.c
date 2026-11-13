@@ -147,6 +147,8 @@ typedef struct {
     char duel_id[PVP_DUEL_ID_CAP];
     char duel_name[PLAYER_NAME_CAPACITY];
     PvpSquadCell duel_cells[SQUAD_SLOT_COUNT];
+    bool duel_hero_builds;
+    BattleHeroBuild duel_builds[SQUAD_SLOT_COUNT];
 } PvpOpponent;
 
 #define PVP_RANK_PLAYER (-1)
@@ -521,13 +523,19 @@ PvpOpponentFromDuel(const char *id, const char *name, int level, int opponent_tr
     return o;
 }
 
-bool PvpOpponentAddDuelUnit(PvpOpponent *o, int slot, const char *id, Tier tier, int level) {
+bool PvpOpponentAddDuelUnit(
+    PvpOpponent *o, int slot, const char *id, Tier tier, int level, const BattleHeroBuild *build
+) {
     if (slot < 0 || slot >= SQUAD_SLOT_COUNT || !id[0]) return false;
     PvpSquadCell *cell = &o->duel_cells[slot];
     StrCopy(cell->id, sizeof(cell->id), id);
     cell->tier = tier;
     cell->level = level > 0 ? level : 1;
     cell->present = true;
+    if (build) {
+        o->duel_builds[slot] = *build;
+        o->duel_hero_builds = true;
+    }
     return true;
 }
 
@@ -546,15 +554,18 @@ void PvpOpponentRoster(BattleRoster *roster, const PvpOpponent *o) {
     cJSON *catalog_root = CharacterCatalogAddCustomHeroes(JsonLoadFile(PVP_CATALOG_PATH));
     cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
     const PvpSquadCell *cells = o->duel ? o->duel_cells : PvpTableEnsure()->squads[o->squad].cells;
+    roster->hero_builds = o->duel && o->duel_hero_builds;
     for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
         const PvpSquadCell *cell = &cells[slot];
         if (!cell->present) continue;
         cJSON *def = CatalogFindCharacter(catalog, cell->id);
         if (!def && o->duel) continue;
         if (!def) TraceLog(LOG_FATAL, "Pvp: unit %s is not in the catalog", cell->id);
-        CharacterParse(def, &roster->chars[slot], &roster->abilities[slot]);
-        roster->chars[slot].tier = cell->tier;
-        roster->chars[slot].level = cell->level;
+        Character *ch = &roster->chars[slot];
+        CharacterParse(def, ch, &roster->abilities[slot]);
+        ch->tier = cell->tier;
+        ch->level = cell->level;
+        if (roster->hero_builds && !BattleHeroBuildApply(ch, &o->duel_builds[slot])) continue;
         roster->present[slot] = true;
     }
     cJSON_Delete(catalog_root);

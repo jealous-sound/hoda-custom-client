@@ -2,6 +2,7 @@
 #define BATTLE_CHANGER_MAX_EFFECTS 4
 #define BATTLE_CHANGER_MAX_GROUPS 2
 #define BATTLE_CHANGER_MAX_UNITS 2
+#define BATTLE_HERO_BUILDS_FIELD "hero_builds"
 
 typedef struct {
     char groups[BATTLE_CHANGER_MAX_GROUPS][24];
@@ -19,14 +20,47 @@ typedef struct {
 } BattleGameChanger;
 
 typedef struct {
+    int consume_xp;
+    bool ascended;
+    short gear_defs[GEAR_SLOT_CAPACITY];
+    FortifyChild fortify[FORTIFY_SLOT_COUNT];
+} BattleHeroBuild;
+
+typedef struct {
     Character chars[SQUAD_SLOT_COUNT];
     Ability abilities[SQUAD_SLOT_COUNT];
     bool present[SQUAD_SLOT_COUNT];
+    bool hero_builds;
     const BattleGameChanger *game_changer;
     const StatBudget *stat_budget;
     int rune_defs[RUNE_SLOT_COUNT];
     int rune_def_count;
 } BattleRoster;
+
+bool BattleHeroBuildLoad(BattleHeroBuild *build, const cJSON *unit) {
+    memset(build, 0, sizeof(*build));
+    build->consume_xp = JsonInt(unit, "consume_xp");
+    build->ascended = JsonBool(unit, "ascended");
+    int slot = 0;
+    const cJSON *gear = NULL;
+    cJSON_ArrayForEach(gear, cJSON_GetObjectItemCaseSensitive(unit, "gear")) {
+        if (slot >= GEAR_SLOT_CAPACITY || !cJSON_IsString(gear)) return false;
+        int index = gear->valuestring[0] ? GearDefIndex(gear->valuestring) : -1;
+        if (gear->valuestring[0] && index < 0) return false;
+        build->gear_defs[slot++] = (short)(index + 1);
+    }
+    return FortifyChildrenParse(build->fortify, cJSON_GetObjectItemCaseSensitive(unit, "fortify"));
+}
+
+bool BattleHeroBuildApply(Character *ch, const BattleHeroBuild *build) {
+    if (!ConsumeCharacterHasProfile(ch)) return false;
+    if (build->ascended) GearApplyAscension(ch);
+    ch->consume_xp = build->consume_xp;
+    ConsumeNormalizeCharacter(ch);
+    memcpy(ch->gear.defs, build->gear_defs, sizeof(ch->gear.defs));
+    memcpy(ch->fortify, build->fortify, sizeof(ch->fortify));
+    return true;
+}
 
 static void
 BattleRosterLoad(BattleRoster *r, const char *rosters_path, const char *catalog_path, const char *map_id, int step) {

@@ -7,7 +7,7 @@ static const char *BattleReplayGearId(const Character *ch, int slot) {
     return def ? def->id : "";
 }
 
-static cJSON *BattleReplayUnitJson(const Character *ch, int slot, bool player_side) {
+static cJSON *BattleReplayUnitJson(const Character *ch, int slot, bool player_side, bool hero_build) {
     cJSON *unit = cJSON_CreateObject();
     if (!unit) return NULL;
     cJSON_AddNumberToObject(unit, "slot", slot);
@@ -15,7 +15,7 @@ static cJSON *BattleReplayUnitJson(const Character *ch, int slot, bool player_si
     cJSON_AddStringToObject(unit, "id", ch->id);
     cJSON_AddStringToObject(unit, "tier", TIER_NAMES[ch->tier]);
     cJSON_AddNumberToObject(unit, "level", ch->level);
-    if (!player_side) return unit;
+    if (!hero_build) return unit;
     cJSON_AddNumberToObject(unit, "consume_xp", ch->consume_xp);
     cJSON_AddBoolToObject(unit, "ascended", ch->ascended);
     cJSON *gear = cJSON_AddArrayToObject(unit, "gear");
@@ -26,7 +26,7 @@ static cJSON *BattleReplayUnitJson(const Character *ch, int slot, bool player_si
     return unit;
 }
 
-static cJSON *BattleReplaySideJson(const BattleSimSide *side, bool player_side) {
+static cJSON *BattleReplaySideJson(const BattleSimSide *side, bool player_side, bool hero_builds) {
     cJSON *json = cJSON_CreateObject();
     cJSON *units = cJSON_AddArrayToObject(json, "units");
     cJSON *runes = cJSON_AddArrayToObject(json, "runes");
@@ -34,23 +34,26 @@ static cJSON *BattleReplaySideJson(const BattleSimSide *side, bool player_side) 
         cJSON_Delete(json);
         return NULL;
     }
-    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
-        if (side->chars[slot]) cJSON_AddItemToArray(units, BattleReplayUnitJson(side->chars[slot], slot, player_side));
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        const Character *ch = side->chars[slot];
+        if (ch) cJSON_AddItemToArray(units, BattleReplayUnitJson(ch, slot, player_side, hero_builds));
+    }
     for (int i = 0; i < side->rune_def_count; i++) {
         const RuneDef *def = RuneDefAt(side->rune_defs[i]);
         if (def) cJSON_AddItemToArray(runes, cJSON_CreateString(def->id));
     }
+    if (hero_builds && !player_side) cJSON_AddBoolToObject(json, BATTLE_HERO_BUILDS_FIELD, true);
     return json;
 }
 
 cJSON *BattleReplayPlayerJson(const Player *player) {
     BattleSimSide side = SimPlayerSide(player);
-    return BattleReplaySideJson(&side, true);
+    return BattleReplaySideJson(&side, true, true);
 }
 
 cJSON *BattleReplayRosterJson(const BattleRoster *roster, bool player_side) {
     BattleSimSide side = SimRosterSide(roster);
-    return BattleReplaySideJson(&side, player_side);
+    return BattleReplaySideJson(&side, player_side, player_side || roster->hero_builds);
 }
 
 static cJSON *BattleReplayStrings(const char *first, int count, size_t stride) {
@@ -104,7 +107,8 @@ bool BattleReplayChangerLoad(BattleGameChanger *changer, const cJSON *json) {
     return true;
 }
 
-static bool BattleReplayUnitLoad(BattleRoster *roster, const cJSON *catalog, const cJSON *unit, bool player_side) {
+static bool
+BattleReplayUnitLoad(BattleRoster *roster, const cJSON *catalog, const cJSON *unit, bool player_side, bool hero_build) {
     int slot = JsonInt(unit, "slot");
     if (slot < 0 || slot >= SQUAD_SLOT_COUNT || roster->present[slot]) return false;
     const cJSON *def = CatalogFindCharacter(catalog, JsonStr(unit, "id"));
@@ -118,18 +122,10 @@ static bool BattleReplayUnitLoad(BattleRoster *roster, const cJSON *catalog, con
         const cJSON *instance_id = cJSON_GetObjectItemCaseSensitive(unit, "instance_id");
         ch->instance_id =
             cJSON_IsNumber(instance_id) && instance_id->valuedouble > 0 ? (uint64_t)instance_id->valuedouble : 0;
-        if (JsonBool(unit, "ascended")) GearApplyAscension(ch);
-        ch->consume_xp = JsonInt(unit, "consume_xp");
-        ConsumeNormalizeCharacter(ch);
-        int gear_slot = 0;
-        const cJSON *gear = NULL;
-        cJSON_ArrayForEach(gear, cJSON_GetObjectItemCaseSensitive(unit, "gear")) {
-            if (gear_slot >= GEAR_SLOT_CAPACITY || !cJSON_IsString(gear)) return false;
-            int index = gear->valuestring[0] ? GearDefIndex(gear->valuestring) : -1;
-            if (gear->valuestring[0] && index < 0) return false;
-            ch->gear.defs[gear_slot++] = (short)(index + 1);
-        }
-        if (!FortifyChildrenLoad(ch, cJSON_GetObjectItemCaseSensitive(unit, "fortify"))) return false;
+    }
+    if (hero_build) {
+        BattleHeroBuild build;
+        if (!BattleHeroBuildLoad(&build, unit) || !BattleHeroBuildApply(ch, &build)) return false;
     }
     roster->present[slot] = true;
     return true;
@@ -137,9 +133,10 @@ static bool BattleReplayUnitLoad(BattleRoster *roster, const cJSON *catalog, con
 
 bool BattleReplayRosterLoad(BattleRoster *roster, const cJSON *catalog, const cJSON *side, bool player_side) {
     memset(roster, 0, sizeof(*roster));
+    roster->hero_builds = player_side || JsonBool(side, BATTLE_HERO_BUILDS_FIELD);
     const cJSON *unit = NULL;
     cJSON_ArrayForEach(unit, cJSON_GetObjectItemCaseSensitive(side, "units")) {
-        if (!BattleReplayUnitLoad(roster, catalog, unit, player_side)) return false;
+        if (!BattleReplayUnitLoad(roster, catalog, unit, player_side, roster->hero_builds)) return false;
     }
     const cJSON *rune = NULL;
     cJSON_ArrayForEach(rune, cJSON_GetObjectItemCaseSensitive(side, "runes")) {

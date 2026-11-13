@@ -285,6 +285,7 @@ typedef struct {
     char id[GUILD_ID_CAP];
     char tier[8];
     int level;
+    BattleHeroBuild build;
 } GuildDuelUnit;
 
 typedef struct {
@@ -292,6 +293,7 @@ typedef struct {
     char name[PLAYER_NAME_CAPACITY];
     int level;
     int trophies;
+    bool hero_builds;
     GuildDuelUnit units[SQUAD_SLOT_COUNT];
     int unit_count;
     char runes[GUILD_DUEL_RUNE_CAP][GUILD_RUNE_ID_CAP];
@@ -834,14 +836,17 @@ static void GuildHandleDuel(Guild *g, const cJSON *json) {
     StrCopy(d->name, sizeof(d->name), JsonStr(json, "name"));
     d->level = JsonInt(json, "level");
     d->trophies = JsonInt(json, "trophies");
+    d->hero_builds = JsonBool(json, BATTLE_HERO_BUILDS_FIELD);
     const cJSON *item;
     cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive(json, "units")) {
         if (d->unit_count >= SQUAD_SLOT_COUNT) break;
-        GuildDuelUnit *unit = &d->units[d->unit_count++];
+        GuildDuelUnit *unit = &d->units[d->unit_count];
+        if (d->hero_builds && !BattleHeroBuildLoad(&unit->build, item)) continue;
         unit->slot = JsonInt(item, "slot");
         StrCopy(unit->id, sizeof(unit->id), JsonStr(item, "id"));
         StrCopy(unit->tier, sizeof(unit->tier), JsonStr(item, "tier"));
         unit->level = JsonInt(item, "level");
+        d->unit_count++;
     }
     cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive(json, "runes")) {
         if (d->rune_count >= GUILD_DUEL_RUNE_CAP || !cJSON_IsString(item)) continue;
