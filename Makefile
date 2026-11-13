@@ -26,6 +26,7 @@ CONTENT_TEST_TARGET = tests/content_update_test
 UPDATE_TEST_TARGET = tests/client_update_test
 INSTALL_TEST_TARGET = tests/client_install_test
 SERVER_ACTIONS_TEST_TARGET = tests/server_actions_test
+BUTTON_TEST_TARGET = tests/button_test
 BACKEND_DIR ?= ../hoda-custom-backend
 DIST_DIR ?= ../hoda-custom-dist
 DIST_BACKEND_URL ?=
@@ -123,7 +124,10 @@ $(INSTALL_TEST_TARGET): tests/client_install_test.c tests/zip_fixture.h $(DEPS) 
 $(SERVER_ACTIONS_TEST_TARGET): tests/server_actions_test.c $(DEPS) Makefile
 	$(CC) $(CFLAGS) tests/server_actions_test.c $(SUPPORT_SRC) -o $(SERVER_ACTIONS_TEST_TARGET) $(LDFLAGS) $(LIBS)
 
-ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(SERVER_ACTIONS_TEST_TARGET) $(GOLDEN_TARGET) $(STRENGTH_TARGET)
+$(BUTTON_TEST_TARGET): tests/button_test.c $(DEPS) Makefile
+	$(CC) $(CFLAGS) tests/button_test.c $(SUPPORT_SRC) -o $(BUTTON_TEST_TARGET) $(LDFLAGS) $(LIBS)
+
+ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(SERVER_ACTIONS_TEST_TARGET) $(BUTTON_TEST_TARGET) $(GOLDEN_TARGET) $(STRENGTH_TARGET)
 	python3 tools/validate_ability_recipes.py
 	python3 tools/validate_intrinsic_passives.py
 	python3 tools/build_hero_pool.py --check
@@ -134,6 +138,7 @@ ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(S
 	./$(UPDATE_TEST_TARGET)
 	./$(INSTALL_TEST_TARGET)
 	./$(SERVER_ACTIONS_TEST_TARGET)
+	./$(BUTTON_TEST_TARGET)
 	./$(GOLDEN_TARGET) --check $(GOLDEN_DIR)
 	./$(STRENGTH_TARGET) --check
 
@@ -172,7 +177,7 @@ content:
 	python3 tools/publish_content.py --bucket "$(CONTENT_BUCKET)" --content-url "$(CONTENT_URL)"
 
 clean:
-	rm -rf "$(APP_NAME).app" build $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(SERVER_ACTIONS_TEST_TARGET) $(GOLDEN_TARGET) $(BALANCE_TARGET) $(STRENGTH_TARGET)
+	rm -rf "$(APP_NAME).app" build $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(SERVER_ACTIONS_TEST_TARGET) $(BUTTON_TEST_TARGET) $(GOLDEN_TARGET) $(BALANCE_TARGET) $(STRENGTH_TARGET)
 
 format:
 	clang-format -i source/*.c
