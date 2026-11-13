@@ -227,6 +227,7 @@ typedef enum {
     GUILD_REQUEST_DUEL,
     GUILD_REQUEST_REPORT,
     GUILD_REQUEST_LADDER,
+    GUILD_REQUEST_EVENT_LADDER,
     GUILD_REQUEST_RIVAL,
 } GuildRequestKind;
 
@@ -848,9 +849,21 @@ static void GuildHandleDuel(Guild *g, const cJSON *json) {
     }
 }
 
+static bool GuildRequestListsALadder(GuildRequestKind kind) {
+    return kind == GUILD_REQUEST_LADDER || kind == GUILD_REQUEST_EVENT_LADDER;
+}
+
+static void GuildRequestLadderFrom(Guild *g, GuildRequestKind kind, const char *route) {
+    if (g->inflight == kind || GuildQueued(g, kind)) return;
+    GuildEnqueue(g, kind, "GET", route, NULL);
+}
+
 static void GuildRequestLadder(Guild *g) {
-    if (g->inflight == GUILD_REQUEST_LADDER || GuildQueued(g, GUILD_REQUEST_LADDER)) return;
-    GuildEnqueue(g, GUILD_REQUEST_LADDER, "GET", PVP_LADDER_ROUTE, NULL);
+    GuildRequestLadderFrom(g, GUILD_REQUEST_LADDER, PVP_LADDER_ROUTE);
+}
+
+static void GuildRequestEventLadder(Guild *g) {
+    GuildRequestLadderFrom(g, GUILD_REQUEST_EVENT_LADDER, PVP_EVENT_LADDER_ROUTE);
 }
 
 void GuildRequestRival(Guild *g, const char *player_id) {
@@ -1076,7 +1089,7 @@ static void GuildHandleAnswer(Guild *g, GuildRequestKind kind, int status, const
             GuildOnslaughtFailed(g);
             return;
         }
-        if (kind == GUILD_REQUEST_LADDER) return;
+        if (GuildRequestListsALadder(kind)) return;
         if (kind == GUILD_REQUEST_RIVAL) {
             g->rival = GUILD_RIVAL_UNAVAILABLE;
             return;
@@ -1115,6 +1128,9 @@ static void GuildHandleAnswer(Guild *g, GuildRequestKind kind, int status, const
         case GUILD_REQUEST_LADDER:
             PvpLadderAdopt(&pvp_ladder, json);
             return;
+        case GUILD_REQUEST_EVENT_LADDER:
+            PvpEventLadderAdopt(&pvp_event_ladder, json);
+            return;
         case GUILD_REQUEST_RIVAL:
             GuildHandleDuel(g, json);
             g->rival = g->duel.unit_count > 0 ? GUILD_RIVAL_READY : GUILD_RIVAL_UNAVAILABLE;
@@ -1150,7 +1166,7 @@ static void GuildPollInflight(Guild *g) {
         GuildOnslaughtFailed(g);
     } else if (kind == GUILD_REQUEST_RIVAL) {
         g->rival = GUILD_RIVAL_UNAVAILABLE;
-    } else if (kind != GUILD_REQUEST_LADDER) {
+    } else if (!GuildRequestListsALadder(kind)) {
         if (kind == GUILD_REQUEST_RECOMMENDED || kind == GUILD_REQUEST_SEARCH) g->list_ready = true;
         GuildPushResult(g, kind, GUILD_OUTCOME_OFFLINE, "");
     }
@@ -1196,7 +1212,9 @@ void GuildUpdate(Guild *g, Player *p) {
     GuildPollCreate(g, p);
     GuildPollClaim(g, p);
     GuildPollInflight(g);
+    PvpEventLadderRankResults(&pvp_event_ladder, &p->pvp);
     if (PvpLadderTakeRefresh(&pvp_ladder)) GuildRequestLadder(g);
+    if (PvpLadderTakeRefresh(&pvp_event_ladder.rivals)) GuildRequestEventLadder(g);
     double now = GetTime();
     bool engaged = GuildUnlocked(p) || GuildIsMember(g) || g->has_application;
     if (engaged && now >= g->next_state_at) GuildRefresh(g);

@@ -6516,6 +6516,129 @@ static void TestTheLadderIsFetchedOnlyWhenAScreenAsksOnline(void) {
     backend_state.enabled = backend_was_enabled;
 }
 
+#define TEST_EVENT_LADDER_CYCLE 7000
+#define TEST_EVENT_LADDER_BANNERS 500
+#define TEST_EVENT_LADDER_REPLY                                                                                        \
+    "{\"cycle\":7000,\"players\":[{\"id\":\"leader\",\"name\":\"Varric\",\"banners\":1000000},"                        \
+    "{\"id\":\"level\",\"name\":\"Isabela\",\"banners\":500},"                                                         \
+    "{\"id\":\"trailing\",\"name\":\"Merrill\",\"banners\":1}],"                                                       \
+    "\"results\":[{\"cycle\":6999,\"rank\":4},{\"cycle\":6997,\"rank\":9},{\"cycle\":6990,\"rank\":0}]}"
+
+static void TestEventLadderAdopt(PvpEventLadder *ladder, const char *reply_text) {
+    cJSON *reply = cJSON_Parse(reply_text);
+    assert(reply);
+    PvpEventLadderAdopt(ladder, reply);
+    cJSON_Delete(reply);
+}
+
+static void TestPvpEventLadderRanksRealPlayersAmongTheBots(void) {
+    static PvpEventLadder ladder_before;
+    ladder_before = pvp_event_ladder;
+    memset(&pvp_event_ladder, 0, sizeof(pvp_event_ladder));
+    long long cycle = TEST_EVENT_LADDER_CYCLE, elapsed = PvpTableEnsure()->events.duration_seconds / 2;
+    int banners = TEST_EVENT_LADDER_BANNERS;
+    int against_bots = PvpEventRankAt(banners, cycle, elapsed);
+    int next_event_against_bots = PvpEventRankAt(banners, cycle + 1, elapsed);
+
+    TestEventLadderAdopt(&pvp_event_ladder, TEST_EVENT_LADDER_REPLY);
+    assert(pvp_event_ladder.cycle == cycle && pvp_event_ladder.rivals.player_count == 3);
+    int only_the_leader_is_ahead = against_bots + 1;
+    assert(PvpEventRankAt(banners, cycle, elapsed) == only_the_leader_is_ahead);
+
+    static PvpRankEntry entries[PVP_LEADERBOARD_CAPACITY];
+    const PvpLadder *rivals = &pvp_event_ladder.rivals;
+    int count = PvpEventLadderBuild(&pvp_event_ladder, entries, banners, cycle, elapsed);
+    assert(count == PvpTableEnsure()->bot_count + 4);
+    for (int i = 1; i < count; i++) assert(entries[i - 1].trophies >= entries[i].trophies);
+    assert(entries[0].bot == PVP_RANK_RIVAL && !strcmp(PvpLadderEntryName(rivals, &entries[0]), "Varric"));
+    int mine = PvpLeaderboardRank(entries, count) - 1;
+    assert(mine + 1 == only_the_leader_is_ahead);
+    const PvpRankEntry *level_rival = &entries[mine + 1];
+    assert(level_rival->bot == PVP_RANK_RIVAL && !strcmp(PvpLadderEntryName(rivals, level_rival), "Isabela"));
+
+    assert(PvpEventRankAt(banners, cycle + 1, elapsed) == next_event_against_bots);
+    count = PvpEventLadderBuild(&pvp_event_ladder, entries, banners, cycle + 1, elapsed);
+    assert(count == PvpTableEnsure()->bot_count + 1);
+    pvp_event_ladder = ladder_before;
+}
+
+static void TestAnEventRankBelowTheRewardTablePaysItsLastTier(void) {
+    long long every_event_twice =
+        2LL * PvpTableEnsure()->events.catalog_count * PvpTableEnsure()->events.guild_every_cycles;
+    for (long long cycle = 0; cycle < every_event_twice; cycle++) {
+        const PvpEvent *event = PvpEventForCycle(cycle);
+        const PvpEventRankReward *last_tier = &event->rank_rewards[event->rank_reward_count - 1];
+        assert(PvpEventRewardForRank(event, 1) == &event->rank_rewards[0]);
+        assert(PvpEventRewardForRank(event, last_tier->last) == last_tier);
+        assert(PvpEventRewardForRank(event, last_tier->last + PVP_LADDER_CAPACITY) == last_tier);
+        assert(!PvpEventRewardForRank(event, 0));
+        bool a_full_ladder_still_finds_the_tier = PVP_LADDER_CAPACITY >= last_tier->first;
+        assert(a_full_ladder_still_finds_the_tier);
+    }
+}
+
+static void TestServerStandingsCorrectTheRankOfUnclaimedEventResults(void) {
+    static PvpEventLadder ladder;
+    memset(&ladder, 0, sizeof(ladder));
+    TestEventLadderAdopt(&ladder, TEST_EVENT_LADDER_REPLY);
+    assert(ladder.finished_count == 2);
+
+    static PlayerPvp pvp;
+    memset(&pvp, 0, sizeof(pvp));
+    pvp.event_result_count = 3;
+    pvp.event_results[0] = (PlayerPvpEventResult){.cycle = 6999, .banners = 900};
+    pvp.event_results[1] = (PlayerPvpEventResult){.cycle = 6997, .banners = 700, .claimed = true};
+    pvp.event_results[2] = (PlayerPvpEventResult){.cycle = 6996, .banners = 600};
+    for (int i = 0; i < pvp.event_result_count; i++) PvpEventResultRank(&pvp.event_results[i], 1);
+    int champion_gold = pvp.event_results[0].gold;
+
+    PvpEventLadderRankResults(&ladder, &pvp);
+    const PvpReward *fourth_place = &PvpEventRewardForRank(PvpEventForCycle(6999), 4)->reward;
+    const PlayerPvpEventResult *corrected = &pvp.event_results[0];
+    assert(corrected->rank == 4 && corrected->gold == fourth_place->gold && corrected->gems == fourth_place->gems);
+    assert(corrected->gold < champion_gold);
+    assert(pvp.event_results[1].rank == 1 && pvp.event_results[2].rank == 1);
+}
+
+static void TestTheEventLadderIsFetchedWhenAnEventScreenAsks(void) {
+    static Guild guild;
+    GuildInitialize(&guild);
+    static PvpEventLadder ladder_before;
+    ladder_before = pvp_event_ladder;
+    bool backend_was_enabled = backend_state.enabled;
+    backend_state.enabled = true;
+    PvpLadder *rivals = &pvp_event_ladder.rivals;
+
+    static PvpEventView view;
+    PvpEventViewOpen(&view);
+    assert(PvpLadderTakeRefresh(rivals) && !PvpLadderTakeRefresh(rivals));
+    static MissionsScreen goals;
+    static Player player;
+    MissionsSelectTab(&goals, &player, GOALS_TAB_EVENTS);
+    assert(PvpLadderTakeRefresh(rivals));
+    MissionsSelectTab(&goals, &player, GOALS_TAB_BATTLES);
+    assert(!PvpLadderTakeRefresh(rivals));
+
+    GuildRequestEventLadder(&guild);
+    GuildRequestEventLadder(&guild);
+    assert(guild.queue_count == 1 && guild.queue[0].kind == GUILD_REQUEST_EVENT_LADDER);
+    assert(!strcmp(guild.queue[0].method, "GET") && !strcmp(guild.queue[0].route, "pvp/event/ladder"));
+
+    cJSON *reply = cJSON_Parse(TEST_EVENT_LADDER_REPLY);
+    int revision = rivals->revision;
+    GuildHandleAnswer(&guild, GUILD_REQUEST_EVENT_LADDER, GUILD_HTTP_OK, reply);
+    cJSON_Delete(reply);
+    assert(pvp_event_ladder.cycle == TEST_EVENT_LADDER_CYCLE && rivals->player_count == 3);
+    assert(rivals->revision == revision + 1);
+    GuildHandleAnswer(&guild, GUILD_REQUEST_EVENT_LADDER, GUILD_HTTP_NOT_FOUND, NULL);
+    assert(rivals->player_count == 3 && rivals->revision == revision + 1);
+    GuildResult told_to_the_guild_screen;
+    assert(!GuildTakeResult(&guild, &told_to_the_guild_screen));
+
+    pvp_event_ladder = ladder_before;
+    backend_state.enabled = backend_was_enabled;
+}
+
 static void TestGemPurchaseCreditsGemsAndRefreshesStamina(void) {
     Player player = {.gems = 41, .stamina = 3, .stamina_max = 12, .stamina_regen_timer = 120.0f};
     PlayerCreditGemPurchase(&player, 121);
@@ -8028,6 +8151,10 @@ int main(void) {
     TestPvpLadderKeepsOnlyPlayersItCanChallengeUpToItsCapacity();
     TestChallengingALadderRivalWaitsForItsSquad();
     TestTheLadderIsFetchedOnlyWhenAScreenAsksOnline();
+    TestPvpEventLadderRanksRealPlayersAmongTheBots();
+    TestAnEventRankBelowTheRewardTablePaysItsLastTier();
+    TestServerStandingsCorrectTheRankOfUnclaimedEventResults();
+    TestTheEventLadderIsFetchedWhenAnEventScreenAsks();
     TestGemPurchaseCreditsGemsAndRefreshesStamina();
     TestPvpTrophiesHeldNeedsAWeekAboveTheLine();
     TestPvpAchievementsFollowTheLadder();

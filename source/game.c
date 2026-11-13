@@ -666,6 +666,7 @@ static void GameExitBattleTo(Game *g, Screen destination) {
     if (destination != SCREEN_BATTLE) g->battle_is_pvp = false;
     if (destination != SCREEN_BATTLE) g->pvp_event = false;
     if (destination == SCREEN_PVP_HUB) PvpHubOpen(&g->pvp_hub, &g->player, ServerNow());
+    if (destination == SCREEN_PVP_EVENT) PvpLadderRefresh(&pvp_event_ladder.rivals);
     if (destination == SCREEN_MISSIONS) MissionsSelectTab(&g->missions, &g->player, g->missions.tab);
 }
 

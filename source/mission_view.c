@@ -81,6 +81,7 @@ static void MissionsSelectTab(MissionsScreen *s, Player *p, GoalsTab tab) {
         GoalsRefreshLeaderboard(&s->tabs, p, ServerNow());
         p->pvp.trophies_seen = p->pvp.trophies;
     }
+    if (tab == GOALS_TAB_EVENTS) PvpLadderRefresh(&pvp_event_ladder.rivals);
 }
 
 void MissionsOpen(MissionsScreen *s, Player *p, GoalsTab tab) {
