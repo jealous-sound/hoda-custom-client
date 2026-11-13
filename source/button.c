@@ -12,7 +12,20 @@ typedef struct {
     Sound click;
     bool click_allow_duplicate;
     bool armed;
+    Vector2 armed_at;
 } Button;
+
+typedef struct {
+    Vector2 position;
+    bool pressed;
+    bool down;
+    bool released;
+} ButtonPointer;
+
+typedef struct {
+    bool held;
+    bool clicked;
+} ButtonTouch;
 
 Button ButtonFromTextures(
     Texture2D idle, Texture2D active, const char *label, Font font, Vector2 label_anchor, float label_scale
@@ -81,6 +94,30 @@ void ButtonDrawSelected(Button *button, Rectangle dst) {
     ButtonDrawVisual(button, dst, true);
 }
 
+static ButtonPointer ButtonPointerNow(void) {
+    return (ButtonPointer){
+        .position = UiMouse(),
+        .pressed = IsMouseButtonPressed(MOUSE_BUTTON_LEFT),
+        .down = IsMouseButtonDown(MOUSE_BUTTON_LEFT),
+        .released = IsMouseButtonReleased(MOUSE_BUTTON_LEFT),
+    };
+}
+
+ButtonTouch ButtonTouchAt(Button *b, Rectangle dst, bool interactive, ButtonPointer pointer) {
+    bool hover = interactive && CheckCollisionPointRec(pointer.position, dst);
+    if (hover && pointer.pressed) {
+        b->armed = true;
+        b->armed_at = pointer.position;
+    }
+    bool pressed_here = b->armed && CheckCollisionPointRec(b->armed_at, dst);
+    if (pressed_here && !interactive) pressed_here = b->armed = false;
+
+    ButtonTouch touch = {.held = hover && pressed_here, .clicked = hover && pressed_here && pointer.released};
+    bool press_is_over = !pointer.down && !pointer.released;
+    if (touch.clicked || press_is_over) b->armed = false;
+    return touch;
+}
+
 bool ButtonDrawEx(Button *b, Rectangle dst, bool interactive) {
     if (dst.width == -1) {
         dst.width = b->idle.width;
@@ -89,26 +126,12 @@ bool ButtonDrawEx(Button *b, Rectangle dst, bool interactive) {
         dst.height = b->idle.height;
     }
 
-    if (!interactive) {
-        b->armed = false;
-    }
-
-    bool hover = interactive && CheckCollisionPointRec(UiMouse(), dst);
-
-    if (hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-        b->armed = true;
-    }
-
-    ButtonDrawVisual(b, dst, hover && b->armed);
-
-    bool clicked = hover && b->armed && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
-    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-        b->armed = false;
-    }
-    if (clicked && b->click.frameCount > 0) {
+    ButtonTouch touch = ButtonTouchAt(b, dst, interactive, ButtonPointerNow());
+    ButtonDrawVisual(b, dst, touch.held);
+    if (touch.clicked && b->click.frameCount > 0) {
         GuiSoundPlayHandle(b->click, b->click_allow_duplicate);
     }
-    return clicked;
+    return touch.clicked;
 }
 
 void ButtonDrawBadge(Rectangle button, int count) {
