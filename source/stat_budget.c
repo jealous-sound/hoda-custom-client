@@ -1,5 +1,5 @@
 #define STAT_BUDGET_PATH "data/stat_budget.json"
-#define STAT_BUDGET_VERSION 4
+#define STAT_BUDGET_VERSION 5
 #define STAT_BUDGET_PATTERN_COUNT (TARGET_ALL + 1)
 #define STAT_BUDGET_RARITY_COUNT (RARITY_MYTHIC + 1)
 #define STAT_BUDGET_NEUTRAL_RARITY_PCT 100
@@ -10,6 +10,9 @@
 #define STAT_BUDGET_NEUTRAL_HERO_PCT 100
 #define STAT_BUDGET_HERO_MIN_PCT 33
 #define STAT_BUDGET_HERO_MAX_PCT 300
+#define STAT_BUDGET_FULL_SHARE_PCT 100
+#define STAT_BUDGET_WORTH_PER_PCT 100
+#define STAT_BUDGET_WORTH_OF_A_HERO (100 * STAT_BUDGET_WORTH_PER_PCT)
 
 static const char *const STAT_BUDGET_PATTERN_NAMES[STAT_BUDGET_PATTERN_COUNT] = {
     [TARGET_ONE] = "One",
@@ -56,6 +59,11 @@ typedef struct {
     int gear_cap_pct;
     int formation_bonus_pct_per_hero;
     int changer_cap_pct;
+    int rune_stat_share_pct;
+    int rune_initiative_share_pct;
+    int flat_resist_per_pct;
+    int gear_item_cap_pct;
+    int gear_trigger_cap_pct;
     int rarity_budget_pct[STAT_BUDGET_RARITY_COUNT];
     StatBudgetHero heroes[STAT_BUDGET_HERO_CAPACITY];
     int hero_count;
@@ -119,11 +127,18 @@ const StatBudget *StatBudgetEnsure(void) {
     b->gear_cap_pct = JsonInt(root, "gear_cap_pct");
     b->formation_bonus_pct_per_hero = JsonInt(root, "formation_bonus_pct_per_hero");
     b->changer_cap_pct = JsonInt(root, "changer_cap_pct");
+    b->rune_stat_share_pct = JsonInt(root, "rune_stat_share_pct");
+    b->rune_initiative_share_pct = JsonInt(root, "rune_initiative_share_pct");
+    b->flat_resist_per_pct = JsonInt(root, "flat_resist_per_pct");
+    b->gear_item_cap_pct = JsonInt(root, "gear_item_cap_pct");
+    b->gear_trigger_cap_pct = JsonInt(root, "gear_trigger_cap_pct");
     const cJSON *patterns = cJSON_GetObjectItemCaseSensitive(root, "pattern_power_cost_pct");
     const cJSON *rarities = cJSON_GetObjectItemCaseSensitive(root, "rarity_budget_pct");
     bool valid = b->budget > 0 && b->health_per_power > 0 && b->giant_budget_pct > 0 && b->aura_cost_pct >= 0 &&
                  b->self_aura_share_pct >= 0 && b->aura_matching_allies >= 0 && b->aura_cap_pct > 0 &&
-                 b->gear_cap_pct >= 0 && b->formation_bonus_pct_per_hero >= 0 && b->changer_cap_pct >= 0;
+                 b->gear_cap_pct >= 0 && b->formation_bonus_pct_per_hero >= 0 && b->changer_cap_pct >= 0 &&
+                 b->rune_stat_share_pct >= 0 && b->rune_initiative_share_pct >= 0 && b->flat_resist_per_pct > 0 &&
+                 b->gear_item_cap_pct >= 0 && b->gear_trigger_cap_pct >= 0;
     for (int pattern = 0; pattern < STAT_BUDGET_PATTERN_COUNT; pattern++) {
         b->pattern_power_cost_pct[pattern] = JsonInt(patterns, STAT_BUDGET_PATTERN_NAMES[pattern]);
         valid = valid && b->pattern_power_cost_pct[pattern] > 0;
@@ -181,7 +196,30 @@ float StatBudgetCappedAuraPct(const StatBudget *b, float aura_pct) {
 }
 
 float StatBudgetCappedGearPct(const StatBudget *b, float gear_pct) {
-    return gear_pct > (float)b->gear_cap_pct ? (float)b->gear_cap_pct : gear_pct;
+    float cap = (float)b->gear_cap_pct;
+    if (gear_pct < -cap) return -cap;
+    return gear_pct > cap ? cap : gear_pct;
+}
+
+int StatBudgetGearItemCap(const StatBudget *b) {
+    return b->gear_item_cap_pct;
+}
+
+int StatBudgetGearTriggerAllowance(const StatBudget *b) {
+    return b->gear_trigger_cap_pct * STAT_BUDGET_WORTH_PER_PCT;
+}
+
+long long StatBudgetShareOfStat(long long amount, int stat) {
+    if (stat <= 0) return 0;
+    return (amount < 0 ? -amount : amount) * STAT_BUDGET_WORTH_OF_A_HERO / stat;
+}
+
+long long StatBudgetWorthOfPoints(long long points) {
+    return (points < 0 ? -points : points) * STAT_BUDGET_WORTH_PER_PCT;
+}
+
+int StatBudgetFlatResistPct(const StatBudget *b, int flat_resist) {
+    return flat_resist / b->flat_resist_per_pct;
 }
 
 float StatBudgetFormationBonus(const StatBudget *b) {
@@ -192,8 +230,23 @@ int StatBudgetCappedChangerPct(const StatBudget *b, int changer_pct) {
     return changer_pct > b->changer_cap_pct ? b->changer_cap_pct : changer_pct;
 }
 
-void StatBudgetDropFlatRuneShield(RuneBonus *bonus) {
+static int StatBudgetRuneShare(int rune_value, int share_pct) {
+    return (rune_value * share_pct + STAT_BUDGET_FULL_SHARE_PCT / 2) / STAT_BUDGET_FULL_SHARE_PCT;
+}
+
+void StatBudgetLimitRuneBonus(const StatBudget *b, RuneBonus *bonus) {
     bonus->damage_shield = 0;
+    bonus->damage_resist_pct = StatBudgetRuneShare(bonus->damage_resist_pct, b->rune_stat_share_pct);
+}
+
+int StatBudgetRuneStat(const StatBudget *b, int stat, int rune_pct) {
+    if (stat <= 0 || rune_pct <= 0) return stat;
+    long long whole = 100LL * STAT_BUDGET_FULL_SHARE_PCT;
+    return (int)((stat * (whole + (long long)rune_pct * b->rune_stat_share_pct) + whole / 2) / whole);
+}
+
+int StatBudgetRuneInitiative(const StatBudget *b, int initiative) {
+    return StatBudgetRuneShare(initiative, b->rune_initiative_share_pct);
 }
 
 int StatBudgetRarityPct(const StatBudget *b, Rarity rarity) {

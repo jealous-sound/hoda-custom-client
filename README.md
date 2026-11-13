@@ -110,8 +110,23 @@ it in both through the data sync, with a client release and a raised minimum cli
   before ascension and fortify. The same scale is then applied to the stats the hero really has, so a hero missing
   levels or a tier fights with that share of its budget, and ascension levels and fortify add on top.
   `rarity_budget_pct` is each rarity's share of the budget. Auras stop at `aura_cap_pct` and the health and power
-  gear adds stop at `gear_cap_pct`, each on its own. Every hero adds the same formation bonus and event buffs stop at
-  `changer_cap_pct`. Every rune works except the flat damage shield, which is larger than a PvP hit.
+  that gear adds to a hero or takes from it stop at `gear_cap_pct`, each on its own. Every hero adds the same
+  formation bonus and event buffs stop at `changer_cap_pct`. Every rune works except the flat damage shield, which is
+  larger than a PvP hit.
+- The same file keeps one item or one rune from deciding a fight on its own. `data/gear.json` and `data/runes.json`
+  stay as the original game had them and a battle without the stat budget reads none of these keys, so PvE is
+  untouched. Runes of power, health and damage resist count `rune_stat_share_pct` percent of their value, and a rune
+  of speed moves initiative by `rune_initiative_share_pct` percent of a class step. Flat damage resist, sized for PvE
+  hits, becomes percent resist at `flat_resist_per_pct` points per percent. What one item hands out when the battle
+  starts (power, health, double damage chance, bonus damage and damage resist, summed over every hero it touches on
+  either side) is scaled down to `gear_item_cap_pct` percent of a hero. What one item's triggers give during the
+  battle (healing that restores missing health, power gained or drained, damage and the same stat points, each as a
+  share of the receiving hero's stat) is metered against `gear_trigger_cap_pct` percent of a hero: the firing that
+  would pass it is scaled to what is left, and later firings of those effects give nothing. Status resists,
+  initiative and targeting effects are not limited.
+- A new key in `data/stat_budget.json` raises `STAT_BUDGET_VERSION` in `source/stat_budget.c` and `statBudgetVersion`
+  in the backend, and a client built for the old version refuses the file. Release the client and raise the minimum
+  client version on the backend before publishing content that carries the new file.
 - `data/stat_budget_heroes.json` holds one handicap per hero, a percent of the budget from 33 to 300. Below 100 it
   also cuts the hero's status chances (stun, slow, curse, levy, assassinate, mark) and what it grants allies by the
   same share. `./tests/balance_check --calibrate 16 --neutral --squads 48 --seeds 6` rewrites the whole table.
@@ -136,7 +151,11 @@ it in both through the data sync, with a client release and a raised minimum cli
   and `./tests/balance_check --hero UNIT_ID` exits non-zero while it wins outside 45-55%.
 - `./tests/balance_check --progress` measures what a player's work is worth: reference squads fight themselves with
   one side changed, and the report lists the win rate of each growth stage, rarity, fortify load, rune and gear item.
-  Every other mode judges fully grown heroes at one rarity share, so the handicaps stay a measure of the kit alone.
+  Runes and items are ranked from the strongest with the battles behind each win rate and the mean win rate of each
+  rarity, which should rise with rarity; `--all` lists every rune and item instead of the first twelve. An item only
+  one reference squad can wear fights few battles, so read its row with `--seeds 16` and with that in mind. The
+  limits above aim at no single rune and no single item on one hero winning more than about 65%. Every other mode
+  judges fully grown heroes at one rarity share, so the handicaps stay a measure of the kit alone.
 - Every squad in `squad_pool` carries a `strength`: its wins per 10000 battles against the rest of the pool, attacking
   and defending once against each, fielded as the ladder fields it. A bot's trophies pick its squads: a bot at zero
   draws from the weakest squads and the top bot from the strongest, so opponents get harder as trophies rise,
