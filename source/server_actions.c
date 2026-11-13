@@ -28,6 +28,8 @@ typedef struct {
     cJSON *adopt;
     bool refetch;
     bool fetching;
+    bool reply_predates_local_save;
+    bool fetch_predates_local_save;
     ServerReplyTag reply_tag;
     cJSON *reply;
 } ServerActions;
@@ -69,9 +71,24 @@ static void ServerActionsPop(ServerActions *s) {
     s->count--;
 }
 
-static void ServerActionsKeepProfile(ServerActions *s, cJSON *response) {
-    if (!cJSON_IsObject(cJSON_GetObjectItemCaseSensitive(response, "profile"))) {
-        s->refetch = true;
+static void ServerActionsDropAdoption(ServerActions *s) {
+    cJSON_Delete(s->adopt);
+    s->adopt = NULL;
+    s->refetch = true;
+}
+
+bool ServerActionsStoreProfile(const char *text) {
+    ServerActions *s = &server_actions;
+    if (!BackendStoreProfile(text)) return false;
+    if (s->adopt) ServerActionsDropAdoption(s);
+    if (s->ticket != BACKEND_NO_TICKET) s->reply_predates_local_save = true;
+    if (s->fetching) s->fetch_predates_local_save = true;
+    return true;
+}
+
+static void ServerActionsKeepProfile(ServerActions *s, cJSON *response, bool predates_local_save) {
+    if (predates_local_save || !cJSON_IsObject(cJSON_GetObjectItemCaseSensitive(response, "profile"))) {
+        ServerActionsDropAdoption(s);
         cJSON_Delete(response);
         return;
     }
@@ -80,7 +97,7 @@ static void ServerActionsKeepProfile(ServerActions *s, cJSON *response) {
     s->refetch = false;
 }
 
-static void ServerActionsSettle(ServerActions *s, BackendActionState state, cJSON *response) {
+static void ServerActionsSettle(ServerActions *s, BackendActionState state, cJSON *response, bool predates_local_save) {
     ServerReplyTag tag = s->queue[0].tag;
     if (state == BACKEND_ACTION_UNREACHABLE) {
         s->retry_at = GetTime() + SERVER_ACTION_RETRY_SECONDS;
@@ -98,11 +115,11 @@ static void ServerActionsSettle(ServerActions *s, BackendActionState state, cJSO
         s->reply_tag = tag;
     }
     if (state == BACKEND_ACTION_CONFLICT) {
-        s->refetch = true;
+        ServerActionsDropAdoption(s);
         cJSON_Delete(response);
         return;
     }
-    ServerActionsKeepProfile(s, response);
+    ServerActionsKeepProfile(s, response, predates_local_save);
 }
 
 void ServerActionsPump(void) {
@@ -112,11 +129,13 @@ void ServerActionsPump(void) {
         BackendActionState state = BackendPollAction(s->ticket, &response);
         if (state == BACKEND_ACTION_PENDING) return;
         s->ticket = BACKEND_NO_TICKET;
+        bool predates_local_save = s->reply_predates_local_save;
+        s->reply_predates_local_save = false;
         if (state == BACKEND_ACTION_IDLE) {
             cJSON_Delete(response);
             return;
         }
-        ServerActionsSettle(s, state, response);
+        ServerActionsSettle(s, state, response, predates_local_save);
     }
     if (s->count == 0 || GetTime() < s->retry_at) return;
     cJSON *body = cJSON_Duplicate(s->queue[0].fields, true);
@@ -133,9 +152,14 @@ bool ServerActionsDrained(void) {
 static cJSON *ServerActionsFinishRefetch(ServerActions *s) {
     if (!BackendProfileFetchSettled()) return NULL;
     s->fetching = false;
+    bool predates_local_save = s->fetch_predates_local_save;
+    s->fetch_predates_local_save = false;
     char *text = NULL;
     long long revision = 0;
-    if (BackendFetchProfile(&text, &revision) != BACKEND_PROFILE_FOUND) {
+    BackendProfileFetch fetched = BackendFetchProfile(&text, &revision);
+    bool newer_reply_held = s->adopt != NULL;
+    if (predates_local_save && !newer_reply_held) s->refetch = true;
+    if (predates_local_save || newer_reply_held || fetched != BACKEND_PROFILE_FOUND) {
         free(text);
         return NULL;
     }
@@ -156,11 +180,7 @@ cJSON *ServerActionsTakeAdoption(void) {
     if (!ServerActionsDrained()) return NULL;
     if (s->fetching) return ServerActionsFinishRefetch(s);
     if (BackendUploadPending()) {
-        if (s->adopt) {
-            cJSON_Delete(s->adopt);
-            s->adopt = NULL;
-            s->refetch = true;
-        }
+        if (s->adopt) ServerActionsDropAdoption(s);
         return NULL;
     }
     if (s->refetch) {

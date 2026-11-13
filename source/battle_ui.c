@@ -6,7 +6,14 @@
 
 static const GuiId BATTLE_UI_FACTION_INTRO_ICON = GUI_DETAILS_POWER;
 
-typedef enum { BATTLE_UI_NONE, BATTLE_UI_FIGHT, BATTLE_UI_RETREAT, BATTLE_UI_RUNES, BATTLE_UI_NEXT } BattleUiAction;
+typedef enum {
+    BATTLE_UI_NONE,
+    BATTLE_UI_FIGHT,
+    BATTLE_UI_RETREAT,
+    BATTLE_UI_RUNES,
+    BATTLE_UI_NEXT,
+    BATTLE_UI_SQUAD,
+} BattleUiAction;
 
 typedef struct {
     const Character *ch;
@@ -42,6 +49,8 @@ typedef struct {
     const CampaignNode *node;
     CampaignNode nexus_node;
     bool new_map_on_win;
+
+    int requested_squad;
 
     bool tactical;
     BattlePlate plates[2][SQUAD_SLOT_COUNT];
@@ -167,6 +176,27 @@ BattlePlateBuild(BattlePlate *p, const Character *ch, const SimUnit *setup_unit,
     p->world = (Vector3){spot->x, BattleFeetY(ch->giant ? 2.0f : 1.0f), spot->z};
 }
 
+void BattleUiShowSquads(BattleUi *ui, const Player *player, const BattleRoster *enemy) {
+    SimUnit preview[SIM_UNIT_COUNT];
+    BattleSimPreview(preview, player, enemy);
+
+    const char *diff_key = BattleUiDifficultyKey(BattleUiDifficultyRatio(preview));
+    ui->diff_color = (Color){230, 230, 230, 255};
+    BattleUiParseColored(LocGet(diff_key), ui->diff_value, sizeof(ui->diff_value), &ui->diff_color);
+
+    ui->detail_open = false;
+    ui->plate_armed = NULL;
+    memset(ui->plates, 0, sizeof(ui->plates));
+    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) {
+        const Character *ours = PlayerSquadCharacter(player, s);
+        if (ours) BattlePlateBuild(&ui->plates[0][s], ours, &preview[s], false, &BATTLE_PLAYER_SPOTS[s]);
+        if (enemy->present[s])
+            BattlePlateBuild(
+                &ui->plates[1][s], &enemy->chars[s], &preview[SQUAD_SLOT_COUNT + s], true, &BATTLE_ENEMY_SPOTS[s]
+            );
+    }
+}
+
 void BattleUiEnterNode(
     BattleUi *ui,
     const Player *player,
@@ -175,9 +205,6 @@ void BattleUiEnterNode(
     const char *map_id,
     int step
 ) {
-    SimUnit preview[SIM_UNIT_COUNT];
-    BattleSimPreview(preview, player, enemy);
-
     char key[96];
     snprintf(key, sizeof(key), "MAP_%s_NODE_%d_NAME", map_id, step);
     const char *name = LocGet(key);
@@ -185,10 +212,6 @@ void BattleUiEnterNode(
     StrCopy(ui->title, sizeof(ui->title), name);
 
     StrCopy(ui->mastery, sizeof(ui->mastery), LocGet("PVE_UNLOCKED"));
-
-    const char *diff_key = BattleUiDifficultyKey(BattleUiDifficultyRatio(preview));
-    ui->diff_color = (Color){230, 230, 230, 255};
-    BattleUiParseColored(LocGet(diff_key), ui->diff_value, sizeof(ui->diff_value), &ui->diff_color);
 
     ui->node = node;
     ui->pvp = false;
@@ -200,17 +223,8 @@ void BattleUiEnterNode(
     StrCopy(ui->player_name, sizeof(ui->player_name), player->name);
 
     ui->tactical = false;
-    ui->detail_open = false;
     ui->info.label = LocGet("MORE_INFO");
-    memset(ui->plates, 0, sizeof(ui->plates));
-    for (int s = 0; s < SQUAD_SLOT_COUNT; s++) {
-        const Character *ours = PlayerSquadCharacter(player, s);
-        if (ours) BattlePlateBuild(&ui->plates[0][s], ours, &preview[s], false, &BATTLE_PLAYER_SPOTS[s]);
-        if (enemy->present[s])
-            BattlePlateBuild(
-                &ui->plates[1][s], &enemy->chars[s], &preview[SQUAD_SLOT_COUNT + s], true, &BATTLE_ENEMY_SPOTS[s]
-            );
-    }
+    BattleUiShowSquads(ui, player, enemy);
 }
 
 void BattleUiEnterNexusNode(
@@ -1089,9 +1103,19 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
 
         Font tab_font = GuiFont(FNT_MENU);
         float size = 60 * MM_SY, stride = MM_X(60);
+        bool tab_released = input_ok && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
         for (int q = 0; q < PLAYER_MAX_SQUADS; q++) {
             Rectangle r = {MM_X(26) + q * stride, MM_Y(504), stride, size};
             bool active = player->current_squad == q;
+            if (tab_released && !active && CheckCollisionPointRec(UiMouse(), r)) {
+                if (PlayerSquadCount(player, q) > 0) {
+                    GuiClickSoundPlay();
+                    ui->requested_squad = q;
+                    result = BATTLE_UI_SQUAD;
+                } else {
+                    GuiSoundPlay(SND_STORE_ERROR);
+                }
+            }
             Texture2D tab = GuiTex(
                 q == 0 ? (active ? GUI_TAB_DEFENSE_ON : GUI_TAB_DEFENSE) : (active ? GUI_TAB_SQUAD_ON : GUI_TAB_SQUAD)
             );

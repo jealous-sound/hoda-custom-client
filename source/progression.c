@@ -1917,7 +1917,7 @@ static ProgressionLoadResult ProgressionLoadFromBackend(Player *player) {
 static bool ProgressionSaveToBackend(const Player *player) {
     char *serialized = ProgressionSerialize(player);
     if (!serialized) return false;
-    bool ok = BackendStoreProfile(serialized);
+    bool ok = ServerActionsStoreProfile(serialized);
     cJSON_free(serialized);
     return ok;
 }

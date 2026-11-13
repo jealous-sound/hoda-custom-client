@@ -1328,10 +1328,26 @@ static void GameReturnFromRunes(Game *g) {
         return;
     }
     g->screen = SCREEN_BATTLE;
-    if (g->battle_is_nexus)
+    if (g->battle_is_pvp)
+        GameEnterPvpOpponent(g);
+    else if (g->battle_is_nexus)
         GameEnterSelectedNexusBattle(g);
     else
         GameEnterSelectedBattle(g);
+}
+
+static void GameKeepSquadChange(Game *g) {
+    HomeBackgroundMarkSquadStale(&g->scene);
+    ProgressionSave(&g->player);
+}
+
+static void GameSelectBattleSquad(Game *g, int squad) {
+    PlayerSquadSelect(&g->player, squad);
+    HeroesBackgroundReloadSquad(&g->heroes_scene, &g->player);
+    GameKeepSquadChange(g);
+    BattleSwapPlayerSquad(&g->battle, &g->player);
+    BattleUiShowSquads(&g->battle_ui, &g->player, &g->battle.enemy_roster);
+    g->battle_squad_index = squad;
 }
 
 static void GameEmitWispFx(Game *g) {
@@ -1506,7 +1522,7 @@ static void GameHandleRunesLeave(Game *g, RunesLeave leave) {
         case RUNES_LEAVE_SELECT_SQUAD:
             PlayerSquadSelect(&g->player, g->runes.leave_squad);
             HeroesBackgroundReloadSquad(&g->heroes_scene, &g->player);
-            HomeBackgroundMarkSquadStale(&g->scene);
+            GameKeepSquadChange(g);
             break;
         default:
             break;
@@ -1845,7 +1861,7 @@ void GameDraw(Game *g) {
                 HeroesBackgroundReloadSquad(&g->heroes_scene, &g->player);
                 squad_changed = true;
             }
-            if (squad_changed) HomeBackgroundMarkSquadStale(&g->scene);
+            if (squad_changed) GameKeepSquadChange(g);
             GamePublishHeroesDragTarget(g);
             break;
         }
@@ -2188,6 +2204,7 @@ void GameDraw(Game *g) {
             UiFrameEnd();
 
             bool leave = false;
+            bool starting = g->battle_start_waiting || g->battle_start_dropped || g->pvp_match_waiting;
             if (showing_results) {
                 BattleResultsAction result_action =
                     BattleResultsFlowUpdate(&g->battle_results, dt, !resource_modal && UiClicksReachScreen());
@@ -2219,7 +2236,8 @@ void GameDraw(Game *g) {
                     }
                 }
             } else {
-                bool starting = g->battle_start_waiting || g->battle_start_dropped || g->pvp_match_waiting;
+                if (ba == BATTLE_UI_SQUAD && !combat && !starting && !g->battle_is_intro)
+                    GameSelectBattleSquad(g, g->battle_ui.requested_squad);
                 if (ba == BATTLE_UI_FIGHT && !combat && !starting && GameBattleHeld(g)) {
                     MaintenanceNoticeExplain(&g->maintenance);
                 } else if (ba == BATTLE_UI_FIGHT && !combat && !starting) {
@@ -2260,7 +2278,7 @@ void GameDraw(Game *g) {
                                         : g->battle_is_nexus ? SCREEN_NEXUS
                                                              : SCREEN_MAP;
                 GameExitBattleTo(g, retreat_screen);
-            } else if (ba == BATTLE_UI_RUNES && !combat) {
+            } else if (ba == BATTLE_UI_RUNES && !combat && !starting) {
                 BattleStopAmbience(&g->battle);
                 GameOpenRunes(g, SCREEN_BATTLE);
             }
