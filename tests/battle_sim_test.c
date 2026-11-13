@@ -1917,6 +1917,11 @@ static const StatBudget TEST_STAT_BUDGET = {
     .gear_cap_pct = 100,
     .formation_bonus_pct_per_hero = 5,
     .changer_cap_pct = 25,
+    .rune_stat_share_pct = 100,
+    .rune_initiative_share_pct = 100,
+    .flat_resist_per_pct = 250,
+    .gear_item_cap_pct = 1000,
+    .gear_trigger_cap_pct = 1000,
     .rarity_budget_pct = {
         [RARITY_COMMON] = 50,
         [RARITY_UNCOMMON] = 60,
@@ -2100,6 +2105,36 @@ static void TestStatBudgetCapsWhatAurasAdd(void) {
     cJSON_Delete(root);
 }
 
+static void TestStatBudgetCountsAShareOfStatRunes(void) {
+    static StatBudget shared;
+    shared = TEST_STAT_BUDGET;
+    shared.rune_stat_share_pct = 8;
+    shared.rune_initiative_share_pct = 20;
+    assert(StatBudgetRuneStat(&shared, 1000, 100) == 1080);
+    assert(StatBudgetRuneStat(&shared, 1000, 50) == 1040);
+    assert(StatBudgetRuneStat(&shared, 10000, 5) == 10040);
+    assert(StatBudgetRuneStat(&shared, 1000, 0) == 1000 && StatBudgetRuneStat(&shared, 0, 100) == 0);
+    assert(StatBudgetRuneStat(&shared, 3210, 100) > StatBudgetRuneStat(&shared, 3210, 50));
+    assert(StatBudgetRuneStat(&TEST_STAT_BUDGET, 1234, 40) == RuneApplyPct(1234, 40));
+
+    RuneBonus bonus = {.damage_shield = 10000, .damage_resist_pct = 75, .power_pct = 100, .stun_resist_pct = 60};
+    StatBudgetLimitRuneBonus(&shared, &bonus);
+    assert(bonus.damage_shield == 0 && bonus.damage_resist_pct == 6);
+    assert(bonus.power_pct == 100 && bonus.stun_resist_pct == 60);
+
+    assert(StatBudgetRuneInitiative(&shared, SIM_INIT_CLASS_SPAN) == 8);
+    assert(StatBudgetRuneInitiative(&TEST_STAT_BUDGET, SIM_INIT_CLASS_SPAN) == SIM_INIT_CLASS_SPAN);
+    static BattleSim plain, limited;
+    memset(&plain, 0, sizeof(plain));
+    memset(&limited, 0, sizeof(limited));
+    plain.rng = limited.rng = 7;
+    plain.units[0].init_class = limited.units[0].init_class = SIM_INIT_CLASS_MEDIUM;
+    plain.rune_bonus[0].initiative_steps = limited.rune_bonus[0].initiative_steps = 1;
+    limited.stat_budget = &shared;
+    int whole_step = SimRollInitiative(&plain, &plain.units[0]);
+    assert(whole_step - SimRollInitiative(&limited, &limited.units[0]) == SIM_INIT_CLASS_SPAN - 8);
+}
+
 static void TestStatBudgetCountsStatRunesAndDropsOnlyTheFlatShield(void) {
     RuneBonus bonus = {
         .power_pct = 100,
@@ -2117,7 +2152,7 @@ static void TestStatBudgetCountsStatRunesAndDropsOnlyTheFlatShield(void) {
         .perceptive = true,
     };
     bonus.target_level[0] = 6;
-    StatBudgetDropFlatRuneShield(&bonus);
+    StatBudgetLimitRuneBonus(&TEST_STAT_BUDGET, &bonus);
     assert(bonus.damage_shield == 0);
     assert(bonus.power_pct == 100 && bonus.health_pct == 60);
     assert(bonus.damage_resist_pct == 75 && bonus.retaliation_pct == 5);
@@ -4806,7 +4841,7 @@ static void TestRuneStatsAndTargeting(void) {
     SimUnitInit(&s, 1, 2, &strong);
     int power = s.units[0].power, health = s.units[0].max_health;
     RuneBonus stats = {.power_pct = 50, .health_pct = 20};
-    SimUnitsRuneBonus(s.units, 0, &stats);
+    SimUnitsRuneBonus(s.units, 0, &stats, NULL);
     assert(s.units[0].power == RuneApplyPct(power, 50) && s.units[0].start_power == s.units[0].power);
     assert(s.units[0].max_health == RuneApplyPct(health, 20) && s.units[0].health == s.units[0].max_health);
 
@@ -5448,7 +5483,7 @@ static void TestGearOnHitReactionsAndStealth(void) {
     assert(s.units[idx].max_health - s.units[idx].health == 500);
 
     attacker.gear.defs[0] = (short)(stealth + 1);
-    SimUnitsGearAuras(s.units, (float[SIM_UNIT_COUNT]){0}, (float[SIM_UNIT_COUNT]){0});
+    SimUnitsGearAuras(s.units, (float[SIM_UNIT_COUNT]){0}, (float[SIM_UNIT_COUNT]){0}, NULL);
     GearTestSwing(&s, 2);
     assert(s.units[idx].power == 1100);
 
@@ -7465,7 +7500,8 @@ static void TestStatBudgetCapsGearApartFromAuras(void) {
     capped.gear_cap_pct = 30;
     assert(StatBudgetCappedGearPct(&capped, 80.0f) == 30.0f);
     assert(StatBudgetCappedGearPct(&capped, 20.0f) == 20.0f);
-    assert(StatBudgetCappedGearPct(&capped, -40.0f) == -40.0f);
+    assert(StatBudgetCappedGearPct(&capped, -20.0f) == -20.0f);
+    assert(StatBudgetCappedGearPct(&capped, -40.0f) == -30.0f);
 
     GearTestReset();
     int power_item = GearTestDef(GEAR_STAT_POWER, 80, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
@@ -7494,6 +7530,138 @@ static void TestStatBudgetCapsGearApartFromAuras(void) {
     SimUnitsBattleStartPassives(units, NULL);
     assert(units[0].power > (int)lroundf(own_power * (1.0f + (50.0f + 80.0f) / 100.0f)));
     cJSON_Delete(root);
+    GearTestReset();
+}
+
+static void TestStatBudgetTurnsFlatResistIntoPercent(void) {
+    assert(StatBudgetFlatResistPct(&TEST_STAT_BUDGET, 2500) == 10);
+    assert(StatBudgetFlatResistPct(&TEST_STAT_BUDGET, 1000) == 4);
+    assert(StatBudgetFlatResistPct(&TEST_STAT_BUDGET, 249) == 0);
+
+    GearTestReset();
+    int plate = GearTestDef(GEAR_STAT_RAW_DAMAGE_RESIST, 2500, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int ward = GearTestDef(GEAR_STAT_DAMAGE_RESIST, 15, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    BattleSim s = {.rng = 5};
+    Character attacker = {0}, target = {0};
+    Ability abilities[2];
+    target.gear.defs[0] = (short)(plate + 1);
+    target.gear.defs[1] = (short)(ward + 1);
+    GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 10000);
+    GearTestUnit(&s, &target, &abilities[1], 1, 2, 10000);
+    SimUnitsBattleStartPassives(s.units, NULL);
+    int idx = SQUAD_SLOT_COUNT + 2;
+    assert(SimMitigatedDamage(&s, &s.units[2], &s.units[idx], 3000) == 425);
+    assert(SimMitigatedDamage(&s, &s.units[2], &s.units[idx], 2000) == SIM_RUNE_SHIELDED_HIT_MIN_DAMAGE);
+    s.stat_budget = &TEST_STAT_BUDGET;
+    assert(SimMitigatedDamage(&s, &s.units[2], &s.units[idx], 3000) == 2250);
+    assert(SimMitigatedDamage(&s, &s.units[2], &s.units[idx], 2000) == 1500);
+    GearTestReset();
+}
+
+static void TestStatBudgetSharesOutWhatOneItemGivesAtBattleStart(void) {
+    static StatBudget capped;
+    capped = TEST_STAT_BUDGET;
+    capped.gear_item_cap_pct = 40;
+    GearTestReset();
+    int banner = GearTestDef(GEAR_STAT_POWER, 10, GEAR_ON_BATTLE, PASSIVE_SCOPE_ALLIES, GEAR_BASIS_BASE);
+    int blade = GearTestDef(GEAR_STAT_POWER, 30, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int hex = GearTestDef(GEAR_STAT_POWER, -20, GEAR_ON_BATTLE, PASSIVE_SCOPE_ENEMIES, GEAR_BASIS_BASE);
+    int aegis = GearTestDef(GEAR_STAT_RAW_DAMAGE_RESIST, 2500, GEAR_ON_BATTLE, PASSIVE_SCOPE_ALLIES, GEAR_BASIS_BASE);
+    int charm = GearTestDef(GEAR_STAT_STUN_RESIST, 30, GEAR_ON_BATTLE, PASSIVE_SCOPE_ALLIES, GEAR_BASIS_BASE);
+
+    static BattleSim s;
+    static Character allies[SQUAD_SLOT_LARGE], foes[SQUAD_SLOT_LARGE];
+    static Ability abilities[2 * SQUAD_SLOT_LARGE];
+    memset(&s, 0, sizeof(s));
+    memset(allies, 0, sizeof(allies));
+    memset(foes, 0, sizeof(foes));
+    allies[0].gear.defs[0] = (short)(banner + 1);
+    allies[1].gear.defs[0] = (short)(blade + 1);
+    allies[2].gear.defs[0] = (short)(hex + 1);
+    allies[3].gear.defs[0] = (short)(aegis + 1);
+    allies[3].gear.defs[1] = (short)(charm + 1);
+    for (int slot = 0; slot < SQUAD_SLOT_LARGE; slot++) {
+        GearTestUnit(&s, &allies[slot], &abilities[slot], 0, slot, 10000);
+        GearTestUnit(&s, &foes[slot], &abilities[SQUAD_SLOT_LARGE + slot], 1, slot, 10000);
+    }
+    SimUnitsBattleStartPassives(s.units, &capped);
+    assert(s.units[0].power == 1100 && s.units[2].power == 1100 && s.units[3].power == 1100);
+    assert(s.units[1].power == 1400);
+    assert(s.units[SQUAD_SLOT_COUNT].power == 900 && s.units[SQUAD_SLOT_COUNT + 3].power == 900);
+    assert(s.units[0].gear.raw_damage_resist == 2500 && s.units[3].gear.raw_damage_resist == 2500);
+    assert(s.units[0].gear.stun_resist_pct == 30);
+
+    static Character fifth;
+    static Ability fifth_ability;
+    memset(&fifth, 0, sizeof(fifth));
+    GearTestUnit(&s, &fifth, &fifth_ability, 0, SQUAD_SLOT_LARGE, 10000);
+    for (int slot = 0; slot < SQUAD_SLOT_LARGE; slot++)
+        GearTestUnit(&s, &allies[slot], &abilities[slot], 0, slot, 10000);
+    SimUnitsBattleStartPassives(s.units, &capped);
+    assert(s.units[0].power == 1080 && s.units[SQUAD_SLOT_LARGE].power == 1080);
+    assert(s.units[1].power == 1380);
+    assert(s.units[0].gear.raw_damage_resist == 2000 && s.units[0].gear.stun_resist_pct == 30);
+
+    for (int slot = 0; slot < SQUAD_SLOT_LARGE; slot++)
+        GearTestUnit(&s, &allies[slot], &abilities[slot], 0, slot, 10000);
+    GearTestUnit(&s, &fifth, &fifth_ability, 0, SQUAD_SLOT_LARGE, 10000);
+    SimUnitsBattleStartPassives(s.units, NULL);
+    assert(s.units[0].power == 1100 && s.units[1].power == 1400);
+    assert(s.units[0].gear.raw_damage_resist == 2500);
+    GearTestReset();
+}
+
+static void TestStatBudgetMetersWhatOneItemsTriggersGive(void) {
+    static StatBudget metered;
+    metered = TEST_STAT_BUDGET;
+    metered.gear_trigger_cap_pct = 30;
+    GearTestReset();
+    int salve = GearTestDef(GEAR_STAT_HEALTH, 25, GEAR_ON_SELF_HIT, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int rally = GearTestDef(GEAR_STAT_POWER, 20, GEAR_ON_ALLY_HIT, PASSIVE_SCOPE_ALLIES, GEAR_BASIS_BASE);
+
+    static BattleSim s;
+    static Character attacker, target, friend;
+    static Ability abilities[3];
+    memset(&s, 0, sizeof(s));
+    memset(&attacker, 0, sizeof(attacker));
+    memset(&target, 0, sizeof(target));
+    memset(&friend, 0, sizeof(friend));
+    s.rng = 5;
+    target.gear.defs[0] = (short)(salve + 1);
+    friend.gear.defs[0] = (short)(rally + 1);
+    GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 100000);
+    GearTestUnit(&s, &target, &abilities[1], 1, 2, 100000);
+    GearTestUnit(&s, &friend, &abilities[2], 1, 3, 100000);
+    abilities[0].target = TARGET_ALL;
+    s.units[2].crit_pct = 0.0f;
+    s.stat_budget = &metered;
+    int hit_idx = SQUAD_SLOT_COUNT + 2, friend_idx = SQUAD_SLOT_COUNT + 3;
+    s.units[hit_idx].health = 40000;
+
+    GearTestSwing(&s, 2);
+    assert(s.units[hit_idx].health == 40000 - 1000 + 25000);
+    assert(s.units[hit_idx].power == 1150 && s.units[friend_idx].power == 1150);
+    GearTestSwing(&s, 2);
+    assert(s.units[hit_idx].health == 64000 - 1000 + 5000);
+    assert(s.units[hit_idx].power == 1150 && s.units[friend_idx].power == 1150);
+    GearTestSwing(&s, 2);
+    assert(s.units[hit_idx].health == 68000 - 1000);
+
+    GearTestUnit(&s, &target, &abilities[1], 1, 2, 100000);
+    GearTestUnit(&s, &friend, &abilities[2], 1, 3, 100000);
+    s.units[hit_idx].health = 99500;
+    GearTestSwing(&s, 2);
+    assert(s.units[hit_idx].health == 100000);
+    assert(s.units[hit_idx].gear_trigger_worth[0] == StatBudgetShareOfStat(1500, 100000));
+
+    GearTestUnit(&s, &target, &abilities[1], 1, 2, 100000);
+    GearTestUnit(&s, &friend, &abilities[2], 1, 3, 100000);
+    s.stat_budget = NULL;
+    s.units[hit_idx].health = 40000;
+    GearTestSwing(&s, 2);
+    GearTestSwing(&s, 2);
+    assert(s.units[hit_idx].health == 40000 - 2000 + 50000);
+    assert(s.units[hit_idx].power == 1400 && s.units[friend_idx].power == 1400);
     GearTestReset();
 }
 
@@ -8467,6 +8635,9 @@ int main(void) {
     TestFortifyMaximaMatchThe5xCatalog();
     TestStatBudgetCountsFortifyOnTopOfAGrownHero();
     TestStatBudgetCapsGearApartFromAuras();
+    TestStatBudgetTurnsFlatResistIntoPercent();
+    TestStatBudgetSharesOutWhatOneItemGivesAtBattleStart();
+    TestStatBudgetMetersWhatOneItemsTriggersGive();
     TestFortifyMergesTiersLikeThe544Slot();
     TestFortifySlotsUnlockWithConsumeLevel();
     TestPlayerFortifyConsumesTheChildren();
@@ -8622,6 +8793,7 @@ int main(void) {
     TestStatBudgetHandicapTableIsSortedAndBounded();
     TestStatBudgetCapsWhatAurasAdd();
     TestStatBudgetCountsStatRunesAndDropsOnlyTheFlatShield();
+    TestStatBudgetCountsAShareOfStatRunes();
     TestStatBudgetGivesEveryRarityTheSameFormationBonus();
     TestStatBudgetCapsEventBuffs();
     TestStatBudgetOnTheEnemyRosterLevelsBothSides();

@@ -21,8 +21,9 @@
     "--stacks fields four copies of each hero against the unchanged squads.\n"                                         \
     "--squad-report fights the reference squads against each other and prints squad and faction win rates.\n"          \
     "--progress fights each reference squad against itself with one side's growth, rarity, fortify, rune or gear\n"    \
-    "changed, and prints what that progress is worth. Every other mode judges fully grown heroes at one rarity "       \
-    "share.\n"                                                                                                         \
+    "changed, and prints what that progress is worth: the strongest runes and items with the battles each fought,\n"   \
+    "and the mean win rate of each rarity. --all lists every rune and item. Every other mode judges fully grown\n"     \
+    "heroes at one rarity share.\n"                                                                                    \
     "--search climbs from each faction's strongest pooled squad by single swaps and prints the squad it ends on;\n"    \
     "--unique forbids two copies of a hero in it.\n"                                                                   \
     "--adversarial looks each round for the squads that best beat the current meta, adds them to the pool and\n"       \
@@ -101,6 +102,7 @@
 #define BALANCE_PROGRESS_SHOWN 12
 #define BALANCE_PROGRESS_STRONG_PCT 60.0f
 #define BALANCE_PROGRESS_ROW_CAPACITY (GEAR_CATALOG_CAPACITY + RUNE_CATALOG_CAPACITY)
+#define BALANCE_PROGRESS_RARITY_COUNT (RUNE_PRESTIGE_RARITY + 1)
 #define BALANCE_GEAR_TRIAL_SLOT 0
 #define BALANCE_EXIT_OUT_OF_BAND 1
 #define BALANCE_EXIT_USAGE 2
@@ -1518,6 +1520,7 @@ static void BalanceAdversarial(Balance *b, const BalanceOptions *o, BalancePool 
 
 typedef struct {
     char label[BALANCE_PROGRESS_LABEL_CAPACITY];
+    int rarity;
     BalanceTally tally;
     long long changed_cost, unchanged_cost;
 } BalanceProgressRow;
@@ -1726,10 +1729,27 @@ static int BalanceProgressStrongCount(const BalanceProgressRow *rows, int count)
     return strong;
 }
 
-static void BalancePrintStrongestProgress(BalanceProgressRow *rows, int count, const char *kind) {
+static void BalancePrintProgressByRarity(const BalanceProgressRow *rows, int count) {
+    double win_pct[BALANCE_PROGRESS_RARITY_COUNT] = {0};
+    int ranked[BALANCE_PROGRESS_RARITY_COUNT] = {0};
+    for (int i = 0; i < count; i++) {
+        win_pct[rows[i].rarity] += BalanceTallyPct(rows[i].tally);
+        ranked[rows[i].rarity]++;
+    }
+    printf("  mean win rate by rarity:");
+    for (int rarity = 0; rarity < BALANCE_PROGRESS_RARITY_COUNT; rarity++)
+        if (ranked[rarity]) printf(" %d: %.1f%%", rarity, win_pct[rarity] / ranked[rarity]);
+    printf("\n");
+}
+
+static void
+BalancePrintStrongestProgress(const BalanceOptions *o, BalanceProgressRow *rows, int count, const char *kind) {
     qsort(rows, (size_t)count, sizeof(rows[0]), BalanceProgressByWinPct);
-    for (int i = 0; i < count && i < BALANCE_PROGRESS_SHOWN; i++)
-        printf("  %-44s %8.1f%%\n", rows[i].label, BalanceTallyPct(rows[i].tally));
+    int shown = o->list_all || count < BALANCE_PROGRESS_SHOWN ? count : BALANCE_PROGRESS_SHOWN;
+    printf("  %-44s %9s %8s\n", "", "win rate", "battles");
+    for (int i = 0; i < shown; i++)
+        printf("  %-44s %8.1f%% %8d\n", rows[i].label, BalanceTallyPct(rows[i].tally), rows[i].tally.battles);
+    BalancePrintProgressByRarity(rows, count);
     printf(
         "  %d of %d %s win over %.0f%%\n",
         BalanceProgressStrongCount(rows, count),
@@ -1743,7 +1763,7 @@ static bool BalanceRuneActsInBattle(const RuneDef *def) {
     return def->buff != RUNE_BUFF_GOLD && def->buff != RUNE_BUFF_XP;
 }
 
-static void BalanceProgressRunes(Balance *b) {
+static void BalanceProgressRunes(Balance *b, const BalanceOptions *o) {
     static BalanceProgressRow rows[BALANCE_PROGRESS_ROW_CAPACITY];
     int count = 0;
     for (int def = 0; def < RuneCatalogCount(); def++) {
@@ -1751,13 +1771,14 @@ static void BalanceProgressRunes(Balance *b) {
         BalanceProgressRow *row = &rows[count++];
         *row = (BalanceProgressRow){0};
         StrCopy(row->label, sizeof(row->label), RuneDefAt(def)->id);
+        row->rarity = RuneDefAt(def)->rarity;
         BalanceProgressMeasure(b, row, def, BalanceCarryRune, &def);
     }
-    printf("\nRunes: one rune on the squad, against the same squad without it; the strongest\n");
-    BalancePrintStrongestProgress(rows, count, "runes");
+    printf("\nRunes: one rune on the squad, against the same squad without it; the strongest first\n");
+    BalancePrintStrongestProgress(o, rows, count, "runes");
 }
 
-static void BalanceProgressGear(Balance *b, bool every_hero) {
+static void BalanceProgressGear(Balance *b, const BalanceOptions *o, bool every_hero) {
     static BalanceProgressRow rows[BALANCE_PROGRESS_ROW_CAPACITY];
     int count = 0;
     for (int def = 0; def < GearCatalogCount(); def++) {
@@ -1765,14 +1786,15 @@ static void BalanceProgressGear(Balance *b, bool every_hero) {
         BalanceProgressRow *row = &rows[count];
         *row = (BalanceProgressRow){0};
         snprintf(row->label, sizeof(row->label), "%s (rarity %d)", GearDefAt(def)->id, GearDefAt(def)->rarity);
+        row->rarity = GearDefAt(def)->rarity;
         BalanceProgressMeasure(b, row, def * BALANCE_SIDES + every_hero, BalanceWearItem, &trial);
         count += row->tally.battles > 0;
     }
     printf(
-        "\nGear: one item on %s, against the same squad without it; the strongest\n",
+        "\nGear: one item on %s, against the same squad without it; the strongest first\n",
         every_hero ? "every hero that can wear it" : "the first hero that can wear it"
     );
-    BalancePrintStrongestProgress(rows, count, "items");
+    BalancePrintStrongestProgress(o, rows, count, "items");
 }
 
 static void BalanceProgress(Balance *b, const BalanceOptions *o) {
@@ -1785,9 +1807,9 @@ static void BalanceProgress(Balance *b, const BalanceOptions *o) {
     BalanceProgressGrowth(b);
     BalanceProgressRarity(b);
     BalanceProgressFortify(b);
-    BalanceProgressRunes(b);
-    BalanceProgressGear(b, false);
-    BalanceProgressGear(b, true);
+    BalanceProgressRunes(b, o);
+    BalanceProgressGear(b, o, false);
+    BalanceProgressGear(b, o, true);
 }
 
 static int BalanceGate(const Balance *b, const BalanceOptions *o) {

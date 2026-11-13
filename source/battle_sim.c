@@ -74,6 +74,7 @@ typedef struct {
     int marked;
     unsigned faction;
     bool game_changer_applied;
+    long long gear_trigger_worth[GEAR_SLOT_CAPACITY];
 } SimUnit;
 
 typedef struct {
@@ -90,6 +91,7 @@ typedef struct {
     unsigned rng;
     unsigned gear_pending_deaths;
     int gear_last_damage;
+    const StatBudget *stat_budget;
 } BattleSim;
 
 typedef enum {
@@ -992,30 +994,80 @@ static void SimGearApplyStat(SimGearState *gear, GearStat stat, int value) {
     }
 }
 
-static void SimUnitsGearAuras(SimUnit *units, float health_pct[SIM_UNIT_COUNT], float power_pct[SIM_UNIT_COUNT]) {
+typedef struct {
+    int granted, asked;
+} SimGearShare;
+
+static const SimGearShare SIM_GEAR_FULL_SHARE = {1, 1};
+
+static bool SimGearStatIsPooled(GearStat stat) {
+    return stat == GEAR_STAT_POWER || stat == GEAR_STAT_HEALTH || stat == GEAR_STAT_CRIT ||
+           stat == GEAR_STAT_BONUS_DAMAGE || stat == GEAR_STAT_DAMAGE_RESIST || stat == GEAR_STAT_RAW_DAMAGE_RESIST;
+}
+
+static int SimGearPooledPoints(const StatBudget *stat_budget, GearStat stat, int value) {
+    int size = value < 0 ? -value : value;
+    return stat == GEAR_STAT_RAW_DAMAGE_RESIST ? StatBudgetFlatResistPct(stat_budget, size) : size;
+}
+
+static int SimGearShared(SimGearShare share, int value) {
+    return (int)((long long)value * share.granted / share.asked);
+}
+
+static float SimGearSharedPct(SimGearShare share, int value) {
+    if (share.granted == share.asked) return (float)value;
+    return (float)((long long)value * share.granted) / (float)share.asked;
+}
+
+static bool SimGearEffectIsAura(const GearEffect *effect, const SimUnit *wearer) {
+    return effect->on == GEAR_ON_BATTLE && !effect->versus.has_match && effect->stat != GEAR_STAT_TARGET_MATCH &&
+           SimGearWearerQualifies(effect, wearer);
+}
+
+static SimGearShare
+SimGearAuraShare(const SimUnit *units, const SimUnit *wearer, const GearDef *def, const StatBudget *stat_budget) {
+    if (!stat_budget) return SIM_GEAR_FULL_SHARE;
+    int asked = 0;
+    for (int e = 0; e < def->effect_count; e++) {
+        const GearEffect *effect = &def->effects[e];
+        if (!SimGearEffectIsAura(effect, wearer) || !SimGearStatIsPooled(effect->stat)) continue;
+        for (int recipient_idx = 0; recipient_idx < SIM_UNIT_COUNT; recipient_idx++) {
+            int multiplier = SimPassiveFilterMatchCount(&effect->recipient, wearer, &units[recipient_idx]);
+            if (multiplier > 0) asked += SimGearPooledPoints(stat_budget, effect->stat, effect->value * multiplier);
+        }
+    }
+    int cap = StatBudgetGearItemCap(stat_budget);
+    return asked > cap ? (SimGearShare){cap, asked} : SIM_GEAR_FULL_SHARE;
+}
+
+static void SimUnitsGearAuras(
+    SimUnit *units, float health_pct[SIM_UNIT_COUNT], float power_pct[SIM_UNIT_COUNT], const StatBudget *stat_budget
+) {
     for (int wearer_idx = 0; wearer_idx < SIM_UNIT_COUNT; wearer_idx++) {
         SimUnit *wearer = &units[wearer_idx];
         if (!wearer->present) continue;
         for (int slot = 0; slot < GEAR_SLOT_CAPACITY; slot++) {
             const GearDef *def = GearInSlot(wearer->ch, slot);
-            for (int e = 0; def && e < def->effect_count; e++) {
+            if (!def) continue;
+            SimGearShare share = SimGearAuraShare(units, wearer, def, stat_budget);
+            for (int e = 0; e < def->effect_count; e++) {
                 const GearEffect *effect = &def->effects[e];
-                if (effect->on != GEAR_ON_BATTLE || effect->versus.has_match ||
-                    effect->stat == GEAR_STAT_TARGET_MATCH || !SimGearWearerQualifies(effect, wearer))
-                    continue;
+                if (!SimGearEffectIsAura(effect, wearer)) continue;
                 for (int recipient_idx = 0; recipient_idx < SIM_UNIT_COUNT; recipient_idx++) {
                     SimUnit *recipient = &units[recipient_idx];
                     int multiplier = SimPassiveFilterMatchCount(&effect->recipient, wearer, recipient);
                     if (multiplier <= 0) continue;
                     int value = effect->value * multiplier;
                     if (effect->stat == GEAR_STAT_POWER)
-                        power_pct[recipient_idx] += (float)value;
+                        power_pct[recipient_idx] += SimGearSharedPct(share, value);
                     else if (effect->stat == GEAR_STAT_HEALTH)
-                        health_pct[recipient_idx] += (float)value;
+                        health_pct[recipient_idx] += SimGearSharedPct(share, value);
                     else if (effect->stat == GEAR_STAT_CRIT)
-                        recipient->crit_pct += (float)value;
+                        recipient->crit_pct += SimGearSharedPct(share, value);
                     else if (effect->stat == GEAR_STAT_BONUS_DAMAGE)
-                        recipient->damage_bonus_pct += (float)value;
+                        recipient->damage_bonus_pct += SimGearSharedPct(share, value);
+                    else if (SimGearStatIsPooled(effect->stat))
+                        SimGearApplyStat(&recipient->gear, effect->stat, SimGearShared(share, value));
                     else
                         SimGearApplyStat(&recipient->gear, effect->stat, value);
                 }
@@ -1062,7 +1114,7 @@ static void SimUnitsBattleStartPassives(SimUnit *units, const StatBudget *stat_b
     float gear_power_pct[SIM_UNIT_COUNT] = {0};
     float health_pct[SIM_UNIT_COUNT] = {0};
     float power_pct[SIM_UNIT_COUNT] = {0};
-    SimUnitsGearAuras(units, gear_health_pct, gear_power_pct);
+    SimUnitsGearAuras(units, gear_health_pct, gear_power_pct, stat_budget);
     for (int i = 0; i < SIM_UNIT_COUNT && !stat_budget; i++) {
         health_pct[i] = gear_health_pct[i];
         power_pct[i] = gear_power_pct[i];
@@ -1463,6 +1515,10 @@ static int SimMitigatedDamage(const BattleSim *s, const SimUnit *actor, const Si
         bonus->damage_shield + t->gear.raw_damage_resist + SimGearVersusStat(s, t, actor, GEAR_STAT_RAW_DAMAGE_RESIST);
     int resist =
         bonus->damage_resist_pct + t->gear.damage_resist_pct + SimGearVersusStat(s, t, actor, GEAR_STAT_DAMAGE_RESIST);
+    if (s->stat_budget) {
+        resist += StatBudgetFlatResistPct(s->stat_budget, shield);
+        shield = 0;
+    }
     return SimDamageAfterResist(damage, shield, resist);
 }
 
@@ -1490,61 +1546,135 @@ typedef struct {
     bool touched[SIM_UNIT_COUNT];
 } SimGearReaction;
 
+static bool SimGearStatIsMetered(GearStat stat) {
+    return stat == GEAR_STAT_DAMAGE || stat == GEAR_STAT_DRAIN || SimGearStatIsPooled(stat);
+}
+
+static int SimGearTriggerAmount(BattleSim *s, const GearEffect *effect, const SimUnit *recipient, int amount) {
+    int base = 0;
+    float pct = effect->value / 100.0f;
+    switch (effect->stat) {
+        case GEAR_STAT_POWER:
+            base = effect->basis == GEAR_BASIS_DAMAGE ? amount : recipient->start_power;
+            return recipient->curse_power ? 0 : (int)lroundf(base * pct);
+        case GEAR_STAT_HEALTH:
+            base = effect->basis == GEAR_BASIS_DAMAGE ? amount : recipient->max_health;
+            return recipient->curse_health ? 0 : (int)lroundf(base * pct);
+        case GEAR_STAT_DAMAGE:
+            base = effect->basis == GEAR_BASIS_DAMAGE ? amount : recipient->max_health;
+            return (int)lroundf(base * pct);
+        case GEAR_STAT_DRAIN:
+            if (SimRuneResists(s, s->rune_bonus[recipient->side].drain_resist_pct + recipient->gear.drain_resist_pct))
+                return 0;
+            return (int)lroundf(recipient->start_power * pct);
+        default:
+            return effect->value;
+    }
+}
+
 static void
 SimGearReactionAdd(BattleSim *s, SimGearReaction *reaction, const GearEffect *effect, SimUnit *recipient, int amount) {
     int idx = (int)(recipient - s->units);
-    int base = 0;
-    float pct = effect->value / 100.0f;
     BattleSimTarget *t = &reaction->targets[idx];
     t->unit = idx;
     switch (effect->stat) {
         case GEAR_STAT_POWER:
-            base = effect->basis == GEAR_BASIS_DAMAGE ? amount : recipient->start_power;
-            if (!recipient->curse_power) t->power_delta += (int)lroundf(base * pct);
+            t->power_delta += amount;
             break;
         case GEAR_STAT_HEALTH:
-            base = effect->basis == GEAR_BASIS_DAMAGE ? amount : recipient->max_health;
-            if (!recipient->curse_health) t->health_delta += (int)lroundf(base * pct);
+            t->health_delta += amount;
             break;
         case GEAR_STAT_DAMAGE:
-            base = effect->basis == GEAR_BASIS_DAMAGE ? amount : recipient->max_health;
-            t->health_delta -= (int)lroundf(base * pct);
+            t->health_delta -= amount;
             break;
         case GEAR_STAT_DRAIN:
-            if (!SimRuneResists(s, s->rune_bonus[recipient->side].drain_resist_pct + recipient->gear.drain_resist_pct))
-                t->power_delta -= (int)lroundf(recipient->start_power * pct);
+            t->power_delta -= amount;
             break;
         case GEAR_STAT_CRIT:
-            t->crit_delta += (float)effect->value;
+            t->crit_delta += (float)amount;
             break;
         case GEAR_STAT_BONUS_DAMAGE:
-            t->damage_bonus_delta += (float)effect->value;
+            t->damage_bonus_delta += (float)amount;
             break;
         default:
-            SimGearApplyStat(&recipient->gear, effect->stat, effect->value);
+            SimGearApplyStat(&recipient->gear, effect->stat, amount);
             return;
     }
     reaction->touched[idx] = true;
 }
 
+static long long SimGearTriggerWorth(BattleSim *s, const GearEffect *effect, const SimUnit *recipient, int amount) {
+    switch (effect->stat) {
+        case GEAR_STAT_POWER:
+        case GEAR_STAT_DRAIN:
+            return StatBudgetShareOfStat(amount, recipient->start_power);
+        case GEAR_STAT_HEALTH:
+        case GEAR_STAT_DAMAGE:
+            return StatBudgetShareOfStat(amount, recipient->max_health);
+        default:
+            return StatBudgetWorthOfPoints(SimGearPooledPoints(s->stat_budget, effect->stat, amount));
+    }
+}
+
+static int SimGearMissingHealth(const SimGearReaction *reaction, const SimUnit *recipient, int idx) {
+    int missing = recipient->max_health - recipient->health - reaction->targets[idx].health_delta;
+    return missing > 0 ? missing : 0;
+}
+
+static void SimGearMeterTrigger(
+    BattleSim *s,
+    const SimGearReaction *reaction,
+    long long *spent,
+    const GearEffect *effect,
+    int amounts[SIM_UNIT_COUNT]
+) {
+    long long asked = 0;
+    for (int idx = 0; idx < SIM_UNIT_COUNT; idx++) {
+        const SimUnit *recipient = &s->units[idx];
+        if (effect->stat == GEAR_STAT_HEALTH && amounts[idx] > SimGearMissingHealth(reaction, recipient, idx))
+            amounts[idx] = SimGearMissingHealth(reaction, recipient, idx);
+        asked += SimGearTriggerWorth(s, effect, recipient, amounts[idx]);
+    }
+    long long left = StatBudgetGearTriggerAllowance(s->stat_budget) - *spent;
+    if (asked <= left) {
+        *spent += asked;
+        return;
+    }
+    for (int idx = 0; idx < SIM_UNIT_COUNT; idx++) amounts[idx] = (int)(amounts[idx] * left / asked);
+    *spent += left;
+}
+
 static void SimGearFireEffect(
-    BattleSim *s, SimGearReaction *reaction, const SimUnit *wearer, const GearEffect *effect, int amount
+    BattleSim *s, SimGearReaction *reaction, SimUnit *wearer, int slot, const GearEffect *effect, int amount
 ) {
     if (!SimGearWearerQualifies(effect, wearer)) return;
+    bool metered = SimGearStatIsMetered(effect->stat);
+    int amounts[SIM_UNIT_COUNT] = {0};
+    bool reached[SIM_UNIT_COUNT] = {false};
     for (int idx = 0; idx < SIM_UNIT_COUNT; idx++) {
         SimUnit *recipient = &s->units[idx];
         if (!recipient->alive) continue;
         int multiplier = SimPassiveFilterMatchCount(&effect->recipient, wearer, recipient);
-        for (int m = 0; m < multiplier; m++) SimGearReactionAdd(s, reaction, effect, recipient, amount);
+        for (int m = 0; m < multiplier; m++) {
+            int fired = SimGearTriggerAmount(s, effect, recipient, amount);
+            if (metered)
+                amounts[idx] += fired;
+            else
+                SimGearReactionAdd(s, reaction, effect, recipient, fired);
+        }
+        reached[idx] = metered && multiplier > 0;
     }
+    if (!metered) return;
+    if (s->stat_budget) SimGearMeterTrigger(s, reaction, &wearer->gear_trigger_worth[slot], effect, amounts);
+    for (int idx = 0; idx < SIM_UNIT_COUNT; idx++)
+        if (reached[idx]) SimGearReactionAdd(s, reaction, effect, &s->units[idx], amounts[idx]);
 }
 
-static void
-SimGearFireTrigger(BattleSim *s, SimGearReaction *reaction, const SimUnit *wearer, GearTrigger on, int amount) {
+static void SimGearFireTrigger(BattleSim *s, SimGearReaction *reaction, SimUnit *wearer, GearTrigger on, int amount) {
     for (int slot = 0; slot < GEAR_SLOT_CAPACITY; slot++) {
         const GearDef *def = GearInSlot(wearer->ch, slot);
         for (int e = 0; def && e < def->effect_count; e++)
-            if (def->effects[e].on == on) SimGearFireEffect(s, reaction, wearer, &def->effects[e], amount);
+            if (def->effects[e].on == on) SimGearFireEffect(s, reaction, wearer, slot, &def->effects[e], amount);
     }
 }
 
@@ -1572,10 +1702,10 @@ static void SimGearResolveDeaths(BattleSim *s, int actor_idx) {
         SimGearReaction reaction = {0};
         for (int dead_idx = 0; dead_idx < SIM_UNIT_COUNT; dead_idx++) {
             if (!(deaths & (1u << dead_idx))) continue;
-            const SimUnit *dead = &s->units[dead_idx];
+            SimUnit *dead = &s->units[dead_idx];
             SimGearFireTrigger(s, &reaction, dead, GEAR_ON_SELF_DEATH, s->gear_last_damage);
             for (int idx = 0; idx < SIM_UNIT_COUNT; idx++) {
-                const SimUnit *wearer = &s->units[idx];
+                SimUnit *wearer = &s->units[idx];
                 if (!wearer->alive) continue;
                 GearTrigger on = wearer->side == dead->side ? GEAR_ON_ALLY_DEATH : GEAR_ON_ENEMY_DEATH;
                 SimGearFireTrigger(s, &reaction, wearer, on, s->gear_last_damage);
@@ -1598,7 +1728,7 @@ static void SimGearReactToAttack(BattleSim *s, int actor_idx, const BattleSimTar
         dealt_total += dealt;
         bool hidden = target->side != actor->side && SimHitIsHidden(s, actor, target);
         for (int idx = 0; idx < SIM_UNIT_COUNT; idx++) {
-            const SimUnit *wearer = &s->units[idx];
+            SimUnit *wearer = &s->units[idx];
             if (!wearer->alive) continue;
             if (wearer->side != target->side)
                 SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_ENEMY_HIT, dealt);
@@ -1613,7 +1743,7 @@ static void SimGearReactToAttack(BattleSim *s, int actor_idx, const BattleSimTar
     if (dealt_total > 0) {
         s->gear_last_damage = dealt_total;
         for (int idx = 0; idx < SIM_UNIT_COUNT; idx++) {
-            const SimUnit *wearer = &s->units[idx];
+            SimUnit *wearer = &s->units[idx];
             if (!wearer->alive || wearer->side != actor->side) continue;
             SimGearFireTrigger(
                 s, &reaction, wearer, idx == actor_idx ? GEAR_ON_SELF_ATTACK : GEAR_ON_ALLY_ATTACK, dealt_total
@@ -1938,13 +2068,14 @@ static void SimTakeTurn(BattleSim *s, int actor_idx) {
 
 static int SimRollInitiative(BattleSim *s, const SimUnit *u) {
     int lo = u->init_class * SIM_INIT_CLASS_SPAN, hi = lo + SIM_INIT_CLASS_SPAN - 1;
-    int rune_steps = s->rune_bonus[u->side].initiative_steps;
+    int rune_initiative = s->rune_bonus[u->side].initiative_steps * SIM_INIT_CLASS_SPAN;
+    if (s->stat_budget) rune_initiative = StatBudgetRuneInitiative(s->stat_budget, rune_initiative);
     int roll = SimRange(s, lo, hi);
     if (u->gear.haste) {
         int second = SimRange(s, lo, hi);
         if (second > roll) roll = second;
     }
-    return roll + u->cur_initiative + rune_steps * SIM_INIT_CLASS_SPAN;
+    return roll + u->cur_initiative + rune_initiative;
 }
 
 static int SimRollRoundOrder(BattleSim *s, int order[SIM_UNIT_COUNT]) {
@@ -1971,12 +2102,16 @@ static int SimRollRoundOrder(BattleSim *s, int order[SIM_UNIT_COUNT]) {
 
 #define SIM_ROUND_CAP 10
 
-static void SimUnitsRuneBonus(SimUnit *units, int side, const RuneBonus *bonus) {
+static int SimRuneStat(int stat, int rune_pct, const StatBudget *stat_budget) {
+    return stat_budget ? StatBudgetRuneStat(stat_budget, stat, rune_pct) : RuneApplyPct(stat, rune_pct);
+}
+
+static void SimUnitsRuneBonus(SimUnit *units, int side, const RuneBonus *bonus, const StatBudget *stat_budget) {
     for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
         SimUnit *u = &units[side * SQUAD_SLOT_COUNT + slot];
         if (!u->present) continue;
-        u->power = u->start_power = RuneApplyPct(u->power, bonus->power_pct);
-        u->max_health = u->health = RuneApplyPct(u->max_health, bonus->health_pct);
+        u->power = u->start_power = SimRuneStat(u->power, bonus->power_pct, stat_budget);
+        u->max_health = u->health = SimRuneStat(u->max_health, bonus->health_pct, stat_budget);
     }
 }
 
@@ -2043,7 +2178,7 @@ static BattleSimRules SimRosterRules(const BattleRoster *enemy) {
 
 static RuneBonus SimSideRuneBonus(const BattleSimSide *side, const StatBudget *stat_budget) {
     RuneBonus bonus = RuneDefsBonus(side->rune_defs, side->rune_def_count);
-    if (stat_budget) StatBudgetDropFlatRuneShield(&bonus);
+    if (stat_budget) StatBudgetLimitRuneBonus(stat_budget, &bonus);
     return bonus;
 }
 
@@ -2064,9 +2199,9 @@ static void SimUnitsSetup(
     SimUnitsFormationBonus(units, 0, &faction[0], &bonus_pct[0], rules->stat_budget);
     SimUnitsFormationBonus(units, 1, &faction[1], &bonus_pct[1], rules->stat_budget);
     RuneBonus rune_bonus = SimSideRuneBonus(player, rules->stat_budget);
-    SimUnitsRuneBonus(units, 0, &rune_bonus);
+    SimUnitsRuneBonus(units, 0, &rune_bonus, rules->stat_budget);
     RuneBonus enemy_rune_bonus = SimSideRuneBonus(enemy, rules->stat_budget);
-    SimUnitsRuneBonus(units, 1, &enemy_rune_bonus);
+    SimUnitsRuneBonus(units, 1, &enemy_rune_bonus, rules->stat_budget);
     SimUnitsGameChanger(units, rules->changer, rules->stat_budget);
 }
 
@@ -2074,6 +2209,7 @@ static void BattleSimSetupSides(
     BattleSim *s, const BattleSimSide *player, const BattleSimSide *enemy, const BattleSimRules *rules
 ) {
     memset(s, 0, sizeof(*s));
+    s->stat_budget = rules->stat_budget;
     SimUnitsSetup(s->units, s->formation_faction, s->formation_bonus_pct, player, enemy, rules);
     s->rune_bonus[0] = SimSideRuneBonus(player, rules->stat_budget);
     s->rune_bonus[1] = SimSideRuneBonus(enemy, rules->stat_budget);
