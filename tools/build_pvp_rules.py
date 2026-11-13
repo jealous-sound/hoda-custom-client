@@ -25,7 +25,8 @@ CLI_DESCRIPTION = "Build the tunable PvP rule table, bot ladder and opponent squ
 
 SQUAD_CELLS = 5
 GIANT_CELL = 4
-MIN_SQUAD_UNITS = 4
+MIN_SQUAD_UNITS = 3
+FIRST_POOL_MIN_UNITS = 4
 UNMEASURED_STRENGTH = 0
 BOT_COUNT = 240
 BOT_SEED = 1604
@@ -472,6 +473,15 @@ def clean_cell(characters, cell, index):
     return {"id": cell["id"], "tier": cell["tier"], "level": cell.get("level", 1)}
 
 
+def unit_count(cells):
+    return sum(cell is not None for cell in cells)
+
+
+def pool_order(characters, cells):
+    joined_later = unit_count(cells) < FIRST_POOL_MIN_UNITS
+    return (joined_later, catalog_stat_total(characters, cells), json.dumps(cells, sort_keys=True))
+
+
 def build_squads(characters):
     squads = {}
     for path in ROSTER_SOURCES:
@@ -479,12 +489,10 @@ def build_squads(characters):
             for node in campaign["nodes"]:
                 cells = [clean_cell(characters, cell, i) for i, cell in enumerate(node["roster"][:SQUAD_CELLS])]
                 cells += [None] * (SQUAD_CELLS - len(cells))
-                if sum(cell is not None for cell in cells) < MIN_SQUAD_UNITS:
+                if unit_count(cells) < MIN_SQUAD_UNITS:
                     continue
                 squads[json.dumps(cells, sort_keys=True)] = cells
-    pool = sorted(
-        squads.values(), key=lambda cells: (catalog_stat_total(characters, cells), json.dumps(cells, sort_keys=True))
-    )
+    pool = sorted(squads.values(), key=lambda cells: pool_order(characters, cells))
     return [{"strength": strength, "cells": cells} for strength, cells in zip(measured_strengths(len(pool)), pool)]
 
 

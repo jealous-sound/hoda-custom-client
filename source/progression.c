@@ -755,6 +755,10 @@ static void ProgressionLoadGear(const cJSON *json, Player *player) {
         cJSON_ArrayForEach(id, cJSON_GetObjectItemCaseSensitive((cJSON *)item, "slots")) {
             if (slot >= GEAR_SLOT_CAPACITY) break;
             int def = cJSON_IsString(id) && id->valuestring[0] ? GearDefIndex(id->valuestring) : -1;
+            if (def >= 0 && GearUnitIsWearing(ch, def, slot)) {
+                player->gear.counts[def]++;
+                def = -1;
+            }
             ch->gear.defs[slot++] = (short)(def + 1);
         }
     }

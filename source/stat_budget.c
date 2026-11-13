@@ -1,6 +1,8 @@
 #define STAT_BUDGET_PATH "data/stat_budget.json"
-#define STAT_BUDGET_VERSION 3
+#define STAT_BUDGET_VERSION 4
 #define STAT_BUDGET_PATTERN_COUNT (TARGET_ALL + 1)
+#define STAT_BUDGET_RARITY_COUNT (RARITY_MYTHIC + 1)
+#define STAT_BUDGET_NEUTRAL_RARITY_PCT 100
 #define STAT_BUDGET_AURA_STAT_COUNT 2
 #define STAT_BUDGET_HEROES_PATH "data/stat_budget_heroes.json"
 #define STAT_BUDGET_HEROES_VERSION 1
@@ -16,6 +18,15 @@ static const char *const STAT_BUDGET_PATTERN_NAMES[STAT_BUDGET_PATTERN_COUNT] = 
     [TARGET_ALL] = "All",
 };
 
+static const char *const STAT_BUDGET_RARITY_NAMES[STAT_BUDGET_RARITY_COUNT] = {
+    [RARITY_COMMON] = "Common",
+    [RARITY_UNCOMMON] = "Uncommon",
+    [RARITY_RARE] = "Rare",
+    [RARITY_EPIC] = "Epic",
+    [RARITY_LEGENDARY] = "Legendary",
+    [RARITY_MYTHIC] = "Mythic",
+};
+
 typedef struct {
     char id[64];
     int budget_pct;
@@ -26,7 +37,12 @@ typedef struct {
     TargetPattern pattern;
     int aura_points;
     int hero_pct;
+    int rarity_pct;
 } StatBudgetKit;
+
+typedef struct {
+    int power, health;
+} StatBudgetStats;
 
 typedef struct {
     int budget;
@@ -37,8 +53,10 @@ typedef struct {
     int self_aura_share_pct;
     int aura_matching_allies;
     int aura_cap_pct;
+    int gear_cap_pct;
     int formation_bonus_pct_per_hero;
     int changer_cap_pct;
+    int rarity_budget_pct[STAT_BUDGET_RARITY_COUNT];
     StatBudgetHero heroes[STAT_BUDGET_HERO_CAPACITY];
     int hero_count;
     bool loaded;
@@ -98,15 +116,21 @@ const StatBudget *StatBudgetEnsure(void) {
     b->self_aura_share_pct = JsonInt(root, "self_aura_share_pct");
     b->aura_matching_allies = JsonInt(root, "aura_matching_allies");
     b->aura_cap_pct = JsonInt(root, "aura_cap_pct");
+    b->gear_cap_pct = JsonInt(root, "gear_cap_pct");
     b->formation_bonus_pct_per_hero = JsonInt(root, "formation_bonus_pct_per_hero");
     b->changer_cap_pct = JsonInt(root, "changer_cap_pct");
     const cJSON *patterns = cJSON_GetObjectItemCaseSensitive(root, "pattern_power_cost_pct");
+    const cJSON *rarities = cJSON_GetObjectItemCaseSensitive(root, "rarity_budget_pct");
     bool valid = b->budget > 0 && b->health_per_power > 0 && b->giant_budget_pct > 0 && b->aura_cost_pct >= 0 &&
                  b->self_aura_share_pct >= 0 && b->aura_matching_allies >= 0 && b->aura_cap_pct > 0 &&
-                 b->formation_bonus_pct_per_hero >= 0 && b->changer_cap_pct >= 0;
+                 b->gear_cap_pct >= 0 && b->formation_bonus_pct_per_hero >= 0 && b->changer_cap_pct >= 0;
     for (int pattern = 0; pattern < STAT_BUDGET_PATTERN_COUNT; pattern++) {
         b->pattern_power_cost_pct[pattern] = JsonInt(patterns, STAT_BUDGET_PATTERN_NAMES[pattern]);
         valid = valid && b->pattern_power_cost_pct[pattern] > 0;
+    }
+    for (int rarity = RARITY_COMMON; rarity < STAT_BUDGET_RARITY_COUNT; rarity++) {
+        b->rarity_budget_pct[rarity] = JsonInt(rarities, STAT_BUDGET_RARITY_NAMES[rarity]);
+        valid = valid && b->rarity_budget_pct[rarity] > 0;
     }
     if (!valid) TraceLog(LOG_FATAL, "StatBudget: %s holds a missing or non-positive rule", STAT_BUDGET_PATH);
     cJSON_Delete(root);
@@ -156,6 +180,10 @@ float StatBudgetCappedAuraPct(const StatBudget *b, float aura_pct) {
     return aura_pct > (float)b->aura_cap_pct ? (float)b->aura_cap_pct : aura_pct;
 }
 
+float StatBudgetCappedGearPct(const StatBudget *b, float gear_pct) {
+    return gear_pct > (float)b->gear_cap_pct ? (float)b->gear_cap_pct : gear_pct;
+}
+
 float StatBudgetFormationBonus(const StatBudget *b) {
     return (float)b->formation_bonus_pct_per_hero / 100.0f;
 }
@@ -164,19 +192,40 @@ int StatBudgetCappedChangerPct(const StatBudget *b, int changer_pct) {
     return changer_pct > b->changer_cap_pct ? b->changer_cap_pct : changer_pct;
 }
 
-void StatBudgetLevelRunes(RuneBonus *bonus) {
-    bonus->power_pct = 0;
-    bonus->health_pct = 0;
+void StatBudgetDropFlatRuneShield(RuneBonus *bonus) {
     bonus->damage_shield = 0;
-    bonus->damage_resist_pct = 0;
-    bonus->retaliation_pct = 0;
 }
 
-void StatBudgetApplyKit(const StatBudget *b, const StatBudgetKit *kit, int *power, int *health) {
-    long long cost_pct = StatBudgetCostPct(b, kit->pattern, *power, *health);
+int StatBudgetRarityPct(const StatBudget *b, Rarity rarity) {
+    bool listed = rarity >= RARITY_COMMON && rarity < STAT_BUDGET_RARITY_COUNT;
+    return listed ? b->rarity_budget_pct[rarity] : STAT_BUDGET_NEUTRAL_RARITY_PCT;
+}
+
+static Tier StatBudgetGrownTier(const Character *ch) {
+    return ch->has_tier[ch->max_tier] ? ch->max_tier : ch->tier;
+}
+
+static int StatBudgetGrownLevel(const Character *ch, Tier tier) {
+    int level = ch->stats[tier].max_level - (ch->ascended ? GEAR_ASCENSION_BONUS_LEVELS : 0);
+    return level > 1 ? level : 1;
+}
+
+StatBudgetStats StatBudgetGrownStats(const Character *ch) {
+    Tier tier = StatBudgetGrownTier(ch);
+    const TierStats *st = &ch->stats[tier];
+    int steps = StatBudgetGrownLevel(ch, tier) - 1;
+    return (StatBudgetStats){
+        .power = st->base_power + steps * st->power_per_level,
+        .health = st->base_health + steps * st->health_per_level,
+    };
+}
+
+void StatBudgetApplyKit(const StatBudget *b, const StatBudgetKit *kit, StatBudgetStats grown, int *power, int *health) {
+    long long cost_pct = StatBudgetCostPct(b, kit->pattern, grown.power, grown.health);
     if (cost_pct <= 0) return;
-    long long numerator = (long long)b->budget * (kit->giant ? b->giant_budget_pct : 100) * kit->hero_pct;
-    long long denominator = cost_pct * StatBudgetAuraChargePct(b, kit->aura_points);
+    long long numerator =
+        (long long)b->budget * (kit->giant ? b->giant_budget_pct : 100) * kit->hero_pct * kit->rarity_pct;
+    long long denominator = cost_pct * StatBudgetAuraChargePct(b, kit->aura_points) * STAT_BUDGET_NEUTRAL_RARITY_PCT;
     *power = (int)((*power * numerator + denominator / 2) / denominator);
     *health = (int)((*health * numerator + denominator / 2) / denominator);
 }
@@ -188,6 +237,7 @@ void StatBudgetApply(const StatBudget *b, const Character *ch, int *power, int *
         .pattern = ch->ability ? ch->ability->target : TARGET_ONE,
         .aura_points = StatBudgetAuraPoints(b, PassiveManifestFind(CharacterDataId(ch))),
         .hero_pct = StatBudgetHeroPct(b, ch->id),
+        .rarity_pct = StatBudgetRarityPct(b, ch->rarity),
     };
-    StatBudgetApplyKit(b, &kit, power, health);
+    StatBudgetApplyKit(b, &kit, StatBudgetGrownStats(ch), power, health);
 }

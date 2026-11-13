@@ -1,5 +1,5 @@
-HODA_NEWS_LEVEL_ARENA_TITLE|競技場已實現公平
-HODA_NEWS_LEVEL_ARENA_SUBTITLE|在PvP中，稀有度、等級和層級不再決定勝負。
-HODA_NEWS_LEVEL_ARENA_SUMMARY|現在所有英雄都以相同的綜合實力進入PvP。點擊查看變更內容。
-HODA_NEWS_LEVEL_ARENA_MESSAGE|現在，無論稀有度、層級、等級或嵌入如何，所有英雄都以相同的綜合實力進入PvP。技能越強的英雄屬性越低，最強的英雄造成擊暈、緩速和詛咒的機率也會低於卡牌上的說明。\n\n增加力量、生命力、傷害護盾、傷害抗性或反擊的符文在PvP中無效。其他符文仍然有效。\n\n所有稀有度的派系獎勵相同，活動增益上限為<color=orange>+25%</color>。\n\n任務和Nexus沒有變化。
-HODA_PVP_EVENT_BUFF_CAP|在公平競技場中，此增益上限為+{0}%。
+HODA_NEWS_PVP_PROGRESS_TITLE|PvP中養成再次生效
+HODA_NEWS_PVP_PROGRESS_SUBTITLE|等級、層級、嵌入、符文和裝備再次讓小隊更強。
+HODA_NEWS_PVP_PROGRESS_SUMMARY|培養過的小隊現在能戰勝未培養的小隊。點擊查看變更內容。
+HODA_NEWS_PVP_PROGRESS_MESSAGE|PvP中英雄之間依然保持平衡，但你對英雄的投入再次有效。英雄按你培養出的實力比例作戰：在最高層級升滿等級的英雄以全部實力作戰，剛獲得的英雄只有其中一部分，嵌入則在此基礎上額外增加。\n\n稀有度同樣有效。神話強於傳說，傳說強於史詩，依此類推直到普通。\n\n符文在PvP中再次生效，固定數值的傷害護盾除外。裝備最多提供<color=orange>+50%</color>的力量和生命力，活動增益上限仍為<color=orange>+25%</color>。\n\n對手現在根據你的獎盃數配對：新小隊遇到新小隊，排行榜頂端都是完全培養的小隊。\n\n任務和Nexus沒有變化。
+HODA_PVP_EVENT_BUFF_CAP|在PvP中，此增益上限為+{0}%。

@@ -1,7 +1,7 @@
 #define PVP_RULES_PATH "data/pvp_rules.json"
 #define PVP_CATALOG_PATH HOD_CACHE "characters.json"
 #define PVP_BOT_CAPACITY 256
-#define PVP_SQUAD_CAPACITY 640
+#define PVP_SQUAD_CAPACITY 1024
 #define PVP_NAME_CAP 32
 #define PVP_BOT_NAME_FORMAT "[BOT] %s"
 #define PVP_UNIT_ID_CAP 48
@@ -421,7 +421,9 @@ static int PvpPickBot(int trophies, long long day, unsigned seed) {
 
 int PvpBotStrengthRank(int bot) {
     const PvpTable *t = PvpTableEnsure();
-    return t->bot_count > 1 ? (int)((long long)bot * (t->squad_count - 1) / (t->bot_count - 1)) : 0;
+    int top_trophies = t->bots[t->bot_count - 1].trophies;
+    if (top_trophies <= 0) return 0;
+    return (int)((long long)t->bots[bot].trophies * (t->squad_count - 1) / top_trophies);
 }
 
 static int PvpPickSquad(int bot, unsigned seed) {
