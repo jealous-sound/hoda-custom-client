@@ -190,12 +190,21 @@ void ConsumeCatalogUnload(void) {
     memset(&consume_catalog, 0, sizeof(consume_catalog));
 }
 
-static const ConsumeProfile *ConsumeProfileFor(const Character *ch) {
+static const ConsumeProfile *ConsumeProfileFind(const Character *ch) {
     ConsumeCatalogEnsure();
     for (int i = 0; i < consume_catalog.profile_count; i++)
         if (!strcmp(consume_catalog.profiles[i].id, CharacterDataId(ch))) return &consume_catalog.profiles[i];
-    TraceLog(LOG_FATAL, "Consume: %s has no profile; rerun tools/build_consume_tables.py", ch->id);
     return NULL;
+}
+
+bool ConsumeCharacterHasProfile(const Character *ch) {
+    return ConsumeProfileFind(ch) != NULL;
+}
+
+static const ConsumeProfile *ConsumeProfileFor(const Character *ch) {
+    const ConsumeProfile *profile = ConsumeProfileFind(ch);
+    if (!profile) TraceLog(LOG_FATAL, "Consume: %s has no profile; rerun tools/build_consume_tables.py", ch->id);
+    return profile;
 }
 
 int ConsumeXpForLevel(const ConsumeXpTable *table, int level) {

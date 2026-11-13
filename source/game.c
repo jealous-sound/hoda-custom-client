@@ -329,7 +329,8 @@ static PvpOpponent GameDuelOpponent(const Game *g) {
     PvpOpponent opponent = PvpOpponentFromDuel(d->id, d->name, d->level, d->trophies, g->player.pvp.trophies, seed);
     for (int i = 0; i < d->unit_count; i++) {
         const GuildDuelUnit *unit = &d->units[i];
-        PvpOpponentAddDuelUnit(&opponent, unit->slot, unit->id, TierFromString(unit->tier), unit->level);
+        const BattleHeroBuild *build = d->hero_builds ? &unit->build : NULL;
+        PvpOpponentAddDuelUnit(&opponent, unit->slot, unit->id, TierFromString(unit->tier), unit->level, build);
     }
     for (int i = 0; i < d->rune_count; i++) PvpOpponentAddDuelRune(&opponent, d->runes[i]);
     return opponent;

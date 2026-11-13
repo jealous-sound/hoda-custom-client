@@ -28,6 +28,8 @@
 #define GOLDEN_FORTIFY_SLOT_PCT 60
 #define GOLDEN_BUDGETED_BATTLES 96
 #define GOLDEN_BUDGETED_FORTIFIED_BATTLES 32
+#define GOLDEN_DUEL_BATTLES 16
+#define GOLDEN_BUDGETED_DUEL_BATTLES 32
 #define GOLDEN_BATTLES_SECTION "battles"
 #define GOLDEN_USAGE "usage: battle_replay_golden [--check | --trace BATTLE] [DIR]"
 #define GOLDEN_COUNT(array) ((int)(sizeof(array) / sizeof((array)[0])))
@@ -275,6 +277,20 @@ static void GoldenBudgetedFortifiedBattles(Golden *g) {
         cJSON *enemy = GoldenSide(g, false);
         cJSON *changer = GoldenChanger(g);
         GoldenAddBattleUnderRules(g, TextFormat("budgeted-fortified-%03d", battle), player, enemy, changer, true);
+    }
+}
+
+static cJSON *GoldenRivalSide(Golden *g) {
+    cJSON *rival = GoldenFortifiedSide(g);
+    cJSON_AddBoolToObject(rival, BATTLE_HERO_BUILDS_FIELD, true);
+    return rival;
+}
+
+static void GoldenDuelBattles(Golden *g, const char *name_format, int count, bool stat_budget) {
+    for (int battle = 0; battle < count; battle++) {
+        cJSON *player = GoldenFortifiedSide(g);
+        cJSON *enemy = GoldenRivalSide(g);
+        GoldenAddBattleUnderRules(g, TextFormat(name_format, battle), player, enemy, cJSON_CreateNull(), stat_budget);
     }
 }
 
@@ -708,6 +724,8 @@ int main(int argc, char **argv) {
     GoldenFortifiedBattles(g);
     GoldenBudgetedBattles(g);
     GoldenBudgetedFortifiedBattles(g);
+    GoldenDuelBattles(g, "duel-%03d", GOLDEN_DUEL_BATTLES, false);
+    GoldenDuelBattles(g, "budgeted-duel-%03d", GOLDEN_BUDGETED_DUEL_BATTLES, true);
     cJSON *recipes = GoldenBuiltinRecipes();
 
     const GoldenSection replay_sections[] = {
