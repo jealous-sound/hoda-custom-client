@@ -424,19 +424,24 @@ static bool FortifyChildLoad(const cJSON *entry, int *slot, FortifyChild *child)
     return true;
 }
 
-bool FortifyChildrenLoad(Character *ch, const cJSON *array) {
-    memset(ch->fortify, 0, sizeof(ch->fortify));
+bool FortifyChildrenParse(FortifyChild children[FORTIFY_SLOT_COUNT], const cJSON *array) {
+    size_t size = FORTIFY_SLOT_COUNT * sizeof(children[0]);
+    memset(children, 0, size);
     if (!array) return true;
     if (!cJSON_IsArray(array)) return false;
     const cJSON *entry = NULL;
     cJSON_ArrayForEach(entry, (cJSON *)array) {
         int slot = -1;
         FortifyChild child;
-        if (!FortifyChildLoad(entry, &slot, &child) || FortifySlotFilled(ch, slot)) {
-            memset(ch->fortify, 0, sizeof(ch->fortify));
+        if (!FortifyChildLoad(entry, &slot, &child) || children[slot].id[0] != '\0') {
+            memset(children, 0, size);
             return false;
         }
-        ch->fortify[slot] = child;
+        children[slot] = child;
     }
     return true;
+}
+
+bool FortifyChildrenLoad(Character *ch, const cJSON *array) {
+    return FortifyChildrenParse(ch->fortify, array);
 }

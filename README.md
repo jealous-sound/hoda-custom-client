@@ -91,6 +91,10 @@ server issues a seed, replays its Go port of `battle_sim.c`, and pays its own re
 - The wire contract is `source/backend.c` here and `internal/api` in the backend; change both together.
 - The backend embeds copies of most `data/` tables and the golden corpus. After changing them, run
   `scripts/sync-client-data.sh` in the backend; its tests fail on drift.
+- A duel opponent, a guildmate or a ladder rival, is that player's current squad. With `"hero_builds": true` each of
+  its units carries `consume_xp`, `ascended`, five `gear` slots and its `fortify` children beside `slot`, `id`, `tier`
+  and `level`. The client fields those builds and sends them back as the `enemy` of `battle_start` with the same
+  flag, and both simulations build that side like the attacker's. Bots and PvE rosters carry no builds.
 - After changing the simulation or its inputs, run `make squad-strength`, then `make golden` and then the sync.
   `make test` fails while the squad strengths or the corpus are stale and names the first corpus entry and field that
   differ. To find where two builds diverge, diff their `./tests/battle_replay_golden --trace <battle name>` output.

@@ -6896,9 +6896,9 @@ static void TestDuelOpponentFightsTheMembersSquad(void) {
     PvpOpponent o = PvpOpponentFromDuel("ally", "Varric", 22, 340, 100, 5);
     assert(o.duel && !strcmp(PvpOpponentName(&o), "Varric") && o.level == 22 && o.trophies == 340);
     assert(o.gain == PvpTrophyGain(100, 340) && o.loss == PvpTrophyLoss(100, 340));
-    assert(PvpOpponentAddDuelUnit(&o, 0, "UNIT_VIVIENNE", TIER_II, 9));
-    assert(PvpOpponentAddDuelUnit(&o, 2, "UNIT_NOT_IN_THE_CATALOG", TIER_I, 3));
-    assert(!PvpOpponentAddDuelUnit(&o, SQUAD_SLOT_COUNT, "UNIT_VIVIENNE", TIER_I, 1));
+    assert(PvpOpponentAddDuelUnit(&o, 0, "UNIT_VIVIENNE", TIER_II, 9, NULL));
+    assert(PvpOpponentAddDuelUnit(&o, 2, "UNIT_NOT_IN_THE_CATALOG", TIER_I, 3, NULL));
+    assert(!PvpOpponentAddDuelUnit(&o, SQUAD_SLOT_COUNT, "UNIT_VIVIENNE", TIER_I, 1, NULL));
     PvpOpponentAddDuelRune(&o, "rune-power-1");
     PvpOpponentAddDuelRune(&o, "rune-that-does-not-exist");
     static BattleRoster roster;
@@ -7926,6 +7926,101 @@ static void TestBattleStartSendsTheBattleTheClientPlays(void) {
     PlayerUnloadRoster(&g->player);
 }
 
+#define TEST_GROWN_RIVAL_CONSUME_XP 40000
+#define TEST_GROWN_RIVAL_REPLY                                                                                         \
+    "{\"id\":\"champion\",\"name\":\"Varric\",\"level\":40,\"trophies\":900,\"hero_builds\":true,"                     \
+    "\"units\":[{\"slot\":0,\"id\":\"UNIT_VIVIENNE\",\"tier\":\"II\",\"level\":9,\"consume_xp\":40000,"                \
+    "\"ascended\":true,\"gear\":[\"templar_shield\",\"\",\"winterweight\",\"\",\"\"],"                                 \
+    "\"fortify\":[{\"slot\":0,\"id\":\"UNIT_ELVENMAGE\",\"tier\":\"II\"},"                                             \
+    "{\"slot\":4,\"id\":\"UNIT_VIVIENNE\",\"tier\":\"I\",\"ascended\":true}]},"                                        \
+    "{\"slot\":1,\"id\":\"UNIT_ELVENMAGE\",\"tier\":\"I\",\"level\":2,\"consume_xp\":0,\"ascended\":false,"            \
+    "\"gear\":[\"\",\"\",\"\",\"\",\"\"],\"fortify\":[]},"                                                             \
+    "{\"slot\":2,\"id\":\"UNIT_ELVENMAGE\",\"tier\":\"I\",\"level\":2,\"consume_xp\":0,\"ascended\":false,"            \
+    "\"gear\":[\"gear-that-does-not-exist\",\"\",\"\",\"\",\"\"],\"fortify\":[]}],"                                    \
+    "\"runes\":[\"rune-power-1\"]}"
+
+static void TestAdoptDuelReply(Game *g, const char *reply_text) {
+    cJSON *reply = cJSON_Parse(reply_text);
+    assert(reply);
+    GuildHandleDuel(&g->guild, reply);
+    cJSON_Delete(reply);
+    g->pvp_opponent = GameDuelOpponent(g);
+    PvpOpponentRoster(&g->battle.enemy_roster, &g->pvp_opponent);
+}
+
+static void TestADuelIsFoughtAgainstTheRivalsHeroBuilds(void) {
+    static Game game;
+    Game *g = &game;
+    memset(g, 0, sizeof(*g));
+    ProgressionInitializePlayerDefaults(&g->player);
+    PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    GuildInitialize(&g->guild);
+    g->battle_is_pvp = true;
+
+    TestAdoptDuelReply(g, TEST_RIVAL_SQUAD_REPLY);
+    static BattleRoster bare;
+    bare = g->battle.enemy_roster;
+    assert(!g->guild.duel.hero_builds && !bare.hero_builds && bare.present[0]);
+    assert(!bare.chars[0].ascended && !GearHasEquipped(&bare.chars[0]) && !FortifyHasChildren(&bare.chars[0]));
+    cJSON *fields = GameBattleStartFields(g);
+    const cJSON *claimed = cJSON_GetObjectItemCaseSensitive(fields, "enemy");
+    const cJSON *unit = cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(claimed, "units"), 0);
+    assert(!cJSON_GetObjectItemCaseSensitive(claimed, "hero_builds"));
+    assert(!cJSON_GetObjectItemCaseSensitive(unit, "gear") && !cJSON_GetObjectItemCaseSensitive(unit, "consume_xp"));
+    cJSON_Delete(fields);
+    for (unsigned seed = 1; seed <= 4; seed++) AssertBattleStartReplaysTheBattle(g, seed);
+
+    TestAdoptDuelReply(g, TEST_GROWN_RIVAL_REPLY);
+    const BattleRoster *enemy = &g->battle.enemy_roster;
+    const Character *grown = &enemy->chars[0];
+    assert(g->guild.duel.hero_builds && g->guild.duel.unit_count == 2);
+    assert(enemy->hero_builds && enemy->present[0] && enemy->present[1] && !enemy->present[2]);
+    assert(grown->ascended && grown->tier == TIER_II && grown->level == 9);
+    assert(grown->consume_xp == TEST_GROWN_RIVAL_CONSUME_XP && grown->crit_chance > bare.chars[0].crit_chance);
+    assert(GearInSlot(grown, 0) == GearDefAt(GearDefIndex("templar_shield")) && !GearInSlot(grown, 1));
+    assert(GearInSlot(grown, 2) == GearDefAt(GearDefIndex("winterweight")));
+    assert(FortifyFilledCount(grown) == 2 && grown->fortify[4].ascended && grown->fortify[0].tier == TIER_II);
+    assert(
+        CharacterStatPower(grown) + CharacterStatHealth(grown) >
+        CharacterStatPower(&bare.chars[0]) + CharacterStatHealth(&bare.chars[0])
+    );
+    assert(enemy->rune_def_count == 1 && enemy->rune_defs[0] == RuneDefIndex("rune-power-1"));
+
+    fields = GameBattleStartFields(g);
+    assert(!strcmp(JsonStr(fields, "duel"), "champion"));
+    claimed = cJSON_GetObjectItemCaseSensitive(fields, "enemy");
+    assert(
+        JsonBool(claimed, "hero_builds") && cJSON_GetArraySize(cJSON_GetObjectItemCaseSensitive(claimed, "units")) == 2
+    );
+    unit = cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(claimed, "units"), 0);
+    const cJSON *gear = cJSON_GetObjectItemCaseSensitive(unit, "gear");
+    const cJSON *fortify = cJSON_GetObjectItemCaseSensitive(unit, "fortify");
+    assert(JsonBool(unit, "ascended") && JsonInt(unit, "consume_xp") == TEST_GROWN_RIVAL_CONSUME_XP);
+    assert(JsonInt(unit, "level") == 9 && !cJSON_GetObjectItemCaseSensitive(unit, "instance_id"));
+    assert(cJSON_GetArraySize(gear) == GEAR_SLOT_CAPACITY);
+    assert(!strcmp(cJSON_GetArrayItem(gear, 0)->valuestring, "templar_shield"));
+    assert(!strcmp(cJSON_GetArrayItem(gear, 1)->valuestring, ""));
+    assert(!strcmp(cJSON_GetArrayItem(gear, 2)->valuestring, "winterweight"));
+    assert(cJSON_GetArraySize(fortify) == 2 && JsonInt(cJSON_GetArrayItem(fortify, 1), "slot") == 4);
+    assert(JsonBool(cJSON_GetArrayItem(fortify, 1), "ascended"));
+    unit = cJSON_GetArrayItem(cJSON_GetObjectItemCaseSensitive(claimed, "units"), 1);
+    assert(cJSON_GetArraySize(cJSON_GetObjectItemCaseSensitive(unit, "gear")) == GEAR_SLOT_CAPACITY);
+    assert(!cJSON_GetObjectItemCaseSensitive(unit, "fortify") && !JsonBool(unit, "ascended"));
+    cJSON_Delete(fields);
+    for (unsigned seed = 1; seed <= 8; seed++) AssertBattleStartReplaysTheBattle(g, seed);
+
+    static SimUnit grown_units[SIM_UNIT_COUNT], bare_units[SIM_UNIT_COUNT];
+    BattleSimPreview(grown_units, &g->player, enemy);
+    bare.rune_def_count = enemy->rune_def_count;
+    memcpy(bare.rune_defs, enemy->rune_defs, sizeof(bare.rune_defs));
+    BattleSimPreview(bare_units, &g->player, &bare);
+    const SimUnit *fielded = &grown_units[SQUAD_SLOT_COUNT], *undressed = &bare_units[SQUAD_SLOT_COUNT];
+    assert(fielded->present && undressed->present);
+    assert(fielded->max_health + fielded->start_power > undressed->max_health + undressed->start_power);
+    assert(fielded->crit_pct > undressed->crit_pct);
+    PlayerUnloadRoster(&g->player);
+}
+
 static void TestPvpMatchAsksTheServerForTheOpponent(void) {
     GamePvpMatchRequest ladder = {.bot = GAME_PVP_MATCHMAKING};
     cJSON *fields = GamePvpMatchFields(&ladder);
@@ -8493,6 +8588,7 @@ int main(void) {
     TestPvpEventRotatesThroughTheCatalog();
     TestOnslaughtReplacesEveryFewPvpEvents();
     TestDuelOpponentFightsTheMembersSquad();
+    TestADuelIsFoughtAgainstTheRivalsHeroBuilds();
     TestPvpEventBannersMilestonesAndClaim();
     TestPvpEventPrizesAreOwnableAndHaveArt();
     TestPvpEventMilestonesPayWispGearAndTome();
