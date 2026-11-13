@@ -1914,8 +1914,17 @@ static const StatBudget TEST_STAT_BUDGET = {
     .self_aura_share_pct = 20,
     .aura_matching_allies = 2,
     .aura_cap_pct = 100,
+    .gear_cap_pct = 100,
     .formation_bonus_pct_per_hero = 5,
     .changer_cap_pct = 25,
+    .rarity_budget_pct = {
+        [RARITY_COMMON] = 50,
+        [RARITY_UNCOMMON] = 60,
+        [RARITY_RARE] = 70,
+        [RARITY_EPIC] = 85,
+        [RARITY_LEGENDARY] = 100,
+        [RARITY_MYTHIC] = 110
+    },
 };
 
 static void TestStatBudgetApply(bool giant, TargetPattern pattern, int aura_points, int *power, int *health) {
@@ -1924,11 +1933,13 @@ static void TestStatBudgetApply(bool giant, TargetPattern pattern, int aura_poin
         .pattern = pattern,
         .aura_points = aura_points,
         .hero_pct = STAT_BUDGET_NEUTRAL_HERO_PCT,
+        .rarity_pct = STAT_BUDGET_NEUTRAL_RARITY_PCT,
     };
-    StatBudgetApplyKit(&TEST_STAT_BUDGET, &kit, power, health);
+    StatBudgetStats grown = {.power = *power, .health = *health};
+    StatBudgetApplyKit(&TEST_STAT_BUDGET, &kit, grown, power, health);
 }
 
-static void TestStatBudgetScalesEveryHeroToOneCostAndKeepsItsShape(void) {
+static void TestStatBudgetPricesEveryGrownHeroAtOneCostAndKeepsItsShape(void) {
     int weak_power = 100, weak_health = 500;
     int strong_power = 2000, strong_health = 20000;
     int giant_power = 100, giant_health = 500;
@@ -2089,7 +2100,7 @@ static void TestStatBudgetCapsWhatAurasAdd(void) {
     cJSON_Delete(root);
 }
 
-static void TestStatBudgetDropsRuneStatBonusesAndKeepsTacticalRunes(void) {
+static void TestStatBudgetCountsStatRunesAndDropsOnlyTheFlatShield(void) {
     RuneBonus bonus = {
         .power_pct = 100,
         .health_pct = 60,
@@ -2106,20 +2117,24 @@ static void TestStatBudgetDropsRuneStatBonusesAndKeepsTacticalRunes(void) {
         .perceptive = true,
     };
     bonus.target_level[0] = 6;
-    StatBudgetLevelRunes(&bonus);
-    assert(bonus.power_pct == 0 && bonus.health_pct == 0);
-    assert(bonus.damage_shield == 0 && bonus.damage_resist_pct == 0 && bonus.retaliation_pct == 0);
+    StatBudgetDropFlatRuneShield(&bonus);
+    assert(bonus.damage_shield == 0);
+    assert(bonus.power_pct == 100 && bonus.health_pct == 60);
+    assert(bonus.damage_resist_pct == 75 && bonus.retaliation_pct == 5);
     assert(bonus.initiative_steps == 1 && bonus.target_level[0] == 6 && bonus.gold_pct == 100);
     assert(bonus.stun_resist_pct == 60 && bonus.slow_resist_pct == 50 && bonus.drain_resist_pct == 40);
     assert(bonus.curse_power_immune && bonus.stealth && bonus.perceptive);
 
-    int power_rune = -1;
-    for (int def = 0; def < RuneCatalogCount() && power_rune < 0; def++)
-        if (RuneDefAt(def)->buff == RUNE_BUFF_POWER) power_rune = def;
-    assert(power_rune >= 0);
+    int power_rune = -1, shield_rune = -1;
+    for (int def = 0; def < RuneCatalogCount(); def++) {
+        if (power_rune < 0 && RuneDefAt(def)->buff == RUNE_BUFF_POWER) power_rune = def;
+        if (shield_rune < 0 && RuneDefAt(def)->buff == RUNE_BUFF_DAMAGE_SHIELD) shield_rune = def;
+    }
+    assert(power_rune >= 0 && shield_rune >= 0);
     static Player player;
     static BattleRoster roster;
     static SimUnit plain[SIM_UNIT_COUNT], runed[SIM_UNIT_COUNT];
+    static BattleSim sim;
     memset(&player, 0, sizeof(player));
     memset(&roster, 0, sizeof(roster));
     for (int q = 0; q < PLAYER_MAX_SQUADS; q++)
@@ -2130,9 +2145,76 @@ static void TestStatBudgetDropsRuneStatBonusesAndKeepsTacticalRunes(void) {
     roster.stat_budget = &TEST_STAT_BUDGET;
     BattleSimPreview(plain, &player, &roster);
     roster.rune_defs[0] = power_rune;
-    roster.rune_def_count = 1;
+    roster.rune_defs[1] = shield_rune;
+    roster.rune_def_count = 2;
     BattleSimPreview(runed, &player, &roster);
-    assert(runed[SQUAD_SLOT_COUNT].power == plain[SQUAD_SLOT_COUNT].power);
+    assert(RuneDefAt(power_rune)->value > 0);
+    assert(runed[SQUAD_SLOT_COUNT].power == RuneApplyPct(plain[SQUAD_SLOT_COUNT].power, RuneDefAt(power_rune)->value));
+
+    BattleSimSetup(&sim, &player, &roster);
+    assert(sim.rune_bonus[1].power_pct == RuneDefAt(power_rune)->value && sim.rune_bonus[1].damage_shield == 0);
+    roster.stat_budget = NULL;
+    BattleSimSetup(&sim, &player, &roster);
+    assert(sim.rune_bonus[1].damage_shield == RuneDefAt(shield_rune)->value);
+}
+
+static void TestStatBudgetKeepsTheShareOfGrowthAHeroHasEarned(void) {
+    Character hero;
+    Ability ability;
+    TestCharacter(&hero, &ability, "grower", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 500);
+    hero.has_tier[TIER_I] = hero.has_tier[TIER_II] = true;
+    hero.max_tier = TIER_II;
+    hero.stats[TIER_I].max_level = 10;
+    hero.stats[TIER_I].power_per_level = 10;
+    hero.stats[TIER_I].health_per_level = 50;
+    hero.stats[TIER_II] = (TierStats){
+        .base_power = 200, .base_health = 1000, .max_level = 11, .power_per_level = 20, .health_per_level = 100
+    };
+    StatBudgetStats grown = StatBudgetGrownStats(&hero);
+    assert(grown.power == 400 && grown.health == 2000);
+
+    static const struct {
+        Tier tier;
+        int level, power, health;
+    } stages[] = {{TIER_I, 1, 75, 375}, {TIER_I, 10, 143, 713}, {TIER_II, 1, 150, 750}, {TIER_II, 11, 300, 1500}};
+    for (size_t stage = 0; stage < sizeof(stages) / sizeof(stages[0]); stage++) {
+        hero.tier = stages[stage].tier;
+        hero.level = stages[stage].level;
+        int power = CharacterStatPower(&hero), health = CharacterStatHealth(&hero);
+        StatBudgetApply(&TEST_STAT_BUDGET, &hero, &power, &health);
+        assert(power == stages[stage].power && health == stages[stage].health);
+    }
+
+    GearApplyAscension(&hero);
+    assert(StatBudgetGrownStats(&hero).power == grown.power && StatBudgetGrownStats(&hero).health == grown.health);
+    hero.level = hero.stats[TIER_II].max_level;
+    int ascended_power = CharacterStatPower(&hero), ascended_health = CharacterStatHealth(&hero);
+    StatBudgetApply(&TEST_STAT_BUDGET, &hero, &ascended_power, &ascended_health);
+    assert(ascended_power == 375 && ascended_health == 1875);
+}
+
+static void TestStatBudgetGivesEachRarityItsShare(void) {
+    static const struct {
+        Rarity rarity;
+        int power, health;
+    } shares[] = {
+        {RARITY_COMMON, 150, 750},
+        {RARITY_UNCOMMON, 180, 900},
+        {RARITY_RARE, 210, 1050},
+        {RARITY_EPIC, 255, 1275},
+        {RARITY_LEGENDARY, 300, 1500},
+        {RARITY_MYTHIC, 330, 1650},
+    };
+    for (size_t i = 0; i < sizeof(shares) / sizeof(shares[0]); i++) {
+        Character hero;
+        Ability ability;
+        TestCharacter(&hero, &ability, "ranked", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 500);
+        hero.rarity = shares[i].rarity;
+        int power = 100, health = 500;
+        StatBudgetApply(&TEST_STAT_BUDGET, &hero, &power, &health);
+        assert(power == shares[i].power && health == shares[i].health);
+        assert(StatBudgetRarityPct(&TEST_STAT_BUDGET, hero.rarity) == TEST_STAT_BUDGET.rarity_budget_pct[hero.rarity]);
+    }
 }
 
 static void TestStatBudgetGivesEveryRarityTheSameFormationBonus(void) {
@@ -5710,7 +5792,7 @@ static void TestAscensionSurvivesSave(void) {
     Character roster[1];
     GearTestLegend(&roster[0]);
     roster[0].instance_id = 7;
-    roster[0].gear.defs[0] = roster[0].gear.defs[1] = roster[0].gear.defs[2] = 1;
+    for (int slot = 0; slot < 3; slot++) roster[0].gear.defs[slot] = (short)(slot + 1);
     Player saved = {.roster = roster, .roster_count = 1, .gear = {.tomes = 3}};
     assert(GearAscend(&saved.gear, &roster[0]));
 
@@ -5723,6 +5805,24 @@ static void TestAscensionSurvivesSave(void) {
     cJSON_Delete(json);
     assert(saved.gear.tomes == 2 && roster[0].ascended && roster[0].rarity == RARITY_LEGENDARY);
     assert(roster[0].stats[TIER_I].max_level == 85);
+}
+
+static void TestGearLoadReturnsASecondCopyOnOneHeroToTheInventory(void) {
+    GearTestReset();
+    Character roster[1];
+    GearTestLegend(&roster[0]);
+    roster[0].instance_id = 7;
+    roster[0].gear.defs[0] = roster[0].gear.defs[2] = 1;
+    roster[0].gear.defs[1] = 2;
+    Player saved = {.roster = roster, .roster_count = 1};
+    saved.gear.counts[0] = 3;
+
+    cJSON *json = ProgressionSaveGear(&saved);
+    assert(json);
+    ProgressionLoadGear(json, &saved);
+    cJSON_Delete(json);
+    assert(roster[0].gear.defs[0] == 1 && roster[0].gear.defs[1] == 2);
+    assert(roster[0].gear.defs[2] == GEAR_EMPTY_SLOT && saved.gear.counts[0] == 4);
 }
 
 static void TestGearPackBundlesATome(void) {
@@ -6234,8 +6334,18 @@ static void TestNewsFeedLeadsWithAnnouncementsWhileTheyRun(void) {
 
 static void TestAnnouncementsAndTheEventBuffCapReadInEveryLanguage(void) {
     static const char *const languages[] = {
-        "Loc_ENG_US.txt", "Loc_FRE_FR.txt", "Loc_GER_DE.txt", "Loc_ITA_IT.txt", "Loc_SPA_XM.txt", "Loc_POR_BR.txt",
-        "Loc_DUT_NL.txt", "Loc_RUS_RU.txt", "Loc_JPN_JP.txt", "Loc_KOR_KR.txt", "Loc_CHS_CN.txt", "Loc_CHT_CN.txt",
+        "Loc_ENG_US.txt",
+        "Loc_FRE_FR.txt",
+        "Loc_GER_DE.txt",
+        "Loc_ITA_IT.txt",
+        "Loc_SPA_XM.txt",
+        "Loc_POR_BR.txt",
+        "Loc_DUT_NL.txt",
+        "Loc_RUS_RU.txt",
+        "Loc_JPN_JP.txt",
+        "Loc_KOR_KR.txt",
+        "Loc_CHS_CN.txt",
+        "Loc_CHT_CN.txt",
     };
     static News news;
     memset(&news, 0, sizeof(news));
@@ -7324,6 +7434,69 @@ static void TestFortifyBonusesFollowThe544Calculator(void) {
     cJSON_Delete(root);
 }
 
+static void TestStatBudgetCountsFortifyOnTopOfAGrownHero(void) {
+    cJSON *root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    Character golem = FortifyTestHero(catalog, "UNIT_INFERNOGOLEM", TIER_IV);
+    golem.tier = golem.max_tier;
+    golem.level = golem.stats[golem.tier].max_level;
+    int grown_power = CharacterStatPower(&golem), grown_health = CharacterStatHealth(&golem);
+    int plain_power = grown_power, plain_health = grown_health;
+    StatBudgetApply(&TEST_STAT_BUDGET, &golem, &plain_power, &plain_health);
+
+    golem.fortify[2] = FortifyTestChild("UNIT_OGRE", TIER_III, false);
+    golem.fortify[1] = FortifyTestChild("UNIT_ELVENMAGE", TIER_I, false);
+    int fortified_power = CharacterStatPower(&golem), fortified_health = CharacterStatHealth(&golem);
+    assert(fortified_power > grown_power && fortified_health > grown_health);
+    StatBudgetStats grown = StatBudgetGrownStats(&golem);
+    assert(grown.power == grown_power && grown.health == grown_health);
+    int power = fortified_power, health = fortified_health;
+    StatBudgetApply(&TEST_STAT_BUDGET, &golem, &power, &health);
+    assert(power > plain_power && health > plain_health);
+    assert(abs(power * grown_power - plain_power * fortified_power) <= fortified_power + grown_power);
+    assert(abs(health * grown_health - plain_health * fortified_health) <= fortified_health + grown_health);
+    cJSON_Delete(root);
+}
+
+static void TestStatBudgetCapsGearApartFromAuras(void) {
+    static StatBudget capped;
+    capped = TEST_STAT_BUDGET;
+    capped.aura_cap_pct = 50;
+    capped.gear_cap_pct = 30;
+    assert(StatBudgetCappedGearPct(&capped, 80.0f) == 30.0f);
+    assert(StatBudgetCappedGearPct(&capped, 20.0f) == 20.0f);
+    assert(StatBudgetCappedGearPct(&capped, -40.0f) == -40.0f);
+
+    GearTestReset();
+    int power_item = GearTestDef(GEAR_STAT_POWER, 80, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    int health_item = GearTestDef(GEAR_STAT_HEALTH, 20, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    static Character abelas;
+    static Ability ability;
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    CharacterParse(CatalogFindCharacter((cJSON *)catalog, "UNIT_ABELAS"), &abelas, &ability);
+    abelas.tier = abelas.max_tier;
+    abelas.level = 1;
+    abelas.gear.defs[0] = (short)(power_item + 1);
+    abelas.gear.defs[1] = (short)(health_item + 1);
+    static SimUnit units[SIM_UNIT_COUNT];
+    PassiveManifestEnsure();
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        SimUnitsInit(units, 0, slot, slot == 0 ? &abelas : NULL, NULL);
+        SimUnitsInit(units, 1, slot, NULL, NULL);
+    }
+    int own_power = units[0].power, own_health = units[0].max_health;
+    SimUnitsBattleStartPassives(units, &capped);
+    assert(units[0].power == (int)lroundf(own_power * (1.0f + (50.0f + 30.0f) / 100.0f)));
+    assert(units[0].max_health >= (int)lroundf(own_health * 1.2f));
+
+    SimUnitsInit(units, 0, 0, &abelas, NULL);
+    SimUnitsBattleStartPassives(units, NULL);
+    assert(units[0].power > (int)lroundf(own_power * (1.0f + (50.0f + 80.0f) / 100.0f)));
+    cJSON_Delete(root);
+    GearTestReset();
+}
+
 static void TestFortifyMaximaMatchThe5xCatalog(void) {
     cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
     const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
@@ -7418,8 +7591,10 @@ static void TestPlayerFortifyConsumesTheChildren(void) {
     assert((uint64_t)cJSON_GetObjectItemCaseSensitive(action, "parent")->valuedouble == parent_id);
     const cJSON *slots = cJSON_GetObjectItemCaseSensitive(action, "slots");
     assert(cJSON_GetArraySize(slots) == 2 && JsonInt(cJSON_GetArrayItem(slots, 1), "index") == 1);
-    assert((uint64_t)cJSON_GetObjectItemCaseSensitive(cJSON_GetArrayItem(slots, 1), "unit")->valuedouble ==
-           player.roster[second_child].instance_id);
+    assert(
+        (uint64_t)cJSON_GetObjectItemCaseSensitive(cJSON_GetArrayItem(slots, 1), "unit")->valuedouble ==
+        player.roster[second_child].instance_id
+    );
     cJSON_Delete(action);
 
     int power = CharacterStatPower(&player.roster[parent]), health = CharacterStatHealth(&player.roster[parent]);
@@ -7428,7 +7603,9 @@ static void TestPlayerFortifyConsumesTheChildren(void) {
     const Character *fortified = &player.roster[kept];
     assert(!strcmp(fortified->fortify[0].id, "UNIT_REDIRONMAGE") && !strcmp(fortified->fortify[1].id, "UNIT_OGRE"));
     assert(FortifyHasChildren(fortified) && FortifyFilledCount(fortified) == 2);
-    assert(CharacterStatHealth(fortified) == health + FortifyBonusHealth(fortified) && FortifyBonusHealth(fortified) > 0);
+    assert(
+        CharacterStatHealth(fortified) == health + FortifyBonusHealth(fortified) && FortifyBonusHealth(fortified) > 0
+    );
     assert(CharacterStatPower(fortified) == power + FortifyBonusPower(fortified) && FortifyBonusPower(fortified) > 0);
     for (int i = 0; i < player.roster_count; i++) assert(strcmp(player.roster[i].id, "UNIT_OGRE") != 0);
 
@@ -7495,7 +7672,9 @@ static void TestFortifySlotsTravelThroughSavesAndBattles(void) {
     cJSON_Delete(slots);
     Character blank = *ch;
     assert(FortifyChildrenLoad(&blank, NULL) && !FortifyHasChildren(&blank));
-    cJSON *bad = cJSON_Parse("[{\"slot\":2,\"id\":\"UNIT_OGRE\",\"tier\":\"IV\"},{\"slot\":2,\"id\":\"UNIT_OGRE\",\"tier\":\"I\"}]");
+    cJSON *bad = cJSON_Parse(
+        "[{\"slot\":2,\"id\":\"UNIT_OGRE\",\"tier\":\"IV\"},{\"slot\":2,\"id\":\"UNIT_OGRE\",\"tier\":\"I\"}]"
+    );
     assert(!FortifyChildrenLoad(&blank, bad) && !FortifyHasChildren(&blank));
     cJSON_Delete(bad);
 
@@ -7970,7 +8149,9 @@ static void TestExpeditionPartiesNeedBenchHeroesAndTheirRequirements(void) {
 
     p->level = 3;
     int patrol[] = {bench.ferelden};
-    assert(ExpeditionSlotsUnlocked(p->level) == 1 && !ExpeditionStart(p, ExpeditionTestDef("lothering"), patrol, 1, 1000));
+    assert(
+        ExpeditionSlotsUnlocked(p->level) == 1 && !ExpeditionStart(p, ExpeditionTestDef("lothering"), patrol, 1, 1000)
+    );
     p->level = 2;
     assert(!ExpeditionCanStart(p, ExpeditionTestDef("storm_coast")));
 }
@@ -8028,13 +8209,14 @@ static void TestExpeditionHeroDropsNeedRosterRoom(void) {
 static void TestExpeditionsSurviveSaveAndLoad(void) {
     PlayerExpeditions saved = {
         .count = 2,
-        .active =
-            {
-                {.def = ExpeditionTestDef("deep_roads"), .heroes = {11, 12, 13}, .hero_count = 3, .started_at = 50,
-                 .ends_at = 50 + 240 * 60},
-                {.def = ExpeditionTestDef("lothering"), .heroes = {14}, .hero_count = 1, .started_at = 70,
-                 .ends_at = 970},
-            },
+        .active = {
+            {.def = ExpeditionTestDef("deep_roads"),
+             .heroes = {11, 12, 13},
+             .hero_count = 3,
+             .started_at = 50,
+             .ends_at = 50 + 240 * 60},
+            {.def = ExpeditionTestDef("lothering"), .heroes = {14}, .hero_count = 1, .started_at = 70, .ends_at = 970},
+        },
     };
     cJSON *json = ExpeditionsSave(&saved);
     PlayerExpeditions loaded;
@@ -8060,7 +8242,9 @@ static void TestExpeditionServerActionsNameTheHeroes(void) {
     int deep_roads = ExpeditionTestDef("deep_roads");
     int party[] = {bench.dwarf, bench.apprentice, bench.giant};
     cJSON *start = ExpeditionStartAction(p, deep_roads, party, 3);
-    assert(!strcmp(JsonStr(start, "action"), "expedition_start") && !strcmp(JsonStr(start, "expedition"), "deep_roads"));
+    assert(
+        !strcmp(JsonStr(start, "action"), "expedition_start") && !strcmp(JsonStr(start, "expedition"), "deep_roads")
+    );
     const cJSON *heroes = cJSON_GetObjectItemCaseSensitive(start, "heroes");
     assert(cJSON_GetArraySize(heroes) == 3);
     assert((uint64_t)cJSON_GetArrayItem(heroes, 2)->valuedouble == p->roster[bench.giant].instance_id);
@@ -8073,14 +8257,17 @@ static void TestExpeditionServerActionsNameTheHeroes(void) {
     assert(!strcmp(cJSON_GetArrayItem(ids, 1)->valuestring, "lothering"));
     cJSON_Delete(claim);
     cJSON *recall = ExpeditionRecallAction(deep_roads);
-    assert(!strcmp(JsonStr(recall, "action"), "expedition_recall") && !strcmp(JsonStr(recall, "expedition"), "deep_roads"));
+    assert(
+        !strcmp(JsonStr(recall, "action"), "expedition_recall") && !strcmp(JsonStr(recall, "expedition"), "deep_roads")
+    );
     cJSON_Delete(recall);
 
     char reply_text[512];
     snprintf(
         reply_text,
         sizeof(reply_text),
-        "{\"granted\":{\"gold\":900,\"gems\":3,\"xp\":200,\"granted\":{\"heroes\":[{\"id\":\"%s\",\"instance_id\":%llu}],"
+        "{\"granted\":{\"gold\":900,\"gems\":3,\"xp\":200,\"granted\":{\"heroes\":[{\"id\":\"%s\",\"instance_id\":%llu}"
+        "],"
         "\"gear\":[\"%s\"],\"runes\":[\"%s\"]}}}",
         p->roster[bench.rare].id,
         (unsigned long long)p->roster[bench.rare].instance_id,
@@ -8122,7 +8309,9 @@ static void TestStoreRevealsExpeditionRewardsHeroesThenGearThenRunes(void) {
     assert(StoreRevealRewards(&store, heroes, 0, gear, gear_new, 0, runes, runes_new, 1));
     assert(store.view == STORE_VIEW_ITEM_REVEAL && store.item_kind == STORE_KIND_RUNE);
     assert(StoreFinishRewardStage(&store) == STORE_ACTION_REWARDS_SHOWN);
-    assert(!StoreRevealRewards(&store, heroes, 0, gear, gear_new, 0, runes, runes_new, 0) && !store.reward_reveal.active);
+    assert(
+        !StoreRevealRewards(&store, heroes, 0, gear, gear_new, 0, runes, runes_new, 0) && !store.reward_reveal.active
+    );
 }
 
 int main(void) {
@@ -8180,6 +8369,8 @@ int main(void) {
     TestFortifyTablesCarryThe544Rules();
     TestFortifyBonusesFollowThe544Calculator();
     TestFortifyMaximaMatchThe5xCatalog();
+    TestStatBudgetCountsFortifyOnTopOfAGrownHero();
+    TestStatBudgetCapsGearApartFromAuras();
     TestFortifyMergesTiersLikeThe544Slot();
     TestFortifySlotsUnlockWithConsumeLevel();
     TestPlayerFortifyConsumesTheChildren();
@@ -8239,6 +8430,7 @@ int main(void) {
     TestEveryGearWearerAscendsAndKeepsItsRarity();
     TestAscensionRaisesLevelCapAndMovesPrestigeGear();
     TestAscensionSurvivesSave();
+    TestGearLoadReturnsASecondCopyOnOneHeroToTheInventory();
     TestGearPackBundlesATome();
     TestSeasonalPackFollowsTheCalendar();
     TestFlashPacksRotateOnePerPeriod();
@@ -8324,14 +8516,16 @@ int main(void) {
     TestTimelineCapacity();
     TestLegendaryStars();
     TestCatalogStatGrowth();
-    TestStatBudgetScalesEveryHeroToOneCostAndKeepsItsShape();
+    TestStatBudgetPricesEveryGrownHeroAtOneCostAndKeepsItsShape();
+    TestStatBudgetKeepsTheShareOfGrowthAHeroHasEarned();
+    TestStatBudgetGivesEachRarityItsShare();
     TestStatBudgetChargesPowerMoreTheMoreEnemiesItHits();
     TestStatBudgetChargesForAuras();
     TestStatBudgetHandicapScalesOneHero();
     TestPotencyCutWeakensStatusChancesAndAllyGrantsOnly();
     TestStatBudgetHandicapTableIsSortedAndBounded();
     TestStatBudgetCapsWhatAurasAdd();
-    TestStatBudgetDropsRuneStatBonusesAndKeepsTacticalRunes();
+    TestStatBudgetCountsStatRunesAndDropsOnlyTheFlatShield();
     TestStatBudgetGivesEveryRarityTheSameFormationBonus();
     TestStatBudgetCapsEventBuffs();
     TestStatBudgetOnTheEnemyRosterLevelsBothSides();

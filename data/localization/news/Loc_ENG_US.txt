@@ -1,5 +1,5 @@
-HODA_NEWS_LEVEL_ARENA_TITLE|The Arena Is Now Level
-HODA_NEWS_LEVEL_ARENA_SUBTITLE|In PvP, rarity, level and tier no longer decide the fight.
-HODA_NEWS_LEVEL_ARENA_SUMMARY|Every hero now enters PvP with the same overall strength. Tap to see what changed.
-HODA_NEWS_LEVEL_ARENA_MESSAGE|Every hero now enters PvP with the same overall strength, whatever its rarity, tier, level or fortify. Heroes with stronger abilities have lower stats, and the strongest land stuns, slows and curses less often than their cards say.\n\nRunes that add power, health, damage shields, damage resistance or retaliation do nothing in PvP. Other runes still work.\n\nThe faction bonus is the same for every rarity, and event buffs are capped at <color=orange>+25%</color>.\n\nQuests and the Nexus are unchanged.
-HODA_PVP_EVENT_BUFF_CAP|In the level arena this buff is capped at +{0}%.
+HODA_NEWS_PVP_PROGRESS_TITLE|Your Progress Counts in PvP
+HODA_NEWS_PVP_PROGRESS_SUBTITLE|Levels, tiers, fortify, runes and gear make a squad stronger again.
+HODA_NEWS_PVP_PROGRESS_SUMMARY|A squad you have built up now beats one that was not. Tap to see what changed.
+HODA_NEWS_PVP_PROGRESS_MESSAGE|PvP keeps its balance between heroes, but the work you put into them counts again. A hero fights with the share of its strength you have grown: a fully levelled hero of its top tier fights at full strength, a fresh one at a fraction of it, and fortify adds on top.\n\nRarity counts too. A Mythic is stronger than a Legendary, a Legendary than an Epic, and so on down to Common.\n\nRunes work in PvP again, except the flat damage shield. Gear adds up to <color=orange>+50%</color> power and health, and event buffs stay capped at <color=orange>+25%</color>.\n\nOpponents now follow your trophies: new squads meet new squads, and the top of the ladder is fully grown.\n\nQuests and the Nexus are unchanged.
+HODA_PVP_EVENT_BUFF_CAP|In PvP this buff is capped at +{0}%.

@@ -1,5 +1,5 @@
-HODA_NEWS_LEVEL_ARENA_TITLE|De arena is gelijkgetrokken
-HODA_NEWS_LEVEL_ARENA_SUBTITLE|In PvP bepalen zeldzaamheid en niveau het gevecht niet meer.
-HODA_NEWS_LEVEL_ARENA_SUMMARY|Elke held gaat nu met dezelfde totale kracht PvP in. Tik om te zien wat er is veranderd.
-HODA_NEWS_LEVEL_ARENA_MESSAGE|Elke held gaat nu met dezelfde totale kracht PvP in, ongeacht zeldzaamheid, niveau of versterking. Helden met sterkere vaardigheden hebben lagere waarden, en de sterkste verlammen, vertragen en vervloeken minder vaak dan op hun kaart staat.\n\nRunen die kracht, energie, schadeschilden, schadeweerstand of vergelding toevoegen, doen niets in PvP. Andere runen werken nog steeds.\n\nDe factiebonus is voor elke zeldzaamheid gelijk, en evenementbonussen zijn begrensd op <color=orange>+25%</color>.\n\nMissies en de Nexus zijn ongewijzigd.
-HODA_PVP_EVENT_BUFF_CAP|In de gelijkgetrokken arena is deze bonus begrensd op +{0}%.
+HODA_NEWS_PVP_PROGRESS_TITLE|Je voortgang telt in PvP
+HODA_NEWS_PVP_PROGRESS_SUBTITLE|Niveaus, versterking, runen en uitrusting maken een team weer sterker.
+HODA_NEWS_PVP_PROGRESS_SUMMARY|Een ontwikkeld team verslaat nu een team dat dat niet is. Tik om te zien wat er is veranderd.
+HODA_NEWS_PVP_PROGRESS_MESSAGE|PvP blijft in balans tussen helden, maar het werk dat je in ze steekt telt weer mee. Een held vecht met het deel van zijn kracht dat je hebt ontwikkeld: een volledig ontwikkelde held vecht op volle kracht, een nieuwe held met maar een fractie daarvan, en versterking komt er bovenop.\n\nZeldzaamheid telt ook. Een mythische held is sterker dan een legendarische, een legendarische sterker dan een epische, enzovoort tot aan gewoon.\n\nRunen werken weer in PvP, behalve het vaste schadeschild. Uitrusting geeft tot <color=orange>+50%</color> kracht en energie, en evenementbonussen blijven begrensd op <color=orange>+25%</color>.\n\nTegenstanders volgen nu je trofeeën: nieuwe teams treffen nieuwe teams, en de top van de ranglijst is volledig ontwikkeld.\n\nMissies en de Nexus zijn ongewijzigd.
+HODA_PVP_EVENT_BUFF_CAP|In PvP is deze bonus begrensd op +{0}%.

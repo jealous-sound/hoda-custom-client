@@ -99,16 +99,19 @@ server issues a seed, replays its Go port of `battle_sim.c`, and pays its own re
 
 ## Balance
 
-A battle whose enemy roster carries a stat budget levels both sides. PvP opponents carry it while `battle.stat_budget`
-in `data/pvp_rules.json` is on (set in `tools/build_pvp_rules.py`), as it ships. The backend replays PvP under the
-same rules and the same switch, so change it in both through the data sync, with a client release and a raised
-minimum client version on the backend.
+A battle whose enemy roster carries a stat budget balances the heroes against each other and keeps what a player
+has built. PvP opponents carry it while `battle.stat_budget` in `data/pvp_rules.json` is on (set in
+`tools/build_pvp_rules.py`), as it ships. The backend replays PvP under the same rules and the same switch, so change
+it in both through the data sync, with a client release and a raised minimum client version on the backend.
 
 - `data/stat_budget.json` holds the rules: one stat cost per hero (`power x health_per_power + health`), a higher
-  power cost for attacks that hit a row, a column or everyone, a budget cut for the health, power and bonus damage
-  a hero's passives hand out, and a cap on what auras and gear together add to one hero's health and power. Every
-  hero adds the same formation bonus, event buffs stop at `changer_cap_pct`, and power, health, damage shield, damage
-  resist and retaliation runes do nothing; targeting, initiative, stealth, perception, dispel and resist runes work.
+  power cost for attacks that hit a row, a column or everyone, and a budget cut for the health, power and bonus damage
+  a hero's passives hand out. The cost is priced on the hero fully grown: its top tier at that tier's level cap,
+  before ascension and fortify. The same scale is then applied to the stats the hero really has, so a hero missing
+  levels or a tier fights with that share of its budget, and ascension levels and fortify add on top.
+  `rarity_budget_pct` is each rarity's share of the budget. Auras stop at `aura_cap_pct` and the health and power
+  gear adds stop at `gear_cap_pct`, each on its own. Every hero adds the same formation bonus and event buffs stop at
+  `changer_cap_pct`. Every rune works except the flat damage shield, which is larger than a PvP hit.
 - `data/stat_budget_heroes.json` holds one handicap per hero, a percent of the budget from 33 to 300. Below 100 it
   also cuts the hero's status chances (stun, slow, curse, levy, assassinate, mark) and what it grants allies by the
   same share. `./tests/balance_check --calibrate 16 --neutral --squads 48 --seeds 6` rewrites the whole table.
@@ -131,14 +134,18 @@ minimum client version on the backend.
   of the last half of the passes.
 - A new hero: `./tests/balance_check --calibrate 12 --hero UNIT_ID` settles its handicap against the existing table,
   and `./tests/balance_check --hero UNIT_ID` exits non-zero while it wins outside 45-55%.
+- `./tests/balance_check --progress` measures what a player's work is worth: reference squads fight themselves with
+  one side changed, and the report lists the win rate of each growth stage, rarity, fortify load, rune and gear item.
+  Every other mode judges fully grown heroes at one rarity share, so the handicaps stay a measure of the kit alone.
 - Every squad in `squad_pool` carries a `strength`: its wins per 10000 battles against the rest of the pool, attacking
-  and defending once against each, fielded as the ladder fields it. A bot's place on the ladder picks its squads: the
-  lowest bot draws from the weakest squads and the top bot from the strongest, so opponents get harder as trophies
-  rise, whatever the player's level. `make squad-strength` measures them again after a change to the simulation, the
+  and defending once against each, fielded as the ladder fields it. A bot's trophies pick its squads: a bot at zero
+  draws from the weakest squads and the top bot from the strongest, so opponents get harder as trophies rise,
+  whatever the player's level. Pooled squads fight at the tier and level of their PvE roster, and the three-hero
+  rosters are what a new account meets. `make squad-strength` measures them again after a change to the simulation, the
   handicaps or the pool, and `./tests/pvp_squad_strength --report` prints the spread and the strength met at each
   trophy count. The strengths hold for the `battle.stat_budget` switch they were measured under, so measure again
-  after flipping it. The pool keeps its order, so a squad index stored in a save or a pending match still names the
-  same squad.
+  after flipping it. The pool keeps its order, with the three-hero squads after the rest, so a squad index stored in a
+  save or a pending match still names the same squad.
 
 ## Custom heroes
 

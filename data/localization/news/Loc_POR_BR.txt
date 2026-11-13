@@ -1,5 +1,5 @@
-HODA_NEWS_LEVEL_ARENA_TITLE|A arena está nivelada
-HODA_NEWS_LEVEL_ARENA_SUBTITLE|No PvP, raridade e nível não decidem mais a luta.
-HODA_NEWS_LEVEL_ARENA_SUMMARY|Agora todos os heróis entram no PvP com a mesma força total. Toque para ver o que mudou.
-HODA_NEWS_LEVEL_ARENA_MESSAGE|Agora todos os heróis entram no PvP com a mesma força total, seja qual for a raridade, o nível ou a melhoria. Heróis com habilidades mais fortes têm atributos mais baixos, e os mais fortes atordoam, retardam e amaldiçoam com menos frequência do que a carta indica.\n\nRunas que adicionam Poder, Saúde, escudo de dano, resistência a dano ou retaliação não têm efeito no PvP. As outras runas continuam funcionando.\n\nO bônus de facção é igual para todas as raridades, e os bônus de evento são limitados a <color=orange>+25%</color>.\n\nAs Missões e o Nexus não mudaram.
-HODA_PVP_EVENT_BUFF_CAP|Na arena nivelada, este bônus é limitado a +{0}%.
+HODA_NEWS_PVP_PROGRESS_TITLE|Seu progresso conta no PvP
+HODA_NEWS_PVP_PROGRESS_SUBTITLE|Níveis, melhoria, runas e equipamentos voltam a fortalecer um esquadrão.
+HODA_NEWS_PVP_PROGRESS_SUMMARY|Um esquadrão desenvolvido agora vence um que não foi. Toque para ver o que mudou.
+HODA_NEWS_PVP_PROGRESS_MESSAGE|O PvP mantém o equilíbrio entre os heróis, mas o trabalho que você dedica a eles volta a contar. Um herói luta com a parte da força que você desenvolveu: um herói no nível máximo luta com força total, um recém-obtido com apenas uma fração, e a melhoria soma por cima.\n\nA raridade também conta. Um herói mítico é mais forte que um lendário, um lendário mais forte que um épico, e assim por diante até o comum.\n\nAs runas voltam a funcionar no PvP, exceto o escudo de dano fixo. Equipamentos adicionam até <color=orange>+50%</color> de Poder e Saúde, e os bônus de evento continuam limitados a <color=orange>+25%</color>.\n\nOs oponentes agora acompanham seus troféus: esquadrões novos enfrentam novos, e o topo da classificação é totalmente desenvolvido.\n\nAs Missões e o Nexus não mudaram.
+HODA_PVP_EVENT_BUFF_CAP|No PvP, este bônus é limitado a +{0}%.

@@ -11,8 +11,8 @@
 
 #define BALANCE_USAGE                                                                                                  \
     "usage: balance_check [--raw | --neutral] [--holdout] [--seeds N] [--squads N] [--band LOW HIGH] [--all]\n"        \
-    "                     [--stacks | --squad-report | --search TRIES | --adversarial ROUNDS [--swaps N]] "            \
-    "[--unique]\n"                                                                                                     \
+    "                     [--stacks | --squad-report | --progress | --search TRIES | --adversarial ROUNDS "            \
+    "[--swaps N]] [--unique]\n"                                                                                        \
     "                     [--nudge PCT] [--calibrate ROUNDS] [--hero UNIT_ID]...\n"                                    \
     "Seats every hero in reference squads of its faction, fights the same squad with a peer in that seat from both\n"  \
     "sides and reports the win rate in the hero's better row. SEEDS is the number of peers per seat.\n"                \
@@ -20,6 +20,9 @@
     "--holdout uses reference squads and peers the calibration never saw. --all lists every hero, weakest first.\n"    \
     "--stacks fields four copies of each hero against the unchanged squads.\n"                                         \
     "--squad-report fights the reference squads against each other and prints squad and faction win rates.\n"          \
+    "--progress fights each reference squad against itself with one side's growth, rarity, fortify, rune or gear\n"    \
+    "changed, and prints what that progress is worth. Every other mode judges fully grown heroes at one rarity "       \
+    "share.\n"                                                                                                         \
     "--search climbs from each faction's strongest pooled squad by single swaps and prints the squad it ends on;\n"    \
     "--unique forbids two copies of a hero in it.\n"                                                                   \
     "--adversarial looks each round for the squads that best beat the current meta, adds them to the pool and\n"       \
@@ -93,6 +96,12 @@
 #define BALANCE_META_SHOWN_WEIGHT 0.01
 #define BALANCE_META_HEROES_SHOWN 15
 #define BALANCE_SEAT_SWAP_ONE_IN 5
+#define BALANCE_PROGRESS_SEED_BASE 1300000
+#define BALANCE_PROGRESS_LABEL_CAPACITY 96
+#define BALANCE_PROGRESS_SHOWN 12
+#define BALANCE_PROGRESS_STRONG_PCT 60.0f
+#define BALANCE_PROGRESS_ROW_CAPACITY (GEAR_CATALOG_CAPACITY + RUNE_CATALOG_CAPACITY)
+#define BALANCE_GEAR_TRIAL_SLOT 0
 #define BALANCE_EXIT_OUT_OF_BAND 1
 #define BALANCE_EXIT_USAGE 2
 
@@ -122,6 +131,7 @@ typedef struct {
     bool list_all;
     bool stacks;
     bool squad_report;
+    bool progress;
     bool unique;
     int search_tries;
     int adversarial_rounds;
@@ -275,6 +285,8 @@ static void BalanceLoadBudget(Balance *b, const BalanceOptions *o) {
         StrCopy(handicap->id, sizeof(handicap->id), b->heroes[i].id);
         handicap->budget_pct = o->neutral ? STAT_BUDGET_NEUTRAL_HERO_PCT : StatBudgetHeroPct(stored, b->heroes[i].id);
     }
+    for (int rarity = RARITY_COMMON; rarity < STAT_BUDGET_RARITY_COUNT && !o->progress; rarity++)
+        b->budget.rarity_budget_pct[rarity] = STAT_BUDGET_NEUTRAL_RARITY_PCT;
     b->stat_budget = &b->budget;
 }
 
@@ -1504,6 +1516,280 @@ static void BalanceAdversarial(Balance *b, const BalanceOptions *o, BalancePool 
     BalancePrintMetaHeroes(b, o, pool);
 }
 
+typedef struct {
+    char label[BALANCE_PROGRESS_LABEL_CAPACITY];
+    BalanceTally tally;
+    long long changed_cost, unchanged_cost;
+} BalanceProgressRow;
+
+typedef bool (*BalanceProgressChange)(
+    const Balance *b, BattleRoster *changed, BattleRoster *unchanged, const void *detail
+);
+
+typedef struct {
+    const char *label;
+    bool top_tier;
+    int level_pct;
+    bool ascended;
+} BalanceGrowthStage;
+
+typedef struct {
+    Rarity rarity;
+    bool top_tier;
+    int slots;
+} BalanceFortifyStage;
+
+typedef struct {
+    int def;
+    bool every_hero;
+} BalanceGearTrial;
+
+static const BalanceGrowthStage BALANCE_GROWTH_STAGES[] = {
+    {"first tier, level 1", false, 0, false},
+    {"first tier, level cap", false, 100, false},
+    {"top tier, level 1", true, 0, false},
+    {"top tier, half its levels", true, 50, false},
+    {"top tier, level cap", true, 100, false},
+    {"top tier, ascended to the raised cap", true, 100, true},
+};
+
+static const BalanceFortifyStage BALANCE_FORTIFY_STAGES[] = {
+    {RARITY_COMMON, false, FORTIFY_SLOT_COUNT / 2},
+    {RARITY_COMMON, false, FORTIFY_SLOT_COUNT},
+    {RARITY_RARE, true, FORTIFY_SLOT_COUNT / 2},
+    {RARITY_RARE, true, FORTIFY_SLOT_COUNT},
+    {RARITY_LEGENDARY, true, FORTIFY_SLOT_COUNT / 2},
+    {RARITY_LEGENDARY, true, FORTIFY_SLOT_COUNT},
+};
+
+static long long BalanceRosterCost(const Balance *b, const BattleRoster *roster) {
+    long long cost = 0;
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        if (!roster->present[slot]) continue;
+        const Character *ch = &roster->chars[slot];
+        int power = CharacterStatPower(ch), health = CharacterStatHealth(ch);
+        if (b->stat_budget) StatBudgetApply(b->stat_budget, ch, &power, &health);
+        cost += (long long)power * StatBudgetEnsure()->health_per_power + health;
+    }
+    return cost;
+}
+
+static void BalanceProgressMeasure(
+    Balance *b, BalanceProgressRow *row, int row_seed, BalanceProgressChange change, const void *detail
+) {
+    static BattleRoster changed, unchanged;
+    for (int squad = 0; squad < b->squad_count; squad++) {
+        BalanceRosterCopy(&changed, &b->squads[squad]);
+        BalanceRosterCopy(&unchanged, &b->squads[squad]);
+        if (!change(b, &changed, &unchanged, detail)) continue;
+        row->changed_cost += BalanceRosterCost(b, &changed);
+        row->unchanged_cost += BalanceRosterCost(b, &unchanged);
+        for (int seed = 0; seed < b->seeds; seed++) {
+            unsigned battle_seed = BalanceSeed(squad, row_seed, BALANCE_PROGRESS_SEED_BASE + seed);
+            BalanceTallyAdd(&row->tally, BalanceWinsFromBothSides(&changed, &unchanged, battle_seed), BALANCE_SIDES);
+        }
+    }
+}
+
+static void BalancePrintProgressRow(const BalanceProgressRow *row) {
+    int stat_share = row->unchanged_cost ? (int)(row->changed_cost * 100 / row->unchanged_cost) : 100;
+    printf("  %-44s %5d%% %8.1f%%\n", row->label, stat_share, BalanceTallyPct(row->tally));
+}
+
+static Tier BalanceFirstTier(const Character *ch) {
+    for (int tier = 0; tier < TIER_COUNT; tier++)
+        if (ch->has_tier[tier]) return (Tier)tier;
+    return ch->tier;
+}
+
+static bool BalanceGrowTo(const Balance *b, BattleRoster *changed, BattleRoster *unchanged, const void *detail) {
+    (void)b;
+    (void)unchanged;
+    const BalanceGrowthStage *stage = detail;
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        Character *ch = &changed->chars[slot];
+        if (stage->ascended) GearApplyAscension(ch);
+        ch->tier = stage->top_tier ? ch->max_tier : BalanceFirstTier(ch);
+        ch->level = 1 + (ch->stats[ch->tier].max_level - 1) * stage->level_pct / 100;
+    }
+    return true;
+}
+
+static bool BalanceRankAs(const Balance *b, BattleRoster *changed, BattleRoster *unchanged, const void *detail) {
+    (void)b;
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        changed->chars[slot].rarity = *(const Rarity *)detail;
+        unchanged->chars[slot].rarity = RARITY_LEGENDARY;
+    }
+    return true;
+}
+
+static FortifyChild BalanceFortifyChild(const Balance *b, const BalanceFortifyStage *stage) {
+    static Character parsed;
+    static Ability ability;
+    FortifyChild child = {0};
+    for (int i = 0; i < b->hero_count && !child.id[0]; i++) {
+        const BalanceHero *hero = &b->heroes[i];
+        if (hero->rarity != stage->rarity || hero->giant || !FortifyHeroFind(hero->id)) continue;
+        CharacterParse(hero->def, &parsed, &ability);
+        child.tier = stage->top_tier ? parsed.max_tier : BalanceFirstTier(&parsed);
+        StrCopy(child.id, sizeof(child.id), hero->id);
+    }
+    return child;
+}
+
+static bool BalanceFortifyWith(const Balance *b, BattleRoster *changed, BattleRoster *unchanged, const void *detail) {
+    (void)unchanged;
+    const BalanceFortifyStage *stage = detail;
+    FortifyChild child = BalanceFortifyChild(b, stage);
+    if (!child.id[0]) return false;
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
+        for (int filled = 0; filled < stage->slots; filled++) changed->chars[slot].fortify[filled] = child;
+    return true;
+}
+
+static bool BalanceCarryRune(const Balance *b, BattleRoster *changed, BattleRoster *unchanged, const void *detail) {
+    (void)b;
+    (void)unchanged;
+    changed->rune_defs[0] = *(const int *)detail;
+    changed->rune_def_count = 1;
+    return true;
+}
+
+static bool BalanceWearItem(const Balance *b, BattleRoster *changed, BattleRoster *unchanged, const void *detail) {
+    (void)b;
+    (void)unchanged;
+    const BalanceGearTrial *trial = detail;
+    int wearers = 0;
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT && (trial->every_hero || !wearers); slot++) {
+        Character *ch = &changed->chars[slot];
+        if (!changed->present[slot] || !GearUnitCanWear(ch, GearDefAt(trial->def))) continue;
+        ch->gear.defs[BALANCE_GEAR_TRIAL_SLOT] = (short)(trial->def + 1);
+        wearers++;
+    }
+    return wearers > 0;
+}
+
+static void BalancePrintProgressHeader(const char *title, const char *changed, const char *unchanged) {
+    printf("\n%s: %s, against %s\n", title, changed, unchanged);
+    printf("  %-44s %6s %9s\n", "", "stats", "win rate");
+}
+
+static void BalanceProgressGrowth(Balance *b) {
+    BalancePrintProgressHeader("Growth", "every hero at that stage", "the same squad fully grown");
+    for (size_t stage = 0; stage < sizeof(BALANCE_GROWTH_STAGES) / sizeof(BALANCE_GROWTH_STAGES[0]); stage++) {
+        BalanceProgressRow row = {0};
+        StrCopy(row.label, sizeof(row.label), BALANCE_GROWTH_STAGES[stage].label);
+        BalanceProgressMeasure(b, &row, (int)stage, BalanceGrowTo, &BALANCE_GROWTH_STAGES[stage]);
+        BalancePrintProgressRow(&row);
+    }
+}
+
+static void BalanceProgressRarity(Balance *b) {
+    BalancePrintProgressHeader("Rarity", "every hero counted as that rarity", "the same squad counted as Legendary");
+    for (int rarity = RARITY_COMMON; rarity < STAT_BUDGET_RARITY_COUNT; rarity++) {
+        BalanceProgressRow row = {0};
+        Rarity counted_as = (Rarity)rarity;
+        StrCopy(row.label, sizeof(row.label), BALANCE_RARITY_NAMES[rarity]);
+        BalanceProgressMeasure(b, &row, rarity, BalanceRankAs, &counted_as);
+        BalancePrintProgressRow(&row);
+    }
+}
+
+static void BalanceProgressFortify(Balance *b) {
+    BalancePrintProgressHeader("Fortify", "every hero fortified", "the same squad bare");
+    for (size_t i = 0; i < sizeof(BALANCE_FORTIFY_STAGES) / sizeof(BALANCE_FORTIFY_STAGES[0]); i++) {
+        const BalanceFortifyStage *stage = &BALANCE_FORTIFY_STAGES[i];
+        BalanceProgressRow row = {0};
+        snprintf(
+            row.label,
+            sizeof(row.label),
+            "%d slots of a %s at its %s tier",
+            stage->slots,
+            BALANCE_RARITY_NAMES[stage->rarity],
+            stage->top_tier ? "top" : "first"
+        );
+        BalanceProgressMeasure(b, &row, (int)i, BalanceFortifyWith, stage);
+        BalancePrintProgressRow(&row);
+    }
+}
+
+static int BalanceProgressByWinPct(const void *a, const void *b) {
+    float left = BalanceTallyPct(((const BalanceProgressRow *)a)->tally);
+    float right = BalanceTallyPct(((const BalanceProgressRow *)b)->tally);
+    return (left < right) - (left > right);
+}
+
+static int BalanceProgressStrongCount(const BalanceProgressRow *rows, int count) {
+    int strong = 0;
+    for (int i = 0; i < count; i++) strong += BalanceTallyPct(rows[i].tally) > BALANCE_PROGRESS_STRONG_PCT;
+    return strong;
+}
+
+static void BalancePrintStrongestProgress(BalanceProgressRow *rows, int count, const char *kind) {
+    qsort(rows, (size_t)count, sizeof(rows[0]), BalanceProgressByWinPct);
+    for (int i = 0; i < count && i < BALANCE_PROGRESS_SHOWN; i++)
+        printf("  %-44s %8.1f%%\n", rows[i].label, BalanceTallyPct(rows[i].tally));
+    printf(
+        "  %d of %d %s win over %.0f%%\n",
+        BalanceProgressStrongCount(rows, count),
+        count,
+        kind,
+        BALANCE_PROGRESS_STRONG_PCT
+    );
+}
+
+static bool BalanceRuneActsInBattle(const RuneDef *def) {
+    return def->buff != RUNE_BUFF_GOLD && def->buff != RUNE_BUFF_XP;
+}
+
+static void BalanceProgressRunes(Balance *b) {
+    static BalanceProgressRow rows[BALANCE_PROGRESS_ROW_CAPACITY];
+    int count = 0;
+    for (int def = 0; def < RuneCatalogCount(); def++) {
+        if (!BalanceRuneActsInBattle(RuneDefAt(def))) continue;
+        BalanceProgressRow *row = &rows[count++];
+        *row = (BalanceProgressRow){0};
+        StrCopy(row->label, sizeof(row->label), RuneDefAt(def)->id);
+        BalanceProgressMeasure(b, row, def, BalanceCarryRune, &def);
+    }
+    printf("\nRunes: one rune on the squad, against the same squad without it; the strongest\n");
+    BalancePrintStrongestProgress(rows, count, "runes");
+}
+
+static void BalanceProgressGear(Balance *b, bool every_hero) {
+    static BalanceProgressRow rows[BALANCE_PROGRESS_ROW_CAPACITY];
+    int count = 0;
+    for (int def = 0; def < GearCatalogCount(); def++) {
+        BalanceGearTrial trial = {.def = def, .every_hero = every_hero};
+        BalanceProgressRow *row = &rows[count];
+        *row = (BalanceProgressRow){0};
+        snprintf(row->label, sizeof(row->label), "%s (rarity %d)", GearDefAt(def)->id, GearDefAt(def)->rarity);
+        BalanceProgressMeasure(b, row, def * BALANCE_SIDES + every_hero, BalanceWearItem, &trial);
+        count += row->tally.battles > 0;
+    }
+    printf(
+        "\nGear: one item on %s, against the same squad without it; the strongest\n",
+        every_hero ? "every hero that can wear it" : "the first hero that can wear it"
+    );
+    BalancePrintStrongestProgress(rows, count, "items");
+}
+
+static void BalanceProgress(Balance *b, const BalanceOptions *o) {
+    printf(
+        "Progress: %d reference squads, %d seeds, %s; each row fights a changed squad against itself from both sides\n",
+        b->squad_count,
+        o->seeds,
+        BalanceStatsName(o)
+    );
+    BalanceProgressGrowth(b);
+    BalanceProgressRarity(b);
+    BalanceProgressFortify(b);
+    BalanceProgressRunes(b);
+    BalanceProgressGear(b, false);
+    BalanceProgressGear(b, true);
+}
+
 static int BalanceGate(const Balance *b, const BalanceOptions *o) {
     int status = 0;
     for (int g = 0; g < o->gated_count; g++) {
@@ -1553,6 +1839,8 @@ static bool BalanceParseOptions(BalanceOptions *o, int argc, char **argv) {
             o->stacks = true;
         } else if (!strcmp(argv[i], "--squad-report")) {
             o->squad_report = true;
+        } else if (!strcmp(argv[i], "--progress")) {
+            o->progress = true;
         } else if (!strcmp(argv[i], "--unique")) {
             o->unique = true;
         } else if (!strcmp(argv[i], "--search") && values_left >= 1) {
@@ -1578,15 +1866,17 @@ static bool BalanceParseOptions(BalanceOptions *o, int argc, char **argv) {
             return false;
         }
     }
-    bool one_mode = o->stacks + o->squad_report + (o->search_tries > 0) + (o->adversarial_rounds > 0) <= 1;
-    bool calibration_fits = !o->calibrate_rounds || (!o->raw && !o->holdout && one_mode && !o->stacks &&
-                                                     !o->squad_report && !o->search_tries && !o->nudge_pct);
+    bool one_mode =
+        o->stacks + o->squad_report + o->progress + (o->search_tries > 0) + (o->adversarial_rounds > 0) <= 1;
+    bool calibration_fits =
+        !o->calibrate_rounds || (!o->raw && !o->holdout && one_mode && !o->stacks && !o->squad_report && !o->progress &&
+                                 !o->search_tries && !o->nudge_pct);
     bool adversarial_fits = o->adversarial_rounds >= 0 && o->adversarial_rounds <= BALANCE_ADVERSARIAL_ROUND_LIMIT &&
                             o->swaps > 0 && !(o->adversarial_rounds && o->gated_count);
     return adversarial_fits && o->seeds > 0 && o->seeds <= BALANCE_SEED_CAPACITY && o->squads > 0 &&
            o->squads <= BALANCE_SQUAD_CAPACITY && o->band_low_pct <= o->band_high_pct && o->calibrate_rounds >= 0 &&
            calibration_fits && !(o->raw && o->neutral) && one_mode && o->search_tries >= 0 && o->nudge_pct > -100 &&
-           !(o->raw && o->nudge_pct);
+           !(o->raw && o->nudge_pct) && !(o->progress && (o->gated_count || o->nudge_pct));
 }
 
 int main(int argc, char **argv) {
@@ -1610,6 +1900,8 @@ int main(int argc, char **argv) {
     if (options.squad_report) {
         BalanceFightSquads(b, options.seeds, seed_base);
         BalancePrintSquadReport(b, &options);
+    } else if (options.progress) {
+        BalanceProgress(b, &options);
     } else if (options.search_tries) {
         BalanceSearch(b, &options);
     } else if (options.adversarial_rounds) {

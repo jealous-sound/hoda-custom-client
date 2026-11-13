@@ -1058,9 +1058,15 @@ static bool SimGearPrefersMatchedTarget(const SimUnit *attacker, const SimUnit *
 }
 
 static void SimUnitsBattleStartPassives(SimUnit *units, const StatBudget *stat_budget) {
+    float gear_health_pct[SIM_UNIT_COUNT] = {0};
+    float gear_power_pct[SIM_UNIT_COUNT] = {0};
     float health_pct[SIM_UNIT_COUNT] = {0};
     float power_pct[SIM_UNIT_COUNT] = {0};
-    SimUnitsGearAuras(units, health_pct, power_pct);
+    SimUnitsGearAuras(units, gear_health_pct, gear_power_pct);
+    for (int i = 0; i < SIM_UNIT_COUNT && !stat_budget; i++) {
+        health_pct[i] = gear_health_pct[i];
+        power_pct[i] = gear_power_pct[i];
+    }
 
     for (int source_idx = 0; source_idx < SIM_UNIT_COUNT; source_idx++) {
         SimUnit *source = &units[source_idx];
@@ -1092,8 +1098,10 @@ static void SimUnitsBattleStartPassives(SimUnit *units, const StatBudget *stat_b
         SimUnit *unit = &units[i];
         if (!unit->present) continue;
         if (stat_budget) {
-            health_pct[i] = StatBudgetCappedAuraPct(stat_budget, health_pct[i]);
-            power_pct[i] = StatBudgetCappedAuraPct(stat_budget, power_pct[i]);
+            health_pct[i] = StatBudgetCappedAuraPct(stat_budget, health_pct[i]) +
+                            StatBudgetCappedGearPct(stat_budget, gear_health_pct[i]);
+            power_pct[i] = StatBudgetCappedAuraPct(stat_budget, power_pct[i]) +
+                           StatBudgetCappedGearPct(stat_budget, gear_power_pct[i]);
         }
         if (health_pct[i] != 0.0f) {
             unit->max_health = (int)lroundf(unit->max_health * (1.0f + health_pct[i] / 100.0f));
@@ -2035,7 +2043,7 @@ static BattleSimRules SimRosterRules(const BattleRoster *enemy) {
 
 static RuneBonus SimSideRuneBonus(const BattleSimSide *side, const StatBudget *stat_budget) {
     RuneBonus bonus = RuneDefsBonus(side->rune_defs, side->rune_def_count);
-    if (stat_budget) StatBudgetLevelRunes(&bonus);
+    if (stat_budget) StatBudgetDropFlatRuneShield(&bonus);
     return bonus;
 }
 
