@@ -103,9 +103,7 @@ typedef struct {
 static GearView gear_view;
 
 static void GearViewLoadButton(Button *button, GuiId idle, GuiId active, const char *label, float scale) {
-    bool armed = button->armed;
-    *button = ButtonLoadText(idle, active, label, GuiFont(FNT_COOL), (Vector2){0.5f, 0.5f}, scale);
-    button->armed = armed;
+    ButtonRestyle(button, ButtonLoadText(idle, active, label, GuiFont(FNT_COOL), (Vector2){0.5f, 0.5f}, scale));
 }
 
 static void GearViewLoadButtons(void) {

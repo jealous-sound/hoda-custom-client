@@ -52,6 +52,12 @@ Button ButtonLoad(GuiId idle, GuiId active) {
     return ButtonLoadText(idle, active, NULL, (Font){0}, (Vector2){0, 0}, 0.0f);
 }
 
+void ButtonRestyle(Button *button, Button style) {
+    style.armed = button->armed;
+    style.armed_at = button->armed_at;
+    *button = style;
+}
+
 void ButtonSetClickSound(Button *button, SoundId sound) {
     button->click = GuiSound(sound);
     button->click_allow_duplicate = GuiSoundAllowsDuplicate(sound);

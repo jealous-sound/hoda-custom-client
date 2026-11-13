@@ -376,9 +376,7 @@ static Button *ExpeditionsRowButton(ExpeditionsView *v, int def_index, Expeditio
     const Button *source = state == EXPEDITION_ROW_READY  ? &v->claim_template
                            : state == EXPEDITION_ROW_AWAY ? &v->recall_template
                                                           : &v->send_template;
-    bool armed = button->armed;
-    *button = *source;
-    button->armed = armed;
+    ButtonRestyle(button, *source);
     return button;
 }
 

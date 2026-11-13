@@ -90,6 +90,20 @@ static void TestAnAbandonedPressDoesNotClickLater(void) {
     assert(TestRelease(&shared, TestRowCentre(0), true) == TEST_NO_ROW);
 }
 
+static void TestARestyledButtonKeepsItsPress(void) {
+    Button restyled = {0};
+    Button style = {.label = "Send"};
+    for (int row = 0; row < TEST_ROW_COUNT; row++) {
+        ButtonRestyle(&restyled, style);
+        TestPress(&restyled, TestRowCentre(row));
+        ButtonRestyle(&restyled, style);
+        TestHold(&restyled, TestRowCentre(row), true);
+        ButtonRestyle(&restyled, style);
+        assert(TestRelease(&restyled, TestRowCentre(row), true) == row);
+        assert(restyled.label == style.label);
+    }
+}
+
 int main(void) {
     TestEveryRowOfASharedButtonClicks();
     TestOnlyThePressedRowIsHeld();
@@ -97,6 +111,7 @@ int main(void) {
     TestAPressFromOutsideClicksNothing();
     TestAListThatStartsScrollingDropsThePress();
     TestAnAbandonedPressDoesNotClickLater();
+    TestARestyledButtonKeepsItsPress();
     printf("button tests passed\n");
     return 0;
 }
