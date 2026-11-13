@@ -150,10 +150,12 @@ typedef struct {
 } PvpOpponent;
 
 #define PVP_RANK_PLAYER (-1)
+#define PVP_RANK_RIVAL (-2)
 
 typedef struct {
     int bot;
     int trophies;
+    int rival;
 } PvpRankEntry;
 
 static PvpTable pvp_table;
@@ -944,7 +946,8 @@ PvpPayout PvpEventTakeMilestones(PlayerPvp *pvp, int roster_room) {
 static int PvpRankCompare(const void *a, const void *b) {
     const PvpRankEntry *left = a, *right = b;
     if (left->trophies != right->trophies) return right->trophies - left->trophies;
-    return left->bot - right->bot;
+    if (left->bot != right->bot) return left->bot - right->bot;
+    return left->rival - right->rival;
 }
 
 int PvpLeaderboardBuild(PvpRankEntry *out, int trophies, long long day) {

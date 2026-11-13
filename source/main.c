@@ -69,6 +69,7 @@
 #include "battle_squad.c"
 #include "battle_sim.c"
 #include "pvp.c"
+#include "pvp_ladder.c"
 #include "battle.c"
 #include "music_player.c"
 #include "heroes.c"

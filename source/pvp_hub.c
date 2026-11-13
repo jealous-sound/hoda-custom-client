@@ -20,6 +20,7 @@ typedef struct {
     Button ladder;
     Button event;
     int rank;
+    int ladder_revision;
     bool scrim_armed;
 } PvpHub;
 
@@ -34,11 +35,17 @@ void PvpHubInitialize(PvpHub *hub) {
     hub->event = ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, go, hub->font, (Vector2){0.5f, 0.5f}, 0.32f);
 }
 
+static void PvpHubRankPlayer(PvpHub *hub, const Player *p, long long now) {
+    static PvpRankEntry ranks[PVP_LEADERBOARD_CAPACITY];
+    int count = PvpLadderBuild(&pvp_ladder, ranks, p->pvp.trophies, PvpDay(now));
+    hub->rank = PvpLeaderboardRank(ranks, count);
+    hub->ladder_revision = pvp_ladder.revision;
+}
+
 void PvpHubOpen(PvpHub *hub, Player *p, long long now) {
     PvpEventSync(&p->pvp, now);
-    static PvpRankEntry ranks[PVP_BOT_CAPACITY + 1];
-    int count = PvpLeaderboardBuild(ranks, p->pvp.trophies, PvpDay(now));
-    hub->rank = PvpLeaderboardRank(ranks, count);
+    PvpLadderRefresh(&pvp_ladder);
+    PvpHubRankPlayer(hub, p, now);
     hub->scrim_armed = false;
 }
 
@@ -107,6 +114,7 @@ static void PvpHubDrawEventColumn(const PvpHub *hub, const PlayerPvp *pvp, Recta
 }
 
 PvpHubAction PvpHubDraw(PvpHub *hub, const Player *p) {
+    if (hub->ladder_revision != pvp_ladder.revision) PvpHubRankPlayer(hub, p, ServerNow());
     Rectangle root = UiRoot();
     DrawRectangle(0, 0, root.width, root.height, (Color){0, 0, 0, 170});
     Rectangle panel = UiRect(root, 0.5f, 0.6f, 940.0f, 597.0f);
