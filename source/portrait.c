@@ -4,9 +4,12 @@
 #define PORTRAIT_STAR_BAND_TOP 76
 #define PORTRAIT_PLAQUE_TOP 104
 #define PORTRAIT_PLAQUE_BOTTOM 120
-#define PORTRAIT_STAR_MIN_GREEN 80
-#define PORTRAIT_STAR_GREEN_LEAD 15
+#define PORTRAIT_STAR_MIN_GREEN 40
+#define PORTRAIT_STAR_GREEN_LEAD 10
 #define PORTRAIT_STAR_HALO 2
+#define PORTRAIT_FILL_EDGE_WEIGHT 1.0f
+#define PORTRAIT_FILL_CORNER_WEIGHT 0.7f
+#define PORTRAIT_FILL_MIN_WEIGHT 1.7f
 #define PORTRAIT_KEEPS_PAINTED_FRAME ((Rarity)0)
 
 static const char *const PORTRAIT_STARLESS_FRAME_DONORS[RARITY_MYTHIC + 1] = {
@@ -75,23 +78,49 @@ static bool PortraitIsCleanArt(const PortraitStarMask *mask, int x, int y) {
 }
 
 typedef struct {
-    float red, green, blue, weight;
-} PortraitBlend;
+    Color color[PORTRAIT_ART_BOTTOM][PORTRAIT_SIZE];
+    bool ready[PORTRAIT_ART_BOTTOM][PORTRAIT_SIZE];
+} PortraitFillRing;
 
-static void PortraitBlendNearestCleanArt(
-    PortraitBlend *blend, Image portrait, const PortraitStarMask *mask, int x, int y, int step_x, int step_y
-) {
-    int distance = 1;
-    while (PortraitInsideArt(x + step_x * distance, y + step_y * distance) &&
-           !PortraitIsCleanArt(mask, x + step_x * distance, y + step_y * distance))
-        distance++;
-    if (!PortraitIsCleanArt(mask, x + step_x * distance, y + step_y * distance)) return;
-    Color pixel = *PortraitPixel(portrait, x + step_x * distance, y + step_y * distance);
-    float weight = 1.0f / (float)distance;
-    blend->red += pixel.r * weight;
-    blend->green += pixel.g * weight;
-    blend->blue += pixel.b * weight;
-    blend->weight += weight;
+static bool PortraitBlendCleanNeighbours(Image portrait, const PortraitStarMask *mask, int x, int y, Color *blended) {
+    float red = 0.0f, green = 0.0f, blue = 0.0f, total = 0.0f;
+    for (int step_y = -1; step_y <= 1; step_y++) {
+        for (int step_x = -1; step_x <= 1; step_x++) {
+            if ((!step_x && !step_y) || !PortraitIsCleanArt(mask, x + step_x, y + step_y)) continue;
+            float weight = step_x && step_y ? PORTRAIT_FILL_CORNER_WEIGHT : PORTRAIT_FILL_EDGE_WEIGHT;
+            Color pixel = *PortraitPixel(portrait, x + step_x, y + step_y);
+            red += pixel.r * weight;
+            green += pixel.g * weight;
+            blue += pixel.b * weight;
+            total += weight;
+        }
+    }
+    if (total < PORTRAIT_FILL_MIN_WEIGHT) return false;
+    *blended = (Color){
+        (unsigned char)(red / total + 0.5f),
+        (unsigned char)(green / total + 0.5f),
+        (unsigned char)(blue / total + 0.5f),
+        PortraitPixel(portrait, x, y)->a,
+    };
+    return true;
+}
+
+static bool PortraitFillOutermostRing(Image *portrait, PortraitStarMask *mask) {
+    static PortraitFillRing ring;
+    bool filled = false;
+    for (int y = PORTRAIT_STAR_BAND_TOP; y < PORTRAIT_ART_BOTTOM; y++)
+        for (int x = PORTRAIT_FRAME_BORDER; x < PORTRAIT_SIZE - PORTRAIT_FRAME_BORDER; x++)
+            ring.ready[y][x] =
+                mask->covered[y][x] && PortraitBlendCleanNeighbours(*portrait, mask, x, y, &ring.color[y][x]);
+    for (int y = PORTRAIT_STAR_BAND_TOP; y < PORTRAIT_ART_BOTTOM; y++) {
+        for (int x = PORTRAIT_FRAME_BORDER; x < PORTRAIT_SIZE - PORTRAIT_FRAME_BORDER; x++) {
+            if (!ring.ready[y][x]) continue;
+            *PortraitPixel(*portrait, x, y) = ring.color[y][x];
+            mask->covered[y][x] = false;
+            filled = true;
+        }
+    }
+    return filled;
 }
 
 static void PortraitPaintOverLegendaryStars(Image *portrait) {
@@ -100,22 +129,7 @@ static void PortraitPaintOverLegendaryStars(Image *portrait) {
     for (int y = PORTRAIT_STAR_BAND_TOP; y < PORTRAIT_ART_BOTTOM; y++)
         for (int x = PORTRAIT_FRAME_BORDER; x < PORTRAIT_SIZE - PORTRAIT_FRAME_BORDER; x++)
             if (PortraitPixelIsLegendaryGreen(*portrait, x, y)) PortraitStarMaskCoverHalo(&mask, x, y);
-    Image clean = ImageCopy(*portrait);
-    for (int y = PORTRAIT_STAR_BAND_TOP; y < PORTRAIT_ART_BOTTOM; y++) {
-        for (int x = PORTRAIT_FRAME_BORDER; x < PORTRAIT_SIZE - PORTRAIT_FRAME_BORDER; x++) {
-            if (!mask.covered[y][x]) continue;
-            PortraitBlend blend = {0};
-            PortraitBlendNearestCleanArt(&blend, clean, &mask, x, y, -1, 0);
-            PortraitBlendNearestCleanArt(&blend, clean, &mask, x, y, 1, 0);
-            PortraitBlendNearestCleanArt(&blend, clean, &mask, x, y, 0, -1);
-            if (blend.weight <= 0.0f) continue;
-            Color *pixel = PortraitPixel(*portrait, x, y);
-            pixel->r = (unsigned char)(blend.red / blend.weight + 0.5f);
-            pixel->g = (unsigned char)(blend.green / blend.weight + 0.5f);
-            pixel->b = (unsigned char)(blend.blue / blend.weight + 0.5f);
-        }
-    }
-    UnloadImage(clean);
+    while (PortraitFillOutermostRing(portrait, &mask)) continue;
 }
 
 static void PortraitReframe(Image *portrait, Image frame) {
