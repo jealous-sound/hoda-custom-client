@@ -87,6 +87,10 @@ bool BackendEnabled(void) {
     return backend_state.enabled;
 }
 
+static bool BackendServesThisClient(void) {
+    return backend_state.enabled && !ClientUpdateOnlineRefused();
+}
+
 static int BackendRequestHeaders(
     const BackendState *state, long long if_match, char storage[][BACKEND_HEADER_CAP], const char **headers
 ) {
@@ -733,7 +737,7 @@ static void BackendChooseRequestId(BackendWorker *w, const char *route, const ch
 }
 
 int BackendBeginAction(const char *route, cJSON *fields) {
-    if (!BackendEnabled() || !fields) return BACKEND_NO_TICKET;
+    if (!BackendServesThisClient() || !fields) return BACKEND_NO_TICKET;
     char *unsigned_body = cJSON_PrintUnformatted(fields);
     if (!unsigned_body) return BACKEND_NO_TICKET;
     BackendWorker *w = BackendWorkerStart();
@@ -787,7 +791,7 @@ BackendActionState BackendPollAction(int ticket, cJSON **out_json) {
 }
 
 int BackendBeginQuery(const char *method, const char *route, const cJSON *fields) {
-    if (!BackendEnabled()) return BACKEND_NO_TICKET;
+    if (!BackendServesThisClient()) return BACKEND_NO_TICKET;
     char *body = fields ? cJSON_PrintUnformatted(fields) : NULL;
     if (fields && !body) return BACKEND_NO_TICKET;
     BackendWorker *w = BackendWorkerStart();

@@ -10,6 +10,7 @@
 #define TEST_FAR_FUTURE_VERSION "v999.0.0"
 #define TEST_SERVER_TIME 1800000000LL
 #define TEST_RECEIVED_AT 5000LL
+#define TEST_UNREACHABLE_SERVER "http://127.0.0.1:1"
 
 static ClientVersion TestVersion(const char *text) {
     ClientVersion version;
@@ -183,6 +184,17 @@ static void TestUpgradeRequiredBlocksOnlineAndKeepsTheServerRelease(void) {
     assert(ClientUpdateOnlineRefused());
 }
 
+static void TestARefusedClientBeginsNoPlayerRequests(void) {
+    assert(ClientUpdateOnlineRefused());
+    assert(BackendConnect(TEST_UNREACHABLE_SERVER));
+    cJSON *fields = cJSON_CreateObject();
+    assert(BackendBeginQuery("GET", "guild", NULL) == BACKEND_NO_TICKET);
+    assert(BackendBeginAction(SERVER_ACTION_ROUTE, fields) == BACKEND_NO_TICKET);
+    assert(!backend_worker.started);
+    cJSON_Delete(fields);
+    backend_state.enabled = false;
+}
+
 static void TestReadsTheAnnouncedRestart(void) {
     ClientRelease release;
     assert(
@@ -263,6 +275,7 @@ int main(void) {
     TestBattlesAreHeldFromTheLeadUntilTheOverrunEnds();
     TestTheLatestReplyDecidesTheAnnouncement();
     TestUpgradeRequiredBlocksOnlineAndKeepsTheServerRelease();
+    TestARefusedClientBeginsNoPlayerRequests();
     printf("client update: ok\n");
     return 0;
 }
