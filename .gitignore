@@ -54,6 +54,7 @@ tests/client_update_test
 tests/client_install_test
 tests/server_actions_test
 tests/button_test
+tests/portrait_test
 .wrangler/
 player_save.dat
 player_save.dat.tmp

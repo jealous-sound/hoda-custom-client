@@ -44,6 +44,7 @@
 #include "assets.c"
 #include "loading_screen.c"
 #include "character.c"
+#include "portrait.c"
 #include "consume.c"
 #include "passive.c"
 #include "rune.c"

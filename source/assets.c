@@ -1291,18 +1291,3 @@ Music GuiMusic(MusicId id) {
 Sound GuiSound(SoundId id) {
     return gui_sounds[id];
 }
-
-const char *GuiPortraitRef(const char *icon) {
-    const char *original = TextFormat(CACHE_RESOURCE("%s"), icon);
-    return ResourceExists(original) ? original : TextFormat(POST_4_4_PORTRAIT_DIR "%s.png", icon);
-}
-
-Texture2D GuiPortraitLoad(const char *icon) {
-    const char *ref = GuiPortraitRef(icon);
-    if (!ResourceExists(ref)) TraceLog(LOG_FATAL, "Assets: missing portrait %s", icon);
-    Texture2D t = ResourceLoadTexture(ref);
-    if (t.id == 0) TraceLog(LOG_FATAL, "Assets: failed to load portrait %s", ref);
-    GenTextureMipmaps(&t);
-    SetTextureFilter(t, TEXTURE_FILTER_TRILINEAR);
-    return t;
-}

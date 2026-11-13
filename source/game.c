@@ -2408,6 +2408,7 @@ void GameDestroy(Game *g) {
     BattleDestroy(&g->battle);
     UnitPoolClear();
     PassiveManifestUnload();
+    PortraitFramesUnload();
     AssetsUnload();
     ResourceShutdown();
 }

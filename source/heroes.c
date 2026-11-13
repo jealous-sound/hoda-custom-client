@@ -428,7 +428,7 @@ void HeroesInitialize(Heroes *h, const Player *p) {
         HeroCard *card = &h->cards[i];
         const Character *ch = &p->roster[i];
         HeroCardBuild(card, ch);
-        card->portrait = GuiPortraitLoad(ch->icon_prefab[ch->tier]);
+        card->portrait = GuiPortraitLoad(ch->icon_prefab[ch->tier], ch->rarity);
     }
     RosterInitialize(&h->roster, p);
     h->roster.pin_squad = true;
@@ -450,7 +450,7 @@ bool HeroesSyncRoster(Heroes *h, const Player *p) {
         HeroCard *card = &h->cards[i];
         const Character *ch = &p->roster[i];
         HeroCardBuild(card, ch);
-        card->portrait = GuiPortraitLoad(ch->icon_prefab[ch->tier]);
+        card->portrait = GuiPortraitLoad(ch->icon_prefab[ch->tier], ch->rarity);
     }
     h->card_count = p->roster_count;
     RosterRefreshOrder(&h->roster, p);
@@ -491,7 +491,7 @@ void HeroesApplyConsume(Heroes *h, const Player *p, const int *seeds, int seed_c
     const Character *ch = &p->roster[target];
     UnloadTexture(card->portrait);
     HeroCardBuild(card, ch);
-    card->portrait = GuiPortraitLoad(ch->icon_prefab[ch->tier]);
+    card->portrait = GuiPortraitLoad(ch->icon_prefab[ch->tier], ch->rarity);
     RosterRefreshOrder(&h->roster, p);
 }
 

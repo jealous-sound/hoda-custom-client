@@ -842,7 +842,10 @@ int PvpPayoutUnitCount(const PvpPayout *payout) {
 }
 
 static Texture2D PvpPrizeTextureLoad(const PvpPrize *prize) {
-    if (prize->kind == PVP_PRIZE_UNIT) return GuiPortraitLoad(prize->icon);
+    if (prize->kind == PVP_PRIZE_UNIT) {
+        const FortifyHero *hero = FortifyHeroFind(prize->id);
+        return GuiPortraitLoad(prize->icon, hero ? hero->rarity : PORTRAIT_KEEPS_PAINTED_FRAME);
+    }
     Texture2D texture = ResourceLoadTexture(prize->icon);
     if (texture.id == 0) TraceLog(LOG_WARNING, "Pvp: missing prize icon %s", prize->icon);
     return texture;

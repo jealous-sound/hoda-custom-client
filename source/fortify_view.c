@@ -308,7 +308,7 @@ static Texture2D FortifyPortraitFor(FortifyScreen *f, const FortifyChild *child)
     }
     FortifyPortrait *entry = &f->portraits[f->portrait_count++];
     StrCopy(entry->icon, sizeof(entry->icon), icon);
-    entry->texture = GuiPortraitLoad(icon);
+    entry->texture = GuiPortraitLoad(icon, hero->rarity);
     return entry->texture;
 }
 

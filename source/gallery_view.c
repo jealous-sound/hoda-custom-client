@@ -176,7 +176,7 @@ static void GalleryCellBuild(GalleryCell *cell, int unit_index, const GalleryCat
     Tier tier = GalleryPortraitTier(unit, record);
     const char *icon = unit->icon_prefab[tier];
     if (record && record->owned_tiers && ResourceExists(GuiPortraitRef(icon))) {
-        cell->portrait = GuiPortraitLoad(icon);
+        cell->portrait = GuiPortraitLoad(icon, unit->rarity);
         cell->loaded_portrait = true;
     } else {
         cell->portrait = GuiTex(GUI_GALLERY_SHADOW_COMMON + (unit->rarity - RARITY_COMMON));
