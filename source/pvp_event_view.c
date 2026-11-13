@@ -48,7 +48,7 @@ typedef struct {
     Button tabs[PVP_EVENT_TAB_COUNT];
     Button fight;
     PvpEventTab tab;
-    PvpRankEntry ranks[PVP_BOT_CAPACITY + 1];
+    PvpRankEntry ranks[PVP_LEADERBOARD_CAPACITY];
     int rank_count;
     GoalsScroll rank_scroll;
     GoalsScroll bracket_scroll;
@@ -113,6 +113,7 @@ static const PvpEvent *PvpEventViewEvent(void) {
 }
 
 void PvpEventViewOpen(PvpEventView *v) {
+    PvpLadderRefresh(&pvp_event_ladder.rivals);
     v->tab = PVP_EVENT_TAB_EVENT;
     v->meter_position = (float)(PvpEventViewEvent()->milestone_count - 1);
     v->meter_delay = PVP_EVENT_VIEW_METER_DELAY;
@@ -497,7 +498,7 @@ static void PvpEventViewDrawLeaderboard(PvpEventView *v, const Player *p, Rectan
         if (y + row_height < list.y || y > list.y + list.height) continue;
         Rectangle slot = {list.x, y, list.width, row_height};
         const PvpRankEntry *entry = &v->ranks[i];
-        bool self = entry->bot == PVP_RANK_PLAYER;
+        bool a_bot_to_fight = entry->bot >= 0;
         DrawRectangleRec(PvpEventFit(slot, 0.0f, 0.5f, 1.0f, 0.85f, 0.0f), PVP_EVENT_VIEW_ROW_TINT);
         Rectangle row = PvpEventFit(slot, 0.5f, 0.5f, 1.0f, 0.8f, 0.0f);
         UiDrawTextCentered(
@@ -507,10 +508,10 @@ static void PvpEventViewDrawLeaderboard(PvpEventView *v, const Player *p, Rectan
             20.0f,
             PVP_EVENT_VIEW_TEXT
         );
-        const char *name = self ? LocGet("HODA_PVP_YOU") : PvpTableEnsure()->bots[entry->bot].name;
+        const char *name = PvpLadderEntryName(&pvp_event_ladder.rivals, entry);
         QuestsDrawFit(v->body, name, PvpEventFit(row, 0.265f, 0.5f, 0.45f, 1.0f, 0.0f), 19.0f, PVP_EVENT_VIEW_TEXT);
         PvpEventViewDrawBannerCell(v, row, 0.725f, 0.2f, entry->trophies, PVP_EVENT_VIEW_TEXT);
-        if (self) continue;
+        if (!a_bot_to_fight) continue;
         Rectangle button = PvpEventFit(row, 1.0f, 0.5f, 1.0f, 1.0f, 2.08f);
         if (ButtonDrawEx(&v->fight, button, interactive && visible && !v->rank_scroll.drag_scrolled))
             v->selected_bot = entry->bot;
@@ -576,7 +577,7 @@ static void PvpEventViewDrawBracketList(PvpEventView *v, int rank, Rectangle pan
 static PvpEventViewAction
 PvpEventViewDrawBannersTab(PvpEventView *v, const Player *p, Rectangle content, long long now, bool interactive) {
     long long elapsed = now % PvpTableEnsure()->events.duration_seconds;
-    v->rank_count = PvpEventLeaderboardBuild(v->ranks, p->pvp.event.banners, p->pvp.event.cycle, elapsed);
+    v->rank_count = PvpEventLadderBuild(&pvp_event_ladder, v->ranks, p->pvp.event.banners, p->pvp.event.cycle, elapsed);
     v->selected_bot = PVP_RANK_PLAYER;
     PvpEventViewDrawLeaderboard(v, p, PvpEventFit(content, 0.03f, 0.0f, 0.7f, 0.98f, 0.0f), interactive);
 

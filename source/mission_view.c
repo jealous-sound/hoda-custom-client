@@ -22,6 +22,7 @@ typedef enum {
     MISSIONS_NONE = 0,
     MISSIONS_CLOSE,
     MISSIONS_FIGHT_BOT,
+    MISSIONS_FIGHT_RIVAL,
     MISSIONS_REVENGE,
     MISSIONS_CLAIM_GUILD_EVENT,
 } MissionsAction;
@@ -76,9 +77,11 @@ static void MissionsSelectTab(MissionsScreen *s, Player *p, GoalsTab tab) {
     s->tab = tab;
     GoalsScrollReset(&s->scroll);
     if (tab == GOALS_TAB_TROPHIES) {
+        PvpLadderRefresh(&pvp_ladder);
         GoalsRefreshLeaderboard(&s->tabs, p, ServerNow());
         p->pvp.trophies_seen = p->pvp.trophies;
     }
+    if (tab == GOALS_TAB_EVENTS) PvpLadderRefresh(&pvp_event_ladder.rivals);
 }
 
 void MissionsOpen(MissionsScreen *s, Player *p, GoalsTab tab) {
@@ -384,6 +387,7 @@ MissionsDraw(MissionsScreen *s, Hud *hud, Heroes *heroes, Player *p, const Goals
         }
     }
     if (goal == GOALS_FIGHT_BOT) action = MISSIONS_FIGHT_BOT;
+    if (goal == GOALS_FIGHT_RIVAL) action = MISSIONS_FIGHT_RIVAL;
     if (goal == GOALS_REVENGE) action = MISSIONS_REVENGE;
     if (goal == GOALS_CLAIM_GUILD_EVENT) action = MISSIONS_CLAIM_GUILD_EVENT;
 

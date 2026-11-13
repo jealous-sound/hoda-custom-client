@@ -105,6 +105,7 @@ typedef struct {
     PvpOpponent pvp_opponent;
     GamePvpMatch pvp_match;
     bool pvp_match_waiting;
+    bool pvp_rival_waiting;
     GamePvpMatchRequest pvp_match_request;
     Screen pvp_return_screen;
 
@@ -332,6 +333,25 @@ static PvpOpponent GameDuelOpponent(const Game *g) {
     }
     for (int i = 0; i < d->rune_count; i++) PvpOpponentAddDuelRune(&opponent, d->runes[i]);
     return opponent;
+}
+
+static void GameChallengeRival(Game *g, int rival) {
+    const PvpLadderPlayer *player = PvpLadderPlayerAt(&pvp_ladder, rival);
+    if (!player || g->pvp_rival_waiting) return;
+    GuildRequestRival(&g->guild, player->id);
+    g->pvp_rival_waiting = true;
+}
+
+static void GamePollRival(Game *g) {
+    if (!g->pvp_rival_waiting) return;
+    GuildRivalState rival = GuildTakeRival(&g->guild);
+    if (rival == GUILD_RIVAL_WAITING) return;
+    g->pvp_rival_waiting = false;
+    if (rival != GUILD_RIVAL_READY) {
+        TraceLog(LOG_WARNING, "Server: the ladder rival has no squad to fight");
+    } else if (g->screen == SCREEN_MISSIONS) {
+        GameEnterFixedPvpBattle(g, GameDuelOpponent(g), -1, SCREEN_MISSIONS);
+    }
 }
 
 static GoalsGuildAward GameGuildAward(const Game *g) {
@@ -646,6 +666,7 @@ static void GameExitBattleTo(Game *g, Screen destination) {
     if (destination != SCREEN_BATTLE) g->battle_is_pvp = false;
     if (destination != SCREEN_BATTLE) g->pvp_event = false;
     if (destination == SCREEN_PVP_HUB) PvpHubOpen(&g->pvp_hub, &g->player, ServerNow());
+    if (destination == SCREEN_PVP_EVENT) PvpLadderRefresh(&pvp_event_ladder.rivals);
     if (destination == SCREEN_MISSIONS) MissionsSelectTab(&g->missions, &g->player, g->missions.tab);
 }
 
@@ -1676,6 +1697,7 @@ void GameDraw(Game *g) {
     g->home_ui.expeditions_badge = ExpeditionsHomeBadge(&g->player);
     if (g->screen != SCREEN_GUILD) GuildHideChat(&g->guild);
     GuildUpdate(&g->guild, &g->player);
+    GamePollRival(g);
     if (g->player.roster_count != g->player.gallery.synced_roster_count) PlayerGallerySync(&g->player);
 
     ClearBackground(RAYWHITE);
@@ -2019,6 +2041,8 @@ void GameDraw(Game *g) {
                 g->screen = SCREEN_HOME;
             } else if (pressed == MISSIONS_FIGHT_BOT) {
                 GameMatchPvp(g, false, g->missions.tabs.selected, false, SCREEN_MISSIONS);
+            } else if (pressed == MISSIONS_FIGHT_RIVAL) {
+                GameChallengeRival(g, g->missions.tabs.selected);
             } else if (pressed == MISSIONS_CLAIM_GUILD_EVENT) {
                 GuildClaimOnslaught(&g->guild, &g->player);
             } else if (pressed == MISSIONS_REVENGE) {

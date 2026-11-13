@@ -27,7 +27,14 @@ typedef enum {
     GOALS_TAB_COUNT
 } GoalsTab;
 
-typedef enum { GOALS_NONE = 0, GOALS_FIGHT_BOT, GOALS_REVENGE, GOALS_CLAIM_EVENT, GOALS_CLAIM_GUILD_EVENT } GoalsAction;
+typedef enum {
+    GOALS_NONE = 0,
+    GOALS_FIGHT_BOT,
+    GOALS_FIGHT_RIVAL,
+    GOALS_REVENGE,
+    GOALS_CLAIM_EVENT,
+    GOALS_CLAIM_GUILD_EVENT
+} GoalsAction;
 
 typedef struct {
     bool shown;
@@ -59,9 +66,10 @@ typedef struct {
     Button tabs[GOALS_TAB_COUNT];
     Button fight;
     Button claim;
-    PvpRankEntry ranks[PVP_BOT_CAPACITY + 1];
+    PvpRankEntry ranks[PVP_LEADERBOARD_CAPACITY];
     int rank_count;
     int player_rank;
+    int ladder_revision;
     int selected;
 } GoalsTabs;
 
@@ -88,8 +96,9 @@ void GoalsTabsInitialize(GoalsTabs *t) {
 }
 
 void GoalsRefreshLeaderboard(GoalsTabs *t, const Player *p, long long now) {
-    t->rank_count = PvpLeaderboardBuild(t->ranks, p->pvp.trophies, PvpDay(now));
+    t->rank_count = PvpLadderBuild(&pvp_ladder, t->ranks, p->pvp.trophies, PvpDay(now));
     t->player_rank = PvpLeaderboardRank(t->ranks, t->rank_count);
+    t->ladder_revision = pvp_ladder.revision;
 }
 
 void GoalsScrollReset(GoalsScroll *scroll) {
@@ -202,6 +211,7 @@ static void GoalsDrawRankHeader(const GoalsTabs *t, Rectangle row) {
 }
 
 GoalsAction GoalsDrawTrophies(GoalsTabs *t, GoalsScroll *scroll, const Player *p, Rectangle content, bool interactive) {
+    if (t->ladder_revision != pvp_ladder.revision) GoalsRefreshLeaderboard(t, p, ServerNow());
     Rectangle header = {content.x, content.y, content.width, GOALS_HEADER_HEIGHT};
     GoalsDrawRankHeader(t, header);
     Rectangle mine = {content.x, header.y + header.height, content.width, GOALS_PLAYER_ROW_HEIGHT};
@@ -225,7 +235,7 @@ GoalsAction GoalsDrawTrophies(GoalsTabs *t, GoalsScroll *scroll, const Player *p
         const PvpRankEntry *entry = &t->ranks[i];
         bool self = entry->bot == PVP_RANK_PLAYER;
         DrawRectangleRec(row, GOALS_ROW_TINT);
-        const char *name = self ? LocGet("HODA_PVP_YOU") : PvpTableEnsure()->bots[entry->bot].name;
+        const char *name = PvpLadderEntryName(&pvp_ladder, entry);
         GoalsDrawRankCells(t, row, i + 1, name, entry->trophies, GOALS_BUTTON_WIDTH + 16.0f, GOALS_TEXT);
         if (self) continue;
         Rectangle button = {
@@ -235,8 +245,9 @@ GoalsAction GoalsDrawTrophies(GoalsTabs *t, GoalsScroll *scroll, const Player *p
             GOALS_BUTTON_HEIGHT,
         };
         if (ButtonDrawEx(&t->fight, button, interactive && visible && !scroll->drag_scrolled)) {
-            t->selected = entry->bot;
-            action = GOALS_FIGHT_BOT;
+            bool rival = entry->bot == PVP_RANK_RIVAL;
+            t->selected = rival ? entry->rival : entry->bot;
+            action = rival ? GOALS_FIGHT_RIVAL : GOALS_FIGHT_BOT;
         }
     }
     EndScissorMode();

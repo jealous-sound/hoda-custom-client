@@ -226,7 +226,17 @@ typedef enum {
     GUILD_REQUEST_ONSLAUGHT,
     GUILD_REQUEST_DUEL,
     GUILD_REQUEST_REPORT,
+    GUILD_REQUEST_LADDER,
+    GUILD_REQUEST_EVENT_LADDER,
+    GUILD_REQUEST_RIVAL,
 } GuildRequestKind;
+
+typedef enum {
+    GUILD_RIVAL_NOT_ASKED,
+    GUILD_RIVAL_WAITING,
+    GUILD_RIVAL_READY,
+    GUILD_RIVAL_UNAVAILABLE,
+} GuildRivalState;
 
 typedef enum {
     GUILD_ABUSE_NONE,
@@ -331,6 +341,7 @@ typedef struct {
     GuildOnslaught previous;
     long long onslaught_inflight;
     GuildDuel duel;
+    GuildRivalState rival;
     int claim_ticket;
 } Guild;
 
@@ -838,6 +849,37 @@ static void GuildHandleDuel(Guild *g, const cJSON *json) {
     }
 }
 
+static bool GuildRequestListsALadder(GuildRequestKind kind) {
+    return kind == GUILD_REQUEST_LADDER || kind == GUILD_REQUEST_EVENT_LADDER;
+}
+
+static void GuildRequestLadderFrom(Guild *g, GuildRequestKind kind, const char *route) {
+    if (g->inflight == kind || GuildQueued(g, kind)) return;
+    GuildEnqueue(g, kind, "GET", route, NULL);
+}
+
+static void GuildRequestLadder(Guild *g) {
+    GuildRequestLadderFrom(g, GUILD_REQUEST_LADDER, PVP_LADDER_ROUTE);
+}
+
+static void GuildRequestEventLadder(Guild *g) {
+    GuildRequestLadderFrom(g, GUILD_REQUEST_EVENT_LADDER, PVP_EVENT_LADDER_ROUTE);
+}
+
+void GuildRequestRival(Guild *g, const char *player_id) {
+    memset(&g->duel, 0, sizeof(g->duel));
+    bool asked =
+        GuildAvailable() &&
+        GuildEnqueue(g, GUILD_REQUEST_RIVAL, "GET", TextFormat(PVP_LADDER_RIVAL_ROUTE_FORMAT, player_id), NULL);
+    g->rival = asked ? GUILD_RIVAL_WAITING : GUILD_RIVAL_UNAVAILABLE;
+}
+
+GuildRivalState GuildTakeRival(Guild *g) {
+    GuildRivalState state = g->rival;
+    if (state != GUILD_RIVAL_WAITING) g->rival = GUILD_RIVAL_NOT_ASKED;
+    return state;
+}
+
 void GuildRequestReport(Guild *g, const char *kind, GuildAbuseType abuse, const char *target_id) {
     cJSON *body = cJSON_CreateObject();
     cJSON_AddStringToObject(body, "kind", kind);
@@ -1047,6 +1089,11 @@ static void GuildHandleAnswer(Guild *g, GuildRequestKind kind, int status, const
             GuildOnslaughtFailed(g);
             return;
         }
+        if (GuildRequestListsALadder(kind)) return;
+        if (kind == GUILD_REQUEST_RIVAL) {
+            g->rival = GUILD_RIVAL_UNAVAILABLE;
+            return;
+        }
         GuildPushResult(
             g,
             kind,
@@ -1078,6 +1125,16 @@ static void GuildHandleAnswer(Guild *g, GuildRequestKind kind, int status, const
         case GUILD_REQUEST_DUEL:
             GuildHandleDuel(g, json);
             break;
+        case GUILD_REQUEST_LADDER:
+            PvpLadderAdopt(&pvp_ladder, json);
+            return;
+        case GUILD_REQUEST_EVENT_LADDER:
+            PvpEventLadderAdopt(&pvp_event_ladder, json);
+            return;
+        case GUILD_REQUEST_RIVAL:
+            GuildHandleDuel(g, json);
+            g->rival = g->duel.unit_count > 0 ? GUILD_RIVAL_READY : GUILD_RIVAL_UNAVAILABLE;
+            return;
         case GUILD_REQUEST_REPORT:
             break;
         default:
@@ -1107,7 +1164,9 @@ static void GuildPollInflight(Guild *g) {
         g->next_state_at = GetTime() + GUILD_RETRY_SECONDS;
     } else if (kind == GUILD_REQUEST_ONSLAUGHT) {
         GuildOnslaughtFailed(g);
-    } else {
+    } else if (kind == GUILD_REQUEST_RIVAL) {
+        g->rival = GUILD_RIVAL_UNAVAILABLE;
+    } else if (!GuildRequestListsALadder(kind)) {
         if (kind == GUILD_REQUEST_RECOMMENDED || kind == GUILD_REQUEST_SEARCH) g->list_ready = true;
         GuildPushResult(g, kind, GUILD_OUTCOME_OFFLINE, "");
     }
@@ -1153,6 +1212,9 @@ void GuildUpdate(Guild *g, Player *p) {
     GuildPollCreate(g, p);
     GuildPollClaim(g, p);
     GuildPollInflight(g);
+    PvpEventLadderRankResults(&pvp_event_ladder, &p->pvp);
+    if (PvpLadderTakeRefresh(&pvp_ladder)) GuildRequestLadder(g);
+    if (PvpLadderTakeRefresh(&pvp_event_ladder.rivals)) GuildRequestEventLadder(g);
     double now = GetTime();
     bool engaged = GuildUnlocked(p) || GuildIsMember(g) || g->has_application;
     if (engaged && now >= g->next_state_at) GuildRefresh(g);

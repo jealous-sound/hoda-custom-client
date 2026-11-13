@@ -150,10 +150,12 @@ typedef struct {
 } PvpOpponent;
 
 #define PVP_RANK_PLAYER (-1)
+#define PVP_RANK_RIVAL (-2)
 
 typedef struct {
     int bot;
     int trophies;
+    int rival;
 } PvpRankEntry;
 
 static PvpTable pvp_table;
@@ -783,9 +785,11 @@ PvpOpponent PvpEventOpponentGenerate(int level, int trophies, int banners, long 
     return PvpOpponentFromBot(bot, level, trophies, PvpDay(now), seed);
 }
 
+int PvpEventRivalsAhead(long long cycle, int banners);
+
 int PvpEventRankAt(int banners, long long cycle, long long elapsed) {
     const PvpTable *t = PvpTableEnsure();
-    int rank = 1;
+    int rank = 1 + PvpEventRivalsAhead(cycle, banners);
     for (int bot = 0; bot < t->bot_count; bot++) rank += PvpBotBanners(bot, cycle, elapsed) > banners;
     return rank;
 }
@@ -793,7 +797,9 @@ int PvpEventRankAt(int banners, long long cycle, long long elapsed) {
 const PvpEventRankReward *PvpEventRewardForRank(const PvpEvent *event, int rank) {
     for (int i = 0; i < event->rank_reward_count; i++)
         if (rank >= event->rank_rewards[i].first && rank <= event->rank_rewards[i].last) return &event->rank_rewards[i];
-    return NULL;
+    if (event->rank_reward_count == 0) return NULL;
+    const PvpEventRankReward *last_tier = &event->rank_rewards[event->rank_reward_count - 1];
+    return rank > last_tier->last ? last_tier : NULL;
 }
 
 int PvpEventRankTier(const PvpEvent *event, int rank) {
@@ -868,17 +874,19 @@ static void PvpEventDropOldestResult(PlayerPvp *pvp) {
     pvp->event_results[oldest] = pvp->event_results[--pvp->event_result_count];
 }
 
+void PvpEventResultRank(PlayerPvpEventResult *result, int rank) {
+    const PvpEventRankReward *reward = PvpEventRewardForRank(PvpEventForCycle(result->cycle), rank);
+    result->rank = rank;
+    result->gold = reward ? reward->reward.gold : 0;
+    result->gems = reward ? reward->reward.gems : 0;
+}
+
 static void PvpEventFinish(PlayerPvp *pvp) {
     const PlayerPvpEvent *event = &pvp->event;
     if (event->banners <= 0) return;
     int duration = PvpTableEnsure()->events.duration_seconds;
     PlayerPvpEventResult result = {.cycle = event->cycle, .banners = event->banners};
-    result.rank = PvpEventRankAt(event->banners, event->cycle, duration);
-    const PvpEventRankReward *reward = PvpEventRewardForRank(PvpEventForCycle(event->cycle), result.rank);
-    if (reward) {
-        result.gold = reward->reward.gold;
-        result.gems = reward->reward.gems;
-    }
+    PvpEventResultRank(&result, PvpEventRankAt(event->banners, event->cycle, duration));
     if (pvp->event_result_count == PVP_EVENT_RESULT_CAPACITY) PvpEventDropOldestResult(pvp);
     pvp->event_results[pvp->event_result_count++] = result;
     PvpEventSortResults(pvp);
@@ -941,10 +949,17 @@ PvpPayout PvpEventTakeMilestones(PlayerPvp *pvp, int roster_room) {
     return total;
 }
 
+static int PvpRankTieOrder(const PvpRankEntry *entry) {
+    if (entry->bot == PVP_RANK_PLAYER) return 0;
+    return entry->bot == PVP_RANK_RIVAL ? 1 : 2;
+}
+
 static int PvpRankCompare(const void *a, const void *b) {
     const PvpRankEntry *left = a, *right = b;
     if (left->trophies != right->trophies) return right->trophies - left->trophies;
-    return left->bot - right->bot;
+    if (PvpRankTieOrder(left) != PvpRankTieOrder(right)) return PvpRankTieOrder(left) - PvpRankTieOrder(right);
+    if (left->bot != right->bot) return left->bot - right->bot;
+    return left->rival - right->rival;
 }
 
 int PvpLeaderboardBuild(PvpRankEntry *out, int trophies, long long day) {
