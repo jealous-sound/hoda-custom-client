@@ -1827,7 +1827,8 @@ void GameDraw(Game *g) {
             int prev_squad = g->player.current_squad;
             HeroesButton heroes_action = HeroesDraw(&g->heroes, &g->player);
             bool squad_tab_changed = g->player.current_squad != prev_squad;
-            if (squad_tab_changed || g->screen != SCREEN_HEROES || heroes_action == HEROES_QUEST)
+            bool leaving_for_battle = heroes_action == HEROES_QUEST || heroes_action == HEROES_PVP;
+            if (squad_tab_changed || g->screen != SCREEN_HEROES || leaving_for_battle)
                 HeroesBackgroundClearRowBonus(&g->heroes_scene);
             HeroesBackgroundDrawRowBonus(&g->heroes_scene);
             if (gallery_modal) GameDrawGalleryPopup(g, resource_modal);
@@ -1835,6 +1836,8 @@ void GameDraw(Game *g) {
 
             if (heroes_action == HEROES_QUEST) {
                 GameOpenQuests(g);
+            } else if (heroes_action == HEROES_PVP) {
+                GameOpenPvpHub(g);
             } else if (GearViewTakeStoreRequest()) {
                 GearViewClose();
                 StoreOpen(&g->store);

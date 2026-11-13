@@ -1078,7 +1078,7 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
         TutorialAnchorSet(TUTORIAL_ANCHOR_HEROES_QUEST, quest);
         if (ButtonDrawEx(&h->gray, quest, buttons_active)) clicked = HEROES_QUEST;
         x += h->gray.idle.width + gap;
-        ButtonDrawEx(&h->gold, (Rectangle){x, y, -1, -1}, false);
+        if (ButtonDrawEx(&h->gold, (Rectangle){x, y, -1, -1}, buttons_active)) clicked = HEROES_PVP;
     }
 
     {
