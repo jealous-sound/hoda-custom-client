@@ -1423,13 +1423,13 @@ static void GuildDrawMemberRow(
         v->font, TextFormat("%d", m->level), GuildSmart(row, h, 13.0f, 0.0f, 65.0f, h), GUILD_HEADING_SIZE, GUILD_TEXT
     );
     bool me = !strcmp(m->id, GuildPlayerId());
-    GuildFitText(
+    RenownDrawStarredName(
+        m->renown_rank,
         v->body,
         m->name,
         GuildSmart(row, h, 108.0f, 0.0f, 385.0f, h),
         GUILD_BODY_SIZE,
-        me ? GUILD_TEXT_GOLD : GUILD_TEXT,
-        false
+        me ? GUILD_TEXT_GOLD : GUILD_TEXT
     );
     GuildFitText(
         v->body,
@@ -1523,7 +1523,9 @@ static void GuildDrawApplicantRow(
     UiDrawTextCentered(
         v->font, TextFormat("%d", a->level), GuildSmart(row, h, 13.0f, 0.0f, 65.0f, h), GUILD_HEADING_SIZE, GUILD_TEXT
     );
-    GuildFitText(v->body, a->name, GuildSmart(row, h, 108.0f, 0.0f, 385.0f, h), GUILD_BODY_SIZE, GUILD_TEXT, false);
+    RenownDrawStarredName(
+        a->renown_rank, v->body, a->name, GuildSmart(row, h, 108.0f, 0.0f, 385.0f, h), GUILD_BODY_SIZE, GUILD_TEXT
+    );
     GuildFitText(
         v->body,
         LocGet("GUILD_MEMBER_PENDING"),
@@ -1734,13 +1736,13 @@ static void GuildViewDrawChatList(GuildView *v, Guild *g, bool interactive) {
         bool two_lines = heights[i] > one;
         float smart = two_lines ? GUILD_CHAT_TWO_LINE_HEIGHT : GUILD_CHAT_ONE_LINE_HEIGHT;
         DrawRectangleRec(row, i % 2 ? GUILD_ROW_ODD : GUILD_ROW_EVEN);
-        GuildFitText(
+        RenownDrawStarredName(
+            line->renown_rank,
             v->font,
             line->title,
             GuildSmart(row, smart, 33.0f, 0.0f, 1080.0f, two_lines ? 43.0f : 44.0f),
             GUILD_BODY_SIZE,
-            GUILD_CHAT_TITLE_COLOR,
-            false
+            GUILD_CHAT_TITLE_COLOR
         );
         Rectangle message =
             GuildSmart(row, smart, 31.0f, two_lines ? 42.0f : 43.0f, 1025.0f, two_lines ? 88.0f : 44.0f);
@@ -1885,6 +1887,7 @@ typedef struct {
     int icon;
     const char *name;
     int banners;
+    int renown_rank;
 } GuildWarRow;
 
 static void GuildDrawWarRow(const GuildView *v, const GuildWarRow *entry, Rectangle row, int index) {
@@ -1895,7 +1898,9 @@ static void GuildDrawWarRow(const GuildView *v, const GuildWarRow *entry, Rectan
         v->font, TextFormat("%d", entry->rank), GuildSmart(row, h, 0.0f, 0.0f, 129.0f, h), size, GUILD_TEXT
     );
     GuildDrawEmblem(v, entry->icon, GuildSmart(row, h, 118.0f, 0.0f, 101.0f, h), WHITE);
-    GuildFitText(v->body, entry->name, GuildSmart(row, h, 231.0f, 0.0f, 717.0f, h), size, GUILD_TEXT, false);
+    RenownDrawStarredName(
+        entry->renown_rank, v->body, entry->name, GuildSmart(row, h, 231.0f, 0.0f, 717.0f, h), size, GUILD_TEXT
+    );
     UiDrawTextRight(
         v->font, TextFormat("%d", entry->banners), GuildSmart(row, h, 946.0f, 0.0f, 205.0f, h), size, GUILD_TEXT
     );
@@ -1917,7 +1922,7 @@ GuildWarRows(const GuildView *v, const Guild *g, const GuildOnslaught *o, GuildW
     *player = (GuildWarRow){0};
     for (int i = 0; i < o->member_count; i++) {
         const GuildContribution *c = &o->members[i];
-        rows[count++] = (GuildWarRow){c->rank, 0, c->name, c->banners};
+        rows[count++] = (GuildWarRow){c->rank, 0, c->name, c->banners, c->renown_rank};
         if (!strcmp(c->id, GuildPlayerId())) *player = rows[count - 1];
     }
     return count;
@@ -1930,13 +1935,13 @@ static void GuildDrawWarFooter(const GuildView *v, const GuildWarRow *player) {
         v->font, TextFormat("%d", player->rank), GuildRect(137.0f, 581.0f, 43.0f, 36.0f), size, GUILD_PLAYER_ROW_TEXT
     );
     GuildDrawEmblem(v, player->icon, GuildRect(177.0f, 581.0f, 36.0f, 36.0f), WHITE);
-    GuildFitText(
+    RenownDrawStarredName(
+        player->renown_rank,
         v->body,
         player->name ? player->name : "",
         GuildRect(218.0f, 581.0f, 228.0f, 36.0f),
         size,
-        GUILD_PLAYER_ROW_TEXT,
-        false
+        GUILD_PLAYER_ROW_TEXT
     );
     UiDrawTextRight(
         v->font, TextFormat("%d", player->banners), GuildRect(439.0f, 581.0f, 86.0f, 36.0f), size, GUILD_PLAYER_ROW_TEXT

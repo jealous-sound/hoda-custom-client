@@ -34,6 +34,18 @@ typedef struct {
 #define DEBUG_RENOWN_RANK 14
 #define DEBUG_RENOWN_FREE_POINTS 3
 #define DEBUG_RENOWN_RANK_PROGRESS 0.62f
+#define DEBUG_LADDER_RIVALS                                                                                            \
+    "{\"cycle\":%lld,\"players\":["                                                                                    \
+    "{\"id\":\"isabela\",\"name\":\"Isabela\",\"level\":100,\"trophies\":6100,\"banners\":9600,\"renown_rank\":41},"   \
+    "{\"id\":\"varric\",\"name\":\"Varric\",\"level\":100,\"trophies\":5975,\"banners\":9500,\"renown_rank\":33},"     \
+    "{\"id\":\"aveline\",\"name\":\"Aveline\",\"level\":100,\"trophies\":5925,\"banners\":9400,\"renown_rank\":24},"   \
+    "{\"id\":\"merrill\",\"name\":\"Merrill\",\"level\":100,\"trophies\":5875,\"banners\":9300,\"renown_rank\":12},"   \
+    "{\"id\":\"fenris\",\"name\":\"Fenris\",\"level\":64,\"trophies\":5825,\"banners\":9200,\"renown_rank\":6},"       \
+    "{\"id\":\"anders\",\"name\":\"Anders\",\"level\":8,\"trophies\":5775,\"banners\":9100}]}"
+#define DEBUG_DUEL_RIVAL                                                                                               \
+    "{\"id\":\"isabela\",\"name\":\"Isabela\",\"level\":100,\"trophies\":900,\"renown_rank\":41,"                      \
+    "\"units\":[{\"slot\":0,\"id\":\"UNIT_VIVIENNE\",\"tier\":\"II\",\"level\":9},"                                    \
+    "{\"slot\":1,\"id\":\"UNIT_ELVENMAGE\",\"tier\":\"I\",\"level\":2}],\"runes\":[]}"
 #define DEBUG_RESULTS_SETTLE_FRAMES 10
 #define DEBUG_MISSION_SUMMONS 600
 #define DEBUG_MISSION_CONSUMES 60
@@ -440,7 +452,30 @@ static BattleResultsPresentation DebugResultsPresentation(const DebugShot *shot,
     return presentation;
 }
 
+static void DebugSeedRenown(Player *player, int rank, int free_points);
+
+static void DebugSeedLadderRivals(Game *game) {
+    cJSON *reply = cJSON_Parse(TextFormat(DEBUG_LADDER_RIVALS, PvpEventCycle((long long)time(NULL))));
+    PvpLadderAdopt(&pvp_ladder, reply);
+    PvpEventLadderAdopt(&pvp_event_ladder, reply);
+    cJSON_Delete(reply);
+    DebugSeedRenown(&game->player, EnvInt("HOD_RENOWN_RANK", DEBUG_RENOWN_RANK), 0);
+}
+
+static bool DebugPrepareDuel(Game *game, DebugShot *shot) {
+    if (!DebugShotIs(shot, "pvp_duel")) return false;
+    game->screen = SCREEN_BATTLE;
+    if (game->battle.squads_loaded) return true;
+    cJSON *reply = cJSON_Parse(DEBUG_DUEL_RIVAL);
+    GuildHandleDuel(&game->guild, reply);
+    cJSON_Delete(reply);
+    DebugSeedRenown(&game->player, EnvInt("HOD_RENOWN_RANK", DEBUG_RENOWN_RANK), 0);
+    GameEnterFixedPvpBattle(game, GameDuelOpponent(game), -1, SCREEN_MISSIONS);
+    return true;
+}
+
 static void DebugPreparePvp(Game *game, DebugShot *shot) {
+    if (DebugPrepareDuel(game, shot)) return;
     if (DebugShotIs(shot, "pvp_hub")) {
         if (shot->frames_drawn == 0) GameOpenPvpHub(game);
         game->screen = SCREEN_PVP_HUB;
@@ -452,6 +487,7 @@ static void DebugPreparePvp(Game *game, DebugShot *shot) {
     } event_shots[] = {
         {"pvp_event", PVP_EVENT_TAB_EVENT},
         {"pvp_event_banners", PVP_EVENT_TAB_BANNERS},
+        {"pvp_event_rivals", PVP_EVENT_TAB_BANNERS},
         {"pvp_event_rewards", PVP_EVENT_TAB_REWARDS},
         {"pvp_event_battles", PVP_EVENT_TAB_BATTLES},
     };
@@ -463,6 +499,7 @@ static void DebugPreparePvp(Game *game, DebugShot *shot) {
             PvpEventSync(&game->player.pvp, (long long)time(NULL));
             game->player.pvp.event.banners = DEBUG_PVP_BANNERS;
             game->player.pvp.event.milestones_paid = DEBUG_PVP_MILESTONES;
+            if (DebugShotIs(shot, "pvp_event_rivals")) DebugSeedLadderRivals(game);
             GameOpenPvpEvent(game);
             game->pvp_event_view.tab = *event_tab;
             if (*event_tab == PVP_EVENT_TAB_BATTLES) {
@@ -649,6 +686,7 @@ static void DebugSeedGoals(Game *game, DebugShot *shot) {
         GoalsTab tab;
     } shots[] = {
         {"goals_trophies", GOALS_TAB_TROPHIES},
+        {"goals_trophies_rivals", GOALS_TAB_TROPHIES},
         {"goals_battles", GOALS_TAB_BATTLES},
         {"goals_events", GOALS_TAB_EVENTS},
     };
@@ -663,6 +701,7 @@ static void DebugSeedGoals(Game *game, DebugShot *shot) {
         }
         PvpSimulateDefense(pvp, game->player.level, now + DEBUG_PVP_DEFENSE_DELAY);
         pvp->event = (PlayerPvpEvent){.cycle = PvpEventCycle(now) - 1, .banners = DEBUG_PVP_BANNERS};
+        if (DebugShotIs(shot, "goals_trophies_rivals")) DebugSeedLadderRivals(game);
         MissionsOpen(&game->missions, &game->player, shots[i].tab);
     }
 }
@@ -1192,6 +1231,9 @@ static const char *const DEBUG_GUILD_MEMBERS[] = {
     "Sebastian",
 };
 
+static const int DEBUG_GUILD_RENOWN_RANKS[] = {12, 3, 0, 21, 1, 0, 34, 45};
+static const int DEBUG_GUILD_APPLICANT_RENOWN_RANKS[] = {2, 0};
+
 static const char *const DEBUG_GUILD_CHAT[] = {
     "{\"id\":1,\"time\":%lld,\"title\":\"GUILD_CHAT_EVENT_GUILD_CREATION_TITLE\","
     "\"text\":\"GUILD_CHAT_EVENT_GUILD_CREATION_MESSAGE\",\"player_rank\":999,"
@@ -1204,10 +1246,10 @@ static const char *const DEBUG_GUILD_CHAT[] = {
     "\"params\":[{\"text\":\"Varric\",\"loc_key\":false},{\"text\":\"GUILD_RANK_OFFICER\",\"loc_key\":true},"
     "{\"text\":\"Hawke\",\"loc_key\":false}]}",
     "{\"id\":4,\"time\":%lld,\"text\":\"Кто идёт в Нексус сегодня вечером?\",\"player_name\":\"Hawke\","
-    "\"player_level\":24,\"player_rank\":2}",
+    "\"player_level\":24,\"player_rank\":2,\"renown_rank\":12}",
     "{\"id\":5,\"time\":%lld,\"text\":\"Я в деле, но сначала прокачаю рунами отряд. Ещё пару боёв на третьей карте, "
     "и можно выдвигаться всем вместе через главные ворота.\",\"player_name\":\"Varric\",\"player_level\":21,"
-    "\"player_rank\":1}",
+    "\"player_rank\":1,\"renown_rank\":3}",
     "{\"id\":6,\"time\":%lld,\"title\":\"GUILD_CHAT_EVENT_PLAYER_APPLICATION_TITLE\","
     "\"text\":\"GUILD_CHAT_EVENT_PLAYER_APPLICATION_MESSAGE\",\"player_rank\":999,"
     "\"params\":[{\"text\":\"Bethany\",\"loc_key\":false}]}",
@@ -1218,11 +1260,11 @@ static const char *const DEBUG_GUILD_CHAT[] = {
 static const char *const DEBUG_WORLD_CHAT[] = {
     "{\"id\":1,\"time\":%lld,\"text\":\"Ищу гильдию для Натиска, 30 "
     "уровень\",\"player_id\":\"isabela\",\"player_name\":\"Isabela\","
-    "\"player_level\":30,\"player_rank\":999}",
+    "\"player_level\":30,\"player_rank\":999,\"renown_rank\":21}",
     "{\"id\":2,\"time\":%lld,\"text\":\"Защитники набирают игроков, заявки открыты. Нужны активные бойцы для "
     "Натиска и арены, вступайте через поиск "
     "гильдий.\",\"player_id\":\"hawke\",\"player_name\":\"Hawke\",\"player_level\":24,"
-    "\"player_rank\":2,\"guild_name\":\"Защитники\"}",
+    "\"player_rank\":2,\"renown_rank\":12,\"guild_name\":\"Защитники\"}",
     "{\"id\":3,\"time\":%lld,\"text\":\"Anyone beaten the level arena with a common squad?\","
     "\"player_id\":\"fenris\",\"player_name\":\"Fenris\",\"player_level\":17,\"player_rank\":0,\"guild_name\":"
     "\"Tevinter Fugitives\"}",
@@ -1257,6 +1299,7 @@ static void DebugSeedGuildInfo(GuildInfo *info, const char *name, int icon, Guil
         StrCopy(m->name, sizeof(m->name), DEBUG_GUILD_MEMBERS[i]);
         m->rank = i == 0 ? GUILD_RANK_LEADER : (i < 3 ? GUILD_RANK_OFFICER : GUILD_RANK_MEMBER);
         m->level = 24 - i * 2;
+        m->renown_rank = DEBUG_GUILD_RENOWN_RANKS[i];
         m->last_login = now - i * i * DEBUG_GUILD_LOGIN_STEP_SECONDS;
     }
     info->summary.member_count = info->member_total;
@@ -1266,6 +1309,7 @@ static void DebugSeedGuildInfo(GuildInfo *info, const char *name, int icon, Guil
         snprintf(a->id, sizeof(a->id), "applicant-%d", i);
         StrCopy(a->name, sizeof(a->name), applicants[i]);
         a->level = 9 + i;
+        a->renown_rank = DEBUG_GUILD_APPLICANT_RENOWN_RANKS[i];
         StrCopy(a->text, sizeof(a->text), "Возьмите меня, я умею лечить!");
     }
 }
@@ -1362,6 +1406,7 @@ static void DebugSeedOnslaught(Guild *g, long long cycle, bool finished) {
         StrCopy(c->id, sizeof(c->id), g->mine.members[i].id);
         StrCopy(c->name, sizeof(c->name), g->mine.members[i].name);
         c->banners = DEBUG_ONSLAUGHT_MEMBER_BANNERS - i * i * 12;
+        c->renown_rank = g->mine.members[i].renown_rank;
     }
     GuildRankContributions(o);
     o->my_banners = o->members[0].banners;
@@ -1673,13 +1718,14 @@ static void DebugShotPrepare(Game *game, DebugShot *shot) {
                 "missions",
                 "missions_claim",
                 "goals_trophies",
+                "goals_trophies_rivals",
                 "goals_battles",
                 "goals_events",
                 "goals_daily",
                 "goals_daily_weekly",
                 "goals_daily_locked"
             },
-            8
+            9
         ))
         game->screen = SCREEN_MISSIONS;
     DebugActivateBattleRunes(game, shot);

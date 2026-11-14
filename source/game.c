@@ -337,6 +337,7 @@ static PvpOpponent GameDuelOpponent(const Game *g) {
     }
     for (int i = 0; i < d->rune_count; i++) PvpOpponentAddDuelRune(&opponent, d->runes[i]);
     opponent.renown = d->renown;
+    opponent.duel_renown_rank = d->renown_rank;
     return opponent;
 }
 

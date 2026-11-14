@@ -11,6 +11,7 @@
 #define GOALS_BUTTON_HEIGHT 48.0f
 #define GOALS_RANK_COLUMN_WIDTH 96.0f
 #define GOALS_NAME_INSET 20.0f
+#define GOALS_RANK_NAME_SIZE 24.0f
 #define GOALS_TROPHY_COLUMN_WIDTH 150.0f
 #define GOALS_TEXT_SIZE 256
 #define GOALS_MINUTE 60LL
@@ -166,7 +167,14 @@ GoalsTab GoalsDrawTabBar(GoalsTabs *t, GoalsTab selected, Rectangle bar, bool in
 }
 
 static void GoalsDrawRankCells(
-    const GoalsTabs *t, Rectangle row, int rank, const char *name, int trophies, float right_inset, Color color
+    const GoalsTabs *t,
+    Rectangle row,
+    int rank,
+    int renown_rank,
+    const char *name,
+    int trophies,
+    float right_inset,
+    Color color
 ) {
     UiDrawTextCentered(
         t->font, TextFormat("%d", rank), (Rectangle){row.x, row.y, GOALS_RANK_COLUMN_WIDTH, row.height}, 26.0f, color
@@ -182,7 +190,8 @@ static void GoalsDrawRankCells(
     Rectangle trophies_cell = {
         trophy.x - GOALS_TROPHY_COLUMN_WIDTH - 8.0f, row.y, GOALS_TROPHY_COLUMN_WIDTH, row.height
     };
-    UiDrawTextLeftMiddle(t->body, name, (Rectangle){name_x, row.y, trophies_cell.x - name_x, row.height}, 24.0f, color);
+    Rectangle name_cell = {name_x, row.y, trophies_cell.x - name_x, row.height};
+    RenownDrawStarredName(renown_rank, t->body, name, name_cell, GOALS_RANK_NAME_SIZE, color);
     UiDrawTextRight(t->font, TextFormat("%d", trophies), trophies_cell, 26.0f, color);
 }
 
@@ -217,7 +226,14 @@ GoalsAction GoalsDrawTrophies(GoalsTabs *t, GoalsScroll *scroll, const Player *p
     Rectangle mine = {content.x, header.y + header.height, content.width, GOALS_PLAYER_ROW_HEIGHT};
     UiDrawTexture(GuiTex(GUI_GOALS_PLAYER_ROW), mine, WHITE);
     GoalsDrawRankCells(
-        t, mine, t->player_rank, LocGet("HODA_PVP_YOU"), p->pvp.trophies, GOALS_BUTTON_WIDTH + 16.0f, GOALS_PLAYER_TEXT
+        t,
+        mine,
+        t->player_rank,
+        RenownRank(p->experience),
+        LocGet("HODA_PVP_YOU"),
+        p->pvp.trophies,
+        GOALS_BUTTON_WIDTH + 16.0f,
+        GOALS_PLAYER_TEXT
     );
 
     float top = mine.y + mine.height + GOALS_LIST_TOP_INSET;
@@ -236,7 +252,8 @@ GoalsAction GoalsDrawTrophies(GoalsTabs *t, GoalsScroll *scroll, const Player *p
         bool self = entry->bot == PVP_RANK_PLAYER;
         DrawRectangleRec(row, GOALS_ROW_TINT);
         const char *name = PvpLadderEntryName(&pvp_ladder, entry);
-        GoalsDrawRankCells(t, row, i + 1, name, entry->trophies, GOALS_BUTTON_WIDTH + 16.0f, GOALS_TEXT);
+        int renown_rank = PvpLadderEntryRenownRank(&pvp_ladder, entry, p);
+        GoalsDrawRankCells(t, row, i + 1, renown_rank, name, entry->trophies, GOALS_BUTTON_WIDTH + 16.0f, GOALS_TEXT);
         if (self) continue;
         Rectangle button = {
             row.x + row.width - GOALS_BUTTON_WIDTH - 6.0f,

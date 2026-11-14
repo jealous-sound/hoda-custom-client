@@ -9143,6 +9143,201 @@ static void TestARenownRankUpGetsItsOwnResultsStage(void) {
     assert(flow.stage == BATTLE_RESULTS_REWARDS);
 }
 
+#define TEST_RANKED_LADDER_ROWS                                                                                        \
+    "\"players\":[{\"id\":\"veteran\",\"name\":\"Varric\",\"level\":40,\"trophies\":1000000,\"banners\":1000000,"      \
+    "\"renown_rank\":24},"                                                                                             \
+    "{\"id\":\"rising\",\"name\":\"Isabela\",\"level\":40,\"trophies\":900000,\"banners\":900000,"                     \
+    "\"renown_rank\":1},"                                                                                              \
+    "{\"id\":\"fresh\",\"name\":\"Merrill\",\"level\":3,\"trophies\":800000,\"banners\":800000},"                      \
+    "{\"id\":\"negative\",\"name\":\"Bodahn\",\"level\":3,\"trophies\":700000,\"banners\":700000,"                     \
+    "\"renown_rank\":-4},"                                                                                             \
+    "{\"id\":\"worded\",\"name\":\"Sandal\",\"level\":3,\"trophies\":600000,\"banners\":600000,"                       \
+    "\"renown_rank\":\"12\"}]"
+#define TEST_RANKED_LADDER_REPLY "{" TEST_RANKED_LADDER_ROWS "}"
+#define TEST_RANKED_EVENT_LADDER_REPLY "{\"cycle\":7000," TEST_RANKED_LADDER_ROWS "}"
+#define TEST_RANKED_LADDER_ROW_COUNT 5
+#define TEST_VIEWER_RENOWN_RANK 12
+
+static void AssertLadderRowsCarryTheirRenownRanks(const PvpLadder *ladder) {
+    static const int sent[TEST_RANKED_LADDER_ROW_COUNT] = {24, 1, 0, 0, 0};
+    assert(ladder->player_count == TEST_RANKED_LADDER_ROW_COUNT);
+    for (int row = 0; row < TEST_RANKED_LADDER_ROW_COUNT; row++) assert(ladder->players[row].renown_rank == sent[row]);
+}
+
+static void TestLadderRowsCarryEachRivalsRenownRank(void) {
+    static PvpLadder ladder;
+    memset(&ladder, 0, sizeof(ladder));
+    TestLadderAdopt(&ladder, TEST_RANKED_LADDER_REPLY);
+    AssertLadderRowsCarryTheirRenownRanks(&ladder);
+
+    static PvpEventLadder event;
+    memset(&event, 0, sizeof(event));
+    TestEventLadderAdopt(&event, TEST_RANKED_EVENT_LADDER_REPLY);
+    AssertLadderRowsCarryTheirRenownRanks(&event.rivals);
+
+    Player viewer = RenownTestPlayer(TEST_VIEWER_RENOWN_RANK);
+    static PvpRankEntry entries[PVP_LEADERBOARD_CAPACITY];
+    int count = PvpLadderBuild(&ladder, entries, TEST_LADDER_TROPHIES_ABOVE_EVERY_BOT / 2, TEST_LADDER_DAY);
+    int rivals = 0, viewers = 0, bots = 0;
+    for (int i = 0; i < count; i++) {
+        const PvpRankEntry *entry = &entries[i];
+        int shown = PvpLadderEntryRenownRank(&ladder, entry, &viewer);
+        if (entry->bot == PVP_RANK_RIVAL) {
+            rivals++;
+            assert(shown == ladder.players[entry->rival].renown_rank);
+        } else if (entry->bot == PVP_RANK_PLAYER) {
+            viewers++;
+            assert(shown == TEST_VIEWER_RENOWN_RANK);
+        } else {
+            bots++;
+            assert(shown == 0);
+        }
+    }
+    assert(rivals == TEST_RANKED_LADDER_ROW_COUNT && viewers == 1 && bots > 0);
+    assert(PvpLadderEntryRenownRank(&ladder, &entries[0], &viewer) == 24);
+
+    Player below_the_first_rank = RenownTestPlayer(0);
+    PvpRankEntry own_row = {.bot = PVP_RANK_PLAYER};
+    assert(PvpLadderEntryRenownRank(&ladder, &own_row, &below_the_first_rank) == 0);
+}
+
+#define TEST_RANKED_GUILD_STATE                                                                                        \
+    "{\"rank\":2,\"guild\":{\"id\":\"champions\",\"name\":\"Champions\",\"members\":["                                 \
+    "{\"id\":\"leader\",\"name\":\"Hawke\",\"rank\":2,\"player_level\":40,\"renown_rank\":31},"                        \
+    "{\"id\":\"officer\",\"name\":\"Varric\",\"rank\":1,\"player_level\":40,\"renown_rank\":9},"                       \
+    "{\"id\":\"recruit\",\"name\":\"Merrill\",\"rank\":0,\"player_level\":12},"                                        \
+    "{\"id\":\"negative\",\"name\":\"Bodahn\",\"rank\":0,\"player_level\":12,\"renown_rank\":-2}],"                    \
+    "\"pending_requests\":["                                                                                           \
+    "{\"id\":\"seasoned\",\"name\":\"Isabela\",\"player_level\":40,\"renown_rank\":20},"                               \
+    "{\"id\":\"novice\",\"name\":\"Sandal\",\"player_level\":4}]}}"
+#define TEST_RANKED_GUILD_CHAT                                                                                         \
+    "{\"rank\":2,\"messages\":["                                                                                       \
+    "{\"id\":1,\"player_id\":\"leader\",\"player_name\":\"Hawke\",\"player_rank\":2,\"player_level\":40,"              \
+    "\"text\":\"To the arena\",\"renown_rank\":31},"                                                                   \
+    "{\"id\":2,\"player_id\":\"recruit\",\"player_name\":\"Merrill\",\"player_rank\":0,\"player_level\":12,"           \
+    "\"text\":\"Coming\"},"                                                                                            \
+    "{\"id\":3,\"title\":\"GUILD_EVENT_TITLE\",\"text\":\"GUILD_EVENT_TEXT\",\"params\":[],\"renown_rank\":31}]}"
+#define TEST_RANKED_WORLD_CHAT                                                                                         \
+    "{\"last_message_id\":2,\"messages\":["                                                                            \
+    "{\"id\":1,\"player_id\":\"stranger\",\"player_name\":\"Isabela\",\"player_level\":40,"                            \
+    "\"guild_name\":\"Raiders\",\"text\":\"Anyone for a duel?\",\"renown_rank\":40},"                                  \
+    "{\"id\":2,\"player_id\":\"novice\",\"player_name\":\"Sandal\",\"player_level\":4,\"text\":\"Enchantment\"}]}"
+#define TEST_RANKED_ONSLAUGHT_FORMAT                                                                                   \
+    "{\"cycle\":%lld,\"members\":["                                                                                    \
+    "{\"id\":\"leader\",\"name\":\"Hawke\",\"banners\":900,\"renown_rank\":31},"                                       \
+    "{\"id\":\"recruit\",\"name\":\"Merrill\",\"banners\":400},"                                                       \
+    "{\"id\":\"departed\",\"name\":\"Anders\",\"banners\":100,\"renown_rank\":\"7\"}]}"
+
+static void TestGuildAnswer(Guild *guild, GuildRequestKind kind, const char *reply_text) {
+    cJSON *reply = cJSON_Parse(reply_text);
+    assert(reply);
+    GuildHandleAnswer(guild, kind, GUILD_HTTP_OK, reply);
+    cJSON_Delete(reply);
+}
+
+static int TestGuildMemberRenownRank(const GuildInfo *info, const char *id) {
+    for (int i = 0; i < info->member_total; i++)
+        if (!strcmp(info->members[i].id, id)) return info->members[i].renown_rank;
+    assert(!"the guild lists no such member");
+    return 0;
+}
+
+static void TestGuildListsAndChatCarryEachPlayersRenownRank(void) {
+    static Guild guild;
+    GuildInitialize(&guild);
+    TestGuildAnswer(&guild, GUILD_REQUEST_STATE, TEST_RANKED_GUILD_STATE);
+    const GuildInfo *mine = &guild.mine;
+    assert(GuildIsMember(&guild) && mine->member_total == 4 && mine->applicant_count == 2);
+    assert(TestGuildMemberRenownRank(mine, "leader") == 31 && TestGuildMemberRenownRank(mine, "officer") == 9);
+    assert(TestGuildMemberRenownRank(mine, "recruit") == 0 && TestGuildMemberRenownRank(mine, "negative") == 0);
+    assert(mine->applicants[0].renown_rank == 20 && mine->applicants[1].renown_rank == 0);
+
+    TestGuildAnswer(&guild, GUILD_REQUEST_MESSAGES, TEST_RANKED_GUILD_CHAT);
+    const GuildChannel *chat = &guild.channels[GUILD_CHANNEL_GUILD];
+    assert(chat->count == 3 && !chat->lines[0].event && chat->lines[2].event);
+    assert(chat->lines[0].renown_rank == 31 && chat->lines[1].renown_rank == 0 && chat->lines[2].renown_rank == 0);
+
+    TestGuildAnswer(&guild, GUILD_REQUEST_WORLD_MESSAGES, TEST_RANKED_WORLD_CHAT);
+    const GuildChannel *world = &guild.channels[GUILD_CHANNEL_WORLD];
+    assert(world->count == 2 && world->lines[0].renown_rank == 40 && world->lines[1].renown_rank == 0);
+
+    long long finished_cycle = 0;
+    TestGuildAnswer(&guild, GUILD_REQUEST_ONSLAUGHT, TextFormat(TEST_RANKED_ONSLAUGHT_FORMAT, finished_cycle));
+    const GuildOnslaught *onslaught = GuildOnslaughtFor(&guild, finished_cycle);
+    assert(onslaught->ready && onslaught->member_count == 3);
+    assert(onslaught->members[0].renown_rank == 31 && onslaught->members[1].renown_rank == 0);
+    assert(onslaught->members[2].renown_rank == 0);
+}
+
+#define TEST_RANKED_RIVAL_SQUAD_REPLY                                                                                  \
+    "{\"id\":\"champion\",\"name\":\"Varric\",\"level\":40,\"trophies\":1000000,\"renown_rank\":33,"                   \
+    "\"units\":[{\"slot\":0,\"id\":\"UNIT_VIVIENNE\",\"tier\":\"II\",\"level\":9}],\"runes\":[]}"
+
+static void TestADuelShowsTheRivalsRenownRank(void) {
+    static Game game;
+    Game *g = &game;
+    memset(g, 0, sizeof(*g));
+    ProgressionInitializePlayerDefaults(&g->player);
+    PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    GuildInitialize(&g->guild);
+
+    TestAdoptDuelReply(g, TEST_RANKED_RIVAL_SQUAD_REPLY);
+    assert(g->guild.duel.renown_rank == 33 && PvpOpponentRenownRank(&g->pvp_opponent) == 33);
+    TestAdoptDuelReply(g, TEST_RIVAL_SQUAD_REPLY);
+    assert(g->guild.duel.renown_rank == 0 && PvpOpponentRenownRank(&g->pvp_opponent) == 0);
+
+    PvpOpponent bot = PvpOpponentGenerate(18, 400, TEST_LADDER_DAY, 1);
+    bot.duel_renown_rank = 33;
+    assert(!bot.duel && PvpOpponentRenownRank(&bot) == 0);
+}
+
+static void TestANameShrinksBesideItsRenownStar(void) {
+    const float size = 24.0f, side = size * RENOWN_NAME_STAR_SIDE, gap = size * RENOWN_NAME_STAR_GAP;
+    const Rectangle row = {100.0f, 40.0f, 200.0f, 30.0f};
+    const float row_right = row.x + row.width, short_name = 80.0f, long_name = 400.0f;
+
+    RenownNameLayout plain = RenownLayOutName(false, row, size, short_name, RENOWN_NAME_LEFT);
+    assert(plain.star.width == 0.0f && plain.text.x == row.x && plain.text_size == size);
+
+    RenownNameLayout starred = RenownLayOutName(true, row, size, short_name, RENOWN_NAME_LEFT);
+    assert(starred.star.x == row.x && starred.star.width == side && starred.star.height == side);
+    assert(fabsf(starred.star.y + side * 0.5f - (row.y + row.height * 0.5f)) < 0.001f);
+    assert(fabsf(starred.text.x - (row.x + side + gap)) < 0.001f && starred.text_size == size);
+
+    RenownNameLayout crowded = RenownLayOutName(true, row, size, long_name, RENOWN_NAME_LEFT);
+    assert(crowded.star.width == side && crowded.text_size < size);
+    assert(fabsf(crowded.text_size - size * (row.width - side - gap) / long_name) < 0.001f);
+    assert(crowded.text.x + crowded.text.width <= row_right + 0.001f);
+
+    RenownNameLayout centred = RenownLayOutName(true, row, size, short_name, RENOWN_NAME_CENTRE);
+    float left_margin = centred.star.x - row.x, right_margin = row_right - (centred.text.x + centred.text.width);
+    assert(left_margin > 0.0f && fabsf(left_margin - right_margin) < 0.001f);
+
+    const Rectangle narrower_than_a_star = {0.0f, 0.0f, side * 0.5f, 30.0f};
+    RenownNameLayout squeezed = RenownLayOutName(true, narrower_than_a_star, size, short_name, RENOWN_NAME_LEFT);
+    assert(squeezed.star.width == side && squeezed.text.width == 0.0f && squeezed.text_size == 0.0f);
+}
+
+static void TestRankZeroAndAMissingRenownTableDrawNoStar(void) {
+    const int gold_rank = 24;
+    int gold_rank_xp = ProgressionRenownRankXp(gold_rank);
+    assert(RenownAvailable() && RenownRank(gold_rank_xp) == gold_rank);
+    assert(RenownTierForRank(gold_rank) == RENOWN_TIER_GOLD && RenownTierForRank(0) == RENOWN_TIER_NONE);
+    assert(!RenownNameHasStar(0));
+
+    assert(!RenownCatalogLoad("data/missing_renown.json"));
+    assert(RenownRank(gold_rank_xp) == 0 && RenownTierForRank(gold_rank) == RENOWN_TIER_NONE);
+    assert(!RenownNameHasStar(gold_rank));
+    assert(RenownCatalogLoad(RENOWN_PATH));
+
+    cJSON *listed = cJSON_Parse("{\"renown_rank\":24}");
+    cJSON *unranked = cJSON_Parse("{\"name\":\"Merrill\"}");
+    assert(RenownRankOfListedPlayer(listed) == gold_rank && RenownRankOfListedPlayer(unranked) == 0);
+    assert(RenownRankOfListedPlayer(NULL) == 0);
+    cJSON_Delete(listed);
+    cJSON_Delete(unranked);
+}
+
 int main(void) {
     TestSystemLocalesPickTheirOriginalLocalization();
     TestFontCoversEveryGlyphOfTheLoadedLanguage();
@@ -9157,6 +9352,11 @@ int main(void) {
     TestBattleSidesNameTheirRenownBonus();
     TestRenownSurvivesSaveAndLoad();
     TestARenownRankUpGetsItsOwnResultsStage();
+    TestLadderRowsCarryEachRivalsRenownRank();
+    TestGuildListsAndChatCarryEachPlayersRenownRank();
+    TestADuelShowsTheRivalsRenownRank();
+    TestANameShrinksBesideItsRenownStar();
+    TestRankZeroAndAMissingRenownTableDrawNoStar();
     TestBattleFeetSitOnPadsWhoseBottomsShareOnePlane();
     TestPvpBannerCurvePeaksAtTheLadderMidpoint();
     TestPvpEventResultsKeepNineteenUnclaimedFirst();

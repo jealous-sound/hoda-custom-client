@@ -136,12 +136,14 @@ typedef struct {
     GuildRank rank;
     long long last_login;
     int level;
+    int renown_rank;
 } GuildMember;
 
 typedef struct {
     char id[GUILD_ID_CAP];
     char name[PLAYER_NAME_CAPACITY];
     int level;
+    int renown_rank;
     char text[GUILD_TEXT_CAP];
 } GuildApplicant;
 
@@ -173,6 +175,7 @@ typedef struct {
     long long time;
     bool event;
     bool reportable;
+    int renown_rank;
     char title[GUILD_LINE_TITLE_CAP];
     char text[GUILD_LINE_TEXT_CAP];
     Color text_color;
@@ -261,6 +264,7 @@ typedef struct {
     char name[PLAYER_NAME_CAPACITY];
     int banners;
     int rank;
+    int renown_rank;
 } GuildContribution;
 
 typedef struct {
@@ -293,6 +297,7 @@ typedef struct {
     char name[PLAYER_NAME_CAPACITY];
     int level;
     int trophies;
+    int renown_rank;
     bool hero_builds;
     GuildDuelUnit units[SQUAD_SLOT_COUNT];
     int unit_count;
@@ -461,6 +466,7 @@ static void GuildParseInfo(GuildInfo *out, const cJSON *json) {
         m->rank = GuildRankFrom(JsonInt(member, "rank"));
         m->last_login = GuildJsonLong(member, "last_login_date");
         m->level = JsonInt(member, "player_level");
+        m->renown_rank = RenownRankOfListedPlayer(member);
     }
     qsort(out->members, (size_t)out->member_total, sizeof(out->members[0]), GuildCompareMembers);
     const cJSON *request;
@@ -470,6 +476,7 @@ static void GuildParseInfo(GuildInfo *out, const cJSON *json) {
         StrCopy(a->id, sizeof(a->id), JsonStr(request, "id"));
         StrCopy(a->name, sizeof(a->name), JsonStr(request, "name"));
         a->level = JsonInt(request, "player_level");
+        a->renown_rank = RenownRankOfListedPlayer(request);
         StrCopy(a->text, sizeof(a->text), JsonStr(request, "application_text"));
     }
 }
@@ -593,6 +600,7 @@ static void GuildAppendChat(Guild *g, GuildChannelId id, const cJSON *message) {
     line->time = GuildJsonLong(message, "time");
     line->event = JsonStr(message, "title")[0] != '\0';
     line->text_color = GUILD_CHAT_TEXT_COLOR;
+    line->renown_rank = line->event ? 0 : RenownRankOfListedPlayer(message);
     if (line->event) {
         GuildFormatEvent(line, message);
     } else if (id == GUILD_CHANNEL_WORLD) {
@@ -780,6 +788,7 @@ static void GuildHandleOnslaught(Guild *g, const cJSON *json) {
         StrCopy(c->id, sizeof(c->id), JsonStr(entry, "id"));
         StrCopy(c->name, sizeof(c->name), JsonStr(entry, "name"));
         c->banners = JsonInt(entry, "banners");
+        c->renown_rank = RenownRankOfListedPlayer(entry);
     }
     GuildRankContributions(o);
     o->my_banners = JsonInt(json, "my_banners");
@@ -837,6 +846,7 @@ static void GuildHandleDuel(Guild *g, const cJSON *json) {
     StrCopy(d->name, sizeof(d->name), JsonStr(json, "name"));
     d->level = JsonInt(json, "level");
     d->trophies = JsonInt(json, "trophies");
+    d->renown_rank = RenownRankOfListedPlayer(json);
     d->hero_builds = JsonBool(json, BATTLE_HERO_BUILDS_FIELD);
     const cJSON *item;
     cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive(json, "units")) {

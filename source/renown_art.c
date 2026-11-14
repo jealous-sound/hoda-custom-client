@@ -8,11 +8,21 @@
 #define RENOWN_NUMERAL_SIZE 0.18f
 #define RENOWN_NUMERAL_OUTLINE 0.04f
 #define RENOWN_NUMERAL_OUTLINE_COLOR ((Color){30, 18, 6, 230})
+#define RENOWN_NAME_STAR_SIDE 1.3f
+#define RENOWN_NAME_STAR_GAP 0.2f
+#define RENOWN_NAME_LEFT 0.0f
+#define RENOWN_NAME_CENTRE 0.5f
 
 typedef struct {
     bool asked;
     Texture2D texture;
 } RenownArtSlot;
+
+typedef struct {
+    Rectangle star;
+    Rectangle text;
+    float text_size;
+} RenownNameLayout;
 
 static RenownArtSlot renown_emblems[RENOWN_TIER_COUNT];
 static RenownArtSlot renown_stars[RENOWN_TIER_COUNT];
@@ -92,4 +102,38 @@ void RenownDrawEmblem(int rank, Rectangle rect, Color tint) {
     RenownDrawFit(RenownEmblemTexture(tier), art, tint);
     Rectangle numeral = UiRect(rect, 0.5f, numeral_centre, RENOWN_NUMERAL_WIDTH, RENOWN_NUMERAL_HEIGHT);
     RenownDrawNumeral(TextFormat("%d", rank), numeral, rect.height * RENOWN_NUMERAL_SIZE * art_scale, tint);
+}
+
+bool RenownNameHasStar(int rank) {
+    return RenownStarTexture(RenownTierForRank(rank)).id != 0;
+}
+
+RenownNameLayout RenownLayOutName(bool starred, Rectangle rect, float size, float name_width, float anchor) {
+    float side = starred ? size * RENOWN_NAME_STAR_SIDE : 0.0f;
+    float advance = starred ? side + size * RENOWN_NAME_STAR_GAP : 0.0f;
+    float room = fmaxf(rect.width - advance, 0.0f);
+    float fitted_width = fminf(name_width, room);
+    float left = rect.x + (rect.width - advance - fitted_width) * anchor;
+    return (RenownNameLayout){
+        .star = {left, rect.y + (rect.height - side) * 0.5f, side, side},
+        .text = {left + advance, rect.y, fitted_width, rect.height},
+        .text_size = name_width > room && name_width > 0.0f ? size * room / name_width : size,
+    };
+}
+
+static void
+RenownDrawStarredNameAt(int rank, Font font, const char *name, Rectangle rect, float size, Color color, float anchor) {
+    float name_width = MeasureTextEx(font, name, size, 1.0f).x;
+    RenownNameLayout layout = RenownLayOutName(RenownNameHasStar(rank), rect, size, name_width, anchor);
+    if (layout.star.width > 0.0f)
+        UiDrawTexture(RenownStarTexture(RenownTierForRank(rank)), layout.star, (Color){255, 255, 255, color.a});
+    UiDrawTextLeftMiddle(font, name, layout.text, layout.text_size, color);
+}
+
+void RenownDrawStarredName(int rank, Font font, const char *name, Rectangle rect, float size, Color color) {
+    RenownDrawStarredNameAt(rank, font, name, rect, size, color, RENOWN_NAME_LEFT);
+}
+
+void RenownDrawStarredNameCentred(int rank, Font font, const char *name, Rectangle rect, float size, Color color) {
+    RenownDrawStarredNameAt(rank, font, name, rect, size, color, RENOWN_NAME_CENTRE);
 }
