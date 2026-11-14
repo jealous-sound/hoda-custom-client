@@ -6425,9 +6425,7 @@ static void TestNewsFeedLeadsWithAnnouncementsWhileTheyRun(void) {
     assert(news.announcement_count >= 1);
     const NewsAnnouncement *first = &news.announcements[0];
     assert(first->starts_at > 0 && first->ends_at > first->starts_at);
-
-    NewsCollect(&news, &no_events, &player, first->starts_at - 1);
-    assert(news.message_count == 0 && news.unseen_count == 0);
+    for (int i = 1; i < news.announcement_count; i++) assert(news.announcements[i].starts_at <= first->starts_at);
 
     NewsCollect(&news, &no_events, &player, first->starts_at);
     assert(news.message_count >= 1 && news.featured_count >= 1 && news.unseen_count >= 1);
@@ -6439,6 +6437,9 @@ static void TestNewsFeedLeadsWithAnnouncementsWhileTheyRun(void) {
     assert(news.message_count >= 1 && news.unseen_count == 0);
 
     news.announcement_count = 1;
+    player.news_seen_at = 0;
+    NewsCollect(&news, &no_events, &player, first->starts_at - 1);
+    assert(news.message_count == 0 && news.unseen_count == 0);
     NewsCollect(&news, &no_events, &player, first->ends_at);
     assert(news.message_count == 0);
 }

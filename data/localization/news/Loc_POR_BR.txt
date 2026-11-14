@@ -1,3 +1,7 @@
+HODA_NEWS_RENOWN_TITLE|Renome: ranks e talentos
+HODA_NEWS_RENOWN_SUBTITLE|A cada 10 níveis você ganha um rank e um talento permanente.
+HODA_NEWS_RENOWN_SUMMARY|Os ranks continuam depois do nível 100. Toque para ver como o Renome funciona.
+HODA_NEWS_RENOWN_MESSAGE|Sua conta agora ganha Renome. A cada 10 níveis você ganha um rank, e os ranks continuam depois do nível 100. Os níveis que você já tem contam: uma conta de nível 50 começa no rank 5 com 5 pontos de talento.\n\nCada novo rank dá <color=orange>1 ponto de talento</color> e <color=orange>10 Joias</color> e restaura sua Energia e seu Vigor. Toque na estrela com o seu nível no topo da tela para gastar pontos em nove talentos permanentes. Cada talento pode ser melhorado cinco vezes.\n\nBatalha: Força (Poder até +10%), Fortitude (Saúde até +10%), Precisão (chance de dano x2 até +2,5%). Eles valem nas missões e no PvP.\n\nEspólios: Pilhagem (Ouro até +25%), Achado (pacotes grátis mais frequentes após vitórias), Chaveiro (vitórias podem dar uma chave de missão).\n\nResistência: Mentor (XP do esquadrão até +25%), Ímpeto (Energia máxima até +15), Tenacidade (Vigor máximo até +5).\n\nSua estrela muda com o rank: bronze a partir do rank 1, prata do 10, ouro do 20, carmesim do 30 e real do 40. Os outros jogadores a veem ao lado do seu nome.
 HODA_NEWS_PVP_ORIGINAL_TITLE|O PvP volta aos atributos originais
 HODA_NEWS_PVP_ORIGINAL_SUBTITLE|No PvP, um herói luta com os atributos da sua carta.
 HODA_NEWS_PVP_ORIGINAL_SUMMARY|Os heróis não são mais nivelados no PvP. Toque para ver o que mudou.

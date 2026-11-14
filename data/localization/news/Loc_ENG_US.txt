@@ -1,3 +1,7 @@
+HODA_NEWS_RENOWN_TITLE|Renown: Ranks and Perks
+HODA_NEWS_RENOWN_SUBTITLE|Every 10 levels is a rank that buys a permanent perk.
+HODA_NEWS_RENOWN_SUMMARY|Ranks now go on past level 100. Tap to see how Renown works.
+HODA_NEWS_RENOWN_MESSAGE|Your account now earns Renown. Every 10 levels is one rank, and ranks keep coming after level 100. Levels you already have count: a level 50 account starts at rank 5 with 5 points to spend.\n\nEach new rank gives <color=orange>1 perk point</color> and <color=orange>10 Gems</color> and refills your Energy and Stamina. Tap your level star at the top of the screen to spend points on nine permanent perks. Each perk can be upgraded five times.\n\nBattle: Strength (Power up to +10%), Fortitude (Health up to +10%), Precision (2X Damage chance up to +2.5%). They count in quests and in PvP.\n\nSpoils: Plunder (Gold up to +25%), Lucky Find (free packs from wins more often), Keymaster (a quest key from some wins).\n\nEndurance: Mentor (squad XP up to +25%), Vigor (maximum Energy up to +15), Tenacity (maximum Stamina up to +5).\n\nYour star changes with your rank: Bronze at rank 1, Silver at 10, Gold at 20, Crimson at 30 and Royal at 40. Other players see it beside your name.
 HODA_NEWS_PVP_ORIGINAL_TITLE|PvP Uses Original Stats
 HODA_NEWS_PVP_ORIGINAL_SUBTITLE|A hero fights in PvP with the stats on its card.
 HODA_NEWS_PVP_ORIGINAL_SUMMARY|Heroes are no longer rescaled in PvP. Tap to see what changed.
