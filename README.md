@@ -52,7 +52,13 @@ for [self-update](#self-update). The game looks for `data/` and
 ## Running
 
 At launch the player picks Local Game, saved in `player_save.dat`, or Online Game against `SERVER_URL`, where the
-server owns the save and the clock. A first launch creates a guest account (`account.dat`) and runs the tutorial.
+server owns the save and the clock. A first online launch asks whether to play as a guest or log in; either way the
+device keeps its key in `account.dat`, and a new guest runs the tutorial.
+
+Profile, in the More menu, shows the player card and renames the player. Online it also manages the account: a guest
+picks a login and a password to play on other devices, and a player with a login can change the password, which logs
+out every other device, log out or delete the account. A device that was logged out elsewhere returns to the log-in
+choice at its next server request. A forgotten password needs a reset by the server's admin.
 
 | Variable | |
 | --- | --- |
@@ -60,7 +66,7 @@ server owns the save and the clock. A first launch creates a guest account (`acc
 | `HOD_LANGUAGE` | `en`, `fr`, `de`, `ja`, `zh-hant`, ...; overrides the system language and the saved choice |
 | `HOD_SKIP_TUTORIAL=1` | skips the tutorial |
 | `HOD_NEW_PLAYER` | a starting roster in place of `data/new_player.json`, such as `client-additional-data/player_starter.json` |
-| `HOD_SAVE_PATH`, `HOD_ACCOUNT_PATH` | the local save and the guest account file |
+| `HOD_SAVE_PATH`, `HOD_ACCOUNT_PATH` | the local save and the device's account file |
 | `HOD_CONTENT_URL`, `HOD_CONTENT_DIR` | the content server, and a data folder to download into even in a checkout |
 | `HOD_RELEASE_URL` | where a release's `client-update.json` and zips are fetched from, in place of the GitHub releases |
 | `HOD_NO_SELF_UPDATE=1` | never downloads a build or hands over to a downloaded one; update prompts open the website |

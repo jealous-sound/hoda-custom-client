@@ -25,3 +25,43 @@ HODA_OPTIONS_VERSION_UPDATE|{0} (доступна {1})
 HODA_MAINTENANCE_TITLE|Перезапуск сервера
 HODA_MAINTENANCE_MESSAGE|Скоро сервер будет перезапущен для обновления. За несколько минут до этого новые бои будут приостановлены, а после перезапуска может потребоваться скачать новую версию.
 HODA_MAINTENANCE_HOLD_MESSAGE|Сервер перезапускается для обновления. Бои приостановлены, пока он не вернётся.
+HODA_OPTIONS_PROFILE|Профиль
+HODA_PROFILE_RENAME|Изменить
+HODA_PROFILE_COPY_ID|Копировать
+HODA_PROFILE_COPIED|Скопировано
+HODA_PROFILE_TROPHIES_VALUE|{0} (рекорд {1})
+HODA_PROFILE_PVP|PvP
+HODA_PROFILE_PVP_VALUE|Побед: {0}, поражений: {1}
+HODA_PROFILE_PLAYING_SINCE|В игре с
+HODA_ACCOUNT_GUEST|Гостевой аккаунт
+HODA_ACCOUNT_GUEST_HINT|Прогресс привязан к этому компьютеру. Создайте логин, чтобы сохранить его и играть на других устройствах.
+HODA_ACCOUNT_SIGNED_IN|Вы вошли как {0}
+HODA_ACCOUNT_DEVICES|Устройств в аккаунте: {0}
+HODA_ACCOUNT_CREATE_LOGIN|Создать логин
+HODA_ACCOUNT_CHANGE_PASSWORD|Сменить пароль
+HODA_ACCOUNT_DELETE|Удалить аккаунт
+HODA_ACCOUNT_LOGIN|Логин
+HODA_ACCOUNT_PASSWORD|Пароль
+HODA_ACCOUNT_REPEAT_PASSWORD|Повторите пароль
+HODA_ACCOUNT_CURRENT_PASSWORD|Текущий пароль
+HODA_ACCOUNT_NEW_PASSWORD|Новый пароль
+HODA_ACCOUNT_CREATE_LOGIN_NOTE|Придумайте логин и пароль, чтобы играть этим аккаунтом на любом устройстве. Забытый пароль нельзя восстановить в игре, сохраните его.
+HODA_ACCOUNT_CHANGE_PASSWORD_NOTE|Все остальные устройства выйдут из аккаунта.
+HODA_ACCOUNT_DELETE_NOTE|Герои, прогресс и членство в гильдии будут удалены навсегда. Введите пароль для подтверждения.
+HODA_ACCOUNT_DELETE_GUEST_NOTE|Герои, прогресс и членство в гильдии будут удалены навсегда. Введите {0} для подтверждения.
+HODA_ACCOUNT_DELETE_MISTYPED|Введите {0} в точности, чтобы удалить аккаунт.
+HODA_ACCOUNT_LOGIN_RULES|Логин: от 3 до 24 символов, латинские буквы, цифры, точка, дефис или подчёркивание, первым идёт буква или цифра.
+HODA_ACCOUNT_PASSWORD_RULES|Пароль: от 8 до 64 символов.
+HODA_ACCOUNT_PASSWORD_MISMATCH|Пароли не совпадают.
+HODA_ACCOUNT_LOGIN_TAKEN|Этот логин уже занят.
+HODA_ACCOUNT_WRONG_CREDENTIALS|Неверный логин или пароль.
+HODA_ACCOUNT_WRONG_PASSWORD|Неверный пароль.
+HODA_ACCOUNT_TOO_MANY_ATTEMPTS|Слишком много попыток. Подождите минуту и попробуйте снова.
+HODA_ACCOUNT_UNREACHABLE|Не удалось связаться с сервером. Попробуйте ещё раз.
+HODA_ACCOUNT_SWITCH_WARNING|Вход заменит гостевой аккаунт на этом компьютере. Его прогресс пропадёт, если сначала не создать для него логин.
+HODA_ACCOUNT_SIGN_OUT_MESSAGE|Чтобы вернуться в этот аккаунт, понадобятся логин и пароль.
+HODA_ACCOUNT_LOGIN_CREATED|Логин создан. С ним можно войти на любом устройстве.
+HODA_ACCOUNT_PASSWORD_CHANGED|Пароль изменён. Остальные устройства вышли из аккаунта.
+HODA_ACCOUNT_SIGNED_OUT_MESSAGE|Вы вышли из аккаунта на этом компьютере. Войдите снова, чтобы продолжить.
+HODA_ACCOUNT_GUEST_START_HINT|Начать новую игру на этом компьютере
+HODA_ACCOUNT_LOG_IN_HINT|Продолжить с логином и паролем

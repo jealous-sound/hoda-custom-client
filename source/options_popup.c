@@ -52,6 +52,7 @@ typedef enum {
 } OptionsPage;
 
 typedef enum {
+    OPTIONS_MORE_PROFILE,
     OPTIONS_MORE_AUDIO,
     OPTIONS_MORE_LANGUAGE,
     OPTIONS_MORE_FULLSCREEN,
@@ -67,6 +68,7 @@ typedef enum {
 typedef enum {
     OPTIONS_ACTION_NONE,
     OPTIONS_ACTION_RESTART,
+    OPTIONS_ACTION_PROFILE,
 } OptionsAction;
 
 typedef struct {
@@ -87,6 +89,7 @@ typedef struct {
 } OptionsPopup;
 
 static const char *const OPTIONS_MORE_LABEL_KEYS[OPTIONS_MORE_BUTTON_COUNT] = {
+    [OPTIONS_MORE_PROFILE] = "HODA_OPTIONS_PROFILE",
     [OPTIONS_MORE_AUDIO] = "OPTIONS_AUDIO_SETTINGS",
     [OPTIONS_MORE_LANGUAGE] = "HODA_OPTIONS_LANGUAGE",
     [OPTIONS_MORE_FULLSCREEN] = "OPTIONS_VIDEO_SETTINGS",
@@ -190,7 +193,8 @@ static void OptionsVersionLine(char *out, size_t capacity) {
     LocFormat2(out, capacity, "HODA_OPTIONS_VERSION_UPDATE", HOD_VERSION, ClientUpdateCurrentRelease().latest);
 }
 
-static void OptionsDrawMore(OptionsPopup *o, const char *player_id) {
+static OptionsAction OptionsDrawMore(OptionsPopup *o, const char *player_id) {
+    OptionsAction action = OPTIONS_ACTION_NONE;
     UiDrawTexture(GuiTex(GUI_OPTIONS_MORE_BG), OptionsPlace(OPTIONS_MORE_BACKGROUND), WHITE);
     UiDrawTextCentered(
         o->title_font,
@@ -203,6 +207,7 @@ static void OptionsDrawMore(OptionsPopup *o, const char *player_id) {
         Rectangle slot = OPTIONS_MORE_SLOT;
         slot.y = OPTIONS_MORE_SLOT_Y[i];
         if (!ButtonDraw(&o->more[i], OptionsPlace(slot))) continue;
+        if (i == OPTIONS_MORE_PROFILE) action = OPTIONS_ACTION_PROFILE;
         if (i == OPTIONS_MORE_AUDIO) o->page = OPTIONS_PAGE_AUDIO;
         if (i == OPTIONS_MORE_LANGUAGE) OptionsShowLanguages(o);
         if (i == OPTIONS_MORE_FULLSCREEN) ToggleBorderlessWindowed();
@@ -222,6 +227,8 @@ static void OptionsDrawMore(OptionsPopup *o, const char *player_id) {
     if (ButtonDraw(&o->close, OptionsPlace(OPTIONS_MORE_CLOSE)) ||
         OptionsScrimClicked(o, OptionsPlace(OPTIONS_MORE_PANEL)))
         o->open = false;
+    if (action == OPTIONS_ACTION_PROFILE) o->open = false;
+    return action;
 }
 
 static bool OptionsToggleClicked(OptionsPopup *o, Rectangle box, OptionsToggle toggle) {
@@ -382,8 +389,7 @@ OptionsAction OptionsPopupDraw(OptionsPopup *o, const char *player_id) {
     DrawRectangleRec(root, OPTIONS_SCRIM_COLOR);
     switch (o->page) {
         case OPTIONS_PAGE_MORE:
-            OptionsDrawMore(o, player_id);
-            break;
+            return OptionsDrawMore(o, player_id);
         case OPTIONS_PAGE_AUDIO:
             OptionsDrawAudio(o);
             break;

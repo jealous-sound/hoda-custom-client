@@ -89,18 +89,37 @@ static void PlayModeScreenUnload(PlayModeScreen *screen) {
     *screen = (PlayModeScreen){0};
 }
 
-static float PlayModeButtonAspect(const PlayModeScreen *screen) {
-    Texture2D idle = screen->local.idle;
-    return idle.height > 0 ? (float)idle.width / (float)idle.height : PLAY_MODE_BUTTON_FALLBACK_ASPECT;
+typedef struct {
+    Rectangle first;
+    Rectangle second;
+} PlayModeButtonRow;
+
+static void PlayModeDrawBackdrop(Texture2D splash) {
+    Rectangle root = UiRoot();
+    UiDrawTexture(splash, root, WHITE);
+    Rectangle shade = UiRect(root, 0.0f, 1.0f, 1.0f, PLAY_MODE_SHADE_HEIGHT);
+    DrawRectangleGradientV(
+        (int)shade.x, (int)shade.y, (int)ceilf(shade.width), (int)ceilf(shade.height), BLANK, PLAY_MODE_SHADE_COLOR
+    );
 }
 
-static void PlayModeDrawHint(const PlayModeScreen *screen, const char *hint, Rectangle button) {
+static PlayModeButtonRow PlayModeLayOutButtons(Texture2D idle) {
+    Rectangle root = UiRoot();
+    float aspect = idle.height > 0 ? (float)idle.width / (float)idle.height : PLAY_MODE_BUTTON_FALLBACK_ASPECT;
+    float height = root.height * PLAY_MODE_BUTTON_HEIGHT;
+    float width = height * aspect;
+    float gap = height * PLAY_MODE_BUTTON_GAP_RATIO;
+    Rectangle row = UiRect(root, 0.5f, PLAY_MODE_BUTTONS_Y, width * 2.0f + gap, height);
+    return (PlayModeButtonRow){{row.x, row.y, width, height}, {row.x + width + gap, row.y, width, height}};
+}
+
+static void PlayModeDrawHint(Font font, const char *hint, Rectangle button) {
     float gap = button.height * PLAY_MODE_HINT_GAP_RATIO;
     Rectangle box = {
         button.x, button.y + button.height + gap, button.width, button.height * PLAY_MODE_HINT_HEIGHT_RATIO
     };
     float size = PLAY_MODE_HINT_FONT_SIZE * ContentCanvasScale();
-    MessagePopupDrawText(screen->menu_font, hint, box, size, PLAY_MODE_HINT_COLOR);
+    MessagePopupDrawText(font, hint, box, size, PLAY_MODE_HINT_COLOR);
 }
 
 static void PlayModeRaiseNotice(PlayModeScreen *screen) {
@@ -135,20 +154,11 @@ static bool PlayModeNoticeRestarts(PlayModeScreen *screen) {
 }
 
 static PlayModeChoice PlayModeScreenDraw(PlayModeScreen *screen) {
-    Rectangle root = UiRoot();
-    UiDrawTexture(screen->splash, root, WHITE);
-    Rectangle shade = UiRect(root, 0.0f, 1.0f, 1.0f, PLAY_MODE_SHADE_HEIGHT);
-    DrawRectangleGradientV(
-        (int)shade.x, (int)shade.y, (int)ceilf(shade.width), (int)ceilf(shade.height), BLANK, PLAY_MODE_SHADE_COLOR
-    );
-    float height = root.height * PLAY_MODE_BUTTON_HEIGHT;
-    float width = height * PlayModeButtonAspect(screen);
-    float gap = height * PLAY_MODE_BUTTON_GAP_RATIO;
-    Rectangle row = UiRect(root, 0.5f, PLAY_MODE_BUTTONS_Y, width * 2.0f + gap, height);
-    Rectangle local = {row.x, row.y, width, height};
-    Rectangle online = {row.x + width + gap, row.y, width, height};
-    PlayModeDrawHint(screen, LocGet("HODA_PLAY_MODE_LOCAL_HINT"), local);
-    PlayModeDrawHint(screen, LocGet("HODA_PLAY_MODE_ONLINE_HINT"), online);
+    PlayModeDrawBackdrop(screen->splash);
+    PlayModeButtonRow row = PlayModeLayOutButtons(screen->local.idle);
+    Rectangle local = row.first, online = row.second;
+    PlayModeDrawHint(screen->menu_font, LocGet("HODA_PLAY_MODE_LOCAL_HINT"), local);
+    PlayModeDrawHint(screen->menu_font, LocGet("HODA_PLAY_MODE_ONLINE_HINT"), online);
     PlayModeRaiseNotice(screen);
     bool interactive = screen->notice == PLAY_MODE_NOTICE_NONE;
     bool local_chosen = ButtonDrawEx(&screen->local, local, interactive);

@@ -84,6 +84,8 @@ typedef struct {
     EnergyDialog stamina_dialog;
     bool stamina_dialog_top;
     OptionsPopup options;
+    ProfilePopup profile;
+    bool account_changed;
     bool restart_requested;
     bool quit_requested;
     bool update_buttons_ready;
@@ -1132,6 +1134,11 @@ static ProgressionLoadResult GameFetchProgression(Game *g, bool *window_closed) 
     return ProgressionLoad(&g->player);
 }
 
+static void GameLeaveAccount(Game *g) {
+    g->account_changed = true;
+    g->restart_requested = true;
+}
+
 static bool game_busy_overlay_shown = false;
 
 bool GameBusyOverlayUpdate(const Game *g, float dt) {
@@ -1152,7 +1159,37 @@ void GameBusyOverlayDraw(void) {
     UiFrameEnd();
 }
 
+static bool GameChooseAccount(const char *message_key) {
+    AccountGate gate;
+    AccountGateInitialize(&gate, LoadingScreenSplash(), message_key);
+    AccountGateChoice choice = ACCOUNT_GATE_UNDECIDED;
+    while (choice == ACCOUNT_GATE_UNDECIDED && !WindowShouldClose()) {
+        BeginDrawing();
+        ClearBackground(BLACK);
+        UiFrameBegin();
+        choice = AccountGateDraw(&gate);
+        UiFrameEnd();
+        EndDrawing();
+    }
+    if (choice == ACCOUNT_GATE_GUEST) BackendAllowGuest();
+    return choice == ACCOUNT_GATE_GUEST || choice == ACCOUNT_GATE_SIGNED_IN;
+}
+
+static bool GameForgetRevokedDevice(void) {
+    if (!BackendCredentialsRefused() || !BackendBeginAccountCall(BACKEND_ACCOUNT_FORGET_DEVICE, NULL)) return false;
+    BackendAccountAnswer answer;
+    BackendAccountState state = BACKEND_ACCOUNT_PENDING;
+    while (state == BACKEND_ACCOUNT_PENDING && !WindowShouldClose()) {
+        LoadingScreenPresent();
+        state = BackendPollAccountCall(&answer);
+    }
+    return state == BACKEND_ACCOUNT_DONE;
+}
+
 static bool GameLoadProgression(Game *g) {
+    bool asks_player = ProgressionNeedsServer() && BackendNeedsAccountChoice();
+    if (asks_player && !GameChooseAccount(NULL)) return false;
+    if (!asks_player) BackendAllowGuest();
     bool window_closed = false;
     ProgressionLoadResult loaded = GameFetchProgression(g, &window_closed);
     if (window_closed) return false;
@@ -1161,8 +1198,13 @@ static bool GameLoadProgression(Game *g) {
             GameAwaitClientUpdate(g);
             return false;
         }
-        TraceLog(LOG_WARNING, "Account: server unreachable, waiting for retry");
-        if (!GameAwaitServerRetry()) return false;
+        if (GameForgetRevokedDevice()) {
+            TraceLog(LOG_WARNING, "Account: this device was logged out, asking how to continue");
+            if (!GameChooseAccount("HODA_ACCOUNT_SIGNED_OUT_MESSAGE")) return false;
+        } else {
+            TraceLog(LOG_WARNING, "Account: server unreachable, waiting for retry");
+            if (!GameAwaitServerRetry()) return false;
+        }
         loaded = GameFetchProgression(g, &window_closed);
         if (window_closed) return false;
     }
@@ -1238,6 +1280,8 @@ bool GameInitialize(Game *g) {
     StaminaDialogInitialize(&g->stamina_dialog);
     g->stamina_dialog_top = false;
     OptionsPopupInitialize(&g->options);
+    ProfilePopupInitialize(&g->profile);
+    g->account_changed = false;
     g->restart_requested = false;
     g->battle_map_index = 0;
     g->battle_node_index = 0;
@@ -1257,7 +1301,7 @@ bool GameInitialize(Game *g) {
 
 static bool GameResourceDialogOpen(const Game *g) {
     return EnergyDialogIsOpen(&g->energy_dialog) || EnergyDialogIsOpen(&g->stamina_dialog) ||
-           OptionsPopupIsOpen(&g->options);
+           OptionsPopupIsOpen(&g->options) || ProfilePopupIsOpen(&g->profile);
 }
 
 static EnergyDialog *GameTopResourceDialog(Game *g) {
@@ -1275,6 +1319,7 @@ bool GameHandlePopupBack(Game *g) {
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return true;
     }
+    if (ProfilePopupBack(&g->profile)) return true;
     if (OptionsPopupBack(&g->options)) return true;
     EnergyDialog *top = GameTopResourceDialog(g);
     if (top) {
@@ -1578,6 +1623,7 @@ static void GameOpenResourceDialogSilently(Game *g, bool stamina) {
 
 static void GameHandleHudAction(Game *g, HudAction a) {
     if (a != HUD_NONE && a != HUD_OPTIONS) OptionsPopupClose(&g->options);
+    if (a != HUD_NONE) ProfilePopupClose(&g->profile);
     switch (a) {
         case HUD_HOME:
             if (EnergyDialogIsOpen(&g->stamina_dialog)) GuiSoundPlay(SND_UI_POPUP_CLOSE);
@@ -2335,11 +2381,21 @@ void GameDraw(Game *g) {
     }
     if (OptionsPopupIsOpen(&g->options)) {
         UiFrameBegin();
-        if (OptionsPopupDraw(&g->options, BackendCurrentPlayerId()) == OPTIONS_ACTION_RESTART)
-            g->restart_requested = true;
+        OptionsAction options_action = OptionsPopupDraw(&g->options, BackendCurrentPlayerId());
+        if (options_action == OPTIONS_ACTION_RESTART) g->restart_requested = true;
+        if (options_action == OPTIONS_ACTION_PROFILE) ProfilePopupOpen(&g->profile);
         popup_hud_action = HudDraw(&g->hud, &g->player, true, g->screen == SCREEN_HOME);
         UiFrameEnd();
+    } else if (ProfilePopupIsOpen(&g->profile)) {
+        UiFrameBegin();
+        const char *guild_name = GuildIsMember(&g->guild) ? g->guild.mine.summary.name : "";
+        if (ProfilePopupDraw(&g->profile, &g->player, guild_name) == PROFILE_ACTION_ACCOUNT_CHANGED)
+            GameLeaveAccount(g);
+        bool hud_interactive = !ProfilePopupModal(&g->profile);
+        popup_hud_action = HudDraw(&g->hud, &g->player, hud_interactive, g->screen == SCREEN_HOME);
+        UiFrameEnd();
     }
+    if (BackendCredentialsRefused()) GameLeaveAccount(g);
     if (resource_dialog_action == ENERGY_DIALOG_ACTION_PVP) {
         EnergyDialogClose(&g->energy_dialog);
         EnergyDialogClose(&g->stamina_dialog);
@@ -2399,7 +2455,7 @@ void GameDestroy(Game *g) {
     GearIconsUnload();
     HeroesDestroy(&g->heroes);
     LocUnload();
-    ProgressionSave(&g->player);
+    if (!g->account_changed) ProgressionSave(&g->player);
     BackendShutdown();
     PlayerUnloadRoster(&g->player);
     HomeBackgroundDestroy(&g->scene);
