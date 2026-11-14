@@ -61,7 +61,8 @@ static long long MissionHighestHeroLevel(const Player *p, const MissionDef *tier
     long long highest = 0;
     for (int i = 0; i < p->roster_count; i++) {
         const Character *ch = &p->roster[i];
-        if (tier_iv_of_rarity && (ch->tier != TIER_IV || (int)ch->rarity != tier_iv_of_rarity->rarity)) continue;
+        if (tier_iv_of_rarity && (ch->tier != TIER_IV || (int)ch->original_rarity != tier_iv_of_rarity->rarity))
+            continue;
         if (ch->level > highest) highest = ch->level;
     }
     return highest;
@@ -71,11 +72,11 @@ static long long MissionCollected(const Player *p, int rarity, int tier) {
     long long unique = 0;
     for (int i = 0; i < p->roster_count; i++) {
         const Character *ch = &p->roster[i];
-        if ((int)ch->rarity != rarity || (int)ch->tier != tier) continue;
+        if ((int)ch->original_rarity != rarity || (int)ch->tier != tier) continue;
         bool repeated = false;
         for (int j = 0; j < i && !repeated; j++) {
-            repeated =
-                p->roster[j].rarity == ch->rarity && p->roster[j].tier == ch->tier && !strcmp(p->roster[j].id, ch->id);
+            repeated = p->roster[j].original_rarity == ch->original_rarity && p->roster[j].tier == ch->tier &&
+                       !strcmp(p->roster[j].id, ch->id);
         }
         if (!repeated) unique++;
     }
