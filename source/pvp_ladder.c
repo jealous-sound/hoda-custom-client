@@ -11,6 +11,7 @@ typedef struct {
     char name[PLAYER_NAME_CAPACITY];
     int level;
     int score;
+    int renown_rank;
 } PvpLadderPlayer;
 
 typedef struct {
@@ -62,6 +63,7 @@ static void PvpLadderAdoptPlayers(PvpLadder *ladder, const cJSON *reply, const c
         StrCopy(player->name, sizeof(player->name), name);
         player->level = JsonInt(listed, "level");
         player->score = JsonInt(listed, score_field);
+        player->renown_rank = RenownRankOfListedPlayer(listed);
     }
     ladder->revision++;
 }
@@ -122,6 +124,12 @@ void PvpEventLadderRankResults(const PvpEventLadder *ladder, PlayerPvp *pvp) {
             if (ranked_here && result->rank != standing->rank) PvpEventResultRank(result, standing->rank);
         }
     }
+}
+
+int PvpLadderEntryRenownRank(const PvpLadder *ladder, const PvpRankEntry *entry, const Player *viewer) {
+    if (entry->bot == PVP_RANK_PLAYER) return RenownRank(viewer->experience);
+    if (entry->bot == PVP_RANK_RIVAL) return ladder->players[entry->rival].renown_rank;
+    return 0;
 }
 
 const char *PvpLadderEntryName(const PvpLadder *ladder, const PvpRankEntry *entry) {

@@ -1,6 +1,7 @@
 #define RENOWN_PATH "data/renown.json"
 #define RENOWN_VERSION 1
 #define RENOWN_NONE (-1)
+#define RENOWN_RANK_FIELD "renown_rank"
 
 typedef enum {
     RENOWN_PERK_POWER,
@@ -136,6 +137,11 @@ int RenownRankForVirtualLevel(int virtual_level) {
 
 int RenownRank(int experience) {
     return RenownRankForVirtualLevel(ProgressionVirtualLevel(experience));
+}
+
+int RenownRankOfListedPlayer(const cJSON *entry) {
+    int rank = JsonInt(entry, RENOWN_RANK_FIELD);
+    return rank > 0 ? rank : 0;
 }
 
 int RenownRankFirstLevel(int rank) {

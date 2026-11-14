@@ -147,6 +147,7 @@ typedef struct {
     bool duel;
     char duel_id[PVP_DUEL_ID_CAP];
     char duel_name[PLAYER_NAME_CAPACITY];
+    int duel_renown_rank;
     PvpSquadCell duel_cells[SQUAD_SLOT_COUNT];
     bool duel_hero_builds;
     BattleHeroBuild duel_builds[SQUAD_SLOT_COUNT];
@@ -543,6 +544,10 @@ bool PvpOpponentAddDuelUnit(
 void PvpOpponentAddDuelRune(PvpOpponent *o, const char *rune_id) {
     int def = RuneDefIndex(rune_id);
     if (def >= 0 && o->rune_count < RUNE_SLOT_COUNT) o->rune_defs[o->rune_count++] = def;
+}
+
+int PvpOpponentRenownRank(const PvpOpponent *o) {
+    return o->duel ? o->duel_renown_rank : 0;
 }
 
 const char *PvpOpponentName(const PvpOpponent *o) {

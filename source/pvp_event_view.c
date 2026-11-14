@@ -11,6 +11,7 @@
 #define PVP_EVENT_VIEW_BATTLE_ROW_HEIGHT 82.0f
 #define PVP_EVENT_VIEW_ROW_GAP 6.0f
 #define PVP_EVENT_VIEW_TAP_TOLERANCE 13.0f
+#define PVP_EVENT_VIEW_RANK_NAME_SIZE 19.0f
 
 typedef enum {
     PVP_EVENT_VIEW_NONE = 0,
@@ -510,7 +511,14 @@ static void PvpEventViewDrawLeaderboard(PvpEventView *v, const Player *p, Rectan
             PVP_EVENT_VIEW_TEXT
         );
         const char *name = PvpLadderEntryName(&pvp_event_ladder.rivals, entry);
-        QuestsDrawFit(v->body, name, PvpEventFit(row, 0.265f, 0.5f, 0.45f, 1.0f, 0.0f), 19.0f, PVP_EVENT_VIEW_TEXT);
+        RenownDrawStarredNameCentred(
+            PvpLadderEntryRenownRank(&pvp_event_ladder.rivals, entry, p),
+            v->body,
+            name,
+            PvpEventFit(row, 0.265f, 0.5f, 0.45f, 1.0f, 0.0f),
+            PVP_EVENT_VIEW_RANK_NAME_SIZE,
+            PVP_EVENT_VIEW_TEXT
+        );
         PvpEventViewDrawBannerCell(v, row, 0.725f, 0.2f, entry->trophies, PVP_EVENT_VIEW_TEXT);
         if (!a_bot_to_fight) continue;
         Rectangle button = PvpEventFit(row, 1.0f, 0.5f, 1.0f, 1.0f, 2.08f);
@@ -527,8 +535,13 @@ static void PvpEventViewDrawLeaderboard(PvpEventView *v, const Player *p, Rectan
         20.0f,
         PVP_EVENT_VIEW_DARK
     );
-    QuestsDrawFit(
-        v->body, LocGet("HODA_PVP_YOU"), PvpEventFit(mine, 0.25f, 0.5f, 0.4f, 1.0f, 0.0f), 19.0f, PVP_EVENT_VIEW_DARK
+    RenownDrawStarredNameCentred(
+        RenownRank(p->experience),
+        v->body,
+        LocGet("HODA_PVP_YOU"),
+        PvpEventFit(mine, 0.25f, 0.5f, 0.4f, 1.0f, 0.0f),
+        PVP_EVENT_VIEW_RANK_NAME_SIZE,
+        PVP_EVENT_VIEW_DARK
     );
     PvpEventViewDrawBannerCell(v, mine, 0.71f, 0.25f, p->pvp.event.banners, PVP_EVENT_VIEW_DARK);
 }
