@@ -35,7 +35,6 @@ HODA_RENOWN_MAX|MAX
 HODA_RENOWN_MAXED|Maximum
 HODA_RENOWN_UPGRADE|Verbessern
 HODA_RENOWN_COST|Kostet 1 Talentpunkt
-HODA_RENOWN_NO_POINTS|Erst im Rang aufsteigen
 HODA_RENOWN_RANK_UP|Ruhmesrang {0}!
 HODA_RENOWN_NEW_EMBLEM|Du hast ein neues Emblem verdient!
 HODA_RENOWN_SPEND_HINT|Tippe auf deinen Stern für Talente

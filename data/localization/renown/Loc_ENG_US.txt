@@ -35,7 +35,6 @@ HODA_RENOWN_MAX|MAX
 HODA_RENOWN_MAXED|Maxed
 HODA_RENOWN_UPGRADE|Upgrade
 HODA_RENOWN_COST|Costs 1 perk point
-HODA_RENOWN_NO_POINTS|Rank up to earn points
 HODA_RENOWN_RANK_UP|Renown Rank {0}!
 HODA_RENOWN_NEW_EMBLEM|You have earned a new emblem!
 HODA_RENOWN_SPEND_HINT|Tap your star to spend perk points

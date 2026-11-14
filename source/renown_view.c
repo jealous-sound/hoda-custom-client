@@ -54,6 +54,7 @@ static const Rectangle RENOWN_VIEW_DETAIL_DESCRIPTION = {424.0f, 490.0f, 250.0f,
 static const Rectangle RENOWN_VIEW_DETAIL_VALUES = {424.0f, 518.0f, 250.0f, 26.0f};
 static const Rectangle RENOWN_VIEW_UPGRADE = {688.0f, 462.0f, 176.0f, 56.0f};
 static const Rectangle RENOWN_VIEW_UPGRADE_NOTE = {682.0f, 520.0f, 188.0f, 26.0f};
+static const Rectangle RENOWN_VIEW_UPGRADE_WITHOUT_NOTE = {688.0f, 474.0f, 176.0f, 56.0f};
 
 typedef enum {
     RENOWN_VALUE_PERCENT,
@@ -398,18 +399,18 @@ static void RenownViewDrawDetail(RenownView *v, Rectangle panel, Player *player,
     );
     RenownViewDrawDetailValues(panel, player, perk);
 
-    Rectangle button = RenownViewPlace(panel, RENOWN_VIEW_UPGRADE);
-    Rectangle note = RenownViewPlace(panel, RENOWN_VIEW_UPGRADE_NOTE);
+    Rectangle centred = RenownViewPlace(panel, RENOWN_VIEW_UPGRADE_WITHOUT_NOTE);
     if (RenownPerkMaxed(&player->renown, perk)) {
-        RenownViewTextCentered(cool, LocGet("HODA_RENOWN_MAXED"), button, 24.0f, RENOWN_VIEW_GOLD);
+        RenownViewTextCentered(cool, LocGet("HODA_RENOWN_MAXED"), centred, 24.0f, RENOWN_VIEW_GOLD);
         return;
     }
     if (!RenownCanUpgrade(&player->renown, player->experience, perk)) {
-        ButtonDrawEx(&v->upgrade_locked, button, false);
-        RenownViewTextCentered(body, LocGet("HODA_RENOWN_NO_POINTS"), note, 16.0f, RENOWN_VIEW_DIM);
+        ButtonDrawEx(&v->upgrade_locked, centred, false);
         return;
     }
+    Rectangle button = RenownViewPlace(panel, RENOWN_VIEW_UPGRADE);
     bool pressed = ButtonDrawEx(&v->upgrade, button, interactive);
+    Rectangle note = RenownViewPlace(panel, RENOWN_VIEW_UPGRADE_NOTE);
     RenownViewTextCentered(body, LocGet("HODA_RENOWN_COST"), note, 16.0f, RENOWN_VIEW_TEXT);
     if (pressed) RenownViewSubmitUpgrade(player, perk);
 }

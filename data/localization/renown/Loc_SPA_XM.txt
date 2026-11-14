@@ -35,7 +35,6 @@ HODA_RENOWN_MAX|MÁX
 HODA_RENOWN_MAXED|Al máximo
 HODA_RENOWN_UPGRADE|Mejorar
 HODA_RENOWN_COST|Cuesta 1 punto de talento
-HODA_RENOWN_NO_POINTS|Sube de rango primero
 HODA_RENOWN_RANK_UP|¡Rango de Renombre {0}!
 HODA_RENOWN_NEW_EMBLEM|¡Has ganado un nuevo emblema!
 HODA_RENOWN_SPEND_HINT|Toca tu estrella para gastar puntos

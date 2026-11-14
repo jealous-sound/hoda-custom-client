@@ -35,7 +35,6 @@ HODA_RENOWN_MAX|МАКС
 HODA_RENOWN_MAXED|Максимум
 HODA_RENOWN_UPGRADE|Улучшить
 HODA_RENOWN_COST|Стоит 1 очко талантов
-HODA_RENOWN_NO_POINTS|Сначала повысьте ранг
 HODA_RENOWN_RANK_UP|Ранг славы {0}!
 HODA_RENOWN_NEW_EMBLEM|Вы получили новую эмблему!
 HODA_RENOWN_SPEND_HINT|Нажмите на звезду, чтобы их потратить

@@ -35,7 +35,6 @@ HODA_RENOWN_MAX|MAX
 HODA_RENOWN_MAXED|Maximaal
 HODA_RENOWN_UPGRADE|Verbeteren
 HODA_RENOWN_COST|Kost 1 talentpunt
-HODA_RENOWN_NO_POINTS|Stijg eerst in rang
 HODA_RENOWN_RANK_UP|Roemrang {0}!
 HODA_RENOWN_NEW_EMBLEM|Je hebt een nieuw embleem verdiend!
 HODA_RENOWN_SPEND_HINT|Tik op je ster om punten te besteden

@@ -35,7 +35,6 @@ HODA_RENOWN_MAX|MAX
 HODA_RENOWN_MAXED|Maximum
 HODA_RENOWN_UPGRADE|Améliorer
 HODA_RENOWN_COST|Coûte 1 point d'atout
-HODA_RENOWN_NO_POINTS|Montez en rang d'abord
 HODA_RENOWN_RANK_UP|Rang de renommée {0} !
 HODA_RENOWN_NEW_EMBLEM|Vous avez gagné un nouvel emblème !
 HODA_RENOWN_SPEND_HINT|Touchez votre étoile pour les dépenser
