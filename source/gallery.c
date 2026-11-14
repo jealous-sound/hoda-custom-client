@@ -143,7 +143,7 @@ Tier GalleryLowestTier(const Character *ch) {
 
 static int GalleryCompareUnits(const void *left, const void *right) {
     const Character *a = (const Character *)left, *b = (const Character *)right;
-    if (a->rarity != b->rarity) return (int)b->rarity - (int)a->rarity;
+    if (a->original_rarity != b->original_rarity) return (int)b->original_rarity - (int)a->original_rarity;
     int power_a = a->stats[GalleryLowestTier(a)].base_power, power_b = b->stats[GalleryLowestTier(b)].base_power;
     if (power_a != power_b) return power_b - power_a;
     return strcmp(a->id, b->id);
@@ -286,7 +286,7 @@ bool GalleryUnitMatches(const GalleryCatalog *catalog, const GallerySelection *s
         case GALLERY_CATEGORY_GROUP:
             return GalleryUnitHasGroup(unit, catalog->groups[selection->group]);
         case GALLERY_CATEGORY_RARITY:
-            return unit->rarity == selection->rarity;
+            return unit->original_rarity == selection->rarity;
         case GALLERY_CATEGORY_FACTION:
             return GalleryUnitInFaction(unit, selection->faction);
         case GALLERY_CATEGORY_SPECIALTY:
@@ -346,8 +346,8 @@ GalleryTotals GalleryTotalsCompute(const GalleryCatalog *catalog, const PlayerGa
         bool lowest_owned = owned_tiers & GalleryTierBit(GalleryLowestTier(unit));
         totals.total++;
         totals.owned += lowest_owned;
-        totals.rarity_total[unit->rarity - RARITY_COMMON]++;
-        totals.rarity_owned[unit->rarity - RARITY_COMMON] += lowest_owned;
+        totals.rarity_total[unit->original_rarity - RARITY_COMMON]++;
+        totals.rarity_owned[unit->original_rarity - RARITY_COMMON] += lowest_owned;
         for (int tier = 0; tier < TIER_COUNT; tier++) {
             if (!unit->has_tier[tier]) continue;
             totals.tier_total[tier]++;

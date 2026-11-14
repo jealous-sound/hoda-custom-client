@@ -5024,8 +5024,8 @@ static void TestGalleryCatalogMatchesReferenceRules(void) {
         assert(unit->ability->key[0] == '\0' || unit->ability == &catalog.abilities[i]);
         if (i == 0) continue;
         const Character *previous = &catalog.units[i - 1];
-        assert(previous->rarity >= unit->rarity);
-        if (previous->rarity == unit->rarity)
+        assert(previous->original_rarity >= unit->original_rarity);
+        if (previous->original_rarity == unit->original_rarity)
             assert(
                 previous->stats[GalleryLowestTier(previous)].base_power >=
                 unit->stats[GalleryLowestTier(unit)].base_power

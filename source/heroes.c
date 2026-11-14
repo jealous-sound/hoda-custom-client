@@ -176,8 +176,9 @@ static void HeroCardBuild(HeroCard *card, const Character *ch) {
         {182, 252, 240, 255},
         {255, 0, 255, 255},
     };
-    card->rarity = ch->rarity == RARITY_MYTHIC ? LocGet("HODA_RARITY_MYTHIC") : LocGet(rarity_keys[ch->rarity]);
-    card->rarity_color = rarity_colors[ch->rarity];
+    card->rarity =
+        ch->original_rarity == RARITY_MYTHIC ? LocGet("HODA_RARITY_MYTHIC") : LocGet(rarity_keys[ch->original_rarity]);
+    card->rarity_color = rarity_colors[ch->original_rarity];
 
     card->speed = LocGet(
         ch->speed == SPEED_QUICK  ? "INITIATIVE_FAST"
@@ -258,11 +259,11 @@ static bool RosterFilterAccepts(RosterFilter filter, const Character *ch) {
         case ROSTER_FILTER_LARGE:
             return ch->giant;
         case ROSTER_FILTER_COMMON:
-            return ch->rarity == RARITY_COMMON;
+            return ch->original_rarity == RARITY_COMMON;
         case ROSTER_FILTER_UNCOMMON:
-            return ch->rarity == RARITY_UNCOMMON;
+            return ch->original_rarity == RARITY_UNCOMMON;
         case ROSTER_FILTER_RARE:
-            return ch->rarity == RARITY_RARE;
+            return ch->original_rarity == RARITY_RARE;
         case ROSTER_FILTER_TUTORIAL:
             return TutorialMockStoreUnit(ch);
         default:
@@ -271,7 +272,7 @@ static bool RosterFilterAccepts(RosterFilter filter, const Character *ch) {
 }
 
 static int RosterCompareOrder(const Character *a, const Character *b) {
-    if (a->rarity != b->rarity) return (int)b->rarity - (int)a->rarity;
+    if (a->original_rarity != b->original_rarity) return (int)b->original_rarity - (int)a->original_rarity;
     if (a->tier != b->tier) return (int)b->tier - (int)a->tier;
     if (a->level != b->level) return b->level - a->level;
     return strcmp(a->id, b->id);
@@ -668,7 +669,7 @@ static void HeroesDrawDetailsAt(HeroCard *card, Rectangle bounds) {
         Texture2D bg = GuiTex(GUI_UNIT_DETAILS);
         UiDrawTexture(bg, body, WHITE);
 
-        int plaque_id = GUI_PLAQUE_COMMON + (card->ch->rarity - RARITY_COMMON);
+        int plaque_id = GUI_PLAQUE_COMMON + (card->ch->original_rarity - RARITY_COMMON);
         Texture2D plaque = GuiTex(plaque_id);
         UiDrawTexture(plaque, head, WHITE);
     }

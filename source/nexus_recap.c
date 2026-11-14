@@ -146,7 +146,7 @@ static float NexusRecapTileTime(const NexusRecapFanfare *fanfare) {
 }
 
 static Rarity NexusRecapTileRarity(const NexusRecap *recap, const Player *player, int index) {
-    return player->roster[recap->award.unit_roster[index]].rarity;
+    return player->roster[recap->award.unit_roster[index]].original_rarity;
 }
 
 static void NexusRecapStartTile(NexusRecap *recap, const Player *player) {
