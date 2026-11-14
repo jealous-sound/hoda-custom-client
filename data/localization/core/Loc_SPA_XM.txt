@@ -25,3 +25,43 @@ HODA_OPTIONS_VERSION_UPDATE|{0} ({1} disponible)
 HODA_MAINTENANCE_TITLE|Reinicio del servidor
 HODA_MAINTENANCE_MESSAGE|El servidor se reiniciará pronto para una actualización. Los nuevos combates se pausarán unos minutos antes, y puede que después tengas que descargar una nueva versión.
 HODA_MAINTENANCE_HOLD_MESSAGE|El servidor se está reiniciando para una actualización. Los combates están en pausa hasta que vuelva.
+HODA_OPTIONS_PROFILE|Perfil
+HODA_PROFILE_RENAME|Renombrar
+HODA_PROFILE_COPY_ID|Copiar
+HODA_PROFILE_COPIED|Copiado
+HODA_PROFILE_TROPHIES_VALUE|{0} (récord: {1})
+HODA_PROFILE_PVP|JcJ
+HODA_PROFILE_PVP_VALUE|{0} victorias, {1} derrotas
+HODA_PROFILE_PLAYING_SINCE|Jugando desde
+HODA_ACCOUNT_GUEST|Cuenta de invitado
+HODA_ACCOUNT_GUEST_HINT|Tu progreso está ligado a este ordenador. Crea un usuario para protegerlo y jugar en otros dispositivos.
+HODA_ACCOUNT_SIGNED_IN|Sesión iniciada como {0}
+HODA_ACCOUNT_DEVICES|Dispositivos conectados: {0}
+HODA_ACCOUNT_CREATE_LOGIN|Crear usuario
+HODA_ACCOUNT_CHANGE_PASSWORD|Cambiar contraseña
+HODA_ACCOUNT_DELETE|Eliminar cuenta
+HODA_ACCOUNT_LOGIN|Usuario
+HODA_ACCOUNT_PASSWORD|Contraseña
+HODA_ACCOUNT_REPEAT_PASSWORD|Repite la contraseña
+HODA_ACCOUNT_CURRENT_PASSWORD|Contraseña actual
+HODA_ACCOUNT_NEW_PASSWORD|Nueva contraseña
+HODA_ACCOUNT_CREATE_LOGIN_NOTE|Elige un usuario y una contraseña para jugar con esta cuenta en cualquier dispositivo. Una contraseña olvidada no se puede recuperar en el juego, guárdala bien.
+HODA_ACCOUNT_CHANGE_PASSWORD_NOTE|Se cerrará la sesión en todos los demás dispositivos.
+HODA_ACCOUNT_DELETE_NOTE|Tus héroes, tu progreso y tu puesto en el gremio se eliminarán para siempre. Introduce tu contraseña para confirmar.
+HODA_ACCOUNT_DELETE_GUEST_NOTE|Tus héroes, tu progreso y tu puesto en el gremio se eliminarán para siempre. Escribe {0} para confirmar.
+HODA_ACCOUNT_DELETE_MISTYPED|Escribe {0} exactamente para eliminar la cuenta.
+HODA_ACCOUNT_LOGIN_RULES|Un usuario tiene de 3 a 24 caracteres: letras latinas, cifras, punto, guion o guion bajo, y empieza por una letra o una cifra.
+HODA_ACCOUNT_PASSWORD_RULES|Una contraseña tiene de 8 a 64 caracteres.
+HODA_ACCOUNT_PASSWORD_MISMATCH|Las contraseñas no coinciden.
+HODA_ACCOUNT_LOGIN_TAKEN|Este usuario ya está en uso.
+HODA_ACCOUNT_WRONG_CREDENTIALS|Usuario o contraseña incorrectos.
+HODA_ACCOUNT_WRONG_PASSWORD|Contraseña incorrecta.
+HODA_ACCOUNT_TOO_MANY_ATTEMPTS|Demasiados intentos. Espera un minuto y vuelve a intentarlo.
+HODA_ACCOUNT_UNREACHABLE|No se pudo conectar con el servidor. Inténtalo de nuevo.
+HODA_ACCOUNT_SWITCH_WARNING|Iniciar sesión sustituye la cuenta de invitado de este ordenador. Su progreso se perderá si antes no le creas un usuario.
+HODA_ACCOUNT_SIGN_OUT_MESSAGE|Necesitarás tu usuario y tu contraseña para volver a esta cuenta.
+HODA_ACCOUNT_LOGIN_CREATED|Usuario creado. Úsalo para iniciar sesión en cualquier dispositivo.
+HODA_ACCOUNT_PASSWORD_CHANGED|Contraseña cambiada. Se cerró la sesión en los demás dispositivos.
+HODA_ACCOUNT_SIGNED_OUT_MESSAGE|Se cerró tu sesión en este ordenador. Inicia sesión de nuevo para continuar.
+HODA_ACCOUNT_GUEST_START_HINT|Empezar una partida nueva en este ordenador
+HODA_ACCOUNT_LOG_IN_HINT|Continuar con tu usuario y contraseña

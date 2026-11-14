@@ -25,3 +25,43 @@ HODA_OPTIONS_VERSION_UPDATE|{0} ({1} beschikbaar)
 HODA_MAINTENANCE_TITLE|Server wordt herstart
 HODA_MAINTENANCE_MESSAGE|De server wordt binnenkort herstart voor een update. Nieuwe gevechten worden een paar minuten van tevoren gepauzeerd, en daarna moet je mogelijk een nieuwe versie downloaden.
 HODA_MAINTENANCE_HOLD_MESSAGE|De server wordt herstart voor een update. Gevechten zijn gepauzeerd tot hij terug is.
+HODA_OPTIONS_PROFILE|Profiel
+HODA_PROFILE_RENAME|Hernoemen
+HODA_PROFILE_COPY_ID|Kopiëren
+HODA_PROFILE_COPIED|Gekopieerd
+HODA_PROFILE_TROPHIES_VALUE|{0} (record: {1})
+HODA_PROFILE_PVP|PvP
+HODA_PROFILE_PVP_VALUE|{0} gewonnen, {1} verloren
+HODA_PROFILE_PLAYING_SINCE|Speelt sinds
+HODA_ACCOUNT_GUEST|Gastaccount
+HODA_ACCOUNT_GUEST_HINT|Je voortgang is aan deze computer gebonden. Maak een login aan om hem veilig te stellen en op andere apparaten te spelen.
+HODA_ACCOUNT_SIGNED_IN|Ingelogd als {0}
+HODA_ACCOUNT_DEVICES|Ingelogde apparaten: {0}
+HODA_ACCOUNT_CREATE_LOGIN|Login aanmaken
+HODA_ACCOUNT_CHANGE_PASSWORD|Wachtwoord wijzigen
+HODA_ACCOUNT_DELETE|Account verwijderen
+HODA_ACCOUNT_LOGIN|Login
+HODA_ACCOUNT_PASSWORD|Wachtwoord
+HODA_ACCOUNT_REPEAT_PASSWORD|Herhaal wachtwoord
+HODA_ACCOUNT_CURRENT_PASSWORD|Huidig wachtwoord
+HODA_ACCOUNT_NEW_PASSWORD|Nieuw wachtwoord
+HODA_ACCOUNT_CREATE_LOGIN_NOTE|Kies een login en een wachtwoord om dit account op elk apparaat te spelen. Een vergeten wachtwoord kan in het spel niet worden hersteld, bewaar het dus goed.
+HODA_ACCOUNT_CHANGE_PASSWORD_NOTE|Alle andere apparaten worden uitgelogd.
+HODA_ACCOUNT_DELETE_NOTE|Je helden, voortgang en gildelidmaatschap worden voorgoed verwijderd. Voer je wachtwoord in om te bevestigen.
+HODA_ACCOUNT_DELETE_GUEST_NOTE|Je helden, voortgang en gildelidmaatschap worden voorgoed verwijderd. Typ {0} om te bevestigen.
+HODA_ACCOUNT_DELETE_MISTYPED|Typ precies {0} om het account te verwijderen.
+HODA_ACCOUNT_LOGIN_RULES|Een login heeft 3 tot 24 tekens: Latijnse letters, cijfers, punt, streepje of onderstrepingsteken, en begint met een letter of cijfer.
+HODA_ACCOUNT_PASSWORD_RULES|Een wachtwoord heeft 8 tot 64 tekens.
+HODA_ACCOUNT_PASSWORD_MISMATCH|De wachtwoorden komen niet overeen.
+HODA_ACCOUNT_LOGIN_TAKEN|Deze login is al in gebruik.
+HODA_ACCOUNT_WRONG_CREDENTIALS|Onjuiste login of onjuist wachtwoord.
+HODA_ACCOUNT_WRONG_PASSWORD|Onjuist wachtwoord.
+HODA_ACCOUNT_TOO_MANY_ATTEMPTS|Te veel pogingen. Wacht een minuut en probeer het opnieuw.
+HODA_ACCOUNT_UNREACHABLE|De server is niet bereikbaar. Probeer het opnieuw.
+HODA_ACCOUNT_SWITCH_WARNING|Inloggen vervangt het gastaccount op deze computer. De voortgang ervan gaat verloren als je er niet eerst een login voor aanmaakt.
+HODA_ACCOUNT_SIGN_OUT_MESSAGE|Je hebt je login en wachtwoord nodig om weer in dit account te komen.
+HODA_ACCOUNT_LOGIN_CREATED|Login aangemaakt. Gebruik hem om op elk apparaat in te loggen.
+HODA_ACCOUNT_PASSWORD_CHANGED|Wachtwoord gewijzigd. Andere apparaten zijn uitgelogd.
+HODA_ACCOUNT_SIGNED_OUT_MESSAGE|Je bent op deze computer uitgelogd. Log opnieuw in om verder te gaan.
+HODA_ACCOUNT_GUEST_START_HINT|Een nieuw spel op deze computer beginnen
+HODA_ACCOUNT_LOG_IN_HINT|Verdergaan met je login en wachtwoord

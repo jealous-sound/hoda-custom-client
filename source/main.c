@@ -108,6 +108,9 @@
 #include "pvp_hub.c"
 #include "pvp_event_view.c"
 #include "text_field.c"
+#include "account_form.c"
+#include "profile_popup.c"
+#include "account_gate.c"
 #include "guild.c"
 #include "guild_view.c"
 #include "expedition_view.c"
@@ -157,6 +160,8 @@ static void RunSelectedMode(void) {
     } else if (EnvFlag("HOD_NEXUS_SCENE")) {
         DebugRenderNexusScene(getenv("HOD_NEXUS_SCENE"));
     } else if (DebugRenderPlayMode(getenv("HOD_SHOT_SCREEN"), getenv("HOD_SHOT"))) {
+        return;
+    } else if (DebugRenderAccountGate(getenv("HOD_SHOT_SCREEN"), getenv("HOD_SHOT"))) {
         return;
     } else if (PlayModeScreenRun()) {
         RunGame();

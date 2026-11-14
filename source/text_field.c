@@ -3,6 +3,7 @@
 #define TEXT_FIELD_PADDING 10.0f
 #define TEXT_FIELD_SLICE 10
 #define TEXT_FIELD_FORBIDDEN "<>"
+#define TEXT_FIELD_MASK_GLYPH '*'
 
 static const Color TEXT_FIELD_BACKGROUND = {24, 20, 16, 235};
 static const Color TEXT_FIELD_BACKGROUND_FOCUSED = {40, 33, 25, 245};
@@ -15,6 +16,7 @@ typedef struct {
     bool digits_only;
     bool focused;
     bool read_only;
+    bool masked;
     bool stripped;
     float time;
 } TextField;
@@ -96,6 +98,21 @@ void TextFieldBlur(TextField *field) {
     field->focused = false;
 }
 
+void TextFieldFocus(TextField *field) {
+    field->focused = true;
+    field->time = 0.0f;
+    while (GetCharPressed() > 0) {}
+}
+
+static const char *TextFieldShownText(const TextField *field) {
+    if (!field->masked) return field->text;
+    static char mask[TEXT_FIELD_CAPACITY];
+    int runes = TextFieldRuneCount(field->text);
+    memset(mask, TEXT_FIELD_MASK_GLYPH, (size_t)runes);
+    mask[runes] = '\0';
+    return mask;
+}
+
 typedef enum { TEXT_FIELD_IDLE, TEXT_FIELD_SUBMITTED, TEXT_FIELD_BLURRED } TextFieldEvent;
 
 static void TextFieldDrawBox(Rectangle rect, bool focused) {
@@ -119,7 +136,7 @@ static void TextFieldDrawText(const TextField *field, Rectangle inner, Font font
         UiDrawTextLeftMiddle(font, placeholder ? placeholder : "", inner, size, TEXT_FIELD_PLACEHOLDER);
         return;
     }
-    const char *shown = TextFormat("%s%s", field->text, caret ? "|" : "");
+    const char *shown = TextFormat("%s%s", TextFieldShownText(field), caret ? "|" : "");
     float width = MeasureTextEx(font, shown, size, 1.0f).x;
     float shift = width > inner.width ? width - inner.width : 0.0f;
     float scale = UiScale();

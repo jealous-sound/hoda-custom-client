@@ -1070,6 +1070,62 @@ static bool DebugPrepareOptions(Game *game, DebugShot *shot) {
     return true;
 }
 
+static bool DebugPrepareProfile(Game *game, DebugShot *shot) {
+    static const struct {
+        const char *screen;
+        AccountFormKind form;
+    } forms[] = {
+        {"profile_create_login", ACCOUNT_FORM_CREATE_LOGIN},
+        {"profile_sign_in", ACCOUNT_FORM_SIGN_IN},
+        {"profile_change_password", ACCOUNT_FORM_CHANGE_PASSWORD},
+        {"profile_delete", ACCOUNT_FORM_DELETE},
+        {"profile_delete_guest", ACCOUNT_FORM_DELETE_GUEST},
+        {"profile_rename", ACCOUNT_FORM_RENAME},
+    };
+    const int form_count = (int)(sizeof(forms) / sizeof(forms[0]));
+    int form = 0;
+    while (form < form_count && !DebugShotIs(shot, forms[form].screen)) form++;
+    bool signing_out = DebugShotIs(shot, "profile_sign_out");
+    if (form == form_count && !signing_out && !DebugShotIs(shot, "profile")) return false;
+    game->screen = SCREEN_HOME;
+    if (shot->frames_drawn > 0) return true;
+    ProfilePopupOpen(&game->profile);
+    if (form < form_count) AccountFormOpen(&game->profile.form, forms[form].form);
+    game->profile.confirming_sign_out = signing_out;
+    return true;
+}
+
+static bool DebugRenderAccountGate(const char *screen_name, const char *output) {
+    bool signing_in = screen_name && strcmp(screen_name, "account_gate_sign_in") == 0;
+    bool signed_out = screen_name && strcmp(screen_name, "account_gate_signed_out") == 0;
+    if (!signing_in && !signed_out && !(screen_name && strcmp(screen_name, "account_gate") == 0)) return false;
+    LoadingScreenBegin();
+    LocLoadPreferred();
+    AssetsLoad();
+    AccountGate gate;
+    AccountGateInitialize(&gate, LoadingScreenSplash(), signed_out ? "HODA_ACCOUNT_SIGNED_OUT_MESSAGE" : NULL);
+    if (signing_in) AccountFormOpen(&gate.form, ACCOUNT_FORM_SIGN_IN);
+    int frames = EnvInt("HOD_SHOT_FRAMES", DEBUG_SHOT_DEFAULT_FRAMES);
+    for (int frame = 0; frame < frames && !WindowShouldClose(); frame++) {
+        bool last = frame + 1 == frames;
+        BeginDrawing();
+        ClearBackground(BLACK);
+        UiFrameBegin();
+        AccountGateDraw(&gate);
+        UiFrameEnd();
+        if (last && output) {
+            rlDrawRenderBatchActive();
+            TakeScreenshot(output);
+        }
+        EndDrawing();
+    }
+    LocUnload();
+    AssetsUnload();
+    LoadingScreenEnd();
+    ResourceShutdown();
+    return true;
+}
+
 static const char *const DEBUG_GUILD_MEMBERS[] = {
     "Hawke",
     "Varric",
@@ -1550,6 +1606,7 @@ static void DebugPrepareExpeditions(Game *game, DebugShot *shot) {
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
     if (DebugPrepareTutorial(game, shot) || DebugPrepareNamePrompt(game, shot)) return;
     if (DebugPrepareOptions(game, shot) || DebugPrepareClientUpdate(game, shot)) return;
+    if (DebugPrepareProfile(game, shot)) return;
     if (DebugPrepareMaintenance(game, shot)) return;
     if (DebugPrepareLiveGuildFlow(game, shot)) return;
     game->screen = shot->consume_opened ? SCREEN_CONSUME : SCREEN_HEROES;

@@ -22,12 +22,16 @@
 #define BACKEND_HTTP_NOT_FOUND 404
 #define BACKEND_HTTP_CONFLICT 409
 #define BACKEND_HTTP_UNPROCESSABLE 422
+#define BACKEND_HTTP_TOO_MANY_REQUESTS 429
 #define BACKEND_REQUEST_ID_CAP 33
 #define BACKEND_NO_TICKET 0
 #define BACKEND_SESSION_RETRY_SECONDS 10
 #define BACKEND_REVISION_UNKNOWN -1
 #define BACKEND_UPLOAD_RETRY_SECONDS BACKEND_SESSION_RETRY_SECONDS
 #define BACKEND_SHUTDOWN_FLUSH_SECONDS 8
+#define BACKEND_LOGIN_CAP 32
+#define BACKEND_REFUSAL_CAP 32
+#define BACKEND_SIGN_IN_PATH "/v1/logins"
 
 typedef struct {
     bool enabled;
@@ -37,6 +41,8 @@ typedef struct {
     char token[BACKEND_TOKEN_CAP];
     bool account_ready;
     bool account_fresh;
+    bool guest_allowed;
+    bool credentials_refused;
     char player_id[BACKEND_PLAYER_ID_CAP];
     char secret[BACKEND_SECRET_CAP];
     long long clock_offset;
@@ -211,6 +217,28 @@ static bool BackendResolveAccount(BackendState *state) {
     return state->account_ready;
 }
 
+static bool BackendPlayerForced(void) {
+    const char *forced = getenv(BACKEND_PLAYER_ENV);
+    return forced && forced[0];
+}
+
+static bool BackendDeviceHasNoAccount(void) {
+    return !BackendPlayerForced() && !FileExists(BackendAccountPath());
+}
+
+bool BackendNeedsAccountChoice(void) {
+    return backend_state.enabled && BackendDeviceHasNoAccount();
+}
+
+static bool BackendAwaitsAccountChoice(const BackendState *state) {
+    return !state->account_ready && !state->guest_allowed && BackendDeviceHasNoAccount();
+}
+
+bool BackendAccountManaged(void) {
+    const BackendState *state = &backend_state;
+    return state->enabled && state->account_ready && state->secret[0];
+}
+
 static const char *BackendPlayerId(void) {
     return backend_state.player_id;
 }
@@ -235,8 +263,7 @@ static bool BackendRequestSession(const BackendState *state, BackendResponse *re
 }
 
 static bool BackendReplaceUnknownAccount(BackendState *state) {
-    const char *forced = getenv(BACKEND_PLAYER_ENV);
-    if (forced && forced[0]) return false;
+    if (BackendPlayerForced()) return false;
     TraceLog(LOG_WARNING, "Backend: the server has no account %s, creating a new guest", state->player_id);
     return BackendCreateGuest(state, BackendAccountPath());
 }
@@ -244,6 +271,7 @@ static bool BackendReplaceUnknownAccount(BackendState *state) {
 static bool BackendOpenSession(void) {
     BackendState *state = &backend_state;
     if (state->session_open) return true;
+    if (BackendAwaitsAccountChoice(state)) return false;
     long long sent_at = (long long)time(NULL);
     if (state->session_failed_at && sent_at - state->session_failed_at < BACKEND_SESSION_RETRY_SECONDS) return false;
     if (!BackendResolveAccount(state)) {
@@ -270,6 +298,7 @@ static bool BackendOpenSession(void) {
         TraceLog(LOG_INFO, "Backend: session open for %s (clock offset %llds)", BackendPlayerId(), state->clock_offset);
     } else {
         state->session_failed_at = sent_at;
+        state->credentials_refused = response.status == BACKEND_HTTP_UNAUTHORIZED && state->secret[0];
         TraceLog(LOG_WARNING, "Backend: session refused (HTTP %d)", response.status);
     }
     cJSON_Delete(json);
@@ -410,6 +439,98 @@ BackendSendQuery(const char *method, const char *route, const char *body, char *
     return BACKEND_QUERY_ANSWERED;
 }
 
+typedef enum {
+    BACKEND_ACCOUNT_SHOW,
+    BACKEND_ACCOUNT_CHOOSE_LOGIN,
+    BACKEND_ACCOUNT_CHANGE_PASSWORD,
+    BACKEND_ACCOUNT_SIGN_OUT,
+    BACKEND_ACCOUNT_DELETE,
+    BACKEND_ACCOUNT_SIGN_IN,
+    BACKEND_ACCOUNT_FORGET_DEVICE,
+} BackendAccountCall;
+
+typedef enum {
+    BACKEND_ACCOUNT_IDLE,
+    BACKEND_ACCOUNT_PENDING,
+    BACKEND_ACCOUNT_DONE,
+    BACKEND_ACCOUNT_REFUSED,
+    BACKEND_ACCOUNT_LIMITED,
+    BACKEND_ACCOUNT_UNREACHABLE,
+} BackendAccountState;
+
+typedef struct {
+    char login[BACKEND_LOGIN_CAP];
+    long long created_at;
+    int devices;
+    char refusal[BACKEND_REFUSAL_CAP];
+} BackendAccountAnswer;
+
+typedef struct {
+    const char *method;
+    const char *route;
+    bool sends_device_secret;
+    bool leaves_account;
+} BackendAccountRoute;
+
+static const BackendAccountRoute BACKEND_ACCOUNT_ROUTES[] = {
+    [BACKEND_ACCOUNT_SHOW] = {"GET", "account"},
+    [BACKEND_ACCOUNT_CHOOSE_LOGIN] = {"POST", "account/login"},
+    [BACKEND_ACCOUNT_CHANGE_PASSWORD] = {"POST", "account/password", .sends_device_secret = true},
+    [BACKEND_ACCOUNT_SIGN_OUT] = {"POST", "account/logout", .sends_device_secret = true, .leaves_account = true},
+    [BACKEND_ACCOUNT_DELETE] = {"POST", "account/delete", .leaves_account = true},
+};
+
+static void BackendReadAccountAnswer(const cJSON *json, BackendAccountAnswer *answer) {
+    StrCopy(answer->login, sizeof(answer->login), JsonStr(json, "login"));
+    StrCopy(answer->refusal, sizeof(answer->refusal), JsonStr(json, "code"));
+    const cJSON *created_at = cJSON_GetObjectItemCaseSensitive(json, "created_at");
+    const cJSON *devices = cJSON_GetObjectItemCaseSensitive(json, "devices");
+    if (cJSON_IsNumber(created_at)) answer->created_at = (long long)created_at->valuedouble;
+    if (cJSON_IsNumber(devices)) answer->devices = devices->valueint;
+}
+
+static BackendAccountState
+BackendAccountOutcome(const BackendResponse *response, BackendAccountAnswer *answer, BackendState *signed_in) {
+    cJSON *json = response->body ? cJSON_Parse(response->body) : NULL;
+    BackendReadAccountAnswer(json, answer);
+    BackendAccountState state = BACKEND_ACCOUNT_UNREACHABLE;
+    if (response->status == BACKEND_HTTP_OK)
+        state = !signed_in || BackendAdoptCredentials(signed_in, json) ? BACKEND_ACCOUNT_DONE : state;
+    else if (response->status == BACKEND_HTTP_TOO_MANY_REQUESTS)
+        state = BACKEND_ACCOUNT_LIMITED;
+    else if (answer->refusal[0])
+        state = BACKEND_ACCOUNT_REFUSED;
+    cJSON_Delete(json);
+    return state;
+}
+
+static BackendAccountState BackendSignIn(const char *body, BackendAccountAnswer *answer, BackendState *signed_in) {
+    BackendResponse response;
+    if (!BackendRequest("POST", BACKEND_SIGN_IN_PATH, body, BACKEND_REVISION_UNKNOWN, &response))
+        return BACKEND_ACCOUNT_UNREACHABLE;
+    BackendAccountState state = BackendAccountOutcome(&response, answer, signed_in);
+    free(response.body);
+    return state;
+}
+
+static BackendAccountState
+BackendSendAccountCall(const BackendAccountRoute *route, const char *body, BackendAccountAnswer *answer) {
+    char path[BACKEND_PATH_CAP];
+    for (int attempt = 0; attempt < 2; attempt++) {
+        if (!BackendOpenSession()) return BACKEND_ACCOUNT_UNREACHABLE;
+        snprintf(path, sizeof(path), "/v1/players/%s/%s", BackendPlayerId(), route->route);
+        BackendResponse response;
+        if (!BackendRequest(route->method, path, body, BACKEND_REVISION_UNKNOWN, &response))
+            return BACKEND_ACCOUNT_UNREACHABLE;
+        bool session_expired = response.status == BACKEND_HTTP_UNAUTHORIZED;
+        BackendAccountState state = BackendAccountOutcome(&response, answer, NULL);
+        free(response.body);
+        if (!session_expired) return state;
+        backend_state.session_open = false;
+    }
+    return BACKEND_ACCOUNT_UNREACHABLE;
+}
+
 typedef struct {
     pthread_mutex_t lock;
     pthread_cond_t wake;
@@ -418,6 +539,7 @@ typedef struct {
     bool started;
     bool stopping;
     bool retry_wanted;
+    bool guest_allowance_wanted;
     bool session_wanted;
     bool fetch_wanted;
     bool fetch_running;
@@ -451,6 +573,12 @@ typedef struct {
     int query_ticket;
     int next_query_ticket;
     char *query_text;
+    BackendAccountCall account_call;
+    char *account_body;
+    bool account_wanted;
+    BackendAccountState account_state;
+    BackendAccountAnswer account_answer;
+    bool credentials_refused;
 } BackendWorker;
 
 static BackendWorker backend_worker = {
@@ -460,7 +588,8 @@ static BackendWorker backend_worker = {
     .revision = BACKEND_REVISION_UNKNOWN,
 };
 
-static void BackendWorkerPublishClock(BackendWorker *w) {
+static void BackendWorkerPublishSession(BackendWorker *w) {
+    w->credentials_refused = backend_state.credentials_refused;
     if (!backend_state.session_open) return;
     w->clock_known = true;
     w->clock_offset = backend_state.clock_offset;
@@ -546,6 +675,69 @@ static void BackendWorkerQuery(BackendWorker *w) {
     w->query_state = state;
 }
 
+static void BackendWorkerDropAccountWork(BackendWorker *w) {
+    char **owned[] = {
+        &w->upload_text,
+        &w->fetch_text,
+        &w->action_body,
+        &w->action_text,
+        &w->query_body,
+        &w->query_text,
+        &w->retry_route_body,
+    };
+    for (size_t i = 0; i < sizeof(owned) / sizeof(owned[0]); i++) {
+        free(*owned[i]);
+        *owned[i] = NULL;
+    }
+    w->revision = BACKEND_REVISION_UNKNOWN;
+    w->fetch_wanted = w->fetch_ready = false;
+    w->action_wanted = w->query_wanted = false;
+    w->action_state = BACKEND_ACTION_IDLE;
+    w->query_state = BACKEND_QUERY_IDLE;
+}
+
+static void BackendWorkerSwitchAccount(BackendWorker *w, const BackendState *signed_in) {
+    BackendState *state = &backend_state;
+    state->session_open = false;
+    state->session_failed_at = 0;
+    state->token[0] = '\0';
+    state->account_fresh = false;
+    state->guest_allowed = false;
+    state->credentials_refused = false;
+    state->account_ready = signed_in != NULL;
+    StrCopy(state->player_id, sizeof(state->player_id), signed_in ? signed_in->player_id : "");
+    StrCopy(state->secret, sizeof(state->secret), signed_in ? signed_in->secret : "");
+    BackendWorkerDropAccountWork(w);
+}
+
+static void BackendWorkerAccountCall(BackendWorker *w) {
+    BackendAccountCall call = w->account_call;
+    char *body = w->account_body;
+    w->account_body = NULL;
+    w->account_wanted = false;
+    pthread_mutex_unlock(&w->lock);
+    BackendAccountAnswer answer = {0};
+    BackendState signed_in = {0};
+    BackendAccountState state = BACKEND_ACCOUNT_DONE;
+    bool leaves_account = call == BACKEND_ACCOUNT_FORGET_DEVICE;
+    if (call == BACKEND_ACCOUNT_SIGN_IN) {
+        state = BackendSignIn(body, &answer, &signed_in);
+        bool key_kept = state == BACKEND_ACCOUNT_DONE && BackendWriteAccount(&signed_in, BackendAccountPath());
+        if (state == BACKEND_ACCOUNT_DONE && !key_kept) state = BACKEND_ACCOUNT_UNREACHABLE;
+    } else if (!leaves_account) {
+        const BackendAccountRoute *route = &BACKEND_ACCOUNT_ROUTES[call];
+        state = BackendSendAccountCall(route, body, &answer);
+        leaves_account = route->leaves_account && state == BACKEND_ACCOUNT_DONE;
+    }
+    if (leaves_account) remove(BackendAccountPath());
+    free(body);
+    pthread_mutex_lock(&w->lock);
+    if (state == BACKEND_ACCOUNT_DONE && call == BACKEND_ACCOUNT_SIGN_IN) BackendWorkerSwitchAccount(w, &signed_in);
+    if (leaves_account) BackendWorkerSwitchAccount(w, NULL);
+    w->account_answer = answer;
+    w->account_state = state;
+}
+
 static void BackendWorkerOpenSession(BackendWorker *w) {
     w->session_wanted = false;
     pthread_mutex_unlock(&w->lock);
@@ -570,6 +762,9 @@ static void *BackendWorkerRun(void *argument) {
         if (w->retry_wanted) {
             w->retry_wanted = false;
             backend_state.session_failed_at = 0;
+        } else if (w->guest_allowance_wanted) {
+            w->guest_allowance_wanted = false;
+            backend_state.guest_allowed = true;
         } else if (w->fetch_wanted) {
             BackendWorkerFetch(w);
         } else if (upload_due) {
@@ -578,6 +773,8 @@ static void *BackendWorkerRun(void *argument) {
             BackendWorkerAction(w);
         } else if (w->query_wanted) {
             BackendWorkerQuery(w);
+        } else if (w->account_wanted) {
+            BackendWorkerAccountCall(w);
         } else if (w->session_wanted) {
             BackendWorkerOpenSession(w);
         } else if (w->stopping) {
@@ -586,7 +783,7 @@ static void *BackendWorkerRun(void *argument) {
             BackendWorkerSleep(w);
             continue;
         }
-        BackendWorkerPublishClock(w);
+        BackendWorkerPublishSession(w);
         pthread_cond_broadcast(&w->settled);
     }
     pthread_mutex_unlock(&w->lock);
@@ -611,6 +808,15 @@ void BackendRetryNow(void) {
     BackendWorker *w = BackendWorkerStart();
     pthread_mutex_lock(&w->lock);
     w->retry_wanted = true;
+    BackendWorkerSignal(w);
+    pthread_mutex_unlock(&w->lock);
+}
+
+void BackendAllowGuest(void) {
+    if (!BackendEnabled()) return;
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    w->guest_allowance_wanted = true;
     BackendWorkerSignal(w);
     pthread_mutex_unlock(&w->lock);
 }
@@ -837,6 +1043,53 @@ BackendQueryState BackendPollQuery(int ticket, cJSON **out_json, int *out_status
     }
     pthread_mutex_unlock(&w->lock);
     return state;
+}
+
+bool BackendBeginAccountCall(BackendAccountCall call, cJSON *fields) {
+    bool player_call = call != BACKEND_ACCOUNT_SIGN_IN && call != BACKEND_ACCOUNT_FORGET_DEVICE;
+    bool possible = BackendServesThisClient() && (!player_call || BackendAccountManaged());
+    BackendWorker *w = possible ? BackendWorkerStart() : NULL;
+    bool begun = false;
+    if (w) pthread_mutex_lock(&w->lock);
+    if (w && w->account_state != BACKEND_ACCOUNT_PENDING) {
+        if (fields && player_call && BACKEND_ACCOUNT_ROUTES[call].sends_device_secret)
+            cJSON_AddStringToObject(fields, "secret", backend_state.secret);
+        free(w->account_body);
+        w->account_body = fields ? cJSON_PrintUnformatted(fields) : NULL;
+        begun = !fields || w->account_body;
+        if (begun) {
+            w->account_call = call;
+            w->account_wanted = true;
+            w->account_state = BACKEND_ACCOUNT_PENDING;
+            BackendWorkerSignal(w);
+        }
+    }
+    if (w) pthread_mutex_unlock(&w->lock);
+    cJSON_Delete(fields);
+    return begun;
+}
+
+BackendAccountState BackendPollAccountCall(BackendAccountAnswer *answer) {
+    *answer = (BackendAccountAnswer){0};
+    if (!BackendEnabled()) return BACKEND_ACCOUNT_IDLE;
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    BackendAccountState state = w->account_state;
+    if (state != BACKEND_ACCOUNT_IDLE && state != BACKEND_ACCOUNT_PENDING) {
+        *answer = w->account_answer;
+        w->account_state = BACKEND_ACCOUNT_IDLE;
+    }
+    pthread_mutex_unlock(&w->lock);
+    return state;
+}
+
+bool BackendCredentialsRefused(void) {
+    if (!BackendEnabled()) return false;
+    BackendWorker *w = BackendWorkerStart();
+    pthread_mutex_lock(&w->lock);
+    bool refused = w->credentials_refused;
+    pthread_mutex_unlock(&w->lock);
+    return refused;
 }
 
 bool BackendUploadPending(void) {
