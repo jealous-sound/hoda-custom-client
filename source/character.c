@@ -137,6 +137,7 @@ typedef struct {
     char based_on[64];
     char name[64];
     Rarity rarity;
+    Rarity original_rarity;
     int stars;
     bool giant;
 
@@ -295,6 +296,8 @@ static void CharacterParse(const cJSON *c, Character *ch, Ability *ab) {
     StrCopy(ch->based_on, sizeof(ch->based_on), JsonStr(c, "based_on"));
     StrCopy(ch->name, sizeof(ch->name), JsonStr(c, "name"));
     ch->rarity = RarityFromString(JsonStr(c, "rarity"));
+    const char *original_rarity = JsonStr(c, "original_rarity");
+    ch->original_rarity = original_rarity[0] ? RarityFromString(original_rarity) : ch->rarity;
     ch->stars = JsonInt(c, "stars");
     ch->giant = JsonBool(c, "giant");
     ch->speed = SpeedFromString(JsonStr(c, "speed"));

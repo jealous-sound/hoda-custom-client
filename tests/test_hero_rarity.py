@@ -58,6 +58,13 @@ class HeroRarityTable(unittest.TestCase):
         stale = validate_hero_rarity.unapplied(table(), CATALOG)
         self.assertEqual(stale, ["UNIT_YOUNG: the catalog ships Legendary, the table says Epic"])
 
+    def test_the_shipped_catalog_remembers_the_rarity_a_hero_was_drawn_at(self):
+        heroes = validate_hero_rarity.catalog_heroes()
+        self.assertEqual(heroes["UNIT_SISTERNIGHTINGALE"]["rarity"], "Rare")
+        self.assertEqual(heroes["UNIT_SISTERNIGHTINGALE"]["original_rarity"], "Legendary")
+        self.assertEqual(heroes["UNIT_VEILWARDEN"]["original_rarity"], heroes["UNIT_VEILWARDEN"]["rarity"])
+        self.assertEqual([uid for uid, hero in heroes.items() if "original_rarity" not in hero], [])
+
     def test_no_reward_from_play_hands_out_a_legendary(self):
         self.assertEqual(validate_hero_rarity.shipped_play_reward_problems(validate_hero_rarity.catalog_heroes()), [])
         nexus = [{"difficulties": [{"id": "Hard_Map", "nodes": [{"step": 2, "reward_rarity": [4, 5]}]}]}]

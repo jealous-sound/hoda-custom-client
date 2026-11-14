@@ -1851,10 +1851,12 @@ static void TestLegendaryStars(void) {
         assert(LegendaryStarRating(&ch) == cases[i].stars);
     }
 
-    Character mythic = {.rarity = RARITY_MYTHIC, .stars = 3};
-    Character epic = {.rarity = RARITY_EPIC, .stars = 3};
+    Character mythic = {.rarity = RARITY_MYTHIC, .original_rarity = RARITY_MYTHIC, .stars = 3};
+    Character epic = {.rarity = RARITY_EPIC, .original_rarity = RARITY_EPIC, .stars = 3};
+    Character drawn_legendary = {.rarity = RARITY_RARE, .original_rarity = RARITY_LEGENDARY, .stars = 2};
     assert(LegendaryStarRating(&mythic) == 0);
     assert(LegendaryStarRating(&epic) == 0);
+    assert(LegendaryStarRating(&drawn_legendary) == 2);
     assert(RarityBaseTier(RARITY_LEGENDARY) == 5);
     assert(RarityBaseTier(RARITY_MYTHIC) == 6);
     assert(RarityBaseTier(RARITY_EPIC) == 4);
@@ -1865,7 +1867,7 @@ static void TestLegendaryStars(void) {
         Character ch;
         Ability ability;
         CharacterParse(entry, &ch, &ability);
-        if (ch.rarity == RARITY_LEGENDARY) {
+        if (ch.original_rarity == RARITY_LEGENDARY) {
             assert(ch.stars >= 1 && ch.stars <= 3);
             assert(LegendaryStarRating(&ch) == ch.stars);
             ratings[ch.stars]++;
