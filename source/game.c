@@ -2397,8 +2397,7 @@ void GameDraw(Game *g) {
     }
     if (OptionsPopupIsOpen(&g->options)) {
         UiFrameBegin();
-        if (OptionsPopupDraw(&g->options, BackendCurrentPlayerId()) == OPTIONS_ACTION_RESTART)
-            g->restart_requested = true;
+        if (OptionsPopupDraw(&g->options) == OPTIONS_ACTION_RESTART) g->restart_requested = true;
         HudAction clicked = HudDraw(&g->hud, &g->player, true, g->screen == SCREEN_HOME);
         popup_hud_action = GameHudActionAfterPopup(clicked, HUD_OPTIONS, OptionsPopupIsOpen(&g->options));
         UiFrameEnd();
