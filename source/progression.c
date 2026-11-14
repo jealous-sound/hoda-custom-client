@@ -3,14 +3,34 @@
 #define PROGRESSION_SAVE_VERSION 8
 #define PROGRESSION_FIRST_PVP_VERSION 8
 #define PROGRESSION_FIRST_FULL_ROSTER_VERSION 7
-#define PROGRESSION_LOCAL_MAX_LEVEL 100
+#define PROGRESSION_LOCAL_MAX_LEVEL PLAYER_MAX_LEVEL
 #define PROGRESSION_START_ENERGY_MAX 12
 #define PROGRESSION_START_STAMINA_MAX 8
+#define PROGRESSION_XP_CURVE_SQUARE 5
+#define PROGRESSION_XP_CURVE_LINEAR 15
+#define PROGRESSION_XP_CURVE_LAST_LEVEL 1000000
 #define PROGRESSION_JSON_MAX_SAFE_INTEGER PLAYER_INSTANCE_ID_MAX
 
-static int ProgressionCumulativeXpThroughLevel(int level) {
+static long long ProgressionCumulativeXp(long long level) {
     if (level <= 0) return 0;
-    return 5 * level * level + 15 * level;
+    if (level > PROGRESSION_XP_CURVE_LAST_LEVEL) level = PROGRESSION_XP_CURVE_LAST_LEVEL;
+    return PROGRESSION_XP_CURVE_SQUARE * level * level + PROGRESSION_XP_CURVE_LINEAR * level;
+}
+
+static int ProgressionCumulativeXpThroughLevel(int level) {
+    long long xp = ProgressionCumulativeXp(level);
+    return xp > INT_MAX ? INT_MAX : (int)xp;
+}
+
+int ProgressionVirtualLevel(int experience) {
+    if (experience <= 0) return 1;
+    double discriminant = (double)PROGRESSION_XP_CURVE_LINEAR * PROGRESSION_XP_CURVE_LINEAR +
+                          4.0 * PROGRESSION_XP_CURVE_SQUARE * (double)experience;
+    long long completed =
+        (long long)((sqrt(discriminant) - PROGRESSION_XP_CURVE_LINEAR) / (2.0 * PROGRESSION_XP_CURVE_SQUARE));
+    while (completed > 0 && ProgressionCumulativeXp(completed) > experience) completed--;
+    while (ProgressionCumulativeXp(completed + 1) <= experience) completed++;
+    return (int)completed + 1;
 }
 
 int ProgressionXpForCurrentLevel(int level) {
@@ -27,6 +47,37 @@ int ProgressionXpForNextLevel(int level) {
 int ProgressionEnergyMaxForLevel(int level) {
     level = Clamp(level, 1, PROGRESSION_LOCAL_MAX_LEVEL);
     return PROGRESSION_START_ENERGY_MAX + level - 1;
+}
+
+int ProgressionEnergyMax(int level, const PlayerRenown *renown) {
+    return ProgressionEnergyMaxForLevel(level) + RenownPerkValue(renown, RENOWN_PERK_ENERGY);
+}
+
+int ProgressionStaminaMax(const PlayerRenown *renown) {
+    return PROGRESSION_START_STAMINA_MAX + RenownPerkValue(renown, RENOWN_PERK_STAMINA);
+}
+
+int ProgressionRenownRankXp(int rank) {
+    return ProgressionCumulativeXpThroughLevel(RenownRankFirstLevel(rank) - 1);
+}
+
+static bool ProgressionXpTracksRenown(int level) {
+    return level == PROGRESSION_LOCAL_MAX_LEVEL && RenownAvailable();
+}
+
+int ProgressionXpFloor(int level, int experience) {
+    if (!ProgressionXpTracksRenown(level)) return ProgressionXpForCurrentLevel(level);
+    return ProgressionRenownRankXp(RenownRank(experience));
+}
+
+int ProgressionXpCeiling(int level, int experience) {
+    if (!ProgressionXpTracksRenown(level)) return ProgressionXpForNextLevel(level);
+    return ProgressionRenownRankXp(RenownRank(experience) + 1);
+}
+
+static void ProgressionSyncXpBounds(Player *p) {
+    p->experience_min = ProgressionXpFloor(p->level, p->experience);
+    p->experience_max = ProgressionXpCeiling(p->level, p->experience);
 }
 
 void ProgressionInitializePlayerDefaults(Player *p) {
@@ -54,6 +105,7 @@ void ProgressionInitializePlayerDefaults(Player *p) {
     p->nexus_run = (PlayerNexusRun){0};
     p->nexus_events = (PlayerNexusEvents){0};
     p->pvp = (PlayerPvp){0};
+    p->renown = (PlayerRenown){0};
     p->name[0] = '\0';
     p->tutorial = (PlayerTutorial){.main_complete = true, .consume_complete = true};
     p->fast_battles = false;
@@ -94,8 +146,8 @@ typedef struct {
 
     int default_gold_reward;
     int crit_gold_reward;
-    int rune_gold_reward;
-    int rune_xp_reward;
+    int bonus_gold_reward;
+    int bonus_xp_reward;
     int gold_reward;
     int xp_reward;
     int first_win_gold_reward;
@@ -122,6 +174,9 @@ typedef struct {
     int player_xp_min_post;
     int player_xp_max_post;
     int levels_gained;
+    int renown_rank_pre;
+    int renown_rank_post;
+    int renown_gems_reward;
 
     int energy_post;
     int energy_max_pre;
@@ -136,6 +191,12 @@ static int ProgressionSaturatingAdd(int value, int amount) {
     if (amount <= 0) return value;
     if (value > INT_MAX - amount) return INT_MAX;
     return value + amount;
+}
+
+static int ProgressionRenownRankUpGems(int ranks_gained) {
+    if (ranks_gained <= 0) return 0;
+    long long gems = (long long)ranks_gained * RenownRankGems();
+    return gems > INT_MAX ? INT_MAX : (int)gems;
 }
 
 void CampaignProgressSync(const Campaign *campaign, PlayerCampaignProgress *progress) {
@@ -191,6 +252,7 @@ static void BattleSquadLevelingSnapshotPost(BattleSquadLeveling *leveling, const
 static void BattleRewardSnapshotPre(BattleRewardResult *result, const Player *player) {
     result->player_level_pre = player->level;
     result->player_xp_pre = player->experience;
+    result->renown_rank_pre = RenownRank(player->experience);
     result->energy_max_pre = player->energy_max;
     BattleSquadLevelingSnapshotPre(&result->squad_leveling, player);
 }
@@ -205,21 +267,17 @@ static void BattleRewardSnapshotPost(BattleRewardResult *result, const Player *p
     result->energy_max_post = player->energy_max;
     result->stamina_post = player->stamina;
     result->levels_gained = result->player_level_post - result->player_level_pre;
+    result->renown_rank_post = RenownRank(player->experience);
+    result->renown_gems_reward = ProgressionRenownRankUpGems(result->renown_rank_post - result->renown_rank_pre);
 }
 
 static void ProgressionAwardAccountXp(Player *player, int xp) {
     if (xp <= 0) return;
-    player->experience_min = ProgressionXpForCurrentLevel(player->level);
-    player->experience_max = ProgressionXpForNextLevel(player->level);
     player->experience = ProgressionSaturatingAdd(player->experience, xp);
-
-    while (player->level < PROGRESSION_LOCAL_MAX_LEVEL && player->experience >= player->experience_max) {
+    while (player->level < PROGRESSION_LOCAL_MAX_LEVEL &&
+           player->experience >= ProgressionXpForNextLevel(player->level))
         player->level++;
-        player->experience_min = ProgressionXpForCurrentLevel(player->level);
-        player->experience_max = ProgressionXpForNextLevel(player->level);
-    }
-    if (player->level == PROGRESSION_LOCAL_MAX_LEVEL && player->experience > player->experience_max)
-        player->experience = player->experience_max;
+    ProgressionSyncXpBounds(player);
 }
 
 static void ProgressionAwardSquadXp(Player *player, int xp) {
@@ -232,22 +290,34 @@ static void ProgressionAwardSquadXp(Player *player, int xp) {
 
 static void ProgressionAwardBattleXp(Player *player, int xp) {
     int level_pre = player->level;
-    ProgressionAwardSquadXp(player, xp);
+    int rank_pre = RenownRank(player->experience);
+    ProgressionAwardSquadXp(player, RuneApplyPct(xp, RenownPerkValue(&player->renown, RENOWN_PERK_HERO_XP)));
     ProgressionAwardAccountXp(player, xp);
-    if (player->level == level_pre) return;
-    player->energy_max = ProgressionEnergyMaxForLevel(player->level);
+    int ranks_gained = RenownRank(player->experience) - rank_pre;
+    player->gems = ProgressionSaturatingAdd(player->gems, ProgressionRenownRankUpGems(ranks_gained));
+    if (player->level == level_pre && ranks_gained <= 0) return;
+    player->energy_max = ProgressionEnergyMax(player->level, &player->renown);
     player->energy = player->energy_max;
     player->stamina = player->stamina_max;
     player->energy_regen_timer = 0.0f;
     player->stamina_regen_timer = 0.0f;
 }
 
-static void ProgressionApplyRuneRewards(const Player *player, BattleRewardResult *result) {
+bool ProgressionRenownUpgrade(Player *player, RenownPerk perk) {
+    if (!player || !RenownCanUpgrade(&player->renown, player->experience, perk)) return false;
+    player->renown.perks[perk]++;
+    player->energy_max = ProgressionEnergyMax(player->level, &player->renown);
+    player->stamina_max = ProgressionStaminaMax(&player->renown);
+    return true;
+}
+
+static void ProgressionApplyRewardBonuses(const Player *player, BattleRewardResult *result) {
     RuneBonus bonus = RuneSquadBonus(&player->runes, player->current_squad, RuneNow());
-    int gold = RuneApplyPct(result->gold_reward, bonus.gold_pct);
+    int gold_pct = ProgressionSaturatingAdd(bonus.gold_pct, RenownPerkValue(&player->renown, RENOWN_PERK_GOLD));
+    int gold = RuneApplyPct(result->gold_reward, gold_pct);
     int xp = RuneApplyPct(result->xp_reward, bonus.xp_pct);
-    result->rune_gold_reward = gold - result->gold_reward;
-    result->rune_xp_reward = xp - result->xp_reward;
+    result->bonus_gold_reward = gold - result->gold_reward;
+    result->bonus_xp_reward = xp - result->xp_reward;
     result->gold_reward = gold;
     result->xp_reward = xp;
 }
@@ -317,8 +387,8 @@ BattleRewardResult CampaignResolveBattle(
     result.xp_reward = ProgressionSaturatingAdd(result.xp_reward, result.mastery_xp_reward);
     result.xp_reward = ProgressionSaturatingAdd(result.xp_reward, result.challenge_xp_reward);
     result.xp_reward = ProgressionSaturatingAdd(result.xp_reward, result.grind_xp_reward);
-    ProgressionApplyRuneRewards(player, &result);
-    StoreAwardVoucherForWin(player);
+    ProgressionApplyRewardBonuses(player, &result);
+    StoreAwardWinDrops(player);
     result.default_gems_reward = node->default_gems > 0 ? node->default_gems : 0;
     result.first_win_gems_reward =
         result.first_win && !node->grind && node->first_win_gems > 0 ? node->first_win_gems : 0;
@@ -473,8 +543,8 @@ BattleRewardResult PvpResolveBattle(
     result.gold_reward = ProgressionSaturatingAdd(battle.gold, result.crit_gold_reward);
     result.gold_reward = ProgressionSaturatingAdd(result.gold_reward, milestones.gold);
     result.xp_reward = battle.xp;
-    if (won) StoreAwardVoucherForWin(player);
-    ProgressionApplyRuneRewards(player, &result);
+    if (won) StoreAwardWinDrops(player);
+    ProgressionApplyRewardBonuses(player, &result);
     player->gold = ProgressionSaturatingAdd(player->gold, result.gold_reward);
     ProgressionAwardBattleXp(player, result.xp_reward);
     BattleRewardSnapshotPost(&result, player);
@@ -524,8 +594,8 @@ BattleRewardResult NexusResolveBattle(Player *player, const Nexus *nexus, int st
     result.crit_gold_reward = crit_gold > 0 ? crit_gold : 0;
     result.gold_reward = ProgressionSaturatingAdd(result.default_gold_reward, result.crit_gold_reward);
     result.xp_reward = node->xp > 0 ? node->xp : 0;
-    ProgressionApplyRuneRewards(player, &result);
-    StoreAwardVoucherForWin(player);
+    ProgressionApplyRewardBonuses(player, &result);
+    StoreAwardWinDrops(player);
     run->escrow_gold = ProgressionSaturatingAdd(run->escrow_gold, result.gold_reward);
     run->escrow_xp = ProgressionSaturatingAdd(run->escrow_xp, result.xp_reward);
     run->escrow_potions = ProgressionSaturatingAdd(run->escrow_potions, node->potion_reward);
@@ -1187,6 +1257,12 @@ char *ProgressionSerialize(const Player *player) {
         goto save_json_failed;
     }
 
+    cJSON *renown = RenownSave(&player->renown);
+    if (!renown || !cJSON_AddItemToObject(root, "renown", renown)) {
+        cJSON_Delete(renown);
+        goto save_json_failed;
+    }
+
     cJSON *tutorial = cJSON_AddObjectToObject(root, "tutorial");
     if (!tutorial || !cJSON_AddBoolToObject(tutorial, "complete", player->tutorial.main_complete) ||
         !cJSON_AddBoolToObject(tutorial, "consume_complete", player->tutorial.consume_complete))
@@ -1451,6 +1527,18 @@ static bool ProgressionLoadGallery(const cJSON *json, PlayerGallery *gallery) {
     return true;
 }
 
+static bool ProgressionSavedXpValid(int level, int experience, int saved_min, int saved_max) {
+    if (level == PROGRESSION_LOCAL_MAX_LEVEL) return experience >= ProgressionXpForCurrentLevel(level);
+    return saved_min == ProgressionXpForCurrentLevel(level) && saved_max == ProgressionXpForNextLevel(level) &&
+           experience >= saved_min && experience < saved_max;
+}
+
+static bool ProgressionSavedEnergyMaxValid(int level, int energy_max, const PlayerRenown *renown) {
+    bool perk_value_unknown = !RenownAvailable() && RenownPerkRank(renown, RENOWN_PERK_ENERGY) > 0;
+    if (perk_value_unknown) return energy_max > ProgressionEnergyMaxForLevel(level);
+    return energy_max == ProgressionEnergyMax(level, renown);
+}
+
 bool ProgressionLoadFromText(Player *player, const char *text, const char *origin) {
     if (!player || !text) return false;
     cJSON *root = cJSON_Parse(text);
@@ -1530,11 +1618,12 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
             }
         }
     }
-    valid = valid && experience_min == ProgressionXpForCurrentLevel(level) &&
-            experience_max == ProgressionXpForNextLevel(level) &&
-            (level == PROGRESSION_LOCAL_MAX_LEVEL ? experience == experience_max
-                                                  : experience >= experience_min && experience < experience_max) &&
-            energy_max == ProgressionEnergyMaxForLevel(level) && energy <= energy_max && stamina <= stamina_max;
+    PlayerRenown loaded_renown;
+    RenownLoad(cJSON_GetObjectItemCaseSensitive(root, "renown"), &loaded_renown);
+    if (RenownOverspent(&loaded_renown, experience)) loaded_renown = (PlayerRenown){0};
+    valid = valid && ProgressionSavedXpValid(level, experience, experience_min, experience_max) &&
+            ProgressionSavedEnergyMaxValid(level, energy_max, &loaded_renown) && energy <= energy_max &&
+            stamina <= stamina_max;
 
     uint32_t loaded_rng = player->store_rng_state;
     int loaded_opened_total = player->store_opened_total;
@@ -1830,8 +1919,8 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
 
     player->level = level;
     player->experience = experience;
-    player->experience_min = experience_min;
-    player->experience_max = experience_max;
+    ProgressionSyncXpBounds(player);
+    player->renown = loaded_renown;
     player->energy = energy;
     player->energy_max = energy_max;
     player->stamina = stamina;

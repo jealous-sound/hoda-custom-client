@@ -1,6 +1,7 @@
 #define SQUAD_SLOT_COUNT 5
 #define SQUAD_SLOT_LARGE 4
 #define PLAYER_REGEN_PERIOD 300.0f
+#define PLAYER_MAX_LEVEL 100
 #define ENERGY_REFILL_GEM_COST 3
 #define STAMINA_REFILL_GEM_COST 3
 #define PLAYER_ROSTER_CAPACITY 1024
@@ -128,6 +129,7 @@ typedef struct {
     PlayerPvp pvp;
     PlayerExpeditions expeditions;
     PlayerTimedQuests timed_quests;
+    PlayerRenown renown;
 
     char name[PLAYER_NAME_CAPACITY];
     PlayerTutorial tutorial;
@@ -674,6 +676,11 @@ int PlayerKeyIndexForId(int inventory_id) {
 int PlayerKeyCount(const Player *p, int inventory_id) {
     int index = PlayerKeyIndexForId(inventory_id);
     return p && index >= 0 ? p->keys[index] : 0;
+}
+
+void PlayerAddKey(Player *p, int index) {
+    if (!p || index < 0 || index >= NEXUS_KEY_COUNT || p->keys[index] >= NEXUS_KEY_MAX) return;
+    p->keys[index]++;
 }
 
 bool PlayerSpendKeys(Player *p, int inventory_id, int count) {

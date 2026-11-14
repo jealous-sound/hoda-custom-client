@@ -450,6 +450,8 @@ typedef enum {
     GUI_FORTIFY_HEALTH_ICON,
     GUI_FORTIFY_BUTTON,
     GUI_ROSTER_FORTIFIED,
+    GUI_RENOWN_VOUCHER,
+    GUI_RENOWN_PIP_NEXT,
     GUI_COUNT
 } GuiId;
 
@@ -978,6 +980,8 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_FORTIFY_HEALTH_ICON] = CACHE_BUNDLE_RESOURCE("FortifySlotSmart", "tex.Ico_Health"),
     [GUI_FORTIFY_BUTTON] = CACHE_BUNDLE_RESOURCE("FortifyConfirmPopupV", "SmallButtonDarkBlue"),
     [GUI_ROSTER_FORTIFIED] = CACHE_BUNDLE_RESOURCE("UnitSmart", "RosterFortifyFrame"),
+    [GUI_RENOWN_VOUCHER] = CACHE_RESOURCE("tex.Voucher_SilverPack"),
+    [GUI_RENOWN_PIP_NEXT] = CACHE_RESOURCE("tex.Ico_PromoteIncrease2"),
 };
 
 #define FONT_BASE_SIZE 96

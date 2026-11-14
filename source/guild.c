@@ -298,6 +298,7 @@ typedef struct {
     int unit_count;
     char runes[GUILD_DUEL_RUNE_CAP][GUILD_RUNE_ID_CAP];
     int rune_count;
+    RenownBattleBonus renown;
 } GuildDuel;
 
 typedef struct {
@@ -852,6 +853,8 @@ static void GuildHandleDuel(Guild *g, const cJSON *json) {
         if (d->rune_count >= GUILD_DUEL_RUNE_CAP || !cJSON_IsString(item)) continue;
         StrCopy(d->runes[d->rune_count++], GUILD_RUNE_ID_CAP, item->valuestring);
     }
+    if (!RenownBattleBonusLoad(cJSON_GetObjectItemCaseSensitive(json, BATTLE_RENOWN_FIELD), &d->renown))
+        d->renown = (RenownBattleBonus){0};
 }
 
 static bool GuildRequestListsALadder(GuildRequestKind kind) {

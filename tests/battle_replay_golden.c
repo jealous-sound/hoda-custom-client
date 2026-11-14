@@ -30,6 +30,11 @@
 #define GOLDEN_BUDGETED_FORTIFIED_BATTLES 32
 #define GOLDEN_DUEL_BATTLES 16
 #define GOLDEN_BUDGETED_DUEL_BATTLES 32
+#define GOLDEN_RENOWN_BATTLES 18
+#define GOLDEN_BUDGETED_RENOWN_BATTLES 18
+#define GOLDEN_RENOWN_SIDE_CYCLE 3
+#define GOLDEN_RENOWN_MAX_PCT 10
+#define GOLDEN_RENOWN_MAX_CRIT_PERMILLE 25
 #define GOLDEN_BATTLES_SECTION "battles"
 #define GOLDEN_USAGE "usage: battle_replay_golden [--check | --trace BATTLE] [DIR]"
 #define GOLDEN_COUNT(array) ((int)(sizeof(array) / sizeof((array)[0])))
@@ -309,6 +314,28 @@ static void GoldenDuelBattles(Golden *g, const char *name_format, int count, boo
     for (int battle = 0; battle < count; battle++) {
         cJSON *player = GoldenFortifiedSide(g);
         cJSON *enemy = GoldenRivalSide(g);
+        GoldenAddBattleUnderRules(g, TextFormat(name_format, battle), player, enemy, cJSON_CreateNull(), stat_budget);
+    }
+    g->trimmed_lead = false;
+}
+
+static cJSON *GoldenRenown(Golden *g) {
+    RenownBattleBonus bonus = {
+        .power_pct = GoldenRange(g, 1, GOLDEN_RENOWN_MAX_PCT),
+        .health_pct = GoldenRange(g, 1, GOLDEN_RENOWN_MAX_PCT),
+        .crit_permille = GoldenRange(g, 0, GOLDEN_RENOWN_MAX_CRIT_PERMILLE),
+    };
+    return RenownBattleBonusJson(&bonus);
+}
+
+static void GoldenRenownBattles(Golden *g, const char *name_format, int count, bool stat_budget) {
+    g->trimmed_lead = stat_budget;
+    for (int battle = 0; battle < count; battle++) {
+        cJSON *player = GoldenFortifiedSide(g);
+        cJSON *enemy = GoldenRivalSide(g);
+        bool player_only = battle % GOLDEN_RENOWN_SIDE_CYCLE == 0, enemy_only = battle % GOLDEN_RENOWN_SIDE_CYCLE == 1;
+        if (!enemy_only) cJSON_AddItemToObject(player, BATTLE_RENOWN_FIELD, GoldenRenown(g));
+        if (!player_only) cJSON_AddItemToObject(enemy, BATTLE_RENOWN_FIELD, GoldenRenown(g));
         GoldenAddBattleUnderRules(g, TextFormat(name_format, battle), player, enemy, cJSON_CreateNull(), stat_budget);
     }
     g->trimmed_lead = false;
@@ -746,6 +773,8 @@ int main(int argc, char **argv) {
     GoldenBudgetedFortifiedBattles(g);
     GoldenDuelBattles(g, "duel-%03d", GOLDEN_DUEL_BATTLES, false);
     GoldenDuelBattles(g, "budgeted-duel-%03d", GOLDEN_BUDGETED_DUEL_BATTLES, true);
+    GoldenRenownBattles(g, "renown-%03d", GOLDEN_RENOWN_BATTLES, false);
+    GoldenRenownBattles(g, "budgeted-renown-%03d", GOLDEN_BUDGETED_RENOWN_BATTLES, true);
     cJSON *recipes = GoldenBuiltinRecipes();
 
     const GoldenSection replay_sections[] = {

@@ -3,6 +3,7 @@
 #define BATTLE_CHANGER_MAX_GROUPS 2
 #define BATTLE_CHANGER_MAX_UNITS 2
 #define BATTLE_HERO_BUILDS_FIELD "hero_builds"
+#define BATTLE_RENOWN_FIELD "renown"
 
 typedef struct {
     char groups[BATTLE_CHANGER_MAX_GROUPS][24];
@@ -35,6 +36,7 @@ typedef struct {
     const StatBudget *stat_budget;
     int rune_defs[RUNE_SLOT_COUNT];
     int rune_def_count;
+    RenownBattleBonus renown;
 } BattleRoster;
 
 bool BattleHeroBuildLoad(BattleHeroBuild *build, const cJSON *unit) {

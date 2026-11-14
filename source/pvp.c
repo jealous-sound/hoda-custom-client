@@ -143,6 +143,7 @@ typedef struct {
     unsigned seed;
     int rune_defs[RUNE_SLOT_COUNT];
     int rune_count;
+    RenownBattleBonus renown;
     bool duel;
     char duel_id[PVP_DUEL_ID_CAP];
     char duel_name[PLAYER_NAME_CAPACITY];
@@ -570,6 +571,7 @@ void PvpOpponentRoster(BattleRoster *roster, const PvpOpponent *o) {
     }
     cJSON_Delete(catalog_root);
     for (int i = 0; i < o->rune_count; i++) roster->rune_defs[roster->rune_def_count++] = o->rune_defs[i];
+    roster->renown = o->renown;
     roster->stat_budget = PvpTableEnsure()->rules.stat_budget ? StatBudgetEnsure() : NULL;
 }
 

@@ -1,3 +1,7 @@
+HODA_NEWS_RENOWN_TITLE|Roem: rangen en talenten
+HODA_NEWS_RENOWN_SUBTITLE|Elke 10 niveaus krijg je een rang en een blijvend talent.
+HODA_NEWS_RENOWN_SUMMARY|Rangen gaan nu door na niveau 100. Tik om te zien hoe Roem werkt.
+HODA_NEWS_RENOWN_MESSAGE|Je account verdient nu Roem. Elke 10 niveaus krijg je een rang, en de rangen gaan door na niveau 100. Niveaus die je al hebt tellen mee: een account van niveau 50 begint op rang 5 met 5 talentpunten.\n\nElke nieuwe rang geeft <color=orange>1 talentpunt</color> en <color=orange>10 gems</color> en vult je energie en stamina aan. Tik op de ster met je niveau bovenaan het scherm om punten te besteden aan negen blijvende talenten. Elk talent kun je vijf keer verbeteren.\n\nStrijd: Slagkracht (kracht tot +10%), Taaiheid (energie van helden tot +10%), Precisie (kans op 2x schade tot +2,5%). Ze tellen in missies en in PvP.\n\nBuit: Plundering (goud tot +25%), Buitenkans (vaker gratis pakketten bij winst), Sleutelaar (winst kan een missiesleutel opleveren).\n\nUithouding: Mentor (XP van je team tot +25%), Vitaliteit (energievoorraad tot +15), Volharding (maximale stamina tot +5).\n\nJe ster verandert met je rang: brons vanaf rang 1, zilver vanaf 10, goud vanaf 20, karmozijn vanaf 30 en koninklijk vanaf 40. Andere spelers zien hem naast je naam.
 HODA_NEWS_PVP_ORIGINAL_TITLE|PvP gebruikt weer de originele waarden
 HODA_NEWS_PVP_ORIGINAL_SUBTITLE|In PvP vecht een held met de waarden op zijn kaart.
 HODA_NEWS_PVP_ORIGINAL_SUMMARY|Helden worden in PvP niet meer gelijkgetrokken. Tik om te zien wat er is veranderd.

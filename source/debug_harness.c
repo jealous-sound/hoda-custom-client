@@ -31,6 +31,9 @@ typedef struct {
 #define DEBUG_WINS_TO_MASTER 3
 #define DEBUG_RESULTS_XP 20
 #define DEBUG_RESULTS_GOLD 140
+#define DEBUG_RENOWN_RANK 14
+#define DEBUG_RENOWN_FREE_POINTS 3
+#define DEBUG_RENOWN_RANK_PROGRESS 0.62f
 #define DEBUG_RESULTS_SETTLE_FRAMES 10
 #define DEBUG_MISSION_SUMMONS 600
 #define DEBUG_MISSION_CONSUMES 60
@@ -416,6 +419,10 @@ static BattleResultsPresentation DebugResultsPresentation(const DebugShot *shot,
         presentation.player_level_pre = 1;
         presentation.player_level_post = 2;
         presentation.energy_max_delta = 1;
+    } else if (DebugShotIs(shot, "renown_rankup")) {
+        presentation.renown_rank_post = EnvInt("HOD_RENOWN_RANK", DEBUG_RENOWN_RANK);
+        presentation.renown_rank_pre = presentation.renown_rank_post - 1;
+        presentation.renown_gems = RenownRankGems();
     } else if (DebugShotIs(shot, "completion")) {
         presentation.first_win = true;
         presentation.completions_pre = 0;
@@ -497,6 +504,7 @@ static void DebugPrepareBattle(Game *game, DebugShot *shot) {
     static const char *const names[] = {
         "battle",
         "levelup",
+        "renown_rankup",
         "herolevel",
         "completion",
         "results",
@@ -1095,6 +1103,53 @@ static bool DebugPrepareProfile(Game *game, DebugShot *shot) {
     return true;
 }
 
+static void DebugSeedRenown(Player *player, int rank, int free_points) {
+    static const RenownPerk favourites[] = {
+        RENOWN_PERK_POWER,
+        RENOWN_PERK_GOLD,
+        RENOWN_PERK_POWER,
+        RENOWN_PERK_HEALTH,
+        RENOWN_PERK_KEY,
+        RENOWN_PERK_POWER,
+        RENOWN_PERK_GOLD,
+        RENOWN_PERK_ENERGY,
+        RENOWN_PERK_HEALTH,
+        RENOWN_PERK_POWER,
+        RENOWN_PERK_GOLD,
+        RENOWN_PERK_CRIT,
+        RENOWN_PERK_STAMINA,
+        RENOWN_PERK_VOUCHER,
+        RENOWN_PERK_HERO_XP,
+    };
+    const int favourite_count = (int)(sizeof(favourites) / sizeof(favourites[0]));
+    int rank_xp = ProgressionRenownRankXp(rank);
+    int rank_span = ProgressionRenownRankXp(rank + 1) - rank_xp;
+    player->experience = rank_xp + (int)((float)rank_span * DEBUG_RENOWN_RANK_PROGRESS);
+    int virtual_level = ProgressionVirtualLevel(player->experience);
+    player->level = virtual_level < PLAYER_MAX_LEVEL ? virtual_level : PLAYER_MAX_LEVEL;
+    player->renown = (PlayerRenown){0};
+    for (int point = 0; point < rank - free_points; point++)
+        for (int attempt = 0; attempt < favourite_count; attempt++)
+            if (ProgressionRenownUpgrade(player, favourites[(point + attempt) % favourite_count])) break;
+    ProgressionSyncXpBounds(player);
+    player->energy = player->energy_max;
+    player->stamina = player->stamina_max;
+}
+
+static bool DebugPrepareRenown(Game *game, DebugShot *shot) {
+    bool hud_only = DebugShotIs(shot, "renown_hud");
+    if (!hud_only && !DebugShotIs(shot, "renown")) return false;
+    game->screen = SCREEN_HOME;
+    if (shot->frames_drawn > 0) return true;
+    int rank = EnvInt("HOD_RENOWN_RANK", DEBUG_RENOWN_RANK);
+    DebugSeedRenown(&game->player, rank, EnvInt("HOD_RENOWN_POINTS", DEBUG_RENOWN_FREE_POINTS));
+    if (hud_only) return true;
+    RenownViewOpen(&game->renown_view, &game->player);
+    int selected = EnvInt("HOD_RENOWN_PERK", RENOWN_NONE);
+    if (selected >= 0 && selected < RENOWN_PERK_COUNT) game->renown_view.selected = selected;
+    return true;
+}
+
 static bool DebugRenderAccountGate(const char *screen_name, const char *output) {
     bool signing_in = screen_name && strcmp(screen_name, "account_gate_sign_in") == 0;
     bool signed_out = screen_name && strcmp(screen_name, "account_gate_signed_out") == 0;
@@ -1606,7 +1661,7 @@ static void DebugPrepareExpeditions(Game *game, DebugShot *shot) {
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
     if (DebugPrepareTutorial(game, shot) || DebugPrepareNamePrompt(game, shot)) return;
     if (DebugPrepareOptions(game, shot) || DebugPrepareClientUpdate(game, shot)) return;
-    if (DebugPrepareProfile(game, shot)) return;
+    if (DebugPrepareProfile(game, shot) || DebugPrepareRenown(game, shot)) return;
     if (DebugPrepareMaintenance(game, shot)) return;
     if (DebugPrepareLiveGuildFlow(game, shot)) return;
     game->screen = shot->consume_opened ? SCREEN_CONSUME : SCREEN_HEROES;
