@@ -25,3 +25,43 @@ HODA_OPTIONS_VERSION_UPDATE|{0} ({1} disponível)
 HODA_MAINTENANCE_TITLE|Reinício do servidor
 HODA_MAINTENANCE_MESSAGE|O servidor será reiniciado em breve para uma atualização. Novas batalhas serão pausadas alguns minutos antes, e depois talvez seja preciso baixar uma nova versão.
 HODA_MAINTENANCE_HOLD_MESSAGE|O servidor está reiniciando para uma atualização. As batalhas estão pausadas até ele voltar.
+HODA_OPTIONS_PROFILE|Perfil
+HODA_PROFILE_RENAME|Renomear
+HODA_PROFILE_COPY_ID|Copiar
+HODA_PROFILE_COPIED|Copiado
+HODA_PROFILE_TROPHIES_VALUE|{0} (recorde: {1})
+HODA_PROFILE_PVP|JxJ
+HODA_PROFILE_PVP_VALUE|{0} vitórias, {1} derrotas
+HODA_PROFILE_PLAYING_SINCE|Jogando desde
+HODA_ACCOUNT_GUEST|Conta de convidado
+HODA_ACCOUNT_GUEST_HINT|Seu progresso está preso a este computador. Crie um login para protegê-lo e jogar em outros dispositivos.
+HODA_ACCOUNT_SIGNED_IN|Conectado como {0}
+HODA_ACCOUNT_DEVICES|Dispositivos conectados: {0}
+HODA_ACCOUNT_CREATE_LOGIN|Criar login
+HODA_ACCOUNT_CHANGE_PASSWORD|Alterar senha
+HODA_ACCOUNT_DELETE|Excluir conta
+HODA_ACCOUNT_LOGIN|Login
+HODA_ACCOUNT_PASSWORD|Senha
+HODA_ACCOUNT_REPEAT_PASSWORD|Repita a senha
+HODA_ACCOUNT_CURRENT_PASSWORD|Senha atual
+HODA_ACCOUNT_NEW_PASSWORD|Nova senha
+HODA_ACCOUNT_CREATE_LOGIN_NOTE|Escolha um login e uma senha para jogar com esta conta em qualquer dispositivo. Uma senha esquecida não pode ser recuperada no jogo, guarde-a bem.
+HODA_ACCOUNT_CHANGE_PASSWORD_NOTE|Todos os outros dispositivos serão desconectados.
+HODA_ACCOUNT_DELETE_NOTE|Seus heróis, seu progresso e sua vaga na guilda serão excluídos para sempre. Digite sua senha para confirmar.
+HODA_ACCOUNT_DELETE_GUEST_NOTE|Seus heróis, seu progresso e sua vaga na guilda serão excluídos para sempre. Digite {0} para confirmar.
+HODA_ACCOUNT_DELETE_MISTYPED|Digite {0} exatamente para excluir a conta.
+HODA_ACCOUNT_LOGIN_RULES|Um login tem de 3 a 24 caracteres: letras latinas, números, ponto, hífen ou sublinhado, começando com uma letra ou um número.
+HODA_ACCOUNT_PASSWORD_RULES|Uma senha tem de 8 a 64 caracteres.
+HODA_ACCOUNT_PASSWORD_MISMATCH|As senhas não coincidem.
+HODA_ACCOUNT_LOGIN_TAKEN|Este login já está em uso.
+HODA_ACCOUNT_WRONG_CREDENTIALS|Login ou senha incorretos.
+HODA_ACCOUNT_WRONG_PASSWORD|Senha incorreta.
+HODA_ACCOUNT_TOO_MANY_ATTEMPTS|Muitas tentativas. Espere um minuto e tente de novo.
+HODA_ACCOUNT_UNREACHABLE|Não foi possível conectar ao servidor. Tente de novo.
+HODA_ACCOUNT_SWITCH_WARNING|Entrar substitui a conta de convidado deste computador. O progresso dela será perdido se você não criar um login para ela antes.
+HODA_ACCOUNT_SIGN_OUT_MESSAGE|Você precisará do login e da senha para voltar a esta conta.
+HODA_ACCOUNT_LOGIN_CREATED|Login criado. Use-o para entrar em qualquer dispositivo.
+HODA_ACCOUNT_PASSWORD_CHANGED|Senha alterada. Os outros dispositivos foram desconectados.
+HODA_ACCOUNT_SIGNED_OUT_MESSAGE|Você foi desconectado neste computador. Entre de novo para continuar.
+HODA_ACCOUNT_GUEST_START_HINT|Começar um jogo novo neste computador
+HODA_ACCOUNT_LOG_IN_HINT|Continuar com seu login e senha

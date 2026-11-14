@@ -13,6 +13,7 @@ typedef enum {
     GUI_HUD_GEMS,
     GUI_HUD_GEMS_SELECTED,
     GUI_HUD_OPTIONS,
+    GUI_HUD_SOCIAL,
 
     GUI_BTN_CAMP,
     GUI_BTN_CAMP_ON,
@@ -538,6 +539,7 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_HUD_GEMS] = CACHE_RESOURCE("ico_gemHUD"),
     [GUI_HUD_GEMS_SELECTED] = CACHE_RESOURCE("ico_gemHUD_selected"),
     [GUI_HUD_OPTIONS] = CACHE_RESOURCE("ico_settings"),
+    [GUI_HUD_SOCIAL] = CACHE_RESOURCE("Button_HUD_Full_Social"),
 
     [GUI_BTN_CAMP] = CACHE_RESOURCE("Btn_homesquare"),
     [GUI_BTN_CAMP_ON] = CACHE_RESOURCE("Btn_homesquare_active"),

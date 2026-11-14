@@ -4,7 +4,6 @@
 #define OPTIONS_TITLE_FONT_SIZE 32.0f
 #define OPTIONS_LABEL_FONT_SIZE 26.0f
 #define OPTIONS_TOGGLE_FONT_SIZE 20.0f
-#define OPTIONS_PLAYER_ID_FONT_SIZE 18.0f
 #define OPTIONS_VERSION_FONT_SIZE 18.0f
 #define OPTIONS_BUTTON_LABEL_SCALE 0.3f
 #define OPTIONS_OK_LABEL_SCALE (20.0f / 76.0f)
@@ -25,7 +24,6 @@ static const Rectangle OPTIONS_MORE_BACKGROUND = {447.0f, 72.0f, 388.0f, 653.0f}
 static const Rectangle OPTIONS_MORE_PANEL = {447.0f, 72.0f, 388.0f, 584.0f};
 static const Rectangle OPTIONS_MORE_TITLE = {447.0f, 72.0f, 388.0f, 65.0f};
 static const Rectangle OPTIONS_MORE_CLOSE = {777.0f, 103.0f, 73.0f, 73.0f};
-static const Rectangle OPTIONS_MORE_PLAYER_ID = {476.0f, 638.0f, 330.0f, 65.0f};
 static const Rectangle OPTIONS_MORE_VERSION = {476.0f, 620.0f, 330.0f, 40.0f};
 static const float OPTIONS_MORE_SLOT_Y[OPTIONS_MORE_SLOT_COUNT] = {176.0f, 248.0f, 320.0f, 392.0f};
 static const Rectangle OPTIONS_MORE_SLOT = {505.0f, 0.0f, 272.0f, 68.0f};
@@ -190,7 +188,7 @@ static void OptionsVersionLine(char *out, size_t capacity) {
     LocFormat2(out, capacity, "HODA_OPTIONS_VERSION_UPDATE", HOD_VERSION, ClientUpdateCurrentRelease().latest);
 }
 
-static void OptionsDrawMore(OptionsPopup *o, const char *player_id) {
+static void OptionsDrawMore(OptionsPopup *o) {
     UiDrawTexture(GuiTex(GUI_OPTIONS_MORE_BG), OptionsPlace(OPTIONS_MORE_BACKGROUND), WHITE);
     UiDrawTextCentered(
         o->title_font,
@@ -212,13 +210,6 @@ static void OptionsDrawMore(OptionsPopup *o, const char *player_id) {
     UiDrawTextCentered(
         o->menu_font, version, OptionsPlace(OPTIONS_MORE_VERSION), OPTIONS_VERSION_FONT_SIZE, OPTIONS_TEXT_COLOR
     );
-    if (player_id && player_id[0]) {
-        char text[LANGUAGE_NAME_CAP];
-        LocFormat1(text, sizeof(text), "OPTIONS_PLAYER_ID", player_id);
-        UiDrawTextCentered(
-            o->menu_font, text, OptionsPlace(OPTIONS_MORE_PLAYER_ID), OPTIONS_PLAYER_ID_FONT_SIZE, OPTIONS_TEXT_COLOR
-        );
-    }
     if (ButtonDraw(&o->close, OptionsPlace(OPTIONS_MORE_CLOSE)) ||
         OptionsScrimClicked(o, OptionsPlace(OPTIONS_MORE_PANEL)))
         o->open = false;
@@ -376,13 +367,13 @@ static OptionsAction OptionsDrawLanguages(OptionsPopup *o) {
     return OPTIONS_ACTION_NONE;
 }
 
-OptionsAction OptionsPopupDraw(OptionsPopup *o, const char *player_id) {
+OptionsAction OptionsPopupDraw(OptionsPopup *o) {
     if (!o->open) return OPTIONS_ACTION_NONE;
     Rectangle root = UiRoot();
     DrawRectangleRec(root, OPTIONS_SCRIM_COLOR);
     switch (o->page) {
         case OPTIONS_PAGE_MORE:
-            OptionsDrawMore(o, player_id);
+            OptionsDrawMore(o);
             break;
         case OPTIONS_PAGE_AUDIO:
             OptionsDrawAudio(o);

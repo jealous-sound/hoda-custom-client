@@ -25,3 +25,43 @@ HODA_OPTIONS_VERSION_UPDATE|{0} ({1} verfügbar)
 HODA_MAINTENANCE_TITLE|Serverneustart
 HODA_MAINTENANCE_MESSAGE|Der Server wird in Kürze für ein Update neu gestartet. Neue Kämpfe werden einige Minuten vorher pausiert, und danach musst du möglicherweise eine neue Version herunterladen.
 HODA_MAINTENANCE_HOLD_MESSAGE|Der Server wird für ein Update neu gestartet. Kämpfe sind pausiert, bis er wieder da ist.
+HODA_OPTIONS_PROFILE|Profil
+HODA_PROFILE_RENAME|Umbenennen
+HODA_PROFILE_COPY_ID|Kopieren
+HODA_PROFILE_COPIED|Kopiert
+HODA_PROFILE_TROPHIES_VALUE|{0} (Rekord: {1})
+HODA_PROFILE_PVP|PvP
+HODA_PROFILE_PVP_VALUE|{0} Siege, {1} Niederlagen
+HODA_PROFILE_PLAYING_SINCE|Dabei seit
+HODA_ACCOUNT_GUEST|Gastkonto
+HODA_ACCOUNT_GUEST_HINT|Dein Fortschritt ist an diesen Computer gebunden. Erstelle einen Login, um ihn zu sichern und auf anderen Geräten zu spielen.
+HODA_ACCOUNT_SIGNED_IN|Angemeldet als {0}
+HODA_ACCOUNT_DEVICES|Angemeldete Geräte: {0}
+HODA_ACCOUNT_CREATE_LOGIN|Login erstellen
+HODA_ACCOUNT_CHANGE_PASSWORD|Passwort ändern
+HODA_ACCOUNT_DELETE|Konto löschen
+HODA_ACCOUNT_LOGIN|Login
+HODA_ACCOUNT_PASSWORD|Passwort
+HODA_ACCOUNT_REPEAT_PASSWORD|Passwort wiederholen
+HODA_ACCOUNT_CURRENT_PASSWORD|Aktuelles Passwort
+HODA_ACCOUNT_NEW_PASSWORD|Neues Passwort
+HODA_ACCOUNT_CREATE_LOGIN_NOTE|Wähle einen Login und ein Passwort, um dieses Konto auf jedem Gerät zu spielen. Ein vergessenes Passwort lässt sich im Spiel nicht wiederherstellen, bewahre es gut auf.
+HODA_ACCOUNT_CHANGE_PASSWORD_NOTE|Alle anderen Geräte werden abgemeldet.
+HODA_ACCOUNT_DELETE_NOTE|Deine Helden, dein Fortschritt und deine Gildenmitgliedschaft werden endgültig gelöscht. Gib zur Bestätigung dein Passwort ein.
+HODA_ACCOUNT_DELETE_GUEST_NOTE|Deine Helden, dein Fortschritt und deine Gildenmitgliedschaft werden endgültig gelöscht. Gib zur Bestätigung {0} ein.
+HODA_ACCOUNT_DELETE_MISTYPED|Gib genau {0} ein, um das Konto zu löschen.
+HODA_ACCOUNT_LOGIN_RULES|Ein Login hat 3 bis 24 Zeichen: lateinische Buchstaben, Ziffern, Punkt, Bindestrich oder Unterstrich, beginnend mit einem Buchstaben oder einer Ziffer.
+HODA_ACCOUNT_PASSWORD_RULES|Ein Passwort hat 8 bis 64 Zeichen.
+HODA_ACCOUNT_PASSWORD_MISMATCH|Die Passwörter stimmen nicht überein.
+HODA_ACCOUNT_LOGIN_TAKEN|Dieser Login ist bereits vergeben.
+HODA_ACCOUNT_WRONG_CREDENTIALS|Login oder Passwort ist falsch.
+HODA_ACCOUNT_WRONG_PASSWORD|Falsches Passwort.
+HODA_ACCOUNT_TOO_MANY_ATTEMPTS|Zu viele Versuche. Warte eine Minute und versuche es erneut.
+HODA_ACCOUNT_UNREACHABLE|Der Server ist nicht erreichbar. Versuche es erneut.
+HODA_ACCOUNT_SWITCH_WARNING|Die Anmeldung ersetzt das Gastkonto auf diesem Computer. Sein Fortschritt geht verloren, wenn du nicht vorher einen Login dafür erstellst.
+HODA_ACCOUNT_SIGN_OUT_MESSAGE|Du brauchst deinen Login und dein Passwort, um in dieses Konto zurückzukehren.
+HODA_ACCOUNT_LOGIN_CREATED|Login erstellt. Melde dich damit auf jedem Gerät an.
+HODA_ACCOUNT_PASSWORD_CHANGED|Passwort geändert. Andere Geräte wurden abgemeldet.
+HODA_ACCOUNT_SIGNED_OUT_MESSAGE|Du wurdest auf diesem Computer abgemeldet. Melde dich erneut an, um fortzufahren.
+HODA_ACCOUNT_GUEST_START_HINT|Neues Spiel auf diesem Computer beginnen
+HODA_ACCOUNT_LOG_IN_HINT|Mit Login und Passwort fortfahren

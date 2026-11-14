@@ -20,8 +20,7 @@ Without a local copy the game downloads its data on first launch (see [Content](
 | Command | |
 | --- | --- |
 | `make` | builds `Heroes of Dragon Age.app`; `PLATFORM=linux` or `PLATFORM=windows` (MinGW-w64) build into `build/` |
-| `make run` | builds and runs the game |
-| `make play` | runs the game against a local backend from `../hoda-custom-backend` (`BACKEND_DIR=`) |
+| `make run`, `make play` | builds the game and a local backend from `../hoda-custom-backend` (`BACKEND_DIR=`) and runs both: Local Game plays `player_save.dat`, Online Game plays on the local server. Without that checkout it only runs the game |
 | `make test` | every check; needs the local asset cache |
 | `make ci-test` | the checks that need no asset cache: golden replays, squad strengths, content, update and install tests, table validators |
 | `make golden` | regenerates the battle corpus in `tests/golden/` |
@@ -52,15 +51,23 @@ for [self-update](#self-update). The game looks for `data/` and
 ## Running
 
 At launch the player picks Local Game, saved in `player_save.dat`, or Online Game against `SERVER_URL`, where the
-server owns the save and the clock. A first launch creates a guest account (`account.dat`) and runs the tutorial.
+server owns the save and the clock. A first online launch asks whether to play as a guest or log in; either way the
+device keeps its key in `account.dat`, and a new guest runs the tutorial.
+
+Profile, the button beside the settings gear in the top bar, shows the player card and renames the player. Online it
+also manages the account: a guest picks a login and a password to play on other devices, and a player with a login can
+change the password, which logs out every other device, log out or delete the account. A device that was logged out
+elsewhere returns to the log-in choice at its next server request. A forgotten password needs a reset by the server's
+admin. The button's icon is `extra/gui/hud/profile.png`; without that file the bar shows the original social button.
 
 | Variable | |
 | --- | --- |
 | `HOD_BACKEND_URL` | skips the choice and plays online against this server |
+| `HOD_SERVER_URL` | the server Online Game plays on, in place of `SERVER_URL`; the choice stays |
 | `HOD_LANGUAGE` | `en`, `fr`, `de`, `ja`, `zh-hant`, ...; overrides the system language and the saved choice |
 | `HOD_SKIP_TUTORIAL=1` | skips the tutorial |
 | `HOD_NEW_PLAYER` | a starting roster in place of `data/new_player.json`, such as `client-additional-data/player_starter.json` |
-| `HOD_SAVE_PATH`, `HOD_ACCOUNT_PATH` | the local save and the guest account file |
+| `HOD_SAVE_PATH`, `HOD_ACCOUNT_PATH` | the local save and the device's account file |
 | `HOD_CONTENT_URL`, `HOD_CONTENT_DIR` | the content server, and a data folder to download into even in a checkout |
 | `HOD_RELEASE_URL` | where a release's `client-update.json` and zips are fetched from, in place of the GitHub releases |
 | `HOD_NO_SELF_UPDATE=1` | never downloads a build or hands over to a downloaded one; update prompts open the website |

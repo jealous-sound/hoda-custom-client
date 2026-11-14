@@ -59,6 +59,10 @@ void LoadingScreenBegin(void) {
     loading_screen.message = NULL;
 }
 
+Texture2D LoadingScreenSplash(void) {
+    return loading_screen.splash;
+}
+
 void LoadingScreenShowMessage(void) {
     loading_screen.message = LocGet(LOADING_SCREEN_MESSAGE_KEY);
 }

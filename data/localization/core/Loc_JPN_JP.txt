@@ -25,3 +25,43 @@ HODA_OPTIONS_VERSION_UPDATE|{0}（{1}が利用可能）
 HODA_MAINTENANCE_TITLE|サーバー再起動
 HODA_MAINTENANCE_MESSAGE|アップデートのため、まもなくサーバーが再起動します。再起動の数分前から新しいバトルは一時停止され、再起動後は新しいバージョンのダウンロードが必要になる場合があります。
 HODA_MAINTENANCE_HOLD_MESSAGE|アップデートのためサーバーを再起動しています。復旧するまでバトルは一時停止されます。
+HODA_OPTIONS_PROFILE|プロフィール
+HODA_PROFILE_RENAME|名前変更
+HODA_PROFILE_COPY_ID|コピー
+HODA_PROFILE_COPIED|コピー済み
+HODA_PROFILE_TROPHIES_VALUE|{0}（最高 {1}）
+HODA_PROFILE_PVP|PvP
+HODA_PROFILE_PVP_VALUE|{0}勝 {1}敗
+HODA_PROFILE_PLAYING_SINCE|プレイ開始日
+HODA_ACCOUNT_GUEST|ゲストアカウント
+HODA_ACCOUNT_GUEST_HINT|進行状況はこのパソコンに紐づいています。ログインIDを作成すると、データを守り、ほかの端末でも遊べます。
+HODA_ACCOUNT_SIGNED_IN|{0} でログイン中
+HODA_ACCOUNT_DEVICES|ログイン中の端末：{0}
+HODA_ACCOUNT_CREATE_LOGIN|ログインID作成
+HODA_ACCOUNT_CHANGE_PASSWORD|パスワード変更
+HODA_ACCOUNT_DELETE|アカウント削除
+HODA_ACCOUNT_LOGIN|ログインID
+HODA_ACCOUNT_PASSWORD|パスワード
+HODA_ACCOUNT_REPEAT_PASSWORD|パスワード再入力
+HODA_ACCOUNT_CURRENT_PASSWORD|現在のパスワード
+HODA_ACCOUNT_NEW_PASSWORD|新しいパスワード
+HODA_ACCOUNT_CREATE_LOGIN_NOTE|ログインIDとパスワードを決めると、どの端末でもこのアカウントで遊べます。忘れたパスワードはゲーム内で復旧できないので、大切に保管してください。
+HODA_ACCOUNT_CHANGE_PASSWORD_NOTE|ほかの端末はすべてログアウトされます。
+HODA_ACCOUNT_DELETE_NOTE|ヒーロー、進行状況、ギルドの所属が完全に削除されます。確認のためパスワードを入力してください。
+HODA_ACCOUNT_DELETE_GUEST_NOTE|ヒーロー、進行状況、ギルドの所属が完全に削除されます。確認のため {0} と入力してください。
+HODA_ACCOUNT_DELETE_MISTYPED|アカウントを削除するには {0} と正確に入力してください。
+HODA_ACCOUNT_LOGIN_RULES|ログインIDは3～24文字。半角英数字、ピリオド、ハイフン、アンダースコアが使え、先頭は英数字にしてください。
+HODA_ACCOUNT_PASSWORD_RULES|パスワードは8～64文字です。
+HODA_ACCOUNT_PASSWORD_MISMATCH|パスワードが一致しません。
+HODA_ACCOUNT_LOGIN_TAKEN|このログインIDはすでに使われています。
+HODA_ACCOUNT_WRONG_CREDENTIALS|ログインIDまたはパスワードが違います。
+HODA_ACCOUNT_WRONG_PASSWORD|パスワードが違います。
+HODA_ACCOUNT_TOO_MANY_ATTEMPTS|試行回数が多すぎます。1分待ってからもう一度お試しください。
+HODA_ACCOUNT_UNREACHABLE|サーバーに接続できませんでした。もう一度お試しください。
+HODA_ACCOUNT_SWITCH_WARNING|ログインすると、このパソコンのゲストアカウントは置き換えられます。先にログインIDを作成しないと、その進行状況は失われます。
+HODA_ACCOUNT_SIGN_OUT_MESSAGE|このアカウントに戻るにはログインIDとパスワードが必要です。
+HODA_ACCOUNT_LOGIN_CREATED|ログインIDを作成しました。どの端末でもこのIDでログインできます。
+HODA_ACCOUNT_PASSWORD_CHANGED|パスワードを変更しました。ほかの端末はログアウトされました。
+HODA_ACCOUNT_SIGNED_OUT_MESSAGE|このパソコンでログアウトされました。続けるにはもう一度ログインしてください。
+HODA_ACCOUNT_GUEST_START_HINT|このパソコンで新しくゲームを始める
+HODA_ACCOUNT_LOG_IN_HINT|ログインIDとパスワードで続ける

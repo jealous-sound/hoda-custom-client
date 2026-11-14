@@ -25,3 +25,43 @@ HODA_OPTIONS_VERSION_UPDATE|{0} ({1} disponible)
 HODA_MAINTENANCE_TITLE|Redémarrage du serveur
 HODA_MAINTENANCE_MESSAGE|Le serveur va bientôt redémarrer pour une mise à jour. Les nouveaux combats seront suspendus quelques minutes avant, et vous devrez peut-être télécharger une nouvelle version ensuite.
 HODA_MAINTENANCE_HOLD_MESSAGE|Le serveur redémarre pour une mise à jour. Les combats sont suspendus jusqu'à son retour.
+HODA_OPTIONS_PROFILE|Profil
+HODA_PROFILE_RENAME|Renommer
+HODA_PROFILE_COPY_ID|Copier
+HODA_PROFILE_COPIED|Copié
+HODA_PROFILE_TROPHIES_VALUE|{0} (record : {1})
+HODA_PROFILE_PVP|JcJ
+HODA_PROFILE_PVP_VALUE|{0} victoires, {1} défaites
+HODA_PROFILE_PLAYING_SINCE|Joue depuis
+HODA_ACCOUNT_GUEST|Compte invité
+HODA_ACCOUNT_GUEST_HINT|Votre progression est liée à cet ordinateur. Créez un identifiant pour la protéger et jouer sur d'autres appareils.
+HODA_ACCOUNT_SIGNED_IN|Connecté : {0}
+HODA_ACCOUNT_DEVICES|Appareils connectés : {0}
+HODA_ACCOUNT_CREATE_LOGIN|Créer un identifiant
+HODA_ACCOUNT_CHANGE_PASSWORD|Changer le mot de passe
+HODA_ACCOUNT_DELETE|Supprimer le compte
+HODA_ACCOUNT_LOGIN|Identifiant
+HODA_ACCOUNT_PASSWORD|Mot de passe
+HODA_ACCOUNT_REPEAT_PASSWORD|Répéter le mot de passe
+HODA_ACCOUNT_CURRENT_PASSWORD|Mot de passe actuel
+HODA_ACCOUNT_NEW_PASSWORD|Nouveau mot de passe
+HODA_ACCOUNT_CREATE_LOGIN_NOTE|Choisissez un identifiant et un mot de passe pour jouer avec ce compte sur n'importe quel appareil. Un mot de passe oublié ne peut pas être récupéré dans le jeu, conservez-le bien.
+HODA_ACCOUNT_CHANGE_PASSWORD_NOTE|Tous les autres appareils seront déconnectés.
+HODA_ACCOUNT_DELETE_NOTE|Vos héros, votre progression et votre place dans la guilde seront supprimés définitivement. Saisissez votre mot de passe pour confirmer.
+HODA_ACCOUNT_DELETE_GUEST_NOTE|Vos héros, votre progression et votre place dans la guilde seront supprimés définitivement. Saisissez {0} pour confirmer.
+HODA_ACCOUNT_DELETE_MISTYPED|Saisissez exactement {0} pour supprimer le compte.
+HODA_ACCOUNT_LOGIN_RULES|Un identifiant compte 3 à 24 caractères : lettres latines, chiffres, point, tiret ou tiret bas, en commençant par une lettre ou un chiffre.
+HODA_ACCOUNT_PASSWORD_RULES|Un mot de passe compte 8 à 64 caractères.
+HODA_ACCOUNT_PASSWORD_MISMATCH|Les mots de passe ne correspondent pas.
+HODA_ACCOUNT_LOGIN_TAKEN|Cet identifiant est déjà pris.
+HODA_ACCOUNT_WRONG_CREDENTIALS|Identifiant ou mot de passe incorrect.
+HODA_ACCOUNT_WRONG_PASSWORD|Mot de passe incorrect.
+HODA_ACCOUNT_TOO_MANY_ATTEMPTS|Trop de tentatives. Patientez une minute et réessayez.
+HODA_ACCOUNT_UNREACHABLE|Impossible de joindre le serveur. Réessayez.
+HODA_ACCOUNT_SWITCH_WARNING|La connexion remplace le compte invité de cet ordinateur. Sa progression sera perdue si vous ne lui créez pas d'abord un identifiant.
+HODA_ACCOUNT_SIGN_OUT_MESSAGE|Il vous faudra votre identifiant et votre mot de passe pour revenir sur ce compte.
+HODA_ACCOUNT_LOGIN_CREATED|Identifiant créé. Utilisez-le pour vous connecter sur n'importe quel appareil.
+HODA_ACCOUNT_PASSWORD_CHANGED|Mot de passe modifié. Les autres appareils ont été déconnectés.
+HODA_ACCOUNT_SIGNED_OUT_MESSAGE|Vous avez été déconnecté sur cet ordinateur. Reconnectez-vous pour continuer.
+HODA_ACCOUNT_GUEST_START_HINT|Commencer une nouvelle partie sur cet ordinateur
+HODA_ACCOUNT_LOG_IN_HINT|Continuer avec votre identifiant et votre mot de passe

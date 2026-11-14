@@ -25,3 +25,43 @@ HODA_OPTIONS_VERSION_UPDATE|{0} ({1} available)
 HODA_MAINTENANCE_TITLE|Server Restart
 HODA_MAINTENANCE_MESSAGE|The server will restart soon for an update. New battles pause a few minutes before it, and you may need to download a new version afterwards.
 HODA_MAINTENANCE_HOLD_MESSAGE|The server is restarting for an update. Battles are paused until it is back.
+HODA_OPTIONS_PROFILE|Profile
+HODA_PROFILE_RENAME|Rename
+HODA_PROFILE_COPY_ID|Copy
+HODA_PROFILE_COPIED|Copied
+HODA_PROFILE_TROPHIES_VALUE|{0} (best {1})
+HODA_PROFILE_PVP|PvP
+HODA_PROFILE_PVP_VALUE|{0} wins, {1} losses
+HODA_PROFILE_PLAYING_SINCE|Playing since
+HODA_ACCOUNT_GUEST|Guest account
+HODA_ACCOUNT_GUEST_HINT|Your progress is tied to this computer. Create a login to keep it safe and play on other devices.
+HODA_ACCOUNT_SIGNED_IN|Logged in as {0}
+HODA_ACCOUNT_DEVICES|Devices logged in: {0}
+HODA_ACCOUNT_CREATE_LOGIN|Create Login
+HODA_ACCOUNT_CHANGE_PASSWORD|Change Password
+HODA_ACCOUNT_DELETE|Delete Account
+HODA_ACCOUNT_LOGIN|Login
+HODA_ACCOUNT_PASSWORD|Password
+HODA_ACCOUNT_REPEAT_PASSWORD|Repeat password
+HODA_ACCOUNT_CURRENT_PASSWORD|Current password
+HODA_ACCOUNT_NEW_PASSWORD|New password
+HODA_ACCOUNT_CREATE_LOGIN_NOTE|Pick a login and a password to play this account on any device. A forgotten password cannot be recovered in the game, so keep it safe.
+HODA_ACCOUNT_CHANGE_PASSWORD_NOTE|Every other device will be logged out.
+HODA_ACCOUNT_DELETE_NOTE|This permanently deletes your heroes, progress and guild membership. Enter your password to confirm.
+HODA_ACCOUNT_DELETE_GUEST_NOTE|This permanently deletes your heroes, progress and guild membership. Type {0} to confirm.
+HODA_ACCOUNT_DELETE_MISTYPED|Type {0} exactly to delete the account.
+HODA_ACCOUNT_LOGIN_RULES|A login is 3 to 24 characters: Latin letters, digits, dot, dash or underscore, starting with a letter or digit.
+HODA_ACCOUNT_PASSWORD_RULES|A password is 8 to 64 characters long.
+HODA_ACCOUNT_PASSWORD_MISMATCH|The passwords do not match.
+HODA_ACCOUNT_LOGIN_TAKEN|This login is already taken.
+HODA_ACCOUNT_WRONG_CREDENTIALS|Wrong login or password.
+HODA_ACCOUNT_WRONG_PASSWORD|Wrong password.
+HODA_ACCOUNT_TOO_MANY_ATTEMPTS|Too many attempts. Wait a minute and try again.
+HODA_ACCOUNT_UNREACHABLE|Could not reach the server. Try again.
+HODA_ACCOUNT_SWITCH_WARNING|Logging in replaces the guest account on this computer. Its progress will be lost unless you create a login for it first.
+HODA_ACCOUNT_SIGN_OUT_MESSAGE|You will need your login and password to get back into this account.
+HODA_ACCOUNT_LOGIN_CREATED|Login created. Use it to log in on any device.
+HODA_ACCOUNT_PASSWORD_CHANGED|Password changed. Other devices were logged out.
+HODA_ACCOUNT_SIGNED_OUT_MESSAGE|You were logged out on this computer. Log in again to continue.
+HODA_ACCOUNT_GUEST_START_HINT|Start a new game on this computer
+HODA_ACCOUNT_LOG_IN_HINT|Continue with your login and password
