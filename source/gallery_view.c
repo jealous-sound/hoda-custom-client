@@ -179,7 +179,7 @@ static void GalleryCellBuild(GalleryCell *cell, int unit_index, const GalleryCat
         cell->portrait = GuiPortraitLoad(icon);
         cell->loaded_portrait = true;
     } else {
-        cell->portrait = GuiTex(GUI_GALLERY_SHADOW_COMMON + (unit->rarity - RARITY_COMMON));
+        cell->portrait = GuiTex(GUI_GALLERY_SHADOW_COMMON + (unit->original_rarity - RARITY_COMMON));
     }
     cell->highlighted = record && (record->new_owned || record->new_fought || record->new_defeated);
     cell->in_squad = GalleryUnitInAnySquad(p, unit->id);

@@ -498,9 +498,9 @@ static PackReveal StoreCurrentReveal(const Store *store, Heroes *heroes) {
     const HeroCard *card = StoreCurrentCard(store, heroes);
     if (!card) return reveal;
     const Character *ch = card->ch;
-    reveal.rarity = ch->rarity;
+    reveal.rarity = ch->original_rarity;
     reveal.faction = ch->faction;
-    reveal.stars = ch->rarity == RARITY_LEGENDARY ? ch->stars : 0;
+    reveal.stars = ch->original_rarity == RARITY_LEGENDARY ? ch->stars : 0;
     reveal.base_scale = PackSceneBaseScale();
     reveal.tall = PackHeroIsTall(&store->opening_hero);
     return reveal;
@@ -508,7 +508,7 @@ static PackReveal StoreCurrentReveal(const Store *store, Heroes *heroes) {
 
 static void StorePlayCurrentRaritySound(const Store *store, Heroes *heroes) {
     const HeroCard *card = StoreCurrentCard(store, heroes);
-    if (card) GuiSoundPlay(StoreRevealSound(card->ch->rarity));
+    if (card) GuiSoundPlay(StoreRevealSound(card->ch->original_rarity));
 }
 
 static void StoreSetStatus(Store *store, const char *message) {

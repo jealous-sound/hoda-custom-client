@@ -92,6 +92,8 @@ class CatalogRowTest(unittest.TestCase):
         plain = build_custom_heroes.catalog_row(spec(), shipped_base())
         raised = build_custom_heroes.catalog_row(spec(), shipped_base(), {spec()["id"]: "Mythic"}, bands)
         self.assertEqual(raised["rarity"], "Mythic")
+        self.assertEqual(raised["original_rarity"], "Mythic")
+        self.assertEqual(plain["original_rarity"], plain["rarity"])
         for tier, stats in raised["tiers"].items():
             self.assertEqual(stats["max_level"], 11)
             self.assertEqual(stats["base_power"], plain["tiers"][tier]["base_power"] * 2)

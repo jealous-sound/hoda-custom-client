@@ -126,6 +126,7 @@ def catalog_row(spec, shipped, rarities=None, bands=None):
     row = {"id": spec["id"], "based_on": spec["based_on"], **merged}
     if rarities and spec["id"] in rarities:
         row = placed_in_band(row, base["rarity"], rarities[spec["id"]], bands)
+    row[hero_retier.ORIGINAL_RARITY_FIELD] = row["rarity"]
     for field, capacity in (
         ("id", RUNTIME_ID_CAPACITY),
         ("name", RUNTIME_NAME_CAPACITY),

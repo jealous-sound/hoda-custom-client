@@ -39,6 +39,7 @@ def build():
             {
                 "id": character["id"],
                 "rarity": character["rarity"],
+                "original_rarity": character["original_rarity"],
                 "obtainable": bool(character.get("obtainable")),
                 "initial_tier": tier,
                 "name": character["name"],

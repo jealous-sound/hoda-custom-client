@@ -306,7 +306,7 @@ static void ConsumeSeedAdd(ConsumeScreen *c, const Player *p, int index) {
 }
 
 static bool ConsumeRarityNeedsWarning(const ConsumeScreen *c, const Character *ch) {
-    return ch->rarity >= CONSUME_RARITY_EPIC_WARNING && !c->warnings_disabled[ch->rarity];
+    return ch->original_rarity >= CONSUME_RARITY_EPIC_WARNING && !c->warnings_disabled[ch->original_rarity];
 }
 
 static bool ConsumeFortifiedNeedsWarning(const ConsumeScreen *c, const Character *ch) {
@@ -321,7 +321,8 @@ static const char *ConsumeSeedWarning(const ConsumeScreen *c, const Character *c
     if (GearHasEquipped(ch)) return LocGet(CONSUME_GEAR_WARNING_KEY);
     if (ConsumeFortifiedNeedsWarning(c, ch)) return LocGet("CONSUME_CONFIRMATION_FORTIFIED_WARNING");
     return LocGet(
-        ch->rarity == RARITY_EPIC ? "CONSUME_CONFIRMATION_EPIC_WARNING" : "CONSUME_CONFIRMATION_LEGENDARY_WARNING"
+        ch->original_rarity == RARITY_EPIC ? "CONSUME_CONFIRMATION_EPIC_WARNING"
+                                           : "CONSUME_CONFIRMATION_LEGENDARY_WARNING"
     );
 }
 
@@ -384,9 +385,9 @@ static bool ConsumeMultiMatches(ConsumeMultiType type, const Character *unit, co
         case CONSUME_MULTI_IDENTICAL:
             return !strcmp(unit->id, seed->id) && unit->tier == seed->tier;
         case CONSUME_MULTI_RARITY:
-            return unit->rarity == seed->rarity;
+            return unit->original_rarity == seed->original_rarity;
         case CONSUME_MULTI_FACTION:
-            return unit->rarity == seed->rarity && unit->faction == seed->faction;
+            return unit->original_rarity == seed->original_rarity && unit->faction == seed->faction;
         default:
             return false;
     }
@@ -877,7 +878,7 @@ static void ConsumeResultsStep(ConsumeScreen *c, const Character *final) {
         c->results_tier = (Tier)promoted;
         c->model_request = true;
         c->attack_request = CONSUME_ATTACK_TIER;
-        c->fx_request = promote_fx[final->rarity];
+        c->fx_request = promote_fx[final->original_rarity];
         GuiSoundPlay((SoundId)(SND_CONSUME_LEVEL_1 + Clamp(promoted, 0, CONSUME_LEVEL_SOUND_COUNT - 1)));
         return;
     }
@@ -1025,7 +1026,7 @@ static void ConsumeDrawRarityWarning(ConsumeScreen *c, HeroesBackground *scene, 
     if (ConsumeFortifiedNeedsWarning(c, seed))
         c->fortified_warning_disabled = c->warning_disable;
     else
-        c->warnings_disabled[seed->rarity] = c->warning_disable;
+        c->warnings_disabled[seed->original_rarity] = c->warning_disable;
     ConsumeSeedAdd(c, p, c->pending_seed);
     HeroesBackgroundPlayPlace(scene);
 }

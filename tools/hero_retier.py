@@ -28,6 +28,7 @@ UPGRADE_MATERIAL_GROUP = "Wisp"
 BANNER_NAME_SUFFIX = " Banner"
 BASE_STATS = ("base_power", "base_health")
 HERO_KIND = "hero"
+ORIGINAL_RARITY_FIELD = "original_rarity"
 GIANT_KIND = "giant"
 
 
@@ -174,7 +175,8 @@ def apply_table(rows, rarities, power_weight):
     for row in rows:
         rarity = rarities[row["id"]]
         if needs_new_stats(row, rarity):
-            applied.append(retiered(row, rarity, cohorts[cohort_of(row)], bands[rarity]))
+            placed = retiered(row, rarity, cohorts[cohort_of(row)], bands[rarity])
         else:
-            applied.append({**row, "rarity": rarity})
+            placed = {**row, "rarity": rarity}
+        applied.append({**placed, ORIGINAL_RARITY_FIELD: row["rarity"]})
     return applied, bands

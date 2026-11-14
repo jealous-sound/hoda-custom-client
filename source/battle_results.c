@@ -601,7 +601,9 @@ static void BattleResultsDrawHeroLevel(const BattleResultsFlow *flow, const Hero
     );
 
     UiDrawTexture(GuiTex(GUI_LEVEL_UP_OVERLAY), HeroLevelRect(735.0f, 202.0f, 513.0f, 389.0f), tint);
-    UiDrawTexture(GuiTex(HeroLevelRarityHeader(card->ch->rarity)), HeroLevelRect(778.0f, 236.0f, 427.0f, 97.0f), tint);
+    UiDrawTexture(
+        GuiTex(HeroLevelRarityHeader(card->ch->original_rarity)), HeroLevelRect(778.0f, 236.0f, 427.0f, 97.0f), tint
+    );
     BattleResultsDrawTextAligned(
         GuiFont(FNT_COOL),
         card->name,

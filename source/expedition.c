@@ -266,7 +266,7 @@ bool ExpeditionTraitMatches(const ExpeditionTrait *trait, const Character *ch) {
         case EXPEDITION_TRAIT_FACTION:
             return !ch->giant && FactionsOverlap(ch->faction, trait->faction);
         case EXPEDITION_TRAIT_RARITY:
-            return ch->rarity >= trait->rarity;
+            return ch->original_rarity >= trait->rarity;
         case EXPEDITION_TRAIT_GIANT:
             return ch->giant;
         default:
