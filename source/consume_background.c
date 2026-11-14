@@ -37,7 +37,7 @@ typedef struct {
     int mesh;
     int seed;
     Matrix matrix;
-    Vector3 mesh_centre, world_centre;
+    Vector3 mesh_centre;
 } ConsumeEnvNode;
 
 typedef struct {
@@ -198,9 +198,7 @@ static void ConsumeEnvLoadData(ConsumeEnv *env, const char *mesh_dir) {
         node->mesh = ConsumeEnvMesh(env, mesh_dir, JsonStr(entry, "mesh"));
         node->seed = ConsumeNodeSeed(JsonStr(entry, "name"));
         node->matrix = ConsumeJsonMatrix(cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "matrix"));
-        BoundingBox bounds = GetMeshBoundingBox(env->meshes[node->mesh]);
-        node->mesh_centre = Vector3Scale(Vector3Add(bounds.min, bounds.max), 0.5f);
-        node->world_centre = Vector3Transform(node->mesh_centre, node->matrix);
+        node->mesh_centre = MeshBoundsCentre(env->meshes[node->mesh]);
     }
     env->pedestal_shadow = ConsumeJsonMatrix(cJSON_GetObjectItemCaseSensitive(root, "pedestal_shadow"));
     env->sun_glow = ConsumeJsonVector(cJSON_GetObjectItemCaseSensitive(root, "sun_glow"));
@@ -393,9 +391,16 @@ static void ConsumeEnvDrawWindKind(const ConsumeEnv *env, ConsumeMaterialKind ki
     for (int i = 0; i < env->node_count; i++) {
         const ConsumeEnvNode *node = &env->nodes[i];
         if (node->kind != kind) continue;
-        SetWindUniforms(env->wind_sh, env->wind_locs, wind, node->world_centre, time);
-        SetShaderValue(env->wind_sh, env->wind_locs.origin, &node->mesh_centre, SHADER_UNIFORM_VEC3);
-        DrawMesh(env->meshes[node->mesh], env->materials[kind], node->matrix);
+        DrawWindMeshInstance(
+            env->wind_sh,
+            env->wind_locs,
+            wind,
+            env->meshes[node->mesh],
+            env->materials[kind],
+            node->matrix,
+            node->mesh_centre,
+            time
+        );
     }
 }
 
