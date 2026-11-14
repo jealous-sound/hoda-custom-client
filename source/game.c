@@ -1621,9 +1621,14 @@ static void GameOpenResourceDialogSilently(Game *g, bool stamina) {
     g->stamina_dialog_top = stamina;
 }
 
+static HudAction GameHudActionAfterPopup(HudAction action, HudAction popup_button, bool popup_still_open) {
+    bool spent_closing_popup = action == popup_button && !popup_still_open;
+    return spent_closing_popup ? HUD_NONE : action;
+}
+
 static void GameHandleHudAction(Game *g, HudAction a) {
     if (a != HUD_NONE && a != HUD_OPTIONS) OptionsPopupClose(&g->options);
-    if (a != HUD_NONE) ProfilePopupClose(&g->profile);
+    if (a != HUD_NONE && a != HUD_PROFILE) ProfilePopupClose(&g->profile);
     switch (a) {
         case HUD_HOME:
             if (EnergyDialogIsOpen(&g->stamina_dialog)) GuiSoundPlay(SND_UI_POPUP_CLOSE);
@@ -1668,6 +1673,17 @@ static void GameHandleHudAction(Game *g, HudAction a) {
                 GuiSoundPlay(SND_UI_POPUP_CLOSE);
             } else {
                 OptionsPopupOpen(&g->options);
+                GuiClickSoundPlay();
+            }
+            break;
+        case HUD_PROFILE:
+            EnergyDialogClose(&g->energy_dialog);
+            EnergyDialogClose(&g->stamina_dialog);
+            if (ProfilePopupIsOpen(&g->profile)) {
+                ProfilePopupClose(&g->profile);
+                GuiSoundPlay(SND_UI_POPUP_CLOSE);
+            } else {
+                ProfilePopupOpen(&g->profile);
                 GuiClickSoundPlay();
             }
             break;
@@ -2381,10 +2397,10 @@ void GameDraw(Game *g) {
     }
     if (OptionsPopupIsOpen(&g->options)) {
         UiFrameBegin();
-        OptionsAction options_action = OptionsPopupDraw(&g->options, BackendCurrentPlayerId());
-        if (options_action == OPTIONS_ACTION_RESTART) g->restart_requested = true;
-        if (options_action == OPTIONS_ACTION_PROFILE) ProfilePopupOpen(&g->profile);
-        popup_hud_action = HudDraw(&g->hud, &g->player, true, g->screen == SCREEN_HOME);
+        if (OptionsPopupDraw(&g->options, BackendCurrentPlayerId()) == OPTIONS_ACTION_RESTART)
+            g->restart_requested = true;
+        HudAction clicked = HudDraw(&g->hud, &g->player, true, g->screen == SCREEN_HOME);
+        popup_hud_action = GameHudActionAfterPopup(clicked, HUD_OPTIONS, OptionsPopupIsOpen(&g->options));
         UiFrameEnd();
     } else if (ProfilePopupIsOpen(&g->profile)) {
         UiFrameBegin();
@@ -2392,7 +2408,8 @@ void GameDraw(Game *g) {
         if (ProfilePopupDraw(&g->profile, &g->player, guild_name) == PROFILE_ACTION_ACCOUNT_CHANGED)
             GameLeaveAccount(g);
         bool hud_interactive = !ProfilePopupModal(&g->profile);
-        popup_hud_action = HudDraw(&g->hud, &g->player, hud_interactive, g->screen == SCREEN_HOME);
+        HudAction clicked = HudDraw(&g->hud, &g->player, hud_interactive, g->screen == SCREEN_HOME);
+        popup_hud_action = GameHudActionAfterPopup(clicked, HUD_PROFILE, ProfilePopupIsOpen(&g->profile));
         UiFrameEnd();
     }
     if (BackendCredentialsRefused()) GameLeaveAccount(g);

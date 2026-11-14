@@ -18,6 +18,8 @@ typedef struct {
     float change_time;
 } HudChangingValue;
 
+#define HUD_PROFILE_ART EXTRA_ASSET_DIR "gui/hud/profile.png"
+#define HUD_PROFILE_STEP 0.9f
 #define HUD_TALLY_TIME 2.25f
 #define HUD_TALLY_PULSE_COUNT 3
 #define HUD_TALLY_PULSE_PERIOD 0.75f
@@ -48,6 +50,7 @@ typedef struct {
     Texture2D gems;
     Texture2D gems_selected;
     Texture2D options;
+    Texture2D profile;
     Font font;
     HudAction armed_action;
     HudAction store_selection;
@@ -88,6 +91,7 @@ typedef struct {
     Rectangle gems_icon;
     Rectangle gems_label;
     Rectangle options;
+    Rectangle profile;
 } HudLayout;
 
 #define HUD_TOP_HEIGHT 73.0f
@@ -155,6 +159,9 @@ static HudLayout HudGetLayout(void) {
 
     Rectangle currency = HudFitRect(sizing, 0.910000026f, 0.0f, 0.639999986f, 0.899999976f, 4.539999962f);
     l.options = HudFitRect(sizing, 1.0f, 0.0f, 1.0f, 0.899999976f, 1.128000021f);
+    float profile_step = ceilf(l.options.width * HUD_PROFILE_STEP);
+    l.profile = HudOffsetRect(l.options, -profile_step, 0.0f);
+    currency = HudOffsetRect(currency, -profile_step, 0.0f);
 
     Rectangle local_gold =
         HudFitRect((Rectangle){0.0f, 0.0f, currency.width, currency.height}, 0.0f, 0.5f, 0.55f, 1.0f, 0.0f);
@@ -180,6 +187,13 @@ static float HudXpProgress(const Player *player) {
     return Clamp((float)(player->experience - minimum) / (float)range, 0.0f, 1.0f);
 }
 
+static Texture2D hud_profile_art;
+
+static Texture2D HudProfileTexture(void) {
+    if (!hud_profile_art.id && ResourceExists(HUD_PROFILE_ART)) hud_profile_art = ResourceLoadTexture(HUD_PROFILE_ART);
+    return hud_profile_art.id ? hud_profile_art : GuiTex(GUI_HUD_SOCIAL);
+}
+
 void HudInitialize(Hud *hud) {
     hud->font = GuiFont(FNT_COOL);
     hud->background = GuiTex(GUI_HUD_GRADIENT);
@@ -197,6 +211,7 @@ void HudInitialize(Hud *hud) {
     hud->gems = GuiTex(GUI_HUD_GEMS);
     hud->gems_selected = GuiTex(GUI_HUD_GEMS_SELECTED);
     hud->options = GuiTex(GUI_HUD_OPTIONS);
+    hud->profile = HudProfileTexture();
     hud->armed_action = HUD_NONE;
     hud->energy_value = (HudChangingValue){0};
     hud->stamina_value = (HudChangingValue){0};
@@ -217,13 +232,15 @@ static Rectangle HudActionRect(HudAction action, const HudLayout *layout) {
             return layout->gems_slot;
         case HUD_OPTIONS:
             return layout->options;
+        case HUD_PROFILE:
+            return layout->profile;
         default:
             return (Rectangle){0};
     }
 }
 
 static HudAction HudActionAt(Vector2 point, const HudLayout *layout) {
-    static const HudAction order[] = {HUD_STAMINA, HUD_ENERGY, HUD_GOLD, HUD_GEMS, HUD_OPTIONS};
+    static const HudAction order[] = {HUD_STAMINA, HUD_ENERGY, HUD_GOLD, HUD_GEMS, HUD_OPTIONS, HUD_PROFILE};
     for (int i = 0; i < (int)(sizeof(order) / sizeof(order[0])); i++) {
         if (CheckCollisionPointRec(point, HudActionRect(order[i], layout))) return order[i];
     }
@@ -477,6 +494,7 @@ HudAction HudDraw(Hud *hud, Player *player, bool interactive, bool on_home) {
             &hud->gems_tally
         );
     UiDrawTexture(hud->options, layout.options, WHITE);
+    UiDrawTexture(hud->profile, layout.profile, WHITE);
 
     if (home_clicked) return HUD_HOME;
     return action;

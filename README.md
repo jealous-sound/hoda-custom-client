@@ -55,10 +55,11 @@ At launch the player picks Local Game, saved in `player_save.dat`, or Online Gam
 server owns the save and the clock. A first online launch asks whether to play as a guest or log in; either way the
 device keeps its key in `account.dat`, and a new guest runs the tutorial.
 
-Profile, in the More menu, shows the player card and renames the player. Online it also manages the account: a guest
-picks a login and a password to play on other devices, and a player with a login can change the password, which logs
-out every other device, log out or delete the account. A device that was logged out elsewhere returns to the log-in
-choice at its next server request. A forgotten password needs a reset by the server's admin.
+Profile, the button beside the settings gear in the top bar, shows the player card and renames the player. Online it
+also manages the account: a guest picks a login and a password to play on other devices, and a player with a login can
+change the password, which logs out every other device, log out or delete the account. A device that was logged out
+elsewhere returns to the log-in choice at its next server request. A forgotten password needs a reset by the server's
+admin. The button's icon is `extra/gui/hud/profile.png`; without that file the bar shows the original social button.
 
 | Variable | |
 | --- | --- |
