@@ -8659,10 +8659,503 @@ static void TestStoreRevealsExpeditionRewardsHeroesThenGearThenRunes(void) {
     );
 }
 
+static void RenownTestSetRank(Player *player, int rank) {
+    player->experience = ProgressionRenownRankXp(rank);
+    int virtual_level = ProgressionVirtualLevel(player->experience);
+    player->level = virtual_level < PLAYER_MAX_LEVEL ? virtual_level : PLAYER_MAX_LEVEL;
+    ProgressionSyncXpBounds(player);
+    player->energy = player->energy_max = ProgressionEnergyMax(player->level, &player->renown);
+    player->stamina = player->stamina_max = ProgressionStaminaMax(&player->renown);
+}
+
+static Player RenownTestPlayer(int rank) {
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    RenownTestSetRank(&player, rank);
+    return player;
+}
+
+static void RenownTestBuy(Player *player, RenownPerk perk, int ranks) {
+    for (int bought = 0; bought < ranks; bought++) assert(ProgressionRenownUpgrade(player, perk));
+}
+
+static void TestRenownIsOffUntilItsTableLoads(void) {
+    assert(!RenownCatalogLoad("data/missing_renown.json") && !RenownAvailable());
+    assert(RenownRank(INT_MAX) == 0 && RenownTierForRank(INT_MAX) == RENOWN_TIER_NONE);
+    static Player capped;
+    capped = RenownTestPlayer(0);
+    capped.level = PLAYER_MAX_LEVEL;
+    capped.experience = ProgressionXpForCurrentLevel(PLAYER_MAX_LEVEL);
+    assert(RenownPointsFree(&capped.renown, capped.experience) == 0);
+    assert(!ProgressionRenownUpgrade(&capped, RENOWN_PERK_POWER) && !HudShowsRenownRank(&capped));
+    assert(ProgressionXpFloor(capped.level, INT_MAX) == ProgressionXpForCurrentLevel(PLAYER_MAX_LEVEL));
+    assert(ProgressionXpCeiling(capped.level, INT_MAX) == ProgressionXpForNextLevel(PLAYER_MAX_LEVEL));
+
+    int gems = capped.gems, experience = capped.experience;
+    ProgressionAwardBattleXp(&capped, 100000);
+    assert(capped.experience == experience + 100000 && capped.level == PLAYER_MAX_LEVEL && capped.gems == gems);
+
+    assert(RenownCatalogLoad(RENOWN_PATH) && RenownAvailable());
+    assert(RenownLevelsPerRank() > 0 && RenownRankGems() > 0 && RenownPerkMaxRank() > 0);
+    for (int perk = 0; perk < RENOWN_PERK_COUNT; perk++) {
+        int per_rank = RenownPerkValueAtRank((RenownPerk)perk, 1);
+        assert(RenownPerkFromId(RenownPerkId((RenownPerk)perk)) == perk && per_rank > 0);
+        assert(RenownPerkValueAtRank((RenownPerk)perk, 3) == 3 * per_rank);
+    }
+    assert(RenownPerkFromId("no_such_perk") == RENOWN_NONE && RenownPerkValueAtRank(RENOWN_PERK_POWER, 0) == 0);
+    assert(HudShowsRenownRank(&capped) && RenownRank(capped.experience) > 0);
+}
+
+static void TestRenownRanksFollowTheXpCurvePastTheLevelCap(void) {
+    enum { LEVEL_TEN_XP = 540, LEVEL_99_XP = 49490, LEVEL_CAP_XP = 50490, RANK_11_XP = 61040, RANK_12_XP = 72590 };
+    assert(RenownLevelsPerRank() == 10);
+    assert(ProgressionVirtualLevel(-5) == 1 && ProgressionVirtualLevel(0) == 1 && ProgressionVirtualLevel(19) == 1);
+    assert(ProgressionVirtualLevel(20) == 2 && ProgressionVirtualLevel(RANK_11_XP) == 110);
+    for (int level = 1; level < 400; level++) {
+        assert(ProgressionVirtualLevel(ProgressionCumulativeXpThroughLevel(level - 1)) == level);
+        assert(ProgressionVirtualLevel(ProgressionCumulativeXpThroughLevel(level) - 1) == level);
+    }
+    assert(RenownRank(LEVEL_TEN_XP - 1) == 0 && RenownRank(LEVEL_TEN_XP) == 1);
+    assert(RenownRank(LEVEL_CAP_XP) == 10 && RenownRank(RANK_11_XP - 1) == 10 && RenownRank(RANK_11_XP) == 11);
+    assert(RenownRank(INT_MAX) == 2072);
+    assert(ProgressionRenownRankXp(0) == 0 && ProgressionRenownRankXp(1) == LEVEL_TEN_XP);
+    assert(ProgressionRenownRankXp(10) == LEVEL_CAP_XP && ProgressionRenownRankXp(11) == RANK_11_XP);
+    assert(ProgressionRenownRankXp(INT_MAX) == INT_MAX);
+
+    assert(ProgressionXpFloor(99, LEVEL_CAP_XP - 1) == LEVEL_99_XP);
+    assert(ProgressionXpCeiling(99, LEVEL_CAP_XP - 1) == LEVEL_CAP_XP);
+    assert(ProgressionXpFloor(PLAYER_MAX_LEVEL, LEVEL_CAP_XP) == LEVEL_CAP_XP);
+    assert(ProgressionXpCeiling(PLAYER_MAX_LEVEL, LEVEL_CAP_XP) == RANK_11_XP);
+    assert(ProgressionXpFloor(PLAYER_MAX_LEVEL, RANK_11_XP) == RANK_11_XP);
+    assert(ProgressionXpCeiling(PLAYER_MAX_LEVEL, RANK_11_XP) == RANK_12_XP);
+
+    assert(RenownTierForRank(0) == RENOWN_TIER_NONE && RenownTierForRank(INT_MAX) == RENOWN_TIER_ROYAL);
+    for (int tier = RENOWN_TIER_BRONZE; tier < RENOWN_TIER_COUNT; tier++) {
+        int first_rank = RenownTierFirstRank((RenownTier)tier);
+        assert(RenownTierForRank(first_rank) == tier && RenownTierForRank(first_rank - 1) == tier - 1);
+    }
+
+    static Player capped, climbing;
+    capped = RenownTestPlayer(11);
+    capped.experience += 700;
+    assert(HudShowsRenownRank(&capped) && HudXpLabelOrigin(&capped) == RANK_11_XP);
+    assert(HudDisplayedXp(&capped) - HudXpLabelOrigin(&capped) == 700);
+    climbing = RenownTestPlayer(3);
+    assert(climbing.level == 30 && !HudShowsRenownRank(&climbing) && HudXpLabelOrigin(&climbing) == 0);
+}
+
+static void TestRenownPointsBuyPerksUpToTheirMaxRank(void) {
+    enum { SPARE_POINTS = 2 };
+    static Player player, unranked;
+    player = RenownTestPlayer(RenownPerkMaxRank() + SPARE_POINTS);
+    assert(RenownPointsFree(&player.renown, player.experience) == RenownPerkMaxRank() + SPARE_POINTS);
+    RenownTestBuy(&player, RENOWN_PERK_POWER, RenownPerkMaxRank());
+    assert(RenownPerkMaxed(&player.renown, RENOWN_PERK_POWER) && !ProgressionRenownUpgrade(&player, RENOWN_PERK_POWER));
+    assert(RenownPointsFree(&player.renown, player.experience) == SPARE_POINTS);
+    int power_pct = RenownPerkMaxRank() * RenownPerkValueAtRank(RENOWN_PERK_POWER, 1);
+    assert(RenownPerkValue(&player.renown, RENOWN_PERK_POWER) == power_pct);
+    RenownBattleBonus bonus = RenownBattleBonusOf(&player.renown);
+    assert(bonus.power_pct == power_pct && bonus.health_pct == 0 && bonus.crit_permille == 0);
+
+    int level_energy = ProgressionEnergyMaxForLevel(player.level);
+    assert(player.energy_max == level_energy && player.stamina_max == PROGRESSION_START_STAMINA_MAX);
+    RenownTestBuy(&player, RENOWN_PERK_ENERGY, 1);
+    assert(player.energy_max == level_energy + RenownPerkValueAtRank(RENOWN_PERK_ENERGY, 1));
+    RenownTestBuy(&player, RENOWN_PERK_STAMINA, 1);
+    assert(player.stamina_max == PROGRESSION_START_STAMINA_MAX + RenownPerkValueAtRank(RENOWN_PERK_STAMINA, 1));
+
+    assert(RenownPointsFree(&player.renown, player.experience) == 0);
+    assert(!ProgressionRenownUpgrade(&player, RENOWN_PERK_GOLD) && player.renown.perks[RENOWN_PERK_GOLD] == 0);
+    assert(!ProgressionRenownUpgrade(&player, RENOWN_PERK_COUNT));
+    assert(!ProgressionRenownUpgrade(&player, (RenownPerk)RENOWN_NONE));
+
+    unranked = RenownTestPlayer(0);
+    assert(!ProgressionRenownUpgrade(&unranked, RENOWN_PERK_POWER));
+
+    cJSON *action = RenownUpgradeAction(RENOWN_PERK_KEY);
+    assert(!strcmp(JsonStr(action, "action"), "renown_upgrade") && !strcmp(JsonStr(action, "perk"), "key_pct"));
+    cJSON_Delete(action);
+}
+
+static void TestXpPastTheLevelCapEarnsRanksGemsAndARefill(void) {
+    static Player player, climbing, fighter;
+    player = RenownTestPlayer(10);
+    assert(player.level == PLAYER_MAX_LEVEL);
+    player.energy = player.stamina = 1;
+    player.gems = 0;
+    ProgressionAwardBattleXp(&player, ProgressionRenownRankXp(11) - player.experience - 1);
+    assert(player.level == PLAYER_MAX_LEVEL && RenownRank(player.experience) == 10);
+    assert(player.gems == 0 && player.energy == 1 && player.stamina == 1);
+    assert(
+        player.experience_min == ProgressionRenownRankXp(10) && player.experience_max == ProgressionRenownRankXp(11)
+    );
+
+    ProgressionAwardBattleXp(&player, 1);
+    assert(player.level == PLAYER_MAX_LEVEL && RenownRank(player.experience) == 11);
+    assert(player.gems == RenownRankGems() && RenownPointsFree(&player.renown, player.experience) == 11);
+    assert(player.energy == player.energy_max && player.stamina == player.stamina_max);
+    assert(
+        player.experience_min == ProgressionRenownRankXp(11) && player.experience_max == ProgressionRenownRankXp(12)
+    );
+
+    RenownTestBuy(&player, RENOWN_PERK_ENERGY, 2);
+    player.energy = 1;
+    ProgressionAwardBattleXp(&player, ProgressionRenownRankXp(14) - player.experience);
+    assert(RenownRank(player.experience) == 14 && player.gems == 4 * RenownRankGems());
+    assert(
+        player.energy ==
+        ProgressionEnergyMaxForLevel(PLAYER_MAX_LEVEL) + RenownPerkValue(&player.renown, RENOWN_PERK_ENERGY)
+    );
+
+    climbing = RenownTestPlayer(0);
+    climbing.level = 9;
+    climbing.experience = ProgressionRenownRankXp(1) - 1;
+    ProgressionSyncXpBounds(&climbing);
+    climbing.gems = 0;
+    ProgressionAwardBattleXp(&climbing, 1);
+    assert(climbing.level == 10 && RenownRank(climbing.experience) == 1 && climbing.gems == RenownRankGems());
+
+    enum { NODE_XP = 20 };
+    fighter = TestStarterPlayer();
+    RenownTestSetRank(&fighter, 10);
+    fighter.experience = ProgressionRenownRankXp(11) - NODE_XP;
+    ProgressionSyncXpBounds(&fighter);
+    int gems = fighter.gems;
+    Campaign *campaign = TestOneNodeCampaign(NODE_XP);
+    BattleRewardResult win = CampaignResolveBattle(&fighter, campaign, 0, 0, true, 0);
+    assert(win.resolved && win.player_level_pre == win.player_level_post && win.levels_gained == 0);
+    assert(win.renown_rank_pre == 10 && win.renown_rank_post == 11 && win.renown_gems_reward == RenownRankGems());
+    assert(fighter.gems >= gems + RenownRankGems());
+    free(campaign);
+}
+
+static void TestRenownPerksRaiseGoldAndSquadXp(void) {
+    enum { NODE_XP = 20, NODE_GOLD = 333 };
+    static Player plain, perked, runed;
+    plain = TestStarterPlayer();
+    perked = TestStarterPlayer();
+    RenownTestSetRank(&plain, 2 * RenownPerkMaxRank());
+    RenownTestSetRank(&perked, 2 * RenownPerkMaxRank());
+    RenownTestBuy(&perked, RENOWN_PERK_GOLD, RenownPerkMaxRank());
+    RenownTestBuy(&perked, RENOWN_PERK_HERO_XP, RenownPerkMaxRank());
+    int gold_pct = RenownPerkValue(&perked.renown, RENOWN_PERK_GOLD);
+    int hero_xp_pct = RenownPerkValue(&perked.renown, RENOWN_PERK_HERO_XP);
+
+    Campaign *campaign = TestOneNodeCampaign(NODE_XP);
+    campaign->maps[0].nodes[0].gold = NODE_GOLD;
+    BattleRewardResult base = CampaignResolveBattle(&plain, campaign, 0, 0, true, 0);
+    BattleRewardResult rich = CampaignResolveBattle(&perked, campaign, 0, 0, true, 0);
+    assert(base.gold_reward > 0 && base.bonus_gold_reward == 0);
+    assert(rich.gold_reward == RuneApplyPct(base.gold_reward, gold_pct));
+    assert(rich.bonus_gold_reward == rich.gold_reward - base.gold_reward);
+    assert(perked.gold - plain.gold == rich.bonus_gold_reward);
+    assert(rich.xp_reward == base.xp_reward && rich.bonus_xp_reward == 0 && perked.experience == plain.experience);
+    assert(rich.squad_leveling.count == base.squad_leveling.count && base.squad_leveling.count > 0);
+    for (int i = 0; i < base.squad_leveling.count; i++) {
+        const BattleHeroLeveling *plain_hero = &base.squad_leveling.heroes[i];
+        const BattleHeroLeveling *perked_hero = &rich.squad_leveling.heroes[i];
+        int plain_gain = plain_hero->post.xp - plain_hero->pre.xp;
+        assert(plain_gain == base.xp_reward);
+        assert(perked_hero->post.xp - perked_hero->pre.xp == RuneApplyPct(plain_gain, hero_xp_pct));
+    }
+    free(campaign);
+
+    runed = RenownTestPlayer(RenownPerkMaxRank());
+    RenownTestBuy(&runed, RENOWN_PERK_GOLD, RenownPerkMaxRank());
+    long long now = RuneNow();
+    uint64_t greed = RuneGrantById(&runed.runes, "rune-greed-3", now);
+    assert(RuneActivate(&runed.runes, runed.current_squad, 0, greed, now) == RUNE_ASSIGN_OK);
+    int rune_pct = RuneSquadBonus(&runed.runes, runed.current_squad, now).gold_pct;
+    assert(rune_pct > 0);
+    BattleRewardResult reward = {.gold_reward = NODE_GOLD, .xp_reward = NODE_XP};
+    ProgressionApplyRewardBonuses(&runed, &reward);
+    assert(reward.gold_reward == RuneApplyPct(NODE_GOLD, rune_pct + gold_pct));
+    assert(reward.gold_reward != RuneApplyPct(RuneApplyPct(NODE_GOLD, rune_pct), gold_pct));
+    assert(reward.bonus_gold_reward == reward.gold_reward - NODE_GOLD && reward.xp_reward == NODE_XP);
+}
+
+static int RenownTestVouchers(const Player *player) {
+    int total = 0;
+    for (int kind = 0; kind < PLAYER_VOUCHER_CAPACITY; kind++) total += player->pack_vouchers[kind];
+    return total;
+}
+
+static void RenownTestClearDrops(Player *player, uint32_t seed) {
+    memset(player->pack_vouchers, 0, sizeof(player->pack_vouchers));
+    memset(player->keys, 0, sizeof(player->keys));
+    player->store_rng_state = seed;
+}
+
+static void TestRenownWinDropsRollTheVoucherThenTheKey(void) {
+    enum { SEEDS = 4000, VOUCHER_KINDS = 3 };
+    int stored_voucher_kinds = store_voucher_kinds;
+    store_voucher_kinds = VOUCHER_KINDS;
+    static Player plain, lucky, keyed;
+    plain = RenownTestPlayer(RenownPerkMaxRank());
+    lucky = keyed = plain;
+    RenownTestBuy(&lucky, RENOWN_PERK_VOUCHER, RenownPerkMaxRank());
+    RenownTestBuy(&keyed, RENOWN_PERK_KEY, RenownPerkMaxRank());
+    int key_pct = RenownPerkValue(&keyed.renown, RENOWN_PERK_KEY);
+    int plain_vouchers = 0, lucky_vouchers = 0, keys_by_kind[NEXUS_KEY_COUNT] = {0};
+    for (uint32_t seed = 1; seed <= SEEDS; seed++) {
+        RenownTestClearDrops(&plain, seed);
+        RenownTestClearDrops(&lucky, seed);
+        RenownTestClearDrops(&keyed, seed);
+        StoreAwardWinDrops(&plain);
+        StoreAwardWinDrops(&lucky);
+        StoreAwardWinDrops(&keyed);
+
+        int plain_won = RenownTestVouchers(&plain), lucky_won = RenownTestVouchers(&lucky);
+        assert(plain_won <= lucky_won && lucky_won <= 1);
+        plain_vouchers += plain_won;
+        lucky_vouchers += lucky_won;
+
+        uint32_t rng = plain.store_rng_state;
+        int expected_key = StoreRngRange(&rng, 100) < key_pct ? StoreRngRange(&rng, NEXUS_KEY_COUNT) : RENOWN_NONE;
+        assert(keyed.store_rng_state == rng);
+        assert(!memcmp(keyed.pack_vouchers, plain.pack_vouchers, sizeof(plain.pack_vouchers)));
+        for (int kind = 0; kind < NEXUS_KEY_COUNT; kind++) {
+            assert(plain.keys[kind] == 0 && lucky.keys[kind] == 0);
+            assert(keyed.keys[kind] == (kind == expected_key ? 1 : 0));
+        }
+        if (expected_key != RENOWN_NONE) keys_by_kind[expected_key]++;
+    }
+    assert(plain_vouchers > 0 && lucky_vouchers > plain_vouchers);
+    for (int kind = 0; kind < NEXUS_KEY_COUNT; kind++) assert(keys_by_kind[kind] > 0);
+
+    store_voucher_kinds = 0;
+    int keys_without_vouchers = 0;
+    for (uint32_t seed = 1; seed <= SEEDS; seed++) {
+        RenownTestClearDrops(&keyed, seed);
+        StoreAwardWinDrops(&keyed);
+        uint32_t rng = seed;
+        bool expected = StoreRngRange(&rng, 100) < key_pct;
+        if (expected) StoreRngRange(&rng, NEXUS_KEY_COUNT);
+        assert(keyed.store_rng_state == rng && RenownTestVouchers(&keyed) == 0);
+        keys_without_vouchers += expected;
+    }
+    assert(keys_without_vouchers > 0);
+    store_voucher_kinds = stored_voucher_kinds;
+
+    keyed.keys[1] = NEXUS_KEY_MAX;
+    PlayerAddKey(&keyed, 1);
+    PlayerAddKey(&keyed, NEXUS_KEY_COUNT);
+    assert(keyed.keys[1] == NEXUS_KEY_MAX);
+}
+
+static void RenownTestSetUp(BattleSim *sim, const BattleRoster *player, const BattleRoster *enemy) {
+    BattleSimSide left = SimRosterSide(player), right = SimRosterSide(enemy);
+    BattleSimRules rules = SimRosterRules(enemy);
+    BattleSimSetupSides(sim, &left, &right, &rules);
+}
+
+static void TestRenownBattleBonusStrengthensOnlyItsOwnSide(void) {
+    enum { POWER = 100, HEALTH = 500, ENEMY = SQUAD_SLOT_COUNT };
+    static BattleRoster player, enemy;
+    static BattleSim plain, boosted;
+    memset(&player, 0, sizeof(player));
+    memset(&enemy, 0, sizeof(enemy));
+    TestCharacter(&player.chars[0], &player.abilities[0], "left", "ABILITY_DAMAGE_ONE", TARGET_ONE, POWER, HEALTH);
+    TestCharacter(&enemy.chars[0], &enemy.abilities[0], "right", "ABILITY_DAMAGE_ONE", TARGET_ONE, POWER, HEALTH);
+    player.present[0] = enemy.present[0] = true;
+    RenownTestSetUp(&plain, &player, &enemy);
+    assert(plain.units[0].power == POWER && plain.units[ENEMY].max_health == HEALTH);
+
+    RenownBattleBonus bonus = {.power_pct = 10, .health_pct = 20, .crit_permille = 25};
+    player.renown = bonus;
+    RenownTestSetUp(&boosted, &player, &enemy);
+    assert(boosted.units[0].power == 110 && boosted.units[0].start_power == 110);
+    assert(boosted.units[0].max_health == 600 && boosted.units[0].health == 600);
+    assert(boosted.units[0].crit_pct == plain.units[0].crit_pct + 2.5f);
+    assert(boosted.units[ENEMY].power == POWER && boosted.units[ENEMY].max_health == HEALTH);
+    assert(boosted.units[ENEMY].crit_pct == plain.units[ENEMY].crit_pct);
+
+    player.renown = (RenownBattleBonus){0};
+    enemy.renown = bonus;
+    RenownTestSetUp(&boosted, &player, &enemy);
+    assert(boosted.units[ENEMY].power == 110 && boosted.units[ENEMY].max_health == 600);
+    assert(boosted.units[ENEMY].crit_pct == plain.units[ENEMY].crit_pct + 2.5f);
+    assert(boosted.units[0].power == POWER && boosted.units[0].max_health == HEALTH);
+
+    int power_rune = -1;
+    for (int def = 0; def < RuneCatalogCount() && power_rune < 0; def++)
+        if (RuneDefAt(def)->buff == RUNE_BUFF_POWER) power_rune = def;
+    assert(power_rune >= 0);
+    enemy.renown = (RenownBattleBonus){0};
+    enemy.rune_defs[0] = power_rune;
+    enemy.rune_def_count = 1;
+    RenownTestSetUp(&plain, &player, &enemy);
+    int runed_power = plain.units[ENEMY].power;
+    assert(runed_power > POWER);
+    enemy.renown = bonus;
+    RenownTestSetUp(&boosted, &player, &enemy);
+    assert(boosted.units[ENEMY].power == RuneApplyPct(runed_power, bonus.power_pct));
+
+    static Player owner;
+    static SimUnit bare[SIM_UNIT_COUNT], trained[SIM_UNIT_COUNT];
+    owner = TestStarterPlayer();
+    RenownTestSetRank(&owner, RenownPerkMaxRank());
+    memset(&enemy, 0, sizeof(enemy));
+    BattleSimPreview(bare, &owner, &enemy);
+    RenownTestBuy(&owner, RENOWN_PERK_POWER, RenownPerkMaxRank());
+    BattleSimPreview(trained, &owner, &enemy);
+    int owner_units = 0;
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        if (!bare[slot].present) continue;
+        owner_units++;
+        assert(
+            trained[slot].power == RuneApplyPct(bare[slot].power, RenownPerkValue(&owner.renown, RENOWN_PERK_POWER))
+        );
+        assert(trained[slot].max_health == bare[slot].max_health);
+    }
+    assert(owner_units > 0);
+}
+
+static void TestBattleSidesNameTheirRenownBonus(void) {
+    static Player player;
+    player = TestStarterPlayer();
+    RenownTestSetRank(&player, RenownPerkMaxRank());
+    cJSON *side = BattleReplayPlayerJson(&player);
+    assert(side && !cJSON_GetObjectItemCaseSensitive(side, BATTLE_RENOWN_FIELD));
+    cJSON_Delete(side);
+
+    RenownTestBuy(&player, RENOWN_PERK_HEALTH, 2);
+    RenownTestBuy(&player, RENOWN_PERK_CRIT, 1);
+    side = BattleReplayPlayerJson(&player);
+    const cJSON *named = cJSON_GetObjectItemCaseSensitive(side, BATTLE_RENOWN_FIELD);
+    RenownBattleBonus loaded, expected = RenownBattleBonusOf(&player.renown);
+    assert(cJSON_IsObject(named) && RenownBattleBonusLoad(named, &loaded));
+    assert(loaded.power_pct == 0 && loaded.health_pct == expected.health_pct && expected.health_pct > 0);
+    assert(loaded.crit_permille == expected.crit_permille && expected.crit_permille > 0);
+    cJSON_Delete(side);
+
+    assert(RenownBattleBonusLoad(NULL, &loaded) && !RenownBattleBonusActive(&loaded));
+    cJSON *forged = cJSON_Parse("{\"power_pct\":-5}");
+    assert(!RenownBattleBonusLoad(forged, &loaded));
+    cJSON_Delete(forged);
+
+    RenownTestBuy(&player, RENOWN_PERK_GOLD, 1);
+    static Player spender;
+    spender = RenownTestPlayer(1);
+    RenownTestBuy(&spender, RENOWN_PERK_GOLD, 1);
+    RenownBattleBonus peaceful = RenownBattleBonusOf(&spender.renown);
+    assert(!RenownBattleBonusActive(&peaceful));
+}
+
+static cJSON *RenownTestSavedJson(const Player *player) {
+    char *text = ProgressionSerialize(player);
+    cJSON *root = cJSON_Parse(text);
+    cJSON_free(text);
+    assert(root);
+    return root;
+}
+
+static bool RenownTestLoadJson(Player *player, const cJSON *root) {
+    char *text = cJSON_PrintUnformatted(root);
+    *player = (Player){0};
+    ProgressionInitializePlayerDefaults(player);
+    bool loaded = ProgressionLoadFromText(player, text, "renown test");
+    cJSON_free(text);
+    return loaded;
+}
+
+static void TestRenownSurvivesSaveAndLoad(void) {
+    enum { RANK = 11, PAST_RANK_XP = 700 };
+    static Player saved, loaded;
+    saved = RenownTestPlayer(RANK);
+    saved.experience += PAST_RANK_XP;
+    RenownTestBuy(&saved, RENOWN_PERK_POWER, 3);
+    RenownTestBuy(&saved, RENOWN_PERK_ENERGY, 2);
+    RenownTestBuy(&saved, RENOWN_PERK_STAMINA, 1);
+    saved.energy = saved.energy_max;
+    saved.stamina = saved.stamina_max;
+
+    cJSON *root = RenownTestSavedJson(&saved);
+    assert(RenownTestLoadJson(&loaded, root));
+    assert(!memcmp(&loaded.renown, &saved.renown, sizeof(saved.renown)));
+    assert(loaded.level == PLAYER_MAX_LEVEL && loaded.experience == saved.experience);
+    assert(loaded.experience_min == ProgressionRenownRankXp(RANK));
+    assert(loaded.experience_max == ProgressionRenownRankXp(RANK + 1));
+    assert(loaded.energy_max == saved.energy_max && loaded.stamina_max == saved.stamina_max);
+    assert(RenownPointsFree(&loaded.renown, loaded.experience) == RANK - 6);
+
+    cJSON *account = cJSON_GetObjectItemCaseSensitive(root, "account");
+    int level_cap_xp = ProgressionXpForCurrentLevel(PLAYER_MAX_LEVEL);
+    cJSON_ReplaceItemInObjectCaseSensitive(account, "experience_min", cJSON_CreateNumber(level_cap_xp));
+    cJSON_ReplaceItemInObjectCaseSensitive(account, "experience_max", cJSON_CreateNumber(level_cap_xp));
+    assert(RenownTestLoadJson(&loaded, root));
+    assert(loaded.experience_min == ProgressionRenownRankXp(RANK));
+    assert(loaded.experience_max == ProgressionRenownRankXp(RANK + 1));
+
+    assert(!RenownCatalogLoad("data/missing_renown.json"));
+    assert(RenownTestLoadJson(&loaded, root));
+    assert(loaded.experience == saved.experience && loaded.energy_max == saved.energy_max);
+    assert(!memcmp(&loaded.renown, &saved.renown, sizeof(saved.renown)));
+    assert(RenownCatalogLoad(RENOWN_PATH));
+    cJSON_Delete(root);
+
+    saved = RenownTestPlayer(RANK);
+    RenownTestBuy(&saved, RENOWN_PERK_POWER, 3);
+    root = RenownTestSavedJson(&saved);
+    cJSON *perks = cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(root, "renown"), "perks");
+    assert(cJSON_GetArraySize(perks) == 1 && JsonInt(perks, "power_pct") == 3);
+    cJSON_AddNumberToObject(perks, "no_such_perk", 4);
+    cJSON_AddNumberToObject(perks, "health_pct", RenownPerkMaxRank() + 3);
+    assert(RenownTestLoadJson(&loaded, root));
+    assert(loaded.renown.perks[RENOWN_PERK_POWER] == 3);
+    assert(loaded.renown.perks[RENOWN_PERK_HEALTH] == RenownPerkMaxRank());
+    assert(RenownPointsSpent(&loaded.renown) == 3 + RenownPerkMaxRank());
+
+    cJSON_AddNumberToObject(perks, "crit_permille", RenownPerkMaxRank());
+    assert(RenownTestLoadJson(&loaded, root));
+    assert(RenownPointsSpent(&loaded.renown) == 0 && RenownPointsFree(&loaded.renown, loaded.experience) == RANK);
+
+    cJSON_DeleteItemFromObjectCaseSensitive(root, "renown");
+    assert(RenownTestLoadJson(&loaded, root));
+    assert(RenownPointsSpent(&loaded.renown) == 0 && loaded.experience == saved.experience);
+    cJSON_Delete(root);
+}
+
+static void TestARenownRankUpGetsItsOwnResultsStage(void) {
+    static BattleResultsFlow flow;
+    BattleResultsFlowInitialize(&flow);
+    BattleResultsPresentation ranked = {
+        .victory = true, .xp = 20, .renown_rank_pre = 10, .renown_rank_post = 11, .renown_gems = 10
+    };
+    BattleResultsFlowStart(&flow, ranked);
+    assert(flow.stage == BATTLE_RESULTS_RENOWN_RANK);
+    BattleResultsAdvance(&flow);
+    assert(flow.stage == BATTLE_RESULTS_REWARDS);
+
+    BattleResultsPresentation both = {
+        .victory = true, .xp = 20, .player_level_pre = 9, .player_level_post = 10, .renown_rank_post = 1
+    };
+    BattleResultsFlowStart(&flow, both);
+    assert(flow.stage == BATTLE_RESULTS_PLAYER_LEVEL);
+    BattleResultsAdvance(&flow);
+    assert(flow.stage == BATTLE_RESULTS_RENOWN_RANK);
+    BattleResultsAdvance(&flow);
+    assert(flow.stage == BATTLE_RESULTS_REWARDS);
+
+    BattleResultsPresentation steady = {.victory = true, .xp = 20, .renown_rank_pre = 4, .renown_rank_post = 4};
+    BattleResultsFlowStart(&flow, steady);
+    assert(flow.stage == BATTLE_RESULTS_REWARDS);
+}
+
 int main(void) {
     TestSystemLocalesPickTheirOriginalLocalization();
     TestFontCoversEveryGlyphOfTheLoadedLanguage();
     TestLocalizationLayersProjectStringsOverTheOriginalTable();
+    TestRenownIsOffUntilItsTableLoads();
+    TestRenownRanksFollowTheXpCurvePastTheLevelCap();
+    TestRenownPointsBuyPerksUpToTheirMaxRank();
+    TestXpPastTheLevelCapEarnsRanksGemsAndARefill();
+    TestRenownPerksRaiseGoldAndSquadXp();
+    TestRenownWinDropsRollTheVoucherThenTheKey();
+    TestRenownBattleBonusStrengthensOnlyItsOwnSide();
+    TestBattleSidesNameTheirRenownBonus();
+    TestRenownSurvivesSaveAndLoad();
+    TestARenownRankUpGetsItsOwnResultsStage();
     TestBattleFeetSitOnPadsWhoseBottomsShareOnePlane();
     TestPvpBannerCurvePeaksAtTheLadderMidpoint();
     TestPvpEventResultsKeepNineteenUnclaimedFirst();

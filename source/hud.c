@@ -9,6 +9,7 @@ typedef enum {
     HUD_OPTIONS,
     HUD_TROPHIES,
     HUD_BANNERS,
+    HUD_RENOWN,
 } HudAction;
 
 typedef struct {
@@ -20,6 +21,7 @@ typedef struct {
 
 #define HUD_PROFILE_ART EXTRA_ASSET_DIR "gui/hud/profile.png"
 #define HUD_PROFILE_STEP 0.9f
+#define HUD_XP_STAR_SCALE 1.02f
 #define HUD_TALLY_TIME 2.25f
 #define HUD_TALLY_PULSE_COUNT 3
 #define HUD_TALLY_PULSE_PERIOD 0.75f
@@ -180,6 +182,23 @@ static int HudDisplayedXpMinimum(const Player *player) {
     return player->experience_min < player->experience_max ? player->experience_min : 0;
 }
 
+static int HudDisplayedXp(const Player *player) {
+    return player->experience < player->experience_max ? player->experience : player->experience_max;
+}
+
+static bool HudShowsRenownRank(const Player *player) {
+    return RenownAvailable() && player->level >= PLAYER_MAX_LEVEL;
+}
+
+static int HudXpLabelOrigin(const Player *player) {
+    return HudShowsRenownRank(player) ? HudDisplayedXpMinimum(player) : 0;
+}
+
+static Rectangle HudXpStarRect(const HudLayout *layout) {
+    Rectangle star = {layout->xp.x, layout->xp.y, layout->xp.height, layout->xp.height};
+    return UiRect(star, 0.5f, 0.5f, star.width * HUD_XP_STAR_SCALE, star.height * HUD_XP_STAR_SCALE);
+}
+
 static float HudXpProgress(const Player *player) {
     int minimum = HudDisplayedXpMinimum(player);
     int range = player->experience_max - minimum;
@@ -234,13 +253,23 @@ static Rectangle HudActionRect(HudAction action, const HudLayout *layout) {
             return layout->options;
         case HUD_PROFILE:
             return layout->profile;
+        case HUD_RENOWN:
+            return RenownAvailable() ? layout->xp : (Rectangle){0};
         default:
             return (Rectangle){0};
     }
 }
 
 static HudAction HudActionAt(Vector2 point, const HudLayout *layout) {
-    static const HudAction order[] = {HUD_STAMINA, HUD_ENERGY, HUD_GOLD, HUD_GEMS, HUD_OPTIONS, HUD_PROFILE};
+    static const HudAction order[] = {
+        HUD_STAMINA,
+        HUD_ENERGY,
+        HUD_GOLD,
+        HUD_GEMS,
+        HUD_OPTIONS,
+        HUD_PROFILE,
+        HUD_RENOWN,
+    };
     for (int i = 0; i < (int)(sizeof(order) / sizeof(order[0])); i++) {
         if (CheckCollisionPointRec(point, HudActionRect(order[i], layout))) return order[i];
     }
@@ -301,14 +330,21 @@ static void HudDrawXp(const Hud *hud, const Player *player, const HudLayout *lay
         dst.width *= progress;
         DrawTexturePro(hud->xp_fill, src, dst, (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
     }
-    UiDrawTextCentered(hud->font, TextFormat("%d", player->level), layout->xp_level_label, 20.0f, WHITE);
+    int rank = RenownRank(player->experience);
+    Rectangle star = HudXpStarRect(layout);
+    Texture2D tier_star = RenownStarTexture(RenownTierForRank(rank));
+    if (tier_star.id) UiDrawTexture(tier_star, star, WHITE);
+    int shown_number = HudShowsRenownRank(player) ? rank : player->level;
+    UiDrawTextCentered(hud->font, TextFormat("%d", shown_number), layout->xp_level_label, 20.0f, WHITE);
+    int label_origin = HudXpLabelOrigin(player);
     UiDrawTextCentered(
         hud->font,
-        TextFormat("%d/%d", player->experience, player->experience_max),
+        TextFormat("%d/%d", HudDisplayedXp(player) - label_origin, player->experience_max - label_origin),
         layout->xp_amount_label,
         15.0f,
         WHITE
     );
+    ButtonDrawBadge(star, RenownPointsFree(&player->renown, player->experience));
 }
 
 static void HudDrawResource(

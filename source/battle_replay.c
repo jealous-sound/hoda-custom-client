@@ -43,6 +43,8 @@ static cJSON *BattleReplaySideJson(const BattleSimSide *side, bool player_side, 
         if (def) cJSON_AddItemToArray(runes, cJSON_CreateString(def->id));
     }
     if (hero_builds && !player_side) cJSON_AddBoolToObject(json, BATTLE_HERO_BUILDS_FIELD, true);
+    if (RenownBattleBonusActive(&side->renown))
+        cJSON_AddItemToObject(json, BATTLE_RENOWN_FIELD, RenownBattleBonusJson(&side->renown));
     return json;
 }
 
@@ -144,7 +146,7 @@ bool BattleReplayRosterLoad(BattleRoster *roster, const cJSON *catalog, const cJ
         if (def < 0 || roster->rune_def_count == RUNE_SLOT_COUNT) return false;
         roster->rune_defs[roster->rune_def_count++] = def;
     }
-    return true;
+    return RenownBattleBonusLoad(cJSON_GetObjectItemCaseSensitive(side, BATTLE_RENOWN_FIELD), &roster->renown);
 }
 
 cJSON *BattleReplayCatalogLoad(void) {

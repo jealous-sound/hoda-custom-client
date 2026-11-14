@@ -379,7 +379,9 @@ static void ProfileDrawCard(ProfilePopup *p, Player *player, const char *guild_n
     }
     char value[PROFILE_TEXT_CAP];
     int row = 0;
-    ProfileDrawRow(font, row++, "LEADERBOARD_LEVEL", TextFormat("%d", player->level));
+    int renown_rank = RenownRank(player->experience);
+    LocFormatInt2(value, sizeof(value), "HODA_RENOWN_PROFILE_LEVEL", player->level, renown_rank);
+    ProfileDrawRow(font, row++, "LEADERBOARD_LEVEL", renown_rank > 0 ? value : TextFormat("%d", player->level));
     LocFormatInt2(value, sizeof(value), "HODA_PROFILE_TROPHIES_VALUE", player->pvp.trophies, player->pvp.best_trophies);
     ProfileDrawRow(font, row++, "LEADERBOARD_TROPHIES", value);
     LocFormatInt2(value, sizeof(value), "HODA_PROFILE_PVP_VALUE", player->pvp.wins, player->pvp.losses);

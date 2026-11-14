@@ -1207,11 +1207,23 @@ static int StoreRollBonusGear(const StorePackDef *pack, uint32_t *rng) {
     return GearRollFromPack(&roll, rng);
 }
 
-void StoreAwardVoucherForWin(Player *player) {
+static void StoreRollWinVoucher(Player *player) {
     if (store_voucher_kinds <= 0) return;
-    if (StoreRngRange(&player->store_rng_state, 100) >= STORE_VOUCHER_WIN_DROP_PCT) return;
+    int chance_pct = STORE_VOUCHER_WIN_DROP_PCT + RenownPerkValue(&player->renown, RENOWN_PERK_VOUCHER);
+    if (StoreRngRange(&player->store_rng_state, 100) >= chance_pct) return;
     int voucher = StoreRngRange(&player->store_rng_state, store_voucher_kinds);
     if (player->pack_vouchers[voucher] < INT_MAX) player->pack_vouchers[voucher]++;
+}
+
+static void StoreRollWinKey(Player *player) {
+    int chance_pct = RenownPerkValue(&player->renown, RENOWN_PERK_KEY);
+    if (chance_pct <= 0 || StoreRngRange(&player->store_rng_state, 100) >= chance_pct) return;
+    PlayerAddKey(player, StoreRngRange(&player->store_rng_state, NEXUS_KEY_COUNT));
+}
+
+void StoreAwardWinDrops(Player *player) {
+    StoreRollWinVoucher(player);
+    StoreRollWinKey(player);
 }
 
 static void StoreOpenDialog(Store *store, StoreDialog dialog) {

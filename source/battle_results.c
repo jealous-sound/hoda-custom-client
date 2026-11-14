@@ -8,6 +8,11 @@
 #define HERO_LEVEL_DESIGN_HEIGHT 720.0f
 #define HERO_LEVEL_XP_EASE_SECONDS 2.0f
 #define HERO_LEVEL_FADE_SECONDS 0.2f
+#define RENOWN_RANK_UP_TEXT_X 293.0f
+#define RENOWN_RANK_UP_TEXT_END 560.0f
+#define RENOWN_RANK_UP_ICON 22.0f
+#define RENOWN_RANK_UP_ICON_STEP 28.0f
+#define RENOWN_RANK_UP_BODY_SIZE 12.5f
 #define TEXT_ALIGN_START 0.0f
 #define TEXT_ALIGN_CENTER 0.5f
 #define TEXT_ALIGN_END 1.0f
@@ -22,6 +27,9 @@ typedef struct {
     int wins_to_master;
     int player_level_pre;
     int player_level_post;
+    int renown_rank_pre;
+    int renown_rank_post;
+    int renown_gems;
     int energy_max_delta;
     int xp;
     int gold;
@@ -39,6 +47,7 @@ typedef struct {
 typedef enum {
     BATTLE_RESULTS_OFF,
     BATTLE_RESULTS_PLAYER_LEVEL,
+    BATTLE_RESULTS_RENOWN_RANK,
     BATTLE_RESULTS_HERO_LEVEL,
     BATTLE_RESULTS_NODE_COMPLETION,
     BATTLE_RESULTS_REWARDS,
@@ -244,7 +253,9 @@ static void BattleResultsEnterStage(BattleResultsFlow *flow, BattleResultsStage 
     flow->reward_sounds_played = 0;
     flow->armed_action = BATTLE_RESULTS_ACTION_NONE;
 
-    if (stage == BATTLE_RESULTS_PLAYER_LEVEL || stage == BATTLE_RESULTS_NODE_COMPLETION) GuiSoundPlay(SND_LEVEL_UP);
+    if (stage == BATTLE_RESULTS_PLAYER_LEVEL || stage == BATTLE_RESULTS_RENOWN_RANK ||
+        stage == BATTLE_RESULTS_NODE_COMPLETION)
+        GuiSoundPlay(SND_LEVEL_UP);
     if (stage == BATTLE_RESULTS_HERO_LEVEL) {
         int first = HeroLevelNextFrom(&flow->presentation, 0);
         HeroLevelScreenShow(&flow->hero_level, &flow->presentation.squad.heroes[first], first);
@@ -256,8 +267,13 @@ static BattleResultsStage BattleResultsStageAfterHeroLevels(const BattleResultsP
     return BattleResultsHasCompletion(p) ? BATTLE_RESULTS_NODE_COMPLETION : BATTLE_RESULTS_REWARDS;
 }
 
-static BattleResultsStage BattleResultsStageAfterPlayerLevel(const BattleResultsPresentation *p) {
+static BattleResultsStage BattleResultsStageAfterRenownRank(const BattleResultsPresentation *p) {
     return BattleResultsHasHeroLevel(p) ? BATTLE_RESULTS_HERO_LEVEL : BattleResultsStageAfterHeroLevels(p);
+}
+
+static BattleResultsStage BattleResultsStageAfterPlayerLevel(const BattleResultsPresentation *p) {
+    bool ranked_up = p->renown_rank_post > p->renown_rank_pre;
+    return ranked_up ? BATTLE_RESULTS_RENOWN_RANK : BattleResultsStageAfterRenownRank(p);
 }
 
 void BattleResultsFlowInitialize(BattleResultsFlow *flow) {
@@ -316,6 +332,8 @@ Player BattleResultsFlowHudPlayer(const BattleResultsFlow *flow, const Player *p
 static void BattleResultsAdvance(BattleResultsFlow *flow) {
     if (flow->stage == BATTLE_RESULTS_PLAYER_LEVEL) {
         BattleResultsEnterStage(flow, BattleResultsStageAfterPlayerLevel(&flow->presentation));
+    } else if (flow->stage == BATTLE_RESULTS_RENOWN_RANK) {
+        BattleResultsEnterStage(flow, BattleResultsStageAfterRenownRank(&flow->presentation));
     } else if (flow->stage == BATTLE_RESULTS_HERO_LEVEL) {
         HeroLevelScreen *screen = &flow->hero_level;
         if (screen->next_hero < 0) {
@@ -402,9 +420,7 @@ static Rectangle BattleResultsLevelRect(Rectangle panel, float x, float y, float
     };
 }
 
-static void BattleResultsDrawLevelUp(const BattleResultsFlow *flow) {
-    const BattleResultsPresentation *p = &flow->presentation;
-    float fade = BattleResultsClamp01(flow->stage_time / 0.2f);
+static Rectangle BattleResultsLevelPanel(void) {
     float aspect = 564.185f / 265.0f;
     float panel_height = UiHeight() * 0.625f;
     float panel_width = panel_height * aspect;
@@ -412,12 +428,18 @@ static void BattleResultsDrawLevelUp(const BattleResultsFlow *flow) {
         panel_width = UiWidth() * 0.96f;
         panel_height = panel_width / aspect;
     }
-    Rectangle panel = {
+    return (Rectangle){
         (UiWidth() - panel_width) * 0.5f,
         (UiHeight() - panel_height) * 0.5f,
         panel_width,
         panel_height,
     };
+}
+
+static void BattleResultsDrawLevelUp(const BattleResultsFlow *flow) {
+    const BattleResultsPresentation *p = &flow->presentation;
+    float fade = BattleResultsClamp01(flow->stage_time / 0.2f);
+    Rectangle panel = BattleResultsLevelPanel();
     float scale = panel.height / 265.0f;
 
     BattleResultsDrawScrim(fade);
@@ -501,6 +523,64 @@ static void BattleResultsDrawLevelUp(const BattleResultsFlow *flow) {
 
     BattleResultsDrawTextInRect(
         GuiFont(FNT_MENU),
+        LocGet("PLAYER_LEVEL_UP_TAP"),
+        BattleResultsLevelRect(panel, 75.0f, 287.0f, 508.0f, 32.0f),
+        16.0f * scale,
+        BattleResultsAlpha((Color){230, 230, 230, 255}, fade),
+        false
+    );
+}
+
+static void
+BattleResultsDrawRenownLine(Rectangle panel, float y, GuiId icon, GuiId second_icon, const char *text, Color tint) {
+    float x = RENOWN_RANK_UP_TEXT_X;
+    RenownDrawFit(GuiTex(icon), BattleResultsLevelRect(panel, x, y, RENOWN_RANK_UP_ICON, RENOWN_RANK_UP_ICON), tint);
+    x += RENOWN_RANK_UP_ICON_STEP;
+    if (second_icon != icon) {
+        RenownDrawFit(
+            GuiTex(second_icon), BattleResultsLevelRect(panel, x, y, RENOWN_RANK_UP_ICON, RENOWN_RANK_UP_ICON), tint
+        );
+        x += RENOWN_RANK_UP_ICON_STEP;
+    }
+    Rectangle line = BattleResultsLevelRect(panel, x, y, RENOWN_RANK_UP_TEXT_END - x, RENOWN_RANK_UP_ICON);
+    Font font = GuiFont(FNT_MENU);
+    float size = RENOWN_RANK_UP_BODY_SIZE * panel.height / 265.0f;
+    UiDrawTextLeftMiddle(font, text, line, RenownFittedTextSize(font, text, line.width, size), tint);
+}
+
+static void BattleResultsDrawRenownRank(const BattleResultsFlow *flow) {
+    const BattleResultsPresentation *p = &flow->presentation;
+    float fade = BattleResultsClamp01(flow->stage_time / 0.2f);
+    Rectangle panel = BattleResultsLevelPanel();
+    float scale = panel.height / 265.0f;
+    Color white = BattleResultsAlpha(WHITE, fade);
+    Color gold = BattleResultsAlpha((Color){236, 200, 120, 255}, fade);
+
+    BattleResultsDrawScrim(fade);
+    UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), panel, white);
+    RenownDrawEmblem(p->renown_rank_post, BattleResultsLevelRect(panel, 105.0f, 114.0f, 192.0f, 192.0f), white);
+
+    Font cool = GuiFont(FNT_COOL), body = GuiFont(FNT_MENU);
+    float text_width = RENOWN_RANK_UP_TEXT_END - RENOWN_RANK_UP_TEXT_X;
+    char text[160];
+    LocFormatInt(text, sizeof(text), "HODA_RENOWN_RANK_UP", p->renown_rank_post);
+    Rectangle heading = BattleResultsLevelRect(panel, RENOWN_RANK_UP_TEXT_X, 141.0f, text_width, 26.0f);
+    UiDrawTextLeftMiddle(cool, text, heading, RenownFittedTextSize(cool, text, heading.width, 21.0f * scale), white);
+
+    bool new_emblem = RenownTierForRank(p->renown_rank_post) != RenownTierForRank(p->renown_rank_pre);
+    const char *note = LocGet(new_emblem ? "HODA_RENOWN_NEW_EMBLEM" : "HODA_RENOWN_SPEND_HINT");
+    Rectangle note_rect = BattleResultsLevelRect(panel, RENOWN_RANK_UP_TEXT_X, 167.0f, text_width, 22.0f);
+    float note_size = RenownFittedTextSize(body, note, note_rect.width, RENOWN_RANK_UP_BODY_SIZE * scale);
+    UiDrawTextLeftMiddle(body, note, note_rect, note_size, gold);
+
+    LocFormatInt(text, sizeof(text), "HODA_RENOWN_GAIN_POINTS", p->renown_rank_post - p->renown_rank_pre);
+    BattleResultsDrawRenownLine(panel, 200.0f, GUI_MISSION_STAR, GUI_MISSION_STAR, text, white);
+    LocFormatInt(text, sizeof(text), "HODA_RENOWN_GAIN_GEMS", p->renown_gems);
+    BattleResultsDrawRenownLine(panel, 226.0f, GUI_MAP_GEMS, GUI_MAP_GEMS, text, white);
+    BattleResultsDrawRenownLine(panel, 252.0f, GUI_HUD_ENERGY, GUI_HUD_STAMINA, LocGet("HODA_RENOWN_REFRESHED"), white);
+
+    BattleResultsDrawTextInRect(
+        body,
         LocGet("PLAYER_LEVEL_UP_TAP"),
         BattleResultsLevelRect(panel, 75.0f, 287.0f, 508.0f, 32.0f),
         16.0f * scale,
@@ -1103,6 +1183,9 @@ BattleResultsDrawRewards(const BattleResultsFlow *flow, const Player *player, co
 
 void BattleResultsFlowDraw(const BattleResultsFlow *flow, const Player *player, const Heroes *heroes, int squad_index) {
     switch (flow->stage) {
+        case BATTLE_RESULTS_RENOWN_RANK:
+            BattleResultsDrawRenownRank(flow);
+            break;
         case BATTLE_RESULTS_PLAYER_LEVEL:
             BattleResultsDrawLevelUp(flow);
             break;

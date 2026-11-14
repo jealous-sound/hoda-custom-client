@@ -85,6 +85,7 @@ typedef struct {
     bool stamina_dialog_top;
     OptionsPopup options;
     ProfilePopup profile;
+    RenownView renown_view;
     bool account_changed;
     bool restart_requested;
     bool quit_requested;
@@ -335,6 +336,7 @@ static PvpOpponent GameDuelOpponent(const Game *g) {
         PvpOpponentAddDuelUnit(&opponent, unit->slot, unit->id, TierFromString(unit->tier), unit->level, build);
     }
     for (int i = 0; i < d->rune_count; i++) PvpOpponentAddDuelRune(&opponent, d->runes[i]);
+    opponent.renown = d->renown;
     return opponent;
 }
 
@@ -540,6 +542,9 @@ static BattleResultsPresentation GameBattleResultsSnapshot(const Game *g) {
         .wins_to_master = g->battle_reward.wins_to_master,
         .player_level_pre = g->battle_reward.player_level_pre,
         .player_level_post = g->battle_reward.player_level_post,
+        .renown_rank_pre = g->battle_reward.renown_rank_pre,
+        .renown_rank_post = g->battle_reward.renown_rank_post,
+        .renown_gems = g->battle_reward.renown_gems_reward,
         .energy_max_delta = g->battle_reward.energy_max_post - g->battle_reward.energy_max_pre,
         .xp = g->battle_reward.xp_reward,
         .gold = g->battle_reward.gold_reward,
@@ -1226,6 +1231,7 @@ bool GameInitialize(Game *g) {
     LoadingScreenPresent();
     MissionCatalogLoad("data/missions.json");
     ExpeditionCatalogLoad(EXPEDITIONS_PATH);
+    RenownCatalogLoad(RENOWN_PATH);
     TimedQuestCatalogLoad(TIMED_QUESTS_PATH);
 
     PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
@@ -1281,6 +1287,7 @@ bool GameInitialize(Game *g) {
     g->stamina_dialog_top = false;
     OptionsPopupInitialize(&g->options);
     ProfilePopupInitialize(&g->profile);
+    RenownViewInitialize(&g->renown_view);
     g->account_changed = false;
     g->restart_requested = false;
     g->battle_map_index = 0;
@@ -1301,7 +1308,7 @@ bool GameInitialize(Game *g) {
 
 static bool GameResourceDialogOpen(const Game *g) {
     return EnergyDialogIsOpen(&g->energy_dialog) || EnergyDialogIsOpen(&g->stamina_dialog) ||
-           OptionsPopupIsOpen(&g->options) || ProfilePopupIsOpen(&g->profile);
+           OptionsPopupIsOpen(&g->options) || ProfilePopupIsOpen(&g->profile) || RenownViewIsOpen(&g->renown_view);
 }
 
 static EnergyDialog *GameTopResourceDialog(Game *g) {
@@ -1320,6 +1327,7 @@ bool GameHandlePopupBack(Game *g) {
         return true;
     }
     if (ProfilePopupBack(&g->profile)) return true;
+    if (RenownViewBack(&g->renown_view)) return true;
     if (OptionsPopupBack(&g->options)) return true;
     EnergyDialog *top = GameTopResourceDialog(g);
     if (top) {
@@ -1629,6 +1637,7 @@ static HudAction GameHudActionAfterPopup(HudAction action, HudAction popup_butto
 static void GameHandleHudAction(Game *g, HudAction a) {
     if (a != HUD_NONE && a != HUD_OPTIONS) OptionsPopupClose(&g->options);
     if (a != HUD_NONE && a != HUD_PROFILE) ProfilePopupClose(&g->profile);
+    if (a != HUD_NONE && a != HUD_RENOWN) RenownViewClose(&g->renown_view);
     switch (a) {
         case HUD_HOME:
             if (EnergyDialogIsOpen(&g->stamina_dialog)) GuiSoundPlay(SND_UI_POPUP_CLOSE);
@@ -1684,6 +1693,18 @@ static void GameHandleHudAction(Game *g, HudAction a) {
                 GuiSoundPlay(SND_UI_POPUP_CLOSE);
             } else {
                 ProfilePopupOpen(&g->profile);
+                GuiClickSoundPlay();
+            }
+            break;
+        case HUD_RENOWN:
+            if (g->screen == SCREEN_BATTLE) break;
+            EnergyDialogClose(&g->energy_dialog);
+            EnergyDialogClose(&g->stamina_dialog);
+            if (RenownViewIsOpen(&g->renown_view)) {
+                RenownViewClose(&g->renown_view);
+                GuiSoundPlay(SND_UI_POPUP_CLOSE);
+            } else {
+                RenownViewOpen(&g->renown_view, &g->player);
                 GuiClickSoundPlay();
             }
             break;
@@ -2409,6 +2430,12 @@ void GameDraw(Game *g) {
         bool hud_interactive = !ProfilePopupModal(&g->profile);
         HudAction clicked = HudDraw(&g->hud, &g->player, hud_interactive, g->screen == SCREEN_HOME);
         popup_hud_action = GameHudActionAfterPopup(clicked, HUD_PROFILE, ProfilePopupIsOpen(&g->profile));
+        UiFrameEnd();
+    } else if (RenownViewIsOpen(&g->renown_view)) {
+        UiFrameBegin();
+        RenownViewDraw(&g->renown_view, &g->player, true);
+        HudAction clicked = HudDraw(&g->hud, &g->player, true, g->screen == SCREEN_HOME);
+        popup_hud_action = GameHudActionAfterPopup(clicked, HUD_RENOWN, RenownViewIsOpen(&g->renown_view));
         UiFrameEnd();
     }
     if (BackendCredentialsRefused()) GameLeaveAccount(g);

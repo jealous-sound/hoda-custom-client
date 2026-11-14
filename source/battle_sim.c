@@ -2109,6 +2109,7 @@ static int SimRollRoundOrder(BattleSim *s, int order[SIM_UNIT_COUNT]) {
 }
 
 #define SIM_ROUND_CAP 10
+#define SIM_PERMILLE_PER_PCT 10.0f
 
 static int SimRuneStat(int stat, int rune_pct, const StatBudget *stat_budget) {
     return stat_budget ? StatBudgetRuneStat(stat_budget, stat, rune_pct) : RuneApplyPct(stat, rune_pct);
@@ -2120,6 +2121,16 @@ static void SimUnitsRuneBonus(SimUnit *units, int side, const RuneBonus *bonus, 
         if (!u->present) continue;
         u->power = u->start_power = SimRuneStat(u->power, bonus->power_pct, stat_budget);
         u->max_health = u->health = SimRuneStat(u->max_health, bonus->health_pct, stat_budget);
+    }
+}
+
+static void SimUnitsRenownBonus(SimUnit *units, int side, const RenownBattleBonus *bonus) {
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        SimUnit *u = &units[side * SQUAD_SLOT_COUNT + slot];
+        if (!u->present) continue;
+        u->power = u->start_power = RuneApplyPct(u->power, bonus->power_pct);
+        u->max_health = u->health = RuneApplyPct(u->max_health, bonus->health_pct);
+        u->crit_pct += (float)bonus->crit_permille / SIM_PERMILLE_PER_PCT;
     }
 }
 
@@ -2157,12 +2168,14 @@ typedef struct {
     const Character *chars[SQUAD_SLOT_COUNT];
     int rune_defs[RUNE_SLOT_COUNT];
     int rune_def_count;
+    RenownBattleBonus renown;
 } BattleSimSide;
 
 static BattleSimSide SimPlayerSide(const Player *player) {
     BattleSimSide side = {0};
     for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) side.chars[slot] = PlayerSquadCharacter(player, slot);
     side.rune_def_count = RuneActiveDefs(&player->runes, player->current_squad, RuneNow(), side.rune_defs);
+    side.renown = RenownBattleBonusOf(&player->renown);
     return side;
 }
 
@@ -2172,6 +2185,7 @@ static BattleSimSide SimRosterSide(const BattleRoster *roster) {
         side.chars[slot] = roster->present[slot] ? &roster->chars[slot] : NULL;
     for (int i = 0; i < roster->rune_def_count && i < RUNE_SLOT_COUNT; i++)
         side.rune_defs[side.rune_def_count++] = roster->rune_defs[i];
+    side.renown = roster->renown;
     return side;
 }
 
@@ -2215,6 +2229,8 @@ static void SimUnitsSetup(
     SimUnitsRuneBonus(units, 0, &rune_bonus, rules->stat_budget);
     RuneBonus enemy_rune_bonus = SimSideRuneBonus(enemy, rules->stat_budget);
     SimUnitsRuneBonus(units, 1, &enemy_rune_bonus, rules->stat_budget);
+    SimUnitsRenownBonus(units, 0, &player->renown);
+    SimUnitsRenownBonus(units, 1, &enemy->renown);
     SimUnitsGameChanger(units, rules->changer, rules->stat_budget);
 }
 
