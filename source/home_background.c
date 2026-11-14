@@ -196,6 +196,20 @@ static void SetWindUniforms(Shader sh, WindLocs locs, const SceneWind *w, Vector
     SetShaderValue(sh, locs.tint,     w->tint,      SHADER_UNIFORM_VEC3);
 }
 
+static void DrawWindMeshInstance(Shader sh, WindLocs locs, const SceneWind *w, Mesh mesh, Material material,
+                                 Matrix placement, Vector3 mesh_centre, float time)
+{
+    SetWindUniforms(sh, locs, w, Vector3Transform(mesh_centre, placement), time);
+    SetShaderValue(sh, locs.origin, &mesh_centre, SHADER_UNIFORM_VEC3);
+    DrawMesh(mesh, material, placement);
+}
+
+static Vector3 MeshBoundsCentre(Mesh mesh)
+{
+    BoundingBox bounds = GetMeshBoundingBox(mesh);
+    return Vector3Scale(Vector3Add(bounds.min, bounds.max), 0.5f);
+}
+
 static Mesh LoadPlyMesh(const char *path)
 {
     Mesh mesh = {0};

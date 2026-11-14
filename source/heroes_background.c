@@ -49,6 +49,8 @@ static HeroRole HeroRoleForMat(int m) {
 }
 
 #define HERO_MAX_MESH 256
+#define HERO_MAX_FLAGS 8
+#define HERO_FLAG_MESH_PATH "MainMenuContainer/ply_vertexcolor/trainscrn_flag.ply"
 
 static const char *const FS_HERO_MIX = "#version 330\n"
                                        "in vec2 fragTexCoord; in vec4 fragColor;\n"
@@ -152,6 +154,11 @@ typedef struct {
     int mesh_mat[HERO_MAX_MESH];
     Vector3 mesh_centre[HERO_MAX_MESH];
 
+    Mesh flag_mesh;
+    Vector3 flag_mesh_centre;
+    Matrix flag_placement[HERO_MAX_FLAGS];
+    int flag_count;
+
     Shader mix_sh, rock_sh, diff_sh, wind_sh, plain_sh, decal_sh, mult_sh;
     WindLocs wind_loc;
 
@@ -170,6 +177,7 @@ typedef struct {
     Model backdrop;
     Texture2D t_woodfort;
     Material backdrop_mat;
+    Material flag_mat;
     Matrix bg_xform;
 
     float glow_time;
@@ -1129,6 +1137,84 @@ static void HeroMeshRebuild(Model *model, int i) {
     *src = m;
 }
 
+static Matrix HeroPlacementOfBakedCopy(Mesh local, Mesh baked) {
+    if (local.vertexCount != baked.vertexCount)
+        TraceLog(
+            LOG_FATAL, "HeroesBackground: baked flag has %d vertices, expected %d", baked.vertexCount, local.vertexCount
+        );
+    float local_outer[4][4] = {0}, baked_outer[4][4] = {0};
+    for (int v = 0; v < local.vertexCount; v++) {
+        const float *l = &local.vertices[v * 3], *b = &baked.vertices[v * 3];
+        float local_point[4] = {l[0], l[1], l[2], 1.0f}, baked_point[4] = {b[0], b[1], b[2], 1.0f};
+        for (int row = 0; row < 4; row++) {
+            for (int column = 0; column < 4; column++) {
+                local_outer[row][column] += local_point[row] * local_point[column];
+                baked_outer[row][column] += baked_point[row] * local_point[column];
+            }
+        }
+    }
+    Matrix inverse = MatrixInvert((Matrix){
+        local_outer[0][0],
+        local_outer[0][1],
+        local_outer[0][2],
+        local_outer[0][3],
+        local_outer[1][0],
+        local_outer[1][1],
+        local_outer[1][2],
+        local_outer[1][3],
+        local_outer[2][0],
+        local_outer[2][1],
+        local_outer[2][2],
+        local_outer[2][3],
+        local_outer[3][0],
+        local_outer[3][1],
+        local_outer[3][2],
+        local_outer[3][3],
+    });
+    float inverse_rows[4][4] = {
+        {inverse.m0, inverse.m4, inverse.m8, inverse.m12},
+        {inverse.m1, inverse.m5, inverse.m9, inverse.m13},
+        {inverse.m2, inverse.m6, inverse.m10, inverse.m14},
+        {inverse.m3, inverse.m7, inverse.m11, inverse.m15},
+    };
+    float fit[3][4] = {0};
+    for (int row = 0; row < 3; row++)
+        for (int column = 0; column < 4; column++)
+            for (int k = 0; k < 4; k++) fit[row][column] += baked_outer[row][k] * inverse_rows[k][column];
+    return (Matrix){
+        fit[0][0],
+        fit[0][1],
+        fit[0][2],
+        fit[0][3],
+        fit[1][0],
+        fit[1][1],
+        fit[1][2],
+        fit[1][3],
+        fit[2][0],
+        fit[2][1],
+        fit[2][2],
+        fit[2][3],
+        0.0f,
+        0.0f,
+        0.0f,
+        1.0f,
+    };
+}
+
+static void HeroFlagsReplaceBakedCopies(HeroesBackground *scene, const char *mesh_dir) {
+    scene->flag_mesh = LoadPlyMesh(TextFormat("%s/%s", mesh_dir, HERO_FLAG_MESH_PATH));
+    scene->flag_mesh_centre = MeshBoundsCentre(scene->flag_mesh);
+    scene->flag_count = 0;
+    for (int i = 0; i < scene->mesh_count; i++) {
+        if (scene->mesh_role[i] != HR_CLOTH) continue;
+        if (scene->flag_count >= HERO_MAX_FLAGS) TraceLog(LOG_FATAL, "HeroesBackground: too many flags");
+        scene->flag_placement[scene->flag_count++] = HeroPlacementOfBakedCopy(scene->flag_mesh, scene->model.meshes[i]);
+        UnloadMesh(scene->model.meshes[i]);
+        scene->model.meshes[i] = (Mesh){0};
+        scene->mesh_role[i] = HR_SKIP;
+    }
+}
+
 #define ARENA_MIN_X (5.0f)
 #define ARENA_MAX_X (62.0f)
 #define ARENA_MIN_Y (-10.0f)
@@ -1245,6 +1331,8 @@ void HeroesBackgroundInitialize(
         }
     }
 
+    HeroFlagsReplaceBakedCopies(scene, mesh_dir);
+
     Material *mats = scene->model.materials;
     int mc = scene->model.materialCount;
     if (mc > 4) {
@@ -1274,10 +1362,9 @@ void HeroesBackgroundInitialize(
         mats[1].shader = scene->wind_sh;
         mats[1].maps[MATERIAL_MAP_DIFFUSE].texture = scene->t_fern;
     }
-    if (mc > 6) {
-        mats[6].shader = scene->wind_sh;
-        mats[6].maps[MATERIAL_MAP_DIFFUSE].texture = scene->t_flag;
-    }
+    scene->flag_mat = LoadMaterialDefault();
+    scene->flag_mat.shader = scene->wind_sh;
+    scene->flag_mat.maps[MATERIAL_MAP_DIFFUSE].texture = scene->t_flag;
     float plain_bright = 1.0f;
     SetShaderValue(
         scene->plain_sh, GetShaderLocation(scene->plain_sh, "brightness"), &plain_bright, SHADER_UNIFORM_FLOAT
@@ -1375,7 +1462,7 @@ void HeroesBackgroundUpdate(HeroesBackground *scene, float dt) {
 }
 
 static const SceneWind *HeroWind(HeroRole role) {
-    return (role == HR_GRASS) ? &SCENE_WIND_GRASS : (role == HR_FERN) ? &SCENE_WIND_FERN : &SCENE_WIND_FLAG;
+    return (role == HR_GRASS) ? &SCENE_WIND_GRASS : &SCENE_WIND_FERN;
 }
 
 static void HeroGlowDraw(HeroesBackground *scene, Camera3D camera, Vector3 pos) {
@@ -1571,10 +1658,21 @@ void HeroesBackgroundDraw(HeroesBackground *scene) {
 
     for (int i = 0; i < scene->mesh_count; i++) {
         HeroRole r = scene->mesh_role[i];
-        if (r != HR_GRASS && r != HR_FERN && r != HR_CLOTH) continue;
+        if (r != HR_GRASS && r != HR_FERN) continue;
         SetWindUniforms(scene->wind_sh, scene->wind_loc, HeroWind(r), scene->mesh_centre[i], t);
         DrawMesh(scene->model.meshes[i], scene->model.materials[scene->mesh_mat[i]], I);
     }
+    for (int i = 0; i < scene->flag_count; i++)
+        DrawWindMeshInstance(
+            scene->wind_sh,
+            scene->wind_loc,
+            &SCENE_WIND_FLAG,
+            scene->flag_mesh,
+            scene->flag_mat,
+            scene->flag_placement[i],
+            scene->flag_mesh_centre,
+            t
+        );
     EndBlendMode();
 
     HeroGlowDraw(scene, scene->cam, HERO_SUN_GLOW_POSITION);
@@ -1641,6 +1739,8 @@ void HeroesBackgroundDestroy(HeroesBackground *scene) {
     SceneTexUnload(scene->t_woodfort);
     SceneMaterialUnload(scene->backdrop_mat);
     UnloadModel(scene->backdrop);
+    SceneMaterialUnload(scene->flag_mat);
+    UnloadMesh(scene->flag_mesh);
 
     UnloadShader(scene->mix_sh);
     UnloadShader(scene->rock_sh);
