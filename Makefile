@@ -28,6 +28,7 @@ INSTALL_TEST_TARGET = tests/client_install_test
 SERVER_ACTIONS_TEST_TARGET = tests/server_actions_test
 BUTTON_TEST_TARGET = tests/button_test
 BACKEND_DIR ?= ../hoda-custom-backend
+LOCAL_PLAY = $(BACKEND_DIR)/scripts/play-local.sh
 DIST_DIR ?= ../hoda-custom-dist
 DIST_BACKEND_URL ?=
 APP_ICON = packaging/app_icon.png
@@ -165,10 +166,14 @@ test: ci-test $(TEST_TARGET)
 	./$(TEST_TARGET)
 
 run: $(TARGET)
+ifneq ($(wildcard $(LOCAL_PLAY)),)
+	HOD_CLIENT_DIR="$(CURDIR)" HOD_CLIENT_EXECUTABLE="$(APP_EXECUTABLE)" "$(LOCAL_PLAY)"
+else
+	@echo "No backend checkout at $(BACKEND_DIR): Online Game plays on $(SERVER_URL)"
 	"./$(APP_EXECUTABLE)"
+endif
 
-play:
-	HOD_CLIENT_DIR="$(CURDIR)" "$(BACKEND_DIR)/scripts/play-local.sh"
+play: run
 
 dist: $(TARGET)
 	python3 tools/build_dist.py --replace --out "$(DIST_DIR)" --backend-url "$(DIST_BACKEND_URL)"

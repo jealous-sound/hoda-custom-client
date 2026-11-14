@@ -1,6 +1,7 @@
 #include <errno.h>
 
 #define BACKEND_URL_ENV "HOD_BACKEND_URL"
+#define BACKEND_ONLINE_URL_ENV "HOD_SERVER_URL"
 #ifndef HOD_SERVER_URL
 #define HOD_SERVER_URL ""
 #endif
@@ -77,6 +78,8 @@ const char *BackendUrlOverride(void) {
 }
 
 const char *BackendDefaultUrl(void) {
+    const char *chosen = getenv(BACKEND_ONLINE_URL_ENV);
+    if (chosen && chosen[0]) return chosen;
     return HOD_SERVER_URL[0] ? HOD_SERVER_URL : NULL;
 }
 

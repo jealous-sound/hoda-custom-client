@@ -20,8 +20,7 @@ Without a local copy the game downloads its data on first launch (see [Content](
 | Command | |
 | --- | --- |
 | `make` | builds `Heroes of Dragon Age.app`; `PLATFORM=linux` or `PLATFORM=windows` (MinGW-w64) build into `build/` |
-| `make run` | builds and runs the game |
-| `make play` | runs the game against a local backend from `../hoda-custom-backend` (`BACKEND_DIR=`) |
+| `make run`, `make play` | builds the game and a local backend from `../hoda-custom-backend` (`BACKEND_DIR=`) and runs both: Local Game plays `player_save.dat`, Online Game plays on the local server. Without that checkout it only runs the game |
 | `make test` | every check; needs the local asset cache |
 | `make ci-test` | the checks that need no asset cache: golden replays, squad strengths, content, update and install tests, table validators |
 | `make golden` | regenerates the battle corpus in `tests/golden/` |
@@ -64,6 +63,7 @@ admin. The button's icon is `extra/gui/hud/profile.png`; without that file the b
 | Variable | |
 | --- | --- |
 | `HOD_BACKEND_URL` | skips the choice and plays online against this server |
+| `HOD_SERVER_URL` | the server Online Game plays on, in place of `SERVER_URL`; the choice stays |
 | `HOD_LANGUAGE` | `en`, `fr`, `de`, `ja`, `zh-hant`, ...; overrides the system language and the saved choice |
 | `HOD_SKIP_TUTORIAL=1` | skips the tutorial |
 | `HOD_NEW_PLAYER` | a starting roster in place of `data/new_player.json`, such as `client-additional-data/player_starter.json` |
