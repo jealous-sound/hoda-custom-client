@@ -27,7 +27,7 @@
 
 static const Rectangle PROFILE_PANEL = {108.0f, 110.0f, 1064.0f, 500.0f};
 static const Rectangle PROFILE_TITLE = {108.0f, 132.0f, 1064.0f, 60.0f};
-static const Rectangle PROFILE_CLOSE = {1116.0f, 92.0f, 73.0f, 73.0f};
+static const Rectangle PROFILE_CLOSE = {1085.0f, 92.0f, 73.0f, 73.0f};
 static const Rectangle PROFILE_NAME = {206.0f, 208.0f, 300.0f, 46.0f};
 static const Rectangle PROFILE_RENAME = {516.0f, 208.0f, 136.0f, 46.0f};
 static const Rectangle PROFILE_ROW_LABEL = {206.0f, 270.0f, 170.0f, PROFILE_ROW_HEIGHT};

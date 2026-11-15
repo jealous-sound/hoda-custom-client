@@ -27,6 +27,7 @@ UPDATE_TEST_TARGET = tests/client_update_test
 INSTALL_TEST_TARGET = tests/client_install_test
 SERVER_ACTIONS_TEST_TARGET = tests/server_actions_test
 BUTTON_TEST_TARGET = tests/button_test
+SETTINGS_TEST_TARGET = tests/settings_test
 BACKEND_DIR ?= ../hoda-custom-backend
 LOCAL_PLAY = $(BACKEND_DIR)/scripts/play-local.sh
 DIST_DIR ?= ../hoda-custom-dist
@@ -128,7 +129,10 @@ $(SERVER_ACTIONS_TEST_TARGET): tests/server_actions_test.c $(DEPS) Makefile
 $(BUTTON_TEST_TARGET): tests/button_test.c $(DEPS) Makefile
 	$(CC) $(CFLAGS) tests/button_test.c $(SUPPORT_SRC) -o $(BUTTON_TEST_TARGET) $(LDFLAGS) $(LIBS)
 
-ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(SERVER_ACTIONS_TEST_TARGET) $(BUTTON_TEST_TARGET) $(GOLDEN_TARGET) $(STRENGTH_TARGET)
+$(SETTINGS_TEST_TARGET): tests/settings_test.c $(DEPS) Makefile
+	$(CC) $(CFLAGS) tests/settings_test.c $(SUPPORT_SRC) -o $(SETTINGS_TEST_TARGET) $(LDFLAGS) $(LIBS)
+
+ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(SERVER_ACTIONS_TEST_TARGET) $(BUTTON_TEST_TARGET) $(SETTINGS_TEST_TARGET) $(GOLDEN_TARGET) $(STRENGTH_TARGET)
 	python3 tools/validate_ability_recipes.py
 	python3 tools/validate_intrinsic_passives.py
 	python3 tools/build_hero_pool.py --check
@@ -140,6 +144,7 @@ ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(S
 	./$(INSTALL_TEST_TARGET)
 	./$(SERVER_ACTIONS_TEST_TARGET)
 	./$(BUTTON_TEST_TARGET)
+	./$(SETTINGS_TEST_TARGET)
 	./$(GOLDEN_TARGET) --check $(GOLDEN_DIR)
 	./$(STRENGTH_TARGET) --check
 

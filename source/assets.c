@@ -414,8 +414,10 @@ typedef enum {
     GUI_GUILD_MEDAL_SILVER,
     GUI_GUILD_MEDAL_BRONZE,
     GUI_GUILD_REWARD_RULE,
-    GUI_OPTIONS_MORE_BG,
-    GUI_OPTIONS_AUDIO_BG,
+    GUI_OPTIONS_ARROW,
+    GUI_OPTIONS_ARROW_ON,
+    GUI_OPTIONS_SLIDER_KNOB,
+    GUI_OPTIONS_RULE,
     GUI_OPTIONS_TOGGLE_ON,
     GUI_OPTIONS_TOGGLE_OFF,
     GUI_LANGUAGE_ROW_BG,
@@ -944,8 +946,10 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_SPLASH_GRUNGE] = CACHE_RESOURCE("victory_defeat_texture"),
     [GUI_SPLASH_GLOW] = CACHE_RESOURCE("valor_glow"),
     [GUI_SPLASH_SMOKE] = CACHE_RESOURCE("wispy10"),
-    [GUI_OPTIONS_MORE_BG] = CACHE_BUNDLE_RESOURCE("GameOptionsPopupV", "bg_settings_legal"),
-    [GUI_OPTIONS_AUDIO_BG] = CACHE_BUNDLE_RESOURCE("GameOptionsPopupV", "bg_settings_audio"),
+    [GUI_OPTIONS_ARROW] = CACHE_BUNDLE_RESOURCE("GalleryPopupV", "shared_arrow"),
+    [GUI_OPTIONS_ARROW_ON] = CACHE_BUNDLE_RESOURCE("GalleryPopupV", "shared_arrow_selected"),
+    [GUI_OPTIONS_SLIDER_KNOB] = CACHE_RESOURCE("Btn_ResultsDiamondCntr"),
+    [GUI_OPTIONS_RULE] = CACHE_BUNDLE_RESOURCE("PVPEventBannersRankRewardsSmart", "Bg_SingleLineSeparator"),
     [GUI_OPTIONS_TOGGLE_ON] = CACHE_BUNDLE_RESOURCE("GameOptionsPopupV", "toggle_on"),
     [GUI_OPTIONS_TOGGLE_OFF] = CACHE_BUNDLE_RESOURCE("GameOptionsPopupV", "toggle_off"),
     [GUI_LANGUAGE_ROW_BG] = APK_RESOURCE("Bg_FlatBlackFill"),
@@ -1108,12 +1112,17 @@ bool GuiSoundAllowsDuplicate(SoundId id) {
     }
 }
 
+static float AudioGain(SettingsVolume volume) {
+    if (SettingsSwitchOn(SETTINGS_SWITCH_MUTE_IN_BACKGROUND) && !IsWindowFocused()) return 0.0f;
+    return SettingsVolumeLevel(SETTINGS_VOLUME_MASTER) * SettingsVolumeLevel(volume);
+}
+
 float AudioMusicGain(void) {
-    return SettingsMusicEnabled() ? 1.0f : 0.0f;
+    return AudioGain(SETTINGS_VOLUME_MUSIC);
 }
 
 float AudioSoundGain(void) {
-    return SettingsSoundEnabled() ? 1.0f : 0.0f;
+    return AudioGain(SETTINGS_VOLUME_SOUND);
 }
 
 void AudioPlaySound(Sound sound, float volume) {

@@ -65,3 +65,16 @@ HODA_ACCOUNT_PASSWORD_CHANGED|Wachtwoord gewijzigd. Andere apparaten zijn uitgel
 HODA_ACCOUNT_SIGNED_OUT_MESSAGE|Je bent op deze computer uitgelogd. Log opnieuw in om verder te gaan.
 HODA_ACCOUNT_GUEST_START_HINT|Een nieuw spel op deze computer beginnen
 HODA_ACCOUNT_LOG_IN_HINT|Verdergaan met je login en wachtwoord
+HODA_SETTINGS_AUDIO|Audio
+HODA_SETTINGS_DISPLAY|Beeld
+HODA_SETTINGS_MASTER_VOLUME|Hoofdvolume
+HODA_SETTINGS_MUTE_IN_BACKGROUND|Dempen op achtergrond
+HODA_SETTINGS_DISPLAY_MODE|Weergavemodus
+HODA_SETTINGS_WINDOWED|Venster
+HODA_SETTINGS_FULLSCREEN|Volledig scherm
+HODA_SETTINGS_FRAME_RATE|FPS-limiet
+HODA_SETTINGS_UNLIMITED|Onbeperkt
+HODA_SETTINGS_FPS_VALUE|{0} FPS
+HODA_SETTINGS_VSYNC|VSync
+HODA_SETTINGS_SHOW_FPS|FPS tonen
+HODA_SETTINGS_VERSION|Versie

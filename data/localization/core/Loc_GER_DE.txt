@@ -65,3 +65,16 @@ HODA_ACCOUNT_PASSWORD_CHANGED|Passwort geändert. Andere Geräte wurden abgemeld
 HODA_ACCOUNT_SIGNED_OUT_MESSAGE|Du wurdest auf diesem Computer abgemeldet. Melde dich erneut an, um fortzufahren.
 HODA_ACCOUNT_GUEST_START_HINT|Neues Spiel auf diesem Computer beginnen
 HODA_ACCOUNT_LOG_IN_HINT|Mit Login und Passwort fortfahren
+HODA_SETTINGS_AUDIO|Audio
+HODA_SETTINGS_DISPLAY|Anzeige
+HODA_SETTINGS_MASTER_VOLUME|Gesamtlautstärke
+HODA_SETTINGS_MUTE_IN_BACKGROUND|Im Hintergrund stumm
+HODA_SETTINGS_DISPLAY_MODE|Anzeigemodus
+HODA_SETTINGS_WINDOWED|Fenster
+HODA_SETTINGS_FULLSCREEN|Vollbild
+HODA_SETTINGS_FRAME_RATE|Bildratenlimit
+HODA_SETTINGS_UNLIMITED|Unbegrenzt
+HODA_SETTINGS_FPS_VALUE|{0} FPS
+HODA_SETTINGS_VSYNC|VSync
+HODA_SETTINGS_SHOW_FPS|FPS anzeigen
+HODA_SETTINGS_VERSION|Version

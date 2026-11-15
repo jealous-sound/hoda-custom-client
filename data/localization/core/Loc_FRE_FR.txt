@@ -65,3 +65,16 @@ HODA_ACCOUNT_PASSWORD_CHANGED|Mot de passe modifié. Les autres appareils ont é
 HODA_ACCOUNT_SIGNED_OUT_MESSAGE|Vous avez été déconnecté sur cet ordinateur. Reconnectez-vous pour continuer.
 HODA_ACCOUNT_GUEST_START_HINT|Commencer une nouvelle partie sur cet ordinateur
 HODA_ACCOUNT_LOG_IN_HINT|Continuer avec votre identifiant et votre mot de passe
+HODA_SETTINGS_AUDIO|Audio
+HODA_SETTINGS_DISPLAY|Affichage
+HODA_SETTINGS_MASTER_VOLUME|Volume général
+HODA_SETTINGS_MUTE_IN_BACKGROUND|Muet en arrière-plan
+HODA_SETTINGS_DISPLAY_MODE|Mode d'affichage
+HODA_SETTINGS_WINDOWED|Fenêtré
+HODA_SETTINGS_FULLSCREEN|Plein écran
+HODA_SETTINGS_FRAME_RATE|Limite d'images/s
+HODA_SETTINGS_UNLIMITED|Illimité
+HODA_SETTINGS_FPS_VALUE|{0} IPS
+HODA_SETTINGS_VSYNC|Synchro verticale
+HODA_SETTINGS_SHOW_FPS|Afficher les IPS
+HODA_SETTINGS_VERSION|Version

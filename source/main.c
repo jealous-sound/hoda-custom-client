@@ -135,6 +135,7 @@ static bool RunLoadedGame(Game *game) {
         BeginDrawing();
         GameDraw(game);
         GameBusyOverlayDraw();
+        if (!shot.output) OptionsFrameRateCounterDraw();
         bool captured = shot.output && DebugShotCapture(&shot);
         EndDrawing();
 
@@ -180,20 +181,24 @@ int main(void) {
     const char *win = getenv("HOD_WINDOW");
     if (win) sscanf(win, "%dx%d", &win_w, &win_h);
 
+    bool player_window = !win && !screenshot_mode;
     unsigned int flags = FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | WINDOW_PIXEL_DENSITY_FLAGS;
     if (screenshot_mode) flags |= FLAG_WINDOW_HIDDEN | FLAG_WINDOW_UNFOCUSED;
+    if (!screenshot_mode && SettingsSwitchOn(SETTINGS_SWITCH_VSYNC)) flags |= FLAG_VSYNC_HINT;
     SetConfigFlags(flags);
     InitWindow(win_w, win_h, APP_NAME);
-    if (!win && !screenshot_mode) WindowGrowToMonitorDensity();
+    if (player_window) WindowGrowToMonitorDensity();
+    if (player_window && SettingsSwitchOn(SETTINGS_SWITCH_FULLSCREEN)) ToggleBorderlessWindowed();
     SetExitKey(KEY_NULL);
     InitAudioDevice();
     if (screenshot_mode || EnvFlag("HOD_MUTE")) SetMasterVolume(0.0f);
-    SetTargetFPS(144);
+    SetTargetFPS(screenshot_mode ? SETTINGS_DEFAULT_FRAME_RATE : SettingsFrameRateLimit());
     ClientInstallConfirmLaunch();
 
     if (!screenshot_mode) ClientUpdateCheckStart(BackendUrlOverride() ? BackendUrlOverride() : BackendDefaultUrl());
     if (ContentScreenRun()) RunSelectedMode();
 
+    SettingsSaveAdjustments();
     CloseAudioDevice();
     CloseWindow();
     ClientInstallRestart();

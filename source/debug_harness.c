@@ -1104,15 +1104,13 @@ static bool DebugRenderPlayMode(const char *screen_name, const char *output) {
 }
 
 static bool DebugPrepareOptions(Game *game, DebugShot *shot) {
-    bool audio = DebugShotIs(shot, "options_audio");
     bool language = DebugShotIs(shot, "options_language");
     bool update = DebugShotIs(shot, "options_update");
-    if (!audio && !language && !update && !DebugShotIs(shot, "options")) return false;
+    if (!language && !update && !DebugShotIs(shot, "options")) return false;
     game->screen = SCREEN_HOME;
     if (shot->frames_drawn > 0) return true;
     if (update) DebugSeedClientRelease(DEBUG_UPDATE_AVAILABLE_RELEASE);
     OptionsPopupOpen(&game->options);
-    if (audio) game->options.page = OPTIONS_PAGE_AUDIO;
     if (language) OptionsShowLanguages(&game->options);
     return true;
 }
