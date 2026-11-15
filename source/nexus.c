@@ -4,6 +4,9 @@
 #define NEXUS_DRAG_GAIN 10.0f
 #define NEXUS_WHEEL_STEP 0.07f
 #define NEXUS_EDGE_BUFFER 3.0f
+#define NEXUS_LORE_PANEL_Y 72.0f
+#define NEXUS_LORE_PANEL_SHRINK 1.3f
+#define NEXUS_VIEW_FIT_ASPECT_EPSILON 1.0e-4f
 #define NEXUS_DRIFT_MAX_TIME 0.5f
 #define NEXUS_FOCUS_TIME 4.0f
 #define NEXUS_BOSS_SCALE 1.3f
@@ -83,6 +86,8 @@ typedef struct {
     NexusBackground bg;
     bool bg_loaded;
     char bg_prefab[64];
+    const NexusDifficulty *view_fit;
+    float view_fit_aspect;
     int active_event, active_difficulty;
 
     Button enter, retreat, quit_stay, quit_confirm;
@@ -463,29 +468,45 @@ bool NexusRunBlocking(const Nexus *n, const Player *player) {
     return NexusEventLive(NexusEventAt(n, run->event_index), NexusWeekdayToday());
 }
 
-static float NexusNodeScrollX(const Nexus *n, const NexusNode *node) {
-    return NexusBackgroundScrollForNode(&n->bg, node->x);
+static Rectangle NexusLorePanelRect(const Nexus *n) {
+    return (Rectangle){
+        0.0f, NEXUS_LORE_PANEL_Y, n->lore.width / NEXUS_LORE_PANEL_SHRINK, n->lore.height / NEXUS_LORE_PANEL_SHRINK
+    };
 }
 
-static void NexusScrollLimits(const Nexus *n, const NexusDifficulty *d, float *out_lo, float *out_hi) {
-    float lo = 0.0f, hi = 0.0f;
-    NexusBackgroundArtScrollLimits(&n->bg, &lo, &hi);
+static float NexusNodeScrollX(const Nexus *n, const NexusNode *node) {
+    return NexusBackgroundNodeWorld(&n->bg, node->x, node->z).x;
+}
+
+static void NexusFitView(Nexus *n, const NexusDifficulty *d) {
+    float aspect = UiWidth() / UiHeight();
+    if (n->view_fit == d && fabsf(n->view_fit_aspect - aspect) < NEXUS_VIEW_FIT_ASPECT_EPSILON) return;
+    NexusViewTarget targets[NEXUS_MAX_NODES];
+    Vector2 unit = NexusBackgroundNodeUnit(&n->bg);
+    for (int i = 0; i < d->node_count; i++) {
+        float scale = d->nodes[i].boss ? NEXUS_BOSS_SCALE : 1.0f;
+        targets[i] = (NexusViewTarget){
+            NexusBackgroundNodeWorld(&n->bg, d->nodes[i].x, d->nodes[i].z),
+            NEXUS_ICON_HALF_WIDTH * unit.x * scale,
+        };
+    }
+    NexusBackgroundFitView(&n->bg, targets, d->node_count, NexusLorePanelRect(n).width / UiWidth(), 1.0f);
+    n->view_fit = d;
+    n->view_fit_aspect = aspect;
+}
+
+static void NexusScrollLimits(Nexus *n, const NexusDifficulty *d, float *out_lo, float *out_hi) {
+    NexusFitView(n, d);
+    float art_lo = 0.0f, art_hi = 0.0f;
+    NexusBackgroundScrollLimits(&n->bg, &art_lo, &art_hi);
     float node_lo = NexusNodeScrollX(n, &d->nodes[0]), node_hi = node_lo;
     for (int i = 1; i < d->node_count; i++) {
         float x = NexusNodeScrollX(n, &d->nodes[i]);
         node_lo = fminf(node_lo, x);
         node_hi = fmaxf(node_hi, x);
     }
-    node_lo -= NEXUS_EDGE_BUFFER;
-    node_hi += NEXUS_EDGE_BUFFER;
-    if (node_hi < lo || node_lo > hi) {
-        *out_lo = node_lo;
-        *out_hi = node_hi;
-        return;
-    }
-    *out_lo = fmaxf(lo, node_lo);
-    *out_hi = fminf(hi, node_hi);
-    if (*out_lo > *out_hi) *out_lo = *out_hi = (fmaxf(lo, node_lo) + fminf(hi, node_hi)) * 0.5f;
+    *out_lo = Clamp(node_lo - NEXUS_EDGE_BUFFER, art_lo, art_hi);
+    *out_hi = Clamp(node_hi + NEXUS_EDGE_BUFFER, art_lo, art_hi);
 }
 
 static void NexusFocusNode(Nexus *n, const NexusDifficulty *d, int index, bool immediate) {
@@ -522,7 +543,8 @@ bool NexusEnterMap(Nexus *n, Player *player, int event, int difficulty) {
         n->bg_loaded = false;
     }
     if (!n->bg_loaded) {
-        NexusBackgroundLoad(&n->bg, HOD_CACHE "meshes", e->prefab);
+        NexusBackgroundLoad(&n->bg, e->prefab);
+        n->view_fit = NULL;
         StrCopy(n->bg_prefab, sizeof(n->bg_prefab), e->prefab);
         n->bg_loaded = true;
     }
@@ -783,7 +805,7 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
     Vector2 unit = NexusBackgroundNodeUnit(&n->bg);
     n->ring_angle = fmodf(n->ring_angle + dt * NEXUS_RING_DEGREES_PER_SECOND, 360.0f);
 
-    ClearBackground(n->bg.clear);
+    ClearBackground(BLACK);
     BeginMode3D(n->bg.cam);
     rlDisableDepthTest();
     NexusBackgroundDrawRange(&n->bg, -1.0e9f, plane_y);
@@ -908,7 +930,7 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
         return action;
     }
 
-    Rectangle lore = {0.0f, 72.0f, n->lore.width / 1.3f, n->lore.height / 1.3f};
+    Rectangle lore = NexusLorePanelRect(n);
     {
         Rectangle src = {2, 0, -(float)n->lore.width, (float)n->lore.height};
         DrawTexturePro(n->lore, src, lore, (Vector2){0, 0}, 0.0f, WHITE);
