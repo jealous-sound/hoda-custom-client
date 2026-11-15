@@ -36,6 +36,8 @@
 #define VAULT_VIEW_PIP_SOURCE_WIDTH 64.0f
 #define VAULT_VIEW_PIP_SOURCE_HEIGHT 32.0f
 #define VAULT_VIEW_LABEL_SCALE 0.4f
+#define VAULT_VIEW_BUTTON_RIM_OF_WIDTH (5.0f / 256.0f)
+#define VAULT_VIEW_BUTTON_GAP 16.0f
 #define VAULT_VIEW_TARGET_STOPS 10LL
 #define VAULT_VIEW_STOP_CAPACITY 16
 #define VAULT_VIEW_TENTHS 10LL
@@ -85,6 +87,20 @@ static bool VaultViewDrawButton(Button *button, Rectangle rect, bool enabled, bo
     if (enabled) return ButtonDrawEx(button, rect, interactive);
     VaultViewDrawDisabled(button, rect);
     return false;
+}
+
+static float VaultViewFrameOutset(float width) {
+    float rim = VAULT_VIEW_BUTTON_RIM_OF_WIDTH;
+    return rim * (width - VAULT_VIEW_STEP_SIDE) / (1.0f - rim);
+}
+
+static Rectangle VaultViewFrameFromLeft(Rectangle rect) {
+    float outset = VaultViewFrameOutset(rect.width);
+    return (Rectangle){rect.x - outset, rect.y, rect.width + outset, rect.height};
+}
+
+static Rectangle VaultViewFrameToRight(Rectangle rect) {
+    return (Rectangle){rect.x, rect.y, rect.width + VaultViewFrameOutset(rect.width), rect.height};
 }
 
 static bool VaultViewCanWithdraw(const Player *player, long long amount) {
@@ -302,9 +318,9 @@ static bool VaultViewDrawCollect(Store *store, Player *player, Rectangle section
     bool stopped = VaultInterestStopped(&player->vault, now);
     float block = VAULT_VIEW_BUTTON_HEIGHT + (stopped ? VAULT_VIEW_WARNING_HEIGHT : 0.0f);
     float top = section.y + (section.height - block) * 0.5f;
-    Rectangle button = {
+    Rectangle button = VaultViewFrameToRight((Rectangle){
         section.x + section.width - VAULT_VIEW_COLLECT_WIDTH, top, VAULT_VIEW_COLLECT_WIDTH, VAULT_VIEW_BUTTON_HEIGHT
-    };
+    });
     Rectangle row = {section.x, top, section.width - VAULT_VIEW_COLLECT_WIDTH - 16.0f, VAULT_VIEW_BUTTON_HEIGHT};
     UiDrawTextLeftMiddle(GuiFont(FNT_MENU), LocGet("HODA_VAULT_READY"), row, VAULT_VIEW_LABEL_SIZE, VAULT_VIEW_DIM);
     char text[32];
@@ -369,9 +385,11 @@ static void VaultViewDrawAmount(Player *player, Rectangle panel, bool interactiv
 
 static void VaultViewDrawMoveButtons(Store *store, const Player *player, Rectangle panel, bool interactive) {
     VaultView *v = &vault_view;
-    float width = (panel.width - 16.0f) * 0.5f;
-    Rectangle deposit = {panel.x, panel.y, width, VAULT_VIEW_BUTTON_HEIGHT};
-    Rectangle withdraw = {panel.x + width + 16.0f, panel.y, width, VAULT_VIEW_BUTTON_HEIGHT};
+    float width = (panel.width - VAULT_VIEW_BUTTON_GAP) * 0.5f;
+    Rectangle deposit = VaultViewFrameFromLeft((Rectangle){panel.x, panel.y, width, VAULT_VIEW_BUTTON_HEIGHT});
+    Rectangle withdraw = VaultViewFrameToRight(
+        (Rectangle){panel.x + width + VAULT_VIEW_BUTTON_GAP, panel.y, width, VAULT_VIEW_BUTTON_HEIGHT}
+    );
     if (VaultViewDrawButton(&v->deposit, deposit, VaultViewCanDeposit(player, v->amount), interactive))
         store->dialog = STORE_DIALOG_VAULT_DEPOSIT;
     if (VaultViewDrawButton(&v->withdraw, withdraw, VaultViewCanWithdraw(player, v->amount), interactive))
@@ -388,7 +406,10 @@ StoreAction VaultViewDraw(Store *store, Player *player) {
     long long now = ServerNow();
     bool interactive = !StoreInputBlocked(store);
     float left_width = list.width * VAULT_VIEW_LEFT_WIDTH;
-    Rectangle left = {list.x, list.y, left_width, list.height};
+    Rectangle plate = StorePlateRect();
+    float inner_top = plate.y + plate.height * STORE_PLATE_INNER_TOP_OF_PLATE;
+    float inner_bottom = plate.y + plate.height * STORE_PLATE_INNER_BOTTOM_OF_PLATE;
+    Rectangle left = {list.x, inner_top, left_width, inner_bottom - inner_top};
     float collect_height = VAULT_VIEW_BUTTON_HEIGHT + VAULT_VIEW_WARNING_HEIGHT;
     float column = 3 * VAULT_VIEW_ROW_HEIGHT + collect_height + VAULT_VIEW_STEP_SIDE + VAULT_VIEW_BUTTON_HEIGHT +
                    8.0f * VAULT_VIEW_SECTION_GAP;
