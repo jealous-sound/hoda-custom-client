@@ -88,7 +88,7 @@ static const Rectangle STORE_LANDING_TILES[STORE_TILE_COUNT] = {
 #define STORE_TILE_ART_HEIGHT 0.76f
 #define STORE_TILE_LABEL_HEIGHT 28.0f
 #define STORE_TILE_LABEL_BOTTOM_OF_FEATURED_TILE 0.065f
-#define STORE_TILE_LABEL_BOTTOM_OF_SQUARE_TILE 0.045f
+#define STORE_TILE_LABEL_BOTTOM_OF_SQUARE_TILE 0.032f
 #define STORE_TILE_LABEL_SIZE 26.0f
 #define STORE_FEATURED_FRAME_TINT ((Color){255, 196, 92, 255})
 
@@ -109,8 +109,7 @@ static const Rectangle STORE_LANDING_TILES[STORE_TILE_COUNT] = {
 #define STORE_BULLET_TEXT_OF_CELL 0.04f
 #define STORE_BULLET_ICON_GAP_OF_ICON 0.3f
 #define STORE_PRICE_TEXT_OF_BAR 0.66f
-#define STORE_PRICE_RIGHT_OF_BAR 0.5f
-#define STORE_CURRENCY_CENTER_OF_BAR 0.609f
+#define STORE_CURRENCY_GAP_OF_BAR 0.2f
 #define STORE_CURRENCY_SIZE_OF_BAR 0.8f
 #define STORE_TITLE_TEXT_OF_PLATE 0.088f
 #define STORE_GEM_SUBTEXT_HEIGHT 21.0f
@@ -1913,6 +1912,26 @@ static StoreAction StoreDrawLanding(Store *store) {
     return STORE_ACTION_NONE;
 }
 
+static Vector2 StoreInkSpan(Font font, const char *text, float size) {
+    float scale = size / (float)font.baseSize;
+    float top = INFINITY, bottom = -INFINITY;
+    for (const char *c = text; *c;) {
+        int bytes = 0;
+        int codepoint = GetCodepointNext(c, &bytes);
+        c += bytes > 0 ? bytes : 1;
+        if (codepoint == ' ') continue;
+        int glyph = GetGlyphIndex(font, codepoint);
+        top = fminf(top, font.glyphs[glyph].offsetY * scale);
+        bottom = fmaxf(bottom, (font.glyphs[glyph].offsetY + font.recs[glyph].height) * scale);
+    }
+    return top <= bottom ? (Vector2){top, bottom} : (Vector2){0.0f, size};
+}
+
+static void StoreDrawInkCentered(Font font, const char *text, Vector2 left_middle, float size, Color color) {
+    Vector2 ink = StoreInkSpan(font, text, size);
+    DrawTextEx(font, text, (Vector2){left_middle.x, left_middle.y - (ink.x + ink.y) * 0.5f}, size, 1.0f, color);
+}
+
 static void StoreDrawBuyPrice(Store *store, StoreOffer offer, const Player *player, Rectangle bar) {
     Color color = {235, 232, 220, 255};
     if (offer.voucher >= 0 || offer.price == 0) {
@@ -1924,25 +1943,15 @@ static void StoreDrawBuyPrice(Store *store, StoreOffer offer, const Player *play
     }
     char price[16];
     snprintf(price, sizeof(price), "%d", offer.price);
-    UiDrawTextRight(
-        store->title_font,
-        price,
-        (Rectangle){bar.x, bar.y, bar.width * STORE_PRICE_RIGHT_OF_BAR, bar.height},
-        bar.height * STORE_PRICE_TEXT_OF_BAR,
-        color
-    );
-    Texture2D icon = offer.gems ? store->currency_gems : store->currency_gold;
+    float size = bar.height * STORE_PRICE_TEXT_OF_BAR;
+    float text_width = MeasureTextEx(store->title_font, price, size, 1.0f).x;
     float icon_size = bar.height * STORE_CURRENCY_SIZE_OF_BAR;
-    UiDrawTexture(
-        icon,
-        (Rectangle){
-            bar.x + bar.width * STORE_CURRENCY_CENTER_OF_BAR - icon_size * 0.5f,
-            bar.y + (bar.height - icon_size) * 0.5f,
-            icon_size,
-            icon_size
-        },
-        WHITE
-    );
+    float gap = bar.height * STORE_CURRENCY_GAP_OF_BAR;
+    float left = bar.x + (bar.width - (text_width + gap + icon_size)) * 0.5f;
+    float middle = bar.y + bar.height * 0.5f;
+    StoreDrawInkCentered(store->title_font, price, (Vector2){left, middle}, size, color);
+    Texture2D icon = offer.gems ? store->currency_gems : store->currency_gold;
+    UiDrawTexture(icon, (Rectangle){left + text_width + gap, middle - icon_size * 0.5f, icon_size, icon_size}, WHITE);
 }
 
 static Texture2D StoreRarityBackdrop(StorePackKind kind, int rarity) {
@@ -2465,26 +2474,6 @@ static void StoreDrawGemTraderNotice(Store *store, Rectangle area) {
 
 static Rectangle StoreIgui(Rectangle parent, Rectangle part) {
     return UiRect(parent, part.x, part.y, part.width, part.height);
-}
-
-static Vector2 StoreInkSpan(Font font, const char *text, float size) {
-    float scale = size / (float)font.baseSize;
-    float top = INFINITY, bottom = -INFINITY;
-    for (const char *c = text; *c;) {
-        int bytes = 0;
-        int codepoint = GetCodepointNext(c, &bytes);
-        c += bytes > 0 ? bytes : 1;
-        if (codepoint == ' ') continue;
-        int glyph = GetGlyphIndex(font, codepoint);
-        top = fminf(top, font.glyphs[glyph].offsetY * scale);
-        bottom = fmaxf(bottom, (font.glyphs[glyph].offsetY + font.recs[glyph].height) * scale);
-    }
-    return top <= bottom ? (Vector2){top, bottom} : (Vector2){0.0f, size};
-}
-
-static void StoreDrawInkCentered(Font font, const char *text, Vector2 left_middle, float size, Color color) {
-    Vector2 ink = StoreInkSpan(font, text, size);
-    DrawTextEx(font, text, (Vector2){left_middle.x, left_middle.y - (ink.x + ink.y) * 0.5f}, size, 1.0f, color);
 }
 
 static void StoreDrawContained(Texture2D texture, Rectangle box, Color tint) {
