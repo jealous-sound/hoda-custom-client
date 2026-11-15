@@ -138,7 +138,7 @@ ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(S
 	python3 tools/build_hero_pool.py --check
 	python3 tools/validate_localization.py
 	python3 tools/validate_roster_levels.py
-	python3 -m unittest tests/test_release_manifest.py tests/test_roster_levels.py tests/test_nexus_scenes.py
+	python3 -m unittest tests/test_release_manifest.py tests/test_roster_levels.py tests/test_patch_notes.py tests/test_nexus_scenes.py
 	./$(CONTENT_TEST_TARGET)
 	./$(UPDATE_TEST_TARGET)
 	./$(INSTALL_TEST_TARGET)
