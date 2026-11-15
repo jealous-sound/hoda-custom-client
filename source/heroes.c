@@ -1031,7 +1031,8 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
             TutorialAnchorSet(TUTORIAL_ANCHOR_HEROES_DETAILS, details);
             details.width += HEROES_GEAR_COLUMN_WIDTH;
             bool tap_closes = TutorialRequires(TUTORIAL_ANCHOR_HEROES_DETAILS);
-            if (ui_input && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+            bool close_input = ui_input && UiClicksReachScreen();
+            if (close_input && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
                 h->details_close_armed = tap_closes || !CheckCollisionPointRec(mouse, details);
             if (ui_input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
                 if (h->details_close_armed && (tap_closes || !CheckCollisionPointRec(mouse, details))) h->selected = -1;

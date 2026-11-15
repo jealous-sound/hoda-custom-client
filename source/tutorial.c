@@ -619,11 +619,21 @@ static bool TutorialEnterStep(Tutorial *t, Player *player, const TutorialStep *s
     return true;
 }
 
+static TutorialEvent TutorialEventUndoneBy(TutorialEvent event) {
+    return event == TUTORIAL_EVENT_UNIT_DETAILS_SHOWING ? TUTORIAL_EVENT_UNIT_DETAILS_CLOSED : TUTORIAL_EVENT_NONE;
+}
+
 static void TutorialTakeEvents(Tutorial *t, const TutorialStep *step) {
     for (int i = 0; i < tutorial_hooks.event_count; i++) {
         TutorialEvent event = tutorial_hooks.events[i];
         if (event == TUTORIAL_EVENT_UNIT_PURCHASE_SUCCEEDED) t->pending_pack = -1;
-        if (step && step->event == event) t->event_seen = true;
+        if (!step) continue;
+        if (step->event == event) t->event_seen = true;
+        if (step->event != TUTORIAL_EVENT_NONE && TutorialEventUndoneBy(step->event) == event) {
+            t->event_seen = false;
+            t->visible_time = 0.0f;
+            t->press_armed = false;
+        }
     }
     tutorial_hooks.event_count = 0;
 }
