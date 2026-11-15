@@ -2,28 +2,18 @@ HODA_VAULT_TIER_NONE|Sin rango
 HODA_VAULT_TIER_BRONZE|Bóveda de bronce
 HODA_VAULT_TIER_SILVER|Bóveda de plata
 HODA_VAULT_TIER_GOLD|Bóveda de oro
-HODA_VAULT_NEXT_TIER|{0} con {1} gemas
-HODA_VAULT_TOP_TIER|Rango máximo alcanzado
-HODA_VAULT_BADGE_HINT|Tu rango aparece junto a tu nombre
-HODA_VAULT_LOCKED|En la bóveda
-HODA_VAULT_LOCKED_VALUE|{0} / {1}
-HODA_VAULT_INTEREST|Intereses
-HODA_VAULT_INTEREST_VALUE|{0} al día
-HODA_VAULT_LOCK|Bloqueo
-HODA_VAULT_EMPTY|Vacía
 HODA_VAULT_UNLOCKED|Desbloqueada
 HODA_VAULT_UNLOCKS_IN|Se desbloquea en {0}
-HODA_VAULT_READY|Listo para cobrar
 HODA_VAULT_COLLECT|Cobrar
-HODA_VAULT_WINDOW_HINT|Los intereses se detienen tras {0} días sin cobrar.
 HODA_VAULT_STOPPED|Los intereses se han detenido. Cóbralos para reanudarlos.
 HODA_VAULT_COLLECTED|{0} gemas cobradas
 HODA_VAULT_MAX|Máx.
 HODA_VAULT_DEPOSIT|Depositar
 HODA_VAULT_WITHDRAW|Retirar
-HODA_VAULT_RULES|Cada depósito bloquea toda la bóveda durante {0} días. Retirar antes cuesta un {1}% y los intereses pendientes.
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Depositar gemas
-HODA_VAULT_CONFIRM_DEPOSIT|¿Bloquear {0} gemas en la bóveda? Todo lo que hay en la bóveda queda bloqueado durante {1} días.
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Retirar gemas
-HODA_VAULT_CONFIRM_WITHDRAW|¿Sacar {0} gemas de la bóveda?
-HODA_VAULT_CONFIRM_EARLY|La bóveda sigue bloqueada. Recuperarás {0} de {1} gemas y perderás los intereses pendientes.
+HODA_VAULT_INTEREST_VALUE|+{0} al día
+HODA_VAULT_INVITE|Bloquea gemas aquí para ganar intereses cada día
+HODA_VAULT_COLLECT_GEMS|Cobrar {0}
+HODA_VAULT_DEPOSIT_NOTE|Toda la bóveda queda bloqueada durante {0} días.
+HODA_VAULT_EARLY_NOTE|Aún bloqueada: recuperas {0} y pierdes los intereses pendientes.

@@ -9457,15 +9457,28 @@ static void TestVaultAmountStepsStayInsideTheVault(void) {
     static Player player;
     player = RenownTestPlayer(0);
     player.gems = 3000;
-    assert(VaultViewMaxAmount(&player) == 3000);
+    assert(VaultViewMaxDeposit(&player) == 3000);
     player.vault.locked = TEST_VAULT_SILVER;
-    assert(VaultViewMaxAmount(&player) == 3000);
+    assert(VaultViewMaxDeposit(&player) == 3000);
     player.gems = 20000;
-    assert(VaultViewMaxAmount(&player) == VaultCapacity() - TEST_VAULT_SILVER);
+    assert(VaultViewMaxDeposit(&player) == VaultCapacity() - TEST_VAULT_SILVER);
     player.vault.locked = VaultCapacity() - 50;
-    assert(VaultViewMaxAmount(&player) == 50);
+    assert(VaultViewMaxDeposit(&player) == 50);
     player.gems = 40;
-    assert(VaultViewMaxAmount(&player) == VaultCapacity() - 50);
+    assert(VaultViewMaxDeposit(&player) == 0);
+
+    static Store store;
+    memset(&store, 0, sizeof(store));
+    player.gems = 20000;
+    player.vault.locked = TEST_VAULT_SILVER;
+    VaultViewOpen(&store, &player, STORE_DIALOG_VAULT_DEPOSIT);
+    assert(store.dialog == STORE_DIALOG_VAULT_DEPOSIT && VaultViewAmount() == 1000);
+    VaultViewOpen(&store, &player, STORE_DIALOG_VAULT_WITHDRAW);
+    assert(store.dialog == STORE_DIALOG_VAULT_WITHDRAW && VaultViewAmount() == TEST_VAULT_SILVER);
+    store.dialog = STORE_DIALOG_NONE;
+    player.vault.locked = VaultCapacity();
+    VaultViewOpen(&store, &player, STORE_DIALOG_VAULT_DEPOSIT);
+    assert(store.dialog == STORE_DIALOG_NONE);
 }
 
 static int TestGuildMemberVaultTier(const GuildInfo *info, const char *id) {

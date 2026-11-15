@@ -250,8 +250,10 @@ static void DebugPrepareStore(Game *game, DebugShot *shot) {
         } else if (strncmp(shot->screen, "store_vault", strlen("store_vault")) == 0) {
             game->store.view = STORE_VIEW_VAULT;
             DebugSeedVault(&game->player);
-            if (DebugShotIs(shot, "store_vault_deposit")) game->store.dialog = STORE_DIALOG_VAULT_DEPOSIT;
-            if (DebugShotIs(shot, "store_vault_withdraw")) game->store.dialog = STORE_DIALOG_VAULT_WITHDRAW;
+            if (DebugShotIs(shot, "store_vault_deposit"))
+                VaultViewOpen(&game->store, &game->player, STORE_DIALOG_VAULT_DEPOSIT);
+            if (DebugShotIs(shot, "store_vault_withdraw"))
+                VaultViewOpen(&game->store, &game->player, STORE_DIALOG_VAULT_WITHDRAW);
         } else if (DebugShotIs(shot, "store_voucher")) {
             game->store.view = STORE_VIEW_HEROES;
             game->store.pending_pack = Clamp(EnvInt("HOD_PACK", 0), 0, game->store.pack_count - 1);

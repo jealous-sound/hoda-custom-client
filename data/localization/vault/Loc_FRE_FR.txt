@@ -2,28 +2,18 @@ HODA_VAULT_TIER_NONE|Aucun rang
 HODA_VAULT_TIER_BRONZE|Coffre de bronze
 HODA_VAULT_TIER_SILVER|Coffre d'argent
 HODA_VAULT_TIER_GOLD|Coffre d'or
-HODA_VAULT_NEXT_TIER|{0} à {1} gemmes
-HODA_VAULT_TOP_TIER|Rang maximal atteint
-HODA_VAULT_BADGE_HINT|Votre rang s'affiche à côté de votre nom
-HODA_VAULT_LOCKED|Dans le coffre
-HODA_VAULT_LOCKED_VALUE|{0} / {1}
-HODA_VAULT_INTEREST|Intérêts
-HODA_VAULT_INTEREST_VALUE|{0} par jour
-HODA_VAULT_LOCK|Blocage
-HODA_VAULT_EMPTY|Vide
 HODA_VAULT_UNLOCKED|Débloqué
 HODA_VAULT_UNLOCKS_IN|Débloqué dans {0}
-HODA_VAULT_READY|Prêt à récupérer
 HODA_VAULT_COLLECT|Récupérer
-HODA_VAULT_WINDOW_HINT|Les intérêts s'arrêtent après {0} jours sans récupération.
 HODA_VAULT_STOPPED|Les intérêts sont arrêtés. Récupérez-les pour les relancer.
 HODA_VAULT_COLLECTED|{0} gemmes récupérées
 HODA_VAULT_MAX|Max
 HODA_VAULT_DEPOSIT|Déposer
 HODA_VAULT_WITHDRAW|Retirer
-HODA_VAULT_RULES|Chaque dépôt bloque tout le coffre pendant {0} jours. Un retrait anticipé coûte {1} % et les intérêts en attente.
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Déposer des gemmes
-HODA_VAULT_CONFIRM_DEPOSIT|Bloquer {0} gemmes dans le coffre ? Tout le contenu du coffre reste bloqué pendant {1} jours.
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Retirer des gemmes
-HODA_VAULT_CONFIRM_WITHDRAW|Retirer {0} gemmes du coffre ?
-HODA_VAULT_CONFIRM_EARLY|Le coffre est encore bloqué. Vous récupérerez {0} gemmes sur {1} et perdrez les intérêts en attente.
+HODA_VAULT_INTEREST_VALUE|+{0} par jour
+HODA_VAULT_INVITE|Bloquez des gemmes ici pour gagner des intérêts chaque jour
+HODA_VAULT_COLLECT_GEMS|Récupérer {0}
+HODA_VAULT_DEPOSIT_NOTE|Tout le coffre reste bloqué pendant {0} jours.
+HODA_VAULT_EARLY_NOTE|Encore bloqué : vous récupérez {0} et perdez les intérêts en attente.

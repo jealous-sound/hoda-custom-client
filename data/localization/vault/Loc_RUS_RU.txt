@@ -2,28 +2,18 @@ HODA_VAULT_TIER_NONE|Уровня пока нет
 HODA_VAULT_TIER_BRONZE|Бронзовое хранилище
 HODA_VAULT_TIER_SILVER|Серебряное хранилище
 HODA_VAULT_TIER_GOLD|Золотое хранилище
-HODA_VAULT_NEXT_TIER|{0} от {1} самоцветов
-HODA_VAULT_TOP_TIER|Достигнут высший уровень
-HODA_VAULT_BADGE_HINT|Ваш уровень виден рядом с именем
-HODA_VAULT_LOCKED|В хранилище
-HODA_VAULT_LOCKED_VALUE|{0} / {1}
-HODA_VAULT_INTEREST|Проценты
-HODA_VAULT_INTEREST_VALUE|{0} в день
-HODA_VAULT_LOCK|Блокировка
-HODA_VAULT_EMPTY|Пусто
 HODA_VAULT_UNLOCKED|Разблокировано
 HODA_VAULT_UNLOCKS_IN|Разблокировка через {0}
-HODA_VAULT_READY|Можно забрать
 HODA_VAULT_COLLECT|Забрать
-HODA_VAULT_WINDOW_HINT|Проценты перестают начисляться через {0} дн. без сбора.
 HODA_VAULT_STOPPED|Проценты остановлены. Заберите их, чтобы начисление возобновилось.
 HODA_VAULT_COLLECTED|Получено самоцветов: {0}
 HODA_VAULT_MAX|Макс.
 HODA_VAULT_DEPOSIT|Вложить
 HODA_VAULT_WITHDRAW|Снять
-HODA_VAULT_RULES|Каждый вклад блокирует всё хранилище на {0} дн. Досрочное снятие стоит {1}% и накопленных процентов.
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Вложить самоцветы
-HODA_VAULT_CONFIRM_DEPOSIT|Заблокировать {0} самоцветов в хранилище? Всё содержимое хранилища останется заблокированным на {1} дн.
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Снять самоцветы
-HODA_VAULT_CONFIRM_WITHDRAW|Забрать {0} самоцветов из хранилища?
-HODA_VAULT_CONFIRM_EARLY|Хранилище ещё заблокировано. Вы получите {0} из {1} самоцветов и потеряете накопленные проценты.
+HODA_VAULT_INTEREST_VALUE|+{0} в день
+HODA_VAULT_INVITE|Заблокируйте самоцветы здесь, чтобы каждый день получать проценты
+HODA_VAULT_COLLECT_GEMS|Забрать {0}
+HODA_VAULT_DEPOSIT_NOTE|Всё хранилище будет заблокировано на {0} дн.
+HODA_VAULT_EARLY_NOTE|Ещё заблокировано: вы получите {0} и потеряете накопленные проценты.
