@@ -150,7 +150,7 @@ static void DebugRunModelLoadTest(const char *list_path) {
 
 static void DebugRenderNexusScene(const char *scene_name) {
     static NexusBackground bg;
-    NexusBackgroundLoad(&bg, HOD_CACHE "meshes", scene_name);
+    NexusBackgroundLoad(&bg, scene_name);
     float art_lo = 0.0f, art_hi = 0.0f;
     NexusBackgroundArtScrollLimits(&bg, &art_lo, &art_hi);
     NexusBackgroundSetScroll(&bg, Clamp(EnvFloat("HOD_NEXUS_SCROLL", NexusBackgroundHomeX(&bg)), art_lo, art_hi));
