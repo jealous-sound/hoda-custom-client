@@ -12,9 +12,17 @@
 #define NEXUS_COVER_REFINE_STEPS 12
 #define NEXUS_COVER_ALPHA 0.5f
 #define NEXUS_COVER_MASK_SIZE 256
-#define NEXUS_COVER_ASPECT_EPSILON 1.0e-4f
 #define NEXUS_RAY_EPSILON 1.0e-6f
 #define NEXUS_HIT_BOUNDS_PAD 0.01f
+
+#define NEXUS_SEAM_SAMPLES 16
+#define NEXUS_SEAM_INSET 0.01f
+#define NEXUS_SEAM_OCCLUSION_GAP 0.05f
+#define NEXUS_SEAM_MIN_EXPOSED 2
+#define NEXUS_SEAM_STRIP_SHARE 0.4f
+
+#define NEXUS_MIN_VIEW_SCALE 0.8f
+#define NEXUS_VIEW_FIT_STEPS 7
 
 static const char *const NEXUS_FS_LAYER = "#version 330\n"
                                           "in vec2 fragTexCoord;\n"
@@ -48,7 +56,18 @@ typedef struct {
     float cutoff;
     Vector3 centre;
     BoundingBox bounds;
+    Vector3 seams[NEXUS_SEAM_SAMPLES * 2];
+    unsigned char seam_end[NEXUS_SEAM_SAMPLES * 2];
+    int seam_count;
+    bool mirror;
+    int mirror_plane_end;
+    bool end_mirrored[2];
 } NexusLayer;
+
+typedef struct {
+    Vector3 world;
+    float half_width;
+} NexusViewTarget;
 
 typedef struct {
     Shader layer_sh;
@@ -62,13 +81,13 @@ typedef struct {
 
     Camera3D cam;
     float cam_home_x;
+    float base_fovy;
+    bool mirrors_on;
 
     Matrix node_frame;
     Vector2 node_unit;
 
-    float cover_aspect;
-    bool cover_found;
-    float cover_lo, cover_hi;
+    float scroll_lo, scroll_hi;
     char prefab[64];
 } NexusBackground;
 
@@ -164,122 +183,17 @@ static bool NexusLayerLoad(NexusBackground *bg, NexusLayer *layer, const cJSON *
     return true;
 }
 
-static const cJSON *NexusSceneJson(const cJSON *root, const char *prefab) {
-    cJSON *scene = NULL;
-    cJSON_ArrayForEach(scene, cJSON_GetObjectItemCaseSensitive((cJSON *)root, "scenes")) {
-        if (strcmp(JsonStr(scene, "prefab"), prefab) == 0) return scene;
-    }
-    return NULL;
-}
-
-void NexusBackgroundLoad(NexusBackground *bg, const char *prefab) {
-    memset(bg, 0, sizeof(*bg));
-    StrCopy(bg->prefab, sizeof(bg->prefab), prefab);
-    bg->layer_sh = LoadShaderFromMemory(VS_UNLIT, NEXUS_FS_LAYER);
-    bg->opaque_loc = GetShaderLocation(bg->layer_sh, "opaque");
-    bg->cutoff_loc = GetShaderLocation(bg->layer_sh, "cutoff");
-    bg->material = LoadMaterialDefault();
-    bg->material.shader = bg->layer_sh;
-    bg->white = bg->material.maps[MATERIAL_MAP_DIFFUSE].texture;
-
-    cJSON *root = JsonLoadFile(NEXUS_SCENES_PATH);
-    const cJSON *scene = NexusSceneJson(root, prefab);
-    if (!scene) TraceLog(LOG_FATAL, "Nexus: %s is not in %s", prefab, NEXUS_SCENES_PATH);
-
-    const cJSON *camera = cJSON_GetObjectItemCaseSensitive((cJSON *)scene, "camera");
-    Vector3 position = NexusJsonVec3(camera, "position");
-    bg->cam = (Camera3D){
-        .position = position,
-        .target = Vector3Add(position, NexusJsonVec3(camera, "forward")),
-        .up = NexusJsonVec3(camera, "up"),
-        .fovy = JsonFloat(camera, "fov"),
-        .projection = CAMERA_PERSPECTIVE,
-    };
-    bg->cam_home_x = position.x;
-
-    const cJSON *nodes = cJSON_GetObjectItemCaseSensitive((cJSON *)scene, "nodes");
-    bg->node_frame = NexusJsonMatrix(cJSON_GetObjectItemCaseSensitive((cJSON *)nodes, "matrix"));
-    cJSON *unit = cJSON_GetObjectItemCaseSensitive((cJSON *)nodes, "unit");
-    bg->node_unit =
-        (Vector2){(float)cJSON_GetArrayItem(unit, 0)->valuedouble, (float)cJSON_GetArrayItem(unit, 1)->valuedouble};
-
-    cJSON *layer_json = NULL;
-    cJSON_ArrayForEach(layer_json, cJSON_GetObjectItemCaseSensitive((cJSON *)scene, "layers")) {
-        if (bg->layer_count >= NEXUS_BG_MAX_LAYERS) {
-            TraceLog(LOG_WARNING, "Nexus: %s has more than %d layers", prefab, NEXUS_BG_MAX_LAYERS);
-            break;
-        }
-        if (NexusLayerLoad(bg, &bg->layers[bg->layer_count], layer_json)) bg->layer_count++;
-    }
-    cJSON_Delete(root);
-    TraceLog(LOG_INFO, "Nexus: %s loaded %d layers", prefab, bg->layer_count);
-}
-
-void NexusBackgroundUnload(NexusBackground *bg) {
-    for (int i = 0; i < bg->layer_count; i++) UnloadMesh(bg->layers[i].mesh);
-    for (int i = 0; i < bg->texture_count; i++) {
-        UnloadTexture(bg->textures[i].texture);
-        UnloadImage(bg->textures[i].mask);
-    }
-    bg->material.shader = (Shader){0};
-    bg->material.maps[MATERIAL_MAP_DIFFUSE].texture = (Texture2D){0};
-    UnloadMaterial(bg->material);
-    UnloadShader(bg->layer_sh);
-    memset(bg, 0, sizeof(*bg));
-}
-
-void NexusBackgroundSetScroll(NexusBackground *bg, float x) {
-    bg->cam.position.x = x;
-    bg->cam.target.x = x;
-}
-
-float NexusBackgroundHomeX(const NexusBackground *bg) {
-    return bg->cam_home_x;
-}
-
-Vector3 NexusBackgroundNodeWorld(const NexusBackground *bg, float table_x, float table_z) {
-    return Vector3Transform((Vector3){table_x, NEXUS_NODE_TABLE_Y, table_z}, bg->node_frame);
-}
-
-Vector2 NexusBackgroundNodeUnit(const NexusBackground *bg) {
-    return bg->node_unit;
-}
-
-float NexusBackgroundNodePlaneY(const NexusBackground *bg) {
-    return NexusBackgroundNodeWorld(bg, 0.0f, 0.0f).y;
-}
-
-Vector2 NexusBackgroundNodeScreen(const NexusBackground *bg, Vector3 world) {
-    Vector2 pixels = GetWorldToScreen(world, bg->cam);
-    float scale = UiScale();
-    return (Vector2){pixels.x / scale, pixels.y / scale};
-}
-
 static bool NexusLayerIsFrame(const NexusLayer *layer) {
     return layer->texture < 0;
 }
 
-static float NexusCameraDepth(const Camera3D *cam, Vector3 point) {
-    Vector3 forward = Vector3Normalize(Vector3Subtract(cam->target, cam->position));
-    return Vector3DotProduct(Vector3Subtract(point, cam->position), forward);
+static bool NexusLayerActive(const NexusBackground *bg, const NexusLayer *layer) {
+    return !layer->mirror || bg->mirrors_on;
 }
 
-static bool NexusFrameSpansViewHeight(const NexusLayer *layer, const Camera3D *cam) {
-    Vector3 up = Vector3Normalize(cam->up);
-    float half_height = NexusCameraDepth(cam, layer->centre) * tanf(cam->fovy * 0.5f * DEG2RAD);
-    float centre = Vector3DotProduct(cam->position, up);
-    float lo = 1.0e9f, hi = -1.0e9f;
-    for (int corner = 0; corner < 8; corner++) {
-        Vector3 v = {
-            (corner & 1) ? layer->bounds.max.x : layer->bounds.min.x,
-            (corner & 2) ? layer->bounds.max.y : layer->bounds.min.y,
-            (corner & 4) ? layer->bounds.max.z : layer->bounds.min.z,
-        };
-        float along = Vector3DotProduct(v, up);
-        lo = fminf(lo, along);
-        hi = fmaxf(hi, along);
-    }
-    return lo <= centre - half_height && hi >= centre + half_height;
+static bool NexusSeamCounts(const NexusBackground *bg, const NexusLayer *layer, int end) {
+    if (layer->mirror) return end != layer->mirror_plane_end;
+    return !(bg->mirrors_on && layer->end_mirrored[end]);
 }
 
 static bool NexusRayTriangle(Ray ray, Vector3 a, Vector3 b, Vector3 c, float *distance, float *bary_u, float *bary_v) {
@@ -343,6 +257,177 @@ static bool NexusLayerSolidAt(const NexusBackground *bg, const NexusLayer *layer
     return found;
 }
 
+static void NexusArtEnvelope(const NexusBackground *bg, float *out_lo, float *out_hi) {
+    *out_lo = *out_hi = bg->cam_home_x;
+    for (int i = 0; i < bg->layer_count; i++) {
+        if (NexusLayerIsFrame(&bg->layers[i]) || !NexusLayerActive(bg, &bg->layers[i])) continue;
+        *out_lo = fminf(*out_lo, bg->layers[i].bounds.min.x);
+        *out_hi = fmaxf(*out_hi, bg->layers[i].bounds.max.x);
+    }
+}
+
+static void NexusLayerFindSeams(const NexusBackground *bg, NexusLayer *layer, float envelope_width) {
+    layer->seam_count = 0;
+    if (NexusLayerIsFrame(layer) || layer->blend == NEXUS_BLEND_ADDITIVE) return;
+    float width = layer->bounds.max.x - layer->bounds.min.x;
+    if (width < envelope_width * NEXUS_SEAM_STRIP_SHARE) return;
+    float rows = layer->bounds.max.z - layer->bounds.min.z;
+    for (int end = 0; end < 2; end++) {
+        float x =
+            end == 0 ? layer->bounds.min.x + width * NEXUS_SEAM_INSET : layer->bounds.max.x - width * NEXUS_SEAM_INSET;
+        for (int i = 0; i < NEXUS_SEAM_SAMPLES; i++) {
+            float z = layer->bounds.min.z + rows * ((float)i + 0.5f) / (float)NEXUS_SEAM_SAMPLES;
+            Ray down = {{x, layer->bounds.max.y + 1.0f, z}, {0.0f, -1.0f, 0.0f}};
+            float distance = 0.0f;
+            if (!NexusLayerSolidAt(bg, layer, down, &distance)) continue;
+            layer->seam_end[layer->seam_count] = (unsigned char)end;
+            layer->seams[layer->seam_count++] = Vector3Add(down.position, Vector3Scale(down.direction, distance));
+        }
+    }
+}
+
+static int NexusSeamsAtEnd(const NexusLayer *layer, int end) {
+    int count = 0;
+    for (int i = 0; i < layer->seam_count; i++) count += layer->seam_end[i] == end;
+    return count;
+}
+
+static void NexusAddMirror(NexusBackground *bg, int source, int end, float envelope_width) {
+    if (bg->layer_count >= NEXUS_BG_MAX_LAYERS) return;
+    NexusLayer *from = &bg->layers[source];
+    NexusLayer *to = &bg->layers[bg->layer_count];
+    float plane = end == 0 ? from->bounds.min.x : from->bounds.max.x;
+    Mesh mesh = {0};
+    mesh.vertexCount = from->mesh.vertexCount;
+    mesh.triangleCount = from->mesh.triangleCount;
+    mesh.vertices = MemAlloc(sizeof(float) * 3 * (size_t)mesh.vertexCount);
+    mesh.texcoords = MemAlloc(sizeof(float) * 2 * (size_t)mesh.vertexCount);
+    mesh.indices = MemAlloc(sizeof(unsigned short) * 3 * (size_t)mesh.triangleCount);
+    for (int i = 0; i < mesh.vertexCount; i++) {
+        mesh.vertices[i * 3] = 2.0f * plane - from->mesh.vertices[i * 3];
+        mesh.vertices[i * 3 + 1] = from->mesh.vertices[i * 3 + 1];
+        mesh.vertices[i * 3 + 2] = from->mesh.vertices[i * 3 + 2];
+    }
+    memcpy(mesh.texcoords, from->mesh.texcoords, sizeof(float) * 2 * (size_t)mesh.vertexCount);
+    memcpy(mesh.indices, from->mesh.indices, sizeof(unsigned short) * 3 * (size_t)mesh.triangleCount);
+    UploadMesh(&mesh, false);
+    *to = *from;
+    to->mesh = mesh;
+    to->bounds = GetMeshBoundingBox(mesh);
+    to->centre = Vector3Scale(Vector3Add(to->bounds.min, to->bounds.max), 0.5f);
+    to->mirror = true;
+    to->mirror_plane_end = 1 - end;
+    to->end_mirrored[0] = to->end_mirrored[1] = false;
+    from->end_mirrored[end] = true;
+    NexusLayerFindSeams(bg, to, envelope_width);
+    bg->layer_count++;
+}
+
+static void NexusAddMirrors(NexusBackground *bg, float envelope_width) {
+    int originals = bg->layer_count;
+    for (int i = 0; i < originals; i++)
+        for (int end = 0; end < 2; end++)
+            if (NexusLayerIsFrame(&bg->layers[i]) || NexusSeamsAtEnd(&bg->layers[i], end) >= NEXUS_SEAM_MIN_EXPOSED)
+                NexusAddMirror(bg, i, end, envelope_width);
+}
+
+static const cJSON *NexusSceneJson(const cJSON *root, const char *prefab) {
+    cJSON *scene = NULL;
+    cJSON_ArrayForEach(scene, cJSON_GetObjectItemCaseSensitive((cJSON *)root, "scenes")) {
+        if (strcmp(JsonStr(scene, "prefab"), prefab) == 0) return scene;
+    }
+    return NULL;
+}
+
+void NexusBackgroundLoad(NexusBackground *bg, const char *prefab) {
+    memset(bg, 0, sizeof(*bg));
+    StrCopy(bg->prefab, sizeof(bg->prefab), prefab);
+    bg->layer_sh = LoadShaderFromMemory(VS_UNLIT, NEXUS_FS_LAYER);
+    bg->opaque_loc = GetShaderLocation(bg->layer_sh, "opaque");
+    bg->cutoff_loc = GetShaderLocation(bg->layer_sh, "cutoff");
+    bg->material = LoadMaterialDefault();
+    bg->material.shader = bg->layer_sh;
+    bg->white = bg->material.maps[MATERIAL_MAP_DIFFUSE].texture;
+
+    cJSON *root = JsonLoadFile(NEXUS_SCENES_PATH);
+    const cJSON *scene = NexusSceneJson(root, prefab);
+    if (!scene) TraceLog(LOG_FATAL, "Nexus: %s is not in %s", prefab, NEXUS_SCENES_PATH);
+
+    const cJSON *camera = cJSON_GetObjectItemCaseSensitive((cJSON *)scene, "camera");
+    Vector3 position = NexusJsonVec3(camera, "position");
+    bg->cam = (Camera3D){
+        .position = position,
+        .target = Vector3Add(position, NexusJsonVec3(camera, "forward")),
+        .up = NexusJsonVec3(camera, "up"),
+        .fovy = JsonFloat(camera, "fov"),
+        .projection = CAMERA_PERSPECTIVE,
+    };
+    bg->cam_home_x = position.x;
+    bg->base_fovy = bg->cam.fovy;
+    bg->scroll_lo = bg->scroll_hi = position.x;
+
+    const cJSON *nodes = cJSON_GetObjectItemCaseSensitive((cJSON *)scene, "nodes");
+    bg->node_frame = NexusJsonMatrix(cJSON_GetObjectItemCaseSensitive((cJSON *)nodes, "matrix"));
+    cJSON *unit = cJSON_GetObjectItemCaseSensitive((cJSON *)nodes, "unit");
+    bg->node_unit =
+        (Vector2){(float)cJSON_GetArrayItem(unit, 0)->valuedouble, (float)cJSON_GetArrayItem(unit, 1)->valuedouble};
+
+    cJSON *layer_json = NULL;
+    cJSON_ArrayForEach(layer_json, cJSON_GetObjectItemCaseSensitive((cJSON *)scene, "layers")) {
+        if (bg->layer_count >= NEXUS_BG_MAX_LAYERS) {
+            TraceLog(LOG_WARNING, "Nexus: %s has more than %d layers", prefab, NEXUS_BG_MAX_LAYERS);
+            break;
+        }
+        if (NexusLayerLoad(bg, &bg->layers[bg->layer_count], layer_json)) bg->layer_count++;
+    }
+    cJSON_Delete(root);
+    float envelope_lo = 0.0f, envelope_hi = 0.0f;
+    NexusArtEnvelope(bg, &envelope_lo, &envelope_hi);
+    for (int i = 0; i < bg->layer_count; i++) NexusLayerFindSeams(bg, &bg->layers[i], envelope_hi - envelope_lo);
+    NexusAddMirrors(bg, envelope_hi - envelope_lo);
+    TraceLog(LOG_INFO, "Nexus: %s loaded %d layers", prefab, bg->layer_count);
+}
+
+void NexusBackgroundUnload(NexusBackground *bg) {
+    for (int i = 0; i < bg->layer_count; i++) UnloadMesh(bg->layers[i].mesh);
+    for (int i = 0; i < bg->texture_count; i++) {
+        UnloadTexture(bg->textures[i].texture);
+        UnloadImage(bg->textures[i].mask);
+    }
+    bg->material.shader = (Shader){0};
+    bg->material.maps[MATERIAL_MAP_DIFFUSE].texture = (Texture2D){0};
+    UnloadMaterial(bg->material);
+    UnloadShader(bg->layer_sh);
+    memset(bg, 0, sizeof(*bg));
+}
+
+void NexusBackgroundSetScroll(NexusBackground *bg, float x) {
+    bg->cam.position.x = x;
+    bg->cam.target.x = x;
+}
+
+float NexusBackgroundHomeX(const NexusBackground *bg) {
+    return bg->cam_home_x;
+}
+
+Vector3 NexusBackgroundNodeWorld(const NexusBackground *bg, float table_x, float table_z) {
+    return Vector3Transform((Vector3){table_x, NEXUS_NODE_TABLE_Y, table_z}, bg->node_frame);
+}
+
+Vector2 NexusBackgroundNodeUnit(const NexusBackground *bg) {
+    return bg->node_unit;
+}
+
+float NexusBackgroundNodePlaneY(const NexusBackground *bg) {
+    return NexusBackgroundNodeWorld(bg, 0.0f, 0.0f).y;
+}
+
+Vector2 NexusBackgroundNodeScreen(const NexusBackground *bg, Vector3 world) {
+    Vector2 pixels = GetWorldToScreen(world, bg->cam);
+    float scale = UiScale();
+    return (Vector2){pixels.x / scale, pixels.y / scale};
+}
+
 static Ray NexusCameraRay(const Camera3D *cam, float aspect, float ndc_x, float ndc_y) {
     Vector3 forward = Vector3Normalize(Vector3Subtract(cam->target, cam->position));
     Vector3 up = Vector3Normalize(cam->up);
@@ -354,117 +439,208 @@ static Ray NexusCameraRay(const Camera3D *cam, float aspect, float ndc_x, float 
     return (Ray){cam->position, Vector3Normalize(direction)};
 }
 
-static bool NexusRayShowsArt(const NexusBackground *bg, const Camera3D *cam, Ray ray) {
-    int nearest = -1;
-    float nearest_distance = 1.0e9f;
-    for (int i = 0; i < bg->layer_count; i++) {
-        float distance = 0.0f;
-        if (NexusLayerSolidAt(bg, &bg->layers[i], ray, &distance) && distance < nearest_distance) {
-            nearest = i;
-            nearest_distance = distance;
-        }
-    }
-    if (nearest < 0) return false;
-    const NexusLayer *layer = &bg->layers[nearest];
-    return !NexusLayerIsFrame(layer) || !NexusFrameSpansViewHeight(layer, cam);
+static Vector2 NexusViewNdc(const Camera3D *cam, float aspect, Vector3 world) {
+    Vector3 forward = Vector3Normalize(Vector3Subtract(cam->target, cam->position));
+    Vector3 up = Vector3Normalize(cam->up);
+    Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, up));
+    Vector3 offset = Vector3Subtract(world, cam->position);
+    float tan_half = tanf(cam->fovy * 0.5f * DEG2RAD);
+    float depth = Vector3DotProduct(offset, forward);
+    return (Vector2){
+        Vector3DotProduct(offset, right) / (depth * tan_half * aspect),
+        Vector3DotProduct(offset, up) / (depth * tan_half),
+    };
 }
 
-static bool NexusEdgesShowArt(const NexusBackground *bg, float camera_x, float aspect) {
+static Camera3D NexusViewCamera(const NexusBackground *bg, float camera_x, float view_scale) {
     Camera3D cam = bg->cam;
     cam.position.x = camera_x;
     cam.target.x = camera_x;
+    cam.fovy = 2.0f * atanf(view_scale * tanf(bg->base_fovy * 0.5f * DEG2RAD)) * RAD2DEG;
+    return cam;
+}
+
+static bool NexusRayShowsArt(const NexusBackground *bg, Ray ray) {
+    for (int i = 0; i < bg->layer_count; i++) {
+        float distance = 0.0f;
+        if (NexusLayerActive(bg, &bg->layers[i]) && NexusLayerSolidAt(bg, &bg->layers[i], ray, &distance)) return true;
+    }
+    return false;
+}
+
+static bool NexusEdgesShowArt(const NexusBackground *bg, const Camera3D *cam, float aspect) {
     for (int side = -1; side <= 1; side += 2) {
         for (int row = 0; row < NEXUS_COVER_ROWS; row++) {
             float ndc_y = -1.0f + (NEXUS_COVER_TOP_NDC + 1.0f) * ((float)row + 0.5f) / (float)NEXUS_COVER_ROWS;
-            if (!NexusRayShowsArt(bg, &cam, NexusCameraRay(&cam, aspect, side * NEXUS_COVER_EDGE_NDC, ndc_y)))
-                return false;
+            if (!NexusRayShowsArt(bg, NexusCameraRay(cam, aspect, side * NEXUS_COVER_EDGE_NDC, ndc_y))) return false;
         }
     }
     return true;
 }
 
-static float NexusRefineCoverEdge(const NexusBackground *bg, float covered, float uncovered, float aspect) {
-    for (int step = 0; step < NEXUS_COVER_REFINE_STEPS; step++) {
-        float middle = (covered + uncovered) * 0.5f;
-        if (NexusEdgesShowArt(bg, middle, aspect))
-            covered = middle;
-        else
-            uncovered = middle;
-    }
-    return covered;
-}
-
-static void NexusArtEnvelope(const NexusBackground *bg, float *out_lo, float *out_hi) {
-    *out_lo = *out_hi = bg->cam_home_x;
+static bool NexusSeamOccluded(const NexusBackground *bg, int owner, const Camera3D *cam, Vector3 seam) {
+    Vector3 offset = Vector3Subtract(seam, cam->position);
+    float reach = Vector3Length(offset) - NEXUS_SEAM_OCCLUSION_GAP;
+    Ray ray = {cam->position, Vector3Normalize(offset)};
     for (int i = 0; i < bg->layer_count; i++) {
-        if (NexusLayerIsFrame(&bg->layers[i])) continue;
-        *out_lo = fminf(*out_lo, bg->layers[i].bounds.min.x);
-        *out_hi = fmaxf(*out_hi, bg->layers[i].bounds.max.x);
+        float distance = 0.0f;
+        if (i == owner || !NexusLayerActive(bg, &bg->layers[i])) continue;
+        if (NexusLayerSolidAt(bg, &bg->layers[i], ray, &distance) && distance < reach) return true;
     }
+    return false;
 }
 
-static bool NexusFindCoveredFrom(const NexusBackground *bg, float from, float to, float aspect, float *out) {
+static bool NexusSeamsHidden(const NexusBackground *bg, const Camera3D *cam, float aspect) {
+    int exposed = 0;
+    for (int i = 0; i < bg->layer_count; i++) {
+        const NexusLayer *layer = &bg->layers[i];
+        if (!NexusLayerActive(bg, layer)) continue;
+        for (int s = 0; s < layer->seam_count; s++) {
+            if (!NexusSeamCounts(bg, layer, layer->seam_end[s])) continue;
+            Vector2 ndc = NexusViewNdc(cam, aspect, layer->seams[s]);
+            if (fabsf(ndc.x) > 1.0f || ndc.y < -1.0f || ndc.y > NEXUS_COVER_TOP_NDC) continue;
+            if (NexusSeamOccluded(bg, i, cam, layer->seams[s])) continue;
+            if (++exposed >= NEXUS_SEAM_MIN_EXPOSED) return false;
+        }
+    }
+    return true;
+}
+
+static bool NexusViewClean(const NexusBackground *bg, float camera_x, float view_scale, float aspect) {
+    Camera3D cam = NexusViewCamera(bg, camera_x, view_scale);
+    return NexusEdgesShowArt(bg, &cam, aspect) && NexusSeamsHidden(bg, &cam, aspect);
+}
+
+static float NexusRefineCleanEdge(const NexusBackground *bg, float clean, float dirty, float view_scale, float aspect) {
+    for (int step = 0; step < NEXUS_COVER_REFINE_STEPS; step++) {
+        float middle = (clean + dirty) * 0.5f;
+        if (NexusViewClean(bg, middle, view_scale, aspect))
+            clean = middle;
+        else
+            dirty = middle;
+    }
+    return clean;
+}
+static bool
+NexusFindCleanFrom(const NexusBackground *bg, float from, float to, float view_scale, float aspect, float *out) {
     float step = to > from ? NEXUS_COVER_STEP : -NEXUS_COVER_STEP;
     int steps = (int)ceilf(fabsf(to - from) / NEXUS_COVER_STEP);
     for (int i = 0; i <= steps; i++) {
         float x = from + (float)i * step;
-        if (!NexusEdgesShowArt(bg, x, aspect)) continue;
-        *out = i == 0 ? x : NexusRefineCoverEdge(bg, x, x - step, aspect);
+        if (!NexusViewClean(bg, x, view_scale, aspect)) continue;
+        *out = i == 0 ? x : NexusRefineCleanEdge(bg, x, x - step, view_scale, aspect);
         return true;
     }
     return false;
 }
 
-static void NexusFitCover(NexusBackground *bg, float aspect) {
-    bg->cover_aspect = aspect;
+static bool NexusCleanRange(const NexusBackground *bg, float view_scale, float aspect, float *out_lo, float *out_hi) {
     float envelope_lo = 0.0f, envelope_hi = 0.0f;
     NexusArtEnvelope(bg, &envelope_lo, &envelope_hi);
-    bg->cover_found = NexusFindCoveredFrom(bg, envelope_lo, envelope_hi, aspect, &bg->cover_lo) &&
-                      NexusFindCoveredFrom(bg, envelope_hi, envelope_lo, aspect, &bg->cover_hi);
-    if (bg->cover_found) return;
-    bg->cover_lo = bg->cover_hi = (envelope_lo + envelope_hi) * 0.5f;
-    TraceLog(LOG_WARNING, "Nexus: %s art cannot fill a %.2f:1 view", bg->prefab, aspect);
+    if (NexusFindCleanFrom(bg, envelope_lo, envelope_hi, view_scale, aspect, out_lo) &&
+        NexusFindCleanFrom(bg, envelope_hi, envelope_lo, view_scale, aspect, out_hi))
+        return true;
+    *out_lo = *out_hi = (envelope_lo + envelope_hi) * 0.5f;
+    return false;
 }
 
-static float NexusViewFraction(const Camera3D *cam, float aspect, Vector3 world) {
-    Vector3 forward = Vector3Normalize(Vector3Subtract(cam->target, cam->position));
-    Vector3 up = Vector3Normalize(cam->up);
-    Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, up));
-    Vector3 offset = Vector3Subtract(world, cam->position);
-    float depth = Vector3DotProduct(offset, forward);
-    float ndc = Vector3DotProduct(offset, right) / (depth * tanf(cam->fovy * 0.5f * DEG2RAD) * aspect);
-    return (ndc + 1.0f) * 0.5f;
-}
-
-void NexusBackgroundScrollToShow(
+static void NexusTargetReach(
     const NexusBackground *bg,
-    Vector3 world,
-    float half_width,
+    const NexusViewTarget *target,
+    float view_scale,
+    float aspect,
     float view_lo,
     float view_hi,
     float *out_lo,
     float *out_hi
 ) {
-    float aspect = UiWidth() / UiHeight();
-    Camera3D here = bg->cam, there = bg->cam;
-    here.position.x = here.target.x = world.x;
-    there.position.x = there.target.x = world.x + 1.0f;
-    float centre = NexusViewFraction(&here, aspect, world);
-    float slope = NexusViewFraction(&there, aspect, world) - centre;
-    float margin =
-        fabsf(NexusViewFraction(&here, aspect, Vector3Add(world, (Vector3){half_width, 0.0f, 0.0f})) - centre);
-    float a = world.x + (view_lo + margin - centre) / slope;
-    float b = world.x + (view_hi - margin - centre) / slope;
+    Camera3D here = NexusViewCamera(bg, target->world.x, view_scale);
+    Camera3D there = NexusViewCamera(bg, target->world.x + 1.0f, view_scale);
+    float centre = (NexusViewNdc(&here, aspect, target->world).x + 1.0f) * 0.5f;
+    float slope = (NexusViewNdc(&there, aspect, target->world).x + 1.0f) * 0.5f - centre;
+    Vector3 side = Vector3Add(target->world, (Vector3){target->half_width, 0.0f, 0.0f});
+    float margin = fabsf((NexusViewNdc(&here, aspect, side).x + 1.0f) * 0.5f - centre);
+    float a = target->world.x + (view_lo + margin - centre) / slope;
+    float b = target->world.x + (view_hi - margin - centre) / slope;
     *out_lo = fminf(a, b);
     *out_hi = fmaxf(a, b);
 }
 
-bool NexusBackgroundArtScrollLimits(NexusBackground *bg, float *out_lo, float *out_hi) {
+static bool NexusTargetsFit(
+    const NexusBackground *bg,
+    const NexusViewTarget *targets,
+    int count,
+    float view_scale,
+    float aspect,
+    float view_lo,
+    float view_hi,
+    float *out_lo,
+    float *out_hi
+) {
+    bool fits = NexusCleanRange(bg, view_scale, aspect, out_lo, out_hi);
+    for (int i = 0; i < count; i++) {
+        float reach_lo = 0.0f, reach_hi = 0.0f;
+        NexusTargetReach(bg, &targets[i], view_scale, aspect, view_lo, view_hi, &reach_lo, &reach_hi);
+        if (*out_hi < reach_lo) {
+            *out_hi = reach_lo;
+            fits = false;
+        }
+        if (*out_lo > reach_hi) {
+            *out_lo = reach_hi;
+            fits = false;
+        }
+    }
+    return fits;
+}
+
+static bool NexusFitScale(
+    const NexusBackground *bg,
+    const NexusViewTarget *targets,
+    int count,
+    float aspect,
+    float view_lo,
+    float view_hi,
+    float *out_scale,
+    float *out_lo,
+    float *out_hi
+) {
+    *out_scale = 1.0f;
+    if (NexusTargetsFit(bg, targets, count, 1.0f, aspect, view_lo, view_hi, out_lo, out_hi)) return true;
+    *out_scale = NEXUS_MIN_VIEW_SCALE;
+    if (!NexusTargetsFit(bg, targets, count, NEXUS_MIN_VIEW_SCALE, aspect, view_lo, view_hi, out_lo, out_hi))
+        return false;
+    float fits = NEXUS_MIN_VIEW_SCALE, fails = 1.0f;
+    for (int step = 0; step < NEXUS_VIEW_FIT_STEPS; step++) {
+        float middle = (fits + fails) * 0.5f;
+        if (NexusTargetsFit(bg, targets, count, middle, aspect, view_lo, view_hi, out_lo, out_hi))
+            fits = middle;
+        else
+            fails = middle;
+    }
+    *out_scale = fits;
+    NexusTargetsFit(bg, targets, count, fits, aspect, view_lo, view_hi, out_lo, out_hi);
+    return true;
+}
+
+void NexusBackgroundFitView(
+    NexusBackground *bg, const NexusViewTarget *targets, int count, float view_lo, float view_hi
+) {
     float aspect = UiWidth() / UiHeight();
-    if (fabsf(aspect - bg->cover_aspect) > NEXUS_COVER_ASPECT_EPSILON) NexusFitCover(bg, aspect);
-    *out_lo = bg->cover_lo;
-    *out_hi = bg->cover_hi;
-    return bg->cover_found;
+    float view_scale = 1.0f, lo = 0.0f, hi = 0.0f;
+    bg->mirrors_on = false;
+    if (!NexusFitScale(bg, targets, count, aspect, view_lo, view_hi, &view_scale, &lo, &hi)) {
+        bg->mirrors_on = true;
+        if (!NexusFitScale(bg, targets, count, aspect, view_lo, view_hi, &view_scale, &lo, &hi))
+            TraceLog(LOG_WARNING, "Nexus: %s cannot frame its nodes cleanly at %.2f:1", bg->prefab, aspect);
+    }
+    bg->cam.fovy = NexusViewCamera(bg, bg->cam.position.x, view_scale).fovy;
+    bg->scroll_lo = lo;
+    bg->scroll_hi = hi;
+}
+
+void NexusBackgroundScrollLimits(const NexusBackground *bg, float *out_lo, float *out_hi) {
+    *out_lo = bg->scroll_lo;
+    *out_hi = bg->scroll_hi;
 }
 
 static int NexusLayerQueue(const NexusLayer *layer) {
@@ -506,7 +682,7 @@ void NexusBackgroundDrawRange(const NexusBackground *bg, float min_y, float max_
     int count = 0;
     for (int i = 0; i < bg->layer_count; i++) {
         float y = bg->layers[i].centre.y;
-        if (y >= min_y && y < max_y) order[count++] = i;
+        if (NexusLayerActive(bg, &bg->layers[i]) && y >= min_y && y < max_y) order[count++] = i;
     }
     nexus_sort_bg = bg;
     qsort(order, (size_t)count, sizeof(order[0]), NexusDrawOrderCompare);

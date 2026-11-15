@@ -6,6 +6,7 @@
 #define NEXUS_EDGE_BUFFER 3.0f
 #define NEXUS_LORE_PANEL_Y 72.0f
 #define NEXUS_LORE_PANEL_SHRINK 1.3f
+#define NEXUS_VIEW_FIT_ASPECT_EPSILON 1.0e-4f
 #define NEXUS_DRIFT_MAX_TIME 0.5f
 #define NEXUS_FOCUS_TIME 4.0f
 #define NEXUS_BOSS_SCALE 1.3f
@@ -85,6 +86,8 @@ typedef struct {
     NexusBackground bg;
     bool bg_loaded;
     char bg_prefab[64];
+    const NexusDifficulty *view_fit;
+    float view_fit_aspect;
     int active_event, active_difficulty;
 
     Button enter, retreat, quit_stay, quit_confirm;
@@ -475,36 +478,35 @@ static float NexusNodeScrollX(const Nexus *n, const NexusNode *node) {
     return NexusBackgroundNodeWorld(&n->bg, node->x, node->z).x;
 }
 
+static void NexusFitView(Nexus *n, const NexusDifficulty *d) {
+    float aspect = UiWidth() / UiHeight();
+    if (n->view_fit == d && fabsf(n->view_fit_aspect - aspect) < NEXUS_VIEW_FIT_ASPECT_EPSILON) return;
+    NexusViewTarget targets[NEXUS_MAX_NODES];
+    Vector2 unit = NexusBackgroundNodeUnit(&n->bg);
+    for (int i = 0; i < d->node_count; i++) {
+        float scale = d->nodes[i].boss ? NEXUS_BOSS_SCALE : 1.0f;
+        targets[i] = (NexusViewTarget){
+            NexusBackgroundNodeWorld(&n->bg, d->nodes[i].x, d->nodes[i].z),
+            NEXUS_ICON_HALF_WIDTH * unit.x * scale,
+        };
+    }
+    NexusBackgroundFitView(&n->bg, targets, d->node_count, NexusLorePanelRect(n).width / UiWidth(), 1.0f);
+    n->view_fit = d;
+    n->view_fit_aspect = aspect;
+}
+
 static void NexusScrollLimits(Nexus *n, const NexusDifficulty *d, float *out_lo, float *out_hi) {
+    NexusFitView(n, d);
     float art_lo = 0.0f, art_hi = 0.0f;
-    NexusBackgroundArtScrollLimits(&n->bg, &art_lo, &art_hi);
+    NexusBackgroundScrollLimits(&n->bg, &art_lo, &art_hi);
     float node_lo = NexusNodeScrollX(n, &d->nodes[0]), node_hi = node_lo;
     for (int i = 1; i < d->node_count; i++) {
         float x = NexusNodeScrollX(n, &d->nodes[i]);
         node_lo = fminf(node_lo, x);
         node_hi = fmaxf(node_hi, x);
     }
-    float lo = Clamp(node_lo - NEXUS_EDGE_BUFFER, art_lo, art_hi);
-    float hi = Clamp(node_hi + NEXUS_EDGE_BUFFER, art_lo, art_hi);
-    float view_lo = NexusLorePanelRect(n).width / UiWidth(), view_hi = 1.0f;
-    Vector2 unit = NexusBackgroundNodeUnit(&n->bg);
-    for (int i = 0; i < d->node_count; i++) {
-        float scale = d->nodes[i].boss ? NEXUS_BOSS_SCALE : 1.0f;
-        float reach_lo = 0.0f, reach_hi = 0.0f;
-        NexusBackgroundScrollToShow(
-            &n->bg,
-            NexusBackgroundNodeWorld(&n->bg, d->nodes[i].x, d->nodes[i].z),
-            NEXUS_ICON_HALF_WIDTH * unit.x * scale,
-            view_lo,
-            view_hi,
-            &reach_lo,
-            &reach_hi
-        );
-        if (hi < reach_lo) hi = reach_lo;
-        if (lo > reach_hi) lo = reach_hi;
-    }
-    *out_lo = lo;
-    *out_hi = hi;
+    *out_lo = Clamp(node_lo - NEXUS_EDGE_BUFFER, art_lo, art_hi);
+    *out_hi = Clamp(node_hi + NEXUS_EDGE_BUFFER, art_lo, art_hi);
 }
 
 static void NexusFocusNode(Nexus *n, const NexusDifficulty *d, int index, bool immediate) {
@@ -542,6 +544,7 @@ bool NexusEnterMap(Nexus *n, Player *player, int event, int difficulty) {
     }
     if (!n->bg_loaded) {
         NexusBackgroundLoad(&n->bg, e->prefab);
+        n->view_fit = NULL;
         StrCopy(n->bg_prefab, sizeof(n->bg_prefab), e->prefab);
         n->bg_loaded = true;
     }

@@ -17,6 +17,8 @@ MAP_CAMERA_ROTATION = (0.0, 0.70711, -0.70711, 0.0)
 DOWN = (0.0, -1.0, 0.0)
 SCREEN_UP = (0.0, 0.0, 1.0)
 UNMIRRORED_PREFAB = "nexus_map3_pre"
+LETTERBOXED_PREFAB = "SnexusDEM_map12_pre"
+SIDE_MASKED_PREFAB = "SnexusFH_map7_pre"
 UNMIRRORED_LAYER = "nexus_map3_FBX/mg"
 
 
@@ -57,6 +59,25 @@ class NexusScenesTest(unittest.TestCase):
         screen_left = max(range(len(xs)), key=xs.__getitem__)
         screen_right = min(range(len(xs)), key=xs.__getitem__)
         self.assertLess(us[screen_left], us[screen_right])
+
+    def test_side_masks_are_dropped_and_letterbox_frames_kept(self) -> None:
+        for scene in SCENES:
+            for layer in scene["layers"]:
+                with self.subTest(prefab=scene["prefab"], layer=layer["name"]):
+                    self.assertFalse(build_nexus_scenes.is_side_mask(layer, scene["camera"]))
+        frames = {
+            scene["prefab"]: [layer for layer in scene["layers"] if layer["texture"] is None] for scene in SCENES
+        }
+        self.assertTrue(frames[LETTERBOXED_PREFAB])
+        self.assertFalse(frames[SIDE_MASKED_PREFAB])
+
+    def test_a_frame_spanning_the_view_height_is_a_side_mask(self) -> None:
+        camera = {"position": [0.0, 10.0, 0.0], "fov": 26.0}
+        tall = {"texture": None, "positions": [0.0, 0.0, -5.0, 1.0, 0.0, 5.0]}
+        band = {"texture": None, "positions": [0.0, 0.0, 1.0, 1.0, 0.0, 5.0]}
+        self.assertTrue(build_nexus_scenes.is_side_mask(tall, camera))
+        self.assertFalse(build_nexus_scenes.is_side_mask(band, camera))
+        self.assertFalse(build_nexus_scenes.is_side_mask({**tall, "texture": "cache:art"}, camera))
 
     def test_unity_points_keep_x_and_flip_z(self) -> None:
         world = build_nexus_scenes.mat_mul(

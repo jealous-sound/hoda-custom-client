@@ -152,7 +152,8 @@ static void DebugRenderNexusScene(const char *scene_name) {
     static NexusBackground bg;
     NexusBackgroundLoad(&bg, scene_name);
     float art_lo = 0.0f, art_hi = 0.0f;
-    NexusBackgroundArtScrollLimits(&bg, &art_lo, &art_hi);
+    NexusBackgroundFitView(&bg, NULL, 0, 0.0f, 1.0f);
+    NexusBackgroundScrollLimits(&bg, &art_lo, &art_hi);
     NexusBackgroundSetScroll(&bg, Clamp(EnvFloat("HOD_NEXUS_SCROLL", NexusBackgroundHomeX(&bg)), art_lo, art_hi));
     TraceLog(LOG_INFO, "Nexus: %s art scroll limits [%.2f, %.2f]", scene_name, art_lo, art_hi);
     for (int frame = 0; frame < 4; frame++) {

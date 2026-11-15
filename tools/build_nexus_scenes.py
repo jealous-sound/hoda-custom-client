@@ -280,11 +280,12 @@ class Scene:
         self.walk(root, IDENTITY, '', True, visit)
         if camera is None or frame is None or marker is None:
             raise SystemExit(f'{self.bundles.prefab}: missing {CAMERA_NODE}, {NODE_FRAME} or {FIRST_MARKER}')
+        view = camera_entry(*camera)
         return {
             'prefab': self.bundles.prefab,
-            'camera': camera_entry(*camera),
+            'camera': view,
             'nodes': nodes_entry(frame, marker),
-            'layers': layers,
+            'layers': [layer for layer in layers if not is_side_mask(layer, view)],
         }
 
     def layers(self, matrix, path, renderer_obj, filter_obj):
@@ -316,6 +317,17 @@ class Scene:
             entry['indices'] = [remap[i] for i in submeshes[index]]
             found.append(entry)
         return found
+
+
+def is_side_mask(layer, camera):
+    if layer['texture'] is not None:
+        return False
+    heights = layer['positions'][1::3]
+    rows = layer['positions'][2::3]
+    depth = camera['position'][1] - (min(heights) + max(heights)) / 2.0
+    half_height = depth * math.tan(math.radians(camera['fov']) / 2.0)
+    centre = camera['position'][2]
+    return min(rows) <= centre - half_height and max(rows) >= centre + half_height
 
 
 def image_uv(uv, scale, offset):
