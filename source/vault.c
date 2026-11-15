@@ -10,7 +10,7 @@
 #define VAULT_ACTION_WITHDRAW "vault_withdraw"
 #define VAULT_ACTION_CLAIM "vault_claim"
 #define VAULT_ACTION_GEMS_FIELD "gems"
-#define VAULT_SEAL_PATH EXTRA_ASSET_DIR "gui/vault/seal_%s.png"
+#define VAULT_BADGE_PATH EXTRA_ASSET_DIR "gui/vault/badge_%s.png"
 
 typedef enum {
     VAULT_TIER_NONE,
@@ -54,10 +54,10 @@ typedef struct {
 typedef struct {
     bool asked;
     Texture2D texture;
-} VaultSealSlot;
+} VaultBadgeSlot;
 
 static VaultCatalog vault_catalog;
-static VaultSealSlot vault_seals[VAULT_TIER_COUNT];
+static VaultBadgeSlot vault_badges[VAULT_TIER_COUNT];
 
 static const char *const VAULT_TIER_IDS[VAULT_TIER_COUNT] = {
     [VAULT_TIER_NONE] = "",
@@ -310,12 +310,12 @@ void VaultLoad(const cJSON *json, PlayerVault *vault) {
     *vault = loaded;
 }
 
-Texture2D VaultSealTexture(VaultTier tier) {
+Texture2D VaultBadgeTexture(VaultTier tier) {
     if (tier <= VAULT_TIER_NONE || tier >= VAULT_TIER_COUNT) return (Texture2D){0};
-    VaultSealSlot *slot = &vault_seals[tier];
+    VaultBadgeSlot *slot = &vault_badges[tier];
     if (slot->asked) return slot->texture;
     slot->asked = true;
-    const char *path = TextFormat(VAULT_SEAL_PATH, VAULT_TIER_IDS[tier]);
+    const char *path = TextFormat(VAULT_BADGE_PATH, VAULT_TIER_IDS[tier]);
     if (!ResourceExists(path)) return slot->texture;
     slot->texture = ResourceLoadTexture(path);
     if (slot->texture.id) {

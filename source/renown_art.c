@@ -133,8 +133,8 @@ NameBadges PlayerNameBadges(const Player *player) {
 static int NameBadgesTextures(NameBadges badges, Texture2D *out) {
     int count = 0;
     if (RenownNameHasStar(badges.renown_rank)) out[count++] = RenownStarTexture(RenownTierForRank(badges.renown_rank));
-    Texture2D seal = VaultSealTexture((VaultTier)badges.vault_tier);
-    if (seal.id) out[count++] = seal;
+    Texture2D vault_badge = VaultBadgeTexture((VaultTier)badges.vault_tier);
+    if (vault_badge.id) out[count++] = vault_badge;
     return count;
 }
 

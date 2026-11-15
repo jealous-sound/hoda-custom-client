@@ -4,14 +4,14 @@
 #define VAULT_VIEW_WARN ((Color){232, 128, 96, 255})
 #define VAULT_VIEW_RULE ((Color){255, 255, 255, 44})
 #define VAULT_VIEW_PANEL ((Color){0, 0, 0, 96})
-#define VAULT_VIEW_LOCKED_SEAL ((Color){90, 90, 90, 200})
+#define VAULT_VIEW_LOCKED_BADGE ((Color){90, 90, 90, 200})
 #define VAULT_VIEW_DISABLED_TINT ((Color){105, 105, 105, 255})
 #define VAULT_VIEW_DISABLED_LABEL ((Color){150, 146, 138, 255})
 #define VAULT_VIEW_TEXT_CAP 192
 #define VAULT_VIEW_LEFT_WIDTH 0.36f
 #define VAULT_VIEW_COLUMN_GAP 24.0f
-#define VAULT_VIEW_SEAL_SIDE 150.0f
-#define VAULT_VIEW_LADDER_SEAL 30.0f
+#define VAULT_VIEW_BADGE_SIDE 150.0f
+#define VAULT_VIEW_LADDER_BADGE 30.0f
 #define VAULT_VIEW_ROW_HEIGHT 40.0f
 #define VAULT_VIEW_LABEL_SIZE 20.0f
 #define VAULT_VIEW_VALUE_SIZE 22.0f
@@ -147,13 +147,13 @@ static void VaultViewDrawRule(Rectangle panel, float y) {
 static void VaultViewDrawTierPanel(const Player *player, Rectangle panel) {
     DrawRectangleRec(panel, VAULT_VIEW_PANEL);
     VaultTier tier = VaultTierFor(player->vault.locked);
-    Rectangle seal = UiRect(panel, 0.5f, 0.0f, VAULT_VIEW_SEAL_SIDE, VAULT_VIEW_SEAL_SIDE);
-    seal.y += 14.0f;
+    Rectangle badge = UiRect(panel, 0.5f, 0.0f, VAULT_VIEW_BADGE_SIDE, VAULT_VIEW_BADGE_SIDE);
+    badge.y += 14.0f;
     bool earned = tier != VAULT_TIER_NONE;
     VaultViewDrawFit(
-        VaultSealTexture(earned ? tier : VAULT_TIER_BRONZE), seal, earned ? WHITE : VAULT_VIEW_LOCKED_SEAL
+        VaultBadgeTexture(earned ? tier : VAULT_TIER_BRONZE), badge, earned ? WHITE : VAULT_VIEW_LOCKED_BADGE
     );
-    Rectangle title = {panel.x + 8.0f, seal.y + seal.height + 8.0f, panel.width - 16.0f, 34.0f};
+    Rectangle title = {panel.x + 8.0f, badge.y + badge.height + 8.0f, panel.width - 16.0f, 34.0f};
     UiDrawTextCentered(
         GuiFont(FNT_COOL),
         VaultViewTierName(tier),
@@ -174,10 +174,10 @@ static void VaultViewDrawTierPanel(const Player *player, Rectangle panel) {
 
     float y = next.y + next.height + 14.0f;
     for (int rung = VAULT_TIER_BRONZE; rung < VAULT_TIER_COUNT; rung++) {
-        Rectangle row = {panel.x + 22.0f, y, panel.width - 44.0f, VAULT_VIEW_LADDER_SEAL + 6.0f};
+        Rectangle row = {panel.x + 22.0f, y, panel.width - 44.0f, VAULT_VIEW_LADDER_BADGE + 6.0f};
         bool reached = tier >= rung;
-        Rectangle icon = {row.x, row.y + 3.0f, VAULT_VIEW_LADDER_SEAL, VAULT_VIEW_LADDER_SEAL};
-        VaultViewDrawFit(VaultSealTexture((VaultTier)rung), icon, reached ? WHITE : VAULT_VIEW_LOCKED_SEAL);
+        Rectangle icon = {row.x, row.y + 3.0f, VAULT_VIEW_LADDER_BADGE, VAULT_VIEW_LADDER_BADGE};
+        VaultViewDrawFit(VaultBadgeTexture((VaultTier)rung), icon, reached ? WHITE : VAULT_VIEW_LOCKED_BADGE);
         Color color = reached ? VAULT_VIEW_TEXT : VAULT_VIEW_DIM;
         Rectangle name = {icon.x + icon.width + 10.0f, row.y, row.width * 0.55f, row.height};
         UiDrawTextLeftMiddle(
