@@ -51,7 +51,7 @@
 
 static const Rectangle OPTIONS_PANEL = {108.0f, 110.0f, 1064.0f, 500.0f};
 static const Rectangle OPTIONS_TITLE = {108.0f, 132.0f, 1064.0f, 60.0f};
-static const Rectangle OPTIONS_CLOSE = {1116.0f, 92.0f, 73.0f, 73.0f};
+static const Rectangle OPTIONS_CLOSE = {1085.0f, 92.0f, 73.0f, 73.0f};
 static const float OPTIONS_COLUMN_X[] = {196.0f, 660.0f};
 static const float OPTIONS_COLUMN_WIDTH = 424.0f;
 static const float OPTIONS_HEADING_Y = 200.0f;
