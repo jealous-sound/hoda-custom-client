@@ -34,16 +34,23 @@ typedef struct {
 #define DEBUG_RENOWN_RANK 14
 #define DEBUG_RENOWN_FREE_POINTS 3
 #define DEBUG_RENOWN_RANK_PROGRESS 0.62f
+#define DEBUG_VAULT_LOCKED 6200
+#define DEBUG_VAULT_WALLET 8000
+#define DEBUG_VAULT_UNLOCK_SECONDS (9LL * 86400LL + 4LL * 3600LL)
+#define DEBUG_VAULT_UNCOLLECTED_SECONDS (36LL * 3600LL)
 #define DEBUG_LADDER_RIVALS                                                                                            \
     "{\"cycle\":%lld,\"players\":["                                                                                    \
-    "{\"id\":\"isabela\",\"name\":\"Isabela\",\"level\":100,\"trophies\":6100,\"banners\":9600,\"renown_rank\":41},"   \
-    "{\"id\":\"varric\",\"name\":\"Varric\",\"level\":100,\"trophies\":5975,\"banners\":9500,\"renown_rank\":33},"     \
+    "{\"id\":\"isabela\",\"name\":\"Isabela\",\"level\":100,\"trophies\":6100,\"banners\":9600,\"renown_rank\":41,"    \
+    "\"vault_tier\":3},"                                                                                               \
+    "{\"id\":\"varric\",\"name\":\"Varric\",\"level\":100,\"trophies\":5975,\"banners\":9500,\"renown_rank\":33,"      \
+    "\"vault_tier\":2},"                                                                                               \
     "{\"id\":\"aveline\",\"name\":\"Aveline\",\"level\":100,\"trophies\":5925,\"banners\":9400,\"renown_rank\":24},"   \
-    "{\"id\":\"merrill\",\"name\":\"Merrill\",\"level\":100,\"trophies\":5875,\"banners\":9300,\"renown_rank\":12},"   \
+    "{\"id\":\"merrill\",\"name\":\"Merrill\",\"level\":100,\"trophies\":5875,\"banners\":9300,\"renown_rank\":12,"    \
+    "\"vault_tier\":1},"                                                                                               \
     "{\"id\":\"fenris\",\"name\":\"Fenris\",\"level\":64,\"trophies\":5825,\"banners\":9200,\"renown_rank\":6},"       \
     "{\"id\":\"anders\",\"name\":\"Anders\",\"level\":8,\"trophies\":5775,\"banners\":9100}]}"
 #define DEBUG_DUEL_RIVAL                                                                                               \
-    "{\"id\":\"isabela\",\"name\":\"Isabela\",\"level\":100,\"trophies\":900,\"renown_rank\":41,"                      \
+    "{\"id\":\"isabela\",\"name\":\"Isabela\",\"level\":100,\"trophies\":900,\"renown_rank\":41,\"vault_tier\":3,"     \
     "\"units\":[{\"slot\":0,\"id\":\"UNIT_VIVIENNE\",\"tier\":\"II\",\"level\":9},"                                    \
     "{\"slot\":1,\"id\":\"UNIT_ELVENMAGE\",\"tier\":\"I\",\"level\":2}],\"runes\":[]}"
 #define DEBUG_RESULTS_SETTLE_FRAMES 10
@@ -186,6 +193,22 @@ static void DebugAdvanceItemReveal(Store *store) {
     );
 }
 
+static void DebugSeedVault(Player *player) {
+    long long now = ServerNow();
+    long long locked = EnvInt("HOD_VAULT_LOCKED", DEBUG_VAULT_LOCKED);
+    player->gems = EnvInt("HOD_VAULT_WALLET", DEBUG_VAULT_WALLET);
+    player->vault = (PlayerVault){0};
+    if (locked <= 0) return;
+    long long since = now - DEBUG_VAULT_UNCOLLECTED_SECONDS;
+    long long unlocks_in = EnvInt("HOD_VAULT_UNLOCKED", 0) ? -1 : DEBUG_VAULT_UNLOCK_SECONDS;
+    player->vault = (PlayerVault){
+        .locked = locked,
+        .unlocks_at = now + unlocks_in,
+        .accrued_at = since,
+        .claimed_at = since,
+    };
+}
+
 static void DebugPrepareStore(Game *game, DebugShot *shot) {
     static const char *const names[] = {
         "store",
@@ -196,6 +219,8 @@ static void DebugPrepareStore(Game *game, DebugShot *shot) {
         "store_items",
         "store_featured",
         "store_vault",
+        "store_vault_deposit",
+        "store_vault_withdraw",
         "store_voucher",
         "pack",
         "pack_reveal",
@@ -222,8 +247,11 @@ static void DebugPrepareStore(Game *game, DebugShot *shot) {
             game->store.view = STORE_VIEW_ITEMS;
         } else if (DebugShotIs(shot, "store_featured")) {
             game->store.view = STORE_VIEW_FEATURED;
-        } else if (DebugShotIs(shot, "store_vault")) {
+        } else if (strncmp(shot->screen, "store_vault", strlen("store_vault")) == 0) {
             game->store.view = STORE_VIEW_VAULT;
+            DebugSeedVault(&game->player);
+            if (DebugShotIs(shot, "store_vault_deposit")) game->store.dialog = STORE_DIALOG_VAULT_DEPOSIT;
+            if (DebugShotIs(shot, "store_vault_withdraw")) game->store.dialog = STORE_DIALOG_VAULT_WITHDRAW;
         } else if (DebugShotIs(shot, "store_voucher")) {
             game->store.view = STORE_VIEW_HEROES;
             game->store.pending_pack = Clamp(EnvInt("HOD_PACK", 0), 0, game->store.pack_count - 1);
@@ -1232,6 +1260,8 @@ static const char *const DEBUG_GUILD_MEMBERS[] = {
 
 static const int DEBUG_GUILD_RENOWN_RANKS[] = {12, 3, 0, 21, 1, 0, 34, 45};
 static const int DEBUG_GUILD_APPLICANT_RENOWN_RANKS[] = {2, 0};
+static const int DEBUG_GUILD_VAULT_TIERS[] = {2, 0, 1, 3, 0, 0, 1, 0};
+static const int DEBUG_GUILD_APPLICANT_VAULT_TIERS[] = {0, 1};
 
 static const char *const DEBUG_GUILD_CHAT[] = {
     "{\"id\":1,\"time\":%lld,\"title\":\"GUILD_CHAT_EVENT_GUILD_CREATION_TITLE\","
@@ -1245,7 +1275,7 @@ static const char *const DEBUG_GUILD_CHAT[] = {
     "\"params\":[{\"text\":\"Varric\",\"loc_key\":false},{\"text\":\"GUILD_RANK_OFFICER\",\"loc_key\":true},"
     "{\"text\":\"Hawke\",\"loc_key\":false}]}",
     "{\"id\":4,\"time\":%lld,\"text\":\"Кто идёт в Нексус сегодня вечером?\",\"player_name\":\"Hawke\","
-    "\"player_level\":24,\"player_rank\":2,\"renown_rank\":12}",
+    "\"player_level\":24,\"player_rank\":2,\"renown_rank\":12,\"vault_tier\":2}",
     "{\"id\":5,\"time\":%lld,\"text\":\"Я в деле, но сначала прокачаю рунами отряд. Ещё пару боёв на третьей карте, "
     "и можно выдвигаться всем вместе через главные ворота.\",\"player_name\":\"Varric\",\"player_level\":21,"
     "\"player_rank\":1,\"renown_rank\":3}",
@@ -1259,7 +1289,7 @@ static const char *const DEBUG_GUILD_CHAT[] = {
 static const char *const DEBUG_WORLD_CHAT[] = {
     "{\"id\":1,\"time\":%lld,\"text\":\"Ищу гильдию для Натиска, 30 "
     "уровень\",\"player_id\":\"isabela\",\"player_name\":\"Isabela\","
-    "\"player_level\":30,\"player_rank\":999,\"renown_rank\":21}",
+    "\"player_level\":30,\"player_rank\":999,\"renown_rank\":21,\"vault_tier\":3}",
     "{\"id\":2,\"time\":%lld,\"text\":\"Защитники набирают игроков, заявки открыты. Нужны активные бойцы для "
     "Натиска и арены, вступайте через поиск "
     "гильдий.\",\"player_id\":\"hawke\",\"player_name\":\"Hawke\",\"player_level\":24,"
@@ -1299,6 +1329,7 @@ static void DebugSeedGuildInfo(GuildInfo *info, const char *name, int icon, Guil
         m->rank = i == 0 ? GUILD_RANK_LEADER : (i < 3 ? GUILD_RANK_OFFICER : GUILD_RANK_MEMBER);
         m->level = 24 - i * 2;
         m->renown_rank = DEBUG_GUILD_RENOWN_RANKS[i];
+        m->vault_tier = DEBUG_GUILD_VAULT_TIERS[i];
         m->last_login = now - i * i * DEBUG_GUILD_LOGIN_STEP_SECONDS;
     }
     info->summary.member_count = info->member_total;
@@ -1309,6 +1340,7 @@ static void DebugSeedGuildInfo(GuildInfo *info, const char *name, int icon, Guil
         StrCopy(a->name, sizeof(a->name), applicants[i]);
         a->level = 9 + i;
         a->renown_rank = DEBUG_GUILD_APPLICANT_RENOWN_RANKS[i];
+        a->vault_tier = DEBUG_GUILD_APPLICANT_VAULT_TIERS[i];
         StrCopy(a->text, sizeof(a->text), "Возьмите меня, я умею лечить!");
     }
 }
@@ -1406,6 +1438,7 @@ static void DebugSeedOnslaught(Guild *g, long long cycle, bool finished) {
         StrCopy(c->name, sizeof(c->name), g->mine.members[i].name);
         c->banners = DEBUG_ONSLAUGHT_MEMBER_BANNERS - i * i * 12;
         c->renown_rank = g->mine.members[i].renown_rank;
+        c->vault_tier = g->mine.members[i].vault_tier;
     }
     GuildRankContributions(o);
     o->my_banners = o->members[0].banners;

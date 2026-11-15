@@ -170,7 +170,7 @@ static void GoalsDrawRankCells(
     const GoalsTabs *t,
     Rectangle row,
     int rank,
-    int renown_rank,
+    NameBadges badges,
     const char *name,
     int trophies,
     float right_inset,
@@ -191,7 +191,7 @@ static void GoalsDrawRankCells(
         trophy.x - GOALS_TROPHY_COLUMN_WIDTH - 8.0f, row.y, GOALS_TROPHY_COLUMN_WIDTH, row.height
     };
     Rectangle name_cell = {name_x, row.y, trophies_cell.x - name_x, row.height};
-    RenownDrawStarredName(renown_rank, t->body, name, name_cell, GOALS_RANK_NAME_SIZE, color);
+    NameBadgesDraw(badges, t->body, name, name_cell, GOALS_RANK_NAME_SIZE, color);
     UiDrawTextRight(t->font, TextFormat("%d", trophies), trophies_cell, 26.0f, color);
 }
 
@@ -229,7 +229,7 @@ GoalsAction GoalsDrawTrophies(GoalsTabs *t, GoalsScroll *scroll, const Player *p
         t,
         mine,
         t->player_rank,
-        RenownRank(p->experience),
+        PlayerNameBadges(p),
         LocGet("HODA_PVP_YOU"),
         p->pvp.trophies,
         GOALS_BUTTON_WIDTH + 16.0f,
@@ -252,8 +252,8 @@ GoalsAction GoalsDrawTrophies(GoalsTabs *t, GoalsScroll *scroll, const Player *p
         bool self = entry->bot == PVP_RANK_PLAYER;
         DrawRectangleRec(row, GOALS_ROW_TINT);
         const char *name = PvpLadderEntryName(&pvp_ladder, entry);
-        int renown_rank = PvpLadderEntryRenownRank(&pvp_ladder, entry, p);
-        GoalsDrawRankCells(t, row, i + 1, renown_rank, name, entry->trophies, GOALS_BUTTON_WIDTH + 16.0f, GOALS_TEXT);
+        NameBadges badges = PvpLadderEntryBadges(&pvp_ladder, entry, p);
+        GoalsDrawRankCells(t, row, i + 1, badges, name, entry->trophies, GOALS_BUTTON_WIDTH + 16.0f, GOALS_TEXT);
         if (self) continue;
         Rectangle button = {
             row.x + row.width - GOALS_BUTTON_WIDTH - 6.0f,

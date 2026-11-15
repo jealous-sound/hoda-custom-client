@@ -511,8 +511,8 @@ static void PvpEventViewDrawLeaderboard(PvpEventView *v, const Player *p, Rectan
             PVP_EVENT_VIEW_TEXT
         );
         const char *name = PvpLadderEntryName(&pvp_event_ladder.rivals, entry);
-        RenownDrawStarredNameCentred(
-            PvpLadderEntryRenownRank(&pvp_event_ladder.rivals, entry, p),
+        NameBadgesDrawCentred(
+            PvpLadderEntryBadges(&pvp_event_ladder.rivals, entry, p),
             v->body,
             name,
             PvpEventFit(row, 0.265f, 0.5f, 0.45f, 1.0f, 0.0f),
@@ -535,8 +535,8 @@ static void PvpEventViewDrawLeaderboard(PvpEventView *v, const Player *p, Rectan
         20.0f,
         PVP_EVENT_VIEW_DARK
     );
-    RenownDrawStarredNameCentred(
-        RenownRank(p->experience),
+    NameBadgesDrawCentred(
+        PlayerNameBadges(p),
         v->body,
         LocGet("HODA_PVP_YOU"),
         PvpEventFit(mine, 0.25f, 0.5f, 0.4f, 1.0f, 0.0f),

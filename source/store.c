@@ -238,6 +238,8 @@ typedef enum {
     STORE_DIALOG_ROSTER_FULL,
     STORE_DIALOG_VOUCHER,
     STORE_DIALOG_CONFIRM_GEMS,
+    STORE_DIALOG_VAULT_DEPOSIT,
+    STORE_DIALOG_VAULT_WITHDRAW,
 } StoreDialog;
 
 typedef enum {
@@ -418,6 +420,10 @@ typedef struct {
     float status_time;
     char status[192];
 } Store;
+
+StoreAction VaultViewDraw(Store *store, Player *player);
+void VaultViewDialogText(const Store *store, const Player *player, char *header, char *body, size_t size);
+bool VaultViewConfirm(Player *player, StoreDialog dialog);
 
 static bool StoreGemPurchaseActive(const Store *store) {
     return store->gem_purchase != STORE_GEM_PURCHASE_IDLE;
@@ -2388,17 +2394,16 @@ static StoreAction StoreDrawPackPage(Store *store, Player *player, Heroes *heroe
     return action;
 }
 
-static StoreAction StoreDrawVaultPage(Store *store) {
+static StoreAction StoreDrawVaultPage(Store *store, Player *player) {
     int chrome = StoreDrawPopupChrome(store, LocGet("HODA_STORE_VAULT_TAB"), true);
     if (chrome == 1) return STORE_ACTION_CLOSE;
     if (chrome == 2) {
         StoreEnterPage(store, STORE_VIEW_LANDING);
         return STORE_ACTION_NONE;
     }
-    StoreDrawCenteredFit(
-        store->title_font, LocGet("HODA_STORE_COMING_SOON"), StoreListRect(), 44.0f, (Color){236, 232, 220, 255}
-    );
-    return STORE_ACTION_NONE;
+    StoreAction action = VaultViewDraw(store, player);
+    StoreDrawToast(store);
+    return action;
 }
 
 static bool StoreGemTraderDead(void) {
@@ -2949,7 +2954,15 @@ static void StoreFormatPackName(char *out, size_t size, const char *format, cons
     snprintf(out, size, "%.*s%s%s", (int)(slot - format), format, name, slot + strlen("{0}"));
 }
 
+static bool StoreDialogIsVault(StoreDialog dialog) {
+    return dialog == STORE_DIALOG_VAULT_DEPOSIT || dialog == STORE_DIALOG_VAULT_WITHDRAW;
+}
+
 static void StoreDialogText(const Store *store, const Player *player, char *header, char *body, size_t size) {
+    if (StoreDialogIsVault(store->dialog)) {
+        VaultViewDialogText(store, player, header, body, size);
+        return;
+    }
     const char *name = store->packs[store->pending_pack].name;
     if (store->dialog == STORE_DIALOG_VOUCHER) {
         StoreFormatPackName(header, size, LocGet("VOUCHER_PACK_UNAVAILABLE_TITLE"), name);
@@ -2996,9 +3009,10 @@ static bool StoreDrawDialog(Store *store, Player *player, Heroes *heroes) {
     } else {
         MessagePopupDrawText(store->body_font, body, body_rect, STORE_CONFIRM_TEXT_SIZE, WHITE);
     }
+    bool choice = confirm || StoreDialogIsVault(store->dialog);
     Rectangle row = MessagePopupChoiceRow(plate);
-    Rectangle ok_rect = confirm ? UiRect(row, 1.0f, 0.0f, 0.5f, 1.0f) : MessagePopupOkButton(plate);
-    if (confirm && ButtonDraw(&store->dialog_cancel, UiRect(row, 0.0f, 0.0f, 0.5f, 1.0f))) {
+    Rectangle ok_rect = choice ? UiRect(row, 1.0f, 0.0f, 0.5f, 1.0f) : MessagePopupOkButton(plate);
+    if (choice && ButtonDraw(&store->dialog_cancel, UiRect(row, 0.0f, 0.0f, 0.5f, 1.0f))) {
         store->dialog = STORE_DIALOG_NONE;
         return false;
     }
@@ -3007,6 +3021,7 @@ static bool StoreDrawDialog(Store *store, Player *player, Heroes *heroes) {
         store->dialog = STORE_DIALOG_NONE;
         store->dialog_press_armed = false;
         if (dialog == STORE_DIALOG_CANT_AFFORD) StoreShowPage(store, true);
+        if (StoreDialogIsVault(dialog)) return VaultViewConfirm(player, dialog);
         return dialog == STORE_DIALOG_CONFIRM_GEMS && StoreTryPurchase(store, player, heroes, store->pending_pack);
     }
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) store->dialog_press_armed = true;
@@ -3068,7 +3083,7 @@ StoreAction StoreDraw(Store *store, Player *player, Heroes *heroes, float dt) {
             action = StoreDrawPackPage(store, player, heroes, LocGet("BUTTON_STORE_FEATURED_TAB"));
             break;
         case STORE_VIEW_VAULT:
-            action = StoreDrawVaultPage(store);
+            action = StoreDrawVaultPage(store, player);
             break;
         case STORE_VIEW_GEMS:
             action = StoreDrawGemsPage(store);

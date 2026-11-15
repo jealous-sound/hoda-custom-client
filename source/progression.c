@@ -106,6 +106,7 @@ void ProgressionInitializePlayerDefaults(Player *p) {
     p->nexus_events = (PlayerNexusEvents){0};
     p->pvp = (PlayerPvp){0};
     p->renown = (PlayerRenown){0};
+    p->vault = (PlayerVault){0};
     p->name[0] = '\0';
     p->tutorial = (PlayerTutorial){.main_complete = true, .consume_complete = true};
     p->fast_battles = false;
@@ -1263,6 +1264,12 @@ char *ProgressionSerialize(const Player *player) {
         goto save_json_failed;
     }
 
+    cJSON *vault = VaultSave(&player->vault);
+    if (!vault || !cJSON_AddItemToObject(root, "vault", vault)) {
+        cJSON_Delete(vault);
+        goto save_json_failed;
+    }
+
     cJSON *tutorial = cJSON_AddObjectToObject(root, "tutorial");
     if (!tutorial || !cJSON_AddBoolToObject(tutorial, "complete", player->tutorial.main_complete) ||
         !cJSON_AddBoolToObject(tutorial, "consume_complete", player->tutorial.consume_complete))
@@ -1875,6 +1882,9 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
     PlayerExpeditions loaded_expeditions;
     ExpeditionsLoad(cJSON_GetObjectItemCaseSensitive(root, "expeditions"), &loaded_expeditions);
 
+    PlayerVault loaded_vault;
+    VaultLoad(cJSON_GetObjectItemCaseSensitive(root, "vault"), &loaded_vault);
+
     static PlayerTimedQuests loaded_timed_quests;
     TimedQuestsLoad(cJSON_GetObjectItemCaseSensitive(root, "timed_quests"), &loaded_timed_quests);
 
@@ -1972,6 +1982,7 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
     player->gallery = loaded_gallery;
     player->missions = loaded_missions;
     player->expeditions = loaded_expeditions;
+    player->vault = loaded_vault;
     player->timed_quests = loaded_timed_quests;
     player->pvp = loaded_pvp;
     PvpHistorySanitize(&player->pvp);
