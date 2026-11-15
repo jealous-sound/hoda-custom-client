@@ -65,3 +65,16 @@ HODA_ACCOUNT_PASSWORD_CHANGED|Contraseña cambiada. Se cerró la sesión en los 
 HODA_ACCOUNT_SIGNED_OUT_MESSAGE|Se cerró tu sesión en este ordenador. Inicia sesión de nuevo para continuar.
 HODA_ACCOUNT_GUEST_START_HINT|Empezar una partida nueva en este ordenador
 HODA_ACCOUNT_LOG_IN_HINT|Continuar con tu usuario y contraseña
+HODA_SETTINGS_AUDIO|Audio
+HODA_SETTINGS_DISPLAY|Pantalla
+HODA_SETTINGS_MASTER_VOLUME|Volumen general
+HODA_SETTINGS_MUTE_IN_BACKGROUND|Silenciar en segundo plano
+HODA_SETTINGS_DISPLAY_MODE|Modo de pantalla
+HODA_SETTINGS_WINDOWED|Ventana
+HODA_SETTINGS_FULLSCREEN|Pantalla completa
+HODA_SETTINGS_FRAME_RATE|Límite de FPS
+HODA_SETTINGS_UNLIMITED|Ilimitado
+HODA_SETTINGS_FPS_VALUE|{0} FPS
+HODA_SETTINGS_VSYNC|VSync
+HODA_SETTINGS_SHOW_FPS|Mostrar FPS
+HODA_SETTINGS_VERSION|Versión

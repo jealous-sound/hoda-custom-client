@@ -65,3 +65,16 @@ HODA_ACCOUNT_PASSWORD_CHANGED|Пароль изменён. Остальные у
 HODA_ACCOUNT_SIGNED_OUT_MESSAGE|Вы вышли из аккаунта на этом компьютере. Войдите снова, чтобы продолжить.
 HODA_ACCOUNT_GUEST_START_HINT|Начать новую игру на этом компьютере
 HODA_ACCOUNT_LOG_IN_HINT|Продолжить с логином и паролем
+HODA_SETTINGS_AUDIO|Звук
+HODA_SETTINGS_DISPLAY|Экран
+HODA_SETTINGS_MASTER_VOLUME|Общая громкость
+HODA_SETTINGS_MUTE_IN_BACKGROUND|Без звука в фоне
+HODA_SETTINGS_DISPLAY_MODE|Режим экрана
+HODA_SETTINGS_WINDOWED|В окне
+HODA_SETTINGS_FULLSCREEN|Полный экран
+HODA_SETTINGS_FRAME_RATE|Лимит кадров
+HODA_SETTINGS_UNLIMITED|Без ограничений
+HODA_SETTINGS_FPS_VALUE|{0} FPS
+HODA_SETTINGS_VSYNC|Верт. синхронизация
+HODA_SETTINGS_SHOW_FPS|Показывать FPS
+HODA_SETTINGS_VERSION|Версия
