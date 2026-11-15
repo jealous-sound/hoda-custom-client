@@ -33,7 +33,6 @@
 #define VAULT_VIEW_AMOUNT_HEIGHT 26.0f
 #define VAULT_VIEW_PIP_HEIGHT 15.0f
 #define VAULT_VIEW_PIP_MAX_WIDTH 30.0f
-#define VAULT_VIEW_TOP_INSET 20.0f
 #define VAULT_VIEW_PIP_SOURCE_WIDTH 64.0f
 #define VAULT_VIEW_PIP_SOURCE_HEIGHT 32.0f
 #define VAULT_VIEW_LABEL_SCALE 0.4f
@@ -391,12 +390,11 @@ StoreAction VaultViewDraw(Store *store, Player *player) {
     float left_width = list.width * VAULT_VIEW_LEFT_WIDTH;
     Rectangle left = {list.x, list.y, left_width, list.height};
     float collect_height = VAULT_VIEW_BUTTON_HEIGHT + VAULT_VIEW_WARNING_HEIGHT;
+    float column = 3 * VAULT_VIEW_ROW_HEIGHT + collect_height + VAULT_VIEW_STEP_SIDE + VAULT_VIEW_BUTTON_HEIGHT +
+                   8.0f * VAULT_VIEW_SECTION_GAP;
     float right_x = left.x + left.width + VAULT_VIEW_SIDE_PADDING;
     Rectangle right = {
-        right_x,
-        list.y + VAULT_VIEW_TOP_INSET,
-        list.x + list.width - VAULT_VIEW_SIDE_PADDING - right_x,
-        list.height - VAULT_VIEW_TOP_INSET
+        right_x, list.y + (list.height - column) * 0.5f, list.x + list.width - VAULT_VIEW_SIDE_PADDING - right_x, column
     };
     VaultViewDrawTierPanel(player, left);
     VaultViewDrawStats(player, right, now);
@@ -410,8 +408,7 @@ StoreAction VaultViewDraw(Store *store, Player *player) {
     VaultViewDrawAmount(player, amount, interactive);
     y = amount.y + amount.height + VAULT_VIEW_SECTION_GAP;
     VaultViewDrawRule(right, y);
-    float below = right.y + right.height - y;
-    Rectangle moves = {right.x, y + (below - VAULT_VIEW_BUTTON_HEIGHT) * 0.5f, right.width, VAULT_VIEW_BUTTON_HEIGHT};
+    Rectangle moves = {right.x, y + VAULT_VIEW_SECTION_GAP, right.width, VAULT_VIEW_BUTTON_HEIGHT};
     VaultViewDrawMoveButtons(store, player, moves, interactive);
     return collected ? STORE_ACTION_PURCHASED : STORE_ACTION_NONE;
 }
