@@ -2,8 +2,14 @@ HODA_VAULT_TIER_NONE|Sem nível
 HODA_VAULT_TIER_BRONZE|Cofre de Bronze
 HODA_VAULT_TIER_SILVER|Cofre de Prata
 HODA_VAULT_TIER_GOLD|Cofre de Ouro
+HODA_VAULT_LOCKED|No cofre
+HODA_VAULT_INTEREST|Juros
+HODA_VAULT_INTEREST_VALUE|{0} por dia
+HODA_VAULT_LOCK|Bloqueio
+HODA_VAULT_EMPTY|Vazio
 HODA_VAULT_UNLOCKED|Desbloqueado
 HODA_VAULT_UNLOCKS_IN|Desbloqueia em {0}
+HODA_VAULT_READY|Pronto para coletar
 HODA_VAULT_COLLECT|Coletar
 HODA_VAULT_STOPPED|Os juros pararam. Colete para reiniciá-los.
 HODA_VAULT_COLLECTED|{0} joias coletadas
@@ -11,9 +17,7 @@ HODA_VAULT_MAX|Máx.
 HODA_VAULT_DEPOSIT|Depositar
 HODA_VAULT_WITHDRAW|Sacar
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Depositar joias
+HODA_VAULT_CONFIRM_DEPOSIT|Bloquear {0} joias no cofre? Tudo no cofre fica bloqueado por {1} dias.
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Sacar joias
-HODA_VAULT_INTEREST_VALUE|+{0} por dia
-HODA_VAULT_INVITE|Bloqueie joias aqui para ganhar juros todo dia
-HODA_VAULT_COLLECT_GEMS|Coletar {0}
-HODA_VAULT_DEPOSIT_NOTE|O cofre inteiro fica bloqueado por {0} dias.
-HODA_VAULT_EARLY_NOTE|Ainda bloqueado: você recebe {0} de volta e perde os juros pendentes.
+HODA_VAULT_CONFIRM_WITHDRAW|Tirar {0} joias do cofre?
+HODA_VAULT_CONFIRM_EARLY|O cofre ainda está bloqueado. Você receberá {0} de {1} joias e perderá os juros pendentes.

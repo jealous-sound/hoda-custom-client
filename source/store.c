@@ -422,7 +422,8 @@ typedef struct {
 } Store;
 
 StoreAction VaultViewDraw(Store *store, Player *player);
-bool VaultViewDrawDialog(Store *store, Player *player);
+void VaultViewDialogText(const Store *store, const Player *player, char *header, char *body, size_t size);
+bool VaultViewConfirm(Player *player, StoreDialog dialog);
 
 static bool StoreGemPurchaseActive(const Store *store) {
     return store->gem_purchase != STORE_GEM_PURCHASE_IDLE;
@@ -2958,6 +2959,10 @@ static bool StoreDialogIsVault(StoreDialog dialog) {
 }
 
 static void StoreDialogText(const Store *store, const Player *player, char *header, char *body, size_t size) {
+    if (StoreDialogIsVault(store->dialog)) {
+        VaultViewDialogText(store, player, header, body, size);
+        return;
+    }
     const char *name = store->packs[store->pending_pack].name;
     if (store->dialog == STORE_DIALOG_VOUCHER) {
         StoreFormatPackName(header, size, LocGet("VOUCHER_PACK_UNAVAILABLE_TITLE"), name);
@@ -2976,7 +2981,6 @@ static void StoreDialogText(const Store *store, const Player *player, char *head
 
 static bool StoreDrawDialog(Store *store, Player *player, Heroes *heroes) {
     if (store->dialog == STORE_DIALOG_NONE) return false;
-    if (StoreDialogIsVault(store->dialog)) return VaultViewDrawDialog(store, player);
     char header[STORE_DIALOG_TEXT_CAPACITY];
     char body[STORE_DIALOG_TEXT_CAPACITY];
     StoreDialogText(store, player, header, body, sizeof(header));
@@ -3005,9 +3009,10 @@ static bool StoreDrawDialog(Store *store, Player *player, Heroes *heroes) {
     } else {
         MessagePopupDrawText(store->body_font, body, body_rect, STORE_CONFIRM_TEXT_SIZE, WHITE);
     }
+    bool choice = confirm || StoreDialogIsVault(store->dialog);
     Rectangle row = MessagePopupChoiceRow(plate);
-    Rectangle ok_rect = confirm ? UiRect(row, 1.0f, 0.0f, 0.5f, 1.0f) : MessagePopupOkButton(plate);
-    if (confirm && ButtonDraw(&store->dialog_cancel, UiRect(row, 0.0f, 0.0f, 0.5f, 1.0f))) {
+    Rectangle ok_rect = choice ? UiRect(row, 1.0f, 0.0f, 0.5f, 1.0f) : MessagePopupOkButton(plate);
+    if (choice && ButtonDraw(&store->dialog_cancel, UiRect(row, 0.0f, 0.0f, 0.5f, 1.0f))) {
         store->dialog = STORE_DIALOG_NONE;
         return false;
     }
@@ -3016,6 +3021,7 @@ static bool StoreDrawDialog(Store *store, Player *player, Heroes *heroes) {
         store->dialog = STORE_DIALOG_NONE;
         store->dialog_press_armed = false;
         if (dialog == STORE_DIALOG_CANT_AFFORD) StoreShowPage(store, true);
+        if (StoreDialogIsVault(dialog)) return VaultViewConfirm(player, dialog);
         return dialog == STORE_DIALOG_CONFIRM_GEMS && StoreTryPurchase(store, player, heroes, store->pending_pack);
     }
     if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) store->dialog_press_armed = true;

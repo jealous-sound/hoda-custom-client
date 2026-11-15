@@ -2,8 +2,14 @@ HODA_VAULT_TIER_NONE|Nessun livello
 HODA_VAULT_TIER_BRONZE|Caveau di bronzo
 HODA_VAULT_TIER_SILVER|Caveau d'argento
 HODA_VAULT_TIER_GOLD|Caveau d'oro
+HODA_VAULT_LOCKED|Nel caveau
+HODA_VAULT_INTEREST|Interessi
+HODA_VAULT_INTEREST_VALUE|{0} al giorno
+HODA_VAULT_LOCK|Blocco
+HODA_VAULT_EMPTY|Vuoto
 HODA_VAULT_UNLOCKED|Sbloccato
 HODA_VAULT_UNLOCKS_IN|Si sblocca tra {0}
+HODA_VAULT_READY|Pronti da riscuotere
 HODA_VAULT_COLLECT|Riscuoti
 HODA_VAULT_STOPPED|Gli interessi sono fermi. Riscuoti per farli ripartire.
 HODA_VAULT_COLLECTED|{0} gemme riscosse
@@ -11,9 +17,7 @@ HODA_VAULT_MAX|Max
 HODA_VAULT_DEPOSIT|Deposita
 HODA_VAULT_WITHDRAW|Preleva
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Deposita gemme
+HODA_VAULT_CONFIRM_DEPOSIT|Bloccare {0} gemme nel caveau? Tutto il contenuto del caveau resta bloccato per {1} giorni.
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Preleva gemme
-HODA_VAULT_INTEREST_VALUE|+{0} al giorno
-HODA_VAULT_INVITE|Blocca qui le gemme per ricevere interessi ogni giorno
-HODA_VAULT_COLLECT_GEMS|Riscuoti {0}
-HODA_VAULT_DEPOSIT_NOTE|L'intero caveau resta bloccato per {0} giorni.
-HODA_VAULT_EARLY_NOTE|Ancora bloccato: riceverai {0} e perderai gli interessi in attesa.
+HODA_VAULT_CONFIRM_WITHDRAW|Prelevare {0} gemme dal caveau?
+HODA_VAULT_CONFIRM_EARLY|Il caveau è ancora bloccato. Riceverai {0} gemme su {1} e perderai gli interessi in attesa.
