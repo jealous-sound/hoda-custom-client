@@ -13,7 +13,6 @@ HODA_VAULT_READY|Klaar om te innen
 HODA_VAULT_COLLECT|Innen
 HODA_VAULT_STOPPED|De rente is gestopt. Inn haar om opnieuw te beginnen.
 HODA_VAULT_COLLECTED|{0} gems geïnd
-HODA_VAULT_MAX|Max
 HODA_VAULT_DEPOSIT|Storten
 HODA_VAULT_WITHDRAW|Opnemen
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Gems storten

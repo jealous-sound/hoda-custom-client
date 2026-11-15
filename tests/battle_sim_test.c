@@ -9448,24 +9448,42 @@ static void TestVaultSurvivesSaveAndLoad(void) {
     cJSON_Delete(root);
 }
 
-static void TestVaultAmountStepsStayInsideTheVault(void) {
-    assert(VaultViewStepUp(100) == 200 && VaultViewStepUp(950) == 1000 && VaultViewStepUp(1000) == 1500);
-    assert(VaultViewStepUp(5000) == 6000 && VaultViewStepUp(14900) == VaultCapacity());
-    assert(VaultViewStepUp(VaultCapacity()) == VaultCapacity());
-    assert(VaultViewStepDown(100) == 100 && VaultViewStepDown(1000) == 900 && VaultViewStepDown(1500) == 1000);
-    assert(VaultViewStepDown(6000) == 5000 && VaultViewStepDown(6200) == 6000);
+static void TestVaultAmountStopsGrowWithTheGemsAtHand(void) {
+    static const long long tops[] = {10, 11, 50, 51, 420, 15000, 100000};
+    static const long long steps[] = {1, 5, 5, 10, 50, 1500, 2500};
+    for (size_t i = 0; i < sizeof(tops) / sizeof(tops[0]); i++) assert(VaultViewStepFor(tops[i]) == steps[i]);
+
     static Player player;
     player = RenownTestPlayer(0);
-    player.gems = 3000;
-    assert(VaultViewMaxAmount(&player) == 3000);
+    static const struct {
+        int gems;
+        long long locked;
+        int count;
+        long long stops[VAULT_VIEW_STOP_CAPACITY];
+    } cases[] = {
+        {0, 0, 0, {0}},
+        {420, 0, 8, {100, 150, 200, 250, 300, 350, 400, 420}},
+        {8000, TEST_VAULT_SILVER, 9, {1000, 2000, 3000, 4000, 5000, 6000, TEST_VAULT_SILVER, 7000, 8000}},
+        {0, 30, 6, {5, 10, 15, 20, 25, 30}},
+        {20000, 15000, 10, {1500, 3000, 4500, 6000, 7500, 9000, 10500, 12000, 13500, 15000}},
+    };
+    for (size_t c = 0; c < sizeof(cases) / sizeof(cases[0]); c++) {
+        player.gems = cases[c].gems;
+        player.vault.locked = cases[c].locked;
+        VaultViewStops stops = VaultViewStopsFor(&player);
+        assert(stops.count == cases[c].count);
+        for (int i = 0; i < stops.count; i++) assert(stops.values[i] == cases[c].stops[i]);
+    }
+
+    player.gems = 8000;
     player.vault.locked = TEST_VAULT_SILVER;
-    assert(VaultViewMaxAmount(&player) == 3000);
-    player.gems = 20000;
-    assert(VaultViewMaxAmount(&player) == VaultCapacity() - TEST_VAULT_SILVER);
-    player.vault.locked = VaultCapacity() - 50;
-    assert(VaultViewMaxAmount(&player) == 50);
-    player.gems = 40;
-    assert(VaultViewMaxAmount(&player) == VaultCapacity() - 50);
+    assert(VaultViewDepositable(&player) == 8000);
+    assert(VaultViewSnap(&player, 0, 0) == 1000 && VaultViewSnap(&player, 1000, -1) == 1000);
+    assert(VaultViewSnap(&player, 6000, 1) == TEST_VAULT_SILVER && VaultViewSnap(&player, 6100, 0) == 6000);
+    assert(VaultViewSnap(&player, 99999, 0) == 8000 && VaultViewSnap(&player, 8000, 1) == 8000);
+    player.gems = 0;
+    player.vault.locked = 0;
+    assert(VaultViewSnap(&player, 500, 1) == 0);
 }
 
 static int TestGuildMemberVaultTier(const GuildInfo *info, const char *id) {
@@ -9550,7 +9568,7 @@ int main(void) {
     TestVaultRatesMatchTheServerTable();
     TestVaultDepositsCollectsAndWithdrawalsMatchTheServer();
     TestVaultSurvivesSaveAndLoad();
-    TestVaultAmountStepsStayInsideTheVault();
+    TestVaultAmountStopsGrowWithTheGemsAtHand();
     TestListedPlayersCarryTheirVaultTier();
     TestTwoBadgesLeaveTheNameTheRestOfTheRow();
     TestBattleFeetSitOnPadsWhoseBottomsShareOnePlane();

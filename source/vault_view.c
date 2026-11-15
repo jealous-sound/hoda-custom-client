@@ -9,9 +9,14 @@
 #define VAULT_VIEW_DISABLED_LABEL ((Color){150, 146, 138, 255})
 #define VAULT_VIEW_TEXT_CAP 192
 #define VAULT_VIEW_LEFT_WIDTH 0.36f
-#define VAULT_VIEW_COLUMN_GAP 24.0f
-#define VAULT_VIEW_BADGE_SIDE 150.0f
+#define VAULT_VIEW_SIDE_PADDING 26.0f
+#define VAULT_VIEW_BADGE_WIDTH 150.0f
+#define VAULT_VIEW_BADGE_NAME_GAP 10.0f
+#define VAULT_VIEW_NAME_HEIGHT 34.0f
 #define VAULT_VIEW_LADDER_BADGE 30.0f
+#define VAULT_VIEW_LADDER_ROW_GAP 4.0f
+#define VAULT_VIEW_LADDER_INSET 22.0f
+#define VAULT_VIEW_EDGE_SHARE 0.3f
 #define VAULT_VIEW_ROW_HEIGHT 40.0f
 #define VAULT_VIEW_LABEL_SIZE 20.0f
 #define VAULT_VIEW_VALUE_SIZE 22.0f
@@ -19,19 +24,26 @@
 #define VAULT_VIEW_TITLE_SIZE 28.0f
 #define VAULT_VIEW_GEM_ICON 24.0f
 #define VAULT_VIEW_BUTTON_HEIGHT 52.0f
-#define VAULT_VIEW_STEP_SIDE 46.0f
-#define VAULT_VIEW_LABEL_SCALE 0.4f
-#define VAULT_VIEW_SMALL_STEP 100LL
-#define VAULT_VIEW_MEDIUM_STEP 500LL
-#define VAULT_VIEW_LARGE_STEP 1000LL
-#define VAULT_VIEW_MEDIUM_FROM 1000LL
-#define VAULT_VIEW_LARGE_FROM 5000LL
-#define VAULT_VIEW_TENTHS 10LL
-#define VAULT_VIEW_NAME_HEIGHT 34.0f
-#define VAULT_VIEW_LADDER_ROW_GAP 4.0f
-#define VAULT_VIEW_LADDER_TOP_GAP 18.0f
-#define VAULT_VIEW_SECTION_GAP 10.0f
+#define VAULT_VIEW_COLLECT_WIDTH 170.0f
 #define VAULT_VIEW_WARNING_HEIGHT 24.0f
+#define VAULT_VIEW_SECTION_GAP 10.0f
+#define VAULT_VIEW_STEP_SIDE 46.0f
+#define VAULT_VIEW_STEPPER_GAP 14.0f
+#define VAULT_VIEW_AMOUNT_SIZE 24.0f
+#define VAULT_VIEW_AMOUNT_HEIGHT 26.0f
+#define VAULT_VIEW_PIP_HEIGHT 15.0f
+#define VAULT_VIEW_PIP_MAX_WIDTH 30.0f
+#define VAULT_VIEW_PIP_SOURCE_WIDTH 64.0f
+#define VAULT_VIEW_PIP_SOURCE_HEIGHT 32.0f
+#define VAULT_VIEW_LABEL_SCALE 0.4f
+#define VAULT_VIEW_TARGET_STOPS 10LL
+#define VAULT_VIEW_STOP_CAPACITY 16
+#define VAULT_VIEW_TENTHS 10LL
+
+typedef struct {
+    long long values[VAULT_VIEW_STOP_CAPACITY];
+    int count;
+} VaultViewStops;
 
 typedef struct {
     bool ready;
@@ -41,10 +53,11 @@ typedef struct {
     Button withdraw;
     Button minus;
     Button plus;
-    Button max;
 } VaultView;
 
 static VaultView vault_view;
+
+static const long long VAULT_VIEW_STEP_SIZES[] = {1, 5, 10, 15, 25, 50, 100, 150, 250, 500, 1000, 1500, 2500};
 
 static Button VaultViewButton(GuiId idle, GuiId active, const char *key) {
     return ButtonLoadText(idle, active, LocGet(key), GuiFont(FNT_COOL), (Vector2){0.5f, 0.5f}, VAULT_VIEW_LABEL_SCALE);
@@ -54,37 +67,24 @@ static void VaultViewEnsure(void) {
     VaultView *v = &vault_view;
     if (v->ready) return;
     v->ready = true;
-    v->amount = VaultMinimumDeposit();
     v->collect = VaultViewButton(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "HODA_VAULT_COLLECT");
     v->deposit = VaultViewButton(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, "HODA_VAULT_DEPOSIT");
     v->withdraw = VaultViewButton(GUI_BTN_GREY, GUI_BTN_GREY_ON, "HODA_VAULT_WITHDRAW");
     v->minus = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "-", GuiFont(FNT_COOL), (Vector2){0.5f, 0.5f}, 0.6f);
     v->plus = ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, "+", GuiFont(FNT_COOL), (Vector2){0.5f, 0.5f}, 0.6f);
-    v->max = VaultViewButton(GUI_BTN_GREY, GUI_BTN_GREY_ON, "HODA_VAULT_MAX");
 }
 
 static void VaultViewDrawDisabled(const Button *button, Rectangle rect) {
     UiDrawTexture(GuiTex(GUI_BTN_GREY), rect, VAULT_VIEW_DISABLED_TINT);
-    float size = rect.height * VAULT_VIEW_LABEL_SCALE;
-    StoreDrawCenteredFit(button->font, button->label, rect, size, VAULT_VIEW_DISABLED_LABEL);
+    StoreDrawCenteredFit(
+        button->font, button->label, rect, rect.height * button->label_scale, VAULT_VIEW_DISABLED_LABEL
+    );
 }
 
-static long long VaultViewStepFrom(long long amount) {
-    return amount >= VAULT_VIEW_LARGE_FROM    ? VAULT_VIEW_LARGE_STEP
-           : amount >= VAULT_VIEW_MEDIUM_FROM ? VAULT_VIEW_MEDIUM_STEP
-                                              : VAULT_VIEW_SMALL_STEP;
-}
-
-long long VaultViewStepUp(long long amount) {
-    long long step = VaultViewStepFrom(amount);
-    long long next = (amount / step + 1) * step;
-    return next < VaultCapacity() ? next : VaultCapacity();
-}
-
-long long VaultViewStepDown(long long amount) {
-    long long step = VaultViewStepFrom(amount - 1);
-    long long next = ((amount - 1) / step) * step;
-    return next > VAULT_VIEW_SMALL_STEP ? next : VAULT_VIEW_SMALL_STEP;
+static bool VaultViewDrawButton(Button *button, Rectangle rect, bool enabled, bool interactive) {
+    if (enabled) return ButtonDrawEx(button, rect, interactive);
+    VaultViewDrawDisabled(button, rect);
+    return false;
 }
 
 static bool VaultViewCanWithdraw(const Player *player, long long amount) {
@@ -95,10 +95,55 @@ static bool VaultViewCanDeposit(const Player *player, long long amount) {
     return VaultDepositFits(&player->vault, amount) && amount <= player->gems;
 }
 
-long long VaultViewMaxAmount(const Player *player) {
+long long VaultViewDepositable(const Player *player) {
     long long room = VaultCapacity() - player->vault.locked;
     long long depositable = player->gems < room ? player->gems : room;
-    return VaultViewCanDeposit(player, depositable) ? depositable : player->vault.locked;
+    return VaultViewCanDeposit(player, depositable) ? depositable : 0;
+}
+
+static void VaultViewAddStop(VaultViewStops *stops, long long value) {
+    if (value <= 0 || stops->count == VAULT_VIEW_STOP_CAPACITY) return;
+    int at = stops->count;
+    while (at > 0 && stops->values[at - 1] > value) at--;
+    if (at > 0 && stops->values[at - 1] == value) return;
+    for (int i = stops->count; i > at; i--) stops->values[i] = stops->values[i - 1];
+    stops->values[at] = value;
+    stops->count++;
+}
+
+long long VaultViewStepFor(long long top) {
+    int last = (int)(sizeof(VAULT_VIEW_STEP_SIZES) / sizeof(VAULT_VIEW_STEP_SIZES[0])) - 1;
+    for (int i = 0; i < last; i++)
+        if (top <= VAULT_VIEW_STEP_SIZES[i] * VAULT_VIEW_TARGET_STOPS) return VAULT_VIEW_STEP_SIZES[i];
+    return VAULT_VIEW_STEP_SIZES[last];
+}
+
+VaultViewStops VaultViewStopsFor(const Player *player) {
+    VaultViewStops stops = {0};
+    long long depositable = VaultViewDepositable(player), locked = player->vault.locked;
+    long long top = depositable > locked ? depositable : locked;
+    if (!VaultAvailable() || top <= 0) return stops;
+    long long step = VaultViewStepFor(top);
+    for (long long value = step; value < top; value += step)
+        if (VaultViewCanDeposit(player, value) || VaultViewCanWithdraw(player, value)) VaultViewAddStop(&stops, value);
+    VaultViewAddStop(&stops, depositable);
+    VaultViewAddStop(&stops, locked);
+    return stops;
+}
+
+static int VaultViewStopIndex(const VaultViewStops *stops, long long amount) {
+    int index = 0;
+    for (int i = 0; i < stops->count; i++)
+        if (stops->values[i] <= amount) index = i;
+    return index;
+}
+
+long long VaultViewSnap(const Player *player, long long amount, int move) {
+    VaultViewStops stops = VaultViewStopsFor(player);
+    if (stops.count == 0) return 0;
+    int index = VaultViewStopIndex(&stops, amount) + move;
+    index = index < 0 ? 0 : index >= stops.count ? stops.count - 1 : index;
+    return stops.values[index];
 }
 
 static void VaultViewFormatGems(char *out, size_t size, long long gems) {
@@ -145,6 +190,12 @@ static void VaultViewDrawGemsRight(Font font, const char *text, Rectangle row, f
     UiDrawTextRight(font, text, text_rect, size, color);
 }
 
+static void VaultViewDrawGemsCentred(Font font, const char *text, Rectangle row, float size, Color color) {
+    float width = MeasureTextEx(font, text, size, 1.0f).x + 6.0f + VAULT_VIEW_GEM_ICON;
+    Rectangle centred = {row.x + (row.width - width) * 0.5f, row.y, width, row.height};
+    VaultViewDrawGemsRight(font, text, centred, size, color);
+}
+
 static void VaultViewDrawRule(Rectangle panel, float y) {
     DrawRectangleRec((Rectangle){panel.x, y, panel.width, 1.0f}, VAULT_VIEW_RULE);
 }
@@ -153,18 +204,35 @@ static float VaultViewLadderRowHeight(void) {
     return VAULT_VIEW_LADDER_BADGE + 6.0f;
 }
 
+static float VaultViewBadgeHeight(VaultTier tier) {
+    Rectangle art = VaultBadgeArt(tier);
+    return art.width > 0.0f ? VAULT_VIEW_BADGE_WIDTH * art.height / art.width : VAULT_VIEW_BADGE_WIDTH;
+}
+
+static void VaultViewDrawBadgeArt(VaultTier tier, Rectangle dst, Color tint) {
+    Texture2D texture = VaultBadgeTexture(tier);
+    Rectangle art = VaultBadgeArt(tier);
+    if (texture.id == 0 || art.width <= 0.0f || art.height <= 0.0f) return;
+    DrawTexturePro(texture, art, dst, (Vector2){0}, 0.0f, tint);
+}
+
 static void VaultViewDrawTierPanel(const Player *player, Rectangle panel) {
     DrawRectangleRec(panel, VAULT_VIEW_PANEL);
     VaultTier tier = VaultTierFor(player->vault.locked);
-    float ladder = (VAULT_TIER_COUNT - 1) * (VaultViewLadderRowHeight() + VAULT_VIEW_LADDER_ROW_GAP);
-    float block = VAULT_VIEW_BADGE_SIDE + 8.0f + VAULT_VIEW_NAME_HEIGHT + VAULT_VIEW_LADDER_TOP_GAP + ladder;
-    Rectangle badge = UiRect(panel, 0.5f, 0.0f, VAULT_VIEW_BADGE_SIDE, VAULT_VIEW_BADGE_SIDE);
-    badge.y = panel.y + (panel.height - block) * 0.5f;
     bool earned = tier != VAULT_TIER_NONE;
-    VaultViewDrawFit(
-        VaultBadgeTexture(earned ? tier : VAULT_TIER_BRONZE), badge, earned ? WHITE : VAULT_VIEW_LOCKED_BADGE
-    );
-    Rectangle title = {panel.x + 8.0f, badge.y + badge.height + 8.0f, panel.width - 16.0f, VAULT_VIEW_NAME_HEIGHT};
+    VaultTier shown = earned ? tier : VAULT_TIER_BRONZE;
+    float badge_height = VaultViewBadgeHeight(shown);
+    float rungs = VAULT_TIER_COUNT - 1;
+    float ladder = rungs * VaultViewLadderRowHeight() + (rungs - 1.0f) * VAULT_VIEW_LADDER_ROW_GAP;
+    float used = badge_height + VAULT_VIEW_BADGE_NAME_GAP + VAULT_VIEW_NAME_HEIGHT + ladder;
+    float edge = fmaxf(panel.height - used, 0.0f) * VAULT_VIEW_EDGE_SHARE;
+    Rectangle badge = {
+        panel.x + (panel.width - VAULT_VIEW_BADGE_WIDTH) * 0.5f, panel.y + edge, VAULT_VIEW_BADGE_WIDTH, badge_height
+    };
+    VaultViewDrawBadgeArt(shown, badge, earned ? WHITE : VAULT_VIEW_LOCKED_BADGE);
+    Rectangle title = {
+        panel.x + 8.0f, badge.y + badge.height + VAULT_VIEW_BADGE_NAME_GAP, panel.width - 16.0f, VAULT_VIEW_NAME_HEIGHT
+    };
     UiDrawTextCentered(
         GuiFont(FNT_COOL),
         VaultViewTierName(tier),
@@ -172,9 +240,14 @@ static void VaultViewDrawTierPanel(const Player *player, Rectangle panel) {
         VAULT_VIEW_TITLE_SIZE,
         earned ? VAULT_VIEW_GOLD : VAULT_VIEW_TEXT
     );
-    float y = title.y + title.height + VAULT_VIEW_LADDER_TOP_GAP;
+    float y = panel.y + panel.height - edge - ladder;
     for (int rung = VAULT_TIER_BRONZE; rung < VAULT_TIER_COUNT; rung++) {
-        Rectangle row = {panel.x + 22.0f, y, panel.width - 44.0f, VaultViewLadderRowHeight()};
+        Rectangle row = {
+            panel.x + VAULT_VIEW_LADDER_INSET,
+            y,
+            panel.width - 2.0f * VAULT_VIEW_LADDER_INSET,
+            VaultViewLadderRowHeight()
+        };
         bool reached = tier >= rung;
         Rectangle icon = {row.x, row.y + 3.0f, VAULT_VIEW_LADDER_BADGE, VAULT_VIEW_LADDER_BADGE};
         VaultViewDrawFit(VaultBadgeTexture((VaultTier)rung), icon, reached ? WHITE : VAULT_VIEW_LOCKED_BADGE);
@@ -221,26 +294,27 @@ static void VaultViewDrawStats(const Player *player, Rectangle panel, long long 
     UiDrawTextRight(value, text, row, VAULT_VIEW_VALUE_SIZE, VAULT_VIEW_TEXT);
 }
 
-static bool VaultViewDrawCollect(Store *store, Player *player, Rectangle panel, long long now, bool interactive) {
+static bool VaultViewDrawCollect(Store *store, Player *player, Rectangle section, long long now, bool interactive) {
     VaultView *v = &vault_view;
     long long ready = VaultPendingGems(&player->vault, now);
-    Rectangle button = {panel.x + panel.width - 170.0f, panel.y + 4.0f, 170.0f, VAULT_VIEW_BUTTON_HEIGHT};
-    Rectangle row = {panel.x, panel.y + 4.0f, panel.width - 186.0f, VAULT_VIEW_BUTTON_HEIGHT};
+    bool stopped = VaultInterestStopped(&player->vault, now);
+    float block = VAULT_VIEW_BUTTON_HEIGHT + (stopped ? VAULT_VIEW_WARNING_HEIGHT : 0.0f);
+    float top = section.y + (section.height - block) * 0.5f;
+    Rectangle button = {
+        section.x + section.width - VAULT_VIEW_COLLECT_WIDTH, top, VAULT_VIEW_COLLECT_WIDTH, VAULT_VIEW_BUTTON_HEIGHT
+    };
+    Rectangle row = {section.x, top, section.width - VAULT_VIEW_COLLECT_WIDTH - 16.0f, VAULT_VIEW_BUTTON_HEIGHT};
     UiDrawTextLeftMiddle(GuiFont(FNT_MENU), LocGet("HODA_VAULT_READY"), row, VAULT_VIEW_LABEL_SIZE, VAULT_VIEW_DIM);
     char text[32];
     VaultViewFormatGems(text, sizeof(text), ready);
     VaultViewDrawGemsRight(GuiFont(FNT_COOL), text, row, VAULT_VIEW_VALUE_SIZE + 4.0f, VAULT_VIEW_GOLD);
-    if (VaultInterestStopped(&player->vault, now)) {
-        Rectangle warning = {panel.x, row.y + row.height + 2.0f, panel.width, VAULT_VIEW_WARNING_HEIGHT - 2.0f};
+    if (stopped) {
+        Rectangle warning = {section.x, row.y + row.height + 2.0f, section.width, VAULT_VIEW_WARNING_HEIGHT - 2.0f};
         StoreDrawCenteredFit(
             GuiFont(FNT_MENU), LocGet("HODA_VAULT_STOPPED"), warning, VAULT_VIEW_HINT_SIZE, VAULT_VIEW_WARN
         );
     }
-    if (ready <= 0) {
-        VaultViewDrawDisabled(&v->collect, button);
-        return false;
-    }
-    if (!ButtonDrawEx(&v->collect, button, interactive)) return false;
+    if (!VaultViewDrawButton(&v->collect, button, ready > 0, interactive)) return false;
     long long collected = VaultClaim(&player->vault, &player->gems, now);
     if (collected <= 0) return false;
     ProgressionSave(player);
@@ -252,26 +326,43 @@ static bool VaultViewDrawCollect(Store *store, Player *player, Rectangle panel, 
     return true;
 }
 
+static void VaultViewDrawPips(const VaultViewStops *stops, int lit, Rectangle area) {
+    if (stops->count <= 0) return;
+    float width = fminf(area.width / stops->count, VAULT_VIEW_PIP_MAX_WIDTH);
+    float x = area.x + (area.width - width * stops->count) * 0.5f;
+    for (int pip = 0; pip < stops->count; pip++) {
+        bool on = pip <= lit;
+        Rectangle source = {
+            on ? 0.0f : VAULT_VIEW_PIP_SOURCE_WIDTH, 0.0f, VAULT_VIEW_PIP_SOURCE_WIDTH, VAULT_VIEW_PIP_SOURCE_HEIGHT
+        };
+        Rectangle target = {x + pip * width, area.y, width, VAULT_VIEW_PIP_HEIGHT};
+        DrawTexturePro(GuiTex(on ? GUI_FORTIFY_TIER_4 : GUI_FORTIFY_TIER_1), source, target, (Vector2){0}, 0.0f, WHITE);
+    }
+}
+
 static void VaultViewDrawAmount(Player *player, Rectangle panel, bool interactive) {
     VaultView *v = &vault_view;
-    long long max_amount = VaultViewMaxAmount(player);
+    VaultViewStops stops = VaultViewStopsFor(player);
+    v->amount = VaultViewSnap(player, v->amount, 0);
+    int index = VaultViewStopIndex(&stops, v->amount);
     Rectangle minus = {panel.x, panel.y, VAULT_VIEW_STEP_SIDE, VAULT_VIEW_STEP_SIDE};
-    Rectangle max = {panel.x + panel.width - 110.0f, panel.y, 110.0f, VAULT_VIEW_STEP_SIDE};
-    Rectangle plus = {max.x - 12.0f - VAULT_VIEW_STEP_SIDE, panel.y, VAULT_VIEW_STEP_SIDE, VAULT_VIEW_STEP_SIDE};
-    Rectangle field = {
-        minus.x + minus.width + 10.0f, panel.y, plus.x - minus.x - minus.width - 20.0f, VAULT_VIEW_STEP_SIDE
+    Rectangle plus = {
+        panel.x + panel.width - VAULT_VIEW_STEP_SIDE, panel.y, VAULT_VIEW_STEP_SIDE, VAULT_VIEW_STEP_SIDE
     };
-    if (ButtonDrawEx(&v->minus, minus, interactive)) v->amount = VaultViewStepDown(v->amount);
-    if (ButtonDrawEx(&v->plus, plus, interactive)) v->amount = VaultViewStepUp(v->amount);
-    if (ButtonDrawEx(&v->max, max, interactive) && max_amount > 0) v->amount = max_amount;
-    DrawRectangleRounded(field, 0.25f, 6, (Color){0, 0, 0, 150});
-    DrawRectangleRoundedLinesEx(field, 0.25f, 6, 1.5f, (Color){160, 140, 100, 200});
+    if (VaultViewDrawButton(&v->minus, minus, stops.count > 0 && index > 0, interactive))
+        v->amount = VaultViewSnap(player, v->amount, -1);
+    if (VaultViewDrawButton(&v->plus, plus, index + 1 < stops.count, interactive))
+        v->amount = VaultViewSnap(player, v->amount, 1);
+    float inner_x = minus.x + minus.width + VAULT_VIEW_STEPPER_GAP;
+    float inner_width = plus.x - VAULT_VIEW_STEPPER_GAP - inner_x;
+    float block = VAULT_VIEW_AMOUNT_HEIGHT + 3.0f + VAULT_VIEW_PIP_HEIGHT;
+    float top = panel.y + (panel.height - block) * 0.5f;
     char text[32];
     VaultViewFormatGems(text, sizeof(text), v->amount);
-    Font font = GuiFont(FNT_COOL);
-    float width = MeasureTextEx(font, text, VAULT_VIEW_VALUE_SIZE + 4.0f, 1.0f).x + 6.0f + VAULT_VIEW_GEM_ICON;
-    Rectangle centred = {field.x + (field.width - width) * 0.5f, field.y, width, field.height};
-    VaultViewDrawGemsRight(font, text, centred, VAULT_VIEW_VALUE_SIZE + 4.0f, VAULT_VIEW_TEXT);
+    Rectangle amount = {inner_x, top, inner_width, VAULT_VIEW_AMOUNT_HEIGHT};
+    VaultViewDrawGemsCentred(GuiFont(FNT_COOL), text, amount, VAULT_VIEW_AMOUNT_SIZE, VAULT_VIEW_TEXT);
+    Rectangle pips = {inner_x, amount.y + amount.height + 3.0f, inner_width, VAULT_VIEW_PIP_HEIGHT};
+    VaultViewDrawPips(&stops, stops.count > 0 ? index : -1, pips);
 }
 
 static void VaultViewDrawMoveButtons(Store *store, const Player *player, Rectangle panel, bool interactive) {
@@ -279,16 +370,10 @@ static void VaultViewDrawMoveButtons(Store *store, const Player *player, Rectang
     float width = (panel.width - 16.0f) * 0.5f;
     Rectangle deposit = {panel.x, panel.y, width, VAULT_VIEW_BUTTON_HEIGHT};
     Rectangle withdraw = {panel.x + width + 16.0f, panel.y, width, VAULT_VIEW_BUTTON_HEIGHT};
-    if (VaultViewCanDeposit(player, v->amount)) {
-        if (ButtonDrawEx(&v->deposit, deposit, interactive)) store->dialog = STORE_DIALOG_VAULT_DEPOSIT;
-    } else {
-        VaultViewDrawDisabled(&v->deposit, deposit);
-    }
-    if (VaultViewCanWithdraw(player, v->amount)) {
-        if (ButtonDrawEx(&v->withdraw, withdraw, interactive)) store->dialog = STORE_DIALOG_VAULT_WITHDRAW;
-    } else {
-        VaultViewDrawDisabled(&v->withdraw, withdraw);
-    }
+    if (VaultViewDrawButton(&v->deposit, deposit, VaultViewCanDeposit(player, v->amount), interactive))
+        store->dialog = STORE_DIALOG_VAULT_DEPOSIT;
+    if (VaultViewDrawButton(&v->withdraw, withdraw, VaultViewCanWithdraw(player, v->amount), interactive))
+        store->dialog = STORE_DIALOG_VAULT_WITHDRAW;
 }
 
 StoreAction VaultViewDraw(Store *store, Player *player) {
@@ -305,11 +390,9 @@ StoreAction VaultViewDraw(Store *store, Player *player) {
     float collect_height = VAULT_VIEW_BUTTON_HEIGHT + VAULT_VIEW_WARNING_HEIGHT;
     float column = 3 * VAULT_VIEW_ROW_HEIGHT + collect_height + VAULT_VIEW_STEP_SIDE + VAULT_VIEW_BUTTON_HEIGHT +
                    6.0f * VAULT_VIEW_SECTION_GAP;
+    float right_x = left.x + left.width + VAULT_VIEW_SIDE_PADDING;
     Rectangle right = {
-        list.x + left_width + VAULT_VIEW_COLUMN_GAP,
-        list.y + (list.height - column) * 0.5f,
-        list.width - left_width - VAULT_VIEW_COLUMN_GAP,
-        column
+        right_x, list.y + (list.height - column) * 0.5f, list.x + list.width - VAULT_VIEW_SIDE_PADDING - right_x, column
     };
     VaultViewDrawTierPanel(player, left);
     VaultViewDrawStats(player, right, now);
@@ -359,7 +442,6 @@ bool VaultViewConfirm(Player *player, StoreDialog dialog) {
     ProgressionSave(player);
     ServerActionSubmit(VaultAction(deposit ? VAULT_ACTION_DEPOSIT : VAULT_ACTION_WITHDRAW, amount));
     GuiSoundPlay(deposit ? SND_GEM_PURCHASE : SND_TALLY_GEM);
-    if (!deposit && !VaultViewCanWithdraw(player, amount) && !VaultViewCanDeposit(player, amount))
-        vault_view.amount = player->vault.locked > 0 ? player->vault.locked : VaultMinimumDeposit();
+    vault_view.amount = VaultViewSnap(player, amount, 0);
     return true;
 }

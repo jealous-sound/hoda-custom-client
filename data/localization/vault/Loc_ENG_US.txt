@@ -13,7 +13,6 @@ HODA_VAULT_READY|Ready to collect
 HODA_VAULT_COLLECT|Collect
 HODA_VAULT_STOPPED|Interest has stopped. Collect to restart it.
 HODA_VAULT_COLLECTED|Collected {0} gems
-HODA_VAULT_MAX|Max
 HODA_VAULT_DEPOSIT|Deposit
 HODA_VAULT_WITHDRAW|Withdraw
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Deposit gems

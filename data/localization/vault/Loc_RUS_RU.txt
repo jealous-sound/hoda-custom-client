@@ -13,7 +13,6 @@ HODA_VAULT_READY|Можно забрать
 HODA_VAULT_COLLECT|Забрать
 HODA_VAULT_STOPPED|Проценты остановлены. Заберите их, чтобы начисление возобновилось.
 HODA_VAULT_COLLECTED|Получено самоцветов: {0}
-HODA_VAULT_MAX|Макс.
 HODA_VAULT_DEPOSIT|Вложить
 HODA_VAULT_WITHDRAW|Снять
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Вложить самоцветы

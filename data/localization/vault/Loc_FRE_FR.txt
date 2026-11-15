@@ -13,7 +13,6 @@ HODA_VAULT_READY|Prêt à récupérer
 HODA_VAULT_COLLECT|Récupérer
 HODA_VAULT_STOPPED|Les intérêts sont arrêtés. Récupérez-les pour les relancer.
 HODA_VAULT_COLLECTED|{0} gemmes récupérées
-HODA_VAULT_MAX|Max
 HODA_VAULT_DEPOSIT|Déposer
 HODA_VAULT_WITHDRAW|Retirer
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Déposer des gemmes

@@ -11,6 +11,7 @@
 #define VAULT_ACTION_CLAIM "vault_claim"
 #define VAULT_ACTION_GEMS_FIELD "gems"
 #define VAULT_BADGE_PATH EXTRA_ASSET_DIR "gui/vault/badge_%s.png"
+#define VAULT_BADGE_ART_ALPHA 0.05f
 
 typedef enum {
     VAULT_TIER_NONE,
@@ -54,6 +55,7 @@ typedef struct {
 typedef struct {
     bool asked;
     Texture2D texture;
+    Rectangle art;
 } VaultBadgeSlot;
 
 static VaultCatalog vault_catalog;
@@ -310,17 +312,30 @@ void VaultLoad(const cJSON *json, PlayerVault *vault) {
     *vault = loaded;
 }
 
-Texture2D VaultBadgeTexture(VaultTier tier) {
-    if (tier <= VAULT_TIER_NONE || tier >= VAULT_TIER_COUNT) return (Texture2D){0};
+static const VaultBadgeSlot *VaultBadgeSlotFor(VaultTier tier) {
+    static const VaultBadgeSlot missing = {0};
+    if (tier <= VAULT_TIER_NONE || tier >= VAULT_TIER_COUNT) return &missing;
     VaultBadgeSlot *slot = &vault_badges[tier];
-    if (slot->asked) return slot->texture;
+    if (slot->asked) return slot;
     slot->asked = true;
     const char *path = TextFormat(VAULT_BADGE_PATH, VAULT_TIER_IDS[tier]);
-    if (!ResourceExists(path)) return slot->texture;
-    slot->texture = ResourceLoadTexture(path);
+    if (!ResourceExists(path)) return slot;
+    Image image = ResourceLoadImage(path);
+    if (!image.data) return slot;
+    slot->art = GetImageAlphaBorder(image, VAULT_BADGE_ART_ALPHA);
+    slot->texture = LoadTextureFromImage(image);
+    UnloadImage(image);
     if (slot->texture.id) {
         GenTextureMipmaps(&slot->texture);
         SetTextureFilter(slot->texture, TEXTURE_FILTER_TRILINEAR);
     }
-    return slot->texture;
+    return slot;
+}
+
+Texture2D VaultBadgeTexture(VaultTier tier) {
+    return VaultBadgeSlotFor(tier)->texture;
+}
+
+Rectangle VaultBadgeArt(VaultTier tier) {
+    return VaultBadgeSlotFor(tier)->art;
 }

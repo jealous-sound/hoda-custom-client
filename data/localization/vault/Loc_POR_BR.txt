@@ -13,7 +13,6 @@ HODA_VAULT_READY|Pronto para coletar
 HODA_VAULT_COLLECT|Coletar
 HODA_VAULT_STOPPED|Os juros pararam. Colete para reiniciá-los.
 HODA_VAULT_COLLECTED|{0} joias coletadas
-HODA_VAULT_MAX|Máx.
 HODA_VAULT_DEPOSIT|Depositar
 HODA_VAULT_WITHDRAW|Sacar
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Depositar joias

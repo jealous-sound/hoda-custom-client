@@ -13,7 +13,6 @@ HODA_VAULT_READY|Pronti da riscuotere
 HODA_VAULT_COLLECT|Riscuoti
 HODA_VAULT_STOPPED|Gli interessi sono fermi. Riscuoti per farli ripartire.
 HODA_VAULT_COLLECTED|{0} gemme riscosse
-HODA_VAULT_MAX|Max
 HODA_VAULT_DEPOSIT|Deposita
 HODA_VAULT_WITHDRAW|Preleva
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Deposita gemme

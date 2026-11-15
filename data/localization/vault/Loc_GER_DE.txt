@@ -13,7 +13,6 @@ HODA_VAULT_READY|Bereit zum Abholen
 HODA_VAULT_COLLECT|Abholen
 HODA_VAULT_STOPPED|Die Zinsen ruhen. Hol sie ab, um sie neu zu starten.
 HODA_VAULT_COLLECTED|{0} Edelsteine abgeholt
-HODA_VAULT_MAX|Max
 HODA_VAULT_DEPOSIT|Einzahlen
 HODA_VAULT_WITHDRAW|Abheben
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Edelsteine einzahlen
