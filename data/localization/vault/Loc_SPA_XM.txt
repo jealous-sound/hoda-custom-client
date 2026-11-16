@@ -20,3 +20,4 @@ HODA_VAULT_CONFIRM_DEPOSIT|¿Bloquear {0} gemas en la bóveda? Todo lo que hay e
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Retirar gemas
 HODA_VAULT_CONFIRM_WITHDRAW|¿Sacar {0} gemas de la bóveda?
 HODA_VAULT_CONFIRM_EARLY|La bóveda sigue bloqueada. Recuperarás {0} de {1} gemas y perderás los intereses pendientes.
+HODA_VAULT_MINIMUM|Depósito mínimo: {0} gemas

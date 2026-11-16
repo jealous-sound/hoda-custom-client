@@ -9462,6 +9462,7 @@ static void TestVaultAmountStopsGrowWithTheGemsAtHand(void) {
         long long stops[VAULT_VIEW_STOP_CAPACITY];
     } cases[] = {
         {0, 0, 0, {0}},
+        {41, 0, 0, {0}},
         {420, 0, 8, {100, 150, 200, 250, 300, 350, 400, 420}},
         {8000, TEST_VAULT_SILVER, 9, {1000, 2000, 3000, 4000, 5000, 6000, TEST_VAULT_SILVER, 7000, 8000}},
         {0, 30, 6, {5, 10, 15, 20, 25, 30}},

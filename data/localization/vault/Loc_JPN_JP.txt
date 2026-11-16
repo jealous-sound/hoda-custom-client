@@ -20,3 +20,4 @@ HODA_VAULT_CONFIRM_DEPOSIT|宝石{0}個を宝物庫に預けますか？宝物�
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|宝石を引き出す
 HODA_VAULT_CONFIRM_WITHDRAW|宝物庫から宝石{0}個を引き出しますか？
 HODA_VAULT_CONFIRM_EARLY|宝物庫はまだロック中です。{1}個のうち{0}個が戻り、未受取の利息は失われます。
+HODA_VAULT_MINIMUM|宝石は{0}個から預けられます

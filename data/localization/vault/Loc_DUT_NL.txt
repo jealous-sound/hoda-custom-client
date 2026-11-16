@@ -20,3 +20,4 @@ HODA_VAULT_CONFIRM_DEPOSIT|{0} gems in de kluis vergrendelen? Alles in de kluis 
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Gems opnemen
 HODA_VAULT_CONFIRM_WITHDRAW|{0} gems uit de kluis halen?
 HODA_VAULT_CONFIRM_EARLY|De kluis is nog vergrendeld. Je krijgt {0} van {1} gems terug en verliest de wachtende rente.
+HODA_VAULT_MINIMUM|Minimale storting: {0} gems

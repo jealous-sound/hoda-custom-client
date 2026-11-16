@@ -20,3 +20,4 @@ HODA_VAULT_CONFIRM_DEPOSIT|보석 {0}개를 보관소에 잠글까요? 보관소
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|보석 인출
 HODA_VAULT_CONFIRM_WITHDRAW|보관소에서 보석 {0}개를 꺼낼까요?
 HODA_VAULT_CONFIRM_EARLY|보관소가 아직 잠겨 있습니다. 보석 {1}개 중 {0}개만 돌려받고 쌓인 이자를 잃습니다.
+HODA_VAULT_MINIMUM|보석은 {0}개부터 예치할 수 있습니다

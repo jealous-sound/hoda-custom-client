@@ -20,3 +20,4 @@ HODA_VAULT_CONFIRM_DEPOSIT|Bloccare {0} gemme nel caveau? Tutto il contenuto del
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Preleva gemme
 HODA_VAULT_CONFIRM_WITHDRAW|Prelevare {0} gemme dal caveau?
 HODA_VAULT_CONFIRM_EARLY|Il caveau è ancora bloccato. Riceverai {0} gemme su {1} e perderai gli interessi in attesa.
+HODA_VAULT_MINIMUM|Deposito minimo: {0} gemme

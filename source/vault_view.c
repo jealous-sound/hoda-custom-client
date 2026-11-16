@@ -373,6 +373,13 @@ static void VaultViewDrawAmount(Player *player, Rectangle panel, bool interactiv
         v->amount = VaultViewSnap(player, v->amount, 1);
     float inner_x = minus.x + minus.width + VAULT_VIEW_STEPPER_GAP;
     float inner_width = plus.x - VAULT_VIEW_STEPPER_GAP - inner_x;
+    if (stops.count == 0) {
+        char minimum[VAULT_VIEW_TEXT_CAP];
+        LocFormatInt(minimum, sizeof(minimum), "HODA_VAULT_MINIMUM", (int)VaultMinimumDeposit());
+        Rectangle hint = {inner_x, panel.y, inner_width, panel.height};
+        StoreDrawCenteredFit(GuiFont(FNT_MENU), minimum, hint, VAULT_VIEW_LABEL_SIZE, VAULT_VIEW_DIM);
+        return;
+    }
     float block = VAULT_VIEW_AMOUNT_HEIGHT + 3.0f + VAULT_VIEW_PIP_HEIGHT;
     float top = panel.y + (panel.height - block) * 0.5f;
     char text[32];

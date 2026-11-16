@@ -20,3 +20,4 @@ HODA_VAULT_CONFIRM_DEPOSIT|Lock {0} gems in the Vault? Everything in the Vault s
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Withdraw gems
 HODA_VAULT_CONFIRM_WITHDRAW|Take {0} gems out of the Vault?
 HODA_VAULT_CONFIRM_EARLY|The Vault is still locked. You will get {0} of {1} gems back and lose the interest waiting.
+HODA_VAULT_MINIMUM|Minimum deposit: {0} gems

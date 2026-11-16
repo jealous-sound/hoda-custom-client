@@ -20,3 +20,4 @@ HODA_VAULT_CONFIRM_DEPOSIT|Bloquer {0} gemmes dans le coffre ? Tout le contenu d
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Retirer des gemmes
 HODA_VAULT_CONFIRM_WITHDRAW|Retirer {0} gemmes du coffre ?
 HODA_VAULT_CONFIRM_EARLY|Le coffre est encore bloqué. Vous récupérerez {0} gemmes sur {1} et perdrez les intérêts en attente.
+HODA_VAULT_MINIMUM|Dépôt minimum : {0} gemmes

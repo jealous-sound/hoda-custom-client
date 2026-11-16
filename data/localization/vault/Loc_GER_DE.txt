@@ -20,3 +20,4 @@ HODA_VAULT_CONFIRM_DEPOSIT|{0} Edelsteine im Tresor sperren? Der gesamte Tresori
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Edelsteine abheben
 HODA_VAULT_CONFIRM_WITHDRAW|{0} Edelsteine aus dem Tresor nehmen?
 HODA_VAULT_CONFIRM_EARLY|Der Tresor ist noch gesperrt. Du erhältst {0} von {1} Edelsteinen zurück und verlierst die wartenden Zinsen.
+HODA_VAULT_MINIMUM|Mindesteinzahlung: {0} Edelsteine

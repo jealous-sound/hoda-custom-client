@@ -20,3 +20,4 @@ HODA_VAULT_CONFIRM_DEPOSIT|Bloquear {0} joias no cofre? Tudo no cofre fica bloqu
 HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Sacar joias
 HODA_VAULT_CONFIRM_WITHDRAW|Tirar {0} joias do cofre?
 HODA_VAULT_CONFIRM_EARLY|O cofre ainda está bloqueado. Você receberá {0} de {1} joias e perderá os juros pendentes.
+HODA_VAULT_MINIMUM|Depósito mínimo: {0} joias
