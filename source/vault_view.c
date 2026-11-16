@@ -257,8 +257,6 @@ static void VaultViewDrawTierPanel(const Player *player, Rectangle panel) {
         earned ? VAULT_VIEW_GOLD : VAULT_VIEW_TEXT
     );
     float y = panel.y + panel.height - edge - ladder;
-    Rectangle rule_span = {panel.x + VAULT_VIEW_LADDER_INSET, 0.0f, panel.width - 2.0f * VAULT_VIEW_LADDER_INSET, 0.0f};
-    VaultViewDrawRule(rule_span, roundf((title.y + title.height + y) * 0.5f));
     for (int rung = VAULT_TIER_BRONZE; rung < VAULT_TIER_COUNT; rung++) {
         Rectangle row = {
             panel.x + VAULT_VIEW_LADDER_INSET,
