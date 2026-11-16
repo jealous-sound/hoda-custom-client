@@ -9448,6 +9448,26 @@ static void TestVaultSurvivesSaveAndLoad(void) {
     cJSON_Delete(root);
 }
 
+static void TestVaultInterestWaitsForAFullDayOfGems(void) {
+    int wallet = TEST_VAULT_WALLET;
+    PlayerVault vault = TestVaultDeposited(&wallet, TEST_VAULT_SILVER);
+    assert(VaultPendingGems(&vault, TEST_VAULT_NOW + TEST_VAULT_DAY - 1) > 0);
+    assert(!VaultInterestWaiting(&vault, TEST_VAULT_NOW + TEST_VAULT_DAY - 1));
+    assert(VaultInterestWaiting(&vault, TEST_VAULT_NOW + TEST_VAULT_DAY));
+    assert(VaultInterestStopsAt(&vault) == TEST_VAULT_NOW + 7 * TEST_VAULT_DAY);
+    assert(VaultInterestWaiting(&vault, TEST_VAULT_NOW + 30 * TEST_VAULT_DAY));
+    assert(VaultClaim(&vault, &wallet, TEST_VAULT_NOW + TEST_VAULT_DAY) > 0);
+    assert(!VaultInterestWaiting(&vault, TEST_VAULT_NOW + TEST_VAULT_DAY + 1));
+    assert(VaultInterestStopsAt(&vault) == TEST_VAULT_NOW + 8 * TEST_VAULT_DAY);
+
+    PlayerVault small = TestVaultDeposited(&wallet, 100);
+    assert(!VaultInterestWaiting(&small, TEST_VAULT_NOW + TEST_VAULT_DAY));
+    assert(VaultInterestWaiting(&small, TEST_VAULT_NOW + 2 * TEST_VAULT_DAY));
+
+    PlayerVault empty = {0};
+    assert(!VaultInterestWaiting(&empty, TEST_VAULT_NOW + 30 * TEST_VAULT_DAY));
+}
+
 static void TestVaultAmountStopsGrowWithTheGemsAtHand(void) {
     static const long long tops[] = {10, 11, 50, 51, 420, 15000, 100000};
     static const long long steps[] = {1, 5, 5, 10, 50, 1500, 2500};
@@ -9569,6 +9589,7 @@ int main(void) {
     TestVaultRatesMatchTheServerTable();
     TestVaultDepositsCollectsAndWithdrawalsMatchTheServer();
     TestVaultSurvivesSaveAndLoad();
+    TestVaultInterestWaitsForAFullDayOfGems();
     TestVaultAmountStopsGrowWithTheGemsAtHand();
     TestListedPlayersCarryTheirVaultTier();
     TestTwoBadgesLeaveTheNameTheRestOfTheRow();

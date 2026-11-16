@@ -24,6 +24,8 @@
 #define TIMED_QUEST_VIEW_PULSE_SPEED 5.0f
 #define TIMED_QUEST_VIEW_PULSE_SCALE 0.07f
 #define TIMED_QUEST_VIEW_TEXT_SIZE 256
+#define TIMED_QUEST_VIEW_VAULT_GAP 14.0f
+#define TIMED_QUEST_VIEW_RATE_ICON_SIZE 18.0f
 
 typedef enum {
     TIMED_QUEST_VIEW_NONE,
@@ -42,6 +44,8 @@ static const Color TIMED_QUEST_VIEW_GOLD = {255, 214, 120, 255};
 static const Color TIMED_QUEST_VIEW_LOCKED = {120, 120, 120, 255};
 static const Color TIMED_QUEST_VIEW_SHADE = {0, 0, 0, 120};
 static const Color TIMED_QUEST_VIEW_GLOW = {255, 196, 90, 150};
+static const Color TIMED_QUEST_VIEW_WARN = {232, 128, 96, 255};
+static const Color TIMED_QUEST_VIEW_NO_TIER = {90, 90, 90, 200};
 
 typedef struct {
     Font font;
@@ -444,11 +448,121 @@ static TimedQuestViewAction TimedQuestViewDrawSection(
     return action;
 }
 
+static float TimedQuestViewVaultHeight(const Player *p) {
+    bool shown = VaultAvailable() && p->vault.locked > 0;
+    return shown ? TIMED_QUEST_VIEW_ROW_HEIGHT + TIMED_QUEST_VIEW_VAULT_GAP : 0.0f;
+}
+
+static void TimedQuestViewDrawVaultRate(const TimedQuestView *v, const Player *p, Rectangle line) {
+    char rate[TIMED_QUEST_VIEW_TEXT_SIZE];
+    VaultViewFormatDaily(rate, sizeof(rate), VaultMilligemsPerDay(p->vault.locked));
+    UiDrawTextLeftMiddle(v->body, rate, line, 16.0f, TIMED_QUEST_VIEW_TEXT_DIM);
+    float width = MeasureTextEx(v->body, rate, 16.0f, 1.0f).x;
+    Rectangle icon = {
+        line.x + width + TIMED_QUEST_VIEW_ICON_GAP,
+        line.y + (line.height - TIMED_QUEST_VIEW_RATE_ICON_SIZE) * 0.5f,
+        TIMED_QUEST_VIEW_RATE_ICON_SIZE,
+        TIMED_QUEST_VIEW_RATE_ICON_SIZE,
+    };
+    TimedQuestViewDrawFit(GuiTex(GUI_STORE_CURRENCY_GEMS), icon, WHITE);
+}
+
+static void TimedQuestViewDrawLeftFit(Font font, const char *text, Rectangle line, float size, Color color) {
+    float width = MeasureTextEx(font, text, size, 1.0f).x;
+    if (width > line.width && width > 0.0f) size *= line.width / width;
+    UiDrawTextLeftMiddle(font, text, line, size, color);
+}
+
+static void TimedQuestViewDrawVaultWindow(const TimedQuestView *v, const Player *p, Rectangle line, long long now) {
+    if (VaultInterestStopped(&p->vault, now)) {
+        TimedQuestViewDrawLeftFit(v->body, LocGet("HODA_VAULT_STOPPED"), line, 16.0f, TIMED_QUEST_VIEW_WARN);
+        return;
+    }
+    char left[48], text[TIMED_QUEST_VIEW_TEXT_SIZE];
+    QuestsShortTime(left, sizeof(left), VaultInterestStopsAt(&p->vault) - now);
+    LocFormat1(text, sizeof(text), "HODA_VAULT_STOPS_IN", left);
+    TimedQuestViewDrawLeftFit(v->body, text, line, 16.0f, TIMED_QUEST_VIEW_TEXT_DIM);
+}
+
+static TimedQuestViewAction TimedQuestViewDrawVault(TimedQuestView *v, Player *p, Rectangle row, bool interactive) {
+    TimedQuestViewAction action = {0};
+    long long now = ServerNow();
+    UiDrawTexture(GuiTex(GUI_MISSION_ROW), row, WHITE);
+    VaultTier tier = VaultTierFor(p->vault.locked);
+    Rectangle icon = {
+        row.x + 12.0f,
+        row.y + (row.height - TIMED_QUEST_VIEW_ICON_SIZE) * 0.5f,
+        TIMED_QUEST_VIEW_ICON_SIZE,
+        TIMED_QUEST_VIEW_ICON_SIZE
+    };
+    bool earned = tier != VAULT_TIER_NONE;
+    VaultBadgeDrawFit(earned ? tier : VAULT_TIER_BRONZE, icon, earned ? WHITE : TIMED_QUEST_VIEW_NO_TIER);
+
+    float text_x = icon.x + icon.width + 12.0f;
+    float text_width = row.x + row.width - 250.0f - text_x;
+    UiDrawTextLeftMiddle(
+        v->font,
+        LocGet("HODA_VAULT_INTEREST_TITLE"),
+        (Rectangle){text_x, row.y + 6.0f, text_width, 26.0f},
+        22.0f,
+        TIMED_QUEST_VIEW_TEXT
+    );
+    TimedQuestViewDrawVaultRate(v, p, (Rectangle){text_x, row.y + 32.0f, text_width, 22.0f});
+    float window_right = row.x + row.width - TIMED_QUEST_VIEW_ROW_INSET - TIMED_QUEST_VIEW_BUTTON_WIDTH - 12.0f;
+    TimedQuestViewDrawVaultWindow(
+        v, p, (Rectangle){text_x, row.y + row.height - 30.0f, window_right - text_x, 22.0f}, now
+    );
+
+    float right = row.x + row.width - TIMED_QUEST_VIEW_ROW_INSET;
+    Rectangle reward_icon = {
+        right - TIMED_QUEST_VIEW_REWARD_ICON_SIZE,
+        row.y + TIMED_QUEST_VIEW_REWARD_TOP,
+        TIMED_QUEST_VIEW_REWARD_ICON_SIZE,
+        TIMED_QUEST_VIEW_REWARD_ICON_SIZE,
+    };
+    TimedQuestViewDrawFit(GuiTex(GUI_MISSION_GEM), reward_icon, WHITE);
+    long long ready = VaultPendingGems(&p->vault, now);
+    char amount[24];
+    snprintf(amount, sizeof(amount), "+%lld", ready);
+    float amount_width = MeasureTextEx(v->font, amount, TIMED_QUEST_VIEW_AMOUNT_SIZE, 1.0f).x;
+    UiDrawTextRight(
+        v->font,
+        amount,
+        (Rectangle){
+            reward_icon.x - TIMED_QUEST_VIEW_ICON_GAP - amount_width, reward_icon.y, amount_width, reward_icon.height
+        },
+        TIMED_QUEST_VIEW_AMOUNT_SIZE,
+        ready > 0 ? TIMED_QUEST_VIEW_TEXT : TIMED_QUEST_VIEW_TEXT_DIM
+    );
+    if (ready <= 0) return action;
+    Rectangle button = {
+        right - TIMED_QUEST_VIEW_BUTTON_WIDTH,
+        row.y + row.height - TIMED_QUEST_VIEW_BUTTON_HEIGHT - 6.0f,
+        TIMED_QUEST_VIEW_BUTTON_WIDTH,
+        TIMED_QUEST_VIEW_BUTTON_HEIGHT,
+    };
+    if (!ButtonDrawEx(&v->claim, button, interactive)) return action;
+    if (VaultClaim(&p->vault, &p->gems, now) <= 0) return action;
+    ProgressionSave(p);
+    ServerActionSubmit(VaultAction(VAULT_ACTION_CLAIM, 0));
+    action.kind = TIMED_QUEST_VIEW_PAID;
+    action.gems = true;
+    action.from = (Vector2){reward_icon.x + reward_icon.width * 0.5f, reward_icon.y + reward_icon.height * 0.5f};
+    return action;
+}
+
 TimedQuestViewAction TimedQuestViewDraw(
     TimedQuestView *v, GoalsScroll *scroll, Heroes *heroes, Player *p, Rectangle content, bool interactive
 ) {
     TimedQuestViewAction action = {0};
+    float vault_height = TimedQuestViewVaultHeight(p);
     if (!TimedQuestsUnlocked(p->level)) {
+        if (vault_height > 0.0f) {
+            Rectangle row = {content.x, content.y, content.width, TIMED_QUEST_VIEW_ROW_HEIGHT};
+            action = TimedQuestViewDrawVault(v, p, row, interactive && !TimedQuestViewBlocking(v));
+            content.y += vault_height;
+            content.height -= vault_height;
+        }
         char locked[TIMED_QUEST_VIEW_TEXT_SIZE];
         LocFormat1(locked, sizeof(locked), "HODA_QUESTS_LOCKED", TextFormat("%d", TimedQuestUnlockLevel()));
         UiDrawTextCentered(v->body, locked, content, 24.0f, TIMED_QUEST_VIEW_TEXT_DIM);
@@ -457,16 +571,22 @@ TimedQuestViewAction TimedQuestViewDraw(
     TimedQuestsRoll(&p->timed_quests, ServerNow());
     float daily_height = TimedQuestViewSectionHeight(TimedQuestSlotCount());
     float weekly_height = TimedQuestViewSectionHeight(TimedQuestWeeklyCount());
-    GoalsScrollUpdate(scroll, content, daily_height + TIMED_QUEST_VIEW_SECTION_GAP + weekly_height);
+    GoalsScrollUpdate(scroll, content, vault_height + daily_height + TIMED_QUEST_VIEW_SECTION_GAP + weekly_height);
     bool visible = CheckCollisionPointRec(UiMouse(), content);
     bool live = interactive && visible && !scroll->drag_scrolled && !TimedQuestViewBlocking(v);
     GoalsBeginClip(content);
     float top = content.y - scroll->offset;
+    TimedQuestViewAction vault = {0};
+    if (vault_height > 0.0f)
+        vault = TimedQuestViewDrawVault(
+            v, p, (Rectangle){content.x, top, content.width, TIMED_QUEST_VIEW_ROW_HEIGHT}, live
+        );
+    top += vault_height;
     TimedQuestViewAction daily = TimedQuestViewDrawSection(v, heroes, p, TIMED_QUEST_DAILY, top, content, live);
     top += daily_height + TIMED_QUEST_VIEW_SECTION_GAP;
     TimedQuestViewAction weekly = TimedQuestViewDrawSection(v, heroes, p, TIMED_QUEST_WEEKLY, top, content, live);
     EndScissorMode();
-    action = daily.kind != TIMED_QUEST_VIEW_NONE ? daily : weekly;
+    action = vault.kind != TIMED_QUEST_VIEW_NONE ? vault : daily.kind != TIMED_QUEST_VIEW_NONE ? daily : weekly;
     if (action.kind == TIMED_QUEST_VIEW_NONE && v->burst_pending && !v->reveal_pending && !v->chest_waiting) {
         v->burst_pending = false;
         action =

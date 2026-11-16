@@ -421,7 +421,7 @@ typedef struct {
     char status[192];
 } Store;
 
-StoreAction VaultViewDraw(Store *store, Player *player);
+void VaultViewDraw(Store *store, Player *player);
 void VaultViewDialogText(const Store *store, const Player *player, char *header, char *body, size_t size);
 bool VaultViewConfirm(Player *player, StoreDialog dialog);
 
@@ -2401,9 +2401,9 @@ static StoreAction StoreDrawVaultPage(Store *store, Player *player) {
         StoreEnterPage(store, STORE_VIEW_LANDING);
         return STORE_ACTION_NONE;
     }
-    StoreAction action = VaultViewDraw(store, player);
+    VaultViewDraw(store, player);
     StoreDrawToast(store);
-    return action;
+    return STORE_ACTION_NONE;
 }
 
 static bool StoreGemTraderDead(void) {

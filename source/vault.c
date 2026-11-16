@@ -200,9 +200,13 @@ bool VaultUnlocked(const PlayerVault *vault, long long now) {
     return now >= vault->unlocks_at;
 }
 
+long long VaultInterestStopsAt(const PlayerVault *vault) {
+    return vault->claimed_at + vault_catalog.unclaimed_days * VAULT_SECONDS_PER_DAY;
+}
+
 static void VaultSettle(PlayerVault *vault, long long now) {
     if (vault->locked <= 0) return;
-    long long window_end = vault->claimed_at + vault_catalog.unclaimed_days * VAULT_SECONDS_PER_DAY;
+    long long window_end = VaultInterestStopsAt(vault);
     long long end = now < window_end ? now : window_end;
     if (end <= vault->accrued_at) return;
     vault->pending_milligems += VaultMilligemsPerDay(vault->locked) * (end - vault->accrued_at) / VAULT_SECONDS_PER_DAY;
@@ -220,7 +224,11 @@ long long VaultPendingGems(const PlayerVault *vault, long long now) {
 }
 
 bool VaultInterestStopped(const PlayerVault *vault, long long now) {
-    return vault->locked > 0 && now >= vault->claimed_at + vault_catalog.unclaimed_days * VAULT_SECONDS_PER_DAY;
+    return vault->locked > 0 && now >= VaultInterestStopsAt(vault);
+}
+
+bool VaultInterestWaiting(const PlayerVault *vault, long long now) {
+    return vault->locked > 0 && now - vault->claimed_at >= VAULT_SECONDS_PER_DAY && VaultPendingGems(vault, now) > 0;
 }
 
 static long long VaultTakeInterest(PlayerVault *vault) {
@@ -338,4 +346,14 @@ Texture2D VaultBadgeTexture(VaultTier tier) {
 
 Rectangle VaultBadgeArt(VaultTier tier) {
     return VaultBadgeSlotFor(tier)->art;
+}
+
+void VaultBadgeDrawFit(VaultTier tier, Rectangle dst, Color tint) {
+    const VaultBadgeSlot *slot = VaultBadgeSlotFor(tier);
+    Rectangle art = slot->art;
+    if (slot->texture.id == 0 || art.width <= 0.0f || art.height <= 0.0f) return;
+    float scale = fminf(dst.width / art.width, dst.height / art.height);
+    float width = art.width * scale, height = art.height * scale;
+    Rectangle fitted = {dst.x + (dst.width - width) * 0.5f, dst.y + (dst.height - height) * 0.5f, width, height};
+    DrawTexturePro(slot->texture, art, fitted, (Vector2){0}, 0.0f, tint);
 }

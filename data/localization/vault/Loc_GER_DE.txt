@@ -9,10 +9,7 @@ HODA_VAULT_LOCK|Sperre
 HODA_VAULT_EMPTY|Leer
 HODA_VAULT_UNLOCKED|Entsperrt
 HODA_VAULT_UNLOCKS_IN|Entsperrt in {0}
-HODA_VAULT_READY|Bereit zum Abholen
-HODA_VAULT_COLLECT|Abholen
 HODA_VAULT_STOPPED|Die Zinsen ruhen. Hol sie ab, um sie neu zu starten.
-HODA_VAULT_COLLECTED|{0} Edelsteine abgeholt
 HODA_VAULT_DEPOSIT|Einzahlen
 HODA_VAULT_WITHDRAW|Abheben
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Edelsteine einzahlen
@@ -21,3 +18,5 @@ HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Edelsteine abheben
 HODA_VAULT_CONFIRM_WITHDRAW|{0} Edelsteine aus dem Tresor nehmen?
 HODA_VAULT_CONFIRM_EARLY|Der Tresor ist noch gesperrt. Du erhältst {0} von {1} Edelsteinen zurück und verlierst die wartenden Zinsen.
 HODA_VAULT_MINIMUM|Mindesteinzahlung: {0} Edelsteine
+HODA_VAULT_INTEREST_TITLE|Tresorzinsen
+HODA_VAULT_STOPS_IN|Wachsen nur noch {0}, wenn du sie nicht abholst

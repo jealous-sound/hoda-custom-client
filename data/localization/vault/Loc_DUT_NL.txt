@@ -9,10 +9,7 @@ HODA_VAULT_LOCK|Vergrendeling
 HODA_VAULT_EMPTY|Leeg
 HODA_VAULT_UNLOCKED|Ontgrendeld
 HODA_VAULT_UNLOCKS_IN|Ontgrendelt over {0}
-HODA_VAULT_READY|Klaar om te innen
-HODA_VAULT_COLLECT|Innen
 HODA_VAULT_STOPPED|De rente is gestopt. Inn haar om opnieuw te beginnen.
-HODA_VAULT_COLLECTED|{0} gems geïnd
 HODA_VAULT_DEPOSIT|Storten
 HODA_VAULT_WITHDRAW|Opnemen
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Gems storten
@@ -21,3 +18,5 @@ HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Gems opnemen
 HODA_VAULT_CONFIRM_WITHDRAW|{0} gems uit de kluis halen?
 HODA_VAULT_CONFIRM_EARLY|De kluis is nog vergrendeld. Je krijgt {0} van {1} gems terug en verliest de wachtende rente.
 HODA_VAULT_MINIMUM|Minimale storting: {0} gems
+HODA_VAULT_INTEREST_TITLE|Kluisrente
+HODA_VAULT_STOPS_IN|Groeit nog {0} als je haar niet int

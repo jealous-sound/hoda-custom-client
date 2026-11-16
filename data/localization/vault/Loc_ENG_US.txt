@@ -9,10 +9,7 @@ HODA_VAULT_LOCK|Lock
 HODA_VAULT_EMPTY|Empty
 HODA_VAULT_UNLOCKED|Unlocked
 HODA_VAULT_UNLOCKS_IN|Unlocks in {0}
-HODA_VAULT_READY|Ready to collect
-HODA_VAULT_COLLECT|Collect
 HODA_VAULT_STOPPED|Interest has stopped. Collect to restart it.
-HODA_VAULT_COLLECTED|Collected {0} gems
 HODA_VAULT_DEPOSIT|Deposit
 HODA_VAULT_WITHDRAW|Withdraw
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Deposit gems
@@ -21,3 +18,5 @@ HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Withdraw gems
 HODA_VAULT_CONFIRM_WITHDRAW|Take {0} gems out of the Vault?
 HODA_VAULT_CONFIRM_EARLY|The Vault is still locked. You will get {0} of {1} gems back and lose the interest waiting.
 HODA_VAULT_MINIMUM|Minimum deposit: {0} gems
+HODA_VAULT_INTEREST_TITLE|Vault interest
+HODA_VAULT_STOPS_IN|Stops growing in {0} unless collected

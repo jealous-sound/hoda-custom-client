@@ -86,7 +86,8 @@ static void MissionsSelectTab(MissionsScreen *s, Player *p, GoalsTab tab) {
 
 void MissionsOpen(MissionsScreen *s, Player *p, GoalsTab tab) {
     PvpEventSync(&p->pvp, ServerNow());
-    bool quests_waiting = tab == GOALS_TAB_DAILY && TimedQuestsClaimableCount(p) > 0;
+    bool daily_waiting = TimedQuestsClaimableCount(p) > 0 || VaultInterestWaiting(&p->vault, ServerNow());
+    bool quests_waiting = tab == GOALS_TAB_DAILY && daily_waiting;
     if (PvpEventUnclaimedCount(&p->pvp) > 0 &&
         (tab == GOALS_TAB_MISSIONS || (tab == GOALS_TAB_DAILY && !quests_waiting)))
         tab = GOALS_TAB_EVENTS;

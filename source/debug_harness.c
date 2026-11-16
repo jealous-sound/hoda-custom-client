@@ -37,7 +37,8 @@ typedef struct {
 #define DEBUG_VAULT_LOCKED 6200
 #define DEBUG_VAULT_WALLET 8000
 #define DEBUG_VAULT_UNLOCK_SECONDS (9LL * 86400LL + 4LL * 3600LL)
-#define DEBUG_VAULT_UNCOLLECTED_SECONDS (36LL * 3600LL)
+#define DEBUG_VAULT_UNCOLLECTED_HOURS 36
+#define DEBUG_SECONDS_PER_HOUR 3600LL
 #define DEBUG_LADDER_RIVALS                                                                                            \
     "{\"cycle\":%lld,\"players\":["                                                                                    \
     "{\"id\":\"isabela\",\"name\":\"Isabela\",\"level\":100,\"trophies\":6100,\"banners\":9600,\"renown_rank\":41,"    \
@@ -199,7 +200,8 @@ static void DebugSeedVault(Player *player) {
     player->gems = EnvInt("HOD_VAULT_WALLET", DEBUG_VAULT_WALLET);
     player->vault = (PlayerVault){0};
     if (locked <= 0) return;
-    long long since = now - DEBUG_VAULT_UNCOLLECTED_SECONDS;
+    long long since =
+        now - EnvInt("HOD_VAULT_UNCOLLECTED_HOURS", DEBUG_VAULT_UNCOLLECTED_HOURS) * DEBUG_SECONDS_PER_HOUR;
     long long unlocks_in = EnvInt("HOD_VAULT_UNLOCKED", 0) ? -1 : DEBUG_VAULT_UNLOCK_SECONDS;
     player->vault = (PlayerVault){
         .locked = locked,
@@ -758,6 +760,7 @@ static void DebugSeedTimedQuests(Game *game, DebugShot *shot) {
     static const char *const shots[] = {"goals_daily", "goals_daily_weekly", "goals_daily_locked"};
     if (!DebugShotIsAny(shot, shots, 3) || shot->frames_drawn != 0) return;
     Player *p = &game->player;
+    if (getenv("HOD_VAULT_LOCKED")) DebugSeedVault(p);
     if (DebugShotIs(shot, "goals_daily_locked")) {
         p->level = 1;
         MissionsOpen(&game->missions, p, GOALS_TAB_DAILY);

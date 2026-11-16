@@ -9,10 +9,7 @@ HODA_VAULT_LOCK|Bloqueio
 HODA_VAULT_EMPTY|Vazio
 HODA_VAULT_UNLOCKED|Desbloqueado
 HODA_VAULT_UNLOCKS_IN|Desbloqueia em {0}
-HODA_VAULT_READY|Pronto para coletar
-HODA_VAULT_COLLECT|Coletar
 HODA_VAULT_STOPPED|Os juros pararam. Colete para reiniciá-los.
-HODA_VAULT_COLLECTED|{0} joias coletadas
 HODA_VAULT_DEPOSIT|Depositar
 HODA_VAULT_WITHDRAW|Sacar
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Depositar joias
@@ -21,3 +18,5 @@ HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Sacar joias
 HODA_VAULT_CONFIRM_WITHDRAW|Tirar {0} joias do cofre?
 HODA_VAULT_CONFIRM_EARLY|O cofre ainda está bloqueado. Você receberá {0} de {1} joias e perderá os juros pendentes.
 HODA_VAULT_MINIMUM|Depósito mínimo: {0} joias
+HODA_VAULT_INTEREST_TITLE|Juros do cofre
+HODA_VAULT_STOPS_IN|Param de crescer em {0} se não forem coletados

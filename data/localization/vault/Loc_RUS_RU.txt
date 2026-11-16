@@ -9,10 +9,7 @@ HODA_VAULT_LOCK|Блокировка
 HODA_VAULT_EMPTY|Пусто
 HODA_VAULT_UNLOCKED|Разблокировано
 HODA_VAULT_UNLOCKS_IN|Разблокировка через {0}
-HODA_VAULT_READY|Можно забрать
-HODA_VAULT_COLLECT|Забрать
 HODA_VAULT_STOPPED|Проценты остановлены. Заберите их, чтобы начисление возобновилось.
-HODA_VAULT_COLLECTED|Получено самоцветов: {0}
 HODA_VAULT_DEPOSIT|Вложить
 HODA_VAULT_WITHDRAW|Снять
 HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Вложить самоцветы
@@ -21,3 +18,5 @@ HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Снять самоцветы
 HODA_VAULT_CONFIRM_WITHDRAW|Забрать {0} самоцветов из хранилища?
 HODA_VAULT_CONFIRM_EARLY|Хранилище ещё заблокировано. Вы получите {0} из {1} самоцветов и потеряете накопленные проценты.
 HODA_VAULT_MINIMUM|Минимальный вклад: {0} самоцветов
+HODA_VAULT_INTEREST_TITLE|Проценты хранилища
+HODA_VAULT_STOPS_IN|Перестанут расти через {0}, если их не забрать
