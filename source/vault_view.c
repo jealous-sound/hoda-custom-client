@@ -435,7 +435,6 @@ StoreAction VaultViewDraw(Store *store, Player *player) {
     Rectangle amount = {right.x, y + VAULT_VIEW_SECTION_GAP, right.width, VAULT_VIEW_STEP_SIDE};
     VaultViewDrawAmount(player, amount, interactive);
     y = amount.y + amount.height + VAULT_VIEW_SECTION_GAP;
-    VaultViewDrawRule(right, y);
     Rectangle moves = {right.x, y + VAULT_VIEW_SECTION_GAP, right.width, VAULT_VIEW_BUTTON_HEIGHT};
     VaultViewDrawMoveButtons(store, player, moves, interactive);
     return collected ? STORE_ACTION_PURCHASED : STORE_ACTION_NONE;
