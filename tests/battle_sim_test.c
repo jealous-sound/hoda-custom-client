@@ -9181,7 +9181,7 @@ static void TestLadderRowsCarryEachRivalsRenownRank(void) {
     int rivals = 0, viewers = 0, bots = 0;
     for (int i = 0; i < count; i++) {
         const PvpRankEntry *entry = &entries[i];
-        int shown = PvpLadderEntryRenownRank(&ladder, entry, &viewer);
+        int shown = PvpLadderEntryBadges(&ladder, entry, &viewer).renown_rank;
         if (entry->bot == PVP_RANK_RIVAL) {
             rivals++;
             assert(shown == ladder.players[entry->rival].renown_rank);
@@ -9194,11 +9194,11 @@ static void TestLadderRowsCarryEachRivalsRenownRank(void) {
         }
     }
     assert(rivals == TEST_RANKED_LADDER_ROW_COUNT && viewers == 1 && bots > 0);
-    assert(PvpLadderEntryRenownRank(&ladder, &entries[0], &viewer) == 24);
+    assert(PvpLadderEntryBadges(&ladder, &entries[0], &viewer).renown_rank == 24);
 
     Player below_the_first_rank = RenownTestPlayer(0);
     PvpRankEntry own_row = {.bot = PVP_RANK_PLAYER};
-    assert(PvpLadderEntryRenownRank(&ladder, &own_row, &below_the_first_rank) == 0);
+    assert(PvpLadderEntryBadges(&ladder, &own_row, &below_the_first_rank).renown_rank == 0);
 }
 
 #define TEST_RANKED_GUILD_STATE                                                                                        \
@@ -9282,13 +9282,13 @@ static void TestADuelShowsTheRivalsRenownRank(void) {
     GuildInitialize(&g->guild);
 
     TestAdoptDuelReply(g, TEST_RANKED_RIVAL_SQUAD_REPLY);
-    assert(g->guild.duel.renown_rank == 33 && PvpOpponentRenownRank(&g->pvp_opponent) == 33);
+    assert(g->guild.duel.renown_rank == 33 && PvpOpponentBadges(&g->pvp_opponent).renown_rank == 33);
     TestAdoptDuelReply(g, TEST_RIVAL_SQUAD_REPLY);
-    assert(g->guild.duel.renown_rank == 0 && PvpOpponentRenownRank(&g->pvp_opponent) == 0);
+    assert(g->guild.duel.renown_rank == 0 && PvpOpponentBadges(&g->pvp_opponent).renown_rank == 0);
 
     PvpOpponent bot = PvpOpponentGenerate(18, 400, TEST_LADDER_DAY, 1);
     bot.duel_renown_rank = 33;
-    assert(!bot.duel && PvpOpponentRenownRank(&bot) == 0);
+    assert(!bot.duel && PvpOpponentBadges(&bot).renown_rank == 0);
 }
 
 static void TestANameShrinksBesideItsRenownStar(void) {
@@ -9296,25 +9296,25 @@ static void TestANameShrinksBesideItsRenownStar(void) {
     const Rectangle row = {100.0f, 40.0f, 200.0f, 30.0f};
     const float row_right = row.x + row.width, short_name = 80.0f, long_name = 400.0f;
 
-    RenownNameLayout plain = RenownLayOutName(false, row, size, short_name, RENOWN_NAME_LEFT);
+    RenownNameLayout plain = RenownLayOutName(0, row, size, short_name, RENOWN_NAME_LEFT);
     assert(plain.star.width == 0.0f && plain.text.x == row.x && plain.text_size == size);
 
-    RenownNameLayout starred = RenownLayOutName(true, row, size, short_name, RENOWN_NAME_LEFT);
+    RenownNameLayout starred = RenownLayOutName(1, row, size, short_name, RENOWN_NAME_LEFT);
     assert(starred.star.x == row.x && starred.star.width == side && starred.star.height == side);
     assert(fabsf(starred.star.y + side * 0.5f - (row.y + row.height * 0.5f)) < 0.001f);
     assert(fabsf(starred.text.x - (row.x + side + gap)) < 0.001f && starred.text_size == size);
 
-    RenownNameLayout crowded = RenownLayOutName(true, row, size, long_name, RENOWN_NAME_LEFT);
+    RenownNameLayout crowded = RenownLayOutName(1, row, size, long_name, RENOWN_NAME_LEFT);
     assert(crowded.star.width == side && crowded.text_size < size);
     assert(fabsf(crowded.text_size - size * (row.width - side - gap) / long_name) < 0.001f);
     assert(crowded.text.x + crowded.text.width <= row_right + 0.001f);
 
-    RenownNameLayout centred = RenownLayOutName(true, row, size, short_name, RENOWN_NAME_CENTRE);
+    RenownNameLayout centred = RenownLayOutName(1, row, size, short_name, RENOWN_NAME_CENTRE);
     float left_margin = centred.star.x - row.x, right_margin = row_right - (centred.text.x + centred.text.width);
     assert(left_margin > 0.0f && fabsf(left_margin - right_margin) < 0.001f);
 
     const Rectangle narrower_than_a_star = {0.0f, 0.0f, side * 0.5f, 30.0f};
-    RenownNameLayout squeezed = RenownLayOutName(true, narrower_than_a_star, size, short_name, RENOWN_NAME_LEFT);
+    RenownNameLayout squeezed = RenownLayOutName(1, narrower_than_a_star, size, short_name, RENOWN_NAME_LEFT);
     assert(squeezed.star.width == side && squeezed.text.width == 0.0f && squeezed.text_size == 0.0f);
 }
 
@@ -9338,6 +9338,235 @@ static void TestRankZeroAndAMissingRenownTableDrawNoStar(void) {
     cJSON_Delete(unranked);
 }
 
+#define TEST_VAULT_NOW 1900000000LL
+#define TEST_VAULT_DAY 86400LL
+#define TEST_VAULT_WALLET 20000
+#define TEST_VAULT_SILVER 6200
+#define TEST_VAULT_SILVER_MILLIGEMS 16200
+#define TEST_VAULT_GUILD_STATE                                                                                         \
+    "{\"rank\":2,\"guild\":{\"id\":\"vaulted\",\"name\":\"Vaulted\",\"members\":["                                     \
+    "{\"id\":\"leader\",\"name\":\"Hawke\",\"rank\":2,\"player_level\":40,\"vault_tier\":3},"                          \
+    "{\"id\":\"recruit\",\"name\":\"Merrill\",\"rank\":0,\"player_level\":12,\"vault_tier\":9}],"                      \
+    "\"pending_requests\":[{\"id\":\"saver\",\"name\":\"Isabela\",\"player_level\":40,\"vault_tier\":1}]}}"
+#define TEST_VAULT_WORLD_CHAT                                                                                          \
+    "{\"last_message_id\":1,\"messages\":[{\"id\":1,\"player_id\":\"stranger\",\"player_name\":\"Isabela\","           \
+    "\"player_level\":40,\"text\":\"Rich\",\"vault_tier\":2}]}"
+#define TEST_VAULT_LADDER_REPLY                                                                                        \
+    "{\"players\":[{\"id\":\"saver\",\"name\":\"Varric\",\"level\":40,\"trophies\":1000000,\"vault_tier\":2},"         \
+    "{\"id\":\"worded\",\"name\":\"Sandal\",\"level\":3,\"trophies\":900000,\"vault_tier\":\"2\"}]}"
+#define TEST_VAULT_RIVAL_SQUAD_REPLY                                                                                   \
+    "{\"id\":\"champion\",\"name\":\"Varric\",\"level\":40,\"trophies\":1000000,\"vault_tier\":2,"                     \
+    "\"units\":[{\"slot\":0,\"id\":\"UNIT_VIVIENNE\",\"tier\":\"II\",\"level\":9}],\"runes\":[]}"
+
+static PlayerVault TestVaultDeposited(int *wallet, long long gems) {
+    PlayerVault vault = {0};
+    *wallet = TEST_VAULT_WALLET;
+    assert(VaultDeposit(&vault, wallet, gems, TEST_VAULT_NOW));
+    return vault;
+}
+
+static void TestVaultRatesMatchTheServerTable(void) {
+    assert(VaultCatalogLoad(VAULT_PATH) && VaultAvailable());
+    static const long long locked[] = {0, 1000, 5000, TEST_VAULT_SILVER, 15000, 50000};
+    static const long long milligems[] = {0, 5000, 15000, TEST_VAULT_SILVER_MILLIGEMS, 25000, 25000};
+    for (size_t i = 0; i < sizeof(locked) / sizeof(locked[0]); i++)
+        assert(VaultMilligemsPerDay(locked[i]) == milligems[i]);
+    assert(VaultCapacity() == 15000 && VaultLockDays() == 14 && VaultUnclaimedDays() == 7);
+    assert(VaultEarlyWithdrawFeePct() == 10 && VaultMinimumDeposit() == 100);
+    assert(VaultTierFor(999) == VAULT_TIER_NONE && VaultTierFor(1000) == VAULT_TIER_BRONZE);
+    assert(VaultTierFor(TEST_VAULT_SILVER) == VAULT_TIER_SILVER && VaultTierFor(15000) == VAULT_TIER_GOLD);
+    static const long long withdrawn[] = {0, 1, 10, 11, 1000};
+    static const long long fees[] = {0, 1, 1, 2, 100};
+    for (size_t i = 0; i < sizeof(withdrawn) / sizeof(withdrawn[0]); i++)
+        assert(VaultEarlyWithdrawFee(withdrawn[i]) == fees[i]);
+
+    assert(!VaultCatalogLoad("data/missing_vault.json") && !VaultAvailable());
+    PlayerVault closed = {0};
+    int wallet = TEST_VAULT_WALLET;
+    assert(VaultTierFor(15000) == VAULT_TIER_NONE && !VaultDeposit(&closed, &wallet, 1000, TEST_VAULT_NOW));
+    assert(VaultCatalogLoad(VAULT_PATH));
+}
+
+static void TestVaultDepositsCollectsAndWithdrawalsMatchTheServer(void) {
+    PlayerVault vault = {0};
+    int wallet = TEST_VAULT_WALLET, poor = 50;
+    assert(!VaultDeposit(&vault, &wallet, 99, TEST_VAULT_NOW) && !VaultDeposit(&vault, &wallet, 15001, TEST_VAULT_NOW));
+    assert(!VaultDeposit(&vault, &poor, 100, TEST_VAULT_NOW) && poor == 50);
+
+    vault = TestVaultDeposited(&wallet, TEST_VAULT_SILVER);
+    assert(wallet == TEST_VAULT_WALLET - TEST_VAULT_SILVER && vault.unlocks_at == TEST_VAULT_NOW + 14 * TEST_VAULT_DAY);
+    assert(VaultClaim(&vault, &wallet, TEST_VAULT_NOW + 60) == 0);
+    assert(VaultPendingGems(&vault, TEST_VAULT_NOW + TEST_VAULT_DAY) == TEST_VAULT_SILVER_MILLIGEMS / 1000);
+    assert(VaultClaim(&vault, &wallet, TEST_VAULT_NOW + TEST_VAULT_DAY) == TEST_VAULT_SILVER_MILLIGEMS / 1000);
+    assert(
+        vault.pending_milligems == TEST_VAULT_SILVER_MILLIGEMS % 1000 &&
+        vault.claimed_at == TEST_VAULT_NOW + TEST_VAULT_DAY
+    );
+
+    PlayerVault away = TestVaultDeposited(&wallet, TEST_VAULT_SILVER);
+    assert(!VaultInterestStopped(&away, TEST_VAULT_NOW + TEST_VAULT_DAY));
+    assert(VaultInterestStopped(&away, TEST_VAULT_NOW + 7 * TEST_VAULT_DAY));
+    assert(VaultClaim(&away, &wallet, TEST_VAULT_NOW + 30 * TEST_VAULT_DAY) == TEST_VAULT_SILVER_MILLIGEMS * 7 / 1000);
+
+    PlayerVault early = TestVaultDeposited(&wallet, TEST_VAULT_SILVER);
+    assert(VaultWithdraw(&early, &wallet, 1001, TEST_VAULT_NOW + 3 * TEST_VAULT_DAY) == 900);
+    assert(early.locked == TEST_VAULT_SILVER - 1001 && early.pending_milligems == 0 && early.fees_paid == 101);
+
+    long long unlocked = TEST_VAULT_NOW + 14 * TEST_VAULT_DAY;
+    PlayerVault full = TestVaultDeposited(&wallet, TEST_VAULT_SILVER);
+    assert(VaultWithdraw(&full, &wallet, 200, unlocked) == 200);
+    long long interest = full.pending_milligems / 1000;
+    assert(interest == TEST_VAULT_SILVER_MILLIGEMS * 7 / 1000);
+    assert(VaultWithdraw(&full, &wallet, TEST_VAULT_SILVER - 200, unlocked) == TEST_VAULT_SILVER - 200 + interest);
+    assert(full.locked == 0 && full.unlocks_at == 0 && full.pending_milligems == 0 && full.interest_paid == interest);
+    assert(VaultWithdraw(&full, &wallet, 1, unlocked) == 0);
+
+    PlayerVault nearly = TestVaultDeposited(&wallet, 14950);
+    assert(!VaultDeposit(&nearly, &wallet, 49, TEST_VAULT_NOW) && VaultDeposit(&nearly, &wallet, 50, TEST_VAULT_NOW));
+    assert(nearly.locked == VaultCapacity() && VaultTierFor(nearly.locked) == VAULT_TIER_GOLD);
+}
+
+static void TestVaultSurvivesSaveAndLoad(void) {
+    static Player saved, loaded;
+    saved = RenownTestPlayer(0);
+    saved.vault = (PlayerVault){
+        .locked = TEST_VAULT_SILVER,
+        .unlocks_at = TEST_VAULT_NOW + 5,
+        .accrued_at = TEST_VAULT_NOW,
+        .claimed_at = TEST_VAULT_NOW - 3,
+        .pending_milligems = 999,
+        .interest_paid = 12,
+        .fees_paid = 3,
+    };
+    cJSON *root = RenownTestSavedJson(&saved);
+    assert(RenownTestLoadJson(&loaded, root));
+    assert(!memcmp(&loaded.vault, &saved.vault, sizeof(saved.vault)));
+    cJSON_ReplaceItemInObjectCaseSensitive(root, "vault", cJSON_Parse("{\"locked\":-5,\"unlocks_at\":10}"));
+    assert(RenownTestLoadJson(&loaded, root) && loaded.vault.locked == 0 && loaded.vault.unlocks_at == 0);
+    cJSON_DeleteItemFromObjectCaseSensitive(root, "vault");
+    assert(RenownTestLoadJson(&loaded, root) && loaded.vault.locked == 0);
+    cJSON_Delete(root);
+}
+
+static void TestVaultInterestWaitsForAFullDayOfGems(void) {
+    int wallet = TEST_VAULT_WALLET;
+    PlayerVault vault = TestVaultDeposited(&wallet, TEST_VAULT_SILVER);
+    assert(VaultPendingGems(&vault, TEST_VAULT_NOW + TEST_VAULT_DAY - 1) > 0);
+    assert(!VaultInterestWaiting(&vault, TEST_VAULT_NOW + TEST_VAULT_DAY - 1));
+    assert(VaultInterestWaiting(&vault, TEST_VAULT_NOW + TEST_VAULT_DAY));
+    assert(VaultInterestStopsAt(&vault) == TEST_VAULT_NOW + 7 * TEST_VAULT_DAY);
+    assert(VaultInterestWaiting(&vault, TEST_VAULT_NOW + 30 * TEST_VAULT_DAY));
+    assert(VaultClaim(&vault, &wallet, TEST_VAULT_NOW + TEST_VAULT_DAY) > 0);
+    assert(!VaultInterestWaiting(&vault, TEST_VAULT_NOW + TEST_VAULT_DAY + 1));
+    assert(VaultInterestStopsAt(&vault) == TEST_VAULT_NOW + 8 * TEST_VAULT_DAY);
+
+    PlayerVault small = TestVaultDeposited(&wallet, 100);
+    assert(!VaultInterestWaiting(&small, TEST_VAULT_NOW + TEST_VAULT_DAY));
+    assert(VaultInterestWaiting(&small, TEST_VAULT_NOW + 2 * TEST_VAULT_DAY));
+
+    PlayerVault empty = {0};
+    assert(!VaultInterestWaiting(&empty, TEST_VAULT_NOW + 30 * TEST_VAULT_DAY));
+}
+
+static void TestVaultAmountStopsGrowWithTheGemsAtHand(void) {
+    static const long long tops[] = {10, 11, 50, 51, 420, 15000, 100000};
+    static const long long steps[] = {1, 5, 5, 10, 50, 1500, 2500};
+    for (size_t i = 0; i < sizeof(tops) / sizeof(tops[0]); i++) assert(VaultViewStepFor(tops[i]) == steps[i]);
+
+    static Player player;
+    player = RenownTestPlayer(0);
+    static const struct {
+        int gems;
+        long long locked;
+        int count;
+        long long stops[VAULT_VIEW_STOP_CAPACITY];
+    } cases[] = {
+        {0, 0, 0, {0}},
+        {41, 0, 0, {0}},
+        {420, 0, 8, {100, 150, 200, 250, 300, 350, 400, 420}},
+        {8000, TEST_VAULT_SILVER, 9, {1000, 2000, 3000, 4000, 5000, 6000, TEST_VAULT_SILVER, 7000, 8000}},
+        {0, 30, 6, {5, 10, 15, 20, 25, 30}},
+        {20000, 15000, 10, {1500, 3000, 4500, 6000, 7500, 9000, 10500, 12000, 13500, 15000}},
+    };
+    for (size_t c = 0; c < sizeof(cases) / sizeof(cases[0]); c++) {
+        player.gems = cases[c].gems;
+        player.vault.locked = cases[c].locked;
+        VaultViewStops stops = VaultViewStopsFor(&player);
+        assert(stops.count == cases[c].count);
+        for (int i = 0; i < stops.count; i++) assert(stops.values[i] == cases[c].stops[i]);
+    }
+
+    player.gems = 8000;
+    player.vault.locked = TEST_VAULT_SILVER;
+    assert(VaultViewDepositable(&player) == 8000);
+    assert(VaultViewSnap(&player, 0, 0) == 1000 && VaultViewSnap(&player, 1000, -1) == 1000);
+    assert(VaultViewSnap(&player, 6000, 1) == TEST_VAULT_SILVER && VaultViewSnap(&player, 6100, 0) == 6000);
+    assert(VaultViewSnap(&player, 99999, 0) == 8000 && VaultViewSnap(&player, 8000, 1) == 8000);
+    player.gems = 0;
+    player.vault.locked = 0;
+    assert(VaultViewSnap(&player, 500, 1) == 0);
+}
+
+static int TestGuildMemberVaultTier(const GuildInfo *info, const char *id) {
+    for (int i = 0; i < info->member_total; i++)
+        if (!strcmp(info->members[i].id, id)) return info->members[i].vault_tier;
+    assert(!"the guild lists no such member");
+    return 0;
+}
+
+static void TestListedPlayersCarryTheirVaultTier(void) {
+    static const char *const sent[] = {
+        "{\"vault_tier\":3}",
+        "{\"vault_tier\":4}",
+        "{\"vault_tier\":-1}",
+        "{\"vault_tier\":\"2\"}",
+        "{}",
+    };
+    static const int read[] = {VAULT_TIER_GOLD, 0, 0, 0, 0};
+    for (size_t i = 0; i < sizeof(sent) / sizeof(sent[0]); i++) {
+        cJSON *entry = cJSON_Parse(sent[i]);
+        assert(VaultTierOfListedPlayer(entry) == read[i]);
+        cJSON_Delete(entry);
+    }
+    assert(VaultTierOfListedPlayer(NULL) == 0);
+
+    static Guild guild;
+    GuildInitialize(&guild);
+    TestGuildAnswer(&guild, GUILD_REQUEST_STATE, TEST_VAULT_GUILD_STATE);
+    assert(TestGuildMemberVaultTier(&guild.mine, "leader") == VAULT_TIER_GOLD);
+    assert(TestGuildMemberVaultTier(&guild.mine, "recruit") == 0);
+    assert(guild.mine.applicants[0].vault_tier == VAULT_TIER_BRONZE);
+    TestGuildAnswer(&guild, GUILD_REQUEST_WORLD_MESSAGES, TEST_VAULT_WORLD_CHAT);
+    assert(guild.channels[GUILD_CHANNEL_WORLD].lines[0].vault_tier == VAULT_TIER_SILVER);
+
+    static PvpLadder ladder;
+    memset(&ladder, 0, sizeof(ladder));
+    TestLadderAdopt(&ladder, TEST_VAULT_LADDER_REPLY);
+    assert(ladder.players[0].vault_tier == VAULT_TIER_SILVER && ladder.players[1].vault_tier == 0);
+    Player viewer = RenownTestPlayer(0);
+    viewer.vault.locked = VaultCapacity();
+    PvpRankEntry own_row = {.bot = PVP_RANK_PLAYER}, rival_row = {.bot = PVP_RANK_RIVAL, .rival = 0};
+    assert(PvpLadderEntryBadges(&ladder, &own_row, &viewer).vault_tier == VAULT_TIER_GOLD);
+    assert(PvpLadderEntryBadges(&ladder, &rival_row, &viewer).vault_tier == VAULT_TIER_SILVER);
+
+    static Game game;
+    memset(&game, 0, sizeof(game));
+    ProgressionInitializePlayerDefaults(&game.player);
+    PlayerLoadRoster(&game.player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    GuildInitialize(&game.guild);
+    TestAdoptDuelReply(&game, TEST_VAULT_RIVAL_SQUAD_REPLY);
+    assert(game.guild.duel.vault_tier == VAULT_TIER_SILVER);
+    assert(PvpOpponentBadges(&game.pvp_opponent).vault_tier == VAULT_TIER_SILVER);
+}
+
+static void TestTwoBadgesLeaveTheNameTheRestOfTheRow(void) {
+    const float size = 24.0f, side = size * RENOWN_NAME_STAR_SIDE, gap = size * RENOWN_NAME_STAR_GAP;
+    const Rectangle row = {100.0f, 40.0f, 300.0f, 30.0f};
+    RenownNameLayout badged = RenownLayOutName(2, row, size, 80.0f, RENOWN_NAME_LEFT);
+    assert(badged.star.x == row.x && badged.star.width == side);
+    assert(fabsf(badged.text.x - (row.x + 2.0f * (side + gap))) < 0.001f && badged.text_size == size);
+}
+
 int main(void) {
     TestSystemLocalesPickTheirOriginalLocalization();
     TestFontCoversEveryGlyphOfTheLoadedLanguage();
@@ -9357,6 +9586,13 @@ int main(void) {
     TestADuelShowsTheRivalsRenownRank();
     TestANameShrinksBesideItsRenownStar();
     TestRankZeroAndAMissingRenownTableDrawNoStar();
+    TestVaultRatesMatchTheServerTable();
+    TestVaultDepositsCollectsAndWithdrawalsMatchTheServer();
+    TestVaultSurvivesSaveAndLoad();
+    TestVaultInterestWaitsForAFullDayOfGems();
+    TestVaultAmountStopsGrowWithTheGemsAtHand();
+    TestListedPlayersCarryTheirVaultTier();
+    TestTwoBadgesLeaveTheNameTheRestOfTheRow();
     TestBattleFeetSitOnPadsWhoseBottomsShareOnePlane();
     TestPvpBannerCurvePeaksAtTheLadderMidpoint();
     TestPvpEventResultsKeepNineteenUnclaimedFirst();

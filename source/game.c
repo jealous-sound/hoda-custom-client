@@ -338,6 +338,7 @@ static PvpOpponent GameDuelOpponent(const Game *g) {
     for (int i = 0; i < d->rune_count; i++) PvpOpponentAddDuelRune(&opponent, d->runes[i]);
     opponent.renown = d->renown;
     opponent.duel_renown_rank = d->renown_rank;
+    opponent.duel_vault_tier = d->vault_tier;
     return opponent;
 }
 
@@ -379,7 +380,8 @@ static int GameGuildAwardBadge(const Game *g) {
 
 static GoalsTab GameGoalsHomeTab(const Game *g) {
     if (GameGuildAwardBadge(g)) return GOALS_TAB_EVENTS;
-    return TimedQuestsUnlocked(g->player.level) ? GOALS_TAB_DAILY : GOALS_TAB_MISSIONS;
+    bool daily = TimedQuestsUnlocked(g->player.level) || VaultInterestWaiting(&g->player.vault, ServerNow());
+    return daily ? GOALS_TAB_DAILY : GOALS_TAB_MISSIONS;
 }
 
 static void GameSubmitBattle(const Game *g, bool won) {
@@ -1233,6 +1235,7 @@ bool GameInitialize(Game *g) {
     MissionCatalogLoad("data/missions.json");
     ExpeditionCatalogLoad(EXPEDITIONS_PATH);
     RenownCatalogLoad(RENOWN_PATH);
+    VaultCatalogLoad(VAULT_PATH);
     TimedQuestCatalogLoad(TIMED_QUESTS_PATH);
 
     PlayerLoadRoster(&g->player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
@@ -1808,6 +1811,7 @@ void GameDraw(Game *g) {
             int missions_badge = MissionUnseenClaimableCount(&g->player.missions);
             missions_badge += PvpEventUnclaimedCount(&g->player.pvp) + GameGuildAwardBadge(g);
             missions_badge += TimedQuestsClaimableCount(&g->player);
+            missions_badge += VaultInterestWaiting(&g->player.vault, ServerNow()) ? 1 : 0;
             if (missions_badge == 0) missions_badge = abs(g->player.pvp.trophies - g->player.pvp.trophies_seen);
             bool guild_notice_open = popups_allowed && !news_open && GuildNoticePopupIsOpen(&g->guild_notice);
             if (guild_notice_open) home_interactive = false;

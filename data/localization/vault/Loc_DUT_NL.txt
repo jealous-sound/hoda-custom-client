@@ -1,0 +1,22 @@
+HODA_VAULT_TIER_NONE|Nog geen niveau
+HODA_VAULT_TIER_BRONZE|Bronzen kluis
+HODA_VAULT_TIER_SILVER|Zilveren kluis
+HODA_VAULT_TIER_GOLD|Gouden kluis
+HODA_VAULT_LOCKED|In de kluis
+HODA_VAULT_INTEREST|Rente
+HODA_VAULT_INTEREST_VALUE|{0} per dag
+HODA_VAULT_LOCK|Vergrendeling
+HODA_VAULT_EMPTY|Leeg
+HODA_VAULT_UNLOCKED|Ontgrendeld
+HODA_VAULT_UNLOCKS_IN|Ontgrendelt over {0}
+HODA_VAULT_STOPPED|De rente is gestopt. Inn haar om opnieuw te beginnen.
+HODA_VAULT_DEPOSIT|Storten
+HODA_VAULT_WITHDRAW|Opnemen
+HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Gems storten
+HODA_VAULT_CONFIRM_DEPOSIT|{0} gems in de kluis vergrendelen? Alles in de kluis blijft {1} dagen vergrendeld.
+HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Gems opnemen
+HODA_VAULT_CONFIRM_WITHDRAW|{0} gems uit de kluis halen?
+HODA_VAULT_CONFIRM_EARLY|De kluis is nog vergrendeld. Je krijgt {0} van {1} gems terug en verliest de wachtende rente.
+HODA_VAULT_MINIMUM|Minimale storting: {0} gems
+HODA_VAULT_INTEREST_TITLE|Kluisrente
+HODA_VAULT_STOPS_IN|Groeit nog {0} als je haar niet int

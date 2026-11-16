@@ -24,6 +24,11 @@ typedef struct {
     float text_size;
 } RenownNameLayout;
 
+typedef struct {
+    int renown_rank;
+    int vault_tier;
+} NameBadges;
+
 static RenownArtSlot renown_emblems[RENOWN_TIER_COUNT];
 static RenownArtSlot renown_stars[RENOWN_TIER_COUNT];
 
@@ -108,9 +113,9 @@ bool RenownNameHasStar(int rank) {
     return RenownStarTexture(RenownTierForRank(rank)).id != 0;
 }
 
-RenownNameLayout RenownLayOutName(bool starred, Rectangle rect, float size, float name_width, float anchor) {
-    float side = starred ? size * RENOWN_NAME_STAR_SIDE : 0.0f;
-    float advance = starred ? side + size * RENOWN_NAME_STAR_GAP : 0.0f;
+RenownNameLayout RenownLayOutName(int badges, Rectangle rect, float size, float name_width, float anchor) {
+    float side = badges > 0 ? size * RENOWN_NAME_STAR_SIDE : 0.0f;
+    float advance = badges > 0 ? badges * (side + size * RENOWN_NAME_STAR_GAP) : 0.0f;
     float room = fmaxf(rect.width - advance, 0.0f);
     float fitted_width = fminf(name_width, room);
     float left = rect.x + (rect.width - advance - fitted_width) * anchor;
@@ -121,19 +126,37 @@ RenownNameLayout RenownLayOutName(bool starred, Rectangle rect, float size, floa
     };
 }
 
-static void
-RenownDrawStarredNameAt(int rank, Font font, const char *name, Rectangle rect, float size, Color color, float anchor) {
+NameBadges PlayerNameBadges(const Player *player) {
+    return (NameBadges){RenownRank(player->experience), VaultTierFor(player->vault.locked)};
+}
+
+static int NameBadgesTextures(NameBadges badges, Texture2D *out) {
+    int count = 0;
+    if (RenownNameHasStar(badges.renown_rank)) out[count++] = RenownStarTexture(RenownTierForRank(badges.renown_rank));
+    Texture2D vault_badge = VaultBadgeTexture((VaultTier)badges.vault_tier);
+    if (vault_badge.id) out[count++] = vault_badge;
+    return count;
+}
+
+static void NameBadgesDrawAt(
+    NameBadges badges, Font font, const char *name, Rectangle rect, float size, Color color, float anchor
+) {
+    Texture2D textures[2];
+    int count = NameBadgesTextures(badges, textures);
     float name_width = MeasureTextEx(font, name, size, 1.0f).x;
-    RenownNameLayout layout = RenownLayOutName(RenownNameHasStar(rank), rect, size, name_width, anchor);
-    if (layout.star.width > 0.0f)
-        UiDrawTexture(RenownStarTexture(RenownTierForRank(rank)), layout.star, (Color){255, 255, 255, color.a});
+    RenownNameLayout layout = RenownLayOutName(count, rect, size, name_width, anchor);
+    Rectangle badge = layout.star;
+    for (int i = 0; i < count && badge.width > 0.0f; i++) {
+        UiDrawTexture(textures[i], badge, (Color){255, 255, 255, color.a});
+        badge.x += badge.width + size * RENOWN_NAME_STAR_GAP;
+    }
     UiDrawTextLeftMiddle(font, name, layout.text, layout.text_size, color);
 }
 
-void RenownDrawStarredName(int rank, Font font, const char *name, Rectangle rect, float size, Color color) {
-    RenownDrawStarredNameAt(rank, font, name, rect, size, color, RENOWN_NAME_LEFT);
+void NameBadgesDraw(NameBadges badges, Font font, const char *name, Rectangle rect, float size, Color color) {
+    NameBadgesDrawAt(badges, font, name, rect, size, color, RENOWN_NAME_LEFT);
 }
 
-void RenownDrawStarredNameCentred(int rank, Font font, const char *name, Rectangle rect, float size, Color color) {
-    RenownDrawStarredNameAt(rank, font, name, rect, size, color, RENOWN_NAME_CENTRE);
+void NameBadgesDrawCentred(NameBadges badges, Font font, const char *name, Rectangle rect, float size, Color color) {
+    NameBadgesDrawAt(badges, font, name, rect, size, color, RENOWN_NAME_CENTRE);
 }

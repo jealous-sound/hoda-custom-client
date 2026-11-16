@@ -1,0 +1,22 @@
+HODA_VAULT_TIER_NONE|Sin rango
+HODA_VAULT_TIER_BRONZE|Bóveda de bronce
+HODA_VAULT_TIER_SILVER|Bóveda de plata
+HODA_VAULT_TIER_GOLD|Bóveda de oro
+HODA_VAULT_LOCKED|En la bóveda
+HODA_VAULT_INTEREST|Intereses
+HODA_VAULT_INTEREST_VALUE|{0} al día
+HODA_VAULT_LOCK|Bloqueo
+HODA_VAULT_EMPTY|Vacía
+HODA_VAULT_UNLOCKED|Desbloqueada
+HODA_VAULT_UNLOCKS_IN|Se desbloquea en {0}
+HODA_VAULT_STOPPED|Los intereses se han detenido. Cóbralos para reanudarlos.
+HODA_VAULT_DEPOSIT|Depositar
+HODA_VAULT_WITHDRAW|Retirar
+HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Depositar gemas
+HODA_VAULT_CONFIRM_DEPOSIT|¿Bloquear {0} gemas en la bóveda? Todo lo que hay en la bóveda queda bloqueado durante {1} días.
+HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Retirar gemas
+HODA_VAULT_CONFIRM_WITHDRAW|¿Sacar {0} gemas de la bóveda?
+HODA_VAULT_CONFIRM_EARLY|La bóveda sigue bloqueada. Recuperarás {0} de {1} gemas y perderás los intereses pendientes.
+HODA_VAULT_MINIMUM|Depósito mínimo: {0} gemas
+HODA_VAULT_INTEREST_TITLE|Intereses de la bóveda
+HODA_VAULT_STOPS_IN|Dejan de crecer en {0} si no los cobras

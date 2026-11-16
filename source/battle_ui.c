@@ -39,8 +39,8 @@ typedef struct {
     int pvp_gain;
     GuiId pvp_stake_icon;
     char player_name[64];
-    int player_renown_rank;
-    int opponent_renown_rank;
+    NameBadges player_badges;
+    NameBadges opponent_badges;
 
     char title[128];
     char mastery[64];
@@ -223,8 +223,8 @@ void BattleUiEnterNode(
     ui->gems = node ? node->default_gems : 0;
     ui->new_map_on_win = false;
     StrCopy(ui->player_name, sizeof(ui->player_name), player->name);
-    ui->player_renown_rank = RenownRank(player->experience);
-    ui->opponent_renown_rank = 0;
+    ui->player_badges = PlayerNameBadges(player);
+    ui->opponent_badges = (NameBadges){0};
 
     ui->tactical = false;
     ui->info.label = LocGet("MORE_INFO");
@@ -279,7 +279,7 @@ void BattleUiEnterPvp(
     ui->gold = PvpGoldReward(opponent, true);
     ui->xp = PvpXpReward(opponent, true);
     StrCopy(ui->title, sizeof(ui->title), PvpOpponentName(opponent));
-    ui->opponent_renown_rank = PvpOpponentRenownRank(opponent);
+    ui->opponent_badges = PvpOpponentBadges(opponent);
     snprintf(ui->next_label, sizeof(ui->next_label), "%s (%d)", LocGet("BUTTON_MATCHMAKING_NEXT"), nexts);
 }
 
@@ -981,11 +981,11 @@ static void BattleUiDrawVsHeader(BattleUi *ui, Battle *battle, float cx, bool in
     BattleUiDrawVsPlate(BattleUiMatchmakingRect(cx, VS_OPPONENT_PLATE));
     float name_size = VS_NAME_FONT * MM_SY;
     const char *player_name = ui->player_name[0] ? ui->player_name : LocGet("BATTLE_SUMMARY_PLAYER");
-    RenownDrawStarredNameCentred(
-        ui->player_renown_rank, font, player_name, BattleUiMatchmakingRect(cx, VS_PLAYER_NAME), name_size, off_white
+    NameBadgesDrawCentred(
+        ui->player_badges, font, player_name, BattleUiMatchmakingRect(cx, VS_PLAYER_NAME), name_size, off_white
     );
-    RenownDrawStarredNameCentred(
-        ui->opponent_renown_rank, font, ui->title, BattleUiMatchmakingRect(cx, VS_OPPONENT_NAME), name_size, off_white
+    NameBadgesDrawCentred(
+        ui->opponent_badges, font, ui->title, BattleUiMatchmakingRect(cx, VS_OPPONENT_NAME), name_size, off_white
     );
 
     Rectangle vs = BattleUiMatchmakingRect(cx, VS_LABEL_BOX);

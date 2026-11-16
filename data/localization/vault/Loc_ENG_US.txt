@@ -1,0 +1,22 @@
+HODA_VAULT_TIER_NONE|No tier yet
+HODA_VAULT_TIER_BRONZE|Bronze Vault
+HODA_VAULT_TIER_SILVER|Silver Vault
+HODA_VAULT_TIER_GOLD|Gold Vault
+HODA_VAULT_LOCKED|In the Vault
+HODA_VAULT_INTEREST|Interest
+HODA_VAULT_INTEREST_VALUE|{0} a day
+HODA_VAULT_LOCK|Lock
+HODA_VAULT_EMPTY|Empty
+HODA_VAULT_UNLOCKED|Unlocked
+HODA_VAULT_UNLOCKS_IN|Unlocks in {0}
+HODA_VAULT_STOPPED|Interest has stopped. Collect to restart it.
+HODA_VAULT_DEPOSIT|Deposit
+HODA_VAULT_WITHDRAW|Withdraw
+HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Deposit gems
+HODA_VAULT_CONFIRM_DEPOSIT|Lock {0} gems in the Vault? Everything in the Vault stays locked for {1} days.
+HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Withdraw gems
+HODA_VAULT_CONFIRM_WITHDRAW|Take {0} gems out of the Vault?
+HODA_VAULT_CONFIRM_EARLY|The Vault is still locked. You will get {0} of {1} gems back and lose the interest waiting.
+HODA_VAULT_MINIMUM|Minimum deposit: {0} gems
+HODA_VAULT_INTEREST_TITLE|Vault interest
+HODA_VAULT_STOPS_IN|Stops growing in {0} unless collected

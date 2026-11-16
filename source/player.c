@@ -130,6 +130,7 @@ typedef struct {
     PlayerExpeditions expeditions;
     PlayerTimedQuests timed_quests;
     PlayerRenown renown;
+    PlayerVault vault;
 
     char name[PLAYER_NAME_CAPACITY];
     PlayerTutorial tutorial;

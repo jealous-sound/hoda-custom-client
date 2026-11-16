@@ -1,0 +1,22 @@
+HODA_VAULT_TIER_NONE|Noch keine Stufe
+HODA_VAULT_TIER_BRONZE|Bronzetresor
+HODA_VAULT_TIER_SILVER|Silbertresor
+HODA_VAULT_TIER_GOLD|Goldtresor
+HODA_VAULT_LOCKED|Im Tresor
+HODA_VAULT_INTEREST|Zinsen
+HODA_VAULT_INTEREST_VALUE|{0} pro Tag
+HODA_VAULT_LOCK|Sperre
+HODA_VAULT_EMPTY|Leer
+HODA_VAULT_UNLOCKED|Entsperrt
+HODA_VAULT_UNLOCKS_IN|Entsperrt in {0}
+HODA_VAULT_STOPPED|Die Zinsen ruhen. Hol sie ab, um sie neu zu starten.
+HODA_VAULT_DEPOSIT|Einzahlen
+HODA_VAULT_WITHDRAW|Abheben
+HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Edelsteine einzahlen
+HODA_VAULT_CONFIRM_DEPOSIT|{0} Edelsteine im Tresor sperren? Der gesamte Tresorinhalt bleibt {1} Tage gesperrt.
+HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Edelsteine abheben
+HODA_VAULT_CONFIRM_WITHDRAW|{0} Edelsteine aus dem Tresor nehmen?
+HODA_VAULT_CONFIRM_EARLY|Der Tresor ist noch gesperrt. Du erhältst {0} von {1} Edelsteinen zurück und verlierst die wartenden Zinsen.
+HODA_VAULT_MINIMUM|Mindesteinzahlung: {0} Edelsteine
+HODA_VAULT_INTEREST_TITLE|Tresorzinsen
+HODA_VAULT_STOPS_IN|Wachsen nur noch {0}, wenn du sie nicht abholst

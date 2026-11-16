@@ -12,6 +12,7 @@ typedef struct {
     int level;
     int score;
     int renown_rank;
+    int vault_tier;
 } PvpLadderPlayer;
 
 typedef struct {
@@ -64,6 +65,7 @@ static void PvpLadderAdoptPlayers(PvpLadder *ladder, const cJSON *reply, const c
         player->level = JsonInt(listed, "level");
         player->score = JsonInt(listed, score_field);
         player->renown_rank = RenownRankOfListedPlayer(listed);
+        player->vault_tier = VaultTierOfListedPlayer(listed);
     }
     ladder->revision++;
 }
@@ -126,10 +128,11 @@ void PvpEventLadderRankResults(const PvpEventLadder *ladder, PlayerPvp *pvp) {
     }
 }
 
-int PvpLadderEntryRenownRank(const PvpLadder *ladder, const PvpRankEntry *entry, const Player *viewer) {
-    if (entry->bot == PVP_RANK_PLAYER) return RenownRank(viewer->experience);
-    if (entry->bot == PVP_RANK_RIVAL) return ladder->players[entry->rival].renown_rank;
-    return 0;
+NameBadges PvpLadderEntryBadges(const PvpLadder *ladder, const PvpRankEntry *entry, const Player *viewer) {
+    if (entry->bot == PVP_RANK_PLAYER) return PlayerNameBadges(viewer);
+    if (entry->bot == PVP_RANK_RIVAL)
+        return (NameBadges){ladder->players[entry->rival].renown_rank, ladder->players[entry->rival].vault_tier};
+    return (NameBadges){0};
 }
 
 const char *PvpLadderEntryName(const PvpLadder *ladder, const PvpRankEntry *entry) {

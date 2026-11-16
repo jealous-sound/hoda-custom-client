@@ -1,0 +1,22 @@
+HODA_VAULT_TIER_NONE|Aucun rang
+HODA_VAULT_TIER_BRONZE|Coffre de bronze
+HODA_VAULT_TIER_SILVER|Coffre d'argent
+HODA_VAULT_TIER_GOLD|Coffre d'or
+HODA_VAULT_LOCKED|Dans le coffre
+HODA_VAULT_INTEREST|Intérêts
+HODA_VAULT_INTEREST_VALUE|{0} par jour
+HODA_VAULT_LOCK|Blocage
+HODA_VAULT_EMPTY|Vide
+HODA_VAULT_UNLOCKED|Débloqué
+HODA_VAULT_UNLOCKS_IN|Débloqué dans {0}
+HODA_VAULT_STOPPED|Les intérêts sont arrêtés. Récupérez-les pour les relancer.
+HODA_VAULT_DEPOSIT|Déposer
+HODA_VAULT_WITHDRAW|Retirer
+HODA_VAULT_CONFIRM_DEPOSIT_TITLE|Déposer des gemmes
+HODA_VAULT_CONFIRM_DEPOSIT|Bloquer {0} gemmes dans le coffre ? Tout le contenu du coffre reste bloqué pendant {1} jours.
+HODA_VAULT_CONFIRM_WITHDRAW_TITLE|Retirer des gemmes
+HODA_VAULT_CONFIRM_WITHDRAW|Retirer {0} gemmes du coffre ?
+HODA_VAULT_CONFIRM_EARLY|Le coffre est encore bloqué. Vous récupérerez {0} gemmes sur {1} et perdrez les intérêts en attente.
+HODA_VAULT_MINIMUM|Dépôt minimum : {0} gemmes
+HODA_VAULT_INTEREST_TITLE|Intérêts du coffre
+HODA_VAULT_STOPS_IN|Ils cessent d'augmenter dans {0} s'ils ne sont pas récupérés
