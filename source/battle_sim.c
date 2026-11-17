@@ -1758,10 +1758,10 @@ static void SimGearReactToAttack(BattleSim *s, int actor_idx, const BattleSimTar
                 SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_ENEMY_HIT, dealt);
             else if (hidden)
                 continue;
-            else if (wearer == target)
-                SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_SELF_HIT, dealt);
-            else
+            else {
+                if (wearer == target) SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_SELF_HIT, dealt);
                 SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_ALLY_HIT, dealt);
+            }
         }
     }
     if (dealt_total > 0) {
