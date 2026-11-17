@@ -7276,6 +7276,99 @@ static void TestCreatureClipFramesStayOnIdleGround(void) {
     assert(!UnitClipsHoldGround("c_wisp_common_t1_rl.glb"));
 }
 
+static void TestStillRootHandsItsSkinToTheMovingHips(void) {
+    BoneInfo bones[3] = {
+        {.name = "DwarfMale_Root", .parent = -1},
+        {.name = "DwarfMale_Pelvis", .parent = 0},
+        {.name = "DwarfMale_LeftUpperLeg", .parent = 1},
+    };
+    Transform rest[3] = {{.rotation = {0, 0, 0, 1}}, {.rotation = {0, 0, 0, 1}}, {.rotation = {0, 0, 0, 1}}};
+    Transform crouch[3] = {
+        {.rotation = {0, 0, 0, 1}},
+        {.translation = {0.0f, -0.4f, 0.0f}, .rotation = {0, 0, 0, 1}},
+        {.translation = {0.0f, -0.4f, 0.0f}, .rotation = {0, 0, 0, 1}},
+    };
+    Transform *idle_poses[2] = {rest, crouch};
+    ModelAnimation idle = {.boneCount = 3, .frameCount = 2, .bones = bones, .framePoses = idle_poses};
+    unsigned char bone_ids[12] = {0, 1, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0};
+    float bone_weights[12] = {0.6f, 0.4f, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0};
+    Mesh mesh = {.vertexCount = 3, .boneIds = bone_ids, .boneWeights = bone_weights};
+    Model model = {.meshCount = 1, .meshes = &mesh, .boneCount = 3, .bones = bones};
+
+    UnitStillRootSkinFollowsItsChild(model, &idle, 1);
+    assert(bone_ids[0] == 1 && bone_ids[1] == 1 && bone_ids[4] == 1 && bone_ids[8] == 2);
+
+    bone_ids[0] = 0;
+    Transform root_steps[3] = {{.translation = {0.1f, 0, 0}, .rotation = {0, 0, 0, 1}}, crouch[1], crouch[2]};
+    Transform *step_poses[2] = {rest, root_steps};
+    ModelAnimation step = {.boneCount = 3, .frameCount = 2, .bones = bones, .framePoses = step_poses};
+    ModelAnimation clips[2] = {idle, step};
+    UnitStillRootSkinFollowsItsChild(model, clips, 2);
+    assert(bone_ids[0] == 0);
+
+    bones[2].parent = 0;
+    UnitStillRootSkinFollowsItsChild(model, &idle, 1);
+    assert(bone_ids[0] == 0);
+}
+
+static void TestHangingIdleFeetArePlantedOnTheGround(void) {
+    BoneInfo bones[7] = {
+        {.name = "DwarfMale_Pelvis", .parent = -1},
+        {.name = "DwarfMale_LeftUpperLeg", .parent = 0},
+        {.name = "DwarfMale_LeftLowerLeg", .parent = 1},
+        {.name = "DwarfMale_LeftFoot", .parent = 2},
+        {.name = "DwarfMale_RightUpperLeg", .parent = 0},
+        {.name = "DwarfMale_RightLowerLeg", .parent = 4},
+        {.name = "DwarfMale_RightFoot", .parent = 5},
+    };
+    Quaternion level = QuaternionIdentity();
+    Transform bind[7] = {
+        {{0.0f, 1.0f, 0.0f}, level, {1, 1, 1}},
+        {{0.1f, 1.0f, 0.0f}, level, {1, 1, 1}},
+        {{0.1f, 0.55f, 0.0f}, level, {1, 1, 1}},
+        {{0.1f, 0.1f, 0.0f}, level, {1, 1, 1}},
+        {{-0.1f, 1.0f, 0.0f}, level, {1, 1, 1}},
+        {{-0.1f, 0.55f, 0.0f}, level, {1, 1, 1}},
+        {{-0.1f, 0.1f, 0.0f}, level, {1, 1, 1}},
+    };
+    Quaternion toes_down = QuaternionFromAxisAngle((Vector3){1.0f, 0.0f, 0.0f}, 0.7f);
+    Transform hop[7] = {
+        bind[0],
+        bind[1],
+        {{0.1f, 0.6f, 0.2f}, level, {1, 1, 1}},
+        {{0.1f, 0.25f, 0.0f}, toes_down, {1, 1, 1}},
+        bind[4],
+        {{-0.1f, 0.62f, -0.1f}, level, {1, 1, 1}},
+        {{-0.1f, 0.4f, -0.35f}, toes_down, {1, 1, 1}},
+    };
+    Model model = {.boneCount = 7, .bones = bones, .bindPose = bind};
+    UnitLeg legs[2];
+    assert(UnitLegFind(model, "Left", 0.0f, &legs[0]) && UnitLegFind(model, "Right", 0.0f, &legs[1]));
+    assert(fabsf(legs[0].ankle_height - 0.1f) < 1e-5f && fabsf(legs[0].thigh - 0.45f) < 1e-5f);
+
+    Transform *bind_poses[1] = {bind};
+    ModelAnimation standing = {.boneCount = 7, .frameCount = 1, .bones = bones, .framePoses = bind_poses};
+    assert(!UnitIdleFootHangs(standing, legs, 0.0f));
+    Transform *hop_poses[1] = {hop};
+    ModelAnimation hopping = {.boneCount = 7, .frameCount = 1, .bones = bones, .framePoses = hop_poses};
+    assert(UnitIdleFootHangs(hopping, legs, 0.0f));
+
+    int bone_order[7] = {0, 1, 2, 3, 4, 5, 6};
+    UnitPlantIdleFeet(hopping, bone_order, legs, 0.0f);
+    for (int side = 0; side < 2; side++) {
+        Transform hip = hop[legs[side].hip], knee = hop[legs[side].knee], ankle = hop[legs[side].ankle];
+        assert(fabsf(Vector3Distance(hip.translation, knee.translation) - legs[side].thigh) < 1e-4f);
+        assert(fabsf(Vector3Distance(knee.translation, ankle.translation) - legs[side].shin) < 1e-4f);
+        assert(fabsf(ankle.rotation.w) > 0.99999f);
+    }
+    assert(fabsf(hop[3].translation.y - 0.1f) < 0.002f);
+    assert(hop[6].translation.y < 0.2f && hop[6].translation.z < -0.3f);
+
+    assert(UnitIsHumanoidRace("client-additional-data/char_pack/dm_dw_cartathug/dm_dw_cartathug_t4_rl.glb"));
+    assert(UnitIsHumanoidRace("hf_mw_bethanyhawke_t1_rl.glb"));
+    assert(!UnitIsHumanoidRace("client-additional-data/char_pack/c_werewolf/c_werewolf_t4_rl.glb"));
+}
+
 static const TutorialStep *TutorialStepAt(Tutorial *t, float step) {
     assert(TutorialJumpTo(t, step));
     return TutorialCurrent(t);
@@ -9868,6 +9961,8 @@ int main(void) {
     TestWispIdleDriftsLikeTheOriginalFx();
     TestFxKeyoutPreservesSourceTransparency();
     TestCreatureClipFramesStayOnIdleGround();
+    TestStillRootHandsItsSkinToTheMovingHips();
+    TestHangingIdleFeetArePlantedOnTheGround();
     puts("battle_sim_test: ok");
     return 0;
 }
