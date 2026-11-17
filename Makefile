@@ -135,10 +135,11 @@ $(SETTINGS_TEST_TARGET): tests/settings_test.c $(DEPS) Makefile
 ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(SERVER_ACTIONS_TEST_TARGET) $(BUTTON_TEST_TARGET) $(SETTINGS_TEST_TARGET) $(GOLDEN_TARGET) $(STRENGTH_TARGET)
 	python3 tools/validate_ability_recipes.py
 	python3 tools/validate_intrinsic_passives.py
+	python3 tools/build_hero_auras.py --check
 	python3 tools/build_hero_pool.py --check
 	python3 tools/validate_localization.py
 	python3 tools/validate_roster_levels.py
-	python3 -m unittest tests/test_release_manifest.py tests/test_roster_levels.py tests/test_patch_notes.py tests/test_nexus_scenes.py
+	python3 -m unittest tests/test_release_manifest.py tests/test_roster_levels.py tests/test_patch_notes.py tests/test_nexus_scenes.py tests/test_build_hero_auras.py
 	./$(CONTENT_TEST_TARGET)
 	./$(UPDATE_TEST_TARGET)
 	./$(INSTALL_TEST_TARGET)
