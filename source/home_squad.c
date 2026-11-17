@@ -10,6 +10,9 @@
 #define HOME_UNIT_PATH_MAX 512
 #define UNIT_SOLE_SAMPLES 8
 #define UNIT_SOLE_SINK 0.01f
+#define UNIT_TIPTOE_ANKLE_CLEARANCE 0.5f
+#define UNIT_HANGING_ANKLE_CLEARANCE 1.5f
+#define UNIT_LEG_FULL_REACH 0.999f
 #define UNIT_POOL_CAPACITY 12
 #define HOME_UI_SOUND_REF_MAX 128
 #define HOME_UNIT_AUDIO_MANIFEST "data/unit_audio.json"
@@ -31,6 +34,14 @@ static const HomePadSpot HOME_PAD_SPOTS[SQUAD_SLOT_COUNT] = {
     {-198.1274f, 14.8212f, 1.00f, -2.6686f},
     {-204.5314f, 18.1156f, 2.00f, +2.1512f},
 };
+
+static const char *const UNIT_HUMANOID_RACE_PREFIXES[] = {"dm_", "df_", "hm_", "hf_", "em_", "ef_", "qm_", "qf_"};
+
+typedef struct {
+    int hip, knee, ankle;
+    float thigh, shin, ankle_height;
+    Quaternion ankle_rest;
+} UnitLeg;
 
 typedef struct {
     char path[HOME_UNIT_PATH_MAX];
@@ -591,23 +602,24 @@ static int UnitVertexMainBone(const Mesh *mesh, int vertex) {
     return mesh->boneIds[vertex * 4 + best];
 }
 
-static float UnitLowestSkinnedY(Model model, bool (*bone_counts)(const char *)) {
+static float UnitLowestVertexY(Model model, bool posed, bool (*bone_counts)(const char *)) {
     float lowest = INFINITY;
     for (int m = 0; m < model.meshCount; m++) {
         const Mesh *mesh = &model.meshes[m];
-        if (!mesh->animVertices || !mesh->boneIds || !mesh->boneWeights) continue;
+        const float *positions = posed ? mesh->animVertices : mesh->vertices;
+        if (!positions || !mesh->boneIds || !mesh->boneWeights) continue;
         for (int v = 0; v < mesh->vertexCount; v++) {
             if (!bone_counts(model.bones[UnitVertexMainBone(mesh, v)].name)) continue;
-            lowest = fminf(lowest, mesh->animVertices[v * 3 + 1]);
+            lowest = fminf(lowest, positions[v * 3 + 1]);
         }
     }
     return lowest;
 }
 
 static float UnitGroundContactY(Model model) {
-    float feet = UnitLowestSkinnedY(model, UnitBoneIsFoot);
+    float feet = UnitLowestVertexY(model, true, UnitBoneIsFoot);
     if (feet <= 0.0f) return feet;
-    return fmaxf(0.0f, fminf(feet, UnitLowestSkinnedY(model, UnitBoneIsBody)));
+    return fmaxf(0.0f, fminf(feet, UnitLowestVertexY(model, true, UnitBoneIsBody)));
 }
 
 static float UnitSoleLift(Model model, ModelAnimation idle) {
@@ -646,6 +658,168 @@ static void ClipHoldGroundOfIdle(ModelAnimation clip, ModelAnimation idle) {
     }
 }
 
+static bool UnitBoneHoldsStill(ModelAnimation clip, int bone) {
+    Transform rest = clip.framePoses[0][bone];
+    for (int frame = 1; frame < clip.frameCount; frame++) {
+        Transform pose = clip.framePoses[frame][bone];
+        if (!Vector3Equals(pose.translation, rest.translation) || !QuaternionEquals(pose.rotation, rest.rotation))
+            return false;
+    }
+    return true;
+}
+
+static int UnitOnlyChildBone(const BoneInfo *bones, int count, int bone) {
+    int child = -1;
+    for (int b = 0; b < count; b++) {
+        if (bones[b].parent != bone) continue;
+        if (child >= 0) return -1;
+        child = b;
+    }
+    return child;
+}
+
+static bool UnitBoneHoldsStillInEveryClip(Model model, const ModelAnimation *clips, int clip_count, int bone) {
+    for (int c = 0; c < clip_count; c++)
+        if (clips[c].frameCount > 0 && IsModelAnimationValid(model, clips[c]) && !UnitBoneHoldsStill(clips[c], bone))
+            return false;
+    return true;
+}
+
+static void UnitStillRootSkinFollowsItsChild(Model model, const ModelAnimation *clips, int clip_count) {
+    for (int bone = 0; bone < model.boneCount; bone++) {
+        if (model.bones[bone].parent >= 0) continue;
+        int child = UnitOnlyChildBone(model.bones, model.boneCount, bone);
+        if (child < 0 || !UnitBoneHoldsStillInEveryClip(model, clips, clip_count, bone) ||
+            UnitBoneHoldsStillInEveryClip(model, clips, clip_count, child))
+            continue;
+        for (int m = 0; m < model.meshCount; m++) {
+            Mesh *mesh = &model.meshes[m];
+            if (!mesh->boneIds) continue;
+            for (int i = 0; i < mesh->vertexCount * 4; i++)
+                if (mesh->boneIds[i] == bone) mesh->boneIds[i] = (unsigned char)child;
+        }
+    }
+}
+
+static bool UnitIsHumanoidRace(const char *path) {
+    const char *base = strrchr(path, '/');
+    base = base ? base + 1 : path;
+    for (int i = 0; i < (int)(sizeof(UNIT_HUMANOID_RACE_PREFIXES) / sizeof(UNIT_HUMANOID_RACE_PREFIXES[0])); i++)
+        if (strncmp(base, UNIT_HUMANOID_RACE_PREFIXES[i], strlen(UNIT_HUMANOID_RACE_PREFIXES[i])) == 0) return true;
+    return false;
+}
+
+static int UnitBoneEndingWith(Model model, const char *suffix) {
+    size_t suffix_len = strlen(suffix);
+    for (int b = 0; b < model.boneCount; b++) {
+        size_t len = strlen(model.bones[b].name);
+        if (len >= suffix_len && strcmp(model.bones[b].name + len - suffix_len, suffix) == 0) return b;
+    }
+    return -1;
+}
+
+static bool UnitLegFind(Model model, const char *side, float rest_sole_y, UnitLeg *leg) {
+    leg->hip = UnitBoneEndingWith(model, TextFormat("%sUpperLeg", side));
+    leg->knee = UnitBoneEndingWith(model, TextFormat("%sLowerLeg", side));
+    leg->ankle = UnitBoneEndingWith(model, TextFormat("%sFoot", side));
+    if (leg->hip < 0 || leg->knee < 0 || leg->ankle < 0) return false;
+    if (model.bones[leg->knee].parent != leg->hip || model.bones[leg->ankle].parent != leg->knee) return false;
+    Transform hip = model.bindPose[leg->hip], knee = model.bindPose[leg->knee], ankle = model.bindPose[leg->ankle];
+    leg->thigh = Vector3Distance(hip.translation, knee.translation);
+    leg->shin = Vector3Distance(knee.translation, ankle.translation);
+    leg->ankle_height = ankle.translation.y - rest_sole_y;
+    leg->ankle_rest = ankle.rotation;
+    return leg->thigh > 0.0f && leg->shin > 0.0f && leg->ankle_height > 0.0f;
+}
+
+static float UnitAnkleClearance(const Transform *pose, UnitLeg leg, float ground_y) {
+    return (pose[leg.ankle].translation.y - ground_y - leg.ankle_height) / leg.ankle_height;
+}
+
+static bool UnitIdleFootHangs(ModelAnimation idle, const UnitLeg legs[2], float ground_y) {
+    float planted = 0.0f, lifted = 0.0f;
+    for (int frame = 0; frame < idle.frameCount; frame++) {
+        float left = UnitAnkleClearance(idle.framePoses[frame], legs[0], ground_y);
+        float right = UnitAnkleClearance(idle.framePoses[frame], legs[1], ground_y);
+        planted += fminf(left, right);
+        lifted += fmaxf(left, right);
+    }
+    planted /= (float)idle.frameCount;
+    lifted /= (float)idle.frameCount;
+    return planted > UNIT_TIPTOE_ANKLE_CLEARANCE && lifted > UNIT_HANGING_ANKLE_CLEARANCE;
+}
+
+static Quaternion UnitTurnBetween(Vector3 from, Vector3 to) {
+    return QuaternionFromVector3ToVector3(Vector3Normalize(from), Vector3Normalize(to));
+}
+
+static Quaternion UnitHeadingOf(Quaternion turn) {
+    if (fabsf(turn.y) + fabsf(turn.w) <= 0.0f) return QuaternionIdentity();
+    return QuaternionNormalize((Quaternion){0.0f, turn.y, 0.0f, turn.w});
+}
+
+static void UnitPlantLeg(Transform *pose, UnitLeg leg, float ground_y) {
+    Transform *hip = &pose[leg.hip], *knee = &pose[leg.knee], *ankle = &pose[leg.ankle];
+    Vector3 target = {ankle->translation.x, ground_y + leg.ankle_height, ankle->translation.z};
+    Vector3 reach = Vector3Subtract(target, hip->translation);
+    float span = fminf(Vector3Length(reach), (leg.thigh + leg.shin) * UNIT_LEG_FULL_REACH);
+    Vector3 along = Vector3Normalize(reach);
+    target = Vector3Add(hip->translation, Vector3Scale(along, span));
+    Vector3 thigh_now = Vector3Subtract(knee->translation, hip->translation);
+    Vector3 bend = Vector3Subtract(thigh_now, Vector3Scale(along, Vector3DotProduct(thigh_now, along)));
+    if (span <= 0.0f || Vector3Length(bend) <= 0.0f) return;
+    float cos_hip =
+        Clamp((leg.thigh * leg.thigh + span * span - leg.shin * leg.shin) / (2.0f * leg.thigh * span), -1.0f, 1.0f);
+    Vector3 thigh_dir =
+        Vector3Add(Vector3Scale(along, cos_hip), Vector3Scale(Vector3Normalize(bend), sqrtf(1.0f - cos_hip * cos_hip)));
+    Vector3 knee_at = Vector3Add(hip->translation, Vector3Scale(thigh_dir, leg.thigh));
+    Quaternion thigh_turn = UnitTurnBetween(thigh_now, thigh_dir);
+    Vector3 shin_now = Vector3RotateByQuaternion(Vector3Subtract(ankle->translation, knee->translation), thigh_turn);
+    Quaternion shin_turn = UnitTurnBetween(shin_now, Vector3Subtract(target, knee_at));
+    Quaternion foot_heading = UnitHeadingOf(QuaternionMultiply(ankle->rotation, QuaternionInvert(leg.ankle_rest)));
+    hip->rotation = QuaternionNormalize(QuaternionMultiply(thigh_turn, hip->rotation));
+    knee->translation = knee_at;
+    knee->rotation = QuaternionNormalize(QuaternionMultiply(shin_turn, QuaternionMultiply(thigh_turn, knee->rotation)));
+    ankle->translation = target;
+    ankle->rotation = QuaternionNormalize(QuaternionMultiply(foot_heading, leg.ankle_rest));
+}
+
+static void UnitPlantIdleFeet(ModelAnimation idle, const int *bone_order, const UnitLeg legs[2], float ground_y) {
+    Transform *locals = MemAlloc(idle.boneCount * sizeof(Transform));
+    for (int frame = 0; frame < idle.frameCount; frame++) {
+        Transform *pose = idle.framePoses[frame];
+        for (int bone = 0; bone < idle.boneCount; bone++) locals[bone] = BoneLocalTransform(pose, idle.bones, bone);
+        for (int side = 0; side < 2; side++) {
+            UnitPlantLeg(pose, legs[side], ground_y);
+            int chain[3] = {legs[side].hip, legs[side].knee, legs[side].ankle};
+            for (int c = 0; c < 3; c++) locals[chain[c]] = BoneLocalTransform(pose, idle.bones, chain[c]);
+        }
+        for (int i = 0; i < idle.boneCount; i++) {
+            int bone = bone_order[i];
+            int parent = idle.bones[bone].parent;
+            if (parent < 0) continue;
+            const Transform *up = &pose[parent];
+            pose[bone].translation =
+                Vector3Add(up->translation, Vector3RotateByQuaternion(locals[bone].translation, up->rotation));
+            pose[bone].rotation = QuaternionMultiply(up->rotation, locals[bone].rotation);
+        }
+    }
+    MemFree(locals);
+}
+
+static void HomeSquadUnitPlantHangingFeet(HomeSquadUnit *unit) {
+    if (!UnitIsHumanoidRace(unit->path)) return;
+    UnitLeg legs[2];
+    float rest_sole_y = UnitLowestVertexY(unit->model, false, UnitBoneIsFoot);
+    if (isinf(rest_sole_y) || !UnitLegFind(unit->model, "Left", rest_sole_y, &legs[0]) ||
+        !UnitLegFind(unit->model, "Right", rest_sole_y, &legs[1]))
+        return;
+    float ground_y = -unit->sole_lift - UNIT_SOLE_SINK;
+    if (!UnitIdleFootHangs(unit->idle, legs, ground_y)) return;
+    UnitPlantIdleFeet(unit->idle, unit->bone_order, legs, ground_y);
+    unit->sole_lift = UnitSoleLift(unit->model, unit->idle);
+}
+
 static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase_seed) {
     *unit = (HomeSquadUnit){0};
     StrCopy(unit->path, sizeof(unit->path), path);
@@ -658,7 +832,7 @@ static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase
     }
 
     int clip_count = 0;
-    ModelAnimation *clips = LoadModelAnimations(path, &clip_count);
+    ModelAnimation *clips = SkinnedClipsLoad(path, unit->model.bones, unit->model.boneCount, &clip_count);
     if (clips) {
         int idle_clip = -1, melee_clip = -1, melee_rank = -1;
         for (int a = 0; a < clip_count; a++) {
@@ -673,6 +847,7 @@ static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase
                 melee_rank = rank;
             }
         }
+        UnitStillRootSkinFollowsItsChild(unit->model, clips, clip_count);
         for (int a = 0; a < clip_count; a++) {
             if (a == idle_clip)
                 unit->idle = clips[a];
@@ -697,6 +872,7 @@ static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase
     }
     unit->phase = (phase_seed * 47) % unit->idle.frameCount;
     unit->sole_lift = unit->wisp_fx ? 0.0f : UnitSoleLift(unit->model, unit->idle);
+    if (!unit->wisp_fx) HomeSquadUnitPlantHangingFeet(unit);
     unit->wisp_bone = -1;
     unit->wisp_loop = -1;
     if (unit->wisp_fx)

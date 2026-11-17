@@ -211,7 +211,7 @@ static void BattleSquadsLoad(
                     MatrixTranslate(spot->x, feet_y, spot->z)
                 );
                 HomeSquadUnitLoad(&sq->units[side][s], path, sq->unit_sh, xform, side * SQUAD_SLOT_COUNT + s);
-                sq->clips[side][s] = LoadModelAnimations(path, &sq->clip_counts[side][s]);
+                sq->clips[side][s] = SkinnedClipsLoad(path, NULL, 0, &sq->clip_counts[side][s]);
                 if (UnitClipsHoldGround(path))
                     for (int a = 1; a < sq->clip_counts[side][s]; a++)
                         ClipHoldGroundOfIdle(sq->clips[side][s][a], sq->units[side][s].idle);
