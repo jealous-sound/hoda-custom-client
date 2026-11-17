@@ -64,6 +64,7 @@
 #include "renown_art.c"
 #include "hud.c"
 #include "home_ui.c"
+#include "gltf_joint_bridge.c"
 #include "home_squad.c"
 #include "home_background.c"
 #include "consume_background.c"

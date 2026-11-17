@@ -832,7 +832,7 @@ static void HomeSquadUnitDecode(HomeSquadUnit *unit, const char *path, int phase
     }
 
     int clip_count = 0;
-    ModelAnimation *clips = LoadModelAnimations(path, &clip_count);
+    ModelAnimation *clips = SkinnedClipsLoad(path, unit->model.bones, unit->model.boneCount, &clip_count);
     if (clips) {
         int idle_clip = -1, melee_clip = -1, melee_rank = -1;
         for (int a = 0; a < clip_count; a++) {

@@ -7311,6 +7311,80 @@ static void TestStillRootHandsItsSkinToTheMovingHips(void) {
     assert(bone_ids[0] == 0);
 }
 
+static int TestGlbAssemble(unsigned char *out, const char *json, const float *floats, int float_count) {
+    int json_len = (int)strlen(json), json_padded = (json_len + 3) & ~3;
+    int bin_len = float_count * (int)sizeof(float);
+    int total = GLB_HEADER_SIZE + GLB_CHUNK_HEADER_SIZE + json_padded + GLB_CHUNK_HEADER_SIZE + bin_len;
+    uint32_t header[3] = {GLB_MAGIC, 2, (uint32_t)total};
+    uint32_t json_chunk[2] = {(uint32_t)json_padded, GLB_JSON_CHUNK};
+    uint32_t bin_chunk[2] = {(uint32_t)bin_len, GLB_BIN_CHUNK};
+    int at = 0;
+    memcpy(out + at, header, sizeof(header));
+    at += sizeof(header);
+    memcpy(out + at, json_chunk, sizeof(json_chunk));
+    at += sizeof(json_chunk);
+    memset(out + at, ' ', (size_t)json_padded);
+    memcpy(out + at, json, (size_t)json_len);
+    at += json_padded;
+    memcpy(out + at, bin_chunk, sizeof(bin_chunk));
+    at += sizeof(bin_chunk);
+    memcpy(out + at, floats, (size_t)bin_len);
+    return total;
+}
+
+static void TestJointsBehindPlainNodesFollowTheirAnimatedChain(void) {
+    static const char *const json =
+        "{\"nodes\":[{\"name\":\"Chest\",\"children\":[1]},"
+        "{\"name\":\"Neck\",\"translation\":[0,1,0],\"children\":[2]},"
+        "{\"name\":\"Head\",\"translation\":[1,0,0],\"children\":[3]},"
+        "{\"name\":\"Jaw\",\"translation\":[0,0,1]}],"
+        "\"skins\":[{\"joints\":[0,2,3]}],"
+        "\"animations\":[{\"channels\":[{\"sampler\":0,\"target\":{\"node\":1,\"path\":\"rotation\"}}],"
+        "\"samplers\":[{\"input\":0,\"output\":1,\"interpolation\":\"LINEAR\"}]}],"
+        "\"accessors\":[{\"bufferView\":0,\"componentType\":5126,\"count\":2,\"type\":\"SCALAR\"},"
+        "{\"bufferView\":1,\"componentType\":5126,\"count\":2,\"type\":\"VEC4\"}],"
+        "\"bufferViews\":[{\"buffer\":0,\"byteOffset\":0,\"byteLength\":8},"
+        "{\"buffer\":0,\"byteOffset\":8,\"byteLength\":32}]}";
+    float half_turn = sqrtf(0.5f);
+    float floats[10] = {0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, half_turn, half_turn};
+    unsigned char glb[1024];
+    int size = TestGlbAssemble(glb, json, floats, 10);
+
+    GltfSkinDoc doc;
+    assert(GltfSkinDocParse(&doc, glb, size));
+    assert(doc.bridge_count == 1 && doc.bridges[0].bone == 1 && doc.bridges[0].anchor == 0);
+
+    BoneInfo bones[3] = {{.name = "Chest", .parent = -1}, {.name = "Head", .parent = -1}, {.name = "Jaw", .parent = 1}};
+    Quaternion level = QuaternionIdentity();
+    Transform first[3] = {
+        {Vector3Zero(), level, Vector3One()}, {{1, 0, 0}, level, Vector3One()}, {{1, 0, 1}, level, Vector3One()}
+    };
+    Transform last[3] = {first[0], first[1], first[2]};
+    Transform *poses[60] = {0};
+    Transform middle[58][3];
+    for (int f = 0; f < 60; f++) poses[f] = f == 0 ? first : f == 59 ? last : middle[f - 1];
+    for (int f = 1; f < 59; f++) memcpy(middle[f - 1], first, sizeof(first));
+    ModelAnimation clip = {.boneCount = 3, .frameCount = 60, .bones = bones, .framePoses = poses};
+    ClipsBridgeJoints(&doc, &clip, 1);
+
+    assert(bones[1].parent == 0 && bones[2].parent == 1);
+    assert(Vector3Distance(first[1].translation, (Vector3){1, 1, 0}) < 1e-4f);
+    assert(Vector3Distance(first[2].translation, (Vector3){1, 1, 1}) < 1e-4f);
+    assert(Vector3Distance(last[1].translation, (Vector3){0, 2, 0}) < 1e-4f);
+    assert(Vector3Distance(last[2].translation, (Vector3){0, 2, 1}) < 1e-4f);
+
+    BoneInfo model_bones[3] = {{.parent = -1}, {.parent = -1}, {.parent = 1}};
+    BonesBridgeAnchors(&doc, model_bones, 3);
+    assert(model_bones[1].parent == 0);
+    GltfSkinDocFree(&doc);
+
+    static const char *const chained = "{\"nodes\":[{\"children\":[1]},{}],\"skins\":[{\"joints\":[0,1]}]}";
+    size = TestGlbAssemble(glb, chained, floats, 0);
+    assert(GltfSkinDocParse(&doc, glb, size) && doc.bridge_count == 0);
+    GltfSkinDocFree(&doc);
+    assert(!GltfSkinDocParse(&doc, (const unsigned char *)"not a glb file at all", 21));
+}
+
 static void TestHangingIdleFeetArePlantedOnTheGround(void) {
     BoneInfo bones[7] = {
         {.name = "DwarfMale_Pelvis", .parent = -1},
@@ -9963,6 +10037,7 @@ int main(void) {
     TestCreatureClipFramesStayOnIdleGround();
     TestStillRootHandsItsSkinToTheMovingHips();
     TestHangingIdleFeetArePlantedOnTheGround();
+    TestJointsBehindPlainNodesFollowTheirAnimatedChain();
     puts("battle_sim_test: ok");
     return 0;
 }
