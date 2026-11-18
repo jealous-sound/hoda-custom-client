@@ -2216,6 +2216,7 @@ void GameDraw(Game *g) {
             break;
         }
         case SCREEN_MAP: {
+            CampaignDrawWorld(&g->map, &g->player.campaign_progress);
             UiFrameBegin();
             CampaignAction act = CampaignDraw(&g->map, &g->player.campaign_progress);
             if (!g->map.progression_active) TutorialRaise(TUTORIAL_EVENT_BATTLE_MAP_NODE_PAN_FINISHED);

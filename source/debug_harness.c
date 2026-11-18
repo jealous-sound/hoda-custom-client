@@ -352,6 +352,8 @@ static void DebugPrepareCampaignMap(Game *game, DebugShot *shot) {
         int boss = CampaignBossNodeIndex(&game->map, i);
         game->player.campaign_progress.node_completions[i][boss] = 1;
     }
+    int selected = Clamp(EnvInt("HOD_NODE", 1) - 1, 0, game->map.maps[map_index].node_count - 1);
+    for (int node = 0; node < selected; node++) game->player.campaign_progress.node_completions[map_index][node] = 1;
     CampaignSelectMap(&game->map, &game->player.campaign_progress, map_index);
     shot->flow_started = true;
 }
