@@ -1,4 +1,9 @@
-#define CAMPAIGN_MAP_LEFT 184
+#define CAMPAIGN_SCENES_PATH "data/campaign_scenes.json"
+#define CAMPAIGN_SWIPE_MARGIN 3.0f
+#define CAMPAIGN_SWIPE_UNITS_PER_SCREEN 10.0f
+#define CAMPAIGN_WHEEL_UNITS 0.7f
+#define CAMPAIGN_FOCUS_SPEED 6.0f
+#define CAMPAIGN_FOCUS_SETTLED 0.01f
 #define CAMPAIGN_OFFLINE_MASTERY_GEMS 1
 #define CAMPAIGN_ID_PREFIX "PVE_MAP_"
 #define CAMPAIGN_TRAY_ICON_PREFIX "tex.Btn_MapPVE_map_"
@@ -72,7 +77,6 @@ typedef struct {
     char name[80];
     char desc[512];
     char cta[256];
-    Vector2 position;
     int energy_cost;
     int gold, xp;
     int first_win_gold, first_win_xp;
@@ -87,20 +91,11 @@ typedef struct {
 } CampaignNode;
 
 typedef struct {
-    Rectangle icon;
-    Rectangle banner;
-    Rectangle flask;
-    Vector2 text;
-} CampaignNodeLayout;
-
-typedef struct {
     char id[32];
     char title[64];
-    Texture2D background;
     Texture2D tray_icon;
     Texture2D about_quote;
     Texture2D about_thumbnail;
-    CampaignNodeLayout layout;
     int node_count;
     CampaignNode nodes[CAMPAIGN_MAX_NODES];
 } CampaignMap;
@@ -120,7 +115,8 @@ typedef struct {
     Font font;
     CampaignIcons icons;
     int map_count;
-    Texture2D separator;
+    MapScene scene;
+    int scene_map;
     Texture2D lore;
     Texture2D progress_bar;
     Texture2D help;
@@ -229,31 +225,6 @@ void CampaignNodeMasteryLabel(const CampaignNode *node, int wins, char *out, int
         LocFormatInt2(out, (size_t)cap, "BUTTON_BATTLERESULTS_MASTERYPROGRESS", wins, node->wins_to_master);
 }
 
-static Rectangle CampaignReadLayoutRect(const cJSON *layout, const char *key, const char *map_id) {
-    const cJSON *values = cJSON_GetObjectItemCaseSensitive(layout, key);
-    if (!cJSON_IsArray(values) || cJSON_GetArraySize(values) != 4)
-        TraceLog(LOG_FATAL, "Campaign: %s node_layout.%s is not [x, y, width, height]", map_id, key);
-    return (Rectangle){
-        (float)cJSON_GetArrayItem(values, 0)->valuedouble,
-        (float)cJSON_GetArrayItem(values, 1)->valuedouble,
-        (float)cJSON_GetArrayItem(values, 2)->valuedouble,
-        (float)cJSON_GetArrayItem(values, 3)->valuedouble,
-    };
-}
-
-static CampaignNodeLayout CampaignReadNodeLayout(const cJSON *layout, const char *map_id) {
-    if (!cJSON_IsObject(layout)) TraceLog(LOG_FATAL, "Campaign: %s lacks node_layout", map_id);
-    const cJSON *text = cJSON_GetObjectItemCaseSensitive(layout, "text");
-    if (!cJSON_IsArray(text) || cJSON_GetArraySize(text) != 2)
-        TraceLog(LOG_FATAL, "Campaign: %s node_layout.text is not [x, y]", map_id);
-    return (CampaignNodeLayout){
-        .icon = CampaignReadLayoutRect(layout, "icon", map_id),
-        .banner = CampaignReadLayoutRect(layout, "banner", map_id),
-        .flask = CampaignReadLayoutRect(layout, "flask", map_id),
-        .text = {(float)cJSON_GetArrayItem(text, 0)->valuedouble, (float)cJSON_GetArrayItem(text, 1)->valuedouble},
-    };
-}
-
 static int CampaignMapNumber(const char *map_id) {
     size_t prefix = strlen(CAMPAIGN_ID_PREFIX);
     if (strncmp(map_id, CAMPAIGN_ID_PREFIX, prefix) != 0)
@@ -285,25 +256,6 @@ static Texture2D CampaignLoadTrayIcon(const char *map_id) {
 }
 
 void CampaignMapsInitialize(Campaign *c, const char *path) {
-    static const GuiId backgrounds[CAMPAIGN_MAX_MAPS] = {
-        GUI_MAP_BG_0,
-        GUI_MAP_BG_1,
-        GUI_MAP_BG_2,
-        GUI_MAP_BG_3,
-        GUI_MAP_BG_4,
-        GUI_MAP_BG_5,
-        GUI_MAP_BG_6,
-        GUI_MAP_BG_7,
-        GUI_MAP_BG_8,
-        GUI_MAP_BG_9,
-        GUI_MAP_BG_10,
-        GUI_MAP_BG_11,
-        GUI_MAP_BG_12,
-        GUI_MAP_BG_13,
-        GUI_MAP_BG_14,
-        GUI_MAP_BG_15,
-    };
-
     cJSON *root = JsonLoadFile(path);
     if (!cJSON_IsArray(root)) TraceLog(LOG_FATAL, "Campaign: %s is not an array of chapters", path);
 
@@ -316,12 +268,9 @@ void CampaignMapsInitialize(Campaign *c, const char *path) {
             TraceLog(LOG_FATAL, "Campaign: %s has more than %d maps", path, CAMPAIGN_MAX_MAPS);
         CampaignMap *m = &c->maps[c->map_count];
 
-        m->background = GuiTex(backgrounds[c->map_count]);
-        if (m->background.id == 0) TraceLog(LOG_FATAL, "Campaign: %s has no panorama", id);
         StrCopy(m->id, sizeof(m->id), id);
         StrCopy(m->title, sizeof(m->title), LocGet(TextFormat(CAMPAIGN_HEADER_KEY_FORMAT, id)));
 
-        m->layout = CampaignReadNodeLayout(cJSON_GetObjectItemCaseSensitive(chapter, "node_layout"), id);
         m->tray_icon = CampaignLoadTrayIcon(id);
         m->about_quote = CampaignLoadMapPrefabTexture(CampaignMapNumber(id), "map%d_character");
         m->about_thumbnail = CampaignLoadMapPrefabTexture(CampaignMapNumber(id), "map%d");
@@ -335,13 +284,9 @@ void CampaignMapsInitialize(Campaign *c, const char *path) {
             CampaignCopyNodeText(node->name, sizeof(node->name), id, step, "NAME");
             CampaignCopyNodeText(node->desc, sizeof(node->desc), id, step, "DESCRIPTION");
             CampaignCopyNodeText(node->cta, sizeof(node->cta), id, step, "CTA");
-            cJSON *position = cJSON_GetObjectItemCaseSensitive(n, "position");
             cJSON *energy = cJSON_GetObjectItemCaseSensitive(n, "energy_cost");
             if (!cJSON_IsNumber(energy))
                 TraceLog(LOG_FATAL, "Campaign: %s node %d (%s) lacks energy data", id, m->node_count + 1, node->name);
-            if (!cJSON_IsObject(position))
-                TraceLog(LOG_FATAL, "Campaign: %s node %d (%s) lacks a position", id, m->node_count + 1, node->name);
-            node->position = (Vector2){JsonFloat(position, "x"), JsonFloat(position, "y")};
             node->energy_cost = energy->valueint;
             cJSON *default_gold = cJSON_GetObjectItemCaseSensitive(n, "default_gold");
             cJSON *default_xp = cJSON_GetObjectItemCaseSensitive(n, "default_xp");
@@ -404,7 +349,8 @@ void CampaignInitialize(Campaign *c, const char *maps_path) {
     c->progression_camera_finished = true;
     c->progression_time = 0.0f;
     c->progression_next_sound_played = false;
-    c->separator = GuiTex(GUI_MAP_SEPARATOR);
+    c->scene.loaded = false;
+    c->scene_map = -1;
     c->icons.energy = GuiTex(GUI_MAP_ENERGY);
     c->icons.locked = GuiTex(GUI_NODE_LOCKED);
     c->icons.locked_selected = GuiTex(GUI_NODE_LOCKED_ON);
@@ -565,12 +511,6 @@ static float CampaignFlipScale(float t) {
 
 static float CampaignProgressionPanEnd(const Campaign *c) {
     return c->progression_from_map == c->progression_to_map ? 2.0f : 3.5f;
-}
-
-static Rectangle CampaignLayoutRect(Rectangle part, Vector2 centre, float world_w, float screen_h) {
-    return (Rectangle){
-        centre.x + part.x * world_w, centre.y + part.y * screen_h, part.width * world_w, part.height * screen_h
-    };
 }
 
 static void CampaignDrawWrapped(
@@ -884,14 +824,38 @@ const CampaignNode *CampaignFindNode(const Campaign *c, const char *map_id, int 
     return NULL;
 }
 
-CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
-    CampaignAction action = CAMPAIGN_NONE;
+static void CampaignShowMapScene(Campaign *c, int map_index) {
+    if (c->scene.loaded && c->scene_map == map_index) return;
+    const CampaignMap *m = &c->maps[map_index];
+    MapSceneUnload(&c->scene);
+    MapSceneLoad(&c->scene, CAMPAIGN_SCENES_PATH, m->id);
+    if (c->scene.node_count != m->node_count)
+        TraceLog(LOG_FATAL, "Campaign: %s scene has %d nodes, not %d", m->id, c->scene.node_count, m->node_count);
+    c->scene_map = map_index;
+}
+
+static void CampaignScrollLimits(const Campaign *c, float *out_lo, float *out_hi) {
+    float lo = MapSceneNodeX(&c->scene, 0), hi = lo;
+    for (int i = 1; i < c->scene.node_count; i++) {
+        lo = fminf(lo, MapSceneNodeX(&c->scene, i));
+        hi = fmaxf(hi, MapSceneNodeX(&c->scene, i));
+    }
+    *out_lo = lo - CAMPAIGN_SWIPE_MARGIN;
+    *out_hi = hi + CAMPAIGN_SWIPE_MARGIN;
+}
+
+static bool CampaignInputLocked(const Campaign *c) {
+    return (c->progression_active && !c->progression_camera_finished) || UiInputBlocked() || c->about_open;
+}
+
+void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
     float dt = GetFrameTime();
     if (pcp->campaign_index < 0 || pcp->campaign_index >= c->map_count ||
         !CampaignMapUnlocked(c, pcp, pcp->campaign_index))
         pcp->campaign_index = 0;
     pcp->node_index = CampaignFrontierForMap(c, pcp, pcp->campaign_index);
     CampaignMap *m = &c->maps[pcp->campaign_index];
+    CampaignShowMapScene(c, pcp->campaign_index);
     float screen_w = UiWidth();
     float screen_h = UiHeight();
 
@@ -912,18 +876,13 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
     }
     if (c->selected_node >= m->node_count) c->selected_node = m->node_count - 1;
 
-    float strip_src_h = m->background.height / 2.0f;
-    float strip_w = m->background.width * (screen_h / strip_src_h);
-    float world_w = 2.0f * strip_w;
-    float max_scroll = fmaxf(0.0f, CAMPAIGN_MAP_LEFT + world_w - screen_w);
-
-    float node_x = CAMPAIGN_MAP_LEFT + m->nodes[c->selected_node].position.x * world_w;
-    float target = Clamp(node_x - screen_w / 2.0f, 0.0f, max_scroll);
+    float lo = 0.0f, hi = 0.0f;
+    CampaignScrollLimits(c, &lo, &hi);
+    float target = Clamp(MapSceneNodeX(&c->scene, c->selected_node), lo, hi);
     if (c->progression_active && !c->progression_camera_finished && c->progression_to_map == pcp->campaign_index) {
         bool same_map = c->progression_from_map == c->progression_to_map;
         int from_node = same_map ? Clamp(c->progression_from_node, 0, m->node_count - 1) : m->node_count - 1;
-        float from_x = CAMPAIGN_MAP_LEFT + m->nodes[from_node].position.x * world_w;
-        float from_scroll = Clamp(from_x - screen_w / 2.0f, 0.0f, max_scroll);
+        float from_scroll = Clamp(MapSceneNodeX(&c->scene, from_node), lo, hi);
         float pan = same_map ? CampaignEaseInOutQuad(c->progression_time - 1.0f)
                              : CampaignEaseInOutQuad((c->progression_time - 1.5f) / 2.0f);
         c->scroll_x = Lerp(from_scroll, target, pan);
@@ -936,44 +895,45 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
         c->scroll_node = c->selected_node;
         c->scroll_x = target;
     } else if (c->scroll_node != c->selected_node) {
-        c->scroll_x += (target - c->scroll_x) * fminf(1.0f, dt * 6.0f);
-        if (fabsf(target - c->scroll_x) < 1.0f) c->scroll_node = c->selected_node;
+        c->scroll_x += (target - c->scroll_x) * fminf(1.0f, dt * CAMPAIGN_FOCUS_SPEED);
+        if (fabsf(target - c->scroll_x) < CAMPAIGN_FOCUS_SETTLED) c->scroll_node = c->selected_node;
     }
 
-    bool about_was_open = c->about_open;
-    bool progression_input_locked =
-        (c->progression_active && !c->progression_camera_finished) || UiInputBlocked() || about_was_open;
+    bool input_locked = CampaignInputLocked(c);
     CampaignTrayLayout tray = CampaignTrayLayoutFor(screen_w, screen_h);
     Rectangle toggle_rect = CampaignTrayToggleRect(screen_w, screen_h);
     bool over_tray = c->tray_open && UiMouse().y >= tray.list.y;
-    if (!progression_input_locked && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+    if (!input_locked && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         c->press_pos = UiMouse();
         c->dragged = false;
         c->tray_pressed = over_tray;
         c->press_blocked = over_tray || CheckCollisionPointRec(c->press_pos, toggle_rect);
     }
-    if (!progression_input_locked && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
+    if (!input_locked && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
         if (fabsf(UiMouse().x - c->press_pos.x) > 6.0f) c->dragged = true;
         if (!c->press_blocked) {
-            c->scroll_x -= UiMouseDelta().x;
+            c->scroll_x += UiMouseDelta().x / screen_w * CAMPAIGN_SWIPE_UNITS_PER_SCREEN;
             c->scroll_node = c->selected_node;
         }
     }
-    if (!progression_input_locked && !over_tray) c->scroll_x -= GetMouseWheelMove() * 60.0f;
-    c->scroll_x = Clamp(c->scroll_x, 0.0f, max_scroll);
+    if (!input_locked && !over_tray) c->scroll_x += GetMouseWheelMove() * CAMPAIGN_WHEEL_UNITS;
+    c->scroll_x = Clamp(c->scroll_x, lo, hi);
 
-    float origin = CAMPAIGN_MAP_LEFT - c->scroll_x;
+    MapSceneSetCameraX(&c->scene, c->scroll_x);
+    MapSceneUpdate(&c->scene, dt);
+    MapSceneDraw(&c->scene);
+}
 
-    for (int part = 0; part < 2; part++) {
-        Rectangle src = {0, part * strip_src_h, m->background.width, strip_src_h};
-        Rectangle dst = {origin + part * strip_w, 0, strip_w, screen_h};
-        DrawTexturePro(m->background, src, dst, (Vector2){0, 0}, 0.0f, WHITE);
-    }
-
-    {
-        Rectangle dst = {origin - 2.0f * CAMPAIGN_MAP_LEFT, 0, c->separator.width, screen_h};
-        UiDrawTexture(c->separator, dst, WHITE);
-    }
+CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
+    CampaignAction action = CAMPAIGN_NONE;
+    if (!c->scene.loaded || c->scene_map != pcp->campaign_index) return action;
+    float dt = GetFrameTime();
+    CampaignMap *m = &c->maps[pcp->campaign_index];
+    float screen_w = UiWidth();
+    float screen_h = UiHeight();
+    bool progression_input_locked = CampaignInputLocked(c);
+    CampaignTrayLayout tray = CampaignTrayLayoutFor(screen_w, screen_h);
+    Rectangle toggle_rect = CampaignTrayToggleRect(screen_w, screen_h);
 
     bool tap =
         !progression_input_locked && !c->dragged && !c->press_blocked && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
@@ -1011,8 +971,8 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
         }
         bool selected = j == c->selected_node && !c->tray_open;
         Texture2D icon = CampaignNodeIcon(c, m, j, frontier, completions, selected);
-        Vector2 centre = {origin + m->nodes[j].position.x * world_w, m->nodes[j].position.y * screen_h};
-        Rectangle dst = CampaignLayoutRect(m->layout.icon, centre, world_w, screen_h);
+        Vector2 centre = MapSceneNodeScreen(&c->scene, j);
+        Rectangle dst = MapSceneNodeIcon(&c->scene, j);
         dst.x += dst.width * (1.0f - flip_scale) * 0.5f;
         dst.width *= flip_scale;
         if (transition_phase >= 0.0f && transition_phase <= 1.0f) {
@@ -1032,13 +992,13 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
         int energy_cost = CampaignCurrentEnergyCost(&m->nodes[j], pcp->node_losses[pcp->campaign_index][j]);
         bool node_locked = j > frontier && completions <= 0;
         if (!node_locked && energy_cost > 0) {
-            Rectangle banner = CampaignLayoutRect(m->layout.banner, centre, world_w, screen_h);
+            Rectangle banner = MapSceneNodeBanner(&c->scene, j);
             UiDrawTexture(c->icons.energy, banner, WHITE);
-            UiDrawTexture(c->energy_flask, CampaignLayoutRect(m->layout.flask, centre, world_w, screen_h), WHITE);
+            UiDrawTexture(c->energy_flask, MapSceneNodeFlask(&c->scene, j), WHITE);
             const char *txt = TextFormat("%d", energy_cost);
             float fs = banner.height * CAMPAIGN_ENERGY_TEXT_OF_BANNER;
             Vector2 tsz = MeasureTextEx(c->font, txt, fs, 1.0f);
-            Vector2 anchor = {centre.x + m->layout.text.x * world_w, centre.y + m->layout.text.y * screen_h};
+            Vector2 anchor = MapSceneNodeText(&c->scene, j);
             DrawTextEx(c->font, txt, (Vector2){anchor.x - tsz.x / 2.0f, anchor.y - tsz.y / 2.0f}, fs, 1.0f, WHITE);
         }
 

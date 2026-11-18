@@ -3829,32 +3829,69 @@ static void TestZathriansCurseBossFitsAPostTutorialSquad(void) {
     cJSON_Delete(catalog_root);
 }
 
-static void TestCampaignNodeCoordinates(void) {
-    const Vector2 centre = {512.0f, 300.0f};
-    const float world_w = 2880.0f;
-    const float screen_h = 720.0f;
-    cJSON *maps = JsonLoadFile("data/campaign_maps.json");
-    assert(cJSON_IsArray(maps));
-    cJSON *chapter = NULL;
-    cJSON_ArrayForEach(chapter, maps) {
-        const char *id = JsonStr(chapter, "id");
-        CampaignNodeLayout layout =
-            CampaignReadNodeLayout(cJSON_GetObjectItemCaseSensitive(chapter, "node_layout"), id);
-        Rectangle icon = CampaignLayoutRect(layout.icon, centre, world_w, screen_h);
-        assert(fabsf(icon.x + icon.width / 2.0f - centre.x) < 0.5f);
-        assert(icon.y < centre.y && icon.y + icon.height > centre.y);
-        Rectangle banner = CampaignLayoutRect(layout.banner, centre, world_w, screen_h);
-        assert(banner.y > centre.y);
-        cJSON *node = NULL;
-        cJSON_ArrayForEach(node, cJSON_GetObjectItemCaseSensitive(chapter, "nodes")) {
-            cJSON *position = cJSON_GetObjectItemCaseSensitive(node, "position");
-            assert(cJSON_IsObject(position));
-            float x = JsonFloat(position, "x"), y = JsonFloat(position, "y");
-            assert(x > 0.0f && x < 1.0f && y > 0.0f && y < 1.0f);
-        }
-    }
-    cJSON_Delete(maps);
+static void TestMapSceneCurvesAndGradients(void) {
+    MapSceneCurve curve = {.count = 2, .time = {0.0f, 1.0f}, .low = {0.0f, 2.0f}, .high = {1.0f, 4.0f}};
+    assert(fabsf(MapSceneCurveSample(&curve, 0.5f, 0.0f) - 1.0f) < 1e-5f);
+    assert(fabsf(MapSceneCurveSample(&curve, 0.5f, 1.0f) - 2.5f) < 1e-5f);
+    assert(fabsf(MapSceneCurveSample(&curve, -1.0f, 0.5f) - 0.5f) < 1e-5f);
+    assert(fabsf(MapSceneCurveSample(&curve, 2.0f, 0.5f) - 3.0f) < 1e-5f);
 
+    MapSceneGradient gradient = {
+        .color_count = 2,
+        .color_time = {0.0f, 1.0f},
+        .color = {{1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+        .alpha_count = 3,
+        .alpha_time = {0.0f, 0.5f, 1.0f},
+        .alpha = {0.0f, 1.0f, 0.0f},
+    };
+    Vector4 middle = MapSceneGradientSample(&gradient, 0.5f);
+    assert(fabsf(middle.x - 0.5f) < 1e-5f && fabsf(middle.z - 0.5f) < 1e-5f && fabsf(middle.w - 1.0f) < 1e-5f);
+    assert(fabsf(MapSceneGradientSample(&gradient, 0.25f).w - 0.5f) < 1e-5f);
+}
+
+static void TestMapSceneSheetFrames(void) {
+    MapSceneEmitter sheet = {
+        .has_sheet = true,
+        .tiles_x = 4,
+        .tiles_y = 4,
+        .row = MAP_SCENE_WHOLE_SHEET,
+        .cycles = 1.0f,
+        .frame = {.count = 1, .time = {0.0f}, .low = {0.0f}, .high = {1.0f}},
+    };
+    MapSceneParticle last = {.frame_random = 0.999f};
+    Rectangle frame = MapSceneParticleFrame(&sheet, &last, 0.0f);
+    assert(fabsf(frame.x - 0.75f) < 1e-5f && fabsf(frame.y - 0.75f) < 1e-5f && fabsf(frame.width - 0.25f) < 1e-5f);
+    assert(fabsf(MapSceneParticleFrame(&sheet, &last, 0.7f).x - frame.x) < 1e-5f);
+
+    sheet.row = MAP_SCENE_RANDOM_ROW;
+    sheet.tiles_y = 2;
+    MapSceneParticle second_row = {.frame_random = 0.3f, .row = 1};
+    Rectangle row = MapSceneParticleFrame(&sheet, &second_row, 0.0f);
+    assert(fabsf(row.x - 0.25f) < 1e-5f && fabsf(row.y - 0.5f) < 1e-5f && fabsf(row.height - 0.5f) < 1e-5f);
+}
+
+static void TestMapSceneEmitterKeepsItsRate(void) {
+    MapScene *scene = calloc(1, sizeof(*scene));
+    scene->random_state = 1u;
+    MapSceneParticle particles[17];
+    MapSceneEmitter emitter = {
+        .rate = 1.0f,
+        .lifetime = {16.0f, 16.0f},
+        .size = {1.0f, 1.0f},
+        .colors = {{1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+        .axes = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+        .shape_axes = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}},
+        .particles = particles,
+        .capacity = 17,
+    };
+    MapSceneEmitterAdvance(scene, &emitter, 5.0f);
+    assert(emitter.particle_count == 5);
+    MapSceneEmitterAdvance(scene, &emitter, 30.0f);
+    assert(emitter.particle_count == 16);
+    free(scene);
+}
+
+static void TestCampaignProgressionPanEnd(void) {
     Campaign same_map_pan = {.progression_from_map = 0, .progression_to_map = 0};
     Campaign map_change_pan = {.progression_from_map = 0, .progression_to_map = 1};
     assert(CampaignProgressionPanEnd(&same_map_pan) == 2.0f);
@@ -10375,7 +10412,10 @@ int main(void) {
     TestCampaignOpenerCanBeWon();
     TestZathriansCurseBossFitsAPostTutorialSquad();
     TestCriticalGoldCommitOnce();
-    TestCampaignNodeCoordinates();
+    TestCampaignProgressionPanEnd();
+    TestMapSceneCurvesAndGradients();
+    TestMapSceneSheetFrames();
+    TestMapSceneEmitterKeepsItsRate();
     TestCampaignMapRewardSchema();
     TestCampaignAndNexusTextResolves();
     TestCampaignProgressionRewards();
