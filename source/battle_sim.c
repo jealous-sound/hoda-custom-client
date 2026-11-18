@@ -933,6 +933,11 @@ static const GearDef *SimGearSource(const SimUnit *wearer, int source) {
     return source == SIM_GEAR_SOURCE_AURA ? wearer->aura : GearInSlot(wearer->ch, source);
 }
 
+static int SimGearEffectValue(const SimUnit *wearer, int source, const GearEffect *effect) {
+    if (source != SIM_GEAR_SOURCE_AURA || wearer->passive_cut_pct <= 0) return effect->value;
+    return effect->value * (100 - wearer->passive_cut_pct) / 100;
+}
+
 static bool SimGearWearerQualifies(const GearEffect *effect, const SimUnit *wearer) {
     return SimPassiveFilterMatchCount(&effect->wearer, wearer, wearer) > 0;
 }
@@ -1034,8 +1039,9 @@ static bool SimGearEffectIsAura(const GearEffect *effect, const SimUnit *wearer)
            SimGearWearerQualifies(effect, wearer);
 }
 
-static SimGearShare
-SimGearAuraShare(const SimUnit *units, const SimUnit *wearer, const GearDef *def, const StatBudget *stat_budget) {
+static SimGearShare SimGearAuraShare(
+    const SimUnit *units, const SimUnit *wearer, int source, const GearDef *def, const StatBudget *stat_budget
+) {
     if (!stat_budget) return SIM_GEAR_FULL_SHARE;
     int asked = 0;
     for (int e = 0; e < def->effect_count; e++) {
@@ -1043,7 +1049,8 @@ SimGearAuraShare(const SimUnit *units, const SimUnit *wearer, const GearDef *def
         if (!SimGearEffectIsAura(effect, wearer) || !SimGearStatIsPooled(effect->stat)) continue;
         for (int recipient_idx = 0; recipient_idx < SIM_UNIT_COUNT; recipient_idx++) {
             int multiplier = SimPassiveFilterMatchCount(&effect->recipient, wearer, &units[recipient_idx]);
-            if (multiplier > 0) asked += SimGearPooledPoints(stat_budget, effect->stat, effect->value * multiplier);
+            int value = SimGearEffectValue(wearer, source, effect) * multiplier;
+            if (multiplier > 0) asked += SimGearPooledPoints(stat_budget, effect->stat, value);
         }
     }
     int cap = StatBudgetGearItemCap(stat_budget);
@@ -1059,7 +1066,7 @@ static void SimUnitsGearAuras(
         for (int source = 0; source < SIM_GEAR_SOURCE_COUNT; source++) {
             const GearDef *def = SimGearSource(wearer, source);
             if (!def) continue;
-            SimGearShare share = SimGearAuraShare(units, wearer, def, stat_budget);
+            SimGearShare share = SimGearAuraShare(units, wearer, source, def, stat_budget);
             for (int e = 0; e < def->effect_count; e++) {
                 const GearEffect *effect = &def->effects[e];
                 if (!SimGearEffectIsAura(effect, wearer)) continue;
@@ -1067,7 +1074,7 @@ static void SimUnitsGearAuras(
                     SimUnit *recipient = &units[recipient_idx];
                     int multiplier = SimPassiveFilterMatchCount(&effect->recipient, wearer, recipient);
                     if (multiplier <= 0) continue;
-                    int value = effect->value * multiplier;
+                    int value = SimGearEffectValue(wearer, source, effect) * multiplier;
                     if (effect->stat == GEAR_STAT_POWER)
                         power_pct[recipient_idx] += SimGearSharedPct(share, value);
                     else if (effect->stat == GEAR_STAT_HEALTH)
@@ -1098,7 +1105,8 @@ static int SimGearVersusStat(const BattleSim *s, const SimUnit *recipient, const
                 if (effect->stat != stat || effect->on != GEAR_ON_BATTLE || !effect->versus.has_match ||
                     !SimGearWearerQualifies(effect, wearer))
                     continue;
-                total += effect->value * SimPassiveFilterMatchCount(&effect->recipient, wearer, recipient) *
+                total += SimGearEffectValue(wearer, source, effect) *
+                         SimPassiveFilterMatchCount(&effect->recipient, wearer, recipient) *
                          SimGearVersusCount(&effect->versus, other);
             }
         }
@@ -1574,9 +1582,10 @@ static bool SimGearStatIsMetered(GearStat stat) {
     return stat == GEAR_STAT_DAMAGE || stat == GEAR_STAT_DRAIN || SimGearStatIsPooled(stat);
 }
 
-static int SimGearTriggerAmount(BattleSim *s, const GearEffect *effect, const SimUnit *recipient, int amount) {
+static int
+SimGearTriggerAmount(BattleSim *s, const GearEffect *effect, int value, const SimUnit *recipient, int amount) {
     int base = 0;
-    float pct = effect->value / 100.0f;
+    float pct = value / 100.0f;
     switch (effect->stat) {
         case GEAR_STAT_POWER:
             base = effect->basis == GEAR_BASIS_DAMAGE ? amount : recipient->start_power;
@@ -1592,7 +1601,7 @@ static int SimGearTriggerAmount(BattleSim *s, const GearEffect *effect, const Si
                 return 0;
             return (int)lroundf(recipient->start_power * pct);
         default:
-            return effect->value;
+            return value;
     }
 }
 
@@ -1673,6 +1682,7 @@ static void SimGearFireEffect(
 ) {
     if (!SimGearWearerQualifies(effect, wearer)) return;
     bool metered = SimGearStatIsMetered(effect->stat);
+    int value = SimGearEffectValue(wearer, source, effect);
     int amounts[SIM_UNIT_COUNT] = {0};
     bool reached[SIM_UNIT_COUNT] = {false};
     for (int idx = 0; idx < SIM_UNIT_COUNT; idx++) {
@@ -1680,7 +1690,7 @@ static void SimGearFireEffect(
         if (!recipient->alive) continue;
         int multiplier = SimPassiveFilterMatchCount(&effect->recipient, wearer, recipient);
         for (int m = 0; m < multiplier; m++) {
-            int fired = SimGearTriggerAmount(s, effect, recipient, amount);
+            int fired = SimGearTriggerAmount(s, effect, value, recipient, amount);
             if (metered)
                 amounts[idx] += fired;
             else

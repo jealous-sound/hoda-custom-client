@@ -5691,6 +5691,28 @@ static void TestAshaBellanarAnswersWitherfangsHit(void) {
     assert(attacker->power == attacker_power - (int)lroundf(attacker->start_power * 0.03f));
 }
 
+static void TestPvpTrimCutsTheHeroAuraByItsPassiveShare(void) {
+    int stated_pct = HeroAuraEffectValue("UNIT_FERELDANKNIGHT", GEAR_STAT_DEFENDER, GEAR_ON_BATTLE);
+    int gain_pct = HeroAuraEffectValue("UNIT_CARTAASSASSIN", GEAR_STAT_POWER, GEAR_ON_SELF_HIT);
+    const int cut_pct = 40;
+    BattleSim s = {.rng = 5};
+    Character attacker, knight, carta;
+    Ability abilities[3];
+    HeroAuraTestUnit(&s, &attacker, &abilities[0], "aura_attacker", 0, 2);
+    HeroAuraTestUnit(&s, &knight, &abilities[1], "UNIT_FERELDANKNIGHT", 1, 1);
+    HeroAuraTestUnit(&s, &carta, &abilities[2], "UNIT_CARTAASSASSIN", 1, 2);
+    s.units[SQUAD_SLOT_COUNT + 1].passive_cut_pct = cut_pct;
+    s.units[SQUAD_SLOT_COUNT + 2].passive_cut_pct = cut_pct;
+    SimUnitsBattleStartPassives(s.units, NULL);
+    assert(s.units[SQUAD_SLOT_COUNT + 1].gear.defender_pct == stated_pct * (100 - cut_pct) / 100);
+
+    SimUnit *hit = &s.units[SQUAD_SLOT_COUNT + 2];
+    int before = hit->power;
+    SimGearReactToAttack(&s, 2, &(BattleSimTarget){.unit = SQUAD_SLOT_COUNT + 2, .health_delta = -100}, 1);
+    int cut_gain = gain_pct * (100 - cut_pct) / 100;
+    assert(hit->power - before == (int)lroundf(hit->start_power * (cut_gain / 100.0f)));
+}
+
 static void TestStealthHidesHitsUntilAnySquadmateIsPerceptive(void) {
     const GearDef *nug = HeroAuraFind("UNIT_SHADOWNUG");
     bool stealthy = false;
@@ -9994,6 +10016,7 @@ int main(void) {
     TestHeroAuraTriggersFireWhenHit();
     TestHeroAuraDefenderAbsorbsItsStatedShare();
     TestAshaBellanarAnswersWitherfangsHit();
+    TestPvpTrimCutsTheHeroAuraByItsPassiveShare();
     TestStealthHidesHitsUntilAnySquadmateIsPerceptive();
     TestGearReactionsRespectCurses();
     TestGearDeathTriggersFireForDeadWearer();
