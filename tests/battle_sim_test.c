@@ -82,8 +82,13 @@ static void TestCharacter(
     ch->stats[TIER_I].base_health = health;
 }
 
-static void SimUnitInit(BattleSim *s, int side, int slot, const Character *ch) {
+static void SimUnitInitWithAura(BattleSim *s, int side, int slot, const Character *ch) {
     SimUnitsInit(s->units, side, slot, ch, NULL);
+}
+
+static void SimUnitInit(BattleSim *s, int side, int slot, const Character *ch) {
+    SimUnitInitWithAura(s, side, slot, ch);
+    s->units[side * SQUAD_SLOT_COUNT + slot].aura = NULL;
 }
 
 static void SimApplyBattleStartPassives(BattleSim *s) {
@@ -5572,6 +5577,155 @@ static void TestGearOnHitReactionsAndStealth(void) {
     GearTestReset();
 }
 
+static void HeroAuraTestUnit(BattleSim *s, Character *ch, Ability *ability, const char *id, int side, int slot) {
+    TestCharacter(ch, ability, id, "ABILITY_DAMAGE_ONE", TARGET_ONE, 1000, 100000);
+    SimUnitInitWithAura(s, side, slot, ch);
+}
+
+static int HeroAuraEffectValue(const char *id, GearStat stat, GearTrigger on) {
+    const GearDef *aura = HeroAuraFind(id);
+    assert(aura);
+    for (int e = 0; e < aura->effect_count; e++)
+        if (aura->effects[e].stat == stat && aura->effects[e].on == on) return aura->effects[e].value;
+    assert(!"hero aura lacks the effect");
+    return 0;
+}
+
+static int HeroAuraHitPowerGain(const char *attacker_id, const char *squadmate_id, bool squadmate_sees_stealth) {
+    GearTestReset();
+    int perceptive = GearTestDef(GEAR_STAT_PERCEPTIVE, 1, GEAR_ON_BATTLE, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
+    BattleSim s = {.rng = 5};
+    Character attacker, target, squadmate;
+    Ability abilities[3];
+    HeroAuraTestUnit(&s, &attacker, &abilities[0], attacker_id, 0, 2);
+    HeroAuraTestUnit(&s, &target, &abilities[1], "UNIT_CARTAASSASSIN", 1, 2);
+    if (squadmate_sees_stealth) {
+        squadmate = (Character){0};
+        squadmate.gear.defs[0] = (short)(perceptive + 1);
+        GearTestUnit(&s, &squadmate, &abilities[2], 1, 3, 100000);
+    } else if (squadmate_id) {
+        HeroAuraTestUnit(&s, &squadmate, &abilities[2], squadmate_id, 1, 3);
+    }
+    SimUnitsBattleStartPassives(s.units, NULL);
+    int idx = SQUAD_SLOT_COUNT + 2;
+    int before = s.units[idx].power;
+    SimGearReactToAttack(&s, 2, &(BattleSimTarget){.unit = idx, .health_delta = -100}, 1);
+    GearTestReset();
+    return s.units[idx].power - before;
+}
+
+static void TestHeroAuraTriggersFireWhenHit(void) {
+    BattleSim s = {.rng = 5};
+    Character attacker, carta;
+    Ability abilities[2];
+    HeroAuraTestUnit(&s, &attacker, &abilities[0], "aura_attacker", 0, 2);
+    HeroAuraTestUnit(&s, &carta, &abilities[1], "UNIT_CARTAASSASSIN", 1, 2);
+    SimUnitsBattleStartPassives(s.units, NULL);
+    s.units[2].crit_pct = 0.0f;
+    int idx = SQUAD_SLOT_COUNT + 2;
+    int start = s.units[idx].start_power;
+    int gain_pct = HeroAuraEffectValue("UNIT_CARTAASSASSIN", GEAR_STAT_POWER, GEAR_ON_SELF_HIT);
+    assert(gain_pct > 0);
+    GearTestSwing(&s, 2);
+    assert(s.units[idx].health < s.units[idx].max_health);
+    assert(s.units[idx].power == start + (int)lroundf(start * (gain_pct / 100.0f)));
+}
+
+static void TestHeroAuraDefenderAbsorbsItsStatedShare(void) {
+    int stated_pct = HeroAuraEffectValue("UNIT_FERELDANKNIGHT", GEAR_STAT_DEFENDER, GEAR_ON_BATTLE);
+    assert(stated_pct > SIM_DEFENDER_ABSORB_PCT);
+    const char *defenders[] = {"UNIT_FERELDANKNIGHT", "unstated_defender"};
+    const int absorbed_pct[] = {stated_pct, SIM_DEFENDER_ABSORB_PCT};
+    for (int i = 0; i < 2; i++) {
+        BattleSim s = {.rng = 5};
+        Character attacker, defender, ally;
+        Ability abilities[3];
+        HeroAuraTestUnit(&s, &attacker, &abilities[0], "aura_attacker", 0, 2);
+        TestCharacter(&defender, &abilities[1], defenders[i], "ABILITY_DAMAGE_ONE", TARGET_ONE, 1000, 100000);
+        defender.specialties[defender.specialty_count++] = SPEC_DEFENDER;
+        SimUnitInitWithAura(&s, 1, 1, &defender);
+        HeroAuraTestUnit(&s, &ally, &abilities[2], "aura_ally", 1, 3);
+        SimUnitsBattleStartPassives(s.units, NULL);
+        s.units[2].crit_pct = 0.0f;
+        int defender_idx = SQUAD_SLOT_COUNT + 1, ally_idx = SQUAD_SLOT_COUNT + 3;
+        int power = s.units[2].power;
+        SimAttack(&s, 2, &SIM_RECIPE_DEFAULT, &(AttackRecipe){.target = RECIPE_TARGET_ALL}, true, false);
+        int moved = power * absorbed_pct[i] / 100;
+        assert(s.units[ally_idx].max_health - s.units[ally_idx].health == power - moved);
+        assert(s.units[defender_idx].max_health - s.units[defender_idx].health == power + moved);
+    }
+}
+
+static void TestAshaBellanarAnswersWitherfangsHit(void) {
+    BattleSim s = {.rng = 5};
+    Character witherfang, asha;
+    Ability abilities[2];
+    HeroAuraTestUnit(&s, &witherfang, &abilities[0], "UNIT_WITHERFANG", 0, 2);
+    HeroAuraTestUnit(&s, &asha, &abilities[1], "UNIT_ASHA'BELLANAR", 1, 2);
+    SimUnitsBattleStartPassives(s.units, NULL);
+    SimUnit *attacker = &s.units[2], *target = &s.units[SQUAD_SLOT_COUNT + 2];
+    attacker->crit_pct = 0.0f;
+    target->health = target->max_health / 2;
+    int attacker_power = attacker->power, attacker_health = attacker->health;
+    int target_power = target->power, target_health = target->health;
+
+    GearTestSwing(&s, 2);
+
+    int dealt = 0;
+    for (int i = 0; i < s.action_count; i++) {
+        const BattleSimAction *a = &s.actions[i];
+        if (!a->replay_attack) continue;
+        for (int t = 0; t < a->target_count; t++)
+            if (a->targets[t].unit == SQUAD_SLOT_COUNT + 2)
+                dealt -= a->targets[t].health_delta + a->targets[t].health_faction_delta;
+    }
+    assert(dealt > 0);
+    int gain_pct = HeroAuraEffectValue("UNIT_ASHA'BELLANAR", GEAR_STAT_POWER, GEAR_ON_SELF_HIT);
+    int heal_pct = HeroAuraEffectValue("UNIT_ASHA'BELLANAR", GEAR_STAT_HEALTH, GEAR_ON_SELF_HIT);
+    int revert_pct = HeroAuraEffectValue("UNIT_ASHA'BELLANAR", GEAR_STAT_DAMAGE, GEAR_ON_SELF_HIT);
+    int drain_pct = HeroAuraEffectValue("UNIT_ASHA'BELLANAR", GEAR_STAT_DRAIN, GEAR_ON_ALLY_HIT);
+    assert(gain_pct == 30 && heal_pct == 30 && revert_pct == 15 && drain_pct == 3);
+    assert(target->power == target_power + (int)lroundf(target->start_power * 0.30f));
+    assert(target->health == target_health - dealt + (int)lroundf(target->max_health * 0.30f));
+    assert(attacker->health == attacker_health - (int)lroundf(dealt * 0.15f));
+    assert(attacker->power == attacker_power - (int)lroundf(attacker->start_power * 0.03f));
+}
+
+static void TestPvpTrimCutsTheHeroAuraByItsPassiveShare(void) {
+    int stated_pct = HeroAuraEffectValue("UNIT_FERELDANKNIGHT", GEAR_STAT_DEFENDER, GEAR_ON_BATTLE);
+    int gain_pct = HeroAuraEffectValue("UNIT_CARTAASSASSIN", GEAR_STAT_POWER, GEAR_ON_SELF_HIT);
+    const int cut_pct = 40;
+    BattleSim s = {.rng = 5};
+    Character attacker, knight, carta;
+    Ability abilities[3];
+    HeroAuraTestUnit(&s, &attacker, &abilities[0], "aura_attacker", 0, 2);
+    HeroAuraTestUnit(&s, &knight, &abilities[1], "UNIT_FERELDANKNIGHT", 1, 1);
+    HeroAuraTestUnit(&s, &carta, &abilities[2], "UNIT_CARTAASSASSIN", 1, 2);
+    s.units[SQUAD_SLOT_COUNT + 1].passive_cut_pct = cut_pct;
+    s.units[SQUAD_SLOT_COUNT + 2].passive_cut_pct = cut_pct;
+    SimUnitsBattleStartPassives(s.units, NULL);
+    assert(s.units[SQUAD_SLOT_COUNT + 1].gear.defender_pct == stated_pct * (100 - cut_pct) / 100);
+
+    SimUnit *hit = &s.units[SQUAD_SLOT_COUNT + 2];
+    int before = hit->power;
+    SimGearReactToAttack(&s, 2, &(BattleSimTarget){.unit = SQUAD_SLOT_COUNT + 2, .health_delta = -100}, 1);
+    int cut_gain = gain_pct * (100 - cut_pct) / 100;
+    assert(hit->power - before == (int)lroundf(hit->start_power * (cut_gain / 100.0f)));
+}
+
+static void TestStealthHidesHitsUntilAnySquadmateIsPerceptive(void) {
+    const GearDef *nug = HeroAuraFind("UNIT_SHADOWNUG");
+    bool stealthy = false;
+    for (int e = 0; nug && e < nug->effect_count; e++) stealthy |= nug->effects[e].stat == GEAR_STAT_STEALTH;
+    assert(stealthy);
+    int plain_gain = HeroAuraHitPowerGain("aura_attacker", NULL, false);
+    assert(plain_gain > 0);
+    assert(HeroAuraHitPowerGain("UNIT_SHADOWNUG", NULL, false) == 0);
+    assert(HeroAuraHitPowerGain("UNIT_SHADOWNUG", "aura_squadmate", false) == 0);
+    assert(HeroAuraHitPowerGain("UNIT_SHADOWNUG", "UNIT_ABELAS", false) == plain_gain);
+    assert(HeroAuraHitPowerGain("UNIT_SHADOWNUG", NULL, true) == plain_gain);
+}
+
 static void TestGearReactionsRespectCurses(void) {
     GearTestReset();
     int power = GearTestDef(GEAR_STAT_POWER, 10, GEAR_ON_SELF_HIT, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
@@ -7911,7 +8065,7 @@ static void TestStatBudgetMetersWhatOneItemsTriggersGive(void) {
     GearTestSwing(&s, 2);
     GearTestSwing(&s, 2);
     assert(s.units[hit_idx].health == 40000 - 2000 + 50000);
-    assert(s.units[hit_idx].power == 1400 && s.units[friend_idx].power == 1400);
+    assert(s.units[hit_idx].power == 1800 && s.units[friend_idx].power == 1800);
     GearTestReset();
 }
 
@@ -9859,6 +10013,11 @@ int main(void) {
     TestGearDamageMitigationAndVersus();
     TestGearResistsScaleAilments();
     TestGearOnHitReactionsAndStealth();
+    TestHeroAuraTriggersFireWhenHit();
+    TestHeroAuraDefenderAbsorbsItsStatedShare();
+    TestAshaBellanarAnswersWitherfangsHit();
+    TestPvpTrimCutsTheHeroAuraByItsPassiveShare();
+    TestStealthHidesHitsUntilAnySquadmateIsPerceptive();
     TestGearReactionsRespectCurses();
     TestGearDeathTriggersFireForDeadWearer();
     TestGearReactionDamageCanEndAChain();

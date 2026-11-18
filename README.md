@@ -119,8 +119,9 @@ release and a raised minimum client version on the backend.
 
 - `scale_stats` in `data/stat_budget.json` picks the mode and ships `false`. The one PvP rule left is then the trim list
   in `data/stat_budget_heroes.json`: a listed hero fights with that percent of its stats, and its status chances (stun,
-  slow, curse, levy, assassinate, mark), what its ability grants allies and what its passives give or take are cut by
-  the same share. A hero that is not listed fights as in PvE. The golden corpus records this mode and leads each side of
+  slow, curse, levy, assassinate, mark), what its ability grants allies and what its passives and hero aura
+  (`data/hero_auras.json`) give or take are cut by the same share; gear it wears is not. A hero that is not listed
+  fights as in PvE. The golden corpus records this mode and leads each side of
   a battle under the rules with a trimmed hero.
 - `./tests/balance_check --calibrate 10 --ceiling 90 --squads 64 --seeds 12` rewrites the trim list. It lowers only the
   heroes that win more than 90% against a peer in the same seat, until they stop, and writes only those. It starts from

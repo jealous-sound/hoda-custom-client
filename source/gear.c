@@ -20,6 +20,8 @@
 #define GEAR_UI_TEXTURE_PATH "gui/gear/%s.png"
 #define GEAR_TOME_ICON "gui/gear/tex.tomeofascension.png"
 #define GEAR_ICON_CACHE_CAPACITY (GEAR_CATALOG_CAPACITY + 16)
+#define HERO_AURA_CATALOG_PATH "data/hero_auras.json"
+#define HERO_AURA_CATALOG_VERSION 1
 
 typedef enum {
     GEAR_STAT_NONE,
@@ -284,6 +286,50 @@ void GearCatalogEnsure(void) {
     }
     gear_catalog.prestige_slot_gem_cost = JsonInt(root, "prestige_slot_gem_cost");
     cJSON_Delete(root);
+}
+
+typedef struct {
+    GearDef *defs;
+    int count;
+    bool loaded;
+} HeroAuraCatalog;
+
+static HeroAuraCatalog hero_aura_catalog;
+
+void HeroAuraCatalogEnsure(void) {
+    if (hero_aura_catalog.loaded) return;
+    hero_aura_catalog.loaded = true;
+    cJSON *root = JsonLoadFile(HERO_AURA_CATALOG_PATH);
+    cJSON *rows = cJSON_GetObjectItemCaseSensitive(root, "items");
+    if (JsonInt(root, "version") != HERO_AURA_CATALOG_VERSION || !cJSON_IsArray(rows))
+        TraceLog(LOG_FATAL, "Gear: invalid hero aura catalog %s", HERO_AURA_CATALOG_PATH);
+    int count = cJSON_GetArraySize(rows);
+    hero_aura_catalog.defs = count > 0 ? calloc((size_t)count, sizeof(*hero_aura_catalog.defs)) : NULL;
+    if (count > 0 && !hero_aura_catalog.defs) TraceLog(LOG_FATAL, "Gear: out of memory loading hero auras");
+    const cJSON *row = NULL;
+    cJSON_ArrayForEach(row, rows) {
+        GearDef *def = &hero_aura_catalog.defs[hero_aura_catalog.count];
+        GearDefParse(def, row);
+        if (hero_aura_catalog.count > 0 && strcmp(def[-1].id, def->id) >= 0)
+            TraceLog(LOG_FATAL, "Gear: hero auras must be sorted by unique id");
+        hero_aura_catalog.count++;
+    }
+    cJSON_Delete(root);
+}
+
+const GearDef *HeroAuraFind(const char *id) {
+    HeroAuraCatalogEnsure();
+    int lo = 0, hi = hero_aura_catalog.count - 1;
+    while (lo <= hi) {
+        int mid = lo + (hi - lo) / 2;
+        int cmp = strcmp(id, hero_aura_catalog.defs[mid].id);
+        if (cmp == 0) return &hero_aura_catalog.defs[mid];
+        if (cmp < 0)
+            hi = mid - 1;
+        else
+            lo = mid + 1;
+    }
+    return NULL;
 }
 
 const char *GearTitle(const GearDef *def) {
