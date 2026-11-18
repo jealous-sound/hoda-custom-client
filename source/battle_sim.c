@@ -29,6 +29,11 @@ typedef struct {
 #define SIM_GEAR_STRONG_TARGET_WEIGHT 3.0f
 #define SIM_GEAR_FLANK_WEIGHT 3.0f
 #define SIM_GEAR_FLANK_REDUCTION 0.5f
+#define SIM_GEAR_AVOID_TARGET_WEIGHT 0.5f
+#define SIM_GEAR_ASSASSINATE_MATCH_WEIGHT 4.0f
+#define SIM_GEAR_TARGET_RULE_CAPACITY 16
+#define SIM_TARGET_ROLL_RESOLUTION 10000u
+#define SIM_IMMUNE_RESIST_PCT 100
 #define SIM_GEAR_DEATH_PASSES 4
 #define SIM_GEAR_ACTION_RESERVE 64
 #define SIM_DEFENDER_ABSORB_PCT 25
@@ -53,8 +58,10 @@ typedef struct {
     int stun_resist_pct, slow_resist_pct, drain_resist_pct;
     int curse_power_resist_pct, curse_health_resist_pct;
     int defender_pct;
+    bool stun_immune, slow_immune, drain_immune, curse_power_immune, curse_health_immune;
     bool stealth, perceptive, haste, flank_reduction;
     bool target_highest_power, target_lowest_health, target_back_row, target_quick, target_slowest;
+    bool target_front_row, target_even_rows;
 } SimGearState;
 
 typedef struct {
@@ -62,6 +69,8 @@ typedef struct {
     const PassiveCharacter *passives;
     const GearDef *aura;
     SimGearState gear;
+    const GearEffect *target_rules[SIM_GEAR_TARGET_RULE_CAPACITY];
+    int target_rule_count;
     bool present, alive;
     int side, slot;
     int max_health, health;
@@ -938,15 +947,31 @@ static int SimGearEffectValue(const SimUnit *wearer, int source, const GearEffec
     return effect->value * (100 - wearer->passive_cut_pct) / 100;
 }
 
+static int SimGearPerCount(const SimUnit *units, const SimUnit *wearer, const GearEffect *effect) {
+    if (!effect->per.has_match) return 1;
+    int count = 0;
+    for (int i = 0; i < SIM_UNIT_COUNT; i++) count += SimPassiveFilterMatchCount(&effect->per, wearer, &units[i]);
+    return count;
+}
+
+static int SimGearScaledValue(const SimUnit *units, const SimUnit *wearer, int source, const GearEffect *effect) {
+    return SimGearEffectValue(wearer, source, effect) * SimGearPerCount(units, wearer, effect);
+}
+
 static bool SimGearWearerQualifies(const GearEffect *effect, const SimUnit *wearer) {
     return SimPassiveFilterMatchCount(&effect->wearer, wearer, wearer) > 0;
 }
 
-static int SimGearVersusCount(const PassiveFilter *filter, const SimUnit *candidate) {
+static bool SimGearTermMatches(const PassiveMatchTerm *term, const SimUnit *holder, const SimUnit *candidate) {
+    if (term->kind == PASSIVE_TERM_OPPOSING_FACTION) return SimHasAdvantage(holder->faction, candidate->faction);
+    return SimPassiveTermMatches(term, candidate->ch);
+}
+
+static int SimGearVersusCount(const PassiveFilter *filter, const SimUnit *holder, const SimUnit *candidate) {
     if (!filter->has_match) return 1;
     int matches = 0;
     for (int i = 0; i < filter->term_count; i++)
-        if (SimPassiveTermMatches(&filter->terms[i], candidate->ch)) matches++;
+        if (SimGearTermMatches(&filter->terms[i], holder, candidate)) matches++;
     if (filter->mode == PASSIVE_MATCH_EACH) return matches;
     return matches > 0 ? 1 : 0;
 }
@@ -1004,9 +1029,44 @@ static void SimGearApplyStat(SimGearState *gear, GearStat stat, int value) {
         case GEAR_STAT_TARGET_SLOWEST:
             gear->target_slowest = true;
             break;
+        case GEAR_STAT_TARGET_FRONT_ROW:
+            gear->target_front_row = true;
+            break;
+        case GEAR_STAT_TARGET_EVEN_ROWS:
+            gear->target_even_rows = true;
+            break;
+        case GEAR_STAT_STUN_IMMUNE:
+            gear->stun_immune = true;
+            break;
+        case GEAR_STAT_SLOW_IMMUNE:
+            gear->slow_immune = true;
+            break;
+        case GEAR_STAT_DRAIN_IMMUNE:
+            gear->drain_immune = true;
+            break;
+        case GEAR_STAT_CURSE_POWER_IMMUNE:
+            gear->curse_power_immune = true;
+            break;
+        case GEAR_STAT_CURSE_HEALTH_IMMUNE:
+            gear->curse_health_immune = true;
+            break;
         default:
             break;
     }
+}
+
+static bool SimGearStatIsTargetRule(GearStat stat) {
+    return stat == GEAR_STAT_TARGET_MATCH || stat == GEAR_STAT_TARGET_AVOID || stat == GEAR_STAT_ASSASSINATE_MATCH;
+}
+
+static void SimGearAddTargetRule(SimUnit *recipient, const GearEffect *effect) {
+    if (recipient->target_rule_count >= SIM_GEAR_TARGET_RULE_CAPACITY) {
+        TraceLog(
+            LOG_WARNING, "Sim: %s has more than %d target rules", recipient->ch->id, SIM_GEAR_TARGET_RULE_CAPACITY
+        );
+        return;
+    }
+    recipient->target_rules[recipient->target_rule_count++] = effect;
 }
 
 typedef struct {
@@ -1035,7 +1095,12 @@ static float SimGearSharedPct(SimGearShare share, int value) {
 }
 
 static bool SimGearEffectIsAura(const GearEffect *effect, const SimUnit *wearer) {
-    return effect->on == GEAR_ON_BATTLE && !effect->versus.has_match && effect->stat != GEAR_STAT_TARGET_MATCH &&
+    return effect->on == GEAR_ON_BATTLE && !effect->versus.has_match && !SimGearStatIsTargetRule(effect->stat) &&
+           SimGearWearerQualifies(effect, wearer);
+}
+
+static bool SimGearEffectIsTargetRule(const GearEffect *effect, const SimUnit *wearer) {
+    return effect->on == GEAR_ON_BATTLE && SimGearStatIsTargetRule(effect->stat) &&
            SimGearWearerQualifies(effect, wearer);
 }
 
@@ -1049,7 +1114,7 @@ static SimGearShare SimGearAuraShare(
         if (!SimGearEffectIsAura(effect, wearer) || !SimGearStatIsPooled(effect->stat)) continue;
         for (int recipient_idx = 0; recipient_idx < SIM_UNIT_COUNT; recipient_idx++) {
             int multiplier = SimPassiveFilterMatchCount(&effect->recipient, wearer, &units[recipient_idx]);
-            int value = SimGearEffectValue(wearer, source, effect) * multiplier;
+            int value = SimGearScaledValue(units, wearer, source, effect) * multiplier;
             if (multiplier > 0) asked += SimGearPooledPoints(stat_budget, effect->stat, value);
         }
     }
@@ -1069,12 +1134,17 @@ static void SimUnitsGearAuras(
             SimGearShare share = SimGearAuraShare(units, wearer, source, def, stat_budget);
             for (int e = 0; e < def->effect_count; e++) {
                 const GearEffect *effect = &def->effects[e];
-                if (!SimGearEffectIsAura(effect, wearer)) continue;
+                bool target_rule = SimGearEffectIsTargetRule(effect, wearer);
+                if (!target_rule && !SimGearEffectIsAura(effect, wearer)) continue;
                 for (int recipient_idx = 0; recipient_idx < SIM_UNIT_COUNT; recipient_idx++) {
                     SimUnit *recipient = &units[recipient_idx];
                     int multiplier = SimPassiveFilterMatchCount(&effect->recipient, wearer, recipient);
                     if (multiplier <= 0) continue;
-                    int value = SimGearEffectValue(wearer, source, effect) * multiplier;
+                    if (target_rule) {
+                        SimGearAddTargetRule(recipient, effect);
+                        continue;
+                    }
+                    int value = SimGearScaledValue(units, wearer, source, effect) * multiplier;
                     if (effect->stat == GEAR_STAT_POWER)
                         power_pct[recipient_idx] += SimGearSharedPct(share, value);
                     else if (effect->stat == GEAR_STAT_HEALTH)
@@ -1105,25 +1175,26 @@ static int SimGearVersusStat(const BattleSim *s, const SimUnit *recipient, const
                 if (effect->stat != stat || effect->on != GEAR_ON_BATTLE || !effect->versus.has_match ||
                     !SimGearWearerQualifies(effect, wearer))
                     continue;
-                total += SimGearEffectValue(wearer, source, effect) *
+                total += SimGearScaledValue(s->units, wearer, source, effect) *
                          SimPassiveFilterMatchCount(&effect->recipient, wearer, recipient) *
-                         SimGearVersusCount(&effect->versus, other);
+                         SimGearVersusCount(&effect->versus, recipient, other);
             }
         }
     }
     return total;
 }
 
-static bool SimGearPrefersMatchedTarget(const SimUnit *attacker, const SimUnit *target) {
-    for (int source = 0; source < SIM_GEAR_SOURCE_COUNT; source++) {
-        const GearDef *def = SimGearSource(attacker, source);
-        for (int e = 0; def && e < def->effect_count; e++) {
-            const GearEffect *effect = &def->effects[e];
-            if (effect->stat == GEAR_STAT_TARGET_MATCH && SimGearWearerQualifies(effect, attacker) &&
-                SimGearVersusCount(&effect->recipient, target) > 0)
-                return true;
-        }
+static bool SimGearTargetRuleMatches(const SimUnit *attacker, const SimUnit *target, GearStat stat) {
+    for (int i = 0; i < attacker->target_rule_count; i++) {
+        const GearEffect *rule = attacker->target_rules[i];
+        if (rule->stat == stat && SimGearVersusCount(&rule->versus, attacker, target) > 0) return true;
     }
+    return false;
+}
+
+static bool SimGearHasTargetRule(const SimUnit *attacker, GearStat stat) {
+    for (int i = 0; i < attacker->target_rule_count; i++)
+        if (attacker->target_rules[i]->stat == stat) return true;
     return false;
 }
 
@@ -1288,13 +1359,16 @@ static float SimGearTargetMultiplier(const BattleSim *s, const SimUnit *attacker
     if (gear->target_slowest && SimRuneTargetPreferred(s, RUNE_TARGET_LOWEST_SPEED, t))
         multiplier *= SIM_GEAR_TARGET_WEIGHT;
     if (gear->target_quick && t->ch->speed == SPEED_QUICK) multiplier *= SIM_GEAR_STRONG_TARGET_WEIGHT;
-    if (SimGearPrefersMatchedTarget(attacker, t)) multiplier *= SIM_GEAR_TARGET_WEIGHT;
+    if (SimGearTargetRuleMatches(attacker, t, GEAR_STAT_TARGET_MATCH)) multiplier *= SIM_GEAR_TARGET_WEIGHT;
+    if (SimGearTargetRuleMatches(attacker, t, GEAR_STAT_TARGET_AVOID)) multiplier *= SIM_GEAR_AVOID_TARGET_WEIGHT;
     return multiplier;
 }
 
-static float SimFlankWeight(const SimUnit *attacker, const SimUnit *t) {
+static float SimRowWeight(const SimUnit *attacker, const SimUnit *t) {
+    if (attacker->gear.target_even_rows || t->ch->giant) return 1.0f;
+    if (attacker->gear.target_front_row && SquadSlotIsFront(t->slot)) return SIM_GEAR_TARGET_WEIGHT;
     bool flanks = SimHasSpec(attacker->ch, SPEC_FLANK) || attacker->gear.target_back_row;
-    if (!flanks || t->ch->giant || !SquadSlotIsBack(t->slot)) return 1.0f;
+    if (!flanks || !SquadSlotIsBack(t->slot)) return 1.0f;
     return t->gear.flank_reduction ? SIM_GEAR_FLANK_WEIGHT * SIM_GEAR_FLANK_REDUCTION : SIM_GEAR_FLANK_WEIGHT;
 }
 
@@ -1319,7 +1393,7 @@ static float SimTargetWeight(const BattleSim *s, const SimUnit *attacker, const 
         if (SimHasSpec(t->ch, SPEC_TAUNT)) w *= 2.0f;
         if (SimHasSpec(t->ch, SPEC_ELUSIVE)) w *= 0.5f;
     }
-    w *= SimFlankWeight(attacker, t);
+    w *= SimRowWeight(attacker, t);
     if (t->marked > 0) w *= 4.0f;
     w *= SimPassiveOutgoingTargetMultiplier(s, attacker, t);
     w *= SimRuneTargetMultiplier(s, attacker, t);
@@ -1338,7 +1412,7 @@ static int SimPickWeighted(BattleSim *s, const SimUnit *attacker, int enemy_side
         total += weights[slot];
     }
     if (total <= 0.0f) return -1;
-    float roll = (SimRand(s) % 10000u) / 10000.0f * total;
+    float roll = (SimRand(s) % SIM_TARGET_ROLL_RESOLUTION) / (float)SIM_TARGET_ROLL_RESOLUTION * total;
     for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
         roll -= weights[slot];
         if (weights[slot] > 0.0f && roll <= 0.0f) return enemy_side * SQUAD_SLOT_COUNT + slot;
@@ -1519,6 +1593,10 @@ static bool SimRuneResists(BattleSim *s, int resist_pct) {
     return resist_pct > 0 && SimChance(s, resist_pct);
 }
 
+static int SimResistOrImmune(bool immune, int resist_pct) {
+    return immune && resist_pct < SIM_IMMUNE_RESIST_PCT ? SIM_IMMUNE_RESIST_PCT : resist_pct;
+}
+
 static bool SimEffectLands(BattleSim *s, int chance_pct, int resist_pct) {
     if (chance_pct <= 0) return false;
     if (resist_pct < 0) chance_pct -= resist_pct;
@@ -1597,7 +1675,13 @@ SimGearTriggerAmount(BattleSim *s, const GearEffect *effect, int value, const Si
             base = effect->basis == GEAR_BASIS_DAMAGE ? amount : recipient->max_health;
             return (int)lroundf(base * pct);
         case GEAR_STAT_DRAIN:
-            if (SimRuneResists(s, s->rune_bonus[recipient->side].drain_resist_pct + recipient->gear.drain_resist_pct))
+            if (SimRuneResists(
+                    s,
+                    SimResistOrImmune(
+                        recipient->gear.drain_immune,
+                        s->rune_bonus[recipient->side].drain_resist_pct + recipient->gear.drain_resist_pct
+                    )
+                ))
                 return 0;
             return (int)lroundf(recipient->start_power * pct);
         default:
@@ -1677,12 +1761,22 @@ static void SimGearMeterTrigger(
     *spent += left;
 }
 
+static bool SimGearCausedBy(const GearEffect *effect, const SimUnit *wearer, const SimUnit *cause) {
+    return !effect->by.has_match || SimGearVersusCount(&effect->by, wearer, cause) > 0;
+}
+
 static void SimGearFireEffect(
-    BattleSim *s, SimGearReaction *reaction, SimUnit *wearer, int source, const GearEffect *effect, int amount
+    BattleSim *s,
+    SimGearReaction *reaction,
+    SimUnit *wearer,
+    int source,
+    const GearEffect *effect,
+    const SimUnit *cause,
+    int amount
 ) {
-    if (!SimGearWearerQualifies(effect, wearer)) return;
+    if (!SimGearWearerQualifies(effect, wearer) || !SimGearCausedBy(effect, wearer, cause)) return;
     bool metered = SimGearStatIsMetered(effect->stat);
-    int value = SimGearEffectValue(wearer, source, effect);
+    int value = SimGearScaledValue(s->units, wearer, source, effect);
     int amounts[SIM_UNIT_COUNT] = {0};
     bool reached[SIM_UNIT_COUNT] = {false};
     for (int idx = 0; idx < SIM_UNIT_COUNT; idx++) {
@@ -1704,11 +1798,14 @@ static void SimGearFireEffect(
         if (reached[idx]) SimGearReactionAdd(s, reaction, effect, &s->units[idx], amounts[idx]);
 }
 
-static void SimGearFireTrigger(BattleSim *s, SimGearReaction *reaction, SimUnit *wearer, GearTrigger on, int amount) {
+static void SimGearFireTrigger(
+    BattleSim *s, SimGearReaction *reaction, SimUnit *wearer, GearTrigger on, const SimUnit *cause, int amount
+) {
     for (int source = 0; source < SIM_GEAR_SOURCE_COUNT; source++) {
         const GearDef *def = SimGearSource(wearer, source);
         for (int e = 0; def && e < def->effect_count; e++)
-            if (def->effects[e].on == on) SimGearFireEffect(s, reaction, wearer, source, &def->effects[e], amount);
+            if (def->effects[e].on == on)
+                SimGearFireEffect(s, reaction, wearer, source, &def->effects[e], cause, amount);
     }
 }
 
@@ -1737,12 +1834,12 @@ static void SimGearResolveDeaths(BattleSim *s, int actor_idx) {
         for (int dead_idx = 0; dead_idx < SIM_UNIT_COUNT; dead_idx++) {
             if (!(deaths & (1u << dead_idx))) continue;
             SimUnit *dead = &s->units[dead_idx];
-            SimGearFireTrigger(s, &reaction, dead, GEAR_ON_SELF_DEATH, s->gear_last_damage);
+            SimGearFireTrigger(s, &reaction, dead, GEAR_ON_SELF_DEATH, dead, s->gear_last_damage);
             for (int idx = 0; idx < SIM_UNIT_COUNT; idx++) {
                 SimUnit *wearer = &s->units[idx];
                 if (!wearer->alive) continue;
                 GearTrigger on = wearer->side == dead->side ? GEAR_ON_ALLY_DEATH : GEAR_ON_ENEMY_DEATH;
-                SimGearFireTrigger(s, &reaction, wearer, on, s->gear_last_damage);
+                SimGearFireTrigger(s, &reaction, wearer, on, dead, s->gear_last_damage);
             }
         }
         SimGearEmitReaction(s, actor_idx, &reaction);
@@ -1765,12 +1862,12 @@ static void SimGearReactToAttack(BattleSim *s, int actor_idx, const BattleSimTar
             SimUnit *wearer = &s->units[idx];
             if (!wearer->alive) continue;
             if (wearer->side != target->side)
-                SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_ENEMY_HIT, dealt);
+                SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_ENEMY_HIT, target, dealt);
             else if (hidden)
                 continue;
             else {
-                if (wearer == target) SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_SELF_HIT, dealt);
-                SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_ALLY_HIT, dealt);
+                if (wearer == target) SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_SELF_HIT, target, dealt);
+                SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_ALLY_HIT, target, dealt);
             }
         }
     }
@@ -1780,13 +1877,29 @@ static void SimGearReactToAttack(BattleSim *s, int actor_idx, const BattleSimTar
             SimUnit *wearer = &s->units[idx];
             if (!wearer->alive || wearer->side != actor->side) continue;
             SimGearFireTrigger(
-                s, &reaction, wearer, idx == actor_idx ? GEAR_ON_SELF_ATTACK : GEAR_ON_ALLY_ATTACK, dealt_total
+                s, &reaction, wearer, idx == actor_idx ? GEAR_ON_SELF_ATTACK : GEAR_ON_ALLY_ATTACK, actor, dealt_total
             );
-            if (idx == actor_idx) SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_ALLY_ATTACK, dealt_total);
+            if (idx == actor_idx) SimGearFireTrigger(s, &reaction, wearer, GEAR_ON_ALLY_ATTACK, actor, dealt_total);
         }
     }
     SimGearEmitReaction(s, actor_idx, &reaction);
     SimGearResolveDeaths(s, actor_idx);
+}
+
+static int SimPickAssassinationVictim(BattleSim *s, const SimUnit *actor, const int *choices, int count) {
+    if (!SimGearHasTargetRule(actor, GEAR_STAT_ASSASSINATE_MATCH)) return choices[SimRange(s, 0, count - 1)];
+    float weights[SIM_MAX_TARGETS], total = 0.0f;
+    for (int i = 0; i < count; i++) {
+        bool preferred = SimGearTargetRuleMatches(actor, &s->units[choices[i]], GEAR_STAT_ASSASSINATE_MATCH);
+        weights[i] = preferred ? SIM_GEAR_ASSASSINATE_MATCH_WEIGHT : 1.0f;
+        total += weights[i];
+    }
+    float roll = (SimRand(s) % SIM_TARGET_ROLL_RESOLUTION) / (float)SIM_TARGET_ROLL_RESOLUTION * total;
+    for (int i = 0; i < count; i++) {
+        roll -= weights[i];
+        if (roll <= 0.0f) return choices[i];
+    }
+    return choices[count - 1];
 }
 
 static int SimDefenderAbsorbPct(const SimUnit *t) {
@@ -1869,7 +1982,7 @@ static void SimAttack(
         int choices[SIM_MAX_TARGETS], choice_count = 0;
         for (int i = 0; i < n; i++)
             if (!s->units[picked[i]].ch->giant) choices[choice_count++] = picked[i];
-        if (choice_count > 0) assassinate_target = choices[SimRange(s, 0, choice_count - 1)];
+        if (choice_count > 0) assassinate_target = SimPickAssassinationVictim(s, actor, choices, choice_count);
     }
 
     for (int i = 0; i < n; i++) {
@@ -1880,16 +1993,29 @@ static void SimAttack(
         BattleSimTarget bt = {.unit = picked[i], .health_delta = -base[i], .health_faction_delta = -extra};
         BattleAilment ailments = AIL_NONE;
         const RuneBonus *defense = &s->rune_bonus[t->side];
-        if (SimEffectLands(s, hit->stun_pct, defense->stun_resist_pct + t->gear.stun_resist_pct))
+        const SimGearState *gear = &t->gear;
+        if (SimEffectLands(
+                s, hit->stun_pct, SimResistOrImmune(gear->stun_immune, defense->stun_resist_pct + gear->stun_resist_pct)
+            ))
             ailments |= AIL_STUNNED;
-        if (SimEffectLands(s, hit->slow_pct, defense->slow_resist_pct + t->gear.slow_resist_pct))
+        if (SimEffectLands(
+                s, hit->slow_pct, SimResistOrImmune(gear->slow_immune, defense->slow_resist_pct + gear->slow_resist_pct)
+            ))
             bt.initiative_delta += hit->slow_amt;
         if (hit->drain_pct > 0 && (hit->drain_chance == 0 || SimChance(s, hit->drain_chance)) &&
-            !SimRuneResists(s, defense->drain_resist_pct + t->gear.drain_resist_pct))
+            !SimRuneResists(
+                s, SimResistOrImmune(gear->drain_immune, defense->drain_resist_pct + gear->drain_resist_pct)
+            ))
             bt.power_delta -= (int)lroundf(actor->power * (hit->drain_pct / 100.0f));
-        if (SimEffectLands(s, hit->curse_power_pct, t->gear.curse_power_resist_pct) && !defense->curse_power_immune)
+        if (SimEffectLands(
+                s, hit->curse_power_pct, SimResistOrImmune(gear->curse_power_immune, gear->curse_power_resist_pct)
+            ) &&
+            !defense->curse_power_immune)
             ailments |= AIL_CURSE_POWER;
-        if (SimEffectLands(s, hit->curse_health_pct, t->gear.curse_health_resist_pct)) ailments |= AIL_CURSE_HEALTH;
+        if (SimEffectLands(
+                s, hit->curse_health_pct, SimResistOrImmune(gear->curse_health_immune, gear->curse_health_resist_pct)
+            ))
+            ailments |= AIL_CURSE_HEALTH;
         if (picked[i] == assassinate_target) {
             bt.health_delta = extra < t->health ? extra - t->health : 0;
             bt.health_faction_delta = extra < t->health ? -extra : -t->health;

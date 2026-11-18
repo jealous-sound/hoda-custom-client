@@ -5726,6 +5726,197 @@ static void TestStealthHidesHitsUntilAnySquadmateIsPerceptive(void) {
     assert(HeroAuraHitPowerGain("UNIT_SHADOWNUG", NULL, true) == plain_gain);
 }
 
+static void AuraTestPlainUnit(BattleSim *s, Character *ch, Ability *ability, const char *id, int side, int slot) {
+    TestCharacter(ch, ability, id, "ABILITY_DAMAGE_ONE", TARGET_ONE, 1000, 100000);
+    SimUnitInit(s, side, slot, ch);
+}
+
+static int FenHarelStunsAndSlowsLanded(bool immune) {
+    const int pvp_trim_cut_pct = 28;
+    GearTestReset();
+    int brittle = GearTestDef(GEAR_STAT_STUN_RESIST, -50, GEAR_ON_BATTLE, PASSIVE_SCOPE_ENEMIES, GEAR_BASIS_BASE);
+    int sluggish = GearTestDef(GEAR_STAT_SLOW_RESIST, -50, GEAR_ON_BATTLE, PASSIVE_SCOPE_ENEMIES, GEAR_BASIS_BASE);
+    BattleSim s = {.rng = 9};
+    Character attacker = {0}, wolf;
+    Ability abilities[2];
+    attacker.gear.defs[0] = (short)(brittle + 1);
+    attacker.gear.defs[1] = (short)(sluggish + 1);
+    GearTestUnit(&s, &attacker, &abilities[0], 0, 2, 100000);
+    HeroAuraTestUnit(&s, &wolf, &abilities[1], "UNIT_FEN'HAREL", 1, 2);
+    SimUnit *fen = &s.units[SQUAD_SLOT_COUNT + 2];
+    fen->passive_cut_pct = pvp_trim_cut_pct;
+    SimUnitsBattleStartPassives(s.units, NULL);
+    assert(fen->gear.stun_immune && fen->gear.slow_immune && fen->gear.stun_resist_pct < 0);
+    fen->gear.stun_immune = fen->gear.slow_immune = immune;
+    if (!immune) fen->gear.stun_resist_pct = fen->gear.slow_resist_pct = 100 * (100 - pvp_trim_cut_pct) / 100 - 50;
+    AttackRecipe stun_and_slow = {
+        .target = RECIPE_TARGET_ABILITY, .stun_pct = 100, .slow_pct = 100, .slow_amt = -50, .status_only = true
+    };
+    int landed = 0;
+    for (int swing = 0; swing < 50; swing++) {
+        SimAttack(&s, 2, &SIM_RECIPE_DEFAULT, &stun_and_slow, true, false);
+        landed += fen->stunned + (fen->cur_initiative != 0);
+        fen->stunned = false;
+        fen->cur_initiative = 0;
+    }
+    GearTestReset();
+    return landed;
+}
+
+static void TestImmunitiesOutlastTrimsAndEnemyResistCuts(void) {
+    assert(HeroAuraEffectValue("UNIT_FEN'HAREL", GEAR_STAT_STUN_IMMUNE, GEAR_ON_BATTLE) == 1);
+    assert(HeroAuraEffectValue("UNIT_FEN'HAREL", GEAR_STAT_SLOW_IMMUNE, GEAR_ON_BATTLE) == 1);
+    assert(SimResistOrImmune(true, -35) == SIM_IMMUNE_RESIST_PCT);
+    assert(SimResistOrImmune(true, 150) == 150 && SimResistOrImmune(false, -35) == -35);
+    assert(FenHarelStunsAndSlowsLanded(true) == 0);
+    assert(FenHarelStunsAndSlowsLanded(false) > 0);
+}
+
+static void TestLessLikelyTargetsHalveTheirWeight(void) {
+    BattleSim s = {.rng = 5};
+    Character danyla, elf, human;
+    Ability abilities[3];
+    HeroAuraTestUnit(&s, &danyla, &abilities[0], "UNIT_DANYLA", 0, 2);
+    AuraTestPlainUnit(&s, &elf, &abilities[1], "aura_elf", 1, 1);
+    AuraTestPlainUnit(&s, &human, &abilities[2], "aura_human", 1, 3);
+    TestAddGroup(&elf, "Elves");
+    SimUnitsBattleStartPassives(s.units, NULL);
+    float elf_weight = SimTargetWeight(&s, &s.units[2], &s.units[SQUAD_SLOT_COUNT + 1]);
+    float human_weight = SimTargetWeight(&s, &s.units[2], &s.units[SQUAD_SLOT_COUNT + 3]);
+    assert(elf_weight == human_weight * SIM_GEAR_AVOID_TARGET_WEIGHT);
+}
+
+static void TestSquadTargetPreferencesReachEveryMatchingAlly(void) {
+    BattleSim s = {.rng = 5};
+    Character gatekeeper, werewolf, outsider, human, plain;
+    Ability abilities[5];
+    HeroAuraTestUnit(&s, &gatekeeper, &abilities[0], "UNIT_GATEKEEPER", 0, 0);
+    AuraTestPlainUnit(&s, &werewolf, &abilities[1], "aura_werewolf", 0, 1);
+    AuraTestPlainUnit(&s, &outsider, &abilities[2], "aura_outsider", 0, 3);
+    AuraTestPlainUnit(&s, &human, &abilities[3], "aura_human", 1, 1);
+    AuraTestPlainUnit(&s, &plain, &abilities[4], "aura_plain", 1, 3);
+    TestAddGroup(&werewolf, "Werewolves");
+    TestAddGroup(&human, "Human");
+    SimUnitsBattleStartPassives(s.units, NULL);
+    SimUnit *human_unit = &s.units[SQUAD_SLOT_COUNT + 1], *plain_unit = &s.units[SQUAD_SLOT_COUNT + 3];
+    assert(
+        SimTargetWeight(&s, &s.units[1], human_unit) ==
+        SimTargetWeight(&s, &s.units[1], plain_unit) * SIM_GEAR_TARGET_WEIGHT
+    );
+    assert(SimTargetWeight(&s, &s.units[3], human_unit) == SimTargetWeight(&s, &s.units[3], plain_unit));
+}
+
+static void TestRowPreferencesFollowTheAura(void) {
+    BattleSim s = {.rng = 5};
+    Character varric, carver, front, back;
+    Ability abilities[4];
+    HeroAuraTestUnit(&s, &varric, &abilities[0], "UNIT_ARTIFICERVARRIC", 0, 1);
+    HeroAuraTestUnit(&s, &carver, &abilities[1], "UNIT_CARVERHAWKE", 0, 3);
+    carver.specialties[carver.specialty_count++] = SPEC_FLANK;
+    AuraTestPlainUnit(&s, &front, &abilities[2], "aura_front", 1, 1);
+    AuraTestPlainUnit(&s, &back, &abilities[3], "aura_back", 1, 2);
+    SimUnitsBattleStartPassives(s.units, NULL);
+    SimUnit *front_unit = &s.units[SQUAD_SLOT_COUNT + 1], *back_unit = &s.units[SQUAD_SLOT_COUNT + 2];
+    assert(SimRowWeight(&s.units[1], front_unit) == SIM_GEAR_TARGET_WEIGHT);
+    assert(SimRowWeight(&s.units[1], back_unit) == 1.0f);
+    assert(SimRowWeight(&s.units[3], front_unit) == 1.0f && SimRowWeight(&s.units[3], back_unit) == 1.0f);
+}
+
+static int PerAllyAuraTotal(const char *id, const char *squadmate_id, const char *group, int squadmates, bool power) {
+    BattleSim s = {.rng = 5};
+    Character holder, squadmate[2];
+    Ability abilities[3];
+    HeroAuraTestUnit(&s, &holder, &abilities[0], id, 0, 2);
+    if (group) TestAddGroup(&holder, group);
+    for (int i = 0; i < squadmates; i++) {
+        AuraTestPlainUnit(&s, &squadmate[i], &abilities[i + 1], squadmate_id, 0, i == 0 ? 1 : 3);
+        if (group) TestAddGroup(&squadmate[i], group);
+    }
+    SimUnitsBattleStartPassives(s.units, NULL);
+    return power ? s.units[2].power : s.units[2].gear.damage_resist_pct;
+}
+
+static void TestPerAllyAurasCountTheirSquadmates(void) {
+    int mistral_pct = HeroAuraEffectValue("UNIT_GREATERMISTRALDRAGONLING", GEAR_STAT_DAMAGE_RESIST, GEAR_ON_BATTLE);
+    int guard_pct = HeroAuraEffectValue("UNIT_DIVINEGUARD", GEAR_STAT_DAMAGE_RESIST, GEAR_ON_BATTLE);
+    int nug_king_pct = HeroAuraEffectValue("UNIT_NUGKING", GEAR_STAT_POWER, GEAR_ON_BATTLE);
+    for (int mates = 0; mates <= 2; mates++) {
+        assert(
+            PerAllyAuraTotal("UNIT_GREATERMISTRALDRAGONLING", "UNIT_DRAGONLING", NULL, mates, false) ==
+            mistral_pct * (1 + mates)
+        );
+        assert(PerAllyAuraTotal("UNIT_DIVINEGUARD", "UNIT_DIVINELELIANA", NULL, mates, false) == guard_pct * mates);
+        assert(
+            PerAllyAuraTotal("UNIT_NUGKING", "aura_nug", "Nug", mates, true) == 1000 + 10 * nug_king_pct * (1 + mates)
+        );
+    }
+}
+
+static void TestTriggerFiltersCheckWhoSetItOff(void) {
+    GearTestReset();
+    int rally = GearTestDef(GEAR_STAT_POWER, 10, GEAR_ON_ALLY_ATTACK, PASSIVE_SCOPE_ALLIES, GEAR_BASIS_BASE);
+    gear_test_effects[gear_test_effect_count - 1].by = GearTestGroupFilter("Inquisition");
+    BattleSim s = {.rng = 5};
+    Character wearer = {0}, inquisitor = {0}, outsider = {0}, target = {0};
+    Ability abilities[4];
+    wearer.gear.defs[0] = (short)(rally + 1);
+    GearTestUnit(&s, &wearer, &abilities[0], 0, 1, 100000);
+    GearTestUnit(&s, &inquisitor, &abilities[1], 0, 2, 100000);
+    GearTestUnit(&s, &outsider, &abilities[2], 0, 3, 100000);
+    GearTestUnit(&s, &target, &abilities[3], 1, 2, 100000);
+    TestAddGroup(&inquisitor, "Inquisition");
+    BattleSimTarget hit = {.unit = SQUAD_SLOT_COUNT + 2, .health_delta = -100};
+    SimGearReactToAttack(&s, 3, &hit, 1);
+    assert(s.units[1].power == 1000 && s.units[2].power == 1000 && s.units[3].power == 1000);
+    SimGearReactToAttack(&s, 2, &hit, 1);
+    assert(s.units[1].power == 1100 && s.units[2].power == 1100 && s.units[3].power == 1100);
+    GearTestReset();
+}
+
+static void TestOpposingFactionBonusFollowsFactionAdvantage(void) {
+    BattleSim s = {.rng = 5};
+    Character cassandra, red, blue;
+    Ability abilities[3];
+    TestCharacter(
+        &cassandra, &abilities[0], "UNIT_LADYSEEKERCASSANDRA", "ABILITY_DAMAGE_ONE", TARGET_ONE, 1000, 100000
+    );
+    cassandra.faction = FACTION_WHITE;
+    SimUnitInitWithAura(&s, 0, 2, &cassandra);
+    TestCharacter(&red, &abilities[1], "aura_red", "ABILITY_DAMAGE_ONE", TARGET_ONE, 1000, 100000);
+    red.faction = FACTION_RED;
+    SimUnitInit(&s, 1, 1, &red);
+    TestCharacter(&blue, &abilities[2], "aura_blue", "ABILITY_DAMAGE_ONE", TARGET_ONE, 1000, 100000);
+    blue.faction = FACTION_BLUE;
+    SimUnitInit(&s, 1, 3, &blue);
+    SimUnitsBattleStartPassives(s.units, NULL);
+    int bonus_pct = HeroAuraEffectValue("UNIT_LADYSEEKERCASSANDRA", GEAR_STAT_BONUS_DAMAGE, GEAR_ON_BATTLE);
+    assert(bonus_pct > 0);
+    assert(SimGearVersusStat(&s, &s.units[2], &s.units[SQUAD_SLOT_COUNT + 1], GEAR_STAT_BONUS_DAMAGE) == bonus_pct);
+    assert(SimGearVersusStat(&s, &s.units[2], &s.units[SQUAD_SLOT_COUNT + 3], GEAR_STAT_BONUS_DAMAGE) == 0);
+}
+
+static void TestAssassinsPreferTheirStatedPrey(void) {
+    BattleSim s = {.rng = 5};
+    Character dowager, plain_assassin, noble, commoner;
+    Ability abilities[4];
+    HeroAuraTestUnit(&s, &dowager, &abilities[0], "UNIT_THEDOWAGER", 0, 2);
+    AuraTestPlainUnit(&s, &plain_assassin, &abilities[1], "aura_assassin", 0, 3);
+    AuraTestPlainUnit(&s, &noble, &abilities[2], "aura_noble", 1, 1);
+    AuraTestPlainUnit(&s, &commoner, &abilities[3], "aura_commoner", 1, 3);
+    TestAddGroup(&noble, "Nobility");
+    SimUnitsBattleStartPassives(s.units, NULL);
+    int choices[] = {SQUAD_SLOT_COUNT + 1, SQUAD_SLOT_COUNT + 3};
+    const int trials = 4000;
+    int dowager_nobles = 0, plain_nobles = 0;
+    for (int i = 0; i < trials; i++) {
+        dowager_nobles += SimPickAssassinationVictim(&s, &s.units[2], choices, 2) == choices[0];
+        plain_nobles += SimPickAssassinationVictim(&s, &s.units[3], choices, 2) == choices[0];
+    }
+    float preferred_share = SIM_GEAR_ASSASSINATE_MATCH_WEIGHT / (SIM_GEAR_ASSASSINATE_MATCH_WEIGHT + 1.0f);
+    assert(fabsf((float)dowager_nobles / trials - preferred_share) < 0.05f);
+    assert(fabsf((float)plain_nobles / trials - 0.5f) < 0.05f);
+}
+
 static void TestGearReactionsRespectCurses(void) {
     GearTestReset();
     int power = GearTestDef(GEAR_STAT_POWER, 10, GEAR_ON_SELF_HIT, PASSIVE_SCOPE_SELF, GEAR_BASIS_BASE);
@@ -5818,10 +6009,10 @@ static void TestGearTargetPreferences(void) {
     GearTestUnit(&s, &back, &abilities[1], 1, 2, 10000);
     assert(SquadSlotIsBack(2));
     SimUnitsBattleStartPassives(s.units, NULL);
-    assert(SimFlankWeight(&s.units[2], &s.units[SQUAD_SLOT_COUNT + 2]) == SIM_GEAR_FLANK_WEIGHT);
+    assert(SimRowWeight(&s.units[2], &s.units[SQUAD_SLOT_COUNT + 2]) == SIM_GEAR_FLANK_WEIGHT);
     back.gear.defs[0] = (short)(reduce + 1);
     s.units[SQUAD_SLOT_COUNT + 2].gear.flank_reduction = true;
-    assert(SimFlankWeight(&s.units[2], &s.units[SQUAD_SLOT_COUNT + 2]) < SIM_GEAR_FLANK_WEIGHT);
+    assert(SimRowWeight(&s.units[2], &s.units[SQUAD_SLOT_COUNT + 2]) < SIM_GEAR_FLANK_WEIGHT);
 
     long hasted = 0, plain = 0;
     SimUnit normal = s.units[2];
@@ -10018,6 +10209,14 @@ int main(void) {
     TestAshaBellanarAnswersWitherfangsHit();
     TestPvpTrimCutsTheHeroAuraByItsPassiveShare();
     TestStealthHidesHitsUntilAnySquadmateIsPerceptive();
+    TestImmunitiesOutlastTrimsAndEnemyResistCuts();
+    TestLessLikelyTargetsHalveTheirWeight();
+    TestSquadTargetPreferencesReachEveryMatchingAlly();
+    TestRowPreferencesFollowTheAura();
+    TestPerAllyAurasCountTheirSquadmates();
+    TestTriggerFiltersCheckWhoSetItOff();
+    TestOpposingFactionBonusFollowsFactionAdvantage();
+    TestAssassinsPreferTheirStatedPrey();
     TestGearReactionsRespectCurses();
     TestGearDeathTriggersFireForDeadWearer();
     TestGearReactionDamageCanEndAChain();

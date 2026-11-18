@@ -45,21 +45,35 @@ PLAIN_STATS = {
     'power': ['power'], 'health': ['health'], 'bonus damage': ['bonus_damage'], 'damage': ['bonus_damage'],
     '2x damage chance': ['crit'], 'defender': ['defender'],
 }
-IMMUNITY_STATS = {
-    'stun': ['stun_resist'], 'stunned': ['stun_resist'], 'slow': ['slow_resist'], 'slowed': ['slow_resist'],
-    'power drain': ['drain_resist'], 'drain': ['drain_resist'], 'curse': ['curse_power_resist', 'curse_health_resist'],
-    'curse power': ['curse_power_resist'], 'curse health': ['curse_health_resist'],
+RESIST_IMMUNITY = {
+    'stun_resist': 'stun_immune', 'slow_resist': 'slow_immune', 'drain_resist': 'drain_immune',
+    'curse_power_resist': 'curse_power_immune', 'curse_health_resist': 'curse_health_immune',
 }
-IMMUNE_PCT = 100
-VERSUS_STATS = {'bonus_damage', 'damage_resist', 'raw_damage_resist', 'power'}
-SUBJECT_VERBS = r'(?:gain|heal|get|deal|resist)s?\b'
+IMMUNITY_RESIST = {immune: resist for resist, immune in RESIST_IMMUNITY.items()}
+IMMUNITY_STATS = {
+    word: [RESIST_IMMUNITY[stat] for stat in stats] for word, stats in {
+        'stun': ['stun_resist'], 'stunned': ['stun_resist'], 'slow': ['slow_resist'], 'slowed': ['slow_resist'],
+        'power drain': ['drain_resist'], 'drain': ['drain_resist'],
+        'curse': ['curse_power_resist', 'curse_health_resist'], 'curse power': ['curse_power_resist'],
+        'curse health': ['curse_health_resist'],
+    }.items()
+}
+FLAG = 1
+VERSUS_STATS = {'bonus_damage', 'damage_resist', 'raw_damage_resist', 'power', 'target_match', 'target_avoid',
+                'assassinate_match'}
+SUBJECT_VERBS = r'(?:(?:gain|heal|get|deal|resist)s?|are immune)\b'
+FACTIONS = ('Black', 'White', 'Red', 'Blue')
 EXTRA_TERMS = {
     'heroes with stealth': [['specialty', 'STEALTH']], 'stealth heroes': [['specialty', 'STEALTH']],
     'power drainers': [['specialty', 'POWERDRAIN']], 'quick': [['speed', 'Quick']],
     'sentinel elves': [['tag', 'SentinelElves']], 'witches of the wild': [['tag', 'WitchOfTheWild']],
+    'opposing faction': [['opposing_faction', '*']],
 }
 STAT_ORDER = ['health', 'power']
 TRIGGER_PATTERNS = (
+    ('any_hit_or_death', r'when an? (?:ally or enemy|enemy or ally) is hit or dies'),
+    ('ally_hit_or_attack', r'when allies are hit or attack'),
+    ('self_hit_or_death', r'when (?:this hero|this unit|this banner|it) is (?:hit|attacked) and when it(?:\'s| is) killed'),
     ('any_death', r'(?:on|upon) any (?:hero )?death|when any hero dies|on (?:enemy or ally|ally or enemy) death'
                   r'|when (?:an )?(?:enemy or ally|ally or enemy) dies|when enemies or allies die'),
     ('any_hit', r'when any hero is hit'),
@@ -75,8 +89,20 @@ TRIGGER_PATTERNS = (
 )
 COMPOUND_TRIGGERS = {
     'any_death': ['ally_death', 'enemy_death'],
-    'any_hit': ['self_hit', 'ally_hit', 'enemy_hit'],
+    'any_hit': ['ally_hit', 'enemy_hit'],
+    'any_hit_or_death': ['ally_hit', 'enemy_hit', 'ally_death', 'enemy_death'],
+    'ally_hit_or_attack': ['ally_hit', 'ally_attack'],
+    'self_hit_or_death': ['self_hit', 'self_death'],
 }
+FILTERED_TRIGGERS = (
+    ('ally_hit', r'when (.+?) allies (?:are|is) (?:hit|attacked)'),
+    ('ally_attack', r'when (.+?) allies attack'),
+)
+TARGET_ROW_SENTENCES = (
+    (r'more likely to attack (?:the )?front row', 'target_front_row'),
+    (r'equal chance to attack (?:the )?front (?:or|and) back rows?', 'target_even_rows'),
+    (r'more likely to stun (?:the )?slowest enemy', 'target_slowest'),
+)
 REWRITES = (
     (r'\bvs\.', 'vs'),
     (r'(\d),(\d{3})', r'\1\2'),
@@ -100,12 +126,6 @@ REWRITES = (
     (r'^enemy (.+?) reduced by (\d+)%$', r'-\2% \1 to enemies'),
     (r'^-(\d+)% enemy (\w+) power$', r'-\1% power to enemy \2'),
 )
-UNSUPPORTED = (
-    r'less likely to attack .+', r'equal chance to attack .+', r'more likely to attack the front row',
-    r'(?:much )?more likely to (?:stun|assassinate) .+', r'grants hatred of .+',
-    r'(?:\w+ )?(?:allies|werewolves) (?:are )?more likely to (?:attack|target) .+',
-    r'.+ for (?:each|every) .+', r'receives .+ per each .+',
-)
 
 
 Rows = list[dict[str, Any]]
@@ -128,9 +148,10 @@ class Resolver:
             return 'enemies'
         if key in EXTRA_TERMS:
             return EXTRA_TERMS[key]
-        terms = intrinsic._target_terms(text, self.names, self.families)
-        if terms is not None and all(term['kind'] not in {'allies', 'self'} for term in terms):
-            return [[term['kind'], term['value']] for term in terms]
+        for name in (text, f'{text} allies'):
+            terms = intrinsic._target_terms(name, self.names, self.families)
+            if terms is not None and all(term['kind'] not in {'allies', 'self'} for term in terms):
+                return [[term['kind'], term['value']] for term in terms]
         return self.gear.one(text.strip()) or self.gear.one(re.sub(r'e?s$', '', text.strip())) or None
 
     def recipients(self, text: str) -> tuple[str | None, list[list[str]]] | None:
@@ -158,11 +179,33 @@ class Resolver:
             return None
         return resolved[1]
 
+    def group(self, text: str) -> list[list[str]] | None:
+        resolved = self.recipients(text)
+        if resolved is None or resolved[0] is not None or not resolved[1]:
+            return None
+        return resolved[1]
+
+    def counted(self, text: str) -> list[list[str]] | None:
+        return self.group(f'{text}s') or self.group(text)
+
 
 def row(stat: str, value: int, on: str = 'battle', scope: str = 'self', who=None, vs=None, basis: str = 'base',
-        each: bool = False) -> dict[str, Any]:
+        each: bool = False, by=None) -> dict[str, Any]:
     vs = vs if stat in VERSUS_STATS else None
-    return gear.effect(stat, value, on=on, scope=scope, who=who or None, vs=vs or None, basis=basis, each=each)
+    item = gear.effect(stat, value, on=on, scope=scope, who=who or None, vs=vs or None, basis=basis, each=each)
+    if by:
+        item['by'] = by
+    return item
+
+
+def counted_rows(rows: Rows, terms: list[list[str]], counts_self: bool) -> Rows:
+    return [dict(item, per=terms, **({'per_self': True} if counts_self else {})) for item in rows]
+
+
+def other_factions(who: list[list[str]] | None) -> list[list[str]] | None:
+    if not who or len(who) != 1 or who[0][0] != 'faction':
+        return None
+    return [['faction', faction] for faction in FACTIONS if faction != who[0][1]]
 
 
 def normalize(sentence: str) -> str:
@@ -187,7 +230,10 @@ def qualitative(text: str) -> str:
     text = re.sub(r'\b(gains?|allies gain|all allies gain) (power|health|health and power|power and health)\b'
                   r'(?! drain| resist| curse)', rf'\1 +{default}% \2', text)
     text = re.sub(r'\bdeals? bonus damage (to|vs)\b', rf'deals +{default}% bonus damage \1', text)
-    return text
+    text = re.sub(r'\btakes less damage\b', f'takes +{default}% less damage', text)
+    text = re.sub(r'^allies resist (stun|slow|power drain|curse)$', rf'+{default}% \1 resist for allies', text)
+    return re.sub(r'^(?:grants? |gives? )?(stun|slow|power drain|curse|all effect) resist (?:to|for) (.+)$',
+                  rf'+{default}% \1 resist for \2', text)
 
 
 def find_trigger(text: str) -> tuple[str, str, bool]:
@@ -195,10 +241,18 @@ def find_trigger(text: str) -> tuple[str, str, bool]:
         prefix = re.match(rf'^(?:{pattern}),?\s+(.+)$', text)
         if prefix:
             return on, prefix.group(1), True
-        suffix = re.match(rf'^(.+?),?\s+(?:{pattern})$', text)
+        suffix = re.match(rf'^(.+?),?\s+(?:{pattern})(\s\((?:all )?stacking\))?$', text)
         if suffix:
-            return on, suffix.group(1), False
+            return on, suffix.group(1) + (suffix.group(2) or ''), False
     return 'battle', text, False
+
+
+def hero_sentence(sentence: str, character: dict) -> str:
+    name = re.escape(character.get('name', '').strip())
+    if not name:
+        return sentence
+    sentence = re.sub(rf'\bwhen {name} dies\b', 'when this hero dies', sentence, flags=re.I)
+    return re.sub(rf'^{name} (gains?|receives?|gets?)\b', r'\1', sentence, flags=re.I)
 
 
 def take_trigger(text: str) -> tuple[str, str]:
@@ -242,7 +296,8 @@ class Parser:
         for part in parts:
             immunity = re.fullmatch(r'(.+?) immunity', part)
             if immunity and immunity.group(1) in IMMUNITY_STATS:
-                part = f'+{IMMUNE_PCT}% {immunity.group(1)} resist'
+                flat.append([FLAG, True, part, True])
+                continue
             match = re.fullmatch(r'([+-]?\d+)(%?)(?![x\d])\s*(.*)', part)
             if match:
                 flat.append([int(match.group(1)), match.group(2) == '%', match.group(3).strip(), True])
@@ -256,7 +311,10 @@ class Parser:
         for value, percent, word, opens in reversed(flat):
             word = re.sub(r'^(?:ally |bonus (?=health|power))', '', word).strip()
             resist = re.fullmatch(r'(.+?) resist', word)
-            if resist and resist.group(1) in RESIST_PREFIXES:
+            immunity = re.fullmatch(r'(.+?) immunity', word)
+            if immunity and immunity.group(1) in IMMUNITY_STATS:
+                found = IMMUNITY_STATS[immunity.group(1)]
+            elif resist and resist.group(1) in RESIST_PREFIXES:
                 found = RESIST_PREFIXES[resist.group(1)]
                 resist_seen = pending = True
             elif resist_seen and word in BARE_RESIST_PREFIXES:
@@ -350,9 +408,13 @@ class Parser:
     def subject(self, text: str, on: str) -> Rows | None:
         forms: list[tuple[str, Callable[[re.Match[str]], Rows | None]]] = [
             (r'(?:all )?allies (?:gain|get|receive) (.+)', lambda m: self.stat_list(m.group(1), on, 'allies')),
+            (r'(?:all )?allies and (.+?) (?:gain|get|receive) (.+)',
+             lambda m: self.stat_list(f'{m.group(2)} for allies and {m.group(1)}', on)),
             (r'(?:grants?|gives?) (?:all )?allies (.+)', lambda m: self.stat_list(m.group(1), on, 'allies')),
             (r'squad gets (.+)', lambda m: self.stat_list(m.group(1), on, 'allies')),
             (r'(?:gains?|receives?|gets?|personal) (.+)', lambda m: self.stat_list(m.group(1), on)),
+            (r'heals? (?:all )?allies \+?(\d+)% of damage dealt',
+             lambda m: [row('health', int(m.group(1)), on=on, scope='allies', basis='damage')]),
             (r'heals? (?:all )?(?:living )?allies (?:for )?\+?(\d+)%',
              lambda m: [row('health', int(m.group(1)), on=on, scope='allies')]),
             (r'(?:all )?allies heal \+?(\d+)%', lambda m: [row('health', int(m.group(1)), on=on, scope='allies')]),
@@ -388,13 +450,17 @@ class Parser:
         for word in re.split(r',\s*(?:and\s+)?|\s+and\s+', words):
             if word.strip() not in IMMUNITY_STATS:
                 return None
-            rows.extend(row(stat, IMMUNE_PCT, on=on, scope=scope, who=who) for stat in IMMUNITY_STATS[word.strip()])
+            rows.extend(row(stat, FLAG, on=on, scope=scope, who=who) for stat in IMMUNITY_STATS[word.strip()])
         return rows
 
     def immunities(self, text: str, on: str) -> Rows | None:
         match = re.fullmatch(r'(?:immune to|immunity to) (.+)', text) or re.fullmatch(r'cannot be (stunned|slowed)', text)
         if match:
             return self.immunity(match.group(1), 'self', None, on)
+        match = re.fullmatch(r'(.+?) (?:are|is) immune to (.+)', text)
+        if match:
+            who = self.resolver.group(match.group(1))
+            return None if who is None else self.immunity(match.group(2), 'allies', who, on)
         match = re.fullmatch(r'(?:grants? |gives? )?(.+?) immunity (?:for|to) (.+)', text)
         if match:
             target = self.recipient(match.group(2), 1)
@@ -430,7 +496,7 @@ class Parser:
         if match:
             versus = self.resolver.versus(match.group(2)) if match.group(2) else []
             return None if versus is None else [row('damage_resist', int(match.group(1)), on=on, vs=versus)]
-        match = re.fullmatch(r'(?:(.+?) )?allies take \+?(\d+)% less damage', text)
+        match = re.fullmatch(r'(?:(.+?) )?allies take \+?(\d+)% less damage(?: from (.+))?', text)
         if match:
             who = None
             if match.group(1):
@@ -438,7 +504,13 @@ class Parser:
                 if resolved is None or resolved[0] is not None:
                     return None
                 who = resolved[1]
-            return [row('damage_resist', int(match.group(2)), on=on, scope='allies', who=who)]
+            versus = None
+            if match.group(3):
+                versus = (other_factions(who) if match.group(3) == 'all other factions'
+                          else self.resolver.versus(match.group(3)))
+                if versus is None:
+                    return None
+            return [row('damage_resist', int(match.group(2)), on=on, scope='allies', who=who, vs=versus)]
         match = re.fullmatch(r'(.+?) take \+?(\d+)% less damage', text)
         if match:
             target = self.recipient(match.group(1), 1)
@@ -481,23 +553,42 @@ class Parser:
                     return None
                 who = target[1]
             return [row('damage', int(match.group(1)), on=trigger, scope='enemies', who=who, basis='damage')]
-        match = re.fullmatch(r'(?:power )?drains? \+?(\d+)% (?:enemy power|power(?: from (?:all )?enemies)?)', text)
+        match = (re.fullmatch(r'(?:power )?drains? \+?(\d+)% (?:enemy power|power(?: from (?:all )?enemies)?)', text)
+                 or re.fullmatch(r'power drains enemies \+?(\d+)%', text))
         if match:
             return [row('drain', int(match.group(1)), on=on, scope='enemies')]
-        match = re.fullmatch(r'(?:all )?(enemies|allies) (?:take|receive) \+?(\d+)% (?:of )?damage (?:dealt|received)',
-                             text)
+        match = re.fullmatch(r'(enemies|allies) (?:are|is) drained \+?(\d+)% power', text)
+        if match:
+            return [row('drain', int(match.group(2)), on=on, scope=match.group(1))]
+        match = re.fullmatch(r'(?:all )?(enemies|allies) (?:take|receive) \+?(\d+)% (?:of )?damage '
+                             r'(?:dealt or received|dealt|received)', text)
         if match:
             return [row('damage', int(match.group(2)), on=on, scope=match.group(1), basis='damage')]
+        match = re.fullmatch(r'(enemies|allies) suffer \+?(\d+)% health loss( and power drain)?', text)
+        if match:
+            stats = ['damage', 'drain'] if match.group(3) else ['damage']
+            return [row(stat, int(match.group(2)), on=on, scope=match.group(1)) for stat in stats]
         return None
 
     def conversion(self, text: str, on: str) -> Rows | None:
+        split = re.fullmatch(r'(.+? (?:into|to|as)) (power|health) for (.+?) and (power|health) for (.+)', text)
+        if split:
+            first = self.conversion(f'{split.group(1)} {split.group(2)} for {split.group(3)}', on)
+            second = self.conversion(f'{split.group(1)} {split.group(4)} for {split.group(5)}', on)
+            return None if first is None or second is None else first + second
         match = re.fullmatch(
             r'(?:(allies) )?converts? \+?(\d+)% (?:of )?(all )?damage (taken|received|dealt or received|dealt|to allies)'
-            r'(?: (?:by|to) (allies|any hero|self|enemies by self|enemies))?(?: into| to| as) (ally |self |allies )?'
-            r'(power and health|health and power|power|health)(?: for (.+))?', text)
+            r'(?: (?:by|to) (allies|any hero|self|enemies by self|enemies|[a-z ]+? allies))?(?: into| to| as)'
+            r' (ally |self |allies )?(power and health|health and power|power|health)(?: for (.+))?', text)
         if not match:
             return None
         whose, value, everyone, kind, by, owner, stats, target = match.groups()
+        cause = None
+        if by and by != 'allies' and by.endswith(' allies'):
+            cause = self.resolver.group(by.removesuffix(' allies'))
+            if cause is None:
+                return None
+            by = 'allies'
         triggers = {
             ('taken', None): 'self_hit', ('received', None): 'self_hit', ('taken', 'allies'): 'ally_hit',
             ('received', 'allies'): 'ally_hit', ('to allies', None): 'ally_hit', ('received', 'any hero'): 'any_hit',
@@ -516,16 +607,32 @@ class Parser:
             if resolved is None:
                 return None
             scope, who = resolved[0], resolved[1]
-        rows = [row(stat, int(value), on=on_each, scope=scope, who=who, basis='damage')
+        rows = [row(stat, int(value), on=on_each, scope=scope, who=who, basis='damage', by=cause)
                 for on_each in trigger.split('+')
                 for stat in sorted(re.findall(r'power|health', stats), key=STAT_ORDER.index)]
         return expand(rows)
 
     def targeting(self, text: str) -> Rows | None:
-        scope = 'self'
-        squad = re.match(r'^(?:squad|allies) ((?:more likely to attack|usually attack).*)$', text)
-        if squad:
+        scope, who = 'self', None
+        hatred = re.fullmatch(r'grants? hatred of (.+) to allies', text)
+        squad = re.match(r'^(?:squad|allies) (?:are )?((?:more likely to (?:attack|target)|usually attack).*)$', text)
+        grouped = re.match(r'^(.+?) (?:are|is) ((?:more|less) likely to (?:attack|target).*)$', text)
+        if hatred:
+            scope, text = 'allies', f'more likely to attack {hatred.group(1)}'
+        elif squad:
             scope, text = 'allies', squad.group(1)
+        elif grouped:
+            who = self.resolver.group(grouped.group(1))
+            if who is None:
+                return None
+            scope, text = 'allies', grouped.group(2)
+        for pattern, stat in TARGET_ROW_SENTENCES:
+            if re.fullmatch(pattern, text):
+                return [row(stat, 1, scope=scope, who=who)]
+        assassinate = re.fullmatch(r'much more likely to assassinate (.+)', text)
+        if assassinate:
+            versus = self.resolver.versus(assassinate.group(1))
+            return [row('assassinate_match', 1, scope=scope, who=who, vs=versus)] if versus else None
         text = re.sub(r'^(?:much |very )?(?:more )?likely to (?:attack|target)', 'more likely to attack', text)
         fixed = [
             (r'(?:more likely to attack|usually attacks?) (?:the )?back row', 'target_back_row'),
@@ -540,13 +647,42 @@ class Parser:
         ]
         for pattern, stat in fixed:
             if re.fullmatch(pattern, text):
-                return [row(stat, 1, scope='allies' if stat == 'flank_reduction' else scope)]
-        match = re.fullmatch(r'more likely to attack (.+)', text)
-        if match and scope == 'self':
-            versus = self.resolver.versus(re.sub(r'\s+heroes$', '', match.group(1)))
+                return [row(stat, 1, scope='allies' if stat == 'flank_reduction' else scope, who=who)]
+        match = re.fullmatch(r'(more|less) likely to attack (.+)', text)
+        if match:
+            versus = self.resolver.versus(re.sub(r'\s+heroes$', '', match.group(2)))
             if versus:
-                return [row('target_match', 1, who=versus)]
+                stat = 'target_match' if match.group(1) == 'more' else 'target_avoid'
+                return [row(stat, 1, scope=scope, who=who, vs=versus)]
         return None
+
+    def per_ally(self, text: str, on: str) -> Rows | None:
+        match = re.fullmatch(r'(?:(?:gains?|receives?|gets?) )?(.+?) (?:for each|for every|per each) (.+?) '
+                             r'(ally|in the party|in the squad)', text)
+        if not match:
+            return None
+        rows = self.stat_list(match.group(1), on)
+        terms = self.resolver.counted(match.group(2))
+        if rows is None or terms is None or any(item['scope'] != 'self' for item in rows):
+            return None
+        return counted_rows(rows, terms, match.group(3) != 'ally')
+
+    def listed(self, text: str, on: str) -> Rows | None:
+        match = re.fullmatch(r'((?:all )?allies) (get|gain): (.+)', text)
+        if not match:
+            return None
+        subject, verb = match.group(1), match.group(2)
+        rows: Rows = []
+        for item in re.split(r',\s*(?:and\s+)?(?![^()]*\))', match.group(3)):
+            extra = re.fullmatch(r'(.+?) \((.+)\)', item)
+            head = extra.group(1) if extra else item
+            phrase = f'{subject} {head}' if re.match(SUBJECT_VERBS, head) else f'{subject} {verb} {head}'
+            found = self.clause(phrase, on)
+            more = self.modifier(extra.group(2), found, None) if extra and found else []
+            if found is None or more is None:
+                return None
+            rows += found + more
+        return rows
 
     def special(self, text: str, on: str) -> Rows | None:
         if re.fullmatch(r'perceptive(?::.*)?', text):
@@ -557,7 +693,8 @@ class Parser:
             rows = handler(text)
             if rows is not None:
                 return rows
-        for handler in (self.immunities, self.damage_resists, self.bonus_damage, self.reaction, self.conversion):
+        for handler in (self.listed, self.per_ally, self.immunities, self.damage_resists, self.bonus_damage,
+                        self.reaction, self.conversion):
             rows = handler(text, on)
             if rows is not None:
                 return rows
@@ -576,7 +713,7 @@ class Parser:
         immune = re.fullmatch(r'immunity (?:for|to) (.+)', text)
         double = re.fullmatch(r'double (?:for|to|vs) (.+)', text)
         if immune or double:
-            value = IMMUNE_PCT if immune else None
+            value = FLAG if immune else None
             tail = (immune or double).group(1)
             versus = bool(double) and text.startswith('double vs')
         else:
@@ -608,8 +745,12 @@ class Parser:
             if key in seen:
                 continue
             seen.add(key)
+            stat = RESIST_IMMUNITY.get(item['stat'], item['stat']) if immune else IMMUNITY_RESIST.get(item['stat'],
+                                                                                                    item['stat'])
+            if immune and stat not in IMMUNITY_RESIST:
+                return None
             amount = item['value'] if value is None else (value if item['value'] > 0 else -abs(value))
-            rows.append(row(item['stat'], amount, on=on or item['on'], scope=scope, who=who, vs=vs,
+            rows.append(row(stat, amount, on=on or item['on'], scope=scope, who=who, vs=vs,
                             basis=item['basis'], each=each))
         return rows
 
@@ -662,10 +803,22 @@ class Parser:
                 return None
         return result
 
+    def filtered(self, text: str) -> Rows | None:
+        for on, pattern in FILTERED_TRIGGERS:
+            match = re.fullmatch(rf'(.+?),?\s+{pattern}', text)
+            cause = self.resolver.group(match.group(2)) if match else None
+            rows = self.body(match.group(1), on) if cause else None
+            if rows is not None:
+                return [dict(item, by=cause) for item in rows]
+        return None
+
     def sentence(self, sentence: str) -> Rows | None:
         text = qualitative(normalize(sentence))
         if not text:
             return []
+        rows = self.filtered(text)
+        if rows is not None:
+            return rows
         on, body, leading = find_trigger(text)
         if on == 'battle':
             return self.body(text, 'battle')
@@ -677,11 +830,6 @@ class Parser:
         return None
 
 
-def unsupported(sentence: str) -> bool:
-    text = normalize(sentence)
-    return any(re.fullmatch(pattern, text) for pattern in UNSUPPORTED)
-
-
 def sentences_of(text: str) -> list[str]:
     text = re.sub(r'\bvs\.', 'vs', text or '', flags=re.I)
     if not re.search(r'<color=', text, re.I):
@@ -690,11 +838,13 @@ def sentences_of(text: str) -> list[str]:
 
 
 def applied_passives(passives: list[dict]) -> dict[str, set]:
-    applied: dict[str, set] = {'stat': set(), 'bonus_damage': set(), 'kinds': set()}
+    applied: dict[str, set] = {'stat': set(), 'per_ally': set(), 'bonus_damage': set(), 'kinds': set()}
     for effect in passives:
         applied['kinds'].add(effect['kind'])
         if effect['kind'] in ('stat_percent', 'stat_percent_per_matching_ally'):
             applied['stat'].update((stat, abs(int(effect['value_pct']))) for stat in effect['stats'])
+        if effect['kind'] == 'stat_percent_per_matching_ally':
+            applied['per_ally'].update((stat, abs(int(effect['value_pct']))) for stat in effect['stats'])
         if effect['kind'] == 'bonus_damage_percent':
             applied['bonus_damage'].add(abs(int(effect['value_pct'])))
     return applied
@@ -702,6 +852,8 @@ def applied_passives(passives: list[dict]) -> dict[str, set]:
 
 def already_applied(item: dict, applied: dict[str, set]) -> bool:
     stat, value, on = item['stat'], abs(item['value']), item['on']
+    if item.get('per'):
+        return on == 'battle' and (stat, value) in applied['per_ally']
     if on == 'battle' and stat in ('health', 'power') and not item.get('vs'):
         return (stat, value) in applied['stat']
     if on == 'battle' and stat in ('power', 'bonus_damage') and item.get('vs'):
@@ -727,17 +879,13 @@ def build() -> tuple[dict, list[str], int]:
     parser = Parser(Resolver(characters, reference))
     items: list[dict] = []
     unparsed: list[str] = []
-    skipped: list[str] = []
     counted = 0
     for character in sorted([*characters, *custom], key=lambda c: c['id']):
         applied = applied_passives(passives.get(character.get('based_on') or character['id'], []))
         effects: Rows = []
         for sentence in sentences_of(character.get('equipped_rune_text', '')):
-            if unsupported(sentence):
-                skipped.append(f'{character["id"]}: {sentence}')
-                continue
             counted += 1
-            rows = parser.sentence(sentence)
+            rows = parser.sentence(hero_sentence(sentence, character))
             if rows is None:
                 unparsed.append(f'{character["id"]}: {sentence}')
                 continue
@@ -754,8 +902,12 @@ def build() -> tuple[dict, list[str], int]:
             'qualitative_defender_pct': QUALITATIVE_DEFENDER_PCT,
             'unstated_defender_pct': UNSTATED_DEFENDER_PCT,
             'unscoped_negative': 'applies to enemies, as data/intrinsic_passives.json reads red aura text',
+            'immune': 'stun_immune and the other *_immune flags hold through PvP trims and enemy resist cuts',
+            'target_rules': 'target_match, target_avoid and assassinate_match steer the scope/who attackers toward or '
+                            'away from the vs heroes',
+            'per': 'the value counts once per allied hero matching per; per_self counts the hero itself too',
+            'by': 'a trigger fires only when the hero that was hit, attacked or died matches by',
         },
-        'unsupported': skipped,
         'unparsed': unparsed,
         'items': items,
     }, unparsed, counted
@@ -772,8 +924,7 @@ def main() -> int:
     if args.verbose:
         for line in unparsed:
             print(line)
-    print(f'{len(catalog["items"])} heroes, {counted} sentences, {coverage:.1%} parsed, '
-          f'{len(catalog["unsupported"])} beyond the battle sim')
+    print(f'{len(catalog["items"])} heroes, {counted} sentences, {coverage:.1%} parsed')
     if args.check:
         if not OUTPUT.exists() or OUTPUT.read_text(encoding='utf-8') != text:
             print(f'{OUTPUT.relative_to(ROOT)} is out of date; run tools/build_hero_auras.py', file=sys.stderr)

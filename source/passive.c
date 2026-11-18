@@ -27,6 +27,7 @@ typedef enum {
     PASSIVE_TERM_RARITY,
     PASSIVE_TERM_SPEED,
     PASSIVE_TERM_TAG,
+    PASSIVE_TERM_OPPOSING_FACTION,
     PASSIVE_TERM_UNKNOWN
 } PassiveTermKind;
 typedef enum { PASSIVE_SELECTOR_NONE, PASSIVE_SELECTOR_LOWEST_HEALTH_PERCENT } PassiveSelector;
@@ -103,6 +104,7 @@ static PassiveTermKind PassiveTermKindFromString(const char *s) {
     if (!strcmp(s, "rarity")) return PASSIVE_TERM_RARITY;
     if (!strcmp(s, "speed")) return PASSIVE_TERM_SPEED;
     if (!strcmp(s, "tag")) return PASSIVE_TERM_TAG;
+    if (!strcmp(s, "opposing_faction")) return PASSIVE_TERM_OPPOSING_FACTION;
     return PASSIVE_TERM_UNKNOWN;
 }
 

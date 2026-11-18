@@ -49,6 +49,15 @@ typedef enum {
     GEAR_STAT_TARGET_MATCH,
     GEAR_STAT_DAMAGE,
     GEAR_STAT_DRAIN,
+    GEAR_STAT_STUN_IMMUNE,
+    GEAR_STAT_SLOW_IMMUNE,
+    GEAR_STAT_DRAIN_IMMUNE,
+    GEAR_STAT_CURSE_POWER_IMMUNE,
+    GEAR_STAT_CURSE_HEALTH_IMMUNE,
+    GEAR_STAT_TARGET_AVOID,
+    GEAR_STAT_TARGET_FRONT_ROW,
+    GEAR_STAT_TARGET_EVEN_ROWS,
+    GEAR_STAT_ASSASSINATE_MATCH,
     GEAR_STAT_COUNT
 } GearStat;
 
@@ -80,6 +89,8 @@ typedef struct {
     PassiveFilter recipient;
     PassiveFilter wearer;
     PassiveFilter versus;
+    PassiveFilter per;
+    PassiveFilter by;
 } GearEffect;
 
 typedef struct {
@@ -169,6 +180,15 @@ static GearStat GearStatFromString(const char *s) {
         {"target_match", GEAR_STAT_TARGET_MATCH},
         {"damage", GEAR_STAT_DAMAGE},
         {"drain", GEAR_STAT_DRAIN},
+        {"stun_immune", GEAR_STAT_STUN_IMMUNE},
+        {"slow_immune", GEAR_STAT_SLOW_IMMUNE},
+        {"drain_immune", GEAR_STAT_DRAIN_IMMUNE},
+        {"curse_power_immune", GEAR_STAT_CURSE_POWER_IMMUNE},
+        {"curse_health_immune", GEAR_STAT_CURSE_HEALTH_IMMUNE},
+        {"target_avoid", GEAR_STAT_TARGET_AVOID},
+        {"target_front_row", GEAR_STAT_TARGET_FRONT_ROW},
+        {"target_even_rows", GEAR_STAT_TARGET_EVEN_ROWS},
+        {"assassinate_match", GEAR_STAT_ASSASSINATE_MATCH},
     };
     for (size_t i = 0; i < sizeof(names) / sizeof(names[0]); i++)
         if (!strcmp(names[i].name, s)) return names[i].stat;
@@ -230,6 +250,10 @@ static void GearEffectParse(GearEffect *effect, const cJSON *row, const char *ge
     effect->wearer.scope = PASSIVE_SCOPE_SELF;
     GearFilterParseTerms(&effect->wearer, cJSON_GetObjectItemCaseSensitive((cJSON *)row, "wearer"), false);
     GearFilterParseTerms(&effect->versus, cJSON_GetObjectItemCaseSensitive((cJSON *)row, "vs"), each);
+    effect->per.scope = PASSIVE_SCOPE_ALLIES;
+    effect->per.include_source = cJSON_IsTrue(cJSON_GetObjectItemCaseSensitive((cJSON *)row, "per_self"));
+    GearFilterParseTerms(&effect->per, cJSON_GetObjectItemCaseSensitive((cJSON *)row, "per"), false);
+    GearFilterParseTerms(&effect->by, cJSON_GetObjectItemCaseSensitive((cJSON *)row, "by"), false);
 }
 
 static void GearDefParse(GearDef *def, const cJSON *row) {
