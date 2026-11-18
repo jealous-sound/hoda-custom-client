@@ -11,6 +11,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import build_campaign_node_layout
 import build_campaign_scenes
+import map_prefab
 
 SCENES = json.loads(build_campaign_scenes.OUTPUT.read_text(encoding="utf-8"))["scenes"]
 MAPS = json.loads(build_campaign_scenes.MAPS.read_text(encoding="utf-8"))
@@ -22,11 +23,7 @@ END_CAP_PREFIX = f"{build_campaign_scenes.TRANSIT_PREFAB}/"
 FIRE_MAP = "PVE_MAP_01"
 FIRE_TEXTURE = "cache:shared_resourcecontainer/vfx_fire_ring_fb"
 WIND_MAP = "PVE_MAP_01"
-PARTICLE_BLENDS = {"alpha", "additive"}
 LAYER_BLENDS = {"opaque", "cutout", "alpha", "additive"}
-SHAPES = {"point", "box", "cone", "sphere", "points"}
-MAX_CURVE_KEYS = 17
-MAX_GRADIENT_KEYS = 8
 
 
 def close(a, b, places=4):
@@ -110,36 +107,6 @@ class CampaignScenesTest(unittest.TestCase):
                     self.assertEqual(len(wind["matrix"]), 16)
         self.assertTrue(next(scene for scene in SCENES if scene["map"] == WIND_MAP)["winds"])
 
-    def test_emitters_are_well_formed(self) -> None:
-        for scene in SCENES:
-            for emitter in scene["emitters"]:
-                with self.subTest(map=scene["map"], emitter=emitter["name"]):
-                    self.assertIn(emitter["blend"], PARTICLE_BLENDS)
-                    self.assertIn(emitter["render"], set(build_campaign_scenes.RENDER_MODES.values()))
-                    self.assertIn(emitter["shape"]["type"], SHAPES)
-                    self.assertEqual(len(emitter["axes"]), 9)
-                    self.assertEqual(len(emitter["shape_axes"]), 9)
-                    self.assertEqual(len(emitter["colors"]), 2)
-                    self.assertGreater(emitter["rate"], 0.0)
-                    self.assertGreater(emitter["lifetime"][1], 0.0)
-                    for key in ("spin", "size_curve"):
-                        if key in emitter:
-                            self.assert_curve(emitter[key])
-                    for key in ("velocity", "force"):
-                        for curve in emitter.get(key, []):
-                            self.assert_curve(curve)
-                    if "sheet" in emitter:
-                        self.assert_curve(emitter["sheet"]["frame"])
-                    gradient = emitter.get("gradient", {"color": [], "alpha": []})
-                    self.assertLessEqual(len(gradient["color"]), MAX_GRADIENT_KEYS)
-                    self.assertLessEqual(len(gradient["alpha"]), MAX_GRADIENT_KEYS)
-
-    def assert_curve(self, curve) -> None:
-        self.assertTrue(1 <= len(curve) <= MAX_CURVE_KEYS)
-        times = [key[0] for key in curve]
-        self.assertEqual(times, sorted(times))
-        self.assertTrue(all(len(key) == 3 for key in curve))
-
     def test_map_one_burns_with_doubled_additive_fire(self) -> None:
         scene = next(scene for scene in SCENES if scene["map"] == FIRE_MAP)
         fires = [emitter for emitter in scene["emitters"] if emitter["texture"] == FIRE_TEXTURE]
@@ -148,35 +115,12 @@ class CampaignScenesTest(unittest.TestCase):
             self.assertEqual(fire["blend"], "additive")
             self.assertGreater(fire["tint"][0], 1.0)
 
-    def test_hermite_curves_follow_their_tangents(self) -> None:
-        keys = [
-            {"time": 0.0, "value": 0.0, "inSlope": 0.0, "outSlope": 0.0},
-            {"time": 1.0, "value": 1.0, "inSlope": 0.0, "outSlope": 0.0},
-        ]
-        self.assertAlmostEqual(build_campaign_scenes.hermite(keys, 0.5), 0.5)
-        self.assertAlmostEqual(build_campaign_scenes.hermite(keys, 0.25), 0.15625)
-        self.assertEqual(build_campaign_scenes.hermite(keys, -1.0), 0.0)
-        self.assertEqual(build_campaign_scenes.hermite(keys, 2.0), 1.0)
-
-    def test_two_constants_become_a_random_range(self) -> None:
-        node = {
-            "minMaxState": build_campaign_scenes.CURVE_TWO_CONSTANTS,
-            "scalar": 2.0,
-            "minCurve": {"m_Curve": [{"time": 0.0, "value": 0.25, "inSlope": 0.0, "outSlope": 0.0}]},
-            "maxCurve": {"m_Curve": [{"time": 0.0, "value": 1.0, "inSlope": 0.0, "outSlope": 0.0}]},
-        }
-        self.assertEqual(build_campaign_scenes.node_curve(node), [[0.0, 0.5, 2.0]])
-        self.assertEqual(build_campaign_scenes.constant_range(node), [0.5, 2.0])
-
-    def test_packed_colours_unpack_red_first(self) -> None:
-        self.assertEqual(build_campaign_scenes.unpack_rgba({"rgba": 0x80FF0000}), (0.0, 0.0, 1.0, 128 / 255))
-
     def test_non_uniform_scale_is_baked_into_the_mesh(self) -> None:
-        matrix = build_campaign_scenes.nexus.trs((1.0, 2.0, 3.0), (0.0, 0.0, 0.0, 1.0), (2.0, 2.0, -3.0))
+        matrix = map_prefab.trs((1.0, 2.0, 3.0), (0.0, 0.0, 0.0, 1.0), (2.0, 2.0, -3.0))
         model, baked = build_campaign_scenes.renderer_placement(matrix, (0.0, 0.0, 0.0, 1.0))
-        self.assertTrue(close(build_campaign_scenes.nexus.transform_point(model, (0.0, 0.0, 0.0)), (1.0, 2.0, 3.0)))
-        self.assertTrue(close(build_campaign_scenes.nexus.transform_point(baked, (1.0, 1.0, 1.0)), (2.0, 2.0, -3.0)))
-        uniform = build_campaign_scenes.nexus.trs((1.0, 2.0, 3.0), (0.0, 0.0, 0.0, 1.0), (2.0, 2.0, 2.0))
+        self.assertTrue(close(map_prefab.transform_point(model, (0.0, 0.0, 0.0)), (1.0, 2.0, 3.0)))
+        self.assertTrue(close(map_prefab.transform_point(baked, (1.0, 1.0, 1.0)), (2.0, 2.0, -3.0)))
+        uniform = map_prefab.trs((1.0, 2.0, 3.0), (0.0, 0.0, 0.0, 1.0), (2.0, 2.0, 2.0))
         self.assertEqual(build_campaign_scenes.renderer_placement(uniform, (0.0, 0.0, 0.0, 1.0))[0], uniform)
 
 

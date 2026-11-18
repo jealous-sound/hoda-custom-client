@@ -12,6 +12,7 @@ typedef struct {
 } DebugShot;
 
 #define DEBUG_SHOT_DEFAULT_FRAMES 90
+#define DEBUG_NEXUS_SCENE_SETTLE_SECONDS 3.0f
 #define DEBUG_EXPEDITION_LEVEL 30
 #define DEBUG_EXPEDITION_LONG_AGO 3600
 #define DEBUG_EXPEDITION_HALF_WAY 7200
@@ -164,6 +165,8 @@ static void DebugRenderNexusScene(const char *scene_name) {
     NexusBackgroundScrollLimits(&bg, &art_lo, &art_hi);
     NexusBackgroundSetScroll(&bg, Clamp(EnvFloat("HOD_NEXUS_SCROLL", NexusBackgroundHomeX(&bg)), art_lo, art_hi));
     TraceLog(LOG_INFO, "Nexus: %s art scroll limits [%.2f, %.2f]", scene_name, art_lo, art_hi);
+    for (float settled = 0.0f; settled < DEBUG_NEXUS_SCENE_SETTLE_SECONDS; settled += MAP_SCENE_STEP)
+        NexusBackgroundUpdate(&bg, MAP_SCENE_STEP);
     for (int frame = 0; frame < 4; frame++) {
         BeginDrawing();
         ClearBackground(BLACK);

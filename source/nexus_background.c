@@ -24,6 +24,9 @@
 #define NEXUS_MIN_VIEW_SCALE 0.8f
 #define NEXUS_VIEW_FIT_STEPS 7
 
+#define NEXUS_OPAQUE_QUEUE 0
+#define NEXUS_MAX_DRAWS (NEXUS_BG_MAX_LAYERS + MAP_SCENE_MAX_EMITTERS)
+
 static const char *const NEXUS_FS_LAYER = "#version 330\n"
                                           "in vec2 fragTexCoord;\n"
                                           "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"
@@ -78,6 +81,7 @@ typedef struct {
     int texture_count;
     NexusLayer layers[NEXUS_BG_MAX_LAYERS];
     int layer_count;
+    MapSceneParticles particles;
 
     Camera3D cam;
     float cam_home_x;
@@ -380,16 +384,18 @@ void NexusBackgroundLoad(NexusBackground *bg, const char *prefab) {
         }
         if (NexusLayerLoad(bg, &bg->layers[bg->layer_count], layer_json)) bg->layer_count++;
     }
+    MapSceneParticlesLoad(&bg->particles, prefab, cJSON_GetObjectItemCaseSensitive((cJSON *)scene, "emitters"));
     cJSON_Delete(root);
     float envelope_lo = 0.0f, envelope_hi = 0.0f;
     NexusArtEnvelope(bg, &envelope_lo, &envelope_hi);
     for (int i = 0; i < bg->layer_count; i++) NexusLayerFindSeams(bg, &bg->layers[i], envelope_hi - envelope_lo);
     NexusAddMirrors(bg, envelope_hi - envelope_lo);
-    TraceLog(LOG_INFO, "Nexus: %s loaded %d layers", prefab, bg->layer_count);
+    TraceLog(LOG_INFO, "Nexus: %s loaded %d layers, %d emitters", prefab, bg->layer_count, bg->particles.count);
 }
 
 void NexusBackgroundUnload(NexusBackground *bg) {
     for (int i = 0; i < bg->layer_count; i++) UnloadMesh(bg->layers[i].mesh);
+    MapSceneParticlesUnload(&bg->particles);
     for (int i = 0; i < bg->texture_count; i++) {
         UnloadTexture(bg->textures[i].texture);
         UnloadImage(bg->textures[i].mask);
@@ -399,6 +405,10 @@ void NexusBackgroundUnload(NexusBackground *bg) {
     UnloadMaterial(bg->material);
     UnloadShader(bg->layer_sh);
     memset(bg, 0, sizeof(*bg));
+}
+
+void NexusBackgroundUpdate(NexusBackground *bg, float dt) {
+    MapSceneParticlesUpdate(&bg->particles, dt);
 }
 
 void NexusBackgroundSetScroll(NexusBackground *bg, float x) {
@@ -644,20 +654,14 @@ void NexusBackgroundScrollLimits(const NexusBackground *bg, float *out_lo, float
 }
 
 static int NexusLayerQueue(const NexusLayer *layer) {
-    return layer->blend == NEXUS_BLEND_OPAQUE || layer->blend == NEXUS_BLEND_CUTOUT ? 0 : 1;
+    bool opaque = layer->blend == NEXUS_BLEND_OPAQUE || layer->blend == NEXUS_BLEND_CUTOUT;
+    return opaque ? NEXUS_OPAQUE_QUEUE : MAP_SCENE_TRANSPARENT_QUEUE;
 }
 
-static const NexusBackground *nexus_sort_bg;
-
 static int NexusDrawOrderCompare(const void *a, const void *b) {
-    const NexusLayer *la = &nexus_sort_bg->layers[*(const int *)a];
-    const NexusLayer *lb = &nexus_sort_bg->layers[*(const int *)b];
-    int qa = NexusLayerQueue(la), qb = NexusLayerQueue(lb);
-    if (qa != qb) return qa - qb;
-    float da = Vector3DistanceSqr(nexus_sort_bg->cam.position, la->centre);
-    float db = Vector3DistanceSqr(nexus_sort_bg->cam.position, lb->centre);
-    if (qa == 0) return (da > db) - (da < db);
-    return (da < db) - (da > db);
+    const MapSceneDrawItem *da = a, *db = b;
+    if (da->queue != db->queue || da->queue != NEXUS_OPAQUE_QUEUE) return MapSceneDrawCompare(a, b);
+    return (da->distance > db->distance) - (da->distance < db->distance);
 }
 
 static void NexusLayerDraw(const NexusBackground *bg, const NexusLayer *layer) {
@@ -665,7 +669,7 @@ static void NexusLayerDraw(const NexusBackground *bg, const NexusLayer *layer) {
     material.maps[MATERIAL_MAP_DIFFUSE].texture =
         NexusLayerIsFrame(layer) ? bg->white : bg->textures[layer->texture].texture;
     material.maps[MATERIAL_MAP_DIFFUSE].color = layer->color;
-    float opaque = NexusLayerQueue(layer) == 0 ? 1.0f : 0.0f;
+    float opaque = NexusLayerQueue(layer) == NEXUS_OPAQUE_QUEUE ? 1.0f : 0.0f;
     SetShaderValue(bg->layer_sh, bg->opaque_loc, &opaque, SHADER_UNIFORM_FLOAT);
     SetShaderValue(bg->layer_sh, bg->cutoff_loc, &layer->cutoff, SHADER_UNIFORM_FLOAT);
     if (opaque > 0.0f)
@@ -678,18 +682,29 @@ static void NexusLayerDraw(const NexusBackground *bg, const NexusLayer *layer) {
 }
 
 void NexusBackgroundDrawRange(const NexusBackground *bg, float min_y, float max_y) {
-    int order[NEXUS_BG_MAX_LAYERS];
+    MapSceneDrawItem draws[NEXUS_MAX_DRAWS];
     int count = 0;
+    Vector3 eye = bg->cam.position;
     for (int i = 0; i < bg->layer_count; i++) {
-        float y = bg->layers[i].centre.y;
-        if (NexusLayerActive(bg, &bg->layers[i]) && y >= min_y && y < max_y) order[count++] = i;
+        const NexusLayer *layer = &bg->layers[i];
+        if (!NexusLayerActive(bg, layer) || layer->centre.y < min_y || layer->centre.y >= max_y) continue;
+        MapSceneAddDraw(draws, &count, eye, MAP_SCENE_DRAW_LAYER, i, NexusLayerQueue(layer), layer->centre);
     }
-    nexus_sort_bg = bg;
-    qsort(order, (size_t)count, sizeof(order[0]), NexusDrawOrderCompare);
+    for (int i = 0; i < bg->particles.count; i++) {
+        Vector3 origin = bg->particles.emitters[i].origin;
+        if (origin.y < min_y || origin.y >= max_y) continue;
+        MapSceneAddDraw(draws, &count, eye, MAP_SCENE_DRAW_EMITTER, i, MAP_SCENE_TRANSPARENT_QUEUE, origin);
+    }
+    qsort(draws, (size_t)count, sizeof(draws[0]), NexusDrawOrderCompare);
     rlDrawRenderBatchActive();
     rlDisableBackfaceCulling();
     rlEnableDepthTest();
-    for (int i = 0; i < count; i++) NexusLayerDraw(bg, &bg->layers[order[i]]);
+    for (int i = 0; i < count; i++) {
+        if (draws[i].kind == MAP_SCENE_DRAW_EMITTER)
+            MapSceneParticlesDraw(&bg->particles, draws[i].index, bg->cam);
+        else
+            NexusLayerDraw(bg, &bg->layers[draws[i].index]);
+    }
     rlEnableDepthMask();
     rlDisableDepthTest();
     rlEnableBackfaceCulling();

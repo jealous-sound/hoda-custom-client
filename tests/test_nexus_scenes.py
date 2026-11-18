@@ -9,10 +9,11 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 import build_nexus_scenes
+import map_prefab
 
 SCENES = json.loads(build_nexus_scenes.OUTPUT.read_text(encoding="utf-8"))["scenes"]
 MAPS = json.loads(build_nexus_scenes.MAPS.read_text(encoding="utf-8"))
-BLENDS = {build_nexus_scenes.OPAQUE, build_nexus_scenes.CUTOUT, build_nexus_scenes.ALPHA, build_nexus_scenes.ADDITIVE}
+BLENDS = {map_prefab.OPAQUE, map_prefab.CUTOUT, map_prefab.ALPHA, map_prefab.ADDITIVE}
 MAP_CAMERA_ROTATION = (0.0, 0.70711, -0.70711, 0.0)
 DOWN = (0.0, -1.0, 0.0)
 SCREEN_UP = (0.0, 0.0, 1.0)
@@ -20,6 +21,13 @@ UNMIRRORED_PREFAB = "nexus_map3_pre"
 LETTERBOXED_PREFAB = "SnexusDEM_map12_pre"
 SIDE_MASKED_PREFAB = "SnexusFH_map7_pre"
 UNMIRRORED_LAYER = "nexus_map3_FBX/mg"
+BURNING_MAPS = {
+    "SnexusAV_map3_pre": "_VFX/LyriumGas",
+    "SnexusWA_map13_pre": "_VFX/Sandstorm",
+    "nexus_map1_pre": "_VFX/vfx.pve11_Falls_mist01/falls01",
+}
+SANDSTORM_PREFAB = "SnexusWA_map13_pre"
+SANDSTORM_WISPS = "_VFX/SandWisps"
 
 
 def close(a, b, places=4):
@@ -43,13 +51,26 @@ class NexusScenesTest(unittest.TestCase):
                     self.assertTrue(all(0 <= index < vertices for index in layer["indices"]))
                     self.assertIn(layer["blend"], BLENDS)
                     if layer["texture"] is None:
-                        self.assertEqual(layer["blend"], build_nexus_scenes.OPAQUE)
+                        self.assertEqual(layer["blend"], map_prefab.OPAQUE)
 
     def test_every_map_camera_looks_down_and_scrolls_along_x(self) -> None:
         for scene in SCENES:
             with self.subTest(prefab=scene["prefab"]):
                 self.assertTrue(close(scene["camera"]["forward"], DOWN))
                 self.assertTrue(close(scene["camera"]["up"], SCREEN_UP))
+
+    def test_event_maps_keep_their_particle_systems(self) -> None:
+        for prefab, emitter_name in BURNING_MAPS.items():
+            with self.subTest(prefab=prefab):
+                scene = next(scene for scene in SCENES if scene["prefab"] == prefab)
+                self.assertIn(emitter_name, {emitter["name"] for emitter in scene["emitters"]})
+
+    def test_sand_wisps_take_their_start_colour_from_the_loop_and_a_random_fade(self) -> None:
+        scene = next(scene for scene in SCENES if scene["prefab"] == SANDSTORM_PREFAB)
+        wisps = next(emitter for emitter in scene["emitters"] if emitter["name"] == SANDSTORM_WISPS)
+        self.assertIn("start_gradient", wisps)
+        self.assertIn("gradient_low", wisps)
+        self.assertNotEqual(wisps["gradient"], wisps["gradient_low"])
 
     def test_map_art_is_not_mirrored(self) -> None:
         scene = next(scene for scene in SCENES if scene["prefab"] == UNMIRRORED_PREFAB)
@@ -64,7 +85,7 @@ class NexusScenesTest(unittest.TestCase):
         for scene in SCENES:
             for layer in scene["layers"]:
                 with self.subTest(prefab=scene["prefab"], layer=layer["name"]):
-                    self.assertFalse(build_nexus_scenes.is_side_mask(layer, scene["camera"]))
+                    self.assertFalse(map_prefab.is_side_mask(layer, scene["camera"]))
         frames = {
             scene["prefab"]: [layer for layer in scene["layers"] if layer["texture"] is None] for scene in SCENES
         }
@@ -75,25 +96,25 @@ class NexusScenesTest(unittest.TestCase):
         camera = {"position": [0.0, 10.0, 0.0], "fov": 26.0}
         tall = {"texture": None, "positions": [0.0, 0.0, -5.0, 1.0, 0.0, 5.0]}
         band = {"texture": None, "positions": [0.0, 0.0, 1.0, 1.0, 0.0, 5.0]}
-        self.assertTrue(build_nexus_scenes.is_side_mask(tall, camera))
-        self.assertFalse(build_nexus_scenes.is_side_mask(band, camera))
-        self.assertFalse(build_nexus_scenes.is_side_mask({**tall, "texture": "cache:art"}, camera))
+        self.assertTrue(map_prefab.is_side_mask(tall, camera))
+        self.assertFalse(map_prefab.is_side_mask(band, camera))
+        self.assertFalse(map_prefab.is_side_mask({**tall, "texture": "cache:art"}, camera))
 
     def test_unity_points_keep_x_and_flip_z(self) -> None:
-        world = build_nexus_scenes.mat_mul(
-            build_nexus_scenes.FLIP_Z, build_nexus_scenes.trs((1.0, 2.0, 3.0), (0.0, 0.0, 0.0, 1.0), (1.0, 1.0, 1.0))
+        world = map_prefab.mat_mul(
+            map_prefab.FLIP_Z, map_prefab.trs((1.0, 2.0, 3.0), (0.0, 0.0, 0.0, 1.0), (1.0, 1.0, 1.0))
         )
-        self.assertTrue(close(build_nexus_scenes.transform_point(world, (4.0, 0.0, 0.0)), (5.0, 2.0, -3.0)))
+        self.assertTrue(close(map_prefab.transform_point(world, (4.0, 0.0, 0.0)), (5.0, 2.0, -3.0)))
 
     def test_map_camera_rotation_looks_down_with_screen_up_along_z(self) -> None:
-        matrix = build_nexus_scenes.trs((0.0, 12.0, 0.0), MAP_CAMERA_ROTATION, (1.0, 1.0, 1.0))
-        camera = build_nexus_scenes.camera_entry(matrix, {"field of view": 26.0})
+        matrix = map_prefab.trs((0.0, 12.0, 0.0), MAP_CAMERA_ROTATION, (1.0, 1.0, 1.0))
+        camera = map_prefab.camera_entry(matrix, {"field of view": 26.0})
         self.assertTrue(close(camera["forward"], DOWN))
         self.assertTrue(close(camera["up"], SCREEN_UP))
 
     def test_image_uv_counts_rows_from_the_top(self) -> None:
-        self.assertEqual(build_nexus_scenes.image_uv((0.25, 0.0), (1.0, 1.0), (0.0, 0.0)), (0.25, 1.0))
-        self.assertEqual(build_nexus_scenes.image_uv((0.5, 0.5), (2.0, 1.0), (0.1, 0.25)), (1.1, 0.25))
+        self.assertEqual(map_prefab.image_uv((0.25, 0.0), (1.0, 1.0), (0.0, 0.0)), (0.25, 1.0))
+        self.assertEqual(map_prefab.image_uv((0.5, 0.5), (2.0, 1.0), (0.1, 0.25)), (1.1, 0.25))
 
 
 if __name__ == "__main__":
