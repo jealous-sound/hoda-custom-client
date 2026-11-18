@@ -378,6 +378,10 @@ def _stat_values(body: str) -> dict[int, set[str]]:
 
 
 def _sentence_clauses(sentence: str) -> list[str]:
+    sentence = re.sub(
+        r"^(allies)\s+(?:get|gain):\s+([^(,]+?)\s+\(((?:extra|additional)\s+[^)]+)\)", r"\2 for \1, \3", sentence,
+        flags=re.I,
+    )
     supplement = re.compile(
         r",\s*(?=(?:and\s+)?(?:an\s+)?(?:extra|additional|another|double)\b)", re.I
     )

@@ -70,6 +70,8 @@ STAT_WORDS = {
 RESIST_SUFFIX_WORDS = {'stun': 'stun_resist', 'slow': 'slow_resist', 'power drain': 'drain_resist',
                        'curse power': 'curse_power_resist', 'curse health': 'curse_health_resist',
                        'damage': 'damage_resist', 'curse': None, 'all effect': None}
+IMMUNITY_WORDS = {'stun': 'stun_immune', 'slow': 'slow_immune', 'power drain': 'drain_immune',
+                  'curse power': 'curse_power_immune'}
 TRIGGER_PHRASES = [
     (r'^when hit,? ', 'self_hit'), (r' when hit$', 'self_hit'), (r'^on attack,? ', 'self_attack'),
     (r' on attack$', 'self_attack'), (r' when attacking$', 'self_attack'),
@@ -241,11 +243,11 @@ def parse_special(body: str, on: str, resolver: TermResolver) -> list[dict] | No
         return [effect('stealth', 1)]
     match = re.fullmatch(r'more likely to attack (.+)', body)
     if match and resolver.many(match.group(1)):
-        return [effect('target_match', 1, who=resolver.many(match.group(1)))]
+        return [effect('target_match', 1, vs=resolver.many(match.group(1)))]
     match = re.fullmatch(r'immune to (stun|slow|power drain)', body) or re.fullmatch(
         r'(curse power|stun|slow|power drain) immunity', body)
     if match:
-        return [effect(RESIST_SUFFIX_WORDS[match.group(1)], 100)]
+        return [effect(IMMUNITY_WORDS[match.group(1)], 1)]
     match = re.fullmatch(r'(?:absorbs )?\+?(\d+)% (?:aoe damage for allies|defender)', body)
     if match:
         return [effect('defender', int(match.group(1)))]
@@ -292,7 +294,7 @@ def curated_sentences(resolver: TermResolver) -> dict[str, list[dict]]:
         '+7% bonus damage for, and against, black faction and demon allies (stacking)': [
             effect('bonus_damage', 7, scope='allies', who=terms('black faction and demon'), each=True),
             effect('bonus_damage', 7, scope='allies', vs=terms('black faction and demon'), each=True)],
-        'slow immunity for the divines': [effect('slow_resist', 100, scope='allies', who=terms('divine'))],
+        'slow immunity for the divines': [effect('slow_immune', 1, scope='allies', who=terms('divine'))],
         'templar equip: extra +5%': [effect('bonus_damage', 5, vs=terms('blue faction'), wearer=terms('templars'))],
         '+20% health and +10% damage resist for dwarves': [
             effect('health', 20, scope='allies', who=dwarves), effect('damage_resist', 10, scope='allies', who=dwarves)],
@@ -345,7 +347,7 @@ def curated_sentences(resolver: TermResolver) -> dict[str, list[dict]]:
             *[effect(s, 20, wearer=terms('vivienne')) for s in curse_resists]],
         'convert 3% of damage taken to power': [effect('power', 3, on='self_hit', basis='damage')],
         '+5% bonus damage vs, and more likely to attack, power gainers (who love raisin cookies)': [
-            effect('bonus_damage', 5, vs=terms('power gainers')), effect('target_match', 1, who=terms('power gainers'))],
+            effect('bonus_damage', 5, vs=terms('power gainers')), effect('target_match', 1, vs=terms('power gainers'))],
         'cassandra equip: +10% heal when hit': [effect('health', 10, on='self_hit', wearer=terms('cassandra'))],
         '+15% health, power drain and damage resist for chantry': [
             effect(s, 15, scope='allies', who=chantry) for s in ('health', 'drain_resist', 'damage_resist')],

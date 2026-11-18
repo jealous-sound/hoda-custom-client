@@ -47,7 +47,7 @@ coverage = root.get("coverage", {})
 expected_coverage = {
     "catalog_characters": 676,
     "manifest_characters": 587,
-    "supported_battle_start_stat_clauses": 704,
+    "supported_battle_start_stat_clauses": 705,
     "unresolved_battle_start_stat_clauses": 0,
     "supported_power_vs_target_clauses": 3,
     "unresolved_power_vs_target_clauses": 0,
