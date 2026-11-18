@@ -3871,8 +3871,8 @@ static void TestMapSceneSheetFrames(void) {
 }
 
 static void TestMapSceneEmitterKeepsItsRate(void) {
-    MapScene *scene = calloc(1, sizeof(*scene));
-    scene->random_state = 1u;
+    MapSceneParticles *fx = calloc(1, sizeof(*fx));
+    fx->random_state = 1u;
     MapSceneParticle particles[17];
     MapSceneEmitter emitter = {
         .rate = 1.0f,
@@ -3884,11 +3884,38 @@ static void TestMapSceneEmitterKeepsItsRate(void) {
         .particles = particles,
         .capacity = 17,
     };
-    MapSceneEmitterAdvance(scene, &emitter, 5.0f);
+    MapSceneEmitterAdvance(fx, &emitter, 5.0f);
     assert(emitter.particle_count == 5);
-    MapSceneEmitterAdvance(scene, &emitter, 30.0f);
+    MapSceneEmitterAdvance(fx, &emitter, 30.0f);
     assert(emitter.particle_count == 16);
-    free(scene);
+    free(fx);
+}
+
+static void TestMapSceneStartColourFollowsTheSystemLoop(void) {
+    MapSceneParticles *fx = calloc(1, sizeof(*fx));
+    fx->random_state = 1u;
+    MapSceneEmitter emitter = {
+        .duration = 10.0f,
+        .time = 12.5f,
+        .colors = {{1.0f, 1.0f, 1.0f, 1.0f}, {1.0f, 1.0f, 1.0f, 1.0f}},
+        .has_start_gradient = true,
+        .start_gradient = {.alpha_count = 2, .alpha_time = {0.0f, 1.0f}, .alpha = {0.0f, 1.0f}},
+    };
+    assert(fabsf(MapSceneStartColor(fx, &emitter).w - 0.25f) < 1e-5f);
+    free(fx);
+}
+
+static void TestMapSceneOverLifeColourPicksBetweenTwoGradients(void) {
+    MapSceneEmitter emitter = {
+        .has_gradient = true,
+        .has_gradient_low = true,
+        .gradient = {.alpha_count = 1, .alpha_time = {0.0f}, .alpha = {1.0f}},
+        .gradient_low = {.alpha_count = 1, .alpha_time = {0.0f}, .alpha = {0.0f}},
+    };
+    MapSceneParticle particle = {.gradient_random = 0.25f};
+    assert(fabsf(MapSceneOverLifeColor(&emitter, &particle, 0.5f).w - 0.25f) < 1e-5f);
+    emitter.has_gradient_low = false;
+    assert(fabsf(MapSceneOverLifeColor(&emitter, &particle, 0.5f).w - 1.0f) < 1e-5f);
 }
 
 static void TestCampaignProgressionPanEnd(void) {
@@ -10416,6 +10443,8 @@ int main(void) {
     TestMapSceneCurvesAndGradients();
     TestMapSceneSheetFrames();
     TestMapSceneEmitterKeepsItsRate();
+    TestMapSceneStartColourFollowsTheSystemLoop();
+    TestMapSceneOverLifeColourPicksBetweenTwoGradients();
     TestCampaignMapRewardSchema();
     TestCampaignAndNexusTextResolves();
     TestCampaignProgressionRewards();

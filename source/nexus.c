@@ -799,6 +799,7 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
         NexusUpdateInput(n, d, dt);
     }
     if (n->final_complete) n->complete_time += dt;
+    NexusBackgroundUpdate(&n->bg, dt);
     NexusBackgroundSetScroll(&n->bg, n->scroll_x);
 
     float plane_y = NexusBackgroundNodePlaneY(&n->bg);

@@ -26,14 +26,15 @@ static const char *const MAP_SCENE_FS_LAYER = "#version 330\n"
                                               "  finalColor = vec4(c.rgb, mix(c.a, 1.0, opaque));\n"
                                               "}\n";
 
-static const char *const MAP_SCENE_FS_PARTICLE = "#version 330\n"
-                                                 "in vec2 fragTexCoord; in vec4 fragColor;\n"
-                                                 "uniform sampler2D texture0; uniform vec4 tint;\n"
-                                                 "out vec4 finalColor;\n"
-                                                 "void main(){\n"
-                                                 "  finalColor = clamp(fragColor*tint*texture(texture0, fragTexCoord),"
-                                                 " 0.0, 1.0);\n"
-                                                 "}\n";
+static const char *const MAP_SCENE_FS_PARTICLE =
+    "#version 330\n"
+    "in vec2 fragTexCoord; in vec4 fragColor;\n"
+    "uniform sampler2D texture0; uniform vec4 tint; uniform float premultiply;\n"
+    "out vec4 finalColor;\n"
+    "void main(){\n"
+    "  vec4 c = clamp(fragColor*tint*texture(texture0, fragTexCoord), 0.0, 1.0);\n"
+    "  finalColor = vec4(c.rgb*mix(1.0, c.a, premultiply), c.a);\n"
+    "}\n";
 
 static const char *const MAP_SCENE_VS_WIND =
     "#version 330\n"
@@ -70,6 +71,7 @@ typedef enum {
     MAP_SCENE_BLEND_CUTOUT,
     MAP_SCENE_BLEND_ALPHA,
     MAP_SCENE_BLEND_ADDITIVE,
+    MAP_SCENE_BLEND_SOFT_ADDITIVE,
 } MapSceneBlend;
 
 typedef enum {
@@ -135,7 +137,7 @@ typedef struct {
     Vector3 position, velocity;
     float age, life, size, rotation;
     Vector4 color;
-    float spin_random, size_random, velocity_random, frame_random;
+    float spin_random, size_random, velocity_random, frame_random, gradient_random;
     int row;
 } MapSceneParticle;
 
@@ -161,15 +163,32 @@ typedef struct {
     Vector2 lifetime, speed, size, rotation;
     Vector4 colors[2];
     float gravity;
-    bool has_spin, has_velocity, velocity_world, has_force, force_world, has_gradient, has_size_curve, has_sheet;
+    bool has_spin, has_velocity, velocity_world, has_force, force_world, has_size_curve, has_sheet;
+    bool has_gradient, has_gradient_low, has_start_gradient;
     MapSceneCurve spin, velocity[3], force[3], size_curve, frame;
-    MapSceneGradient gradient;
+    MapSceneGradient gradient, gradient_low, start_gradient;
     int tiles_x, tiles_y, row;
     float cycles;
+    float time;
     float emit_accumulator;
     MapSceneParticle *particles;
     int particle_count, capacity;
 } MapSceneEmitter;
+
+typedef struct {
+    MapSceneTexture entries[MAP_SCENE_MAX_TEXTURES];
+    int count;
+} MapSceneTextures;
+
+typedef struct {
+    char owner[64];
+    Shader shader;
+    int tint_loc, premultiply_loc;
+    uint32_t random_state;
+    MapSceneTextures textures;
+    MapSceneEmitter emitters[MAP_SCENE_MAX_EMITTERS];
+    int count;
+} MapSceneParticles;
 
 typedef struct {
     Vector3 position;
@@ -191,20 +210,17 @@ typedef struct {
     char map_id[32];
     Camera3D camera;
     float time;
-    uint32_t random_state;
-    Shader layer_shader, particle_shader, wind_shader;
-    int opaque_loc, cutoff_loc, tint_loc;
+    Shader layer_shader, wind_shader;
+    int opaque_loc, cutoff_loc;
     int wind_time_loc, wind_loc, wind_phase_loc, wind_flutter_loc, wind_frequency_loc, wind_scale_loc, wind_shift_loc;
     Material material;
     Texture2D white;
-    MapSceneTexture textures[MAP_SCENE_MAX_TEXTURES];
-    int texture_count;
+    MapSceneTextures textures;
     MapSceneLayer layers[MAP_SCENE_MAX_LAYERS];
     int layer_count;
     MapSceneWind winds[MAP_SCENE_MAX_WINDS];
     int wind_count;
-    MapSceneEmitter emitters[MAP_SCENE_MAX_EMITTERS];
-    int emitter_count;
+    MapSceneParticles particles;
     MapSceneNode nodes[MAP_SCENE_MAX_NODES];
     int node_count;
 } MapScene;
@@ -213,17 +229,17 @@ static int MapSceneClampInt(int value, int low, int high) {
     return value < low ? low : value > high ? high : value;
 }
 
-static float MapSceneRandom(MapScene *s) {
-    uint32_t x = s->random_state;
+static float MapSceneRandom(MapSceneParticles *fx) {
+    uint32_t x = fx->random_state;
     x ^= x << 13;
     x ^= x >> 17;
     x ^= x << 5;
-    s->random_state = x;
+    fx->random_state = x;
     return (float)(x & 0x00ffffffu) / 16777216.0f;
 }
 
-static float MapSceneRandomRange(MapScene *s, Vector2 range) {
-    return range.x + (range.y - range.x) * MapSceneRandom(s);
+static float MapSceneRandomRange(MapSceneParticles *fx, Vector2 range) {
+    return range.x + (range.y - range.x) * MapSceneRandom(fx);
 }
 
 static float MapSceneJsonNumber(const cJSON *array, int index) {
@@ -362,6 +378,7 @@ static MapSceneBlend MapSceneBlendNamed(const char *name) {
     if (strcmp(name, "opaque") == 0) return MAP_SCENE_BLEND_OPAQUE;
     if (strcmp(name, "cutout") == 0) return MAP_SCENE_BLEND_CUTOUT;
     if (strcmp(name, "additive") == 0) return MAP_SCENE_BLEND_ADDITIVE;
+    if (strcmp(name, "soft_additive") == 0) return MAP_SCENE_BLEND_SOFT_ADDITIVE;
     if (strcmp(name, "alpha") != 0) TraceLog(LOG_FATAL, "MapScene: unknown blend %s", name);
     return MAP_SCENE_BLEND_ALPHA;
 }
@@ -373,26 +390,31 @@ static MapSceneRender MapSceneRenderNamed(const char *name) {
     return MAP_SCENE_RENDER_BILLBOARD;
 }
 
-static int MapSceneTextureLoad(MapScene *s, const char *ref) {
-    for (int i = 0; i < s->texture_count; i++)
-        if (strcmp(s->textures[i].ref, ref) == 0) return i;
-    if (s->texture_count >= MAP_SCENE_MAX_TEXTURES)
-        TraceLog(LOG_FATAL, "MapScene: %s has more than %d textures", s->map_id, MAP_SCENE_MAX_TEXTURES);
+static int MapSceneTexturesLoad(MapSceneTextures *t, const char *owner, const char *ref) {
+    for (int i = 0; i < t->count; i++)
+        if (strcmp(t->entries[i].ref, ref) == 0) return i;
+    if (t->count >= MAP_SCENE_MAX_TEXTURES)
+        TraceLog(LOG_FATAL, "MapScene: %s has more than %d textures", owner, MAP_SCENE_MAX_TEXTURES);
     Image image = ResourceLoadImage(ref);
-    if (!image.data) TraceLog(LOG_FATAL, "MapScene: %s has no texture %s", s->map_id, ref);
-    MapSceneTexture *entry = &s->textures[s->texture_count];
+    if (!image.data) TraceLog(LOG_FATAL, "MapScene: %s has no texture %s", owner, ref);
+    MapSceneTexture *entry = &t->entries[t->count];
     StrCopy(entry->ref, sizeof(entry->ref), ref);
     entry->texture = LoadTextureFromImage(image);
     UnloadImage(image);
     SetTextureWrap(entry->texture, TEXTURE_WRAP_REPEAT);
     GenTextureMipmaps(&entry->texture);
     SetTextureFilter(entry->texture, TEXTURE_FILTER_TRILINEAR);
-    return s->texture_count++;
+    return t->count++;
+}
+
+static void MapSceneTexturesUnload(MapSceneTextures *t) {
+    for (int i = 0; i < t->count; i++) UnloadTexture(t->entries[i].texture);
+    t->count = 0;
 }
 
 static int MapSceneOptionalTexture(MapScene *s, const cJSON *node) {
     const cJSON *texture = cJSON_GetObjectItemCaseSensitive((cJSON *)node, "texture");
-    return cJSON_IsString(texture) ? MapSceneTextureLoad(s, texture->valuestring) : -1;
+    return cJSON_IsString(texture) ? MapSceneTexturesLoad(&s->textures, s->map_id, texture->valuestring) : -1;
 }
 
 static Mesh MapSceneMesh(const cJSON *node, bool with_normals, bool with_colors) {
@@ -504,12 +526,19 @@ static bool MapSceneJsonCurves(const cJSON *json, const char *key, MapSceneCurve
     return true;
 }
 
-static void MapSceneLoadEmitter(MapScene *s, const cJSON *json) {
-    if (s->emitter_count >= MAP_SCENE_MAX_EMITTERS)
-        TraceLog(LOG_FATAL, "MapScene: %s has more than %d emitters", s->map_id, MAP_SCENE_MAX_EMITTERS);
-    MapSceneEmitter *e = &s->emitters[s->emitter_count++];
+static bool MapSceneJsonOptionalGradient(const cJSON *json, const char *key, MapSceneGradient *gradient) {
+    const cJSON *keys = cJSON_GetObjectItemCaseSensitive((cJSON *)json, key);
+    if (!cJSON_IsObject(keys)) return false;
+    *gradient = MapSceneJsonGradient(keys);
+    return true;
+}
+
+static void MapSceneParticlesAdd(MapSceneParticles *fx, const cJSON *json) {
+    if (fx->count >= MAP_SCENE_MAX_EMITTERS)
+        TraceLog(LOG_FATAL, "MapScene: %s has more than %d emitters", fx->owner, MAP_SCENE_MAX_EMITTERS);
+    MapSceneEmitter *e = &fx->emitters[fx->count++];
     *e = (MapSceneEmitter){0};
-    e->texture = MapSceneTextureLoad(s, JsonStr(json, "texture"));
+    e->texture = MapSceneTexturesLoad(&fx->textures, fx->owner, JsonStr(json, "texture"));
     e->blend = MapSceneBlendNamed(JsonStr(json, "blend"));
     e->tint = MapSceneJsonVec4(cJSON_GetObjectItemCaseSensitive((cJSON *)json, "tint"));
     e->render = MapSceneRenderNamed(JsonStr(json, "render"));
@@ -537,9 +566,9 @@ static void MapSceneLoadEmitter(MapScene *s, const cJSON *json) {
     e->has_force = MapSceneJsonCurves(json, "force", e->force, 3);
     e->force_world = JsonBool(json, "force_world");
     e->has_size_curve = MapSceneJsonCurves(json, "size_curve", &e->size_curve, 1);
-    const cJSON *gradient = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "gradient");
-    e->has_gradient = cJSON_IsObject(gradient);
-    if (e->has_gradient) e->gradient = MapSceneJsonGradient(gradient);
+    e->has_gradient = MapSceneJsonOptionalGradient(json, "gradient", &e->gradient);
+    e->has_gradient_low = MapSceneJsonOptionalGradient(json, "gradient_low", &e->gradient_low);
+    e->has_start_gradient = MapSceneJsonOptionalGradient(json, "start_gradient", &e->start_gradient);
     const cJSON *sheet = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "sheet");
     e->has_sheet = cJSON_IsObject(sheet);
     if (e->has_sheet) {
@@ -561,47 +590,48 @@ static Vector3 MapSceneApplyAxes(const Vector3 axes[3], Vector3 v) {
     return Vector3Add(Vector3Add(Vector3Scale(axes[0], v.x), Vector3Scale(axes[1], v.y)), Vector3Scale(axes[2], v.z));
 }
 
-static Vector3 MapSceneRandomUnit(MapScene *s) {
-    float z = MapSceneRandom(s) * 2.0f - 1.0f;
-    float angle = MapSceneRandom(s) * 2.0f * PI;
+static Vector3 MapSceneRandomUnit(MapSceneParticles *fx) {
+    float z = MapSceneRandom(fx) * 2.0f - 1.0f;
+    float angle = MapSceneRandom(fx) * 2.0f * PI;
     float r = sqrtf(fmaxf(0.0f, 1.0f - z * z));
     return (Vector3){r * cosf(angle), r * sinf(angle), z};
 }
 
-static void MapSceneShapeSample(MapScene *s, const MapSceneEmitter *e, Vector3 *position, Vector3 *direction) {
+static void
+MapSceneShapeSample(MapSceneParticles *fx, const MapSceneEmitter *e, Vector3 *position, Vector3 *direction) {
     *position = (Vector3){0.0f, 0.0f, 0.0f};
     *direction = (Vector3){0.0f, 0.0f, 1.0f};
     switch (e->shape) {
         case MAP_SCENE_SHAPE_BOX:
             *position = (Vector3){
-                (MapSceneRandom(s) - 0.5f) * e->box.x,
-                (MapSceneRandom(s) - 0.5f) * e->box.y,
-                (MapSceneRandom(s) - 0.5f) * e->box.z,
+                (MapSceneRandom(fx) - 0.5f) * e->box.x,
+                (MapSceneRandom(fx) - 0.5f) * e->box.y,
+                (MapSceneRandom(fx) - 0.5f) * e->box.z,
             };
-            if (e->random_direction) *direction = MapSceneRandomUnit(s);
+            if (e->random_direction) *direction = MapSceneRandomUnit(fx);
             break;
         case MAP_SCENE_SHAPE_CONE: {
-            float distance = sqrtf(MapSceneRandom(s));
-            float azimuth = MapSceneRandom(s) * 2.0f * PI;
+            float distance = sqrtf(MapSceneRandom(fx));
+            float azimuth = MapSceneRandom(fx) * 2.0f * PI;
             Vector2 spread = {cosf(azimuth) * distance, sinf(azimuth) * distance};
             float tilt = tanf(e->angle);
             *position = (Vector3){spread.x * e->radius, spread.y * e->radius, 0.0f};
             *direction = Vector3Normalize((Vector3){spread.x * tilt, spread.y * tilt, 1.0f});
             if (e->length > 0.0f)
-                *position = Vector3Add(*position, Vector3Scale(*direction, e->length * MapSceneRandom(s)));
-            if (e->random_direction) *direction = MapSceneRandomUnit(s);
+                *position = Vector3Add(*position, Vector3Scale(*direction, e->length * MapSceneRandom(fx)));
+            if (e->random_direction) *direction = MapSceneRandomUnit(fx);
             break;
         }
         case MAP_SCENE_SHAPE_SPHERE: {
-            Vector3 unit = MapSceneRandomUnit(s);
+            Vector3 unit = MapSceneRandomUnit(fx);
             if (e->hemisphere) unit.z = fabsf(unit.z);
-            float distance = e->shell ? e->radius : e->radius * cbrtf(MapSceneRandom(s));
+            float distance = e->shell ? e->radius : e->radius * cbrtf(MapSceneRandom(fx));
             *position = Vector3Scale(unit, distance);
             *direction = unit;
             break;
         }
         case MAP_SCENE_SHAPE_POINTS: {
-            int index = (int)(MapSceneRandom(s) * (float)e->point_count) % e->point_count;
+            int index = (int)(MapSceneRandom(fx) * (float)e->point_count) % e->point_count;
             *position = (Vector3){e->points[index * 3], e->points[index * 3 + 1], e->points[index * 3 + 2]};
             *direction = (Vector3){e->normals[index * 3], e->normals[index * 3 + 1], e->normals[index * 3 + 2]};
             break;
@@ -611,33 +641,35 @@ static void MapSceneShapeSample(MapScene *s, const MapSceneEmitter *e, Vector3 *
     }
 }
 
-static void MapSceneEmit(MapScene *s, MapSceneEmitter *e) {
+static Vector4 MapSceneStartColor(MapSceneParticles *fx, const MapSceneEmitter *e) {
+    Vector4 color = Vector4Lerp(e->colors[0], e->colors[1], MapSceneRandom(fx));
+    if (!e->has_start_gradient || e->duration <= 0.0f) return color;
+    Vector4 loop = MapSceneGradientSample(&e->start_gradient, fmodf(e->time, e->duration) / e->duration);
+    return Vector4Multiply(color, loop);
+}
+
+static void MapSceneEmit(MapSceneParticles *fx, MapSceneEmitter *e) {
     if (e->particle_count >= e->capacity) return;
     Vector3 local_position = {0}, local_direction = {0};
-    MapSceneShapeSample(s, e, &local_position, &local_direction);
+    MapSceneShapeSample(fx, e, &local_position, &local_direction);
     Vector3 direction = MapSceneApplyAxes(e->axes, local_direction);
     float length = Vector3Length(direction);
     if (length > 0.0f) direction = Vector3Scale(direction, 1.0f / length);
-    float color_random = MapSceneRandom(s);
+    Vector4 color = MapSceneStartColor(fx, e);
     MapSceneParticle *p = &e->particles[e->particle_count++];
     *p = (MapSceneParticle){
         .position = Vector3Add(e->origin, MapSceneApplyAxes(e->shape_axes, local_position)),
-        .velocity = Vector3Scale(direction, MapSceneRandomRange(s, e->speed)),
-        .life = fmaxf(MapSceneRandomRange(s, e->lifetime), MAP_SCENE_STEP),
-        .size = MapSceneRandomRange(s, e->size),
-        .rotation = MapSceneRandomRange(s, e->rotation),
-        .color =
-            {
-                Lerp(e->colors[0].x, e->colors[1].x, color_random),
-                Lerp(e->colors[0].y, e->colors[1].y, color_random),
-                Lerp(e->colors[0].z, e->colors[1].z, color_random),
-                Lerp(e->colors[0].w, e->colors[1].w, color_random),
-            },
-        .spin_random = MapSceneRandom(s),
-        .size_random = MapSceneRandom(s),
-        .velocity_random = MapSceneRandom(s),
-        .frame_random = MapSceneRandom(s),
-        .row = e->row == MAP_SCENE_RANDOM_ROW ? (int)(MapSceneRandom(s) * (float)e->tiles_y) : e->row,
+        .velocity = Vector3Scale(direction, MapSceneRandomRange(fx, e->speed)),
+        .life = fmaxf(MapSceneRandomRange(fx, e->lifetime), MAP_SCENE_STEP),
+        .size = MapSceneRandomRange(fx, e->size),
+        .rotation = MapSceneRandomRange(fx, e->rotation),
+        .color = color,
+        .spin_random = MapSceneRandom(fx),
+        .size_random = MapSceneRandom(fx),
+        .velocity_random = MapSceneRandom(fx),
+        .frame_random = MapSceneRandom(fx),
+        .gradient_random = MapSceneRandom(fx),
+        .row = e->row == MAP_SCENE_RANDOM_ROW ? (int)(MapSceneRandom(fx) * (float)e->tiles_y) : e->row,
     };
 }
 
@@ -656,7 +688,8 @@ static Vector3 MapSceneParticleVelocity(const MapSceneEmitter *e, const MapScene
     return Vector3Add(p->velocity, animated);
 }
 
-static void MapSceneEmitterStep(MapScene *s, MapSceneEmitter *e, float dt) {
+static void MapSceneEmitterStep(MapSceneParticles *fx, MapSceneEmitter *e, float dt) {
+    e->time += dt;
     int kept = 0;
     for (int i = 0; i < e->particle_count; i++) {
         MapSceneParticle p = e->particles[i];
@@ -678,16 +711,45 @@ static void MapSceneEmitterStep(MapScene *s, MapSceneEmitter *e, float dt) {
     e->emit_accumulator += e->rate * dt;
     while (e->emit_accumulator >= 1.0f) {
         e->emit_accumulator -= 1.0f;
-        MapSceneEmit(s, e);
+        MapSceneEmit(fx, e);
     }
 }
 
-static void MapSceneEmitterAdvance(MapScene *s, MapSceneEmitter *e, float seconds) {
+static void MapSceneEmitterAdvance(MapSceneParticles *fx, MapSceneEmitter *e, float seconds) {
     while (seconds > 0.0f) {
         float step = fminf(seconds, MAP_SCENE_STEP);
-        MapSceneEmitterStep(s, e, step);
+        MapSceneEmitterStep(fx, e, step);
         seconds -= step;
     }
+}
+
+void MapSceneParticlesLoad(MapSceneParticles *fx, const char *owner, const cJSON *emitters) {
+    memset(fx, 0, sizeof(*fx));
+    StrCopy(fx->owner, sizeof(fx->owner), owner);
+    fx->random_state = MAP_SCENE_RANDOM_SEED;
+    fx->shader = LoadShaderFromMemory(VS_UNLIT, MAP_SCENE_FS_PARTICLE);
+    fx->tint_loc = GetShaderLocation(fx->shader, "tint");
+    fx->premultiply_loc = GetShaderLocation(fx->shader, "premultiply");
+    const cJSON *item = NULL;
+    cJSON_ArrayForEach(item, emitters) MapSceneParticlesAdd(fx, item);
+    for (int i = 0; i < fx->count; i++)
+        if (fx->emitters[i].prewarm) MapSceneEmitterAdvance(fx, &fx->emitters[i], fx->emitters[i].duration);
+}
+
+void MapSceneParticlesUnload(MapSceneParticles *fx) {
+    for (int i = 0; i < fx->count; i++) {
+        MemFree(fx->emitters[i].particles);
+        MemFree(fx->emitters[i].points);
+        MemFree(fx->emitters[i].normals);
+    }
+    MapSceneTexturesUnload(&fx->textures);
+    UnloadShader(fx->shader);
+    memset(fx, 0, sizeof(*fx));
+}
+
+void MapSceneParticlesUpdate(MapSceneParticles *fx, float dt) {
+    dt = fminf(dt, MAP_SCENE_MAX_FRAME_TIME);
+    for (int i = 0; i < fx->count; i++) MapSceneEmitterAdvance(fx, &fx->emitters[i], dt);
 }
 
 static void MapSceneLoadNode(MapScene *s, const cJSON *json) {
@@ -720,12 +782,9 @@ static const cJSON *MapSceneJsonFor(const cJSON *root, const char *map_id) {
 void MapSceneLoad(MapScene *s, const char *path, const char *map_id) {
     memset(s, 0, sizeof(*s));
     StrCopy(s->map_id, sizeof(s->map_id), map_id);
-    s->random_state = MAP_SCENE_RANDOM_SEED;
     s->layer_shader = LoadShaderFromMemory(VS_UNLIT, MAP_SCENE_FS_LAYER);
     s->opaque_loc = GetShaderLocation(s->layer_shader, "opaque");
     s->cutoff_loc = GetShaderLocation(s->layer_shader, "cutoff");
-    s->particle_shader = LoadShaderFromMemory(VS_UNLIT, MAP_SCENE_FS_PARTICLE);
-    s->tint_loc = GetShaderLocation(s->particle_shader, "tint");
     s->wind_shader = LoadShaderFromMemory(MAP_SCENE_VS_WIND, MAP_SCENE_FS_WIND);
     s->wind_time_loc = GetShaderLocation(s->wind_shader, "time");
     s->wind_loc = GetShaderLocation(s->wind_shader, "wind");
@@ -752,11 +811,9 @@ void MapSceneLoad(MapScene *s, const char *path, const char *map_id) {
     const cJSON *item = NULL;
     cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)scene, "layers")) MapSceneLoadLayer(s, item);
     cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)scene, "winds")) MapSceneLoadWind(s, item);
-    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)scene, "emitters")) MapSceneLoadEmitter(s, item);
     cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)scene, "nodes")) MapSceneLoadNode(s, item);
+    MapSceneParticlesLoad(&s->particles, map_id, cJSON_GetObjectItemCaseSensitive((cJSON *)scene, "emitters"));
     cJSON_Delete(root);
-    for (int i = 0; i < s->emitter_count; i++)
-        if (s->emitters[i].prewarm) MapSceneEmitterAdvance(s, &s->emitters[i], s->emitters[i].duration);
     s->loaded = true;
     TraceLog(
         LOG_INFO,
@@ -764,7 +821,7 @@ void MapSceneLoad(MapScene *s, const char *path, const char *map_id) {
         map_id,
         s->layer_count,
         s->wind_count,
-        s->emitter_count
+        s->particles.count
     );
 }
 
@@ -772,24 +829,18 @@ void MapSceneUnload(MapScene *s) {
     if (!s->loaded) return;
     for (int i = 0; i < s->layer_count; i++) UnloadMesh(s->layers[i].mesh);
     for (int i = 0; i < s->wind_count; i++) UnloadMesh(s->winds[i].mesh);
-    for (int i = 0; i < s->emitter_count; i++) {
-        MemFree(s->emitters[i].particles);
-        MemFree(s->emitters[i].points);
-        MemFree(s->emitters[i].normals);
-    }
-    for (int i = 0; i < s->texture_count; i++) UnloadTexture(s->textures[i].texture);
+    MapSceneParticlesUnload(&s->particles);
+    MapSceneTexturesUnload(&s->textures);
     UnloadMaterial(s->material);
     UnloadShader(s->layer_shader);
-    UnloadShader(s->particle_shader);
     UnloadShader(s->wind_shader);
     memset(s, 0, sizeof(*s));
 }
 
 void MapSceneUpdate(MapScene *s, float dt) {
     if (!s->loaded) return;
-    dt = fminf(dt, MAP_SCENE_MAX_FRAME_TIME);
-    s->time += dt;
-    for (int i = 0; i < s->emitter_count; i++) MapSceneEmitterAdvance(s, &s->emitters[i], dt);
+    s->time += fminf(dt, MAP_SCENE_MAX_FRAME_TIME);
+    MapSceneParticlesUpdate(&s->particles, dt);
 }
 
 void MapSceneSetCameraX(MapScene *s, float x) {
@@ -845,7 +896,8 @@ static Vector3 MapSceneCameraRight(const Camera3D *camera) {
 static void MapSceneDrawLayer(const MapScene *s, const MapSceneLayer *layer) {
     Material material = s->material;
     material.shader = s->layer_shader;
-    material.maps[MATERIAL_MAP_DIFFUSE].texture = layer->texture < 0 ? s->white : s->textures[layer->texture].texture;
+    material.maps[MATERIAL_MAP_DIFFUSE].texture =
+        layer->texture < 0 ? s->white : s->textures.entries[layer->texture].texture;
     material.maps[MATERIAL_MAP_DIFFUSE].color = layer->color;
     bool opaque = layer->blend == MAP_SCENE_BLEND_OPAQUE || layer->blend == MAP_SCENE_BLEND_CUTOUT;
     float opaque_value = opaque ? 1.0f : 0.0f;
@@ -863,7 +915,8 @@ static void MapSceneDrawLayer(const MapScene *s, const MapSceneLayer *layer) {
 static void MapSceneDrawWind(const MapScene *s, const MapSceneWind *wind) {
     Material material = s->material;
     material.shader = s->wind_shader;
-    material.maps[MATERIAL_MAP_DIFFUSE].texture = wind->texture < 0 ? s->white : s->textures[wind->texture].texture;
+    material.maps[MATERIAL_MAP_DIFFUSE].texture =
+        wind->texture < 0 ? s->white : s->textures.entries[wind->texture].texture;
     SetShaderValue(s->wind_shader, s->wind_time_loc, &s->time, SHADER_UNIFORM_FLOAT);
     SetShaderValue(s->wind_shader, s->wind_loc, &wind->wind, SHADER_UNIFORM_VEC4);
     SetShaderValue(s->wind_shader, s->wind_phase_loc, &wind->phase, SHADER_UNIFORM_FLOAT);
@@ -901,31 +954,45 @@ static void MapSceneQuad(Vector3 c, Vector3 a, Vector3 b, Rectangle uv) {
     rlVertex3f(c.x - a.x + b.x, c.y - a.y + b.y, c.z - a.z + b.z);
 }
 
-static void MapSceneDrawEmitter(const MapScene *s, const MapSceneEmitter *e) {
+static void MapSceneBeginParticleBlend(MapSceneBlend blend) {
+    if (blend == MAP_SCENE_BLEND_SOFT_ADDITIVE) {
+        rlSetBlendFactors(RL_ONE, RL_ONE_MINUS_SRC_COLOR, RL_FUNC_ADD);
+        BeginBlendMode(BLEND_CUSTOM);
+        return;
+    }
+    BeginBlendMode(blend == MAP_SCENE_BLEND_ADDITIVE ? BLEND_ADDITIVE : BLEND_ALPHA);
+}
+
+static Vector4 MapSceneOverLifeColor(const MapSceneEmitter *e, const MapSceneParticle *p, float t) {
+    Vector4 over = MapSceneGradientSample(&e->gradient, t);
+    if (!e->has_gradient_low) return over;
+    return Vector4Lerp(MapSceneGradientSample(&e->gradient_low, t), over, p->gradient_random);
+}
+
+void MapSceneParticlesDraw(const MapSceneParticles *fx, int index, Camera3D camera) {
+    const MapSceneEmitter *e = &fx->emitters[index];
     if (e->particle_count == 0) return;
-    Vector3 forward = Vector3Normalize(Vector3Subtract(s->camera.target, s->camera.position));
-    Vector3 right = MapSceneCameraRight(&s->camera);
+    Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+    Vector3 right = MapSceneCameraRight(&camera);
     Vector3 up = Vector3CrossProduct(right, forward);
-    float view_tangent = 2.0f * tanf(s->camera.fovy * 0.5f * DEG2RAD);
+    float view_tangent = 2.0f * tanf(camera.fovy * 0.5f * DEG2RAD);
+    float premultiply = e->blend == MAP_SCENE_BLEND_SOFT_ADDITIVE ? 1.0f : 0.0f;
     rlDrawRenderBatchActive();
-    BeginShaderMode(s->particle_shader);
-    SetShaderValue(s->particle_shader, s->tint_loc, &e->tint, SHADER_UNIFORM_VEC4);
+    BeginShaderMode(fx->shader);
+    SetShaderValue(fx->shader, fx->tint_loc, &e->tint, SHADER_UNIFORM_VEC4);
+    SetShaderValue(fx->shader, fx->premultiply_loc, &premultiply, SHADER_UNIFORM_FLOAT);
     rlDisableDepthMask();
-    BeginBlendMode(e->blend == MAP_SCENE_BLEND_ADDITIVE ? BLEND_ADDITIVE : BLEND_ALPHA);
-    rlSetTexture(s->textures[e->texture].texture.id);
+    MapSceneBeginParticleBlend(e->blend);
+    rlSetTexture(fx->textures.entries[e->texture].texture.id);
     rlBegin(RL_QUADS);
     for (int i = 0; i < e->particle_count; i++) {
         const MapSceneParticle *p = &e->particles[i];
         float t = p->age / p->life;
-        Vector4 color = p->color;
-        if (e->has_gradient) {
-            Vector4 over = MapSceneGradientSample(&e->gradient, t);
-            color = (Vector4){color.x * over.x, color.y * over.y, color.z * over.z, color.w * over.w};
-        }
+        Vector4 color = e->has_gradient ? Vector4Multiply(p->color, MapSceneOverLifeColor(e, p, t)) : p->color;
         float size = p->size;
         if (e->has_size_curve) size *= fmaxf(0.0f, MapSceneCurveSample(&e->size_curve, t, p->size_random));
         if (e->max_size > 0.0f) {
-            float distance = Vector3DotProduct(Vector3Subtract(p->position, s->camera.position), forward);
+            float distance = Vector3DotProduct(Vector3Subtract(p->position, camera.position), forward);
             size = fminf(size, e->max_size * view_tangent * distance);
         }
         if (size <= 0.0f || color.w <= 0.0f) continue;
@@ -970,9 +1037,9 @@ static int MapSceneDrawCompare(const void *a, const void *b) {
 }
 
 static void MapSceneAddDraw(
-    MapSceneDrawItem *draws, int *count, const MapScene *s, MapSceneDrawKind kind, int index, int queue, Vector3 centre
+    MapSceneDrawItem *draws, int *count, Vector3 eye, MapSceneDrawKind kind, int index, int queue, Vector3 centre
 ) {
-    draws[(*count)++] = (MapSceneDrawItem){kind, index, queue, Vector3DistanceSqr(s->camera.position, centre)};
+    draws[(*count)++] = (MapSceneDrawItem){kind, index, queue, Vector3DistanceSqr(eye, centre)};
 }
 
 void MapSceneDraw(const MapScene *s) {
@@ -982,14 +1049,18 @@ void MapSceneDraw(const MapScene *s) {
     for (int i = 0; i < s->layer_count; i++) {
         const MapSceneLayer *layer = &s->layers[i];
         if (layer->blend == MAP_SCENE_BLEND_ALPHA || layer->blend == MAP_SCENE_BLEND_ADDITIVE)
-            MapSceneAddDraw(draws, &count, s, MAP_SCENE_DRAW_LAYER, i, layer->queue, layer->centre);
+            MapSceneAddDraw(draws, &count, s->camera.position, MAP_SCENE_DRAW_LAYER, i, layer->queue, layer->centre);
     }
-    for (int i = 0; i < s->wind_count; i++)
-        MapSceneAddDraw(draws, &count, s, MAP_SCENE_DRAW_WIND, i, MAP_SCENE_TRANSPARENT_QUEUE, s->winds[i].centre);
-    for (int i = 0; i < s->emitter_count; i++)
+    for (int i = 0; i < s->wind_count; i++) {
+        Vector3 centre = s->winds[i].centre;
+        MapSceneAddDraw(draws, &count, s->camera.position, MAP_SCENE_DRAW_WIND, i, MAP_SCENE_TRANSPARENT_QUEUE, centre);
+    }
+    for (int i = 0; i < s->particles.count; i++) {
+        Vector3 origin = s->particles.emitters[i].origin;
         MapSceneAddDraw(
-            draws, &count, s, MAP_SCENE_DRAW_EMITTER, i, MAP_SCENE_TRANSPARENT_QUEUE, s->emitters[i].origin
+            draws, &count, s->camera.position, MAP_SCENE_DRAW_EMITTER, i, MAP_SCENE_TRANSPARENT_QUEUE, origin
         );
+    }
     qsort(draws, (size_t)count, sizeof(draws[0]), MapSceneDrawCompare);
 
     ClearBackground(BLACK);
@@ -1005,7 +1076,7 @@ void MapSceneDraw(const MapScene *s) {
     for (int i = 0; i < count; i++) {
         if (draws[i].kind == MAP_SCENE_DRAW_LAYER) MapSceneDrawLayer(s, &s->layers[draws[i].index]);
         if (draws[i].kind == MAP_SCENE_DRAW_WIND) MapSceneDrawWind(s, &s->winds[draws[i].index]);
-        if (draws[i].kind == MAP_SCENE_DRAW_EMITTER) MapSceneDrawEmitter(s, &s->emitters[draws[i].index]);
+        if (draws[i].kind == MAP_SCENE_DRAW_EMITTER) MapSceneParticlesDraw(&s->particles, draws[i].index, s->camera);
     }
     rlEnableDepthMask();
     rlDisableDepthTest();
