@@ -358,6 +358,7 @@ static void DebugPrepareQuestLadder(Game *game, const DebugShot *shot) {
 static void DebugPrepareCampaignMap(Game *game, DebugShot *shot) {
     if (!DebugShotIs(shot, "map")) return;
     game->screen = SCREEN_MAP;
+    if (EnvFlag("HOD_MAP_TRAY")) game->map.tray_open = true;
     const char *map_number = getenv("HOD_MAP");
     if (!map_number || shot->flow_started) return;
     int map_index = Clamp(atoi(map_number) - 1, 0, game->map.map_count - 1);

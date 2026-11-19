@@ -266,22 +266,28 @@ static ResourceRef ResourceParse(const char *ref) {
     return parsed;
 }
 
+static bool ResourceCacheEntryPrecedes(const ResourceCatalog *catalog, int entry, int other) {
+    int bundle_order = strcmp(
+        ResourceBundleName(catalog->entries[entry].container), ResourceBundleName(catalog->entries[other].container)
+    );
+    return bundle_order < 0 || (bundle_order == 0 && entry < other);
+}
+
 static const ResourceEntry *ResourceFind(const ResourceRef *ref, int class_id) {
     ResourceCatalog *catalog = ref->origin == RESOURCE_CACHE ? &resource_cache : &resource_apk;
     if (ref->origin == RESOURCE_CACHE)
         ResourceIndexCache();
     else
         ResourceIndexApk();
-    const ResourceEntry *found = NULL;
+    int found = -1;
     for (int i = catalog->buckets[ResourceHash(ref->name)]; i >= 0; i = catalog->entries[i].next) {
         const ResourceEntry *entry = &catalog->entries[i];
         if (entry->object.class_id != class_id || strcmp(entry->name, ref->name) != 0) continue;
         if (ref->origin != RESOURCE_CACHE) return entry;
-        const char *bundle = ResourceBundleName(entry->container);
-        if (ref->bundle[0] && strcmp(bundle, ref->bundle) != 0) continue;
-        if (!found || strcmp(bundle, ResourceBundleName(found->container)) < 0) found = entry;
+        if (ref->bundle[0] && strcmp(ResourceBundleName(entry->container), ref->bundle) != 0) continue;
+        if (found < 0 || ResourceCacheEntryPrecedes(catalog, i, found)) found = i;
     }
-    return found;
+    return found < 0 ? NULL : &catalog->entries[found];
 }
 
 static unsigned char *ResourceReadObject(const ResourceRef *ref, const ResourceEntry *entry) {

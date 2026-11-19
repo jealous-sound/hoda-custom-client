@@ -79,6 +79,7 @@ typedef enum {
     GUI_BTN_PACK_SQUAD_ON,
     GUI_BTN_CLOSE,
     GUI_BTN_MAPS,
+    GUI_BTN_MAPS_ON,
 
     GUI_STORE_HEADER_RECRUIT,
     GUI_STORE_HEADER_SOLDIER,
@@ -597,7 +598,8 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_BTN_PACK_SQUAD] = CACHE_RESOURCE("Btn_SquadSmall"),
     [GUI_BTN_PACK_SQUAD_ON] = CACHE_RESOURCE("Btn_SquadSmall_active"),
     [GUI_BTN_CLOSE] = APK_RESOURCE("Store_CloseButton"),
-    [GUI_BTN_MAPS] = CACHE_RESOURCE("Button_HUD_Full_Maps_active"),
+    [GUI_BTN_MAPS] = CACHE_BUNDLE_RESOURCE("BattleMapScreenV", "Button_HUD_Full_Maps"),
+    [GUI_BTN_MAPS_ON] = CACHE_BUNDLE_RESOURCE("BattleMapScreenV", "Button_HUD_Full_Maps_active"),
 
     [GUI_STORE_HEADER_RECRUIT] = CACHE_RESOURCE("tex.Store_HeaderBGBronzePack"),
     [GUI_STORE_HEADER_SOLDIER] = CACHE_RESOURCE("tex.Store_HeaderBGSilverPack"),

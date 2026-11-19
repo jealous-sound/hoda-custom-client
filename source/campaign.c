@@ -25,8 +25,12 @@ typedef struct {
 static const CampaignIguiAnchor CAMPAIGN_TRAY_BACKGROUND = {0.5f, 1.055f, 1.9f, 0.25f, 8.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_CONTAINER = {1.0f, 0.5f, 0.897f, 1.0f, 0.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_LIST = {0.44f, 1.0f, 0.84f, 0.16f, 0.0f};
+static const CampaignIguiAnchor CAMPAIGN_TRAY_MAP_BUTTON = {0.0f, 0.0f, 1.0f, 1.3f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_BACK_ARROW = {0.0f, 0.97f, 1.0f, 0.1f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_FORWARD_ARROW = {0.98f, 0.97f, 1.0f, 0.1f, 1.0f};
+static const Vector2 CAMPAIGN_TRAY_BACKGROUND_SCALE = {1.0f, -1.0f};
+static const Vector2 CAMPAIGN_TRAY_BACK_ARROW_SCALE = {-1.0f, 1.0f};
+static const Vector2 CAMPAIGN_TRAY_FORWARD_ARROW_SCALE = {1.0f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_TOGGLE_CONTAINER = {0.0f, 1.0f, 1.0f, 0.15f, 1.1f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_TOGGLE = {0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_CTA_PANEL = {0.0f, 0.04f, 1.0f, 0.32f, 2.251f};
@@ -128,8 +132,6 @@ typedef struct {
     Texture2D tray_bg;
     Texture2D tray_node;
     Texture2D tray_node_selected;
-    Texture2D tray_arrow;
-    Texture2D tray_arrow_on;
     Texture2D cta_bg;
     Texture2D about_frame;
     Texture2D about_quote_bg;
@@ -142,6 +144,8 @@ typedef struct {
     bool about_open;
     bool about_opening_release;
     Button change_map;
+    Button tray_back;
+    Button tray_forward;
     Button enter_map;
     bool tray_open;
     bool press_blocked;
@@ -379,8 +383,8 @@ void CampaignInitialize(Campaign *c, const char *maps_path) {
     c->tray_bg = GuiTex(GUI_MAP_TRAY_BG);
     c->tray_node = GuiTex(GUI_MAP_TRAY_NODE);
     c->tray_node_selected = GuiTex(GUI_MAP_TRAY_NODE_SELECTED);
-    c->tray_arrow = GuiTex(GUI_MAP_TRAY_ARROW);
-    c->tray_arrow_on = GuiTex(GUI_MAP_TRAY_ARROW_ON);
+    c->tray_back = ButtonLoad(GUI_MAP_TRAY_ARROW, GUI_MAP_TRAY_ARROW_ON);
+    c->tray_forward = ButtonLoad(GUI_MAP_TRAY_ARROW, GUI_MAP_TRAY_ARROW_ON);
     c->cta_bg = GuiTex(GUI_MAP_TRAY_CTA_BG);
     c->about_frame = GuiTex(GUI_QUESTS_BG);
     c->about_quote_bg = GuiTex(GUI_MAP_ABOUT_QUOTE_BG);
@@ -397,7 +401,7 @@ void CampaignInitialize(Campaign *c, const char *maps_path) {
     c->tray_scroll_target = 0.0f;
     c->change_map = ButtonLoadText(
         GUI_BTN_MAPS,
-        GUI_BTN_MAPS,
+        GUI_BTN_MAPS_ON,
         LocGet("PVE_MAP_LABEL"),
         c->font,
         (Vector2){0.5f, CAMPAIGN_TRAY_TOGGLE_LABEL_ANCHOR_Y},
@@ -577,7 +581,7 @@ static int CampaignUnlockedMapCount(const Campaign *c, const PlayerCampaignProgr
 }
 
 static float CampaignTrayItemSize(const CampaignTrayLayout *layout) {
-    return layout->list.height;
+    return CampaignIguiRect(layout->list, CAMPAIGN_TRAY_MAP_BUTTON).width;
 }
 
 static float CampaignTrayStride(float list_w, float item_size, int count) {
@@ -604,13 +608,23 @@ static void CampaignTrayRevealMap(Campaign *c, const CampaignTrayLayout *layout,
     c->tray_scroll = c->tray_scroll_target;
 }
 
-static bool CampaignDrawTrayArrow(const Campaign *c, Rectangle rect, bool back, bool enabled, bool interactive) {
-    bool hover = enabled && interactive && CheckCollisionPointRec(UiMouse(), rect);
-    Texture2D texture = hover ? c->tray_arrow_on : c->tray_arrow;
-    Rectangle src = {0.0f, 0.0f, (float)texture.width, (float)texture.height};
-    if (back) src.width = -src.width;
-    DrawTexturePro(texture, src, rect, (Vector2){0}, 0.0f, enabled ? WHITE : (Color){110, 110, 110, 140});
-    return hover && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+static bool CampaignTrayCanScrollBack(const Campaign *c) {
+    return c->tray_scroll_target > 0.0f;
+}
+
+static bool CampaignTrayCanScrollForward(const Campaign *c, const CampaignTrayLayout *layout, int count) {
+    return c->tray_scroll_target < CampaignTrayMaxScroll(layout, count);
+}
+
+static Rectangle CampaignMirroredSource(Texture2D texture, Vector2 scale) {
+    return (Rectangle){0.0f, 0.0f, copysignf((float)texture.width, scale.x), copysignf((float)texture.height, scale.y)};
+}
+
+static bool CampaignDrawTrayArrow(Button *arrow, Rectangle rect, Vector2 scale, bool interactive) {
+    ButtonTouch touch = ButtonTouchAt(arrow, rect, interactive, ButtonPointerNow());
+    Texture2D texture = touch.held ? arrow->active : arrow->idle;
+    DrawTexturePro(texture, CampaignMirroredSource(texture, scale), rect, (Vector2){0}, 0.0f, WHITE);
+    return touch.clicked;
 }
 
 static int CampaignDrawTray(
@@ -619,13 +633,24 @@ static int CampaignDrawTray(
     int count = CampaignUnlockedMapCount(c, pcp);
     float stride = CampaignTrayStride(layout->list.width, CampaignTrayItemSize(layout), count);
     float max_scroll = CampaignTrayMaxScroll(layout, count);
-    UiDrawTexture(c->tray_bg, layout->background, WHITE);
+    DrawTexturePro(
+        c->tray_bg,
+        CampaignMirroredSource(c->tray_bg, CAMPAIGN_TRAY_BACKGROUND_SCALE),
+        layout->background,
+        (Vector2){0},
+        0.0f,
+        WHITE
+    );
 
-    if (CampaignDrawTrayArrow(c, layout->back_arrow, true, c->tray_scroll_target > 0.0f, interactive)) {
+    if (CampaignTrayCanScrollBack(c) &&
+        CampaignDrawTrayArrow(&c->tray_back, layout->back_arrow, CAMPAIGN_TRAY_BACK_ARROW_SCALE, interactive)) {
         c->tray_scroll_target -= CAMPAIGN_TRAY_SCROLL_ITEMS * stride;
         GuiSoundPlay(SND_UI_TAB);
     }
-    if (CampaignDrawTrayArrow(c, layout->forward_arrow, false, c->tray_scroll_target < max_scroll, interactive)) {
+    if (CampaignTrayCanScrollForward(c, layout, count) &&
+        CampaignDrawTrayArrow(
+            &c->tray_forward, layout->forward_arrow, CAMPAIGN_TRAY_FORWARD_ARROW_SCALE, interactive
+        )) {
         c->tray_scroll_target += CAMPAIGN_TRAY_SCROLL_ITEMS * stride;
         GuiSoundPlay(SND_UI_TAB);
     }
@@ -646,7 +671,7 @@ static int CampaignDrawTray(
     for (int map = 0; map < count; map++) {
         Rectangle item = {
             layout->list.x + map * stride - c->tray_scroll + (stride - item_size) * 0.5f,
-            layout->list.y + (layout->list.height - item_size) * 0.5f,
+            layout->list.y,
             item_size,
             item_size,
         };
