@@ -5,6 +5,8 @@
 #define CAMPAIGN_FOCUS_SPEED 6.0f
 #define CAMPAIGN_FOCUS_SETTLED 0.01f
 #define CAMPAIGN_EDGE_RETURN_UNITS_PER_SECOND 0.5f
+#define CAMPAIGN_MAP_INDICATOR_FADE_SECONDS 0.25f
+#define CAMPAIGN_MAP_INDICATOR_PULSE 0.25f
 #define CAMPAIGN_OFFLINE_MASTERY_GEMS 1
 #define CAMPAIGN_ID_PREFIX "PVE_MAP_"
 #define CAMPAIGN_TRAY_ICON_PREFIX "tex.Btn_MapPVE_map_"
@@ -39,6 +41,10 @@ static const CampaignIguiAnchor CAMPAIGN_CTA_TITLE = {0.1f, 0.2f, 0.8f, 0.2f, 0.
 static const CampaignIguiAnchor CAMPAIGN_CTA_BODY = {0.775f, 0.725f, 0.725f, 0.38f, 0.0f};
 static const CampaignIguiAnchor CAMPAIGN_CTA_INFO = {0.925f, 0.175f, 1.0f, 0.275f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_CTA_ICON = {-0.025f, 0.775f, 1.0f, 0.55f, 1.0f};
+static const CampaignIguiAnchor CAMPAIGN_PREVIOUS_MAP_INDICATOR = {0.0818f, 0.5f, 0.2795f, 0.22f, 1.0f};
+static const CampaignIguiAnchor CAMPAIGN_NEXT_MAP_INDICATOR = {0.9f, 0.5f, 0.2795f, 0.22f, 1.0f};
+static const float CAMPAIGN_PREVIOUS_MAP_ARROW_ROTATION = 90.0f;
+static const float CAMPAIGN_NEXT_MAP_ARROW_ROTATION = -90.0f;
 
 #define CAMPAIGN_ABOUT_CANVAS_WIDTH 1280.0f
 #define CAMPAIGN_ABOUT_TITLE_SIZE 34.0f
@@ -94,6 +100,13 @@ typedef struct {
     float elapsed;
     float duration;
 } CampaignEdgeReturn;
+
+typedef struct {
+    float opacity;
+    float from;
+    float target;
+    float elapsed;
+} CampaignIndicatorFade;
 
 typedef enum {
     CAMPAIGN_SWIPE_INSIDE,
@@ -157,6 +170,7 @@ typedef struct {
     Texture2D tray_node;
     Texture2D tray_node_selected;
     Texture2D cta_bg;
+    Texture2D map_indicator_arrow;
     Texture2D about_frame;
     Texture2D about_quote_bg;
     Texture2D about_cta_bg;
@@ -180,6 +194,9 @@ typedef struct {
     CampaignEdgeReturn edge_return;
     CampaignSwipeEdge swipe_edge;
     bool arrive_at_first_node;
+    CampaignIndicatorFade previous_map_indicator;
+    CampaignIndicatorFade next_map_indicator;
+    float map_indicator_pulse_time;
     int scroll_map;
     int scroll_node;
     int selected_node;
@@ -413,6 +430,7 @@ void CampaignInitialize(Campaign *c, const char *maps_path) {
     c->tray_back = ButtonLoad(GUI_MAP_TRAY_ARROW, GUI_MAP_TRAY_ARROW_ON);
     c->tray_forward = ButtonLoad(GUI_MAP_TRAY_ARROW, GUI_MAP_TRAY_ARROW_ON);
     c->cta_bg = GuiTex(GUI_MAP_TRAY_CTA_BG);
+    c->map_indicator_arrow = GuiTex(GUI_MAP_INDICATOR_ARROW);
     c->about_frame = GuiTex(GUI_QUESTS_BG);
     c->about_quote_bg = GuiTex(GUI_MAP_ABOUT_QUOTE_BG);
     c->about_cta_bg = GuiTex(GUI_MAP_ABOUT_CTA_BG);
@@ -968,6 +986,69 @@ static void CampaignSwipeToNeighbourMap(Campaign *c, PlayerCampaignProgress *pcp
     c->arrive_at_first_node = step > 0;
 }
 
+static float CampaignEaseInOutQuart(float t) {
+    if (t < 0.5f) return 8.0f * powf(t, 4.0f);
+    return 1.0f - 8.0f * powf(t - 1.0f, 4.0f);
+}
+
+static void CampaignIndicatorFadeTo(CampaignIndicatorFade *fade, float target) {
+    if (fade->target == target) return;
+    *fade = (CampaignIndicatorFade){.opacity = fade->opacity, .from = fade->opacity, .target = target};
+}
+
+static void CampaignIndicatorFadeUpdate(CampaignIndicatorFade *fade, float dt) {
+    if (fade->opacity == fade->target) return;
+    fade->elapsed += dt;
+    float progress = fminf(fade->elapsed / CAMPAIGN_MAP_INDICATOR_FADE_SECONDS, 1.0f);
+    fade->opacity = Lerp(fade->from, fade->target, CampaignEaseInOutQuart(progress));
+}
+
+static void CampaignAimMapIndicators(Campaign *c, const PlayerCampaignProgress *pcp, bool swiping) {
+    int step = swiping && c->swipe_edge != CAMPAIGN_SWIPE_INSIDE ? CampaignSwipeMapStep(c) : 0;
+    bool neighbour = step != 0 && CampaignMapUnlocked(c, pcp, pcp->campaign_index + step);
+    CampaignIndicatorFadeTo(&c->previous_map_indicator, neighbour && step < 0 ? 1.0f : 0.0f);
+    CampaignIndicatorFadeTo(&c->next_map_indicator, neighbour && step > 0 ? 1.0f : 0.0f);
+}
+
+static void CampaignUpdateMapIndicators(Campaign *c, float dt) {
+    CampaignIndicatorFadeUpdate(&c->previous_map_indicator, dt);
+    CampaignIndicatorFadeUpdate(&c->next_map_indicator, dt);
+    bool shown = c->previous_map_indicator.opacity > 0.0f || c->next_map_indicator.opacity > 0.0f;
+    c->map_indicator_pulse_time = shown ? c->map_indicator_pulse_time + dt : 0.0f;
+}
+
+static void CampaignDrawMapIndicator(
+    const Campaign *c,
+    const CampaignIndicatorFade *fade,
+    CampaignIguiAnchor anchor,
+    float rotation,
+    float screen_w,
+    float screen_h
+) {
+    if (fade->opacity <= 0.0f) return;
+    Rectangle box = CampaignScreenIgui(screen_w, screen_h, anchor);
+    float scale = 1.0f + sinf(c->map_indicator_pulse_time) * CAMPAIGN_MAP_INDICATOR_PULSE;
+    Vector2 size = {box.width * scale, box.height * scale};
+    Rectangle dst = {box.x + box.width * 0.5f, box.y + box.height * 0.5f, size.x, size.y};
+    Texture2D arrow = c->map_indicator_arrow;
+    Rectangle src = {0.0f, 0.0f, (float)arrow.width, (float)arrow.height};
+    DrawTexturePro(arrow, src, dst, Vector2Scale(size, 0.5f), rotation, Fade(WHITE, fade->opacity));
+}
+
+static void CampaignDrawMapIndicators(const Campaign *c, float screen_w, float screen_h) {
+    CampaignDrawMapIndicator(
+        c,
+        &c->previous_map_indicator,
+        CAMPAIGN_PREVIOUS_MAP_INDICATOR,
+        CAMPAIGN_PREVIOUS_MAP_ARROW_ROTATION,
+        screen_w,
+        screen_h
+    );
+    CampaignDrawMapIndicator(
+        c, &c->next_map_indicator, CAMPAIGN_NEXT_MAP_INDICATOR, CAMPAIGN_NEXT_MAP_ARROW_ROTATION, screen_w, screen_h
+    );
+}
+
 void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
     float dt = GetFrameTime();
     if (pcp->campaign_index < 0 || pcp->campaign_index >= c->map_count ||
@@ -996,6 +1077,8 @@ void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
         int arrival_node = c->arrive_at_first_node ? 0 : pcp->node_index;
         c->selected_node = c->progression_active ? c->progression_to_node : arrival_node;
         c->arrive_at_first_node = false;
+        c->previous_map_indicator = (CampaignIndicatorFade){0};
+        c->next_map_indicator = (CampaignIndicatorFade){0};
     }
     if (c->selected_node >= m->node_count) c->selected_node = m->node_count - 1;
 
@@ -1044,6 +1127,8 @@ void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
     float wheel = !input_locked && !over_tray ? GetMouseWheelMove() : 0.0f;
     c->scroll_x = Clamp(c->scroll_x + wheel * CAMPAIGN_WHEEL_UNITS, lo, hi);
     if (swiping) c->swipe_edge = CampaignSwipeEdgeAt(c->scroll_x, lo, hi);
+    CampaignAimMapIndicators(c, pcp, swiping);
+    CampaignUpdateMapIndicators(c, dt);
     bool focusing = c->scroll_node != c->selected_node;
     CampaignReturnFromEdge(c, swiping || wheel != 0.0f || focusing || map_changed, dt);
 
@@ -1244,6 +1329,7 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
         }
     }
 
+    CampaignDrawMapIndicators(c, screen_w, screen_h);
     if (c->progression_active) {
         float duration =
             c->progression_from_map == c->progression_to_map ? (c->progression_unlock_next ? 3.0f : 2.0f) : 3.5f;
