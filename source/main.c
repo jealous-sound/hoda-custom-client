@@ -92,6 +92,7 @@
 #include "pack_fx.c"
 #include "pack_hero.c"
 #include "store.c"
+#include "challenge_drops.c"
 #include "map_scene.c"
 #include "campaign.c"
 #include "nexus_background.c"

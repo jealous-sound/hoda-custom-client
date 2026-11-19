@@ -169,6 +169,7 @@ typedef struct {
     int mastery_gems_reward;
     int gems_reward;
     PvpPayout event_payout;
+    ChallengeDropAward challenge_drop;
     int wins_to_master;
 
     int player_level_pre;
@@ -451,6 +452,36 @@ static cJSON *ProgressionLoadCharacterCatalog(void) {
         return NULL;
     }
     return CharacterCatalogAddCustomHeroes(root);
+}
+
+static bool ProgressionGrantUnitById(Player *player, const char *id) {
+    cJSON *root = ProgressionLoadCharacterCatalog();
+    const cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, cJSON_GetObjectItemCaseSensitive(root, "characters")) {
+        if (!strcmp(JsonStr(entry, "id"), id)) break;
+    }
+    bool granted = entry && PlayerRosterAppendDefinitions(player, &entry, 1, NULL);
+    cJSON_Delete(root);
+    return granted;
+}
+
+static bool ProgressionGrantChallengeDrop(Player *player, const ChallengeDrop *drop, long long now) {
+    if (drop->kind == CHALLENGE_DROP_UNIT) return ProgressionGrantUnitById(player, drop->id);
+    return RuneGrantById(&player->runes, drop->id, now) != 0;
+}
+
+bool CampaignChallengeDropDue(const BattleRewardResult *result, const CampaignNode *node) {
+    return result && node && result->resolved && result->won && result->grind && node->drops;
+}
+
+void CampaignAwardChallengeDrop(Player *player, const CampaignNode *node, BattleRewardResult *result, long long now) {
+    if (!player || !CampaignChallengeDropDue(result, node)) return;
+    const ChallengeDrop *drop = ChallengeDropRoll(node->drops, &player->store_rng_state);
+    if (drop && !ProgressionGrantChallengeDrop(player, drop, now)) {
+        TraceLog(LOG_WARNING, "Campaign: no room for the challenge drop %s", drop->id);
+        drop = NULL;
+    }
+    result->challenge_drop = (ChallengeDropAward){.drop = drop};
 }
 
 void NexusResetRun(Player *player) {

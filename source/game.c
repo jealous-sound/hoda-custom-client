@@ -30,6 +30,9 @@ typedef enum {
 #define GAME_TUTORIAL_CAMPAIGN_MAPS 2
 #define GAME_PVP_KIND_REVENGE "revenge"
 #define GAME_PVP_MATCHMAKING -1
+#define GAME_CHALLENGE_DROP_WAIT_SECONDS 6.0f
+#define GAME_CHALLENGE_DROP_SPINNER_SECONDS 0.4f
+#define GAME_CHALLENGE_DROP_SPINNER_HEIGHT 0.12f
 
 typedef struct {
     long long id;
@@ -127,6 +130,8 @@ typedef struct {
     int nexus_award_potions;
     BattleRewardResult battle_reward;
     BattleResultsFlow battle_results;
+    bool battle_results_queued;
+    float challenge_drop_wait;
     bool battle_end_announced;
 
     Tutorial tutorial;
@@ -145,6 +150,8 @@ static bool GameBattleSelectionValid(const Game *g) {
 static void GameClearBattleOutcome(Game *g) {
     g->battle_outcome_committed = false;
     g->battle_reward = (BattleRewardResult){0};
+    g->battle_results_queued = false;
+    g->challenge_drop_wait = 0.0f;
 }
 
 static void GameEnterSelectedBattle(Game *g) {
@@ -390,7 +397,52 @@ static void GameSubmitBattle(const Game *g, bool won) {
     cJSON_AddNumberToObject(fields, "battle_id", (double)g->battle_server_id);
     cJSON_AddBoolToObject(fields, "won", won);
     cJSON_AddNumberToObject(fields, "crit_gold", BattlePlayCriticalGold(&g->battle_play));
-    ServerActionSubmit(fields);
+    bool drop_awaited = g->battle_reward.challenge_drop.pending;
+    ServerActionSubmitTagged(fields, drop_awaited ? SERVER_REPLY_BATTLE_RESULT : SERVER_REPLY_NONE);
+}
+
+static const CampaignNode *GameBattleCampaignNode(const Game *g) {
+    if (g->battle_is_nexus || g->battle_is_pvp || !GameBattleSelectionValid(g)) return NULL;
+    return &g->map.maps[g->battle_map_index].nodes[g->battle_node_index];
+}
+
+static void GameDiscardChallengeDropReply(void) {
+    cJSON *stale = NULL;
+    if (ServerActionsTakeSettledReply(SERVER_REPLY_BATTLE_RESULT, &stale)) cJSON_Delete(stale);
+}
+
+static void GameResolveChallengeDrop(Game *g) {
+    const CampaignNode *node = GameBattleCampaignNode(g);
+    GameDiscardChallengeDropReply();
+    if (ServerActionsActive())
+        g->battle_reward.challenge_drop.pending = CampaignChallengeDropDue(&g->battle_reward, node);
+    else
+        CampaignAwardChallengeDrop(&g->player, node, &g->battle_reward, RuneNow());
+}
+
+static void GamePollChallengeDrop(Game *g) {
+    ChallengeDropAward *award = &g->battle_reward.challenge_drop;
+    cJSON *reply = NULL;
+    if (!award->pending || !ServerActionsTakeSettledReply(SERVER_REPLY_BATTLE_RESULT, &reply)) return;
+    const CampaignNode *node = GameBattleCampaignNode(g);
+    *award = ChallengeDropAwardFromReply(node ? node->drops : NULL, reply);
+    cJSON_Delete(reply);
+}
+
+static bool GameChallengeDropSettled(Game *g, float dt) {
+    ChallengeDropAward *award = &g->battle_reward.challenge_drop;
+    if (!award->pending) return true;
+    g->challenge_drop_wait += dt;
+    if (g->challenge_drop_wait < GAME_CHALLENGE_DROP_WAIT_SECONDS) return false;
+    TraceLog(LOG_WARNING, "Campaign: no server reply for the challenge drop, showing results without it");
+    *award = (ChallengeDropAward){0};
+    return true;
+}
+
+static void GameDrawChallengeDropWait(const Game *g) {
+    if (!g->battle_results_queued || g->challenge_drop_wait < GAME_CHALLENGE_DROP_SPINNER_SECONDS) return;
+    Rectangle box = LoadingIndicatorBox(UiRoot(), 0.5f, 0.5f, GAME_CHALLENGE_DROP_SPINNER_HEIGHT);
+    LoadingIndicatorDraw(GuiTex(GUI_LOADING_RING), box);
 }
 
 static void GameAddPvpOpponent(cJSON *fields, const Game *g) {
@@ -519,6 +571,7 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
     g->battle_reward = CampaignResolveBattle(
         &g->player, &g->map, g->battle_map_index, g->battle_node_index, won, BattlePlayCriticalGold(&g->battle_play)
     );
+    GameResolveChallengeDrop(g);
     g->player.campaign_progress.pending_animation = GamePendingCampaignAnimation(&g->map, &g->battle_reward);
     GameRefreshSquadCards(g);
     MissionsSync(&g->player, &g->map);
@@ -559,6 +612,7 @@ static BattleResultsPresentation GameBattleResultsSnapshot(const Game *g) {
         .trophy_delta = g->battle_reward.trophy_delta,
         .banner_delta = g->battle_reward.banner_delta,
         .event_payout = g->battle_reward.event_payout,
+        .challenge_drop = g->battle_reward.challenge_drop,
         .squad = g->battle_reward.squad_leveling,
     };
 }
@@ -2284,6 +2338,7 @@ void GameDraw(Game *g) {
         }
         case SCREEN_BATTLE: {
             GamePollBattleStart(g);
+            GamePollChallengeDrop(g);
             bool showing_results = BattleResultsFlowActive(&g->battle_results);
             if (!showing_results) {
                 BattlePlayUpdate(&g->battle_play, &g->battle, TutorialHoldsBattle(&g->tutorial) ? 0.0f : dt);
@@ -2313,6 +2368,7 @@ void GameDraw(Game *g) {
                 if (!resource_modal && !combat && !g->battle_is_intro) a = HudDraw(&g->hud, &g->player, true, false);
                 if (!g->battle_is_intro || !g->battle_end_announced)
                     ba = BattleUiDraw(&g->battle_ui, GameBattlePlayer(g), &g->battle, &g->battle_play);
+                GameDrawChallengeDropWait(g);
                 if (combat && BattlePlayFast(&g->battle_play) != g->player.fast_battles) {
                     g->player.fast_battles = BattlePlayFast(&g->battle_play);
                     ProgressionSave(&g->player);
@@ -2387,6 +2443,10 @@ void GameDraw(Game *g) {
                     g->battle_play.state = BP_SUMMARY;
                     g->battle_play.t = 0.0f;
                 } else if (BattlePlayFinished(&g->battle_play) && battle_continue) {
+                    g->battle_results_queued = true;
+                }
+                if (g->battle_results_queued && GameChallengeDropSettled(g, dt)) {
+                    g->battle_results_queued = false;
                     BattleResultsFlowStart(&g->battle_results, GameBattleResultsSnapshot(g));
                 }
             }
