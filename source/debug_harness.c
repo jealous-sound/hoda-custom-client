@@ -245,6 +245,7 @@ static void DebugPrepareStore(Game *game, DebugShot *shot) {
         StoreOpen(&game->store);
         game->store.clock_override = EnvInt("HOD_STORE_NOW", 0);
         game->store.scroll = EnvFloat("HOD_STORE_SCROLL", 0.0f);
+        game->store.bullet_time = EnvFloat("HOD_STORE_BULLET_TIME", 0.0f);
         for (int voucher = 0; voucher < game->store.voucher_count; voucher++)
             game->player.pack_vouchers[voucher] = EnvInt("HOD_VOUCHERS", 0);
         DebugShowStorePackInfo(&game->store, &game->player);

@@ -65,6 +65,7 @@ static const Rectangle STORE_GEM_CONGRATS_REWARD = {0.0f, 0.22f, 1.0f, 0.36f};
 static const Rectangle STORE_GEM_CONGRATS_MESSAGE = {0.0f, 0.6f, 1.0f, 0.17f};
 #define STORE_TIMER_BANNER_COLOR ((Color){176, 28, 24, 255})
 #define STORE_INFO_PADDING 7.0f
+#define STORE_INFO_FRAME_BEVEL 14.0f
 #define STORE_INFO_TEXT_SIZE 16.0f
 #define STORE_INFO_MIN_TEXT_SIZE 10.0f
 #define STORE_INFO_FIT_STEP 0.5f
@@ -79,7 +80,10 @@ static const Rectangle STORE_GEM_CONGRATS_MESSAGE = {0.0f, 0.6f, 1.0f, 0.17f};
 #define STORE_INFO_TEXT_COLOR ((Color){236, 232, 220, 255})
 #define STORE_INFO_HEADING_COLOR ((Color){236, 206, 140, 255})
 #define STORE_INFO_NOTE_COLOR ((Color){178, 172, 158, 255})
-#define STORE_PITY_FILL_TINT ((Color){255, 158, 40, 255})
+#define STORE_INFO_ICON_CLEARANCE 3.0f
+#define STORE_PITY_FILL_TINT ((Color){72, 200, 64, 255})
+#define STORE_PITY_TRACK_EDGE ((Color){118, 110, 94, 255})
+#define STORE_PITY_TRACK_EDGE_WIDTH 1.0f
 #define STORE_ODDS_PERCENT_PER_WEIGHT 100
 #define STORE_ODDS_TEXT_CAPACITY 32
 #define STORE_SCROLL_LINE_GAP 4.0f
@@ -2116,6 +2120,7 @@ static float StoreInfoOddsRows(const Store *store, const StorePackDef *pack, Rec
 
 static void StoreDrawPityBar(const StorePackDef *pack, const Player *player, Rectangle bar) {
     UiDrawTexture(GuiTex(GUI_CARD_BAR_BG), bar, WHITE);
+    DrawRectangleLinesEx(bar, STORE_PITY_TRACK_EDGE_WIDTH, STORE_PITY_TRACK_EDGE);
     float done = 1.0f - (float)(StorePackPullsUntilLegendary(pack, player) - 1) / pack->legendary_pity_packs;
     Rectangle fill = {bar.x + 1.0f, bar.y + 1.0f, (bar.width - 2.0f) * Clamp(done, 0.0f, 1.0f), bar.height - 2.0f};
     if (fill.width > 0.0f) UiDrawTexture(GuiTex(GUI_STORE_PITY_FILL), fill, STORE_PITY_FILL_TINT);
@@ -2129,12 +2134,18 @@ static const char *StorePityText(const StorePackDef *pack, const Player *player,
 }
 
 static float StoreDrawPackInfoAt(
-    const Store *store, const StorePackDef *pack, const Player *player, Rectangle area, float size, bool draw
+    const Store *store,
+    const StorePackDef *pack,
+    const Player *player,
+    Rectangle area,
+    float text_width,
+    float size,
+    bool draw
 ) {
     Font font = store->body_font;
     float gap = size * STORE_INFO_GAP_OF_TEXT;
     float y = area.y;
-    y += StoreInfoParagraph(font, pack->info, (Vector2){area.x, y}, area.width, size, STORE_INFO_TEXT_COLOR, draw);
+    y += StoreInfoParagraph(font, pack->info, (Vector2){area.x, y}, text_width, size, STORE_INFO_TEXT_COLOR, draw);
     if (pack->kind != STORE_KIND_HERO || StorePackGuaranteedSlots(pack) >= pack->hero_count) return y - area.y;
 
     y += gap;
@@ -2160,17 +2171,21 @@ static float StoreDrawPackInfoAt(
     return y - area.y;
 }
 
-static void StoreDrawPackInfo(const Store *store, const StorePackDef *pack, const Player *player, Rectangle art) {
+static void StoreDrawPackInfo(
+    const Store *store, const StorePackDef *pack, const Player *player, Rectangle art, Rectangle info_icon
+) {
     Rectangle area = {
         art.x + STORE_INFO_PADDING,
         art.y + STORE_INFO_PADDING,
         art.width - STORE_INFO_PADDING * 2.0f,
-        art.height - STORE_INFO_PADDING * 2.0f
+        art.height - STORE_INFO_PADDING - STORE_INFO_FRAME_BEVEL
     };
+    float text_width = fminf(area.width, info_icon.x - STORE_INFO_ICON_CLEARANCE - area.x);
     float size = STORE_INFO_TEXT_SIZE;
-    while (size > STORE_INFO_MIN_TEXT_SIZE && StoreDrawPackInfoAt(store, pack, player, area, size, false) > area.height)
+    while (size > STORE_INFO_MIN_TEXT_SIZE &&
+           StoreDrawPackInfoAt(store, pack, player, area, text_width, size, false) > area.height)
         size -= STORE_INFO_FIT_STEP;
-    StoreDrawPackInfoAt(store, pack, player, area, size, true);
+    StoreDrawPackInfoAt(store, pack, player, area, text_width, size, true);
 }
 
 static void
@@ -2269,11 +2284,11 @@ static bool StoreDrawPackCard(
         WHITE
     );
 
-    if (show_info) StoreDrawPackInfo(store, pack, player, art);
+    Rectangle info = StoreCellPart(cell, STORE_CELL_INFO);
+    if (show_info) StoreDrawPackInfo(store, pack, player, art, info);
 
     if (seconds_left > 0) StoreDrawTimerBanner(store, cell, seconds_left);
 
-    Rectangle info = StoreCellPart(cell, STORE_CELL_INFO);
     bool info_hover = !StoreInputBlocked(store) && CheckCollisionPointRec(mouse, info);
     UiDrawTexture(info_hover || show_info ? store->info_icon_on : store->info_icon, info, WHITE);
 
