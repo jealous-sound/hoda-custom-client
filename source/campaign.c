@@ -95,6 +95,12 @@ typedef struct {
     float duration;
 } CampaignEdgeReturn;
 
+typedef enum {
+    CAMPAIGN_SWIPE_INSIDE,
+    CAMPAIGN_SWIPE_AT_LOW_EDGE,
+    CAMPAIGN_SWIPE_AT_HIGH_EDGE,
+} CampaignSwipeEdge;
+
 typedef struct {
     char name[80];
     char desc[512];
@@ -172,6 +178,8 @@ typedef struct {
     float tray_scroll_target;
     float scroll_x;
     CampaignEdgeReturn edge_return;
+    CampaignSwipeEdge swipe_edge;
+    bool arrive_at_first_node;
     int scroll_map;
     int scroll_node;
     int selected_node;
@@ -931,11 +939,41 @@ static bool CampaignInputLocked(const Campaign *c) {
     return (c->progression_active && !c->progression_camera_finished) || UiInputBlocked() || c->about_open;
 }
 
+static CampaignSwipeEdge CampaignSwipeEdgeAt(float scroll_x, float lo, float hi) {
+    if (scroll_x <= lo) return CAMPAIGN_SWIPE_AT_LOW_EDGE;
+    if (scroll_x >= hi) return CAMPAIGN_SWIPE_AT_HIGH_EDGE;
+    return CAMPAIGN_SWIPE_INSIDE;
+}
+
+static bool CampaignSwipeEndedAtEdge(const Campaign *c) {
+    return c->swipe_edge != CAMPAIGN_SWIPE_INSIDE && c->dragged && !c->press_blocked && !CampaignInputLocked(c) &&
+           IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+}
+
+static int CampaignSwipeMapStep(const Campaign *c) {
+    bool path_ends_high = MapSceneNodeX(&c->scene, c->scene.node_count - 1) > MapSceneNodeX(&c->scene, 0);
+    bool toward_path_end = (c->swipe_edge == CAMPAIGN_SWIPE_AT_HIGH_EDGE) == path_ends_high;
+    return toward_path_end ? 1 : -1;
+}
+
+static void CampaignSwipeToNeighbourMap(Campaign *c, PlayerCampaignProgress *pcp) {
+    bool ended_at_edge = CampaignSwipeEndedAtEdge(c) && c->scene.loaded && c->scene_map == pcp->campaign_index;
+    if (!ended_at_edge) return;
+    int step = CampaignSwipeMapStep(c);
+    int map = pcp->campaign_index + step;
+    c->swipe_edge = CAMPAIGN_SWIPE_INSIDE;
+    if (!CampaignMapUnlocked(c, pcp, map)) return;
+    GuiSoundPlay(SND_MAP_TRANSITION);
+    CampaignSelectMap(c, pcp, map);
+    c->arrive_at_first_node = step > 0;
+}
+
 void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
     float dt = GetFrameTime();
     if (pcp->campaign_index < 0 || pcp->campaign_index >= c->map_count ||
         !CampaignMapUnlocked(c, pcp, pcp->campaign_index))
         pcp->campaign_index = 0;
+    CampaignSwipeToNeighbourMap(c, pcp);
     pcp->node_index = CampaignFrontierForMap(c, pcp, pcp->campaign_index);
     CampaignMap *m = &c->maps[pcp->campaign_index];
     CampaignShowMapScene(c, pcp->campaign_index);
@@ -955,7 +993,9 @@ void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
     bool map_changed = c->scroll_map != pcp->campaign_index;
     if (map_changed) {
         c->scroll_map = pcp->campaign_index;
-        c->selected_node = c->progression_active ? c->progression_to_node : pcp->node_index;
+        int arrival_node = c->arrive_at_first_node ? 0 : pcp->node_index;
+        c->selected_node = c->progression_active ? c->progression_to_node : arrival_node;
+        c->arrive_at_first_node = false;
     }
     if (c->selected_node >= m->node_count) c->selected_node = m->node_count - 1;
 
@@ -991,6 +1031,7 @@ void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
         c->dragged = false;
         c->tray_pressed = over_tray;
         c->press_blocked = over_tray || CheckCollisionPointRec(c->press_pos, toggle_rect);
+        c->swipe_edge = CAMPAIGN_SWIPE_INSIDE;
     }
     bool swiping = !input_locked && IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !c->press_blocked;
     if (!input_locked && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
@@ -1002,6 +1043,7 @@ void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
     }
     float wheel = !input_locked && !over_tray ? GetMouseWheelMove() : 0.0f;
     c->scroll_x = Clamp(c->scroll_x + wheel * CAMPAIGN_WHEEL_UNITS, lo, hi);
+    if (swiping) c->swipe_edge = CampaignSwipeEdgeAt(c->scroll_x, lo, hi);
     bool focusing = c->scroll_node != c->selected_node;
     CampaignReturnFromEdge(c, swiping || wheel != 0.0f || focusing || map_changed, dt);
 
