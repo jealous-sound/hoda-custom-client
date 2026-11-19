@@ -5,8 +5,9 @@
 #define STRENGTH_PATH "data/pvp_squad_strength.json"
 #define STRENGTH_USAGE                                                                                                 \
     "usage: pvp_squad_strength [--check | --report]\n"                                                                 \
-    "Fights every opponent squad of the PvP pool against every other from both sides, as the ladder fields them,\n"    \
-    "and writes each squad's wins per 10000 battles to " STRENGTH_PATH ".\n"                                           \
+    "Fights every opponent squad of the PvP pool against every ladder squad from both sides, as the ladder fields\n"   \
+    "them, and writes each squad's wins per 10000 battles to " STRENGTH_PATH ". Squads only rule events field are\n"   \
+    "measured against the ladder squads too, so adding them leaves the ladder's strengths unchanged.\n"                \
     "tools/build_pvp_rules.py copies them into the pool. --check fails when the pool's strengths differ from the\n"    \
     "measured ones. --report prints how the measured strength spreads over the pool and how strong the opponents\n"    \
     "met at each trophy count are, instead of writing it."
@@ -25,6 +26,7 @@
 typedef struct {
     BattleRoster rosters[PVP_SQUAD_CAPACITY];
     int wins[PVP_SQUAD_CAPACITY];
+    int battles[PVP_SQUAD_CAPACITY];
     int strength[PVP_SQUAD_CAPACITY];
     int squad_count;
     int battles_per_squad;
@@ -42,19 +44,27 @@ static void StrengthFieldSquads(Strength *s) {
     }
 }
 
+static bool StrengthMeasuresAgainst(int squad) {
+    return !PvpTableEnsure()->squads[squad].events_only;
+}
+
 static void StrengthFight(Strength *s) {
     static BattleSim sim;
     for (int attacker = 0; attacker < s->squad_count; attacker++) {
         for (int defender = 0; defender < s->squad_count; defender++) {
-            if (attacker == defender) continue;
+            bool attacker_counts = StrengthMeasuresAgainst(defender),
+                 defender_counts = StrengthMeasuresAgainst(attacker);
+            if (attacker == defender || (!attacker_counts && !defender_counts)) continue;
             BattleSimRunRosters(&sim, &s->rosters[attacker], &s->rosters[defender], StrengthSeed(attacker, defender));
-            s->wins[attacker] += sim.player_won;
-            s->wins[defender] += !sim.player_won;
+            s->wins[attacker] += attacker_counts && sim.player_won;
+            s->battles[attacker] += attacker_counts;
+            s->wins[defender] += defender_counts && !sim.player_won;
+            s->battles[defender] += defender_counts;
         }
     }
-    s->battles_per_squad = (s->squad_count - 1) * STRENGTH_SIDES;
+    s->battles_per_squad = (PvpTableEnsure()->ladder.count - 1) * STRENGTH_SIDES;
     for (int squad = 0; squad < s->squad_count; squad++)
-        s->strength[squad] = (int)((long long)s->wins[squad] * STRENGTH_SCALE / s->battles_per_squad);
+        s->strength[squad] = (int)((long long)s->wins[squad] * STRENGTH_SCALE / s->battles[squad]);
 }
 
 static void StrengthWrite(const Strength *s) {
@@ -97,6 +107,32 @@ static void StrengthReportLadder(const Strength *s) {
     }
 }
 
+static void StrengthReportEventPool(const Strength *s, const PvpEvent *event, int side) {
+    const PvpSquadList *pool = PvpEventSquadPool(event, side);
+    int events_only = 0;
+    for (int rank = 0; rank < pool->count; rank++)
+        events_only += PvpTableEnsure()->squads[pool->squads[rank]].events_only;
+    printf(
+        "%-44s %4d  %5d %6.1f%% %6.1f%% %6.1f%%\n",
+        TextFormat("%s side %d", event->title_key, side),
+        pool->count,
+        events_only,
+        s->strength[pool->squads[0]] * STRENGTH_PCT_PER_SCALE,
+        s->strength[pool->squads[pool->count / 2]] * STRENGTH_PCT_PER_SCALE,
+        s->strength[pool->squads[pool->count - 1]] * STRENGTH_PCT_PER_SCALE
+    );
+}
+
+static void StrengthReportEvents(const Strength *s) {
+    const PvpEventRules *events = &PvpTableEnsure()->events;
+    printf("\n%-44s %4s  %5s %7s %7s %7s\n", "rule event pool", "size", "added", "weakest", "median", "strongest");
+    for (int i = 0; i < events->catalog_count; i++) {
+        const PvpEvent *event = &events->catalog[i];
+        int pools = event->rules.side_count > 0 ? event->rules.side_count : 1;
+        for (int side = 0; event->rules.active && side < pools; side++) StrengthReportEventPool(s, event, side);
+    }
+}
+
 static void StrengthReport(const Strength *s) {
     const PvpTable *table = PvpTableEnsure();
     int squads[STRENGTH_REPORT_BANDS] = {0}, full[STRENGTH_REPORT_BANDS] = {0};
@@ -112,6 +148,7 @@ static void StrengthReport(const Strength *s) {
         printf("%3d%%-%3d%%   %6d  %12d\n", low, high, squads[band], full[band]);
     }
     StrengthReportLadder(s);
+    StrengthReportEvents(s);
 }
 
 int main(int argc, char **argv) {

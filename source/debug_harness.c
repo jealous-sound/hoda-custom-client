@@ -22,6 +22,8 @@ typedef struct {
 #define DEBUG_PVP_FIGHT_SEED 7
 #define DEBUG_PVP_BANNERS 320
 #define DEBUG_PVP_MILESTONES 2
+#define DEBUG_PVP_EVENT_SEARCH_CYCLES 400
+#define DEBUG_PVP_EVENT_INTO_CYCLE 3600
 #define DEBUG_PVP_BATTLES 5
 #define DEBUG_PVP_BATTLE_SPACING 5400
 #define DEBUG_PVP_DEFENSE_DELAY 90000
@@ -521,6 +523,18 @@ static bool DebugPrepareDuel(Game *game, DebugShot *shot) {
     return true;
 }
 
+static void DebugPinPvpEvent(const char *title_key) {
+    if (!title_key || !title_key[0]) return;
+    long long now = (long long)time(NULL);
+    long long cycle = PvpEventCycle(now);
+    for (long long step = 0; step < DEBUG_PVP_EVENT_SEARCH_CYCLES; step++) {
+        if (strcasecmp(PvpEventForCycle(cycle + step)->title_key, title_key)) continue;
+        ServerNowShift(PvpEventCycleStart(cycle + step) + DEBUG_PVP_EVENT_INTO_CYCLE - now);
+        return;
+    }
+    TraceLog(LOG_WARNING, "Debug: no PvP event %s comes up", title_key);
+}
+
 static void DebugPreparePvp(Game *game, DebugShot *shot) {
     if (DebugPrepareDuel(game, shot)) return;
     if (DebugShotIs(shot, "pvp_hub")) {
@@ -543,17 +557,19 @@ static void DebugPreparePvp(Game *game, DebugShot *shot) {
         if (DebugShotIs(shot, event_shots[i].screen)) event_tab = &event_shots[i].tab;
     if (event_tab) {
         if (shot->frames_drawn == 0) {
-            PvpEventSync(&game->player.pvp, (long long)time(NULL));
+            DebugPinPvpEvent(getenv("HOD_PVP_EVENT"));
+            PvpEventSync(&game->player.pvp, ServerNow());
             game->player.pvp.event.banners = DEBUG_PVP_BANNERS;
             game->player.pvp.event.milestones_paid = DEBUG_PVP_MILESTONES;
             if (DebugShotIs(shot, "pvp_event_rivals")) DebugSeedLadderRivals(game);
             GameOpenPvpEvent(game);
             game->pvp_event_view.tab = *event_tab;
+            if (EnvFlag("HOD_PVP_RULE_NOTICE")) GameMatchPvp(game, true, GAME_PVP_MATCHMAKING, false, SCREEN_PVP_EVENT);
             if (*event_tab == PVP_EVENT_TAB_BATTLES) {
-                long long now = (long long)time(NULL);
+                long long now = ServerNow();
                 PlayerPvp *pvp = &game->player.pvp;
                 PvpOpponent opponent =
-                    PvpEventOpponentGenerate(game->player.level, pvp->trophies, pvp->event.banners, now, 1);
+                    PvpEventOpponentGenerate(game->player.level, pvp->trophies, pvp->event.banners, now, 0, 1);
                 PvpRecordEventAttack(pvp, &opponent, true, now);
             }
         }

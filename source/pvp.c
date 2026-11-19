@@ -24,6 +24,48 @@
 #define PVP_REWARD_PRIZE_CAPACITY 6
 #define PVP_PAYOUT_PRIZE_CAPACITY 16
 #define PVP_PRIZE_TEXTURE_CAPACITY 256
+#define PVP_RULE_SIDE_CAPACITY 4
+#define PVP_RULE_NAME_CAPACITY 8
+#define PVP_RULE_NAME_CAP 24
+#define PVP_RULE_ANY_SIDE (-1)
+#define PVP_RULE_NO_SLOT (-1)
+
+typedef struct {
+    char names[PVP_RULE_NAME_CAPACITY][PVP_RULE_NAME_CAP];
+    bool faction[PVP_RULE_NAME_CAPACITY];
+    int count;
+    unsigned faction_mask;
+} PvpHeroFilter;
+
+typedef struct {
+    bool active;
+    Rarity max_rarity;
+    unsigned rarity_mask;
+    bool unique_heroes;
+    PvpHeroFilter members;
+    PvpHeroFilter sides[PVP_RULE_SIDE_CAPACITY];
+    int side_count;
+} PvpSquadRules;
+
+typedef enum {
+    PVP_SQUAD_ALLOWED,
+    PVP_SQUAD_EMPTY,
+    PVP_SQUAD_RARITY,
+    PVP_SQUAD_MEMBER,
+    PVP_SQUAD_DUPLICATE,
+    PVP_SQUAD_SIDE,
+} PvpSquadVerdictKind;
+
+typedef struct {
+    PvpSquadVerdictKind kind;
+    int slot;
+    int side;
+} PvpSquadVerdict;
+
+typedef struct {
+    int squads[PVP_SQUAD_CAPACITY];
+    int count;
+} PvpSquadList;
 
 typedef enum {
     PVP_PRIZE_UNIT,
@@ -68,6 +110,8 @@ typedef struct {
 typedef struct {
     char title_key[PVP_EVENT_KEY_CAP];
     BattleGameChanger changer;
+    PvpSquadRules rules;
+    PvpSquadList pools[PVP_RULE_SIDE_CAPACITY];
     PvpEventMilestone milestones[PVP_EVENT_REWARD_CAPACITY];
     int milestone_count;
     PvpEventRankReward rank_rewards[PVP_EVENT_REWARD_CAPACITY];
@@ -119,6 +163,7 @@ typedef struct {
 
 typedef struct {
     int strength;
+    bool events_only;
     PvpSquadCell cells[SQUAD_SLOT_COUNT];
 } PvpSquad;
 
@@ -128,7 +173,7 @@ typedef struct {
     PvpBot bots[PVP_BOT_CAPACITY];
     int bot_count;
     PvpSquad squads[PVP_SQUAD_CAPACITY];
-    int squads_weakest_first[PVP_SQUAD_CAPACITY];
+    PvpSquadList ladder;
     int squad_count;
     bool loaded;
 } PvpTable;
@@ -274,9 +319,109 @@ static void PvpEventLadderParse(PvpEvent *event, const cJSON *json) {
     event->guild_minimum_banners = JsonInt(json, "guild_minimum_banners");
 }
 
+static void PvpHeroFilterAdd(PvpHeroFilter *filter, const char *name, bool faction) {
+    if (filter->count == PVP_RULE_NAME_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many names in a squad rule");
+    StrCopy(filter->names[filter->count], PVP_RULE_NAME_CAP, name);
+    filter->faction[filter->count++] = faction;
+    if (faction) filter->faction_mask |= SimFactionMask(FactionFromString(name));
+}
+
+static void PvpHeroFilterParse(PvpHeroFilter *filter, const cJSON *json) {
+    const cJSON *item = NULL;
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "factions")) {
+        PvpHeroFilterAdd(filter, item->valuestring, true);
+    }
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "groups")) {
+        PvpHeroFilterAdd(filter, item->valuestring, false);
+    }
+}
+
+static unsigned PvpRarityBit(Rarity rarity) {
+    return 1u << rarity;
+}
+
+static void PvpSquadRulesParse(PvpSquadRules *rules, const cJSON *json) {
+    if (!cJSON_IsObject(json)) return;
+    rules->active = true;
+    const char *max_rarity = JsonStr(json, "max_rarity");
+    rules->max_rarity = max_rarity[0] ? RarityFromString(max_rarity) : RARITY_MYTHIC;
+    const cJSON *item = NULL;
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "rarities")) {
+        rules->rarity_mask |= PvpRarityBit(RarityFromString(item->valuestring));
+    }
+    rules->unique_heroes = JsonBool(json, "unique_heroes");
+    PvpHeroFilterParse(&rules->members, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "members"));
+    cJSON_ArrayForEach(item, cJSON_GetObjectItemCaseSensitive((cJSON *)json, "sides")) {
+        if (rules->side_count == PVP_RULE_SIDE_CAPACITY) TraceLog(LOG_FATAL, "Pvp: too many sides in a squad rule");
+        PvpHeroFilterParse(&rules->sides[rules->side_count++], item);
+    }
+}
+
+static bool PvpHeroFilterPasses(const PvpHeroFilter *filter, const Character *ch) {
+    if (filter->count == 0) return true;
+    if (filter->faction_mask && (ch->giant || (SimFactionMask(ch->faction) & filter->faction_mask))) return true;
+    for (int i = 0; i < filter->count; i++)
+        if (!filter->faction[i] && SimPassiveHasGroup(ch, filter->names[i])) return true;
+    return false;
+}
+
+static bool PvpRarityAllowed(const PvpSquadRules *rules, const Character *ch) {
+    if (ch->rarity > rules->max_rarity) return false;
+    return !rules->rarity_mask || (rules->rarity_mask & PvpRarityBit(ch->rarity));
+}
+
+static int PvpSquadSideMisfit(const PvpSquadRules *rules, const Character *const heroes[SQUAD_SLOT_COUNT], int side) {
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
+        if (heroes[slot] && !PvpHeroFilterPasses(&rules->sides[side], heroes[slot])) return slot;
+    return PVP_RULE_NO_SLOT;
+}
+
+static int PvpSquadSideFitCount(const PvpSquadRules *rules, const Character *const heroes[SQUAD_SLOT_COUNT], int side) {
+    int fitting = 0;
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
+        fitting += heroes[slot] && PvpHeroFilterPasses(&rules->sides[side], heroes[slot]);
+    return fitting;
+}
+
+static PvpSquadVerdict
+PvpSquadJudgeSide(const PvpSquadRules *rules, const Character *const heroes[SQUAD_SLOT_COUNT], int side) {
+    if (side != PVP_RULE_ANY_SIDE) {
+        int misfit = side >= 0 && side < rules->side_count ? PvpSquadSideMisfit(rules, heroes, side) : 0;
+        return (PvpSquadVerdict){misfit == PVP_RULE_NO_SLOT ? PVP_SQUAD_ALLOWED : PVP_SQUAD_SIDE, misfit, side};
+    }
+    int closest = 0;
+    for (int candidate = 0; candidate < rules->side_count; candidate++) {
+        if (PvpSquadSideMisfit(rules, heroes, candidate) == PVP_RULE_NO_SLOT)
+            return (PvpSquadVerdict){PVP_SQUAD_ALLOWED, PVP_RULE_NO_SLOT, candidate};
+        if (PvpSquadSideFitCount(rules, heroes, candidate) > PvpSquadSideFitCount(rules, heroes, closest))
+            closest = candidate;
+    }
+    return (PvpSquadVerdict){PVP_SQUAD_SIDE, PvpSquadSideMisfit(rules, heroes, closest), closest};
+}
+
+PvpSquadVerdict
+PvpSquadRulesJudge(const PvpSquadRules *rules, const Character *const heroes[SQUAD_SLOT_COUNT], int side) {
+    int fielded = 0;
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        const Character *ch = heroes[slot];
+        if (!ch) continue;
+        fielded++;
+        if (!rules->active) continue;
+        if (!PvpRarityAllowed(rules, ch)) return (PvpSquadVerdict){PVP_SQUAD_RARITY, slot, 0};
+        if (!PvpHeroFilterPasses(&rules->members, ch)) return (PvpSquadVerdict){PVP_SQUAD_MEMBER, slot, 0};
+        for (int earlier = 0; rules->unique_heroes && earlier < slot; earlier++)
+            if (heroes[earlier] && !strcmp(heroes[earlier]->id, ch->id))
+                return (PvpSquadVerdict){PVP_SQUAD_DUPLICATE, slot, 0};
+    }
+    if (fielded == 0) return (PvpSquadVerdict){PVP_SQUAD_EMPTY, PVP_RULE_NO_SLOT, 0};
+    if (!rules->active || rules->side_count == 0) return (PvpSquadVerdict){PVP_SQUAD_ALLOWED, PVP_RULE_NO_SLOT, 0};
+    return PvpSquadJudgeSide(rules, heroes, side);
+}
+
 static void PvpEventParse(PvpEvent *event, const cJSON *item, bool guild) {
     StrCopy(event->title_key, sizeof(event->title_key), JsonStr(item, "title_key"));
     PvpEventLadderParse(event, item);
+    PvpSquadRulesParse(&event->rules, cJSON_GetObjectItemCaseSensitive((cJSON *)item, "squad_rules"));
     event->guild = guild;
     StrCopy(event->changer.text_key, sizeof(event->changer.text_key), JsonStr(item, "text_key"));
     const cJSON *effect = NULL;
@@ -330,6 +475,7 @@ static void PvpSquadsParse(PvpTable *t, const cJSON *root) {
         if (t->squad_count == PVP_SQUAD_CAPACITY) TraceLog(LOG_FATAL, "Pvp: more than %d squads", PVP_SQUAD_CAPACITY);
         PvpSquad *squad = &t->squads[t->squad_count++];
         squad->strength = JsonInt(entry, "strength");
+        squad->events_only = JsonBool(entry, "events_only");
         int slot = 0;
         const cJSON *cell = NULL;
         cJSON_ArrayForEach(cell, cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "cells")) {
@@ -344,13 +490,86 @@ static void PvpSquadsParse(PvpTable *t, const cJSON *root) {
     }
 }
 
+static void PvpSquadListAddByStrength(PvpSquadList *list, const PvpTable *t, int squad) {
+    int rank = list->count++;
+    for (; rank > 0 && t->squads[squad].strength < t->squads[list->squads[rank - 1]].strength; rank--)
+        list->squads[rank] = list->squads[rank - 1];
+    list->squads[rank] = squad;
+}
+
 static void PvpSquadsRankByStrength(PvpTable *t) {
-    for (int squad = 0; squad < t->squad_count; squad++) {
-        int rank = squad;
-        for (; rank > 0 && t->squads[squad].strength < t->squads[t->squads_weakest_first[rank - 1]].strength; rank--)
-            t->squads_weakest_first[rank] = t->squads_weakest_first[rank - 1];
-        t->squads_weakest_first[rank] = squad;
+    for (int squad = 0; squad < t->squad_count; squad++)
+        if (!t->squads[squad].events_only) PvpSquadListAddByStrength(&t->ladder, t, squad);
+}
+
+static Character PvpRuleHero(const cJSON *def) {
+    Character ch = {0};
+    StrCopy(ch.id, sizeof(ch.id), JsonStr(def, "id"));
+    ch.rarity = RarityFromString(JsonStr(def, "rarity"));
+    ch.giant = JsonBool(def, "giant");
+    ch.faction = FactionFromString(JsonStr(def, "faction"));
+    const cJSON *group = NULL;
+    cJSON_ArrayForEach(group, cJSON_GetObjectItemCaseSensitive((cJSON *)def, "groups")) {
+        if (ch.group_count == MAX_GROUPS) break;
+        StrCopy(ch.groups[ch.group_count++], sizeof(ch.groups[0]), group->valuestring);
     }
+    return ch;
+}
+
+static bool PvpPooledSquadFits(
+    const PvpSquadRules *rules, const Character heroes[SQUAD_SLOT_COUNT], const PvpSquad *squad, int player_side
+) {
+    const Character *fielded[SQUAD_SLOT_COUNT] = {0};
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
+        if (squad->cells[slot].present) fielded[slot] = &heroes[slot];
+    if (rules->side_count == 0) return PvpSquadRulesJudge(rules, fielded, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_ALLOWED;
+    if (PvpSquadRulesJudge(rules, fielded, player_side).kind == PVP_SQUAD_ALLOWED) return false;
+    for (int side = 0; side < rules->side_count; side++)
+        if (side != player_side && PvpSquadRulesJudge(rules, fielded, side).kind == PVP_SQUAD_ALLOWED) return true;
+    return false;
+}
+
+static int PvpEventPoolCount(const PvpEvent *event) {
+    return event->rules.side_count > 0 ? event->rules.side_count : 1;
+}
+
+static void PvpEventPoolsBuild(PvpTable *t, PvpEvent *events, int event_count, const cJSON *catalog) {
+    static Character heroes[SQUAD_SLOT_COUNT];
+    for (int squad = 0; squad < t->squad_count; squad++) {
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+            const PvpSquadCell *cell = &t->squads[squad].cells[slot];
+            const cJSON *def = cell->present ? CatalogFindCharacter(catalog, cell->id) : NULL;
+            if (cell->present && !def) TraceLog(LOG_FATAL, "Pvp: unit %s is not in the catalog", cell->id);
+            heroes[slot] = def ? PvpRuleHero(def) : (Character){0};
+        }
+        for (int e = 0; e < event_count; e++) {
+            PvpEvent *event = &events[e];
+            for (int side = 0; event->rules.active && side < PvpEventPoolCount(event); side++)
+                if (PvpPooledSquadFits(&event->rules, heroes, &t->squads[squad], side))
+                    PvpSquadListAddByStrength(&event->pools[side], t, squad);
+        }
+    }
+    for (int e = 0; e < event_count; e++)
+        for (int side = 0; events[e].rules.active && side < PvpEventPoolCount(&events[e]); side++)
+            if (events[e].pools[side].count == 0)
+                TraceLog(LOG_FATAL, "Pvp: %s has no squad to field", events[e].title_key);
+}
+
+static bool PvpEventsHaveSquadRules(const PvpEventRules *e) {
+    for (int i = 0; i < e->catalog_count; i++)
+        if (e->catalog[i].rules.active) return true;
+    for (int i = 0; i < e->guild_catalog_count; i++)
+        if (e->guild_catalog[i].rules.active) return true;
+    return false;
+}
+
+static void PvpEventsPoolSquads(PvpTable *t) {
+    if (!PvpEventsHaveSquadRules(&t->events)) return;
+    cJSON *catalog_root = CharacterCatalogAddCustomHeroes(JsonLoadFile(PVP_CATALOG_PATH));
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(catalog_root, "characters");
+    PvpEventPoolsBuild(t, t->events.catalog, t->events.catalog_count, catalog);
+    PvpEventPoolsBuild(t, t->events.guild_catalog, t->events.guild_catalog_count, catalog);
+    cJSON_Delete(catalog_root);
 }
 
 const PvpTable *PvpTableEnsure(void) {
@@ -362,7 +581,8 @@ const PvpTable *PvpTableEnsure(void) {
     PvpSquadsParse(&pvp_table, root);
     PvpSquadsRankByStrength(&pvp_table);
     cJSON_Delete(root);
-    if (pvp_table.bot_count == 0 || pvp_table.squad_count == 0) TraceLog(LOG_FATAL, "Pvp: empty ladder");
+    if (pvp_table.bot_count == 0 || pvp_table.ladder.count == 0) TraceLog(LOG_FATAL, "Pvp: empty ladder");
+    PvpEventsPoolSquads(&pvp_table);
     pvp_table.loaded = true;
     return &pvp_table;
 }
@@ -424,20 +644,37 @@ static int PvpPickBot(int trophies, long long day, unsigned seed) {
     return closest;
 }
 
-int PvpBotStrengthRank(int bot) {
+static int PvpListStrengthRank(const PvpSquadList *list, int bot) {
     const PvpTable *t = PvpTableEnsure();
     int top_trophies = t->bots[t->bot_count - 1].trophies;
     if (top_trophies <= 0) return 0;
-    return (int)((long long)t->bots[bot].trophies * (t->squad_count - 1) / top_trophies);
+    return (int)((long long)t->bots[bot].trophies * (list->count - 1) / top_trophies);
 }
 
-static int PvpPickSquad(int bot, unsigned seed) {
-    const PvpTable *t = PvpTableEnsure();
-    int candidates = t->rules.squad_candidates;
-    int weakest = PvpBotStrengthRank(bot) - candidates / 2;
-    weakest = Clamp(weakest, 0, t->squad_count > candidates ? t->squad_count - candidates : 0);
-    int span = candidates < t->squad_count ? candidates : t->squad_count;
-    return t->squads_weakest_first[weakest + PvpRoll(seed, PVP_SQUAD_SALT, span)];
+int PvpBotStrengthRank(int bot) {
+    return PvpListStrengthRank(&PvpTableEnsure()->ladder, bot);
+}
+
+static int PvpPickSquadFrom(const PvpSquadList *list, int bot, unsigned seed) {
+    int candidates = PvpTableEnsure()->rules.squad_candidates;
+    int weakest = PvpListStrengthRank(list, bot) - candidates / 2;
+    weakest = Clamp(weakest, 0, list->count > candidates ? list->count - candidates : 0);
+    int span = candidates < list->count ? candidates : list->count;
+    return list->squads[weakest + PvpRoll(seed, PVP_SQUAD_SALT, span)];
+}
+
+const PvpSquadList *PvpEventSquadPool(const PvpEvent *event, int side) {
+    if (!event->rules.active) return &PvpTableEnsure()->ladder;
+    return &event->pools[side >= 0 && side < PvpEventPoolCount(event) ? side : 0];
+}
+
+PvpSquadVerdict PvpEventJudgeSquad(const PvpEvent *event, const Player *p, int squad, int side) {
+    const Character *heroes[SQUAD_SLOT_COUNT] = {0};
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        int unit = PlayerSquadUnitAt(p, squad, slot);
+        if (unit >= 0 && unit < p->roster_count) heroes[slot] = &p->roster[unit];
+    }
+    return PvpSquadRulesJudge(&event->rules, heroes, side);
 }
 
 static void PvpPickRunes(PvpOpponent *o) {
@@ -467,15 +704,20 @@ static void PvpOpponentDerive(PvpOpponent *o, int player_trophies) {
     PvpPickRunes(o);
 }
 
-PvpOpponent PvpOpponentFromBot(int bot, int level, int trophies, long long day, unsigned seed) {
+PvpOpponent
+PvpOpponentFromBotIn(const PvpSquadList *pool, int bot, int level, int trophies, long long day, unsigned seed) {
     const PvpTable *t = PvpTableEnsure();
     PvpOpponent o = {.bot = bot, .seed = seed ? seed : 1u};
     o.trophies = PvpBotTrophies(bot, day);
     int spread = t->rules.level_spread;
     o.level = Clamp(level + PvpRoll(o.seed, PVP_LEVEL_SALT, spread * 2 + 1) - spread, 1, PVP_LOCAL_MAX_LEVEL);
-    o.squad = PvpPickSquad(bot, o.seed);
+    o.squad = PvpPickSquadFrom(pool, bot, o.seed);
     PvpOpponentDerive(&o, trophies);
     return o;
+}
+
+PvpOpponent PvpOpponentFromBot(int bot, int level, int trophies, long long day, unsigned seed) {
+    return PvpOpponentFromBotIn(&PvpTableEnsure()->ladder, bot, level, trophies, day, seed);
 }
 
 PvpOpponent PvpOpponentGenerate(int level, int trophies, long long day, unsigned seed) {
@@ -800,10 +1042,15 @@ static int PvpPickEventBot(int banners, long long cycle, long long elapsed, unsi
     return closest;
 }
 
-PvpOpponent PvpEventOpponentGenerate(int level, int trophies, int banners, long long now, unsigned seed) {
+PvpOpponent PvpEventOpponentFromBot(int bot, int level, int trophies, long long now, int side, unsigned seed) {
+    const PvpSquadList *pool = PvpEventSquadPool(PvpEventForCycle(PvpEventCycle(now)), side);
+    return PvpOpponentFromBotIn(pool, bot, level, trophies, PvpDay(now), seed);
+}
+
+PvpOpponent PvpEventOpponentGenerate(int level, int trophies, int banners, long long now, int side, unsigned seed) {
     long long elapsed = now % PvpTableEnsure()->events.duration_seconds;
     int bot = PvpPickEventBot(banners, PvpEventCycle(now), elapsed, seed ? seed : 1u);
-    return PvpOpponentFromBot(bot, level, trophies, PvpDay(now), seed);
+    return PvpEventOpponentFromBot(bot, level, trophies, now, side, seed);
 }
 
 int PvpEventRivalsAhead(long long cycle, int banners);

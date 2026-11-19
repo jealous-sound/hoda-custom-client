@@ -1,0 +1,13 @@
+HODA_PVP_RULE_RARITY|参加できるレア度：{0}
+HODA_PVP_RULE_FACTIONS|{0}派閥のヒーローのみ参加できます。大型クリーチャーも参加できます。
+HODA_PVP_RULE_GROUPS|{0}のみ参加できます。
+HODA_PVP_RULE_SIDES_FACTIONS|チームは1つの派閥で編成：{0}。別の派閥のチームと戦います。大型クリーチャーはどのチームにも参加できます。
+HODA_PVP_RULE_SIDES_GROUPS|チームは1つの陣営で編成：{0}。別の陣営のチームと戦います。
+HODA_PVP_RULE_UNIQUE|同じヒーローは1体まで。
+HODA_PVP_RULE_LIST_JOIN|{0}、{1}
+HODA_PVP_RULE_BLOCKED_TITLE|参加できないチーム
+HODA_PVP_RULE_BLOCKED|{0}はこのイベントに参加できません。
+HODA_PVP_RULE_BLOCKED_DUPLICATE|{0}がチームに2体以上います。
+HODA_PVP_RULE_BLOCKED_SIDE|{0}はチームの他のヒーローと同じ陣営ではありません。
+HODA_PVP_RULE_BLOCKED_MATCHED_SIDE|この対戦相手は{1}のチーム用に選ばれたため、{0}は戦えません。チームを戻すか「次へ」をタップしてください。
+HODA_PVP_RULE_CHANGE_SQUAD|ヒーロー画面でチームを変更してから、もう一度お試しください。

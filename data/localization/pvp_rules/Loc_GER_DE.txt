@@ -1,0 +1,13 @@
+HODA_PVP_RULE_RARITY|Erlaubte Seltenheiten: {0}
+HODA_PVP_RULE_FACTIONS|Nur Helden der Gruppierung {0} dürfen teilnehmen. Große Kreaturen sind erlaubt.
+HODA_PVP_RULE_GROUPS|Nur {0} dürfen teilnehmen.
+HODA_PVP_RULE_SIDES_FACTIONS|Eine Gruppierung pro Trupp: {0}. Du triffst auf einen Trupp einer anderen Gruppierung. Große Kreaturen dürfen in jeden Trupp.
+HODA_PVP_RULE_SIDES_GROUPS|Eine Seite pro Trupp: {0}. Du triffst auf einen Trupp der anderen Seite.
+HODA_PVP_RULE_UNIQUE|Keine doppelten Helden.
+HODA_PVP_RULE_LIST_JOIN|{0}, {1}
+HODA_PVP_RULE_BLOCKED_TITLE|Trupp nicht erlaubt
+HODA_PVP_RULE_BLOCKED|{0} darf an diesem Ereignis nicht teilnehmen.
+HODA_PVP_RULE_BLOCKED_DUPLICATE|{0} ist mehrmals in deinem Trupp.
+HODA_PVP_RULE_BLOCKED_SIDE|{0} gehört nicht zur selben Seite wie der Rest deines Trupps.
+HODA_PVP_RULE_BLOCKED_MATCHED_SIDE|Dieser Gegner wurde für deinen Trupp {1} gefunden, deshalb kann {0} nicht gegen ihn kämpfen. Wechsle zurück oder tippe auf Weiter.
+HODA_PVP_RULE_CHANGE_SQUAD|Ändere deinen Trupp unter Helden und versuche es erneut.

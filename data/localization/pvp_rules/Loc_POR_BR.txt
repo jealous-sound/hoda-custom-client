@@ -1,0 +1,13 @@
+HODA_PVP_RULE_RARITY|Raridades permitidas: {0}
+HODA_PVP_RULE_FACTIONS|Apenas heróis da facção {0} podem participar. Criaturas grandes são permitidas.
+HODA_PVP_RULE_GROUPS|Apenas {0} podem participar.
+HODA_PVP_RULE_SIDES_FACTIONS|Uma facção por esquadrão: {0}. Você enfrenta um esquadrão de outra facção. Criaturas grandes podem entrar em qualquer esquadrão.
+HODA_PVP_RULE_SIDES_GROUPS|Um lado por esquadrão: {0}. Você enfrenta um esquadrão de outro lado.
+HODA_PVP_RULE_UNIQUE|Sem heróis repetidos.
+HODA_PVP_RULE_LIST_JOIN|{0}, {1}
+HODA_PVP_RULE_BLOCKED_TITLE|Esquadrão não permitido
+HODA_PVP_RULE_BLOCKED|{0} não pode participar deste evento.
+HODA_PVP_RULE_BLOCKED_DUPLICATE|{0} está no seu esquadrão mais de uma vez.
+HODA_PVP_RULE_BLOCKED_SIDE|{0} não é do mesmo lado que o resto do seu esquadrão.
+HODA_PVP_RULE_BLOCKED_MATCHED_SIDE|Este oponente foi encontrado para o seu esquadrão {1}, então {0} não pode enfrentá-lo. Volte a esse esquadrão ou toque em Próximo.
+HODA_PVP_RULE_CHANGE_SQUAD|Mude seu esquadrão em Heróis e tente de novo.

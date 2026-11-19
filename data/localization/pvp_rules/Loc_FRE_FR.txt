@@ -1,0 +1,13 @@
+HODA_PVP_RULE_RARITY|Raretés autorisées : {0}
+HODA_PVP_RULE_FACTIONS|Seuls les héros de la faction {0} peuvent participer. Les créatures imposantes sont acceptées.
+HODA_PVP_RULE_GROUPS|Seuls les {0} peuvent participer.
+HODA_PVP_RULE_SIDES_FACTIONS|Une faction par escouade : {0}. Vous affrontez une escouade d'une autre faction. Les créatures imposantes peuvent rejoindre n'importe quelle escouade.
+HODA_PVP_RULE_SIDES_GROUPS|Un camp par escouade : {0}. Vous affrontez une escouade d'un autre camp.
+HODA_PVP_RULE_UNIQUE|Pas de héros en double.
+HODA_PVP_RULE_LIST_JOIN|{0}, {1}
+HODA_PVP_RULE_BLOCKED_TITLE|Escouade refusée
+HODA_PVP_RULE_BLOCKED|{0} ne peut pas participer à cet événement.
+HODA_PVP_RULE_BLOCKED_DUPLICATE|{0} figure plusieurs fois dans votre escouade.
+HODA_PVP_RULE_BLOCKED_SIDE|{0} n'est pas du même camp que le reste de votre escouade.
+HODA_PVP_RULE_BLOCKED_MATCHED_SIDE|Cet adversaire a été trouvé pour votre escouade {1} : {0} ne peut pas l'affronter. Reprenez-la ou touchez Suivant.
+HODA_PVP_RULE_CHANGE_SQUAD|Modifiez votre escouade dans Héros, puis réessayez.
