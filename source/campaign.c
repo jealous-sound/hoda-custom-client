@@ -4,6 +4,7 @@
 #define CAMPAIGN_WHEEL_UNITS 0.7f
 #define CAMPAIGN_FOCUS_SPEED 6.0f
 #define CAMPAIGN_FOCUS_SETTLED 0.01f
+#define CAMPAIGN_EDGE_RETURN_UNITS_PER_SECOND 0.5f
 #define CAMPAIGN_OFFLINE_MASTERY_GEMS 1
 #define CAMPAIGN_ID_PREFIX "PVE_MAP_"
 #define CAMPAIGN_TRAY_ICON_PREFIX "tex.Btn_MapPVE_map_"
@@ -87,6 +88,14 @@ static Rectangle CampaignScreenIgui(float screen_w, float screen_h, CampaignIgui
 typedef enum { CAMPAIGN_NONE = 0, CAMPAIGN_ENTER } CampaignAction;
 
 typedef struct {
+    bool active;
+    float from;
+    float to;
+    float elapsed;
+    float duration;
+} CampaignEdgeReturn;
+
+typedef struct {
     char name[80];
     char desc[512];
     char cta[256];
@@ -162,6 +171,7 @@ typedef struct {
     float tray_scroll;
     float tray_scroll_target;
     float scroll_x;
+    CampaignEdgeReturn edge_return;
     int scroll_map;
     int scroll_node;
     int selected_node;
@@ -876,14 +886,45 @@ static void CampaignShowMapScene(Campaign *c, int map_index) {
     c->scene_map = map_index;
 }
 
-static void CampaignScrollLimits(const Campaign *c, float *out_lo, float *out_hi) {
+static void CampaignNodeSpan(const Campaign *c, float *out_lo, float *out_hi) {
     float lo = MapSceneNodeX(&c->scene, 0), hi = lo;
     for (int i = 1; i < c->scene.node_count; i++) {
         lo = fminf(lo, MapSceneNodeX(&c->scene, i));
         hi = fmaxf(hi, MapSceneNodeX(&c->scene, i));
     }
-    *out_lo = lo - CAMPAIGN_SWIPE_MARGIN;
-    *out_hi = hi + CAMPAIGN_SWIPE_MARGIN;
+    *out_lo = lo;
+    *out_hi = hi;
+}
+
+static void CampaignScrollLimits(const Campaign *c, float *out_lo, float *out_hi) {
+    CampaignNodeSpan(c, out_lo, out_hi);
+    *out_lo -= CAMPAIGN_SWIPE_MARGIN;
+    *out_hi += CAMPAIGN_SWIPE_MARGIN;
+}
+
+static float CampaignEaseOutExpo(float t) {
+    if (t <= 0.0f) return 0.0f;
+    if (t >= 1.0f) return 1.0f;
+    return 1.0f - powf(2.0f, -10.0f * t);
+}
+
+static void CampaignReturnFromEdge(Campaign *c, bool steered, float dt) {
+    CampaignEdgeReturn *edge = &c->edge_return;
+    if (steered) {
+        edge->active = false;
+        return;
+    }
+    if (!edge->active) {
+        float lo = 0.0f, hi = 0.0f;
+        CampaignNodeSpan(c, &lo, &hi);
+        float rest = Clamp(c->scroll_x, lo, hi);
+        if (rest == c->scroll_x) return;
+        float duration = fabsf(rest - c->scroll_x) / CAMPAIGN_EDGE_RETURN_UNITS_PER_SECOND;
+        *edge = (CampaignEdgeReturn){.active = true, .from = c->scroll_x, .to = rest, .duration = duration};
+    }
+    edge->elapsed += dt;
+    c->scroll_x = Lerp(edge->from, edge->to, CampaignEaseOutExpo(edge->elapsed / edge->duration));
+    if (edge->elapsed >= edge->duration) edge->active = false;
 }
 
 static bool CampaignInputLocked(const Campaign *c) {
@@ -951,15 +992,18 @@ void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
         c->tray_pressed = over_tray;
         c->press_blocked = over_tray || CheckCollisionPointRec(c->press_pos, toggle_rect);
     }
+    bool swiping = !input_locked && IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !c->press_blocked;
     if (!input_locked && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
         if (fabsf(UiMouse().x - c->press_pos.x) > 6.0f) c->dragged = true;
-        if (!c->press_blocked) {
+        if (swiping) {
             c->scroll_x += UiMouseDelta().x / screen_w * CAMPAIGN_SWIPE_UNITS_PER_SCREEN;
             c->scroll_node = c->selected_node;
         }
     }
-    if (!input_locked && !over_tray) c->scroll_x += GetMouseWheelMove() * CAMPAIGN_WHEEL_UNITS;
-    c->scroll_x = Clamp(c->scroll_x, lo, hi);
+    float wheel = !input_locked && !over_tray ? GetMouseWheelMove() : 0.0f;
+    c->scroll_x = Clamp(c->scroll_x + wheel * CAMPAIGN_WHEEL_UNITS, lo, hi);
+    bool focusing = c->scroll_node != c->selected_node;
+    CampaignReturnFromEdge(c, swiping || wheel != 0.0f || focusing || map_changed, dt);
 
     MapSceneSetCameraX(&c->scene, c->scroll_x);
     MapSceneUpdate(&c->scene, dt);
