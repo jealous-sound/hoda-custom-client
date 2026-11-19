@@ -103,10 +103,9 @@ static float HudRectValue(float parent, float input) {
     return ceilf(parent * input);
 }
 
-static Rectangle
-HudFitRectIn(Rectangle sizing, Rectangle placing, float x, float y, float width, float height, float aspect) {
-    float w = HudRectValue(sizing.width, width);
-    float h = HudRectValue(sizing.height, height);
+static Rectangle HudFitRect(Rectangle parent, float x, float y, float width, float height, float aspect) {
+    float w = HudRectValue(parent.width, width);
+    float h = HudRectValue(parent.height, height);
     if (aspect > 0.0f && w > 0.0f && h > 0.0f) {
         float aspect_width = h * aspect;
         if (aspect_width < w)
@@ -115,15 +114,11 @@ HudFitRectIn(Rectangle sizing, Rectangle placing, float x, float y, float width,
             h = w / aspect;
     }
     return (Rectangle){
-        placing.x + HudRectValue(placing.width - w, x),
-        placing.y + HudRectValue(placing.height - h, y),
+        parent.x + HudRectValue(parent.width - w, x),
+        parent.y + HudRectValue(parent.height - h, y),
         w,
         h,
     };
-}
-
-static Rectangle HudFitRect(Rectangle parent, float x, float y, float width, float height, float aspect) {
-    return HudFitRectIn(parent, parent, x, y, width, height, aspect);
 }
 
 static Rectangle HudSpanCanvasWidth(Rectangle band) {

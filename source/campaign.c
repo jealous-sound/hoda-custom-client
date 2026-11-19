@@ -77,15 +77,11 @@ static Rectangle CampaignScreenRoot(float screen_w, float screen_h) {
 
 static Rectangle CampaignScreenIgui(float screen_w, float screen_h, CampaignIguiAnchor anchor) {
     Rectangle full_scale = {0.0f, HUD_TOP_HEIGHT, UiFullScaleWidth(), UI_DESIGN_H - HUD_TOP_HEIGHT};
-    return HudFitRectIn(
-        full_scale,
-        CampaignScreenRoot(screen_w, screen_h),
-        anchor.x,
-        anchor.y,
-        anchor.width,
-        anchor.height,
-        anchor.aspect
-    );
+    Rectangle root = CampaignScreenRoot(screen_w, screen_h);
+    Rectangle rect = CampaignIguiRect(full_scale, anchor);
+    rect.x += (root.width - full_scale.width) * Clamp(anchor.x, 0.0f, 1.0f);
+    rect.y += (root.height - full_scale.height) * Clamp(anchor.y, 0.0f, 1.0f);
+    return rect;
 }
 
 typedef enum { CAMPAIGN_NONE = 0, CAMPAIGN_ENTER } CampaignAction;
