@@ -889,9 +889,12 @@ static int CampaignCurrentEnergyCost(const CampaignNode *node, int losses) {
     return losses > 0 ? 0 : node->energy_cost;
 }
 
-int CampaignSelectedEnergyCost(const Campaign *c, const PlayerCampaignProgress *pcp) {
-    int map = pcp->campaign_index, node = c->selected_node;
+int CampaignNodeEnergyCost(const Campaign *c, const PlayerCampaignProgress *pcp, int map, int node) {
     return CampaignCurrentEnergyCost(&c->maps[map].nodes[node], pcp->node_losses[map][node]);
+}
+
+int CampaignSelectedEnergyCost(const Campaign *c, const PlayerCampaignProgress *pcp) {
+    return CampaignNodeEnergyCost(c, pcp, pcp->campaign_index, c->selected_node);
 }
 
 const CampaignNode *CampaignFindNode(const Campaign *c, const char *map_id, int step) {

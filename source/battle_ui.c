@@ -200,6 +200,17 @@ void BattleUiShowSquads(BattleUi *ui, const Player *player, const BattleRoster *
     }
 }
 
+bool BattleUiCloseDetail(BattleUi *ui) {
+    if (!ui->detail_open) return false;
+    ui->detail_open = false;
+    GuiSoundPlay(SND_UI_POPUP_CLOSE);
+    return true;
+}
+
+void BattleUiSetEnergyCost(BattleUi *ui, int energy_cost) {
+    ui->energy_cost = energy_cost;
+}
+
 void BattleUiEnterNode(
     BattleUi *ui,
     const Player *player,
@@ -926,11 +937,27 @@ static void BattleUiDrawCombat(BattleUi *ui, BattlePlay *bp) {
     }
 }
 
-static void BattleUiDrawCombatRunes(const BattlePlay *bp) {
+static void BattleUiDrawCombatRuneRail(const int *rune_defs, int count, float x) {
     float size = 54.0f;
-    for (int i = 0; i < bp->sim.rune_def_count; i++) {
-        Texture2D icon = RuneIconLoad(RuneDefAt(bp->sim.rune_defs[i])->icon);
-        if (icon.id != 0) UiDrawTexture(icon, (Rectangle){8.0f, 92.0f + i * (size + 4.0f), size * 0.78f, size}, WHITE);
+    for (int i = 0; i < count && i < RUNE_SLOT_COUNT; i++) {
+        Texture2D icon = RuneIconLoad(RuneDefAt(rune_defs[i])->icon);
+        if (icon.id != 0) UiDrawTexture(icon, (Rectangle){x, 92.0f + i * (size + 4.0f), size * 0.78f, size}, WHITE);
+    }
+}
+
+static void BattleUiDrawCombatRunes(const BattlePlay *bp, const BattleRoster *enemy) {
+    float width = 54.0f * 0.78f;
+    BattleUiDrawCombatRuneRail(bp->sim.rune_defs, bp->sim.rune_def_count, 8.0f);
+    BattleUiDrawCombatRuneRail(enemy->rune_defs, enemy->rune_def_count, UiWidth() - 8.0f - width);
+}
+
+static void BattleUiDrawOpponentRuneSlots(const BattleRoster *enemy) {
+    if (enemy->rune_def_count <= 0) return;
+    float width = MM_X(76);
+    for (int slot = 0; slot < enemy->rune_def_count && slot < RUNE_SLOT_COUNT; slot++) {
+        Rectangle rect = {UiWidth() - width, MM_Y(4) + slot * 97 * MM_SY, width, 98 * MM_SY};
+        Texture2D texture = RuneIconLoad(RuneDefAt(enemy->rune_defs[slot])->icon);
+        UiDrawTexture(texture.id != 0 ? texture : GuiTex(GUI_MM_RUNE_SLOT), rect, WHITE);
     }
 }
 
@@ -1020,7 +1047,7 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
         ui->detail_open = false;
         if (ui->tactical) BattleUiSetTacticalEx(ui, battle, false, false);
         BattleUiDrawCombat(ui, bp);
-        BattleUiDrawCombatRunes(bp);
+        BattleUiDrawCombatRunes(bp, &battle->enemy_roster);
         return BATTLE_UI_NONE;
     }
 
@@ -1086,6 +1113,7 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
     }
 
     if (BattleUiDrawRuneSlots(player, input_ok)) result = BATTLE_UI_RUNES;
+    BattleUiDrawOpponentRuneSlots(&battle->enemy_roster);
 
     if (!ui->tactical) {
         float row_h = 44 * MM_SY, stride = 40 * MM_SY;

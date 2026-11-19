@@ -93,9 +93,10 @@ enum {
 
 #define BP_MAX_MESSAGES 24
 #define BP_MAX_PROJECTILES 8
-#define BP_MAX_INTRO_EVENTS (RUNE_SLOT_COUNT + 2)
+#define BP_MAX_INTRO_EVENTS (2 * RUNE_SLOT_COUNT + 3)
 
 typedef struct {
+    int side;
     float value;
     unsigned affected_slots;
     unsigned faction;
@@ -569,9 +570,10 @@ static void BpApplyAction(BattlePlay *bp, Battle *b, const BattleSimAction *a) {
     }
 }
 
-static void BpQueueIntroEvent(BattlePlay *bp, float value, unsigned affected_slots, unsigned faction) {
+static void BpQueueIntroEvent(BattlePlay *bp, int side, float value, unsigned affected_slots, unsigned faction) {
     if (bp->intro_event_count >= BP_MAX_INTRO_EVENTS || affected_slots == 0) return;
     bp->intro_events[bp->intro_event_count++] = (BpIntroEvent){
+        .side = side,
         .value = value,
         .affected_slots = affected_slots,
         .faction = faction,
@@ -594,21 +596,32 @@ static bool BpAnyGameChangerApplied(const BattleSim *sim) {
     return false;
 }
 
-static void BpBuildIntroEvents(BattlePlay *bp) {
+static void BpQueueRuneIntroEvent(BattlePlay *bp, int side, int rune_def) {
+    if (bp->intro_event_count >= BP_MAX_INTRO_EVENTS || rune_def < 0) return;
+    bp->intro_events[bp->intro_event_count++] = (BpIntroEvent){.side = side, .rune_def = rune_def};
+}
+
+static void BpBuildIntroEvents(BattlePlay *bp, const BattleRoster *enemy) {
     bp->intro_event_count = 0;
     bp->intro_event = -1;
 
-    for (int i = 0; i < bp->sim.rune_def_count; i++)
-        bp->intro_events[bp->intro_event_count++] = (BpIntroEvent){.rune_def = bp->sim.rune_defs[i]};
+    for (int i = 0; i < bp->sim.rune_def_count; i++) BpQueueRuneIntroEvent(bp, 0, bp->sim.rune_defs[i]);
+    for (int i = 0; i < enemy->rune_def_count && i < RUNE_SLOT_COUNT; i++)
+        BpQueueRuneIntroEvent(bp, 1, enemy->rune_defs[i]);
 
-    if (bp->sim.formation_bonus_pct[0] > 0.0f)
-        BpQueueIntroEvent(
-            bp, bp->sim.formation_bonus_pct[0], BpFormationSlots(&bp->sim, 0), bp->sim.formation_faction[0]
-        );
+    for (int side = 0; side < 2; side++)
+        if (bp->sim.formation_bonus_pct[side] > 0.0f)
+            BpQueueIntroEvent(
+                bp,
+                side,
+                bp->sim.formation_bonus_pct[side],
+                BpFormationSlots(&bp->sim, side),
+                bp->sim.formation_faction[side]
+            );
 }
 
 static void BpQueueGameChangerEvent(BattlePlay *bp, const BattleRoster *enemy) {
-    if (!enemy->game_changer) return;
+    if (!enemy->game_changer || bp->intro_event_count >= BP_MAX_INTRO_EVENTS) return;
     bool applied = BpAnyGameChangerApplied(&bp->sim);
     bp->intro_events[bp->intro_event_count++] =
         (BpIntroEvent){.rune_def = -1, .event_bonus = applied, .no_event_bonus = !applied};
@@ -631,7 +644,7 @@ void BattlePlayStart(BattlePlay *bp, Battle *b, const Player *player, unsigned s
     BattleBeginCombatCamera(b);
     memset(bp, 0, sizeof(*bp));
     BattleSimRun(&bp->sim, player, &b->enemy_roster, seed);
-    BpBuildIntroEvents(bp);
+    BpBuildIntroEvents(bp, &b->enemy_roster);
     BpQueueGameChangerEvent(bp, &b->enemy_roster);
     bp->state = BP_INTRO;
     bp->action = 0;
@@ -728,17 +741,18 @@ static void BpPlayIntroEvent(BattlePlay *bp, Battle *b, const BpIntroEvent *even
         }
         return;
     }
+    int side = event->side;
     if (event->rune_def >= 0) {
         BattleAudioPlayGlobal(b, "gui_bonus_rune");
         for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
-            if (bp->sim.units[slot].present) BattleFxUnitColorAura(b, BP_RUNE_AURA_FX, 0, slot, BP_RUNE_AURA_COLOR);
+            if (bp->sim.units[side * SQUAD_SLOT_COUNT + slot].present)
+                BattleFxUnitColorAura(b, BP_RUNE_AURA_FX, side, slot, BP_RUNE_AURA_COLOR);
         return;
     }
     BattleAudioPlayGlobal(b, "gui_bonus_faction");
     const char *fx = BpFactionFx(event->faction);
     for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
-        if (event->affected_slots & (1u << slot)) BattleFxUnitBurst(b, fx, 0, slot, (Vector3){0, 0, 0});
-    (void)bp;
+        if (event->affected_slots & (1u << slot)) BattleFxUnitBurst(b, fx, side, slot, (Vector3){0, 0, 0});
 }
 
 static void BpBeginNextIntroEvent(BattlePlay *bp, Battle *b) {

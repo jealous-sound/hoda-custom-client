@@ -28,6 +28,11 @@
 #define NEXUS_ENERGY_TEXT_OF_BANNER 0.5f
 #define NEXUS_ROTATION_VISIBLE_EVENTS 3
 #define NEXUS_QUIT_BUTTON_GAP 16.0f
+#define NEXUS_REVIVE_POTION_COST 1
+#define NEXUS_REVIVE_ROUTE "refills"
+#define NEXUS_REVIVE_REFILL_KIND "revive"
+#define NEXUS_DIALOG_TEXT_COLOR ((Color){235, 232, 220, 255})
+#define NEXUS_DIALOG_AMOUNT_TOP 128.0f
 #define NEXUS_COMPLETE_BANNER_DELAY 1.3f
 #define NEXUS_COMPLETE_LOOT_DELAY_PER_ITEM 0.1f
 #define NEXUS_COMPLETE_BANNER_TIME 2.0f
@@ -41,6 +46,14 @@ typedef enum {
     NEXUS_REVIVE,
     NEXUS_SHOW_RECAP,
 } NexusAction;
+
+typedef enum {
+    NEXUS_DIALOG_NONE = 0,
+    NEXUS_DIALOG_QUIT,
+    NEXUS_DIALOG_REVIVE,
+    NEXUS_DIALOG_CONFIRM_QUIT,
+    NEXUS_DIALOG_BUY_REVIVE,
+} NexusDialog;
 
 typedef struct {
     int step;
@@ -91,7 +104,10 @@ typedef struct {
     int active_event, active_difficulty;
 
     Button enter, retreat, quit_stay, quit_confirm;
-    bool quit_open, quit_opening_release;
+    Button dialog_no, dialog_yes, revive, buy_cancel;
+    NexusDialog dialog;
+    bool dialog_opening_release;
+    int revive_ticket;
     float ring_angle;
     Texture2D lore, progress_bar, energy_plate, energy_flask;
     Texture2D gold_icon, xp_icon, potion_icon, reward_tag, divider, timer_plate;
@@ -198,6 +214,27 @@ void NexusInitialize(Nexus *n, const char *maps_path) {
     n->quit_confirm = ButtonLoadText(
         GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("NEXUS_QUIT_SCREEN_RETREAT_BUTTON"), n->font, (Vector2){0.5f, 0.5f}, 0.3f
     );
+    n->dialog_no = ButtonLoadText(
+        GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("CONFIRM_DIALOG_NO"), n->font, (Vector2){0.5f, 0.5f}, 0.3f
+    );
+    n->dialog_yes = ButtonLoadText(
+        GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("CONFIRM_DIALOG_YES"), n->font, (Vector2){0.5f, 0.5f}, 0.3f
+    );
+    n->revive = ButtonLoadText(
+        GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("NEXUS_REVIVE_UI_BUTTON"), n->font, (Vector2){0.5f, 0.5f}, 0.32f
+    );
+    n->buy_cancel = ButtonLoadText(
+        GUI_BTN_GREY,
+        GUI_BTN_GREY_ON,
+        LocGet("NEXUS_COMMIT_MAP_EXPLANATION_CANCEL_BUTTON"),
+        n->font,
+        (Vector2){0.5f, 0.5f},
+        0.3f
+    );
+    ButtonSetClickSound(&n->dialog_no, SND_UI_POPUP_CLOSE);
+    ButtonSetClickSound(&n->buy_cancel, SND_UI_POPUP_CLOSE);
+    n->dialog = NEXUS_DIALOG_NONE;
+    n->revive_ticket = BACKEND_NO_TICKET;
 
     cJSON *root = JsonLoadFile(maps_path);
     if (!cJSON_IsArray(root)) TraceLog(LOG_FATAL, "Nexus: %s is not an array of events", maps_path);
@@ -693,41 +730,183 @@ static Rectangle NexusNodeScreenRect(const Nexus *n, Vector3 world, Vector2 unit
     return (Rectangle){fminf(a.x, b.x), fminf(a.y, b.y), fabsf(b.x - a.x), fabsf(b.y - a.y)};
 }
 
-static bool NexusDrawQuitDialog(Nexus *n, const PlayerNexusRun *run) {
-    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT)) n->quit_opening_release = false;
-    Rectangle popup = MessagePopupDrawFrame();
-    Rectangle content = MessagePopupContent(popup);
-    Font body = GuiFont(FNT_MENU);
-    UiDrawTextCentered(
-        n->font,
-        LocGet("NEXUS_QUIT_SCREEN_TITLE"),
-        (Rectangle){content.x, content.y, content.width, 48.0f},
-        34.0f,
-        (Color){235, 232, 220, 255}
-    );
+static bool NexusRunHasLoot(const PlayerNexusRun *run) {
     bool loot = run->escrow_gold > 0 || run->escrow_xp > 0 || run->escrow_potions > 0;
-    HeroesDrawRich(
-        body,
-        LocGet(loot ? "NEXUS_QUIT_SCREEN_BODY" : "NEXUS_QUIT_LOSE_ENERGY_BODY"),
-        (Rectangle){content.x, content.y + 64.0f, content.width, content.height - 140.0f},
-        24.0f,
-        (Color){235, 232, 220, 255}
+    for (int rarity = RARITY_COMMON; rarity <= RARITY_MYTHIC; rarity++) loot = loot || run->escrow_units[rarity] > 0;
+    return loot;
+}
+
+static void NexusOpenDialog(Nexus *n, NexusDialog dialog) {
+    n->dialog = dialog;
+    n->dialog_opening_release = true;
+}
+
+bool NexusDialogLocksHud(const Nexus *n) {
+    return n->dialog == NEXUS_DIALOG_REVIVE || n->dialog == NEXUS_DIALOG_CONFIRM_QUIT ||
+           n->dialog == NEXUS_DIALOG_BUY_REVIVE;
+}
+
+static void NexusDrawDialogText(Nexus *n, Rectangle content, const char *title, const char *body) {
+    UiDrawTextCentered(
+        n->font, title, (Rectangle){content.x, content.y, content.width, 48.0f}, 34.0f, NEXUS_DIALOG_TEXT_COLOR
     );
+    HeroesDrawRich(
+        GuiFont(FNT_MENU),
+        body,
+        (Rectangle){content.x, content.y + 64.0f, content.width, NEXUS_DIALOG_AMOUNT_TOP - 72.0f},
+        24.0f,
+        NEXUS_DIALOG_TEXT_COLOR
+    );
+}
+
+static void NexusDrawDialogAmount(Nexus *n, Rectangle content, const char *label, const char *amount, Texture2D icon) {
+    float icon_size = 56.0f, y = content.y + NEXUS_DIALOG_AMOUNT_TOP;
+    Font body = GuiFont(FNT_MENU);
+    Vector2 label_size = label[0] ? MeasureTextEx(body, label, 24.0f, 1.0f) : (Vector2){0};
+    Vector2 amount_size = MeasureTextEx(n->font, amount, 30.0f, 1.0f);
+    float gap = label[0] ? 10.0f : 0.0f;
+    float width = label_size.x + gap + amount_size.x + 6.0f + icon_size;
+    float x = content.x + (content.width - width) * 0.5f;
+    if (label[0]) DrawTextEx(body, label, (Vector2){x, y + (icon_size - label_size.y) * 0.5f}, 24.0f, 1.0f, WHITE);
+    x += label_size.x + gap;
+    DrawTextEx(n->font, amount, (Vector2){x, y + (icon_size - amount_size.y) * 0.5f}, 30.0f, 1.0f, WHITE);
+    UiDrawTexture(icon, (Rectangle){x + amount_size.x + 6.0f, y, icon_size, icon_size}, WHITE);
+}
+
+static void NexusDialogRows(Rectangle popup, Rectangle *left, Rectangle *right) {
     Rectangle row = MessagePopupChoiceRow(popup);
     float width = (row.width - NEXUS_QUIT_BUTTON_GAP) * 0.5f;
-    Rectangle left = {row.x, row.y, width, row.height};
-    Rectangle right = {row.x + width + NEXUS_QUIT_BUTTON_GAP, row.y, width, row.height};
-    bool interactive = !n->quit_opening_release && !UiInputBlocked();
-    bool quit = ButtonDrawEx(&n->quit_confirm, left, interactive);
-    if (ButtonDrawEx(&n->quit_stay, right, interactive)) n->quit_open = false;
-    if (quit) n->quit_open = false;
-    return quit;
+    *left = (Rectangle){row.x, row.y, width, row.height};
+    *right = (Rectangle){row.x + width + NEXUS_QUIT_BUTTON_GAP, row.y, width, row.height};
+}
+
+static void NexusDrawReviveCost(Nexus *n, Rectangle button) {
+    const char *cost = TextFormat("-%d", NEXUS_REVIVE_POTION_COST);
+    Vector2 size = MeasureTextEx(n->font, cost, 22.0f, 1.0f);
+    DrawTextEx(
+        n->font,
+        cost,
+        (Vector2){button.x + button.width - size.x - 18.0f, button.y + (button.height - size.y) * 0.5f},
+        22.0f,
+        1.0f,
+        WHITE
+    );
+}
+
+static bool NexusBuyRevive(Nexus *n, Player *player) {
+    if (!ProgressionNeedsServer()) {
+        if (!PlayerBuyRevivePotion(player)) return false;
+        ProgressionSave(player);
+        return true;
+    }
+    if (n->revive_ticket == BACKEND_NO_TICKET && ProgressionSave(player)) {
+        cJSON *fields = cJSON_CreateObject();
+        cJSON_AddStringToObject(fields, "kind", NEXUS_REVIVE_REFILL_KIND);
+        n->revive_ticket = BackendBeginAction(NEXUS_REVIVE_ROUTE, fields);
+        cJSON_Delete(fields);
+    }
+    return false;
+}
+
+static bool NexusPollReviveBought(Nexus *n, Player *player) {
+    if (n->revive_ticket == BACKEND_NO_TICKET) return false;
+    cJSON *response = NULL;
+    BackendActionState state = BackendPollAction(n->revive_ticket, &response);
+    if (state == BACKEND_ACTION_PENDING) return false;
+    n->revive_ticket = BACKEND_NO_TICKET;
+    bool bought = state == BACKEND_ACTION_APPLIED && ProgressionAdoptServerProfile(player, response);
+    if (!bought) GuiSoundPlay(SND_STORE_ERROR);
+    cJSON_Delete(response);
+    return bought;
+}
+
+static NexusAction NexusDrawDialog(Nexus *n, Player *player, const PlayerNexusRun *run) {
+    if (!IsMouseButtonDown(MOUSE_BUTTON_LEFT)) n->dialog_opening_release = false;
+    if (NexusPollReviveBought(n, player)) {
+        n->dialog = NEXUS_DIALOG_NONE;
+        return NEXUS_REVIVE;
+    }
+    Rectangle popup = MessagePopupDrawFrame();
+    Rectangle content = MessagePopupContent(popup);
+    Rectangle left, right;
+    NexusDialogRows(popup, &left, &right);
+    bool interactive = !n->dialog_opening_release && !UiInputBlocked() && n->revive_ticket == BACKEND_NO_TICKET;
+    bool loot = NexusRunHasLoot(run);
+    switch (n->dialog) {
+        case NEXUS_DIALOG_QUIT: {
+            NexusDrawDialogText(
+                n,
+                content,
+                LocGet("NEXUS_QUIT_SCREEN_TITLE"),
+                LocGet(loot ? "NEXUS_QUIT_SCREEN_BODY" : "NEXUS_QUIT_LOSE_ENERGY_BODY")
+            );
+            bool quit = ButtonDrawEx(&n->quit_confirm, left, interactive);
+            if (ButtonDrawEx(&n->quit_stay, right, interactive) || quit) n->dialog = NEXUS_DIALOG_NONE;
+            return quit ? NEXUS_QUIT : NEXUS_NONE;
+        }
+        case NEXUS_DIALOG_REVIVE: {
+            NexusDrawDialogText(
+                n,
+                content,
+                LocGet("NEXUS_HAVE_REVIVE_SCREEN_TITLE"),
+                LocGet(loot ? "NEXUS_HAVE_REVIVE_SCREEN_BODY" : "NEXUS_QUIT_LOSE_ENERGY_BODY")
+            );
+            NexusDrawDialogAmount(
+                n, content, "", TextFormat("%d / %d", player->potions, player->potion_max), n->potion_icon
+            );
+            if (ButtonDrawEx(&n->dialog_no, left, interactive)) NexusOpenDialog(n, NEXUS_DIALOG_CONFIRM_QUIT);
+            bool revive = ButtonDrawEx(&n->revive, right, interactive);
+            NexusDrawReviveCost(n, right);
+            if (revive && player->potions >= NEXUS_REVIVE_POTION_COST) {
+                n->dialog = NEXUS_DIALOG_NONE;
+                return NEXUS_REVIVE;
+            }
+            if (revive) NexusOpenDialog(n, NEXUS_DIALOG_BUY_REVIVE);
+            return NEXUS_NONE;
+        }
+        case NEXUS_DIALOG_CONFIRM_QUIT: {
+            NexusDrawDialogText(
+                n,
+                content,
+                LocGet("NEXUS_QUIT_SCREEN_TITLE"),
+                LocGet(loot ? "NEXUS_QUIT_SCREEN_BODY" : "NEXUS_QUIT_LOSE_ENERGY_BODY")
+            );
+            bool quit = ButtonDrawEx(&n->dialog_yes, left, interactive);
+            if (ButtonDrawEx(&n->dialog_no, right, interactive)) NexusOpenDialog(n, NEXUS_DIALOG_REVIVE);
+            if (quit) n->dialog = NEXUS_DIALOG_NONE;
+            return quit ? NEXUS_QUIT : NEXUS_NONE;
+        }
+        case NEXUS_DIALOG_BUY_REVIVE: {
+            char title[128];
+            LocFormatInt(title, sizeof(title), "NEXUS_NO_REVIVES_SCREEN_TITLE", player->potions);
+            NexusDrawDialogText(n, content, title, LocGet("NEXUS_NO_REVIVES_SCREEN_BODY"));
+            NexusDrawDialogAmount(
+                n, content, LocGet("REFRESH_COST"), TextFormat("%d", REVIVE_POTION_GEM_COST), GuiTex(GUI_DIALOG_GEM)
+            );
+            if (ButtonDrawEx(&n->buy_cancel, left, interactive)) NexusOpenDialog(n, NEXUS_DIALOG_REVIVE);
+            bool affordable = player->gems >= REVIVE_POTION_GEM_COST;
+            if (ButtonDrawEx(&n->revive, right, interactive && affordable) && NexusBuyRevive(n, player)) {
+                n->dialog = NEXUS_DIALOG_NONE;
+                return NEXUS_REVIVE;
+            }
+            return NEXUS_NONE;
+        }
+        case NEXUS_DIALOG_NONE:
+            break;
+    }
+    return NEXUS_NONE;
 }
 
 bool NexusHandleBack(Nexus *n) {
-    if (!n->quit_open) return false;
-    n->quit_open = false;
+    if (n->dialog == NEXUS_DIALOG_NONE) return false;
+    if (n->revive_ticket != BACKEND_NO_TICKET) return true;
     GuiSoundPlay(SND_UI_POPUP_CLOSE);
+    if (n->dialog == NEXUS_DIALOG_QUIT)
+        n->dialog = NEXUS_DIALOG_NONE;
+    else if (n->dialog == NEXUS_DIALOG_REVIVE)
+        NexusOpenDialog(n, NEXUS_DIALOG_CONFIRM_QUIT);
+    else
+        NexusOpenDialog(n, NEXUS_DIALOG_REVIVE);
     return true;
 }
 
@@ -745,7 +924,7 @@ static void NexusUpdateInput(Nexus *n, const NexusDifficulty *d, float dt) {
         }
     }
 
-    bool blocked = UiInputBlocked() || n->anim_active || n->final_complete || n->quit_open;
+    bool blocked = UiInputBlocked() || n->anim_active || n->final_complete || n->dialog != NEXUS_DIALOG_NONE;
     if (!blocked && IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
         n->press_pos = UiMouse();
         n->dragged = false;
@@ -871,7 +1050,9 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
 
     UiFrameBegin();
 
-    bool interactive = !UiInputBlocked() && !n->anim_active && !n->final_complete && !n->quit_open;
+    if (run->reset && run->committed && !n->final_complete && !n->anim_active && n->dialog == NEXUS_DIALOG_NONE)
+        NexusOpenDialog(n, NEXUS_DIALOG_REVIVE);
+    bool interactive = !UiInputBlocked() && !n->anim_active && !n->final_complete && n->dialog == NEXUS_DIALOG_NONE;
     if (interactive && !n->dragged && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
         Vector2 mouse = UiMouse();
         for (int i = 0; i < d->node_count; i++) {
@@ -1009,8 +1190,7 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
         Rectangle retreat = {7.0f, screen_h - 76.0f, 270.0f, 67.0f};
         if (ButtonDrawEx(&n->retreat, retreat, interactive)) {
             if (run->committed) {
-                n->quit_open = true;
-                n->quit_opening_release = true;
+                NexusOpenDialog(n, NEXUS_DIALOG_QUIT);
             } else {
                 action = NEXUS_LEAVE;
             }
@@ -1075,7 +1255,10 @@ NexusAction NexusDraw(Nexus *n, Player *player, PlayerNexusRun *run) {
         }
     }
 
-    if (n->quit_open && NexusDrawQuitDialog(n, run)) action = NEXUS_QUIT;
+    if (n->dialog != NEXUS_DIALOG_NONE) {
+        NexusAction chosen = NexusDrawDialog(n, player, run);
+        if (chosen != NEXUS_NONE) action = chosen;
+    }
 
     UiFrameEnd();
     return action;

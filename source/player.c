@@ -4,6 +4,7 @@
 #define PLAYER_MAX_LEVEL 100
 #define ENERGY_REFILL_GEM_COST 3
 #define STAMINA_REFILL_GEM_COST 3
+#define REVIVE_POTION_GEM_COST 5
 #define PLAYER_ROSTER_CAPACITY 1024
 #define PLAYER_STORE_PACK_COUNT 4
 #define PLAYER_VOUCHER_CAPACITY 16
@@ -690,6 +691,13 @@ bool PlayerRefillEnergy(Player *p) {
     p->gems -= ENERGY_REFILL_GEM_COST;
     p->energy = p->energy_max;
     p->energy_regen_timer = 0.0f;
+    return true;
+}
+
+bool PlayerBuyRevivePotion(Player *p) {
+    if (!p || p->gems < REVIVE_POTION_GEM_COST || (p->potion_max > 0 && p->potions >= p->potion_max)) return false;
+    p->gems -= REVIVE_POTION_GEM_COST;
+    p->potions++;
     return true;
 }
 

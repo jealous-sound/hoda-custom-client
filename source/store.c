@@ -8,6 +8,13 @@ void GearDrawTile(const GearDef *def, Rectangle r, bool selected);
 #define STORE_PACK_COUNT 4
 #define STORE_PACK_CAPACITY 72
 #define STORE_MAX_RESULTS 10
+#define STORE_MAX_PACK_BONUSES (STORE_MAX_RESULTS + 1)
+#define STORE_PACK_BONUS_POSITIONS 3
+
+typedef struct {
+    bool rune;
+    int def;
+} StorePackBonus;
 #define STORE_GEM_SKU_COUNT 7
 #define STORE_PACK_BULLET_MAX 4
 #define STORE_VOUCHER_BULLETS 2
@@ -249,6 +256,7 @@ typedef enum {
     STORE_ACTION_GOTO_MAP,
     STORE_ACTION_GOTO_SQUAD,
     STORE_ACTION_GOTO_CONSUME,
+    STORE_ACTION_GOTO_RUNES,
     STORE_ACTION_REWARDS_SHOWN,
 } StoreAction;
 
@@ -393,6 +401,7 @@ typedef struct {
     Button gem_claim;
     Button nav_train, nav_runes, nav_squad;
     bool nav_consume_clicked;
+    bool nav_runes_clicked;
     Camera3D opening_camera;
 
     StoreView view;
@@ -424,8 +433,8 @@ typedef struct {
     bool item_details_armed;
     int item_reveal_next;
     float item_reveal_wait;
-    int pack_rune_def;
-    int pack_gear_def;
+    StorePackBonus pack_bonuses[STORE_MAX_PACK_BONUSES];
+    int pack_bonus_count;
     int result_roster_indices[STORE_MAX_RESULTS];
     int result_count;
     StoreRewardReveal reward_reveal;
@@ -454,6 +463,7 @@ static bool StoreGemPurchaseActive(const Store *store) {
 #define STORE_OPEN_SEQUENCE_START 4.80f
 #define STORE_OPEN_COMPLETE 8.0503f
 #define STORE_PACK_RUNE_RECT ((Rectangle){1074.0f, 88.0f, 206.0f, 206.0f})
+#define STORE_PACK_BONUS_STEP 180.0f
 #define STORE_RESULT_CORNER_BUTTON ((Rectangle){1044.0f, 654.0f, 236.0f, 59.0f})
 #define STORE_RESULT_BUY_AGAIN_BUTTON ((Rectangle){808.0f, 654.0f, 236.0f, 59.0f})
 #define STORE_PACK_RUNE_ICON_SCALE 0.78f
@@ -939,8 +949,7 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
         ButtonDisableClickSound(&store->buy[i]);
     }
     store->item_details = -1;
-    store->pack_rune_def = -1;
-    store->pack_gear_def = -1;
+    store->pack_bonus_count = 0;
     store->next =
         ButtonLoadText(GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("NEXT"), store->title_font, (Vector2){0.5f, 0.5f}, 0.34f);
     store->skip =
@@ -1257,15 +1266,19 @@ int StoreRollRune(const StoreRuneSlot *slot, uint32_t *rng) {
     return count > 0 ? candidates[StoreRngRange(rng, count)] : -1;
 }
 
-static int StoreRollPackRunes(const StorePackDef *pack, uint32_t *rng, PlayerRunes *runes, long long now) {
+static void StoreAddPackBonus(Store *store, bool rune, int def) {
+    if (def < 0 || store->pack_bonus_count >= STORE_MAX_PACK_BONUSES) return;
+    store->pack_bonuses[store->pack_bonus_count++] = (StorePackBonus){.rune = rune, .def = def};
+}
+
+static void
+StoreRollPackRunes(Store *store, const StorePackDef *pack, uint32_t *rng, PlayerRunes *runes, long long now) {
     StoreRuneSlot slot = {.min_rarity = pack->rune_min_rarity, .max_rarity = pack->rune_max_rarity};
-    int first = -1;
     for (int i = 0; i < pack->rune_count; i++) {
         if (StoreRngRange(rng, 100) >= pack->rune_chance_pct) continue;
         int def = StoreRollRune(&slot, rng);
-        if (def >= 0 && RuneGrant(runes, def, now) && first < 0) first = def;
+        if (def >= 0 && RuneGrant(runes, def, now)) StoreAddPackBonus(store, true, def);
     }
-    return first;
 }
 
 static int StoreRollBonusGear(const StorePackDef *pack, uint32_t *rng) {
@@ -1480,8 +1493,7 @@ static void StoreBeginHeroReveal(Store *store, int pack_index, int first_index, 
 }
 
 void StoreRevealGrantedHeroes(Store *store, int first_index, int count) {
-    store->pack_rune_def = -1;
-    store->pack_gear_def = -1;
+    store->pack_bonus_count = 0;
     store->reward_reveal.active = false;
     StoreBeginHeroReveal(store, -1, first_index, count);
 }
@@ -1492,8 +1504,7 @@ static bool StoreBeginNextRewardStage(Store *store) {
         StoreRewardStage stage = reveal->stage++;
         if (stage == STORE_REWARD_STAGE_HEROES) {
             if (reveal->hero_count == 0) continue;
-            store->pack_rune_def = -1;
-            store->pack_gear_def = -1;
+            store->pack_bonus_count = 0;
             StoreBeginHeroRevealOf(store, -1, reveal->heroes, reveal->hero_count);
             return true;
         }
@@ -1606,10 +1617,14 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
     StoreOfferPay(offer, player);
     static PlayerRunes old_runes;
     old_runes = player->runes;
-    int pack_rune = scripted ? StoreGrantScriptedRune(scripted, &player->runes)
-                             : StoreRollPackRunes(pack, &rng, &player->runes, RuneNow());
+    store->pack_bonus_count = 0;
+    if (scripted)
+        StoreAddPackBonus(store, true, StoreGrantScriptedRune(scripted, &player->runes));
+    else
+        StoreRollPackRunes(store, pack, &rng, &player->runes, RuneNow());
     int pack_gear = scripted ? -1 : StoreRollBonusGear(pack, &rng);
     if (pack_gear >= 0) GearGrant(&player->gear, pack_gear);
+    StoreAddPackBonus(store, false, pack_gear);
 
     player->store_rng_state = rng;
     player->store_opened_total++;
@@ -1622,6 +1637,7 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
         PlayerRosterClearRange(player, old_roster_count, player->roster_count);
         player->runes = old_runes;
         if (pack_gear >= 0) player->gear.counts[pack_gear]--;
+        store->pack_bonus_count = 0;
         player->roster_count = old_roster_count;
         player->next_instance_id = old_next_instance_id;
         player->gold = old_gold;
@@ -1636,8 +1652,6 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
     }
 
     if (!HeroesSyncRoster(heroes, player)) TraceLog(LOG_FATAL, "Store: persisted roster cannot sync to Heroes");
-    store->pack_rune_def = pack_rune;
-    store->pack_gear_def = pack_gear;
     StoreBeginHeroReveal(store, pack_index, first_index, pack->hero_count);
     TutorialRaise(TUTORIAL_EVENT_UNIT_PURCHASE_SUCCEEDED);
     return true;
@@ -1717,8 +1731,11 @@ StoreRevealServerHeroes(Store *store, Player *player, Heroes *heroes, int pack_i
         return false;
     }
     if (!HeroesSyncRoster(heroes, player)) TraceLog(LOG_FATAL, "Store: persisted roster cannot sync to Heroes");
-    store->pack_rune_def = StoreGrantedDef(granted, "runes", 0, true);
-    store->pack_gear_def = StoreGrantedDef(granted, "gear", 0, false);
+    store->pack_bonus_count = 0;
+    for (int i = 0; i < cJSON_GetArraySize(cJSON_GetObjectItemCaseSensitive(granted, "runes")); i++)
+        StoreAddPackBonus(store, true, StoreGrantedDef(granted, "runes", i, true));
+    for (int i = 0; i < cJSON_GetArraySize(cJSON_GetObjectItemCaseSensitive(granted, "gear")); i++)
+        StoreAddPackBonus(store, false, StoreGrantedDef(granted, "gear", i, false));
     StoreBeginHeroReveal(store, pack_index, first_index, count);
     TutorialRaise(TUTORIAL_EVENT_UNIT_PURCHASE_SUCCEEDED);
     return true;
@@ -3044,7 +3061,9 @@ static bool StoreDrawResultNavigation(Store *store, bool last) {
     TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_CONSUME, consume);
     TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_SQUAD, squad);
     store->nav_consume_clicked = ButtonDrawEx(&store->nav_train, consume, !StoreInputBlocked(store));
-    ButtonDrawEx(&store->nav_runes, UiBottomRect((Rectangle){120.0f, 662.0f, 106.0f, 49.5f}), false);
+    store->nav_runes_clicked = ButtonDrawEx(
+        &store->nav_runes, UiBottomRect((Rectangle){120.0f, 662.0f, 106.0f, 49.5f}), !StoreInputBlocked(store)
+    );
     return ButtonDrawEx(&store->nav_squad, squad, !StoreInputBlocked(store));
 }
 
@@ -3057,9 +3076,10 @@ static float StoreClamp01(float value) {
     return Clamp(value, 0.0f, 1.0f);
 }
 
-static void StoreDrawPackBonus(const Store *store, Texture2D icon, int rarity) {
+static void StoreDrawPackBonus(const Store *store, Texture2D icon, int rarity, int position) {
     float time = store->result_time;
     Rectangle slot = StoreFromRightEdge(STORE_PACK_RUNE_RECT);
+    slot.y += (float)position * STORE_PACK_BONUS_STEP;
 
     float burst_time = time - STORE_PACK_RUNE_BURST_DELAY;
     if (burst_time >= 0.0f && burst_time < STORE_PACK_RUNE_BURST_DURATION) {
@@ -3099,14 +3119,21 @@ static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes)
     HeroCard *card = StoreCurrentCard(store, heroes);
     bool last = store->reveal_index + 1 >= store->result_count;
     if (card && store->result_time >= 0.08f) HeroesDrawDetailsAt(card, (Rectangle){17.0f, 91.0f, 433.0f, 555.0f});
-    bool first_result = store->reveal_index == 0;
-    if (store->pack_gear_def >= 0 && first_result) {
-        const GearDef *gear = GearDefAt(store->pack_gear_def);
-        StoreDrawPackBonus(store, GearIconLoad(gear), gear->rarity);
-    } else if (store->pack_rune_def >= 0 && first_result) {
-        const RuneDef *rune = RuneDefAt(store->pack_rune_def);
-        StoreDrawPackBonus(store, RuneIconLoad(rune->icon), rune->rarity);
-        TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_RUNE, StoreFromRightEdge(STORE_PACK_RUNE_RECT));
+    int first_bonus = store->reveal_index;
+    int shown_until = last ? store->pack_bonus_count : first_bonus + 1;
+    if (shown_until > store->pack_bonus_count) shown_until = store->pack_bonus_count;
+    if (shown_until > first_bonus + STORE_PACK_BONUS_POSITIONS) shown_until = first_bonus + STORE_PACK_BONUS_POSITIONS;
+    for (int b = first_bonus; b < shown_until; b++) {
+        StorePackBonus bonus = store->pack_bonuses[b];
+        int position = b - first_bonus;
+        if (bonus.rune) {
+            const RuneDef *rune = RuneDefAt(bonus.def);
+            StoreDrawPackBonus(store, RuneIconLoad(rune->icon), rune->rarity, position);
+            if (position == 0) TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_RUNE, StoreFromRightEdge(STORE_PACK_RUNE_RECT));
+        } else {
+            const GearDef *gear = GearDefAt(bonus.def);
+            StoreDrawPackBonus(store, GearIconLoad(gear), gear->rarity, position);
+        }
     }
     bool squad = StoreDrawResultNavigation(store, last);
 
@@ -3141,6 +3168,10 @@ static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes)
     if (store->nav_consume_clicked) {
         PackHeroClear(&store->opening_hero);
         return STORE_ACTION_GOTO_CONSUME;
+    }
+    if (store->nav_runes_clicked) {
+        PackHeroClear(&store->opening_hero);
+        return STORE_ACTION_GOTO_RUNES;
     }
     if (again && StoreRequestPurchase(store, player, heroes, store->selected_pack)) return STORE_ACTION_PURCHASED;
     StoreDrawToast(store);

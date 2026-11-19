@@ -322,8 +322,14 @@ static void DebugPrepareNexus(Game *game, DebugShot *shot) {
         game->player.nexus_run.escrow_potions = EnvInt("HOD_NEXUS_POTIONS", 2);
         game->player.nexus_run.escrow_units[EnvInt("HOD_NEXUS_RARITY", RARITY_RARE)] = EnvInt("HOD_NEXUS_UNITS", 3);
     }
+    if (EnvFlag("HOD_NEXUS_REVIVE")) {
+        game->player.nexus_run.committed = true;
+        game->player.nexus_run.reset = true;
+        game->player.potions = EnvInt("HOD_NEXUS_POTIONS_HELD", game->player.potions);
+    }
     NexusEnterMap(&game->nexus, &game->player, event, difficulty);
-    game->nexus.quit_open = EnvFlag("HOD_NEXUS_QUIT");
+    if (EnvFlag("HOD_NEXUS_QUIT")) game->nexus.dialog = NEXUS_DIALOG_QUIT;
+    if (EnvFlag("HOD_NEXUS_DIALOG")) game->nexus.dialog = (NexusDialog)EnvInt("HOD_NEXUS_DIALOG", 0);
     shot->flow_started = true;
 }
 
@@ -569,6 +575,7 @@ static void DebugPreparePvp(Game *game, DebugShot *shot) {
     game->screen = SCREEN_BATTLE;
     if (!game->battle.squads_loaded) {
         game->player.pvp.trophies = DEBUG_PVP_TROPHIES;
+        game->player.level = EnvInt("HOD_PLAYER_LEVEL", game->player.level);
         bool event = DebugShotIsAny(shot, (const char *const[]){"pvp_event_match", "pvp_event_results"}, 2);
         GameMatchPvp(game, event, GAME_PVP_MATCHMAKING, false, SCREEN_PVP_HUB);
         return;
@@ -1754,7 +1761,17 @@ static void DebugPrepareExpeditions(Game *game, DebugShot *shot) {
     }
 }
 
+static void DebugPrepareNotice(Game *game) {
+    const char *notice = getenv("HOD_NOTICE");
+    if (!notice || game->notice.open) return;
+    if (strcmp(notice, "energy") == 0)
+        GameOpenNotice(game, "REFRESH_ENERGY_MAX_CTA_TITLE", "REFRESH_ENERGY_MAX_CTA_MESSAGE");
+    if (strcmp(notice, "retreat") == 0) GameOpenNotice(game, NULL, "BACK_BUTTON_DURING_BATTLE_MESSAGE");
+    if (strcmp(notice, "revive") == 0) GameOpenNotice(game, "NEXUS_REVIVE_SUCCESS_TITLE", "NEXUS_REVIVE_SUCCESS_BODY");
+}
+
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
+    DebugPrepareNotice(game);
     if (DebugPrepareTutorial(game, shot) || DebugPrepareNamePrompt(game, shot)) return;
     if (DebugPrepareOptions(game, shot) || DebugPrepareClientUpdate(game, shot)) return;
     if (DebugPrepareProfile(game, shot) || DebugPrepareRenown(game, shot)) return;
