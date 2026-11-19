@@ -118,6 +118,7 @@ typedef enum {
     GUI_STORE_GEM_ICON_6,
     GUI_STORE_INFO_ICON,
     GUI_STORE_INFO_ICON_ON,
+    GUI_STORE_PITY_FILL,
 
     GUI_HEROES_PANEL,
     GUI_HEROES_ROW_HEALTH,
@@ -636,6 +637,7 @@ static const char *const gui_paths[GUI_COUNT] = {
     [GUI_STORE_GEM_ICON_6] = CACHE_RESOURCE("tex.IconGems6"),
     [GUI_STORE_INFO_ICON] = CACHE_RESOURCE("ico_help_info"),
     [GUI_STORE_INFO_ICON_ON] = CACHE_RESOURCE("ico_help_info_select"),
+    [GUI_STORE_PITY_FILL] = CACHE_RESOURCE("Bar_ProgressFill_Grey"),
 
     [GUI_HEROES_PANEL] = CACHE_RESOURCE("bg_unittray_squads"),
     [GUI_HEROES_ROW_HEALTH] = CACHE_RESOURCE("tex.rowbonus_front_health"),

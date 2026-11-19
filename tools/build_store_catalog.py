@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import math
 import sys
+from fractions import Fraction
 from pathlib import Path
 
 from PIL import Image
@@ -85,6 +87,7 @@ MINIMUM = {id(COMMON_TIER): 'Common', id(UNCOMMON_TIER): 'Uncommon', id(RARE_TIE
            id(RARE_ONLY_TIER): 'Rare'}
 
 RARITY_NUMBER = {'Common': 1, 'Uncommon': 2, 'Rare': 3, 'Epic': 4, 'Legendary': 5}
+WEIGHT_TOTAL = 10000
 WISP_POOL = 'WISP'
 GOAT_POOL = 'GOAT'
 
@@ -120,6 +123,16 @@ def gear_info(count):
     return f'HODA_STORE_GEAR_PACK_INFO_{count}'
 
 
+def average_packs_per_legendary(tier, rolled_slots):
+    miss_one = Fraction(WEIGHT_TOTAL - tier['Legendary'], WEIGHT_TOTAL)
+    return math.ceil(1 / (1 - miss_one ** rolled_slots))
+
+
+def legendary_pity_packs(tier, rolled_slots, guaranteed_legendary):
+    can_miss = 0 < tier['Legendary'] < WEIGHT_TOTAL and rolled_slots > 0 and not guaranteed_legendary
+    return average_packs_per_legendary(tier, rolled_slots) if can_miss else 0
+
+
 def offer(currency, price):
     return {'currency': currency, 'price': price}
 
@@ -129,16 +142,17 @@ def voucher(name):
 
 
 def hero(key, loc, order, category, header, icon, offers, tier, count=1, bullets=(), info=None, opened_counter=0,
-         schedule=None, rotation=None, epic=0, legendary=0, pity=0, rune_pct=0, rune=(1, 2), rune_count=1,
+         schedule=None, rotation=None, epic=0, legendary=0, pity=True, rune_pct=0, rune=(1, 2), rune_count=1,
          gear_pct=0, gear=(1, 3), rare=0, fixed=(), pool=None, unique=False, header_tint=None):
     optional = {'guaranteed_rare': rare, 'fixed_heroes': list(fixed), 'pool_tag': pool, 'unique_heroes': unique,
                 'header_tint': header_tint}
+    rolled_slots = count - len(fixed) - legendary - epic - rare
     return {
         'id': key, 'kind': 'hero', **pack_text(loc, info or hero_info(count, tier)), 'category': category,
         'order': order, 'header': header, 'icon': icon, 'offers': offers, 'bullets': list(bullets), 'schedule': schedule,
         'rotation': rotation, 'opened_counter': opened_counter, 'hero_count': count,
         'minimum_rarity': MINIMUM[id(tier)], 'guaranteed_legendary': legendary, 'guaranteed_epic': epic,
-        'legendary_pity': pity, 'weights': tier, 'rune_chance_pct': rune_pct, 'rune_min_rarity': rune[0],
+        'legendary_pity_packs': legendary_pity_packs(tier, rolled_slots, legendary) if pity else 0, 'weights': tier, 'rune_chance_pct': rune_pct, 'rune_min_rarity': rune[0],
         'rune_max_rarity': rune[1], 'rune_count': rune_count, 'gear_chance_pct': gear_pct,
         'gear_min_rarity': gear[0], 'gear_max_rarity': gear[1],
         **{key: value for key, value in optional.items() if value},
@@ -183,7 +197,7 @@ TUTORIAL_CONSUME_ICON = 'cache:tex.Store_IconGreyWardenKnight'
 def tutorial_consume_pack():
     row = hero('tutorial_consume', 'TUTORIAL_CONSUME', 5, 'UNITS', GOLD, TUTORIAL_CONSUME_ICON,
                [offer('gold', 0)], RARE_TIER, count=2, bullets=[bullet(TRAINING)],
-               info='HODA_TUTORIAL_CONSUME_PACK_INFO')
+               info='HODA_TUTORIAL_CONSUME_PACK_INFO', pity=False)
     row['tutorial_only'] = True
     return row
 

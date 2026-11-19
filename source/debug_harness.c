@@ -214,6 +214,14 @@ static void DebugSeedVault(Player *player) {
     };
 }
 
+static void DebugShowStorePackInfo(Store *store, Player *player) {
+    int pack = EnvInt("HOD_STORE_INFO", -1);
+    if (pack < 0 || pack >= store->pack_count) return;
+    store->info_pack = pack;
+    const char *counter = StorePackPityCounter(&store->packs[pack]);
+    PlayerSetPacksSinceLegendary(player, counter, EnvInt("HOD_PACKS_SINCE_LEGENDARY", 0));
+}
+
 static void DebugPrepareStore(Game *game, DebugShot *shot) {
     static const char *const names[] = {
         "store",
@@ -239,6 +247,7 @@ static void DebugPrepareStore(Game *game, DebugShot *shot) {
         game->store.scroll = EnvFloat("HOD_STORE_SCROLL", 0.0f);
         for (int voucher = 0; voucher < game->store.voucher_count; voucher++)
             game->player.pack_vouchers[voucher] = EnvInt("HOD_VOUCHERS", 0);
+        DebugShowStorePackInfo(&game->store, &game->player);
         if (DebugShotIs(shot, "store_heroes")) {
             game->store.view = STORE_VIEW_HEROES;
         } else if (DebugShotIs(shot, "store_gems")) {

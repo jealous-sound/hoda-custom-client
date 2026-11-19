@@ -1,0 +1,8 @@
+HODA_STORE_ODDS_EACH_HERO|Kans per held
+HODA_STORE_ODDS_OTHER_HEROES|Kans voor de overige helden
+HODA_STORE_ODDS_PERCENT|{0}%
+HODA_STORE_PITY_PACKS_LEFT|Legendarisch gegarandeerd binnen {0} pakketten
+HODA_STORE_PITY_NEXT_PACK|Legendarisch gegarandeerd in het volgende pakket
+HODA_STORE_PITY_SHARED|Gedeeld met de andere weekpakketten
+HODA_STORE_BULLET_PITY|Legendarisch binnen {0} pakketten
+HODA_STORE_BULLET_PITY_NEXT|Legendarisch in volgend pakket!

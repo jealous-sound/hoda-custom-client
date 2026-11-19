@@ -4230,7 +4230,7 @@ static void TestProgressionPersistence(void) {
     source.store_opened_by_pack[1] = 2;
     source.store_opened_by_pack[2] = 3;
     source.store_opened_by_pack[3] = 4;
-    source.champion_since_legendary = 2;
+    assert(PlayerSetPacksSinceLegendary(&source, "champion", 2));
     source.campaign_progress.campaign_index = 1;
     source.campaign_progress.node_index = 1;
     source.campaign_progress.node_completions[0][0] = 3;
@@ -4251,6 +4251,7 @@ static void TestProgressionPersistence(void) {
     char *json = LoadFileText(path);
     assert(json && strstr(json, "\"version\"") && strstr(json, "\"completions\""));
     assert(strstr(json, "\"roster\"") && strstr(json, "\"store\""));
+    assert(strstr(json, "\"" PROGRESSION_RELEASED_CLIENT_PITY_KEY "\":\t0"));
     UnloadFileText(json);
 
     Character sentinel_roster = {0};
@@ -4265,7 +4266,8 @@ static void TestProgressionPersistence(void) {
     assert(loaded.gold == 9876 && loaded.gems == 77);
     assert(loaded.store_rng_state == 0x1234abcdu && loaded.store_opened_total == 10);
     assert(loaded.store_opened_by_pack[0] == 1 && loaded.store_opened_by_pack[3] == 4);
-    assert(loaded.champion_since_legendary == 2);
+    assert(loaded.pack_pity_count == 1 && PlayerPacksSinceLegendary(&loaded, "champion") == 2);
+    assert(PlayerPacksSinceLegendary(&loaded, "knight") == 0);
     assert(loaded.campaign_progress.node_completions[0][0] == 3);
     assert(loaded.campaign_progress.node_completions[1][0] == 2);
     assert(loaded.campaign_progress.node_losses[1][2] == 4);
@@ -4370,7 +4372,7 @@ static void TestRosterInstancesAndPersistence(void) {
     source.store_opened_by_pack[1] = 2;
     source.store_opened_by_pack[2] = 3;
     source.store_opened_by_pack[3] = 4;
-    source.champion_since_legendary = 2;
+    assert(PlayerSetPacksSinceLegendary(&source, "champion", 2));
     assert(PlayerSquadPlace(&source, 2, 0, first));
     PlayerSquadSelect(&source, 2);
     assert(ProgressionSaveToPath(&source, path));
@@ -4389,7 +4391,7 @@ static void TestRosterInstancesAndPersistence(void) {
     assert(loaded.roster[first].ability == &loaded.roster_abilities[first]);
     assert(PlayerRosterDefinitionCount(&loaded, "UNIT_ELVENMAGE") == definition_count + 2);
     assert(loaded.store_rng_state == source.store_rng_state && loaded.store_opened_total == 10);
-    assert(loaded.store_opened_by_pack[2] == 3 && loaded.champion_since_legendary == 2);
+    assert(loaded.store_opened_by_pack[2] == 3 && PlayerPacksSinceLegendary(&loaded, "champion") == 2);
     assert(loaded.current_squad == 2 && loaded.squads[2][0] == first);
 
     Character addition_before = loaded.roster[first];
@@ -6448,6 +6450,110 @@ static void TestVoucherOfferWinsOnlyWhenOwned(void) {
     pack.has_paid_offer = false;
     StoreOffer find = StoreActiveOffer(&pack, &player);
     assert(find.voucher == 3 && !StoreOfferAffordable(find, &player));
+}
+
+static void TestPackPityCountsPacksOnEachPacksOwnCounter(void) {
+    StorePackDef champion = {.id = "champion", .kind = STORE_KIND_HERO, .hero_count = 1, .legendary_pity_packs = 100};
+    StorePackDef booster = {
+        .id = "booster_giant",
+        .rotation_group = "booster",
+        .kind = STORE_KIND_HERO,
+        .hero_count = 1,
+        .legendary_pity_packs = 100
+    };
+    StorePackDef recruit = {.id = "recruit", .kind = STORE_KIND_HERO, .hero_count = 1};
+    assert(!strcmp(StorePackPityCounter(&champion), "champion") && !strcmp(StorePackPityCounter(&booster), "booster"));
+
+    Player player = {0};
+    assert(StorePackPullsUntilLegendary(&champion, &player) == 100);
+    assert(PlayerSetPacksSinceLegendary(&player, "champion", 97));
+    assert(StorePackPullsUntilLegendary(&champion, &player) == 3);
+    assert(StorePackPullsUntilLegendary(&booster, &player) == 100);
+    assert(StorePackPullsUntilLegendary(&recruit, &player) == 0 && !StorePackPityDue(&recruit, 1000));
+    assert(!StorePackPityDue(&champion, 98) && StorePackPityDue(&champion, 99));
+    assert(PlayerSetPacksSinceLegendary(&player, "champion", 140));
+    assert(StorePackPullsUntilLegendary(&champion, &player) == 1 && player.pack_pity_count == 1);
+
+    Rarity missed[] = {RARITY_RARE, RARITY_EPIC, RARITY_RARE};
+    Rarity found[] = {RARITY_RARE, RARITY_LEGENDARY};
+    assert(StorePacksSinceLegendaryAfter(5, missed, 3) == 6);
+    assert(StorePacksSinceLegendaryAfter(5, found, 2) == 0);
+
+    Player full = {0};
+    for (int i = 0; i < PLAYER_PACK_PITY_CAPACITY; i++)
+        assert(PlayerSetPacksSinceLegendary(&full, TextFormat("pack_%d", i), i));
+    assert(!PlayerCanTrackPackPity(&full, "one_more") && !PlayerSetPacksSinceLegendary(&full, "one_more", 1));
+    assert(PlayerSetPacksSinceLegendary(&full, "pack_3", 30) && PlayerPacksSinceLegendary(&full, "pack_3") == 30);
+}
+
+static void TestDuePackHoldsALegendaryInItsFirstRolledSlot(void) {
+    StorePackDef flash = {
+        .id = "flash",
+        .kind = STORE_KIND_HERO,
+        .hero_count = 3,
+        .guaranteed_epic = 1,
+        .legendary_pity_packs = 4,
+        .weights = {[RARITY_RARE] = STORE_WEIGHT_TOTAL}
+    };
+    for (uint32_t seed = 1; seed <= 20; seed++) {
+        uint32_t due_rng = seed, early_rng = seed;
+        Rarity due[3], early[3];
+        for (int slot = 0; slot < 3; slot++) {
+            due[slot] = StorePackSlotRarity(&flash, slot, StorePackPityDue(&flash, 3), &due_rng);
+            early[slot] = StorePackSlotRarity(&flash, slot, StorePackPityDue(&flash, 2), &early_rng);
+        }
+        assert(due[0] == RARITY_EPIC && due[1] == RARITY_LEGENDARY && due[2] == RARITY_RARE);
+        assert(early[0] == RARITY_EPIC && early[1] == RARITY_RARE && early[2] == RARITY_RARE);
+    }
+}
+
+static char *TestProfileWithPackPity(cJSON *root, cJSON *counters) {
+    cJSON *store = cJSON_GetObjectItemCaseSensitive(root, "store");
+    cJSON_DeleteItemFromObjectCaseSensitive(store, PROGRESSION_PACK_PITY_KEY);
+    if (counters) cJSON_AddItemToObject(store, PROGRESSION_PACK_PITY_KEY, counters);
+    return cJSON_PrintUnformatted(root);
+}
+
+static void TestPackPityLoadsFromServerProfilesAndOlderSaves(void) {
+    Player defaults = {0};
+    ProgressionInitializePlayerDefaults(&defaults);
+    char *text = ProgressionSerialize(&defaults);
+    assert(text);
+    cJSON *root = cJSON_Parse(text);
+    cJSON_free(text);
+    cJSON_DeleteItemFromObjectCaseSensitive(
+        cJSON_GetObjectItemCaseSensitive(root, "store"), PROGRESSION_RELEASED_CLIENT_PITY_KEY
+    );
+
+    char *older = TestProfileWithPackPity(root, NULL);
+    Player from_older = {0};
+    ProgressionInitializePlayerDefaults(&from_older);
+    assert(ProgressionLoadFromText(&from_older, older, "pity test") && from_older.pack_pity_count == 0);
+    cJSON_free(older);
+
+    cJSON *counters = cJSON_CreateObject();
+    cJSON_AddNumberToObject(counters, "flash", 63);
+    cJSON_AddNumberToObject(counters, "grand_champion", 9);
+    char *server = TestProfileWithPackPity(root, counters);
+    Player from_server = {0};
+    ProgressionInitializePlayerDefaults(&from_server);
+    assert(ProgressionLoadFromText(&from_server, server, "pity test"));
+    assert(PlayerPacksSinceLegendary(&from_server, "flash") == 63);
+    assert(PlayerPacksSinceLegendary(&from_server, "grand_champion") == 9);
+    cJSON_free(server);
+
+    cJSON *negative_counters = cJSON_CreateObject();
+    cJSON_AddNumberToObject(negative_counters, "flash", -1);
+    char *negative = TestProfileWithPackPity(root, negative_counters);
+    Player rejected = {0};
+    ProgressionInitializePlayerDefaults(&rejected);
+    assert(!ProgressionLoadFromText(&rejected, negative, "pity test") && rejected.pack_pity_count == 0);
+    cJSON_free(negative);
+
+    char *listed = TestProfileWithPackPity(root, cJSON_CreateArray());
+    assert(!ProgressionLoadFromText(&rejected, listed, "pity test"));
+    cJSON_free(listed);
+    cJSON_Delete(root);
 }
 
 static void TestAscendedHeroLoadsAboveTheOldLevelCap(void) {
@@ -10303,6 +10409,9 @@ int main(void) {
     TestSeasonalPackFollowsTheCalendar();
     TestFlashPacksRotateOnePerPeriod();
     TestVoucherOfferWinsOnlyWhenOwned();
+    TestPackPityCountsPacksOnEachPacksOwnCounter();
+    TestDuePackHoldsALegendaryInItsFirstRolledSlot();
+    TestPackPityLoadsFromServerProfilesAndOlderSaves();
     TestStoreDialogTextFitsRussianPackNames();
     TestLegendaryPackRollsSkipHeroesAlreadyOwned();
     TestAscendedHeroLoadsAboveTheOldLevelCap();

@@ -7,6 +7,8 @@
 #define PLAYER_ROSTER_CAPACITY 1024
 #define PLAYER_STORE_PACK_COUNT 4
 #define PLAYER_VOUCHER_CAPACITY 16
+#define PLAYER_PACK_PITY_CAPACITY 72
+#define PLAYER_PACK_PITY_COUNTER_CAPACITY 32
 #define PLAYER_INSTANCE_ID_MAX 9007199254740991ULL
 #define PLAYER_NAME_MAX_CHARACTERS 25
 #define PLAYER_NAME_CAPACITY (PLAYER_NAME_MAX_CHARACTERS * 4 + 1)
@@ -86,6 +88,11 @@ typedef struct {
 } PlayerTutorial;
 
 typedef struct {
+    char counter[PLAYER_PACK_PITY_COUNTER_CAPACITY];
+    int packs_since_legendary;
+} PlayerPackPity;
+
+typedef struct {
     int level;
     int experience;
     int experience_min;
@@ -110,7 +117,8 @@ typedef struct {
     uint32_t store_rng_state;
     int store_opened_total;
     int store_opened_by_pack[PLAYER_STORE_PACK_COUNT];
-    int champion_since_legendary;
+    PlayerPackPity pack_pity[PLAYER_PACK_PITY_CAPACITY];
+    int pack_pity_count;
     int pack_vouchers[PLAYER_VOUCHER_CAPACITY];
 
     PlayerCampaignProgress campaign_progress;
@@ -610,6 +618,33 @@ bool PlayerSpendGold(Player *p, int cost) {
 bool PlayerSpendGems(Player *p, int cost) {
     if (!p || cost < 0 || p->gems < cost) return false;
     p->gems -= cost;
+    return true;
+}
+
+static PlayerPackPity *PlayerFindPackPity(Player *p, const char *counter) {
+    for (int i = 0; i < p->pack_pity_count; i++)
+        if (!strcmp(p->pack_pity[i].counter, counter)) return &p->pack_pity[i];
+    return NULL;
+}
+
+int PlayerPacksSinceLegendary(const Player *p, const char *counter) {
+    const PlayerPackPity *pity = PlayerFindPackPity((Player *)p, counter);
+    return pity ? pity->packs_since_legendary : 0;
+}
+
+bool PlayerCanTrackPackPity(const Player *p, const char *counter) {
+    if (PlayerFindPackPity((Player *)p, counter)) return true;
+    return p->pack_pity_count < PLAYER_PACK_PITY_CAPACITY && strlen(counter) < PLAYER_PACK_PITY_COUNTER_CAPACITY;
+}
+
+bool PlayerSetPacksSinceLegendary(Player *p, const char *counter, int packs) {
+    if (packs < 0 || !PlayerCanTrackPackPity(p, counter)) return false;
+    PlayerPackPity *pity = PlayerFindPackPity(p, counter);
+    if (!pity) {
+        pity = &p->pack_pity[p->pack_pity_count++];
+        StrCopy(pity->counter, sizeof(pity->counter), counter);
+    }
+    pity->packs_since_legendary = packs;
     return true;
 }
 
