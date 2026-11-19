@@ -573,6 +573,9 @@ typedef struct {
 
 static CampaignTrayLayout CampaignTrayLayoutFor(float screen_w, float screen_h) {
     Rectangle container = CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_TRAY_CONTAINER);
+    float toggle_room = UiFullScaleWidth() - container.width;
+    container.x = toggle_room;
+    container.width = screen_w - toggle_room;
     return (CampaignTrayLayout){
         .background = HudSpanCanvasWidth(CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_TRAY_BACKGROUND)),
         .list = CampaignIguiRect(container, CAMPAIGN_TRAY_LIST),

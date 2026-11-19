@@ -722,7 +722,7 @@ static void GearViewDrawPageButton(Button *button, char *label, const char *key,
 void GearViewDrawPanel(Player *p) {
     GearViewLoadButtons();
     bool input = GearViewAcceptsInput();
-    UiDrawTexture(GuiTex(GUI_CONSUME_TRAY), RosterPxAt(ROSTER_FILL_LEFT, -7.0f, 0.0f, 455.0f, 938.0f), WHITE);
+    RosterDrawTray();
 
     int items[GEAR_CATALOG_CAPACITY];
     int count = GearViewFilteredItems(p, gear_view.filter, gear_view.reversed, items);

@@ -9,6 +9,9 @@
 #define ROSTER_PANEL_DESIGN_WIDTH 278.0f
 #define ROSTER_PANEL_WIDTH (ROSTER_PANEL_DESIGN_WIDTH * UiFullScaleWidth() / UI_DESIGN_W)
 #define ROSTER_GRID_COLS 2
+#define ROSTER_TRAY_FIXED_TOP 0.15f
+#define ROSTER_TRAY_FIXED_BOTTOM 0.15f
+#define ROSTER_TRAY_SLICES 3
 #define ROSTER_FILTER_ROW 65.0f
 #define ROSTER_SCROLL_STEP 50.0f
 
@@ -263,6 +266,26 @@ static Rectangle RosterPx(float x, float y, float w, float h) {
     return RosterPxAt(ROSTER_TOP_LEFT, x, y, w, h);
 }
 
+static void RosterDrawTray(void) {
+    Texture2D tray = GuiTex(GUI_CONSUME_TRAY);
+    Rectangle full = RosterPx(-7.0f, 0.0f, 455.0f, 938.0f);
+    float top = full.height * ROSTER_TRAY_FIXED_TOP, bottom = full.height * ROSTER_TRAY_FIXED_BOTTOM;
+    float source_top = tray.height * ROSTER_TRAY_FIXED_TOP, source_bottom = tray.height * ROSTER_TRAY_FIXED_BOTTOM;
+    float stretched = full.height - top - bottom + UiSpareHeight();
+    Rectangle sources[ROSTER_TRAY_SLICES] = {
+        {0.0f, 0.0f, (float)tray.width, source_top},
+        {0.0f, source_top, (float)tray.width, tray.height - source_top - source_bottom},
+        {0.0f, tray.height - source_bottom, (float)tray.width, source_bottom},
+    };
+    Rectangle targets[ROSTER_TRAY_SLICES] = {
+        {full.x, full.y, full.width, top},
+        {full.x, full.y + top, full.width, stretched},
+        {full.x, full.y + top + stretched, full.width, bottom},
+    };
+    for (int i = 0; i < ROSTER_TRAY_SLICES; i++)
+        DrawTexturePro(tray, sources[i], targets[i], (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
+}
+
 static Rectangle RosterGridView(void) {
     return RosterPxAt(ROSTER_FILL_LEFT, 8.0f, 120.0f, 375.0f, 704.0f);
 }
@@ -374,7 +397,7 @@ static void RosterDrawFilterList(Roster *r, const Player *p, bool input) {
 
 static int
 RosterDraw(Roster *r, const HeroCard *cards, const Player *p, bool input, RosterCardDrawFn draw, const void *context) {
-    UiDrawTexture(GuiTex(GUI_CONSUME_TRAY), RosterPxAt(ROSTER_FILL_LEFT, -7.0f, 0.0f, 455.0f, 938.0f), WHITE);
+    RosterDrawTray();
 
     r->category.label = LocGet(ROSTER_FILTER_KEYS[r->filter]);
     if (ButtonDrawEx(&r->category, RosterPx(16.0f, 56.0f, 276.0f, 68.0f), input)) {
