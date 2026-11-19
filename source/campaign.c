@@ -25,7 +25,7 @@ typedef struct {
 static const CampaignIguiAnchor CAMPAIGN_TRAY_BACKGROUND = {0.5f, 1.055f, 1.9f, 0.25f, 8.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_CONTAINER = {1.0f, 0.5f, 0.897f, 1.0f, 0.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_LIST = {0.44f, 1.0f, 0.84f, 0.16f, 0.0f};
-static const CampaignIguiAnchor CAMPAIGN_TRAY_MAP_BUTTON = {0.0f, 0.0f, 1.0f, 1.3f, 1.0f};
+static const CampaignIguiAnchor CAMPAIGN_TRAY_MAP_BUTTON = {0.0f, 0.5f, 1.0f, 1.3f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_BACK_ARROW = {0.0f, 0.97f, 1.0f, 0.1f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_FORWARD_ARROW = {0.98f, 0.97f, 1.0f, 0.1f, 1.0f};
 static const Vector2 CAMPAIGN_TRAY_BACKGROUND_SCALE = {1.0f, -1.0f};
@@ -580,8 +580,12 @@ static int CampaignUnlockedMapCount(const Campaign *c, const PlayerCampaignProgr
     return count;
 }
 
+static Rectangle CampaignTrayButtonRow(const CampaignTrayLayout *layout) {
+    return CampaignIguiRect(layout->list, CAMPAIGN_TRAY_MAP_BUTTON);
+}
+
 static float CampaignTrayItemSize(const CampaignTrayLayout *layout) {
-    return CampaignIguiRect(layout->list, CAMPAIGN_TRAY_MAP_BUTTON).width;
+    return CampaignTrayButtonRow(layout).width;
 }
 
 static float CampaignTrayStride(float list_w, float item_size, int count) {
@@ -660,18 +664,19 @@ static int CampaignDrawTray(
     c->tray_scroll += (c->tray_scroll_target - c->tray_scroll) * fminf(1.0f, dt * CAMPAIGN_TRAY_SCROLL_SPEED);
 
     int clicked = -1;
-    float item_size = CampaignTrayItemSize(layout);
+    Rectangle row = CampaignTrayButtonRow(layout);
+    float item_size = row.width;
     float scale = UiScale();
     BeginScissorMode(
         (int)(layout->list.x * scale),
-        (int)(layout->list.y * scale),
+        (int)(row.y * scale),
         (int)(layout->list.width * scale),
-        (int)(layout->list.height * scale)
+        (int)(row.height * scale)
     );
     for (int map = 0; map < count; map++) {
         Rectangle item = {
             layout->list.x + map * stride - c->tray_scroll + (stride - item_size) * 0.5f,
-            layout->list.y,
+            row.y,
             item_size,
             item_size,
         };

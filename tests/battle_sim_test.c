@@ -4725,6 +4725,8 @@ static void TestMapTrayFollowsTheOriginalPrefab(void) {
     CampaignTrayLayout layout = CampaignTrayLayoutFor(1280.0f, 720.0f);
     float item = CampaignTrayItemSize(&layout);
     assert(item == ceilf(layout.list.height * 1.3f) && item > layout.list.height);
+    Rectangle row = CampaignTrayButtonRow(&layout);
+    assert(row.y + row.height * 0.5f == layout.list.y + layout.list.height * 0.5f);
 
     Texture2D texture = {.width = 64, .height = 32};
     Rectangle background = CampaignMirroredSource(texture, CAMPAIGN_TRAY_BACKGROUND_SCALE);
