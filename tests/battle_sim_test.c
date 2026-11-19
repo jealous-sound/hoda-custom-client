@@ -4713,6 +4713,36 @@ static void TestOriginalResourcesDecodeLikeUnityPy(void) {
     assert(!ResourceExists(CACHE_RESOURCE("no_such_texture")));
 }
 
+static void TestSameNamedCacheTexturesResolveToTheFirstInTheirBundle(void) {
+    static const int full_maps_with_label_plate_size = 128;
+    Image maps = ResourceLoadImage(gui_paths[GUI_BTN_MAPS]);
+    assert(maps.data && maps.width == full_maps_with_label_plate_size);
+    assert(maps.height == full_maps_with_label_plate_size);
+    UnloadImage(maps);
+}
+
+static void TestMapTrayFollowsTheOriginalPrefab(void) {
+    CampaignTrayLayout layout = CampaignTrayLayoutFor(1280.0f, 720.0f);
+    float item = CampaignTrayItemSize(&layout);
+    assert(item == ceilf(layout.list.height * 1.3f) && item > layout.list.height);
+    Rectangle row = CampaignTrayButtonRow(&layout);
+    assert(row.y + row.height * 0.5f == layout.list.y + layout.list.height * 0.5f);
+
+    Texture2D texture = {.width = 64, .height = 32};
+    Rectangle background = CampaignMirroredSource(texture, CAMPAIGN_TRAY_BACKGROUND_SCALE);
+    assert(background.width == 64.0f && background.height == -32.0f);
+    Rectangle back = CampaignMirroredSource(texture, CAMPAIGN_TRAY_BACK_ARROW_SCALE);
+    assert(back.width == -64.0f && back.height == 32.0f);
+
+    static Campaign campaign;
+    enum { FEW_MAPS = 3, MANY_MAPS = 12 };
+    campaign.tray_scroll_target = 0.0f;
+    assert(!CampaignTrayCanScrollBack(&campaign) && !CampaignTrayCanScrollForward(&campaign, &layout, FEW_MAPS));
+    assert(!CampaignTrayCanScrollBack(&campaign) && CampaignTrayCanScrollForward(&campaign, &layout, MANY_MAPS));
+    campaign.tray_scroll_target = CampaignTrayMaxScroll(&layout, MANY_MAPS);
+    assert(CampaignTrayCanScrollBack(&campaign) && !CampaignTrayCanScrollForward(&campaign, &layout, MANY_MAPS));
+}
+
 static void TestEveryReferencedResourceResolves(void) {
     for (int i = 0; i < GUI_COUNT; i++) assert(ResourceExists(gui_paths[i]));
     for (int i = 0; i < SND_COUNT; i++) assert(ResourceExists(sound_paths[i]));
@@ -10444,6 +10474,8 @@ int main(void) {
     TestRuneActivationFx();
     TestOriginalResourcesDecodeLikeUnityPy();
     TestEveryReferencedResourceResolves();
+    TestSameNamedCacheTexturesResolveToTheFirstInTheirBundle();
+    TestMapTrayFollowsTheOriginalPrefab();
     TestSquadSlotReferenceLayout();
     TestBattleRowBonuses();
     TestHeroRowBonusReferencePresentation();
