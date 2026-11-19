@@ -233,7 +233,7 @@ static float GuildLeft(void) {
 }
 
 static Rectangle GuildRect(float x, float y, float width, float height) {
-    return (Rectangle){GuildLeft() + x, y, width, height};
+    return (Rectangle){GuildLeft() + x, UiCentredY(y), width, height};
 }
 
 static Rectangle GuildSmart(Rectangle row, float smart_height, float x, float y, float width, float height) {
@@ -566,7 +566,7 @@ static bool GuildViewDrawFrame(GuildView *v, bool interactive) {
     float title_half_width = MeasureTextEx(v->font, title, GUILD_TITLE_SIZE, 1.0f).x * 0.5f;
     Rectangle title_icon = {
         title_band.x + title_band.width * 0.5f - title_half_width - GUILD_TITLE_ICON_GAP - GUILD_TITLE_ICON_SIZE,
-        GUILD_TITLE_CENTER_Y - GUILD_TITLE_ICON_SIZE * 0.5f,
+        title_band.y - GUILD_TITLE_ICON_SIZE * 0.5f,
         GUILD_TITLE_ICON_SIZE,
         GUILD_TITLE_ICON_SIZE
     };

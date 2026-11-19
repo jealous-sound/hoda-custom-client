@@ -62,7 +62,7 @@ typedef struct {
 } NexusRecap;
 
 static float NexusRecapScale(void) {
-    return fminf(UiWidth() / NEXUS_RECAP_DESIGN_WIDTH, UiHeight() / NEXUS_RECAP_DESIGN_HEIGHT);
+    return fminf(UiFullScaleWidth() / NEXUS_RECAP_DESIGN_WIDTH, UI_DESIGN_H / NEXUS_RECAP_DESIGN_HEIGHT);
 }
 
 static Rectangle NexusRecapRect(float x, float y, float width, float height) {

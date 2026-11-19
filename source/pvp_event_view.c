@@ -684,8 +684,8 @@ static void PvpEventViewDrawBattlesTab(PvpEventView *v, const PlayerPvp *pvp, Re
 PvpEventViewAction PvpEventViewDraw(PvpEventView *v, const Player *p) {
     long long now = ServerNow();
     const PvpEvent *event = PvpEventForCycle(PvpEventCycle(now));
-    Rectangle root = UiRoot();
-    DrawRectangle(0, 0, root.width, root.height, (Color){0, 0, 0, 170});
+    Rectangle root = UiFullScaleRoot();
+    DrawRectangleRec(UiRoot(), (Color){0, 0, 0, 170});
     float panel_height = root.height * PVP_EVENT_VIEW_POPUP_HEIGHT;
     float panel_width = panel_height * PVP_EVENT_VIEW_POPUP_ASPECT;
     Rectangle panel = UiRect(root, 0.5f, 1.0f, panel_width, panel_height);

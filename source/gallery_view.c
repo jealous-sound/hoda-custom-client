@@ -91,7 +91,7 @@ typedef struct {
 static Rectangle GalleryRect(float x, float y, float w, float h) {
     float k = GALLERY_DESIGN_SCALE;
     float origin = (UiWidth() - GALLERY_DESIGN_WIDTH * k) * 0.5f;
-    return (Rectangle){origin + x * k, y * k, w * k, h * k};
+    return (Rectangle){origin + x * k, UiCentredY(y * k), w * k, h * k};
 }
 
 void GalleryInitialize(Gallery *g, const char *catalog_path) {
@@ -724,7 +724,7 @@ GalleryScreenAction GalleryScreenDraw(Gallery *g, Heroes *h, Player *p, HomeBack
     for (int tier = 0; tier < TIER_COUNT; tier++) {
         Rectangle r = {
             GALLERY_TIER_BUTTONS_X + tier * GALLERY_TIER_BUTTON_STRIDE,
-            GALLERY_BOTTOM_BUTTONS_Y,
+            UiBottomY(GALLERY_BOTTOM_BUTTONS_Y),
             GALLERY_TIER_BUTTON_SIZE,
             GALLERY_TIER_BUTTON_SIZE,
         };
@@ -737,7 +737,7 @@ GalleryScreenAction GalleryScreenDraw(Gallery *g, Heroes *h, Player *p, HomeBack
     int step = 0;
     if (g->unit_count > 1) {
         float height = GALLERY_NAV_BUTTON_W / 3.5f;
-        Rectangle previous = {GALLERY_NAV_BUTTON_X, GALLERY_BOTTOM_BUTTONS_Y, GALLERY_NAV_BUTTON_W, height};
+        Rectangle previous = {GALLERY_NAV_BUTTON_X, UiBottomY(GALLERY_BOTTOM_BUTTONS_Y), GALLERY_NAV_BUTTON_W, height};
         Rectangle next = previous;
         next.x += GALLERY_NAV_BUTTON_W + GALLERY_NAV_BUTTON_GAP;
         if (ButtonDrawEx(&g->previous, previous, input)) step = -1;

@@ -1861,7 +1861,7 @@ static void StoreDrawTextureCover(Texture2D texture, Rectangle dst, Color tint) 
 
 static Rectangle StorePlateRect(void) {
     float width = STORE_PLATE_HEIGHT * STORE_PLATE_ASPECT;
-    return (Rectangle){(UiWidth() - width) * 0.5f, STORE_PLATE_TOP, width, STORE_PLATE_HEIGHT};
+    return (Rectangle){(UiWidth() - width) * 0.5f, UiCentredY(STORE_PLATE_TOP), width, STORE_PLATE_HEIGHT};
 }
 
 static Rectangle StoreListRect(void) {
@@ -1911,7 +1911,7 @@ static int StoreDrawPopupChrome(Store *store, const char *title, bool show_back)
 
 static void StoreDrawToast(Store *store) {
     if (store->status_time <= 0.0f || !store->status[0]) return;
-    float y = store->view == STORE_VIEW_RESULT ? 596.0f : 660.0f;
+    float y = store->view == STORE_VIEW_RESULT ? UiBottomY(596.0f) : UiCentredY(660.0f);
     Rectangle toast = {390.0f, y, 500.0f, 42.0f};
     DrawRectangleRounded(toast, 0.24f, 6, (Color){70, 19, 17, 242});
     DrawRectangleLinesEx(toast, 2.0f, (Color){196, 92, 66, 255});
@@ -2316,7 +2316,7 @@ static Rectangle StoreRevealCardRect(const Store *store, int index) {
     float height = width * STORE_REVEAL_CARD_ASPECT;
     return (Rectangle){
         STORE_REVEAL_LEFT + index * (width + STORE_REVEAL_CARD_GAP),
-        STORE_REVEAL_CENTER_Y - height * 0.5f,
+        UiCentredY(STORE_REVEAL_CENTER_Y) - height * 0.5f,
         width,
         height
     };
@@ -2462,8 +2462,9 @@ static StoreAction StoreDrawItemReveal(Store *store, Player *player, Heroes *her
         if (store->item_results[i].age >= 0.0f && StoreReleasedOn(store, card)) StoreShowItemDetails(store, i);
     }
     bool interactive = !StoreInputBlocked(store);
-    bool again = store->selected_pack >= 0 && ButtonDrawEx(&store->item_again, STORE_REVEAL_AGAIN_RECT, interactive);
-    bool done = ButtonDrawEx(&store->item_done, STORE_REVEAL_DONE_RECT, interactive);
+    bool again = store->selected_pack >= 0 &&
+                 ButtonDrawEx(&store->item_again, UiCentredRect(STORE_REVEAL_AGAIN_RECT), interactive);
+    bool done = ButtonDrawEx(&store->item_done, UiCentredRect(STORE_REVEAL_DONE_RECT), interactive);
     if (store->item_details >= 0) StoreDrawItemDetails(store);
     if (done && store->reward_reveal.active) return StoreFinishRewardStage(store);
     if (done) store->view = store->packs[store->selected_pack].page;
@@ -3026,19 +3027,24 @@ static Rectangle StoreFromRightEdge(Rectangle design) {
     return design;
 }
 
+static Rectangle StoreFromBottomRight(Rectangle design) {
+    return UiBottomRect(StoreFromRightEdge(design));
+}
+
 static StoreAction StoreDrawOpening(Store *store, Heroes *heroes) {
-    if (ButtonDraw(&store->skip, StoreFromRightEdge(STORE_RESULT_CORNER_BUTTON)))
+    if (ButtonDraw(&store->skip, StoreFromBottomRight(STORE_RESULT_CORNER_BUTTON)))
         StoreFinishCurrentResult(store, heroes, true);
     return STORE_ACTION_NONE;
 }
 
 static bool StoreDrawResultNavigation(Store *store, bool last) {
     if (!last) return false;
-    Rectangle consume = {4.0f, 662.0f, 106.0f, 49.5f}, squad = {236.0f, 662.0f, 106.0f, 49.5f};
+    Rectangle consume = UiBottomRect((Rectangle){4.0f, 662.0f, 106.0f, 49.5f});
+    Rectangle squad = UiBottomRect((Rectangle){236.0f, 662.0f, 106.0f, 49.5f});
     TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_CONSUME, consume);
     TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_SQUAD, squad);
     store->nav_consume_clicked = ButtonDrawEx(&store->nav_train, consume, !StoreInputBlocked(store));
-    ButtonDrawEx(&store->nav_runes, (Rectangle){120.0f, 662.0f, 106.0f, 49.5f}, false);
+    ButtonDrawEx(&store->nav_runes, UiBottomRect((Rectangle){120.0f, 662.0f, 106.0f, 49.5f}), false);
     return ButtonDrawEx(&store->nav_squad, squad, !StoreInputBlocked(store));
 }
 
@@ -3106,7 +3112,7 @@ static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes)
 
     bool interactive = !StoreInputBlocked(store);
     if (!last) {
-        Rectangle next = StoreFromRightEdge(STORE_RESULT_CORNER_BUTTON);
+        Rectangle next = StoreFromBottomRight(STORE_RESULT_CORNER_BUTTON);
         TutorialAnchorSet(TUTORIAL_ANCHOR_PACK_NEXT, next);
         if (ButtonDrawEx(&store->next, next, interactive)) {
             store->reveal_index++;
@@ -3117,8 +3123,8 @@ static StoreAction StoreDrawResult(Store *store, Player *player, Heroes *heroes)
     }
 
     bool again = store->selected_pack >= 0 &&
-                 ButtonDrawEx(&store->buy_again, StoreFromRightEdge(STORE_RESULT_BUY_AGAIN_BUTTON), interactive);
-    if (ButtonDrawEx(&store->done, StoreFromRightEdge(STORE_RESULT_CORNER_BUTTON), interactive)) {
+                 ButtonDrawEx(&store->buy_again, StoreFromBottomRight(STORE_RESULT_BUY_AGAIN_BUTTON), interactive);
+    if (ButtonDrawEx(&store->done, StoreFromBottomRight(STORE_RESULT_CORNER_BUTTON), interactive)) {
         if (store->reward_reveal.active) {
             PackHeroClear(&store->opening_hero);
             return StoreFinishRewardStage(store);

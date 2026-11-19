@@ -791,6 +791,22 @@ bool PlatformPreferredLanguage(char *out, size_t capacity) {
 }
 #endif
 
+#ifdef __APPLE__
+#include <objc/message.h>
+#include <objc/runtime.h>
+
+#define PLATFORM_COCOA_FULLSCREEN_STYLE_MASK (1ul << 14)
+
+bool PlatformNativeFullscreen(void *window) {
+    unsigned long style = ((unsigned long (*)(id, SEL))objc_msgSend)((id)window, sel_registerName("styleMask"));
+    return (style & PLATFORM_COCOA_FULLSCREEN_STYLE_MASK) != 0;
+}
+
+void PlatformToggleNativeFullscreen(void *window) {
+    ((void (*)(id, SEL, id))objc_msgSend)((id)window, sel_registerName("toggleFullScreen:"), nil);
+}
+#endif
+
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size) {
     return pread(fileno(file), out, size, (off_t)offset) == (ssize_t)size;
 }

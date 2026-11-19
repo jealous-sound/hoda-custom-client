@@ -8,6 +8,9 @@
 #define SETTINGS_DEFAULT_FRAME_RATE 144
 #define SETTINGS_MINIMUM_FRAME_RATE 15
 #define SETTINGS_MAXIMUM_FRAME_RATE 1000
+#define SETTINGS_FULL_UI_SCALE 1.0f
+#define SETTINGS_MINIMUM_UI_SCALE 0.6f
+#define SETTINGS_UI_SCALE_STEPS 20.0
 
 typedef enum {
     SETTINGS_VOLUME_MASTER,
@@ -49,13 +52,16 @@ typedef struct {
     float volume[SETTINGS_VOLUME_COUNT];
     bool switches[SETTINGS_SWITCH_COUNT];
     int frame_rate_limit;
+    float ui_scale;
     char skipped_update[SETTINGS_VERSION_CAP];
 } Settings;
 
 static Settings settings;
 
 static Settings SettingsDefaults(void) {
-    Settings defaults = {.loaded = true, .frame_rate_limit = SETTINGS_DEFAULT_FRAME_RATE};
+    Settings defaults = {
+        .loaded = true, .frame_rate_limit = SETTINGS_DEFAULT_FRAME_RATE, .ui_scale = SETTINGS_FULL_UI_SCALE
+    };
     for (int i = 0; i < SETTINGS_VOLUME_COUNT; i++) defaults.volume[i] = SETTINGS_FULL_VOLUME;
     return defaults;
 }
@@ -87,6 +93,19 @@ static int SettingsFrameRateFrom(const cJSON *root) {
     return cJSON_IsNumber(item) ? SettingsValidFrameRate(item->valueint) : SETTINGS_DEFAULT_FRAME_RATE;
 }
 
+static double SettingsUiScaleStep(double scale) {
+    return round(scale * SETTINGS_UI_SCALE_STEPS) / SETTINGS_UI_SCALE_STEPS;
+}
+
+static float SettingsValidUiScale(double scale) {
+    return (float)SettingsUiScaleStep(Clamp((float)scale, SETTINGS_MINIMUM_UI_SCALE, SETTINGS_FULL_UI_SCALE));
+}
+
+static float SettingsUiScaleFrom(const cJSON *root) {
+    const cJSON *item = cJSON_GetObjectItemCaseSensitive(root, "ui_scale");
+    return cJSON_IsNumber(item) ? SettingsValidUiScale(item->valuedouble) : SETTINGS_FULL_UI_SCALE;
+}
+
 static void SettingsLoad(void) {
     if (settings.loaded) return;
     settings = SettingsDefaults();
@@ -102,6 +121,7 @@ static void SettingsLoad(void) {
         settings.volume[i] = SettingsVolumeFrom(root, SETTINGS_VOLUME_FIELDS[i]);
     for (int i = 0; i < SETTINGS_SWITCH_COUNT; i++) settings.switches[i] = JsonBool(root, SETTINGS_SWITCH_KEYS[i]);
     settings.frame_rate_limit = SettingsFrameRateFrom(root);
+    settings.ui_scale = SettingsUiScaleFrom(root);
     StrCopy(settings.skipped_update, sizeof(settings.skipped_update), JsonStr(root, "skipped_update"));
     cJSON_Delete(root);
 }
@@ -114,6 +134,7 @@ static bool SettingsSave(void) {
     for (int i = 0; i < SETTINGS_SWITCH_COUNT; i++)
         cJSON_AddBoolToObject(root, SETTINGS_SWITCH_KEYS[i], settings.switches[i]);
     cJSON_AddNumberToObject(root, "frame_rate_limit", settings.frame_rate_limit);
+    cJSON_AddNumberToObject(root, "ui_scale", SettingsUiScaleStep(settings.ui_scale));
     if (settings.skipped_update[0]) cJSON_AddStringToObject(root, "skipped_update", settings.skipped_update);
     char *text = cJSON_Print(root);
     cJSON_Delete(root);
@@ -172,6 +193,17 @@ int SettingsFrameRateLimit(void) {
 void SettingsSetFrameRateLimit(int frame_rate) {
     SettingsLoad();
     settings.frame_rate_limit = SettingsValidFrameRate(frame_rate);
+    SettingsSave();
+}
+
+float SettingsUiScale(void) {
+    SettingsLoad();
+    return settings.ui_scale;
+}
+
+void SettingsSetUiScale(float scale) {
+    SettingsLoad();
+    settings.ui_scale = SettingsValidUiScale(scale);
     SettingsSave();
 }
 

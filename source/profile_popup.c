@@ -213,7 +213,7 @@ bool ProfilePopupBack(ProfilePopup *p) {
 
 static Rectangle ProfilePlace(Rectangle design) {
     float offset = (UiWidth() - PROFILE_DESIGN_WIDTH) * 0.5f;
-    return (Rectangle){design.x + offset, design.y, design.width, design.height};
+    return (Rectangle){design.x + offset, UiCentredY(design.y), design.width, design.height};
 }
 
 static void ProfileShowNotice(ProfilePopup *p, const char *key, bool is_error) {

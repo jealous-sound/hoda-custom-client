@@ -224,7 +224,8 @@ static Rectangle FortifyFit(Rectangle parent, FortifyAnchor anchor) {
 
 static FortifyLayout FortifyLayoutCompute(void) {
     FortifyLayout l;
-    Rectangle root = {0.0f, ROSTER_PREFAB_TOP, UiWidth(), UiHeight() - ROSTER_PREFAB_TOP};
+    Rectangle frame = UiFullScaleRoot();
+    Rectangle root = {frame.x, frame.y + ROSTER_PREFAB_TOP, frame.width, frame.height - ROSTER_PREFAB_TOP};
     l.slots_area = FortifyFit(FortifyFit(root, FORTIFY_CENTER), FORTIFY_SLOTS_AREA);
     l.frame = FortifyFit(l.slots_area, FORTIFY_FRAME_BACKGROUND);
     l.selected = FortifyFit(l.slots_area, FORTIFY_SELECTED_UNIT);
@@ -866,12 +867,12 @@ static void FortifyDrawRoster(FortifyScreen *f, const Heroes *h, const Player *p
     int hovered = RosterDraw(&f->roster, h->cards, p, input, FortifyDrawRosterCard, &context);
     if (input && hovered >= 0 && f->press == FORTIFY_PRESS_NONE && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         FortifyStartPress(f, FORTIFY_PRESS_ROSTER, hovered, -1);
-    if (ButtonDrawEx(&f->store, RosterPx(13.0f, 828.0f, 81.0f, 61.0f), input))
+    if (ButtonDrawEx(&f->store, RosterPxAt(ROSTER_BOTTOM_LEFT, 13.0f, 828.0f, 81.0f, 61.0f), input))
         FortifyRequestLeave(f, FORTIFY_LEAVE_STORE);
     UiDrawTextLeftMiddle(
         GuiFont(FNT_MENU),
         LocGet("TAP_PORTRAIT_FOR_INFO"),
-        RosterPx(105.0f, 831.0f, 287.0f, 66.0f),
+        RosterPxAt(ROSTER_BOTTOM_LEFT, 105.0f, 831.0f, 287.0f, 66.0f),
         15.0f,
         FORTIFY_SOFT_TEXT_COLOR
     );
@@ -912,11 +913,11 @@ static float FortifyAnchorBottom(FortifyAnchor anchor) {
 
 static FortifyPopupFrame FortifyPopupLayout(FortifyAnchor top, FortifyAnchor bottom) {
     float top_edge = FortifyAnchorTop(top), bottom_edge = FortifyAnchorBottom(bottom);
-    float panel_height = UiHeight() * FORTIFY_POPUP_PANEL_HEIGHT;
+    float panel_height = UI_DESIGN_H * FORTIFY_POPUP_PANEL_HEIGHT;
     float inner_height = panel_height * (1.0f - 2.0f * FORTIFY_POPUP_INSET_Y);
     float content_height = inner_height / (bottom_edge - top_edge);
     float content_width = content_height * FORTIFY_POPUP_CONTENT.aspect;
-    float panel_width = fminf(content_width * FORTIFY_POPUP_PANEL_WIDTH_PER_CONTENT, UiWidth());
+    float panel_width = fminf(content_width * FORTIFY_POPUP_PANEL_WIDTH_PER_CONTENT, UiFullScaleWidth());
     Rectangle panel = UiRect(UiRoot(), 0.5f, 0.5f, panel_width, panel_height);
     float inner_top = panel.y + panel.height * FORTIFY_POPUP_INSET_Y;
     Rectangle content = {
