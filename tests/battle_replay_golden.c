@@ -132,7 +132,7 @@ static void GoldenLoadChangers(Golden *g) {
     cJSON_Delete(root);
     const PvpEventRules *events = &PvpTableEnsure()->events;
     for (int i = 0; i < events->catalog_count && g->changer_count < GOLDEN_CHANGER_CAPACITY; i++)
-        g->changers[g->changer_count++] = events->catalog[i].changer;
+        if (!events->catalog[i].rules.active) g->changers[g->changer_count++] = events->catalog[i].changer;
     for (int i = 0; i < events->guild_catalog_count && g->changer_count < GOLDEN_CHANGER_CAPACITY; i++)
         g->changers[g->changer_count++] = events->guild_catalog[i].changer;
 }
@@ -491,8 +491,11 @@ static PvpOpponent GoldenPvpOpponent(Golden *g, cJSON *entry) {
     cJSON_AddNumberToObject(entry, "now", (double)now);
     cJSON_AddNumberToObject(entry, "seed", seed);
     if (!strcmp(kind, "event")) {
+        int sides = PvpEventForCycle(PvpEventCycle(now))->rules.side_count;
+        int side = sides > 0 ? (int)(seed % (unsigned)sides) : 0;
         cJSON_AddNumberToObject(entry, "banners", banners);
-        return PvpEventOpponentGenerate(level, trophies, banners, now, seed);
+        if (sides > 0) cJSON_AddNumberToObject(entry, "side", side);
+        return PvpEventOpponentGenerate(level, trophies, banners, now, side, seed);
     }
     if (!strcmp(kind, "bot")) {
         int bot = GoldenRange(g, 0, table->bot_count - 1);
@@ -501,7 +504,7 @@ static PvpOpponent GoldenPvpOpponent(Golden *g, cJSON *entry) {
     }
     if (!strcmp(kind, "revenge")) {
         int bot = GoldenRange(g, 0, table->bot_count - 1);
-        int squad = GoldenRange(g, 0, table->squad_count - 1);
+        int squad = GoldenRange(g, 0, table->ladder.count - 1);
         int opponent_trophies = GoldenRange(g, 0, 4000);
         PlayerPvpBattle battle = {
             .bot = bot,

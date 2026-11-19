@@ -370,7 +370,7 @@ static void BalanceLoadSquads(Balance *b, const BalanceOptions *o) {
     int pool[PVP_SQUAD_CAPACITY];
     int pooled = 0;
     for (int i = 0; i < table->squad_count; i++)
-        if (BalanceSquadIsFull(&table->squads[i])) pool[pooled++] = i;
+        if (!table->squads[i].events_only && BalanceSquadIsFull(&table->squads[i])) pool[pooled++] = i;
     int wanted = o->squads < pooled ? o->squads : pooled;
     if (o->holdout) pooled = BalanceDropCalibrationSquads(pool, pooled, wanted);
     if (wanted > pooled) wanted = pooled;

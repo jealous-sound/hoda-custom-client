@@ -6669,20 +6669,37 @@ static double PvpTestMeanSquadStrength(int level, int trophies) {
     return total / 200.0;
 }
 
-static void TestPvpSquadsRankFromWeakestToStrongest(void) {
+static void PvpTestListRanksWeakestFirst(const PvpSquadList *list) {
     const PvpTable *table = PvpTableEnsure();
     bool ranked[PVP_SQUAD_CAPACITY] = {0};
-    for (int rank = 0; rank < table->squad_count; rank++) {
-        int squad = table->squads_weakest_first[rank];
-        assert(!ranked[squad]);
+    for (int rank = 0; rank < list->count; rank++) {
+        int squad = list->squads[rank];
+        assert(squad >= 0 && squad < table->squad_count && !ranked[squad]);
         ranked[squad] = true;
         if (rank == 0) continue;
-        int weaker = table->squads_weakest_first[rank - 1];
+        int weaker = list->squads[rank - 1];
         int gap = table->squads[squad].strength - table->squads[weaker].strength;
         assert(gap > 0 || (gap == 0 && squad > weaker));
     }
+}
+
+static void TestPvpSquadsRankFromWeakestToStrongest(void) {
+    const PvpTable *table = PvpTableEnsure();
+    PvpTestListRanksWeakestFirst(&table->ladder);
     assert(PvpBotStrengthRank(0) == 0);
-    assert(PvpBotStrengthRank(table->bot_count - 1) == table->squad_count - 1);
+    assert(PvpBotStrengthRank(table->bot_count - 1) == table->ladder.count - 1);
+}
+
+static void TestPvpLadderLeavesEventOnlySquadsToTheEvents(void) {
+    const PvpTable *table = PvpTableEnsure();
+    int events_only = 0;
+    for (int squad = 0; squad < table->squad_count; squad++) events_only += table->squads[squad].events_only;
+    assert(events_only > 0 && table->ladder.count + events_only == table->squad_count);
+    for (int rank = 0; rank < table->ladder.count; rank++)
+        assert(!table->squads[table->ladder.squads[rank]].events_only);
+    for (int squad = 0; squad < table->ladder.count; squad++) assert(!table->squads[squad].events_only);
+    for (unsigned seed = 1; seed <= 200; seed++)
+        assert(!table->squads[PvpOpponentGenerate(30, (int)seed * 30, 20000, seed).squad].events_only);
 }
 
 static void TestPvpOpponentsGrowStrongerUpTheLadder(void) {
@@ -7361,7 +7378,8 @@ static void TestPvpEventRotatesThroughTheCatalog(void) {
     long long cycle = PvpEventCycle(start);
     assert(PvpEventForCycle(cycle) != PvpEventForCycle(cycle + 1));
     assert(PvpEventForCycle(cycle) == PvpEventForCycle(cycle + rules->catalog_count));
-    for (int i = 0; i < rules->catalog_count; i++) assert(rules->catalog[i].changer.effect_count > 0);
+    for (int i = 0; i < rules->catalog_count; i++)
+        assert(rules->catalog[i].changer.effect_count > 0 || rules->catalog[i].rules.active);
 }
 
 static void TestOnslaughtReplacesEveryFewPvpEvents(void) {
@@ -7486,7 +7504,9 @@ static const PvpEvent *TestPvpEventNamed(const char *key) {
 
 static long long TestPvpCycleOf(const PvpEvent *event) {
     const PvpEventRules *rules = &PvpTableEnsure()->events;
-    return 700 - 700 % rules->catalog_count + (long long)(event - rules->catalog);
+    long long cycle = 700 - 700 % rules->catalog_count + (long long)(event - rules->catalog);
+    while (PvpEventIsGuildCycle(cycle)) cycle += rules->catalog_count;
+    return cycle;
 }
 
 static const PvpEventMilestone *TestMilestoneWith(const PvpEvent *event, PvpPrizeKind kind, int *index) {
@@ -7653,11 +7673,316 @@ static void TestPvpEventMatchmakingFollowsBanners(void) {
     long long now = 1700000000 / duration * duration + duration - 1;
     long long cycle = PvpEventCycle(now), elapsed = now % duration;
     for (unsigned seed = 1; seed < 60; seed++) {
-        PvpOpponent o = PvpEventOpponentGenerate(30, 500, 900, now, seed);
+        PvpOpponent o = PvpEventOpponentGenerate(30, 500, 900, now, 0, seed);
         assert(abs(PvpBotBanners(o.bot, cycle, elapsed) - 900) <= rules->matchmaking_banner_window);
-        PvpOpponent again = PvpEventOpponentGenerate(30, 500, 900, now, seed);
+        PvpOpponent again = PvpEventOpponentGenerate(30, 500, 900, now, 0, seed);
         assert(memcmp(&o, &again, sizeof(o)) == 0);
     }
+}
+
+#define PVP_TEST_EVENT_POOL_MIN_SQUADS 64
+#define PVP_TEST_EVENT_START_OFFSET 60
+
+static Character PvpTestHero(const char *id, Rarity rarity, Faction faction, bool giant, const char *group) {
+    Character ch = {0};
+    StrCopy(ch.id, sizeof(ch.id), id);
+    ch.rarity = rarity;
+    ch.faction = faction;
+    ch.giant = giant;
+    if (group) StrCopy(ch.groups[ch.group_count++], sizeof(ch.groups[0]), group);
+    return ch;
+}
+
+static PvpSquadRules PvpTestRules(const char *json) {
+    cJSON *root = cJSON_Parse(json);
+    assert(root);
+    PvpSquadRules rules = {0};
+    PvpSquadRulesParse(&rules, root);
+    cJSON_Delete(root);
+    return rules;
+}
+
+static PvpSquadVerdict PvpTestJudge(
+    const PvpSquadRules *rules,
+    const Character *a,
+    const Character *b,
+    const Character *c,
+    const Character *giant,
+    int side
+) {
+    const Character *heroes[SQUAD_SLOT_COUNT] = {a, b, c, NULL, giant};
+    return PvpSquadRulesJudge(rules, heroes, side);
+}
+
+static void TestPvpSquadRulesCapAndListRarities(void) {
+    PvpSquadRules capped = PvpTestRules(
+        "{\"max_rarity\":\"Uncommon\",\"rarities\":[],\"unique_heroes\":false,"
+        "\"members\":{\"factions\":[],\"groups\":[]},\"sides\":[]}"
+    );
+    Character common = PvpTestHero("UNIT_A", RARITY_COMMON, FACTION_RED, false, NULL);
+    Character uncommon = PvpTestHero("UNIT_B", RARITY_UNCOMMON, FACTION_BLUE, false, NULL);
+    Character rare = PvpTestHero("UNIT_C", RARITY_RARE, FACTION_RED, false, NULL);
+    Character legendary_giant = PvpTestHero("UNIT_D", RARITY_LEGENDARY, FACTION_LARGE, true, NULL);
+    assert(PvpTestJudge(&capped, &common, &uncommon, &common, NULL, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_ALLOWED);
+    PvpSquadVerdict verdict = PvpTestJudge(&capped, &common, NULL, &rare, NULL, PVP_RULE_ANY_SIDE);
+    assert(verdict.kind == PVP_SQUAD_RARITY && verdict.slot == 2);
+    verdict = PvpTestJudge(&capped, &common, NULL, NULL, &legendary_giant, PVP_RULE_ANY_SIDE);
+    assert(verdict.kind == PVP_SQUAD_RARITY && verdict.slot == SQUAD_SLOT_COUNT - 1);
+
+    PvpSquadRules rares = PvpTestRules(
+        "{\"max_rarity\":\"\",\"rarities\":[\"Rare\"],\"unique_heroes\":true,"
+        "\"members\":{\"factions\":[],\"groups\":[]},\"sides\":[]}"
+    );
+    Character other_rare = PvpTestHero("UNIT_E", RARITY_RARE, FACTION_WHITE, false, NULL);
+    assert(PvpTestJudge(&rares, &rare, &other_rare, NULL, NULL, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_ALLOWED);
+    assert(PvpTestJudge(&rares, &rare, &common, NULL, NULL, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_RARITY);
+    verdict = PvpTestJudge(&rares, &rare, &other_rare, &rare, NULL, PVP_RULE_ANY_SIDE);
+    assert(verdict.kind == PVP_SQUAD_DUPLICATE && verdict.slot == 2);
+
+    PvpSquadRules open = {0};
+    assert(PvpTestJudge(&open, &rare, &rare, &legendary_giant, NULL, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_ALLOWED);
+    assert(PvpTestJudge(&capped, NULL, NULL, NULL, NULL, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_EMPTY);
+}
+
+static void TestPvpSquadRulesFactionsLetLargeCreaturesJoinButGroupsDoNot(void) {
+    PvpSquadRules red = PvpTestRules(
+        "{\"max_rarity\":\"\",\"rarities\":[],\"unique_heroes\":false,"
+        "\"members\":{\"factions\":[\"Red\"],\"groups\":[]},\"sides\":[]}"
+    );
+    Character red_hero = PvpTestHero("UNIT_A", RARITY_RARE, FACTION_RED, false, NULL);
+    Character dual = PvpTestHero("UNIT_B", RARITY_RARE, FACTION_WHITE_RED, false, NULL);
+    Character blue = PvpTestHero("UNIT_C", RARITY_RARE, FACTION_BLUE, false, "Warden");
+    Character every = PvpTestHero("UNIT_D", RARITY_MYTHIC, FACTION_ALL, false, NULL);
+    Character giant = PvpTestHero("UNIT_E", RARITY_RARE, FACTION_LARGE, true, NULL);
+    assert(PvpTestJudge(&red, &red_hero, &dual, &every, &giant, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_ALLOWED);
+    PvpSquadVerdict verdict = PvpTestJudge(&red, &red_hero, &blue, NULL, &giant, PVP_RULE_ANY_SIDE);
+    assert(verdict.kind == PVP_SQUAD_MEMBER && verdict.slot == 1);
+
+    PvpSquadRules wardens = PvpTestRules(
+        "{\"max_rarity\":\"\",\"rarities\":[],\"unique_heroes\":false,"
+        "\"members\":{\"factions\":[],\"groups\":[\"Warden\"]},\"sides\":[]}"
+    );
+    Character warden_giant = PvpTestHero("UNIT_F", RARITY_RARE, FACTION_LARGE, true, "Warden");
+    assert(PvpTestJudge(&wardens, &blue, NULL, NULL, &warden_giant, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_ALLOWED);
+    verdict = PvpTestJudge(&wardens, &blue, NULL, NULL, &giant, PVP_RULE_ANY_SIDE);
+    assert(verdict.kind == PVP_SQUAD_MEMBER && verdict.slot == SQUAD_SLOT_COUNT - 1);
+}
+
+static void TestPvpSquadRulesSidesPickTheFirstSideTheWholeSquadFits(void) {
+    PvpSquadRules wars = PvpTestRules(
+        "{\"max_rarity\":\"\",\"rarities\":[],\"unique_heroes\":false,\"members\":{\"factions\":[],\"groups\":[]},"
+        "\"sides\":[{\"factions\":[\"Red\"],\"groups\":[]},{\"factions\":[\"Blue\"],\"groups\":[]}]}"
+    );
+    assert(wars.side_count == 2);
+    Character red = PvpTestHero("UNIT_A", RARITY_EPIC, FACTION_RED, false, NULL);
+    Character blue = PvpTestHero("UNIT_B", RARITY_EPIC, FACTION_BLUE, false, NULL);
+    Character dual = PvpTestHero("UNIT_C", RARITY_EPIC, FACTION_RED_BLUE, false, NULL);
+    Character giant = PvpTestHero("UNIT_D", RARITY_EPIC, FACTION_LARGE, true, NULL);
+    PvpSquadVerdict verdict = PvpTestJudge(&wars, &red, &red, &dual, &giant, PVP_RULE_ANY_SIDE);
+    assert(verdict.kind == PVP_SQUAD_ALLOWED && verdict.side == 0);
+    verdict = PvpTestJudge(&wars, &dual, &blue, NULL, &giant, PVP_RULE_ANY_SIDE);
+    assert(verdict.kind == PVP_SQUAD_ALLOWED && verdict.side == 1);
+    verdict = PvpTestJudge(&wars, &red, &blue, &red, NULL, PVP_RULE_ANY_SIDE);
+    assert(verdict.kind == PVP_SQUAD_SIDE && verdict.side == 0 && verdict.slot == 1);
+    verdict = PvpTestJudge(&wars, &red, &red, NULL, NULL, 1);
+    assert(verdict.kind == PVP_SQUAD_SIDE && verdict.side == 1 && verdict.slot == 0);
+    assert(PvpTestJudge(&wars, &dual, &dual, NULL, NULL, 1).kind == PVP_SQUAD_ALLOWED);
+}
+
+static void PvpTestFieldPooledSquad(
+    const cJSON *catalog, int squad, Character heroes[SQUAD_SLOT_COUNT], const Character *fielded[SQUAD_SLOT_COUNT]
+) {
+    static Ability ability;
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        const PvpSquadCell *cell = &PvpTableEnsure()->squads[squad].cells[slot];
+        fielded[slot] = NULL;
+        if (!cell->present) continue;
+        const cJSON *def = CatalogFindCharacter(catalog, cell->id);
+        assert(def);
+        CharacterParse(def, &heroes[slot], &ability);
+        fielded[slot] = &heroes[slot];
+    }
+}
+
+static void PvpTestEventPoolDefendsByItsRule(const cJSON *catalog, const PvpEvent *event) {
+    static Character heroes[SQUAD_SLOT_COUNT];
+    const Character *fielded[SQUAD_SLOT_COUNT];
+    int pools = event->rules.side_count > 0 ? event->rules.side_count : 1;
+    for (int side = 0; side < pools; side++) {
+        const PvpSquadList *pool = PvpEventSquadPool(event, side);
+        assert(pool->count >= PVP_TEST_EVENT_POOL_MIN_SQUADS);
+        PvpTestListRanksWeakestFirst(pool);
+        for (int rank = 0; rank < pool->count; rank++) {
+            PvpTestFieldPooledSquad(catalog, pool->squads[rank], heroes, fielded);
+            if (event->rules.side_count == 0) {
+                assert(PvpSquadRulesJudge(&event->rules, fielded, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_ALLOWED);
+                continue;
+            }
+            assert(PvpSquadRulesJudge(&event->rules, fielded, side).kind != PVP_SQUAD_ALLOWED);
+            PvpSquadVerdict verdict = PvpSquadRulesJudge(&event->rules, fielded, PVP_RULE_ANY_SIDE);
+            assert(verdict.kind == PVP_SQUAD_ALLOWED && verdict.side != side);
+        }
+    }
+}
+
+static void TestPvpRuleEventBotsDefendWithSquadsTheRuleAllows(void) {
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    cJSON *root = CharacterCatalogAddCustomHeroes(JsonLoadFile(PVP_CATALOG_PATH));
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    int restricted = 0, sided = 0;
+    for (int i = 0; i < rules->catalog_count; i++) {
+        const PvpEvent *event = &rules->catalog[i];
+        if (!event->rules.active) {
+            assert(PvpEventSquadPool(event, 0) == &PvpTableEnsure()->ladder);
+            continue;
+        }
+        restricted++;
+        sided += event->rules.side_count > 0;
+        assert(event->changer.effect_count == 0);
+        PvpTestEventPoolDefendsByItsRule(catalog, event);
+    }
+    cJSON_Delete(root);
+    assert(restricted > 0 && sided > 0);
+}
+
+static long long PvpTestEventStart(const PvpEvent *wanted) {
+    long long cycle = PvpEventCycle(1700000000);
+    for (long long step = 0; step < 1000; step++)
+        if (PvpEventForCycle(cycle + step) == wanted) return PvpEventCycleStart(cycle + step);
+    assert(false);
+    return 0;
+}
+
+static void TestPvpRuleEventOpponentsComeFromTheEventPool(void) {
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    for (int i = 0; i < rules->catalog_count; i++) {
+        const PvpEvent *event = &rules->catalog[i];
+        if (!event->rules.active) continue;
+        long long now = PvpTestEventStart(event) + PvpTableEnsure()->events.duration_seconds / 2;
+        int pools = event->rules.side_count > 0 ? event->rules.side_count : 1;
+        for (int side = 0; side < pools; side++) {
+            const PvpSquadList *pool = PvpEventSquadPool(event, side);
+            for (unsigned seed = 1; seed <= 40; seed++) {
+                PvpOpponent o = PvpEventOpponentGenerate(30, 500, (int)seed * 40, now, side, seed);
+                PvpOpponent chosen = PvpEventOpponentFromBot(o.bot, 30, 500, now, side, seed);
+                assert(o.squad == chosen.squad);
+                bool pooled = false;
+                for (int rank = 0; rank < pool->count; rank++) pooled |= pool->squads[rank] == o.squad;
+                assert(pooled);
+            }
+            int weakest_pick = PvpEventOpponentFromBot(0, 30, 500, now, side, 1).squad;
+            int rank = 0;
+            while (pool->squads[rank] != weakest_pick) rank++;
+            assert(rank < PvpTableEnsure()->rules.squad_candidates);
+        }
+    }
+}
+
+static void TestPvpRuleEventsComeUpEveryFewEvents(void) {
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    int count = rules->catalog_count;
+    for (int i = 0; i < count; i++) {
+        bool here = rules->catalog[i].rules.active;
+        bool next = rules->catalog[(i + 1) % count].rules.active;
+        bool after = rules->catalog[(i + 2) % count].rules.active;
+        assert(!(here && next));
+        assert(here || next || after);
+    }
+}
+
+static void TestPvpRuleTextNamesEveryRule(void) {
+    Loc saved = loc;
+    loc = (Loc){0};
+    LocLoad(ORIGINAL_LOCALIZATION_DIR "/Loc_ENG_US.txt");
+    char text[PVP_EVENT_VIEW_RULE_CAPACITY * 2];
+    PvpSquadRules peasants = PvpTestRules(
+        "{\"max_rarity\":\"Uncommon\",\"rarities\":[],\"unique_heroes\":true,"
+        "\"members\":{\"factions\":[],\"groups\":[\"Warden\"]},\"sides\":[]}"
+    );
+    PvpSquadRulesText(text, sizeof(text), &peasants);
+    assert(strstr(text, "Allowed rarities: Common, Uncommon") && !strstr(text, "Rare"));
+    assert(strstr(text, "Wardens") && strstr(text, LocGet("HODA_PVP_RULE_UNIQUE")));
+    PvpSquadRules wars = PvpTestRules(
+        "{\"max_rarity\":\"\",\"rarities\":[],\"unique_heroes\":false,\"members\":{\"factions\":[],\"groups\":[]},"
+        "\"sides\":[{\"factions\":[\"Red\"],\"groups\":[]},{\"factions\":[\"Blue\"],\"groups\":[]}]}"
+    );
+    PvpSquadRulesText(text, sizeof(text), &wars);
+    assert(strstr(text, "Red, Blue") && !strstr(text, "Allowed rarities"));
+    PvpSquadRules open = {0};
+    PvpSquadRulesText(text, sizeof(text), &open);
+    assert(text[0] == '\0');
+    LocUnload();
+    loc = saved;
+}
+
+static Character pvp_test_roster[3];
+
+static void PvpTestGameWithSquad(Game *g, const Character *a, const Character *b) {
+    memset(g, 0, sizeof(*g));
+    ProgressionInitializePlayerDefaults(&g->player);
+    pvp_test_roster[0] = *a;
+    pvp_test_roster[1] = *b;
+    g->player.roster = pvp_test_roster;
+    g->player.roster_count = 2;
+    for (int q = 0; q < PLAYER_MAX_SQUADS; q++)
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) g->player.squads[q][slot] = -1;
+    g->player.current_squad = 0;
+    g->player.squads[0][0] = 0;
+    g->player.squads[0][1] = 1;
+}
+
+static const PvpEvent *PvpTestSidedEvent(void) {
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    for (int i = 0; i < rules->catalog_count; i++)
+        if (rules->catalog[i].rules.side_count > 1) return &rules->catalog[i];
+    assert(false);
+    return NULL;
+}
+
+static void TestAnIllegalSquadIsStoppedBeforeTheServer(void) {
+    static Game game;
+    Game *g = &game;
+    const PvpEvent *wars = PvpTestSidedEvent();
+    ServerNowShift(PvpTestEventStart(wars) + PVP_TEST_EVENT_START_OFFSET - (long long)time(NULL));
+    bool backend_was_enabled = backend_state.enabled;
+    backend_state.enabled = true;
+
+    Character red = PvpTestHero("UNIT_A", RARITY_EPIC, FACTION_RED, false, NULL);
+    Character blue = PvpTestHero("UNIT_B", RARITY_EPIC, FACTION_BLUE, false, NULL);
+    PvpTestGameWithSquad(g, &red, &blue);
+    PvpRuleNoticeInitialize(&g->pvp_rule_notice);
+    g->screen = SCREEN_PVP_EVENT;
+    GameMatchPvp(g, true, GAME_PVP_MATCHMAKING, false, SCREEN_PVP_EVENT);
+    assert(!g->pvp_match_waiting && server_actions.count == 0 && PvpRuleNoticeIsOpen(&g->pvp_rule_notice));
+    assert(strstr(g->pvp_rule_notice.message, LocGet("HODA_PVP_RULE_CHANGE_SQUAD")));
+    PvpRuleNoticeClose(&g->pvp_rule_notice);
+
+    Character other_blue = PvpTestHero("UNIT_C", RARITY_EPIC, FACTION_BLUE, false, NULL);
+    PvpTestGameWithSquad(g, &other_blue, &blue);
+    PvpRuleNoticeInitialize(&g->pvp_rule_notice);
+    g->screen = SCREEN_PVP_EVENT;
+    GameMatchPvp(g, true, GAME_PVP_MATCHMAKING, false, SCREEN_PVP_EVENT);
+    assert(g->pvp_match_waiting && server_actions.count == 1 && !PvpRuleNoticeIsOpen(&g->pvp_rule_notice));
+    int blue_side = 0;
+    while (!(wars->rules.sides[blue_side].faction_mask & SimFactionMask(FACTION_BLUE))) blue_side++;
+    assert(JsonInt(server_actions.queue[0].fields, "side") == blue_side);
+    assert(g->pvp_match_request.side == blue_side);
+    ServerActionsPop(&server_actions);
+
+    g->pvp_match_waiting = false;
+    g->battle_is_pvp = true;
+    g->pvp_event = true;
+    g->pvp_match = (GamePvpMatch){.id = 1, .at = ServerNow(), .side = blue_side};
+    assert(GameBattleSquadEnters(g) && !PvpRuleNoticeIsOpen(&g->pvp_rule_notice));
+    pvp_test_roster[0] = red;
+    pvp_test_roster[1] = red;
+    assert(!GameBattleSquadEnters(g) && PvpRuleNoticeIsOpen(&g->pvp_rule_notice));
+    g->pvp_event = false;
+    PvpRuleNoticeClose(&g->pvp_rule_notice);
+    assert(GameBattleSquadEnters(g));
+
+    backend_state.enabled = backend_was_enabled;
+    ServerNowShift(0);
 }
 
 static void TestBattleFeetSitOnPadsWhoseBottomsShareOnePlane(void) {
@@ -8704,6 +9029,14 @@ static void GameTestSettlePvpMatch(cJSON *reply) {
     server_actions.reply = reply;
 }
 
+static const PvpEvent *PvpTestOpenEvent(void) {
+    const PvpEventRules *rules = &PvpTableEnsure()->events;
+    for (int i = 0; i < rules->catalog_count; i++)
+        if (!rules->catalog[i].rules.active) return &rules->catalog[i];
+    assert(false);
+    return NULL;
+}
+
 static void TestPvpMatchWaitsForTheServersReply(void) {
     static Game game;
     Game *g = &game;
@@ -8711,6 +9044,7 @@ static void TestPvpMatchWaitsForTheServersReply(void) {
     ProgressionInitializePlayerDefaults(&g->player);
     bool backend_was_enabled = backend_state.enabled;
     backend_state.enabled = true;
+    ServerNowShift(PvpTestEventStart(PvpTestOpenEvent()) + PVP_TEST_EVENT_START_OFFSET - (long long)time(NULL));
 
     g->screen = SCREEN_PVP_EVENT;
     GameMatchPvp(g, true, 3, false, SCREEN_PVP_EVENT);
@@ -8743,6 +9077,7 @@ static void TestPvpMatchWaitsForTheServersReply(void) {
     assert(ServerActionsDrained());
 
     backend_state.enabled = backend_was_enabled;
+    ServerNowShift(0);
 }
 
 static void TestPvpOpponentFromServerMatchRebuildsTheBot(void) {
@@ -10173,6 +10508,14 @@ int main(void) {
     TestPvpBannerCurvePeaksAtTheLadderMidpoint();
     TestPvpEventResultsKeepNineteenUnclaimedFirst();
     TestPvpEventMatchmakingFollowsBanners();
+    TestPvpSquadRulesCapAndListRarities();
+    TestPvpSquadRulesFactionsLetLargeCreaturesJoinButGroupsDoNot();
+    TestPvpSquadRulesSidesPickTheFirstSideTheWholeSquadFits();
+    TestPvpRuleEventBotsDefendWithSquadsTheRuleAllows();
+    TestPvpRuleEventOpponentsComeFromTheEventPool();
+    TestPvpRuleEventsComeUpEveryFewEvents();
+    TestPvpRuleTextNamesEveryRule();
+    TestAnIllegalSquadIsStoppedBeforeTheServer();
     TestPvpEventRotatesThroughTheCatalog();
     TestOnslaughtReplacesEveryFewPvpEvents();
     TestDuelOpponentFightsTheMembersSquad();
@@ -10202,6 +10545,7 @@ int main(void) {
     TestPvpOpponentsAreDeterministic();
     TestPvpEventLeaderboardMatchesRank();
     TestPvpSquadsRankFromWeakestToStrongest();
+    TestPvpLadderLeavesEventOnlySquadsToTheEvents();
     TestPvpOpponentsGrowStrongerUpTheLadder();
     TestPvpMatchingStaysInTheTrophyWindow();
     TestPvpTrophyBounds();

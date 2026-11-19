@@ -1,0 +1,13 @@
+HODA_PVP_RULE_RARITY|Допустимая редкость: {0}
+HODA_PVP_RULE_FACTIONS|Участвуют только герои фракции {0}. Крупные существа допускаются.
+HODA_PVP_RULE_GROUPS|Участвуют только {0}.
+HODA_PVP_RULE_SIDES_FACTIONS|Одна фракция в отряде: {0}. Ваш соперник — отряд другой фракции. Крупные существа могут быть в любом отряде.
+HODA_PVP_RULE_SIDES_GROUPS|Одна сторона в отряде: {0}. Ваш соперник — отряд другой стороны.
+HODA_PVP_RULE_UNIQUE|Без повторяющихся героев.
+HODA_PVP_RULE_LIST_JOIN|{0}, {1}
+HODA_PVP_RULE_BLOCKED_TITLE|Отряд не допущен
+HODA_PVP_RULE_BLOCKED|{0} не может участвовать в этом событии.
+HODA_PVP_RULE_BLOCKED_DUPLICATE|{0} встречается в отряде больше одного раза.
+HODA_PVP_RULE_BLOCKED_SIDE|{0} не на той же стороне, что остальной отряд.
+HODA_PVP_RULE_BLOCKED_MATCHED_SIDE|Этот соперник подобран для вашего отряда «{1}», поэтому {0} не может с ним сражаться. Верните тот отряд или нажмите «Далее».
+HODA_PVP_RULE_CHANGE_SQUAD|Измените отряд в разделе «Герои» и попробуйте снова.

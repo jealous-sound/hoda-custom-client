@@ -1,0 +1,13 @@
+HODA_PVP_RULE_RARITY|Allowed rarities: {0}
+HODA_PVP_RULE_FACTIONS|Only heroes of the {0} faction can enter. Large creatures can join.
+HODA_PVP_RULE_GROUPS|Only {0} can enter.
+HODA_PVP_RULE_SIDES_FACTIONS|One faction per squad: {0}. You face a squad of another faction. Large creatures can join any squad.
+HODA_PVP_RULE_SIDES_GROUPS|One side per squad: {0}. You face a squad of another side.
+HODA_PVP_RULE_UNIQUE|No duplicate heroes.
+HODA_PVP_RULE_LIST_JOIN|{0}, {1}
+HODA_PVP_RULE_BLOCKED_TITLE|Squad Not Allowed
+HODA_PVP_RULE_BLOCKED|{0} cannot enter this event.
+HODA_PVP_RULE_BLOCKED_DUPLICATE|{0} is in your squad more than once.
+HODA_PVP_RULE_BLOCKED_SIDE|{0} is not on the same side as the rest of your squad.
+HODA_PVP_RULE_BLOCKED_MATCHED_SIDE|This opponent was found for your {1} squad, so {0} cannot fight it. Switch back or tap Next.
+HODA_PVP_RULE_CHANGE_SQUAD|Change your squad in Heroes, then try again.
