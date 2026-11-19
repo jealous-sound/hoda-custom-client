@@ -1,0 +1,8 @@
+HODA_STORE_ODDS_EACH_HERO|Probabilità per ogni eroe
+HODA_STORE_ODDS_OTHER_HEROES|Probabilità per gli altri eroi
+HODA_STORE_ODDS_PERCENT|{0}%
+HODA_STORE_PITY_PACKS_LEFT|Leggendario garantito entro {0} pacchetti
+HODA_STORE_PITY_NEXT_PACK|Leggendario garantito nel prossimo pacchetto
+HODA_STORE_PITY_SHARED|Condiviso con gli altri pacchetti settimanali
+HODA_STORE_BULLET_PITY|Leggendario entro {0} pacchetti
+HODA_STORE_BULLET_PITY_NEXT|Leggendario al prossimo pacchetto!

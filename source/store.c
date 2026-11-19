@@ -4,9 +4,6 @@ bool ProgressionNeedsServer(void);
 bool ProgressionAdoptServerProfile(Player *player, const cJSON *response);
 Color GearRarityColor(int rarity);
 void GearDrawTile(const GearDef *def, Rectangle r, bool selected);
-static void CampaignDrawWrapped(
-    Font font, const char *text, Vector2 pos, float size, float spacing, float line_gap, float max_width, Color tint
-);
 
 #define STORE_PACK_COUNT 4
 #define STORE_PACK_CAPACITY 72
@@ -23,6 +20,7 @@ static void CampaignDrawWrapped(
 #define STORE_NO_DUPLICATE_RARITY RARITY_LEGENDARY
 #define STORE_DEFAULT_POOL_EXCLUDED_TAG "WISP"
 #define STORE_NEVER_SOLD_TAG "BANNER"
+#define STORE_WEIGHT_TOTAL 10000
 #define STORE_MAX_ITEM_RESULTS                                                                                         \
     (GEAR_PACK_MAX_ROLLS > STORE_RUNE_PACK_SLOTS ? GEAR_PACK_MAX_ROLLS : STORE_RUNE_PACK_SLOTS)
 #define STORE_PACK_UNAVAILABLE (-1LL)
@@ -66,6 +64,28 @@ static const Rectangle STORE_GEM_CONGRATS_TITLE = {0.0f, 0.0f, 1.0f, 0.18f};
 static const Rectangle STORE_GEM_CONGRATS_REWARD = {0.0f, 0.22f, 1.0f, 0.36f};
 static const Rectangle STORE_GEM_CONGRATS_MESSAGE = {0.0f, 0.6f, 1.0f, 0.17f};
 #define STORE_TIMER_BANNER_COLOR ((Color){176, 28, 24, 255})
+#define STORE_INFO_PADDING 7.0f
+#define STORE_INFO_FRAME_BEVEL 14.0f
+#define STORE_INFO_TEXT_SIZE 16.0f
+#define STORE_INFO_MIN_TEXT_SIZE 10.0f
+#define STORE_INFO_FIT_STEP 0.5f
+#define STORE_INFO_LINES 8
+#define STORE_INFO_LINE_OF_TEXT 1.2f
+#define STORE_INFO_GAP_OF_TEXT 0.5f
+#define STORE_INFO_ROW_OF_TEXT 1.35f
+#define STORE_INFO_ICON_OF_TEXT 1.1f
+#define STORE_INFO_ICON_GAP_OF_TEXT 0.4f
+#define STORE_INFO_BAR_OF_TEXT 0.6f
+#define STORE_INFO_NOTE_OF_TEXT 0.85f
+#define STORE_INFO_TEXT_COLOR ((Color){236, 232, 220, 255})
+#define STORE_INFO_HEADING_COLOR ((Color){236, 206, 140, 255})
+#define STORE_INFO_NOTE_COLOR ((Color){178, 172, 158, 255})
+#define STORE_INFO_ICON_CLEARANCE 3.0f
+#define STORE_PITY_FILL_TINT ((Color){72, 200, 64, 255})
+#define STORE_PITY_TRACK_EDGE ((Color){118, 110, 94, 255})
+#define STORE_PITY_TRACK_EDGE_WIDTH 1.0f
+#define STORE_ODDS_PERCENT_PER_WEIGHT 100
+#define STORE_ODDS_TEXT_CAPACITY 32
 #define STORE_SCROLL_LINE_GAP 4.0f
 
 typedef enum {
@@ -301,7 +321,7 @@ typedef struct {
     int fixed_hero_count;
     char pool_tag[STORE_POOL_TAG_CAPACITY];
     bool unique_heroes;
-    int legendary_pity;
+    int legendary_pity_packs;
     int weights[RARITY_LEGENDARY + 1];
     int rune_chance_pct;
     int rune_count;
@@ -610,6 +630,30 @@ static Color StoreParseTint(const char *hex, const char *pack_id) {
     return (Color){(unsigned char)(rgb >> 16), (unsigned char)(rgb >> 8), (unsigned char)rgb, 255};
 }
 
+static int StorePackGuaranteedSlots(const StorePackDef *pack) {
+    return pack->fixed_hero_count + pack->guaranteed_legendary + pack->guaranteed_epic + pack->guaranteed_rare;
+}
+
+static const char *StorePackPityCounter(const StorePackDef *pack) {
+    return pack->rotation_group[0] ? pack->rotation_group : pack->id;
+}
+
+static bool StorePackPityDue(const StorePackDef *pack, int packs_since_legendary) {
+    return pack->legendary_pity_packs > 0 && packs_since_legendary >= pack->legendary_pity_packs - 1;
+}
+
+static int StorePacksSinceLegendaryAfter(int packs_since_legendary, const Rarity *rarities, int count) {
+    for (int i = 0; i < count; i++)
+        if (rarities[i] == RARITY_LEGENDARY) return 0;
+    return packs_since_legendary + 1;
+}
+
+int StorePackPullsUntilLegendary(const StorePackDef *pack, const Player *player) {
+    if (pack->kind != STORE_KIND_HERO || pack->legendary_pity_packs <= 0) return 0;
+    int left = pack->legendary_pity_packs - PlayerPacksSinceLegendary(player, StorePackPityCounter(pack));
+    return left < 1 ? 1 : left;
+}
+
 static void StoreLoadHeroContents(StorePackDef *pack, const cJSON *json) {
     pack->opened_counter = JsonInt(json, "opened_counter");
     pack->hero_count = JsonInt(json, "hero_count");
@@ -625,7 +669,7 @@ static void StoreLoadHeroContents(StorePackDef *pack, const cJSON *json) {
             TraceLog(LOG_FATAL, "Store: invalid fixed heroes in %s", pack->id);
         pack->fixed_heroes[pack->fixed_hero_count++] = fixed->valuestring;
     }
-    pack->legendary_pity = JsonInt(json, "legendary_pity");
+    pack->legendary_pity_packs = JsonInt(json, "legendary_pity_packs");
     pack->rune_chance_pct = JsonInt(json, "rune_chance_pct");
     pack->rune_count = JsonInt(json, "rune_count");
     pack->rune_min_rarity = JsonInt(json, "rune_min_rarity");
@@ -644,11 +688,13 @@ static void StoreLoadHeroContents(StorePackDef *pack, const cJSON *json) {
             TraceLog(LOG_FATAL, "Store: %s assigns weight below its minimum rarity", pack->id);
     }
     if (pack->hero_count <= 0 || pack->hero_count > STORE_MAX_RESULTS || pack->guaranteed_legendary < 0 ||
-        pack->guaranteed_epic < 0 || pack->guaranteed_rare < 0 ||
-        pack->fixed_hero_count + pack->guaranteed_legendary + pack->guaranteed_epic + pack->guaranteed_rare >
-            pack->hero_count ||
-        pack->opened_counter < 0 || pack->opened_counter >= PLAYER_STORE_PACK_COUNT || total != 10000)
+        pack->guaranteed_epic < 0 || pack->guaranteed_rare < 0 || StorePackGuaranteedSlots(pack) > pack->hero_count ||
+        pack->opened_counter < 0 || pack->opened_counter >= PLAYER_STORE_PACK_COUNT || total != STORE_WEIGHT_TOTAL ||
+        pack->legendary_pity_packs < 0)
         TraceLog(LOG_FATAL, "Store: invalid hero pack %s", pack->id);
+    if (pack->legendary_pity_packs > 0 &&
+        (StorePackGuaranteedSlots(pack) == pack->hero_count || pack->weights[RARITY_LEGENDARY] == 0))
+        TraceLog(LOG_FATAL, "Store: %s has a Legendary pity but no rolled slot that can be Legendary", pack->id);
 }
 
 static void StoreLoadRuneContents(StorePackDef *pack, const cJSON *json) {
@@ -812,6 +858,21 @@ static void StoreCountRotations(Store *store) {
     }
 }
 
+static void StoreValidatePityCounters(const Store *store) {
+    int distinct = 0;
+    for (int i = 0; i < store->pack_count; i++) {
+        const StorePackDef *pack = &store->packs[i];
+        if (pack->legendary_pity_packs <= 0) continue;
+        bool seen = false;
+        for (int earlier = 0; earlier < i && !seen; earlier++)
+            seen = store->packs[earlier].legendary_pity_packs > 0 &&
+                   !strcmp(StorePackPityCounter(&store->packs[earlier]), StorePackPityCounter(pack));
+        distinct += !seen;
+    }
+    if (distinct > PLAYER_PACK_PITY_CAPACITY)
+        TraceLog(LOG_FATAL, "Store: %d pity counters do not fit a save", distinct);
+}
+
 void StoreInitialize(Store *store, const char *config_path, const char *catalog_path) {
     memset(store, 0, sizeof(*store));
     store->config_root = JsonLoadFile(config_path);
@@ -829,6 +890,7 @@ void StoreInitialize(Store *store, const char *config_path, const char *catalog_
         StoreLoadPack(store, &store->packs[store->pack_count++], pack);
     }
     StoreCountRotations(store);
+    StoreValidatePityCounters(store);
     const cJSON *gem_skus = cJSON_GetObjectItemCaseSensitive(store->config_root, "gem_skus");
     if (!cJSON_IsArray(gem_skus) || cJSON_GetArraySize(gem_skus) != STORE_GEM_SKU_COUNT)
         TraceLog(LOG_FATAL, "Store: expected %d gem skus in %s", STORE_GEM_SKU_COUNT, config_path);
@@ -1171,7 +1233,7 @@ static Rarity StorePackSlotRarity(const StorePackDef *pack, int rolled_slot, boo
     int legendary_end = pack->guaranteed_legendary;
     int epic_end = legendary_end + pack->guaranteed_epic;
     int rare_end = epic_end + pack->guaranteed_rare;
-    if (rolled_slot < legendary_end || pity) return RARITY_LEGENDARY;
+    if (rolled_slot < legendary_end || (pity && rolled_slot == rare_end)) return RARITY_LEGENDARY;
     if (rolled_slot < epic_end) return RARITY_EPIC;
     if (rolled_slot < rare_end) return RARITY_RARE;
     return StoreRollRarity(pack, rng);
@@ -1492,7 +1554,9 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
         StoreOpenDialog(store, STORE_DIALOG_CANT_AFFORD);
         return false;
     }
-    if (player->store_opened_total == INT_MAX || player->store_opened_by_pack[counter] == INT_MAX) {
+    const char *pity_counter = StorePackPityCounter(pack);
+    if (player->store_opened_total == INT_MAX || player->store_opened_by_pack[counter] == INT_MAX ||
+        (pack->legendary_pity_packs > 0 && !PlayerCanTrackPackPity(player, pity_counter))) {
         StoreSetStatus(store, LocGet("HODA_STORE_COUNTER_LIMIT"));
         GuiSoundPlay(SND_STORE_ERROR);
         return false;
@@ -1506,19 +1570,17 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
     uint32_t old_rng = player->store_rng_state;
     int old_opened_total = player->store_opened_total;
     int old_opened_pack = player->store_opened_by_pack[counter];
-    int old_champion_since = player->champion_since_legendary;
+    int old_packs_since_legendary = PlayerPacksSinceLegendary(player, pity_counter);
     int old_vouchers[PLAYER_VOUCHER_CAPACITY];
     memcpy(old_vouchers, player->pack_vouchers, sizeof(old_vouchers));
     const cJSON *definitions[STORE_MAX_RESULTS] = {0};
     Rarity rarities[STORE_MAX_RESULTS] = {0};
-    bool tracks_pity = pack->legendary_pity > 0;
-    int next_pity = player->champion_since_legendary;
+    bool pity = StorePackPityDue(pack, old_packs_since_legendary);
     for (int i = 0; i < pack->hero_count; i++) {
         if (i < pack->fixed_hero_count) {
             definitions[i] = CatalogFindCharacter(store->catalog, pack->fixed_heroes[i]);
             rarities[i] = definitions[i] ? RarityFromString(JsonStr(definitions[i], "rarity")) : RARITY_COMMON;
         } else {
-            bool pity = tracks_pity && next_pity >= pack->legendary_pity - 1;
             rarities[i] = StorePackSlotRarity(pack, i - pack->fixed_hero_count, pity, &rng);
             definitions[i] = StoreRollPackDefinition(store, pack, player, rarities[i], definitions, i, &rng);
         }
@@ -1527,10 +1589,11 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
             GuiSoundPlay(SND_STORE_ERROR);
             return false;
         }
-        if (tracks_pity) next_pity = rarities[i] == RARITY_LEGENDARY ? 0 : next_pity + 1;
     }
     const TutorialPackReward *scripted = TutorialScriptedPack(pack->id);
     if (!StoreScriptedDefinitions(store, scripted, pack->hero_count, definitions, rarities)) scripted = NULL;
+    bool tracks_pity = !scripted && pack->legendary_pity_packs > 0;
+    int packs_since_legendary = StorePacksSinceLegendaryAfter(old_packs_since_legendary, rarities, pack->hero_count);
     if (pack->hero_count > 1) StoreSortResults(definitions, rarities, pack->hero_count);
 
     int first_index = -1;
@@ -1553,7 +1616,7 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
     player->missions.counters[MISSION_STAT_SUMMONED] += pack->hero_count;
     TimedQuestsCount(&player->timed_quests, TIMED_QUEST_STAT_SUMMONED, pack->hero_count, ServerNow());
     player->store_opened_by_pack[counter]++;
-    if (tracks_pity) player->champion_since_legendary = next_pity;
+    if (tracks_pity) PlayerSetPacksSinceLegendary(player, pity_counter, packs_since_legendary);
 
     if (!ProgressionSave(player)) {
         PlayerRosterClearRange(player, old_roster_count, player->roster_count);
@@ -1567,7 +1630,7 @@ static bool StoreTryBuyHeroPack(Store *store, Player *player, Heroes *heroes, in
         player->store_rng_state = old_rng;
         player->store_opened_total = old_opened_total;
         player->store_opened_by_pack[counter] = old_opened_pack;
-        player->champion_since_legendary = old_champion_since;
+        if (tracks_pity) PlayerSetPacksSinceLegendary(player, pity_counter, old_packs_since_legendary);
         StorePurchaseSaveFailed(store);
         return false;
     }
@@ -1970,16 +2033,159 @@ static void StoreDrawRarityIcon(StorePackKind kind, Rectangle rect, int rarity, 
     UiDrawTexture(StoreRarityBackdrop(kind, rarity), rect, tint);
 }
 
-static int StoreBulletCount(const StorePackDef *pack, const Player *player) {
+static int StoreVoucherBulletCount(const StorePackDef *pack, const Player *player) {
     bool claimable = pack->voucher >= 0 && player->pack_vouchers[pack->voucher] > 0;
-    return pack->bullet_count + (claimable ? STORE_VOUCHER_BULLETS : 0);
+    return claimable ? STORE_VOUCHER_BULLETS : 0;
+}
+
+static int StoreBulletCount(const StorePackDef *pack, const Player *player) {
+    bool pity = StorePackPullsUntilLegendary(pack, player) > 0;
+    return StoreVoucherBulletCount(pack, player) + pack->bullet_count + (pity ? 1 : 0);
+}
+
+static StoreBullet StorePityBullet(const StorePackDef *pack, const Player *player) {
+    static char text[STORE_DIALOG_TEXT_CAPACITY];
+    int left = StorePackPullsUntilLegendary(pack, player);
+    if (left == 1) return (StoreBullet){LocGet("HODA_STORE_BULLET_PITY_NEXT"), 0};
+    LocFormatInt(text, sizeof(text), "HODA_STORE_BULLET_PITY", left);
+    return (StoreBullet){text, 0};
 }
 
 static StoreBullet StoreBulletAt(const StorePackDef *pack, const Player *player, int index) {
-    int extra = StoreBulletCount(pack, player) - pack->bullet_count;
-    if (index >= extra) return pack->bullets[index - extra];
+    int vouchers = StoreVoucherBulletCount(pack, player);
+    if (index >= vouchers + pack->bullet_count) return StorePityBullet(pack, player);
+    if (index >= vouchers) return pack->bullets[index - vouchers];
     if (index == 1) return (StoreBullet){LocGet("FREE!"), 0};
     return (StoreBullet){TextFormat("%d %s", player->pack_vouchers[pack->voucher], LocGet("AVAILABLE")), 0};
+}
+
+static const char *StoreHeroRarityName(Rarity rarity) {
+    static const char *const keys[] = {
+        [RARITY_COMMON] = "RARITY_COMMON",
+        [RARITY_UNCOMMON] = "RARITY_UNCOMMON",
+        [RARITY_RARE] = "RARITY_RARE",
+        [RARITY_EPIC] = "RARITY_EPIC",
+        [RARITY_LEGENDARY] = "RARITY_LEGENDARY",
+    };
+    return LocGet(keys[rarity]);
+}
+
+static void StoreFormatOdds(int weight, char *out, size_t size) {
+    int whole = weight / STORE_ODDS_PERCENT_PER_WEIGHT;
+    int hundredths = weight % STORE_ODDS_PERCENT_PER_WEIGHT;
+    const char *separator = LocGetOr("NUMBER_DECIMAL_SEPARATOR", ".");
+    char number[STORE_ODDS_TEXT_CAPACITY];
+    if (hundredths == 0)
+        snprintf(number, sizeof(number), "%d", whole);
+    else if (hundredths % 10 == 0)
+        snprintf(number, sizeof(number), "%d%s%d", whole, separator, hundredths / 10);
+    else
+        snprintf(number, sizeof(number), "%d%s%02d", whole, separator, hundredths);
+    LocFormat1(out, size, "HODA_STORE_ODDS_PERCENT", number);
+}
+
+static float
+StoreInfoParagraph(Font font, const char *text, Vector2 at, float width, float size, Color color, bool draw) {
+    char lines[STORE_INFO_LINES][MESSAGE_POPUP_TEXT_CAP];
+    int count = MessagePopupWrap(font, text, width, size, lines, STORE_INFO_LINES);
+    float line_height = size * STORE_INFO_LINE_OF_TEXT;
+    for (int i = 0; draw && i < count; i++) {
+        Color current = color;
+        MessagePopupRichRun(font, lines[i], (Vector2){at.x, at.y + i * line_height}, size, color, &current, true);
+    }
+    return count * line_height;
+}
+
+static float StoreInfoOddsRows(const Store *store, const StorePackDef *pack, Rectangle area, float size, bool draw) {
+    float row_height = size * STORE_INFO_ROW_OF_TEXT;
+    float icon = size * STORE_INFO_ICON_OF_TEXT;
+    float gap = size * STORE_INFO_ICON_GAP_OF_TEXT;
+    float height = 0.0f;
+    for (int rarity = RARITY_LEGENDARY; rarity >= RARITY_COMMON; rarity--) {
+        if (pack->weights[rarity] <= 0) continue;
+        Rectangle row = {area.x, area.y + height, area.width, row_height};
+        height += row_height;
+        if (!draw) continue;
+        StoreDrawRarityIcon(
+            STORE_KIND_HERO, (Rectangle){row.x, row.y + (row_height - icon) * 0.5f, icon, icon}, rarity, WHITE
+        );
+        Rectangle name = {row.x + icon + gap, row.y, row.width - icon - gap, row_height};
+        UiDrawTextLeftMiddle(store->body_font, StoreHeroRarityName((Rarity)rarity), name, size, STORE_INFO_TEXT_COLOR);
+        char odds[STORE_ODDS_TEXT_CAPACITY];
+        StoreFormatOdds(pack->weights[rarity], odds, sizeof(odds));
+        UiDrawTextRight(store->body_font, odds, row, size, STORE_INFO_TEXT_COLOR);
+    }
+    return height;
+}
+
+static void StoreDrawPityBar(const StorePackDef *pack, const Player *player, Rectangle bar) {
+    UiDrawTexture(GuiTex(GUI_CARD_BAR_BG), bar, WHITE);
+    DrawRectangleLinesEx(bar, STORE_PITY_TRACK_EDGE_WIDTH, STORE_PITY_TRACK_EDGE);
+    float done = 1.0f - (float)(StorePackPullsUntilLegendary(pack, player) - 1) / pack->legendary_pity_packs;
+    Rectangle fill = {bar.x + 1.0f, bar.y + 1.0f, (bar.width - 2.0f) * Clamp(done, 0.0f, 1.0f), bar.height - 2.0f};
+    if (fill.width > 0.0f) UiDrawTexture(GuiTex(GUI_STORE_PITY_FILL), fill, STORE_PITY_FILL_TINT);
+}
+
+static const char *StorePityText(const StorePackDef *pack, const Player *player, char *out, size_t size) {
+    int left = StorePackPullsUntilLegendary(pack, player);
+    if (left == 1) return LocGet("HODA_STORE_PITY_NEXT_PACK");
+    LocFormatInt(out, size, "HODA_STORE_PITY_PACKS_LEFT", left);
+    return out;
+}
+
+static float StoreDrawPackInfoAt(
+    const Store *store,
+    const StorePackDef *pack,
+    const Player *player,
+    Rectangle area,
+    float text_width,
+    float size,
+    bool draw
+) {
+    Font font = store->body_font;
+    float gap = size * STORE_INFO_GAP_OF_TEXT;
+    float y = area.y;
+    y += StoreInfoParagraph(font, pack->info, (Vector2){area.x, y}, text_width, size, STORE_INFO_TEXT_COLOR, draw);
+    if (pack->kind != STORE_KIND_HERO || StorePackGuaranteedSlots(pack) >= pack->hero_count) return y - area.y;
+
+    y += gap;
+    const char *heading =
+        LocGet(StorePackGuaranteedSlots(pack) > 0 ? "HODA_STORE_ODDS_OTHER_HEROES" : "HODA_STORE_ODDS_EACH_HERO");
+    y += StoreInfoParagraph(font, heading, (Vector2){area.x, y}, area.width, size, STORE_INFO_HEADING_COLOR, draw);
+    y += StoreInfoOddsRows(store, pack, (Rectangle){area.x, y, area.width, 0.0f}, size, draw);
+    if (StorePackPullsUntilLegendary(pack, player) <= 0) return y - area.y;
+
+    y += gap;
+    char pity[STORE_DIALOG_TEXT_CAPACITY];
+    const char *pity_text = StorePityText(pack, player, pity, sizeof(pity));
+    y += StoreInfoParagraph(font, pity_text, (Vector2){area.x, y}, area.width, size, STORE_INFO_HEADING_COLOR, draw);
+    float bar_height = size * STORE_INFO_BAR_OF_TEXT;
+    if (draw) StoreDrawPityBar(pack, player, (Rectangle){area.x, y, area.width, bar_height});
+    y += bar_height;
+    if (!pack->rotation_group[0]) return y - area.y;
+    float note = size * STORE_INFO_NOTE_OF_TEXT;
+    y += gap * 0.5f;
+    y += StoreInfoParagraph(
+        font, LocGet("HODA_STORE_PITY_SHARED"), (Vector2){area.x, y}, area.width, note, STORE_INFO_NOTE_COLOR, draw
+    );
+    return y - area.y;
+}
+
+static void StoreDrawPackInfo(
+    const Store *store, const StorePackDef *pack, const Player *player, Rectangle art, Rectangle info_icon
+) {
+    Rectangle area = {
+        art.x + STORE_INFO_PADDING,
+        art.y + STORE_INFO_PADDING,
+        art.width - STORE_INFO_PADDING * 2.0f,
+        art.height - STORE_INFO_PADDING - STORE_INFO_FRAME_BEVEL
+    };
+    float text_width = fminf(area.width, info_icon.x - STORE_INFO_ICON_CLEARANCE - area.x);
+    float size = STORE_INFO_TEXT_SIZE;
+    while (size > STORE_INFO_MIN_TEXT_SIZE &&
+           StoreDrawPackInfoAt(store, pack, player, area, text_width, size, false) > area.height)
+        size -= STORE_INFO_FIT_STEP;
+    StoreDrawPackInfoAt(store, pack, player, area, text_width, size, true);
 }
 
 static void
@@ -2078,21 +2284,11 @@ static bool StoreDrawPackCard(
         WHITE
     );
 
-    if (show_info)
-        CampaignDrawWrapped(
-            store->body_font,
-            pack->info,
-            (Vector2){art.x + 6.0f, art.y + 12.0f},
-            18.0f,
-            1.0f,
-            5.0f,
-            art.width - 12.0f,
-            (Color){236, 232, 220, 255}
-        );
+    Rectangle info = StoreCellPart(cell, STORE_CELL_INFO);
+    if (show_info) StoreDrawPackInfo(store, pack, player, art, info);
 
     if (seconds_left > 0) StoreDrawTimerBanner(store, cell, seconds_left);
 
-    Rectangle info = StoreCellPart(cell, STORE_CELL_INFO);
     bool info_hover = !StoreInputBlocked(store) && CheckCollisionPointRec(mouse, info);
     UiDrawTexture(info_hover || show_info ? store->info_icon_on : store->info_icon, info, WHITE);
 

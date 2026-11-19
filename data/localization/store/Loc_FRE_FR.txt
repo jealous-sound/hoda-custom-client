@@ -1,0 +1,8 @@
+HODA_STORE_ODDS_EACH_HERO|Chances pour chaque héros
+HODA_STORE_ODDS_OTHER_HEROES|Chances pour les autres héros
+HODA_STORE_ODDS_PERCENT|{0} %
+HODA_STORE_PITY_PACKS_LEFT|Légendaire garanti d'ici {0} packs
+HODA_STORE_PITY_NEXT_PACK|Légendaire garanti dans le prochain pack
+HODA_STORE_PITY_SHARED|Partagé avec les autres packs de la semaine
+HODA_STORE_BULLET_PITY|Légendaire d'ici {0} packs
+HODA_STORE_BULLET_PITY_NEXT|Légendaire au prochain pack !
