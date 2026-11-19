@@ -1,11 +1,13 @@
 
 #define HEROES_GEAR_COLUMN_WIDTH 64.0f
-#define HEROES_GEAR_BUTTON_X 284.0f
+#define HEROES_GEAR_BUTTON_GAP 6.0f
+#define HEROES_GEAR_BUTTON_X (ROSTER_PANEL_WIDTH + HEROES_GEAR_BUTTON_GAP)
 #define HEROES_DRAG_THRESHOLD 51.0f
 #define ROSTER_PREFAB_WIDTH 2030.0f
 #define ROSTER_PREFAB_HEIGHT 938.0f
 #define ROSTER_PREFAB_TOP 72.0f
-#define ROSTER_PANEL_WIDTH 278.0f
+#define ROSTER_PANEL_DESIGN_WIDTH 278.0f
+#define ROSTER_PANEL_WIDTH (ROSTER_PANEL_DESIGN_WIDTH * UiWidth() / UI_DESIGN_W)
 #define ROSTER_GRID_COLS 2
 #define ROSTER_FILTER_ROW 65.0f
 #define ROSTER_SCROLL_STEP 50.0f
@@ -1019,7 +1021,7 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
             &h->roster, h->cards, p, !UiInputBlocked() && h->selected < 0, HeroesDrawRosterCard, &card_context
         );
     {
-        int requested_squad = HeroesDrawSquadTabs(h, p, HEROES_SQUAD_TABS);
+        int requested_squad = HeroesDrawSquadTabs(h, p, UiBottomRect(HEROES_SQUAD_TABS));
         if (requested_squad >= 0) PlayerSquadSelect(p, requested_squad);
     }
 

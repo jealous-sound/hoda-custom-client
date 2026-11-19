@@ -437,7 +437,11 @@ void RunesDrawCard(const RuneDef *def, const PlayerRune *rune, Rectangle card, l
 
 static void RunesDrawRoster(RunesScreen *r, const Player *p, bool input) {
     Texture2D panel = GuiTex(GUI_HEROES_PANEL);
-    UiDrawTexture(panel, (Rectangle){0, 72, panel.width / 2.0f, panel.height + 128.0f}, (Color){255, 255, 255, 236});
+    UiDrawTexture(
+        panel,
+        (Rectangle){0, 72, panel.width / 2.0f, panel.height + 128.0f + UiSpareHeight()},
+        (Color){255, 255, 255, 236}
+    );
 
     Font font = GuiFont(FNT_COOL);
     const char *title = LocGet("RUNES_TITLE_TEXT_NO_COUNT");
@@ -449,7 +453,7 @@ static void RunesDrawRoster(RunesScreen *r, const Player *p, bool input) {
         r->scroll = 0.0f;
     }
 
-    Rectangle view = {0.0f, RUNES_GRID_TOP, RUNES_PANEL_WIDTH, RUNES_GRID_HEIGHT};
+    Rectangle view = {0.0f, RUNES_GRID_TOP, RUNES_PANEL_WIDTH, RUNES_GRID_HEIGHT + UiSpareHeight()};
     int rows = (r->roster_count + RUNES_GRID_COLS - 1) / RUNES_GRID_COLS;
     float max_scroll = fmaxf(rows * RUNES_CELL - view.height, 0.0f);
     bool over = input && CheckCollisionPointRec(UiMouse(), view);
@@ -962,8 +966,9 @@ static void RunesDrawInstructions(const RunesScreen *r) {
 
 static void RunesDrawActions(RunesScreen *r, Player *p, bool input) {
     float cx = RunesCenterX();
-    Rectangle left = {cx - RUNES_BUTTON_W - 6.0f, RUNES_ACTION_Y, RUNES_BUTTON_W, RUNES_BUTTON_H};
-    Rectangle right = {cx + 6.0f, RUNES_ACTION_Y, RUNES_BUTTON_W, RUNES_BUTTON_H};
+    float y = UiBottomY(RUNES_ACTION_Y);
+    Rectangle left = {cx - RUNES_BUTTON_W - 6.0f, y, RUNES_BUTTON_W, RUNES_BUTTON_H};
+    Rectangle right = {cx + 6.0f, y, RUNES_BUTTON_W, RUNES_BUTTON_H};
 
     if (r->mode == RUNES_MODE_ASSIGN && RunesHasPending(r)) {
         if (ButtonDrawEx(&r->cancel, left, input)) RunesClearPending(r);
@@ -981,7 +986,7 @@ static void RunesDrawActions(RunesScreen *r, Player *p, bool input) {
         Color dim = ready ? WHITE : (Color){120, 120, 120, 255};
         ButtonSetLabelColor(&r->craft_one, dim);
         ButtonSetLabelColor(&r->craft_many, dim);
-        Rectangle one = {left.x, RUNES_ACTION_Y - RUNES_BUTTON_H - 6.0f, RUNES_BUTTON_W, RUNES_BUTTON_H};
+        Rectangle one = {left.x, y - RUNES_BUTTON_H - 6.0f, RUNES_BUTTON_W, RUNES_BUTTON_H};
         Rectangle many = {right.x, one.y, RUNES_BUTTON_W, RUNES_BUTTON_H};
         if (ButtonDrawEx(&r->craft_one, one, ready)) r->dialog = RUNES_DIALOG_CRAFT_SINGLE;
         if (ButtonDrawEx(&r->craft_many, many, ready)) r->dialog = RUNES_DIALOG_CRAFT_MENU;
@@ -997,9 +1002,9 @@ RunesLeave RunesDraw(RunesScreen *r, Heroes *h, Player *p, float dt) {
 
     if (r->activation_count <= 0) {
         RunesDrawRoster(r, p, input);
-        if (ButtonDrawEx(&r->store, (Rectangle){20.0f, 560.0f, 192.0f, 48.0f}, input))
+        if (ButtonDrawEx(&r->store, UiBottomRect((Rectangle){20.0f, 560.0f, 192.0f, 48.0f}), input))
             RunesRequestLeave(r, RUNES_LEAVE_STORE, 0);
-        int squad = HeroesDrawSquadTabs(h, p, RUNES_SQUAD_TABS);
+        int squad = HeroesDrawSquadTabs(h, p, UiBottomRect(RUNES_SQUAD_TABS));
         if (squad >= 0 && !blocked) RunesRequestLeave(r, RUNES_LEAVE_SELECT_SQUAD, squad);
 
         RunesDrawInstructions(r);

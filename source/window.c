@@ -5,6 +5,14 @@
 
 static void WindowGrowToMonitorDensity(void) {
 }
+
+static bool WindowFullscreen(void) {
+    return PlatformNativeFullscreen(GetWindowHandle());
+}
+
+static void WindowSetFullscreen(bool fullscreen) {
+    if (WindowFullscreen() != fullscreen) PlatformToggleNativeFullscreen(GetWindowHandle());
+}
 #else
 #define WINDOW_PIXEL_DENSITY_FLAGS 0
 
@@ -26,5 +34,14 @@ static void WindowGrowToMonitorDensity(void) {
     SetWindowPosition(
         (int)origin.x + ((int)monitor_size.x - width) / 2, (int)origin.y + ((int)monitor_size.y - height) / 2
     );
+}
+
+static bool WindowFullscreen(void) {
+    return IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE);
+}
+
+static void WindowSetFullscreen(bool fullscreen) {
+    if (WindowFullscreen() != fullscreen) ToggleBorderlessWindowed();
+    if (fullscreen) ClearWindowState(FLAG_WINDOW_TOPMOST);
 }
 #endif

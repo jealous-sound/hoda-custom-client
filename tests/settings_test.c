@@ -23,6 +23,7 @@ static void TestFreshInstallPlaysEverythingAtFullVolume(void) {
     for (int i = 0; i < SETTINGS_VOLUME_COUNT; i++) assert(SettingsVolumeLevel(i) == 1.0f);
     for (int i = 0; i < SETTINGS_SWITCH_COUNT; i++) assert(!SettingsSwitchOn(i));
     assert(SettingsFrameRateLimit() == SETTINGS_DEFAULT_FRAME_RATE);
+    assert(SettingsUiScale() == SETTINGS_FULL_UI_SCALE);
 }
 
 static void TestMusicSwitchedOffBeforeVolumesStaysSilent(void) {
@@ -45,6 +46,12 @@ static void TestOutOfRangeValuesAreClamped(void) {
     assert(SettingsFrameRateLimit() == SETTINGS_MINIMUM_FRAME_RATE);
     TestReloadFrom("{\"frame_rate_limit\":0}");
     assert(SettingsFrameRateLimit() == SETTINGS_UNLIMITED_FRAME_RATE);
+    TestReloadFrom("{\"ui_scale\":0.2}");
+    assert(SettingsUiScale() == SETTINGS_MINIMUM_UI_SCALE);
+    TestReloadFrom("{\"ui_scale\":1.7}");
+    assert(SettingsUiScale() == SETTINGS_FULL_UI_SCALE);
+    TestReloadFrom("{\"ui_scale\":0.83}");
+    assert(SettingsUiScale() == 0.85f);
 }
 
 static void TestAVolumeAdjustmentWaitsForTheSave(void) {
@@ -69,6 +76,7 @@ static void TestEverySettingSurvivesARestart(void) {
     SettingsSetSwitch(SETTINGS_SWITCH_VSYNC, true);
     SettingsSetSwitch(SETTINGS_SWITCH_SHOW_FPS, true);
     SettingsSetFrameRateLimit(60);
+    SettingsSetUiScale(0.75f);
     SettingsSetSkippedUpdate("v9.9.9");
     settings = (Settings){0};
     assert(!strcmp(SettingsLanguage(), "ja"));
@@ -77,7 +85,31 @@ static void TestEverySettingSurvivesARestart(void) {
     assert(SettingsVolumeLevel(SETTINGS_VOLUME_SOUND) == 1.0f);
     for (int i = 0; i < SETTINGS_SWITCH_COUNT; i++) assert(SettingsSwitchOn(i));
     assert(SettingsFrameRateLimit() == 60);
+    assert(SettingsUiScale() == 0.75f);
     assert(!strcmp(SettingsSkippedUpdate(), "v9.9.9"));
+}
+
+static void TestTheUiScaleIsStoredAsAWholePercent(void) {
+    TestReloadFrom(NULL);
+    SettingsSetUiScale(0.85f);
+    char *text = LoadFileText(SETTINGS_PATH);
+    cJSON *root = cJSON_Parse(text);
+    UnloadFileText(text);
+    assert(cJSON_GetObjectItemCaseSensitive(root, "ui_scale")->valuedouble == 0.85);
+    cJSON_Delete(root);
+}
+
+static void TestUiScaleArrowsStepFivePercentAndStopAtTheEnds(void) {
+    TestReloadFrom(NULL);
+    OptionsStepUiScale(OPTIONS_STEP_FORWARD);
+    assert(SettingsUiScale() == SETTINGS_FULL_UI_SCALE);
+    OptionsStepUiScale(OPTIONS_STEP_BACK);
+    assert(SettingsUiScale() == 0.95f);
+    assert(ui_chosen_scale == 0.95f);
+    for (int step = 0; step < 20; step++) OptionsStepUiScale(OPTIONS_STEP_BACK);
+    assert(SettingsUiScale() == SETTINGS_MINIMUM_UI_SCALE);
+    OptionsStepUiScale(OPTIONS_STEP_FORWARD);
+    assert(SettingsUiScale() == 0.65f);
 }
 
 static void TestFrameRateArrowsWalkTheListAndWrap(void) {
@@ -114,6 +146,8 @@ int main(void) {
     TestOutOfRangeValuesAreClamped();
     TestAVolumeAdjustmentWaitsForTheSave();
     TestEverySettingSurvivesARestart();
+    TestTheUiScaleIsStoredAsAWholePercent();
+    TestUiScaleArrowsStepFivePercentAndStopAtTheEnds();
     TestFrameRateArrowsWalkTheListAndWrap();
     TestAnUnlistedFrameRateStepsToItsNeighbours();
     TestTheSliderFollowsThePointerAndStopsAtItsEnds();
