@@ -45,6 +45,18 @@ Rectangle UiRoot(void) {
     return (Rectangle){0.0f, 0.0f, UiWidth(), UiHeight()};
 }
 
+float UiFullScaleWidth(void) {
+    return UiWidth() * ui_chosen_scale;
+}
+
+float UiSpareWidth(void) {
+    return UiWidth() - UiFullScaleWidth();
+}
+
+Rectangle UiFullScaleRoot(void) {
+    return (Rectangle){UiSpareWidth() * 0.5f, UiSpareHeight() * 0.5f, UiFullScaleWidth(), UI_DESIGN_H};
+}
+
 static bool ui_input_blocked = false;
 static bool ui_input_suspended = false;
 static bool ui_input_window_active = false;

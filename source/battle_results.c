@@ -219,7 +219,7 @@ static int BattleResultsRewardCount(const BattleResultsPresentation *p) {
 }
 
 static float BattleResultsPopupScale(void) {
-    return fminf(UiHeight() / 639.0f, UiWidth() / 1061.0f);
+    return fminf(UI_DESIGN_H / 639.0f, UiFullScaleWidth() / 1061.0f);
 }
 
 static Rectangle BattleResultsPopupRect(float x, float y, float width, float height) {
@@ -422,10 +422,10 @@ static Rectangle BattleResultsLevelRect(Rectangle panel, float x, float y, float
 
 static Rectangle BattleResultsLevelPanel(void) {
     float aspect = 564.185f / 265.0f;
-    float panel_height = UiHeight() * 0.625f;
+    float panel_height = UI_DESIGN_H * 0.625f;
     float panel_width = panel_height * aspect;
-    if (panel_width > UiWidth() * 0.96f) {
-        panel_width = UiWidth() * 0.96f;
+    if (panel_width > UiFullScaleWidth() * 0.96f) {
+        panel_width = UiFullScaleWidth() * 0.96f;
         panel_height = panel_width / aspect;
     }
     return (Rectangle){
@@ -590,12 +590,13 @@ static void BattleResultsDrawRenownRank(const BattleResultsFlow *flow) {
 }
 
 static Rectangle HeroLevelRect(float x, float y, float width, float height) {
-    float sx = UiWidth() / HERO_LEVEL_DESIGN_WIDTH, sy = UiHeight() / HERO_LEVEL_DESIGN_HEIGHT;
-    return (Rectangle){x * sx, y * sy, width * sx, height * sy};
+    Rectangle frame = UiFullScaleRoot();
+    float sx = frame.width / HERO_LEVEL_DESIGN_WIDTH, sy = frame.height / HERO_LEVEL_DESIGN_HEIGHT;
+    return (Rectangle){frame.x + x * sx, frame.y + y * sy, width * sx, height * sy};
 }
 
 static float HeroLevelFontSize(float dynamic_size, float element_height) {
-    return dynamic_size * element_height * UiHeight() / HERO_LEVEL_DESIGN_HEIGHT;
+    return dynamic_size * element_height * UI_DESIGN_H / HERO_LEVEL_DESIGN_HEIGHT;
 }
 
 static void BattleResultsDrawTextAligned(
@@ -735,10 +736,10 @@ static Rectangle BattleResultsCompletionRect(Rectangle base, float x, float y, f
 
 static void BattleResultsDrawNodeCompletion(const BattleResultsFlow *flow) {
     const BattleResultsPresentation *p = &flow->presentation;
-    float base_height = UiHeight() * 0.90f;
+    float base_height = UI_DESIGN_H * 0.90f;
     float base_width = base_height * (756.0f / 523.0f);
-    if (base_width > UiWidth() * 0.96f) {
-        base_width = UiWidth() * 0.96f;
+    if (base_width > UiFullScaleWidth() * 0.96f) {
+        base_width = UiFullScaleWidth() * 0.96f;
         base_height = base_width * (523.0f / 756.0f);
     }
     Rectangle base = {

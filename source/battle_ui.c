@@ -685,7 +685,7 @@ static void BattleUiDrawSummaryStats(const BattlePlay *bp, Rectangle background,
 
 static void BattleUiDrawSummary(const BattleUi *ui, const BattlePlay *bp, float W, float H) {
     unsigned char alpha = (unsigned char)(255.0f * Clamp(bp->t / SUMMARY_FADE_TIME, 0.0f, 1.0f));
-    Rectangle screen = {0.0f, 0.0f, W, H};
+    Rectangle screen = UiFullScaleRoot();
     DrawRectangle(0, 0, (int)W + 1, (int)H + 1, (Color){0, 0, 0, (unsigned char)(SUMMARY_SCRIM_OPACITY * alpha)});
     BattleUiDrawSummaryNames(ui, bp, screen, alpha);
 

@@ -103,9 +103,10 @@ static float HudRectValue(float parent, float input) {
     return ceilf(parent * input);
 }
 
-static Rectangle HudFitRect(Rectangle parent, float x, float y, float width, float height, float aspect) {
-    float w = HudRectValue(parent.width, width);
-    float h = HudRectValue(parent.height, height);
+static Rectangle
+HudFitRectIn(Rectangle sizing, Rectangle placing, float x, float y, float width, float height, float aspect) {
+    float w = HudRectValue(sizing.width, width);
+    float h = HudRectValue(sizing.height, height);
     if (aspect > 0.0f && w > 0.0f && h > 0.0f) {
         float aspect_width = h * aspect;
         if (aspect_width < w)
@@ -114,11 +115,20 @@ static Rectangle HudFitRect(Rectangle parent, float x, float y, float width, flo
             h = w / aspect;
     }
     return (Rectangle){
-        parent.x + HudRectValue(parent.width - w, x),
-        parent.y + HudRectValue(parent.height - h, y),
+        placing.x + HudRectValue(placing.width - w, x),
+        placing.y + HudRectValue(placing.height - h, y),
         w,
         h,
     };
+}
+
+static Rectangle HudFitRect(Rectangle parent, float x, float y, float width, float height, float aspect) {
+    return HudFitRectIn(parent, parent, x, y, width, height, aspect);
+}
+
+static Rectangle HudSpanCanvasWidth(Rectangle band) {
+    if (band.width >= UiWidth()) return band;
+    return (Rectangle){0.0f, band.y, UiWidth(), band.height};
 }
 
 static Rectangle HudOffsetRect(Rectangle rect, float x, float y) {
@@ -129,9 +139,8 @@ static Rectangle HudOffsetRect(Rectangle rect, float x, float y) {
 
 static HudLayout HudGetLayout(void) {
     HudLayout l = {0};
-    Rectangle screen = UiRoot();
-
-    l.background = HudFitRect(screen, 0.5f, 0.0f, 1.9f, 0.12f, 16.0f);
+    Rectangle design_band = {0.0f, 0.0f, UiWidth(), UI_DESIGN_H};
+    l.background = HudSpanCanvasWidth(HudFitRect(design_band, 0.5f, 0.0f, 1.9f, 0.12f, 16.0f));
 
     Rectangle sizing = {2.0f, 0.0f, fmaxf(0.0f, ceilf(UiWidth()) - 2.0f), HUD_TOP_HEIGHT};
     Rectangle left = HudFitRect(sizing, 0.0f, 0.0f, 1.0f, 0.9f, 8.0f);

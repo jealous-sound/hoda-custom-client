@@ -23,7 +23,7 @@ typedef struct {
 } CampaignIguiAnchor;
 
 static const CampaignIguiAnchor CAMPAIGN_TRAY_BACKGROUND = {0.5f, 1.055f, 1.9f, 0.25f, 8.0f};
-static const CampaignIguiAnchor CAMPAIGN_TRAY_CONTAINER = {1.0f, 0.5f, 0.897f, 1.0f, 0.0f};
+static const CampaignIguiAnchor CAMPAIGN_TRAY_CONTAINER = {1.0f, 1.0f, 0.897f, 1.0f, 0.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_LIST = {0.44f, 1.0f, 0.84f, 0.16f, 0.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_MAP_BUTTON = {0.0f, 0.5f, 1.0f, 1.3f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_BACK_ARROW = {0.0f, 0.97f, 1.0f, 0.1f, 1.0f};
@@ -73,6 +73,19 @@ static Rectangle CampaignIguiRect(Rectangle parent, CampaignIguiAnchor anchor) {
 
 static Rectangle CampaignScreenRoot(float screen_w, float screen_h) {
     return (Rectangle){0.0f, HUD_TOP_HEIGHT, screen_w, screen_h - HUD_TOP_HEIGHT};
+}
+
+static Rectangle CampaignScreenIgui(float screen_w, float screen_h, CampaignIguiAnchor anchor) {
+    Rectangle full_scale = {0.0f, HUD_TOP_HEIGHT, UiFullScaleWidth(), UI_DESIGN_H - HUD_TOP_HEIGHT};
+    return HudFitRectIn(
+        full_scale,
+        CampaignScreenRoot(screen_w, screen_h),
+        anchor.x,
+        anchor.y,
+        anchor.width,
+        anchor.height,
+        anchor.aspect
+    );
 }
 
 typedef enum { CAMPAIGN_NONE = 0, CAMPAIGN_ENTER } CampaignAction;
@@ -559,10 +572,9 @@ typedef struct {
 } CampaignTrayLayout;
 
 static CampaignTrayLayout CampaignTrayLayoutFor(float screen_w, float screen_h) {
-    Rectangle root = CampaignScreenRoot(screen_w, screen_h);
-    Rectangle container = CampaignIguiRect(root, CAMPAIGN_TRAY_CONTAINER);
+    Rectangle container = CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_TRAY_CONTAINER);
     return (CampaignTrayLayout){
-        .background = CampaignIguiRect(root, CAMPAIGN_TRAY_BACKGROUND),
+        .background = HudSpanCanvasWidth(CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_TRAY_BACKGROUND)),
         .list = CampaignIguiRect(container, CAMPAIGN_TRAY_LIST),
         .back_arrow = CampaignIguiRect(container, CAMPAIGN_TRAY_BACK_ARROW),
         .forward_arrow = CampaignIguiRect(container, CAMPAIGN_TRAY_FORWARD_ARROW),
@@ -570,7 +582,7 @@ static CampaignTrayLayout CampaignTrayLayoutFor(float screen_w, float screen_h) 
 }
 
 static Rectangle CampaignTrayToggleRect(float screen_w, float screen_h) {
-    Rectangle container = CampaignIguiRect(CampaignScreenRoot(screen_w, screen_h), CAMPAIGN_TRAY_TOGGLE_CONTAINER);
+    Rectangle container = CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_TRAY_TOGGLE_CONTAINER);
     return CampaignIguiRect(container, CAMPAIGN_TRAY_TOGGLE);
 }
 
@@ -716,7 +728,7 @@ static float CampaignFitWrappedSize(Font font, const char *text, Rectangle box, 
 }
 
 static Rectangle CampaignDrawTrayCallToAction(const Campaign *c, const CampaignMap *m, float screen_w, float screen_h) {
-    Rectangle panel = CampaignIguiRect(CampaignScreenRoot(screen_w, screen_h), CAMPAIGN_CTA_PANEL);
+    Rectangle panel = CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_CTA_PANEL);
     Rectangle title_box = CampaignIguiRect(panel, CAMPAIGN_CTA_TITLE);
     Rectangle body_box = CampaignIguiRect(panel, CAMPAIGN_CTA_BODY);
     Rectangle icon_box = CampaignIguiRect(panel, CAMPAIGN_CTA_ICON);
@@ -741,6 +753,7 @@ static Rectangle CampaignDrawTrayCallToAction(const Campaign *c, const CampaignM
 
 static Rectangle CampaignAboutRect(Rectangle rect, float offset_x) {
     rect.x += offset_x;
+    rect.y = UiCentredY(rect.y);
     return rect;
 }
 

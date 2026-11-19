@@ -7,7 +7,7 @@
 #define ROSTER_PREFAB_HEIGHT 938.0f
 #define ROSTER_PREFAB_TOP 72.0f
 #define ROSTER_PANEL_DESIGN_WIDTH 278.0f
-#define ROSTER_PANEL_WIDTH (ROSTER_PANEL_DESIGN_WIDTH * UiWidth() / UI_DESIGN_W)
+#define ROSTER_PANEL_WIDTH (ROSTER_PANEL_DESIGN_WIDTH * UiFullScaleWidth() / UI_DESIGN_W)
 #define ROSTER_GRID_COLS 2
 #define ROSTER_FILTER_ROW 65.0f
 #define ROSTER_SCROLL_STEP 50.0f
@@ -230,14 +230,41 @@ static void HeroCardBuild(HeroCard *card, const Character *ch) {
     card->desc_fs = 0.0f;
 }
 
+typedef struct {
+    float x;
+    float y;
+    bool fill_height;
+} RosterAnchor;
+
+static const RosterAnchor ROSTER_TOP_LEFT = {0.0f, 0.0f, false};
+static const RosterAnchor ROSTER_FILL_LEFT = {0.0f, 0.0f, true};
+static const RosterAnchor ROSTER_BOTTOM_LEFT = {0.0f, 1.0f, false};
+static const RosterAnchor ROSTER_TOP_CENTRE = {0.5f, 0.0f, false};
+static const RosterAnchor ROSTER_MIDDLE_CENTRE = {0.5f, 0.5f, false};
+static const RosterAnchor ROSTER_BOTTOM_CENTRE = {0.5f, 1.0f, false};
+static const RosterAnchor ROSTER_MIDDLE_RIGHT = {1.0f, 0.5f, false};
+static const RosterAnchor ROSTER_BOTTOM_RIGHT = {1.0f, 1.0f, false};
+
+static float RosterPrefabScale(void) {
+    return (UI_DESIGN_H - ROSTER_PREFAB_TOP) / ROSTER_PREFAB_HEIGHT;
+}
+
+static Rectangle RosterPxAt(RosterAnchor anchor, float x, float y, float w, float h) {
+    float sx = UiFullScaleWidth() / ROSTER_PREFAB_WIDTH, sy = RosterPrefabScale();
+    Rectangle r = {x * sx + UiSpareWidth() * anchor.x, ROSTER_PREFAB_TOP + y * sy, w * sx, h * sy};
+    if (anchor.fill_height)
+        r.height += UiSpareHeight();
+    else
+        r.y += UiSpareHeight() * anchor.y;
+    return r;
+}
+
 static Rectangle RosterPx(float x, float y, float w, float h) {
-    float sx = UiWidth() / ROSTER_PREFAB_WIDTH;
-    float sy = (UiHeight() - ROSTER_PREFAB_TOP) / ROSTER_PREFAB_HEIGHT;
-    return (Rectangle){x * sx, ROSTER_PREFAB_TOP + y * sy, w * sx, h * sy};
+    return RosterPxAt(ROSTER_TOP_LEFT, x, y, w, h);
 }
 
 static Rectangle RosterGridView(void) {
-    return RosterPx(8.0f, 120.0f, 375.0f, 704.0f);
+    return RosterPxAt(ROSTER_FILL_LEFT, 8.0f, 120.0f, 375.0f, 704.0f);
 }
 
 static Rectangle RosterTileRect(const Roster *r, int index) {
@@ -347,7 +374,7 @@ static void RosterDrawFilterList(Roster *r, const Player *p, bool input) {
 
 static int
 RosterDraw(Roster *r, const HeroCard *cards, const Player *p, bool input, RosterCardDrawFn draw, const void *context) {
-    UiDrawTexture(GuiTex(GUI_CONSUME_TRAY), RosterPx(-7.0f, 0.0f, 455.0f, 938.0f), WHITE);
+    UiDrawTexture(GuiTex(GUI_CONSUME_TRAY), RosterPxAt(ROSTER_FILL_LEFT, -7.0f, 0.0f, 455.0f, 938.0f), WHITE);
 
     r->category.label = LocGet(ROSTER_FILTER_KEYS[r->filter]);
     if (ButtonDrawEx(&r->category, RosterPx(16.0f, 56.0f, 276.0f, 68.0f), input)) {
@@ -1067,7 +1094,7 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
 
     {
         float gap = 8.0f;
-        float x = UiWidth() / 4.0f + 96.0f;
+        float x = UiFullScaleWidth() / 4.0f + 96.0f;
         float y = UiHeight() - h->gray.idle.height - 12.0f;
 
         Rectangle inventory = {HEROES_GEAR_BUTTON_X, y, x - HEROES_GEAR_BUTTON_X - gap, (float)h->gray.idle.height};

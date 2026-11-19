@@ -655,7 +655,7 @@ static void GearViewDrawMiddleText(const char *text, Rectangle area, float size,
 }
 
 static Rectangle GearViewDetailsPanel(void) {
-    return RosterPx(8.0f, 461.0f, 378.0f, 359.0f);
+    return RosterPxAt(ROSTER_BOTTOM_LEFT, 8.0f, 461.0f, 378.0f, 359.0f);
 }
 
 static void GearViewDrawDetails(Player *p, bool input) {
@@ -704,7 +704,7 @@ static void GearViewDrawDetails(Player *p, bool input) {
 }
 
 static void GearViewDrawFooter(bool input) {
-    Rectangle footer = RosterPx(16.0f, 764.0f, 372.0f, 56.0f);
+    Rectangle footer = RosterPxAt(ROSTER_BOTTOM_LEFT, 16.0f, 764.0f, 372.0f, 56.0f);
     Rectangle hint = UiRect(footer, 0.0f, 0.0f, 1.0f - GEAR_VIEW_FOOTER_STORE_WIDTH - 0.04f, 1.0f);
     GearViewDrawMiddleText(LocGet("HODA_GEAR_INVENTORY_FOOTER_TEXT"), hint, GEAR_VIEW_FOOTER_HINT_TEXT, LIGHTGRAY);
     if (ButtonDrawEx(&gear_view.store, UiRect(footer, 1.0f, 0.0f, GEAR_VIEW_FOOTER_STORE_WIDTH, 1.0f), input))
@@ -722,7 +722,7 @@ static void GearViewDrawPageButton(Button *button, char *label, const char *key,
 void GearViewDrawPanel(Player *p) {
     GearViewLoadButtons();
     bool input = GearViewAcceptsInput();
-    UiDrawTexture(GuiTex(GUI_CONSUME_TRAY), RosterPx(-7.0f, 0.0f, 455.0f, 938.0f), WHITE);
+    UiDrawTexture(GuiTex(GUI_CONSUME_TRAY), RosterPxAt(ROSTER_FILL_LEFT, -7.0f, 0.0f, 455.0f, 938.0f), WHITE);
 
     int items[GEAR_CATALOG_CAPACITY];
     int count = GearViewFilteredItems(p, gear_view.filter, gear_view.reversed, items);
@@ -769,12 +769,13 @@ void GearViewDrawPanel(Player *p) {
             &gear_view.next,
             gear_view.next_label,
             "HODA_GEAR_SHOW_NEXT",
-            RosterPx(16.0f, bottom + 2.0f, 372.0f, 60.0f),
+            RosterPxAt(ROSTER_BOTTOM_LEFT, 16.0f, bottom + 2.0f, 372.0f, 60.0f),
             input,
             1
         );
     }
-    bool tile_tapped = GearViewDrawGrid(p, items, count, RosterPx(8.0f, top, 378.0f, bottom - top), input);
+    bool tile_tapped =
+        GearViewDrawGrid(p, items, count, RosterPxAt(ROSTER_FILL_LEFT, 8.0f, top, 378.0f, bottom - top), input);
     bool tapped_away = input && !tile_tapped && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) &&
                        !CheckCollisionPointRec(UiMouse(), GearViewDetailsPanel());
     if (details && tapped_away) gear_view.selected = -1;

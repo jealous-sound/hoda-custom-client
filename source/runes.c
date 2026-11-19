@@ -777,7 +777,7 @@ static void RunesDrawConfirm(RunesScreen *r, Player *p) {
 
 static void RunesDrawPrestigeUnlock(RunesScreen *r, Player *p) {
     MessagePopupDrawScrim();
-    Rectangle popup = UiRect(UiRoot(), 0.5f, 0.5f, 0.75f, 0.75f);
+    Rectangle popup = UiRect(UiFullScaleRoot(), 0.5f, 0.5f, 0.75f, 0.75f);
     UiDrawTexture(GuiTex(GUI_STORE_OVERLAY), popup, WHITE);
     Rectangle content = UiRect(popup, 0.5f, 0.15f, 0.86f, 0.5f);
     MessagePopupDrawText(
