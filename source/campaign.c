@@ -751,6 +751,7 @@ static void CampaignOpenAbout(Campaign *c) {
 }
 
 bool CampaignHandleBack(Campaign *c) {
+    if (c->progression_active && !c->progression_camera_finished) return true;
     if (!c->about_open) return false;
     c->about_open = false;
     GuiSoundPlay(SND_UI_POPUP_CLOSE);
