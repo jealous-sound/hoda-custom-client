@@ -33,6 +33,7 @@ typedef enum {
     GOALS_FIGHT_BOT,
     GOALS_FIGHT_RIVAL,
     GOALS_REVENGE,
+    GOALS_REVENGE_PLAYER,
     GOALS_CLAIM_EVENT,
     GOALS_CLAIM_GUILD_EVENT
 } GoalsAction;
@@ -52,6 +53,7 @@ static const Color GOALS_PLAYER_TEXT = {36, 22, 8, 255};
 static const Color GOALS_ROW_TINT = {0, 0, 0, 120};
 static const Color GOALS_GAIN = {132, 214, 112, 255};
 static const Color GOALS_LOSS = {226, 104, 92, 255};
+static const Color GOALS_COOLDOWN_TINT = {128, 128, 128, 255};
 
 typedef struct {
     float offset;
@@ -100,6 +102,10 @@ void GoalsRefreshLeaderboard(GoalsTabs *t, const Player *p, long long now) {
     t->rank_count = PvpLadderBuild(&pvp_ladder, t->ranks, p->pvp.trophies, PvpDay(now));
     t->player_rank = PvpLeaderboardRank(t->ranks, t->rank_count);
     t->ladder_revision = pvp_ladder.revision;
+}
+
+Color GoalsCooldownTint(const PlayerPvp *pvp, const char *id) {
+    return PvpAttackCooldownLeft(pvp, id, ServerNow()) > 0 ? GOALS_COOLDOWN_TINT : WHITE;
 }
 
 void GoalsScrollReset(GoalsScroll *scroll) {
@@ -261,14 +267,40 @@ GoalsAction GoalsDrawTrophies(GoalsTabs *t, GoalsScroll *scroll, const Player *p
             GOALS_BUTTON_WIDTH,
             GOALS_BUTTON_HEIGHT,
         };
-        if (ButtonDrawEx(&t->fight, button, interactive && visible && !scroll->drag_scrolled)) {
-            bool rival = entry->bot == PVP_RANK_RIVAL;
+        bool rival = entry->bot == PVP_RANK_RIVAL;
+        const PvpLadderPlayer *listed = rival ? PvpLadderPlayerAt(&pvp_ladder, entry->rival) : NULL;
+        Color tint = listed ? GoalsCooldownTint(&p->pvp, listed->id) : WHITE;
+        if (ButtonDrawTinted(&t->fight, button, interactive && visible && !scroll->drag_scrolled, tint)) {
             t->selected = rival ? entry->rival : entry->bot;
             action = rival ? GOALS_FIGHT_RIVAL : GOALS_FIGHT_BOT;
         }
     }
     EndScissorMode();
     return action;
+}
+
+void GoalsTimeSpanText(char *out, size_t size, long long seconds) {
+    const char *unit = "SECOND";
+    long long number = seconds > 0 ? seconds : 0;
+    if (seconds >= NEXUS_SECONDS_PER_DAY) {
+        unit = "DAY";
+        number = seconds / NEXUS_SECONDS_PER_DAY;
+    } else if (seconds >= GOALS_HOUR) {
+        unit = "HOUR";
+        number = seconds / GOALS_HOUR;
+    } else if (seconds >= GOALS_MINUTE) {
+        unit = "MINUTE";
+        number = seconds / GOALS_MINUTE;
+    }
+    StrReplaceToken(
+        out, size, LocGet(TextFormat("%s%s", unit, number == 1 ? "" : "S")), "[number]", TextFormat("%lld", number)
+    );
+}
+
+void GoalsCooldownMessage(char *out, size_t size, const char *key, long long seconds) {
+    char span[GOALS_TEXT_SIZE];
+    GoalsTimeSpanText(span, sizeof(span), seconds);
+    LocFormat1(out, size, key, span);
 }
 
 static void GoalsAgoText(char *out, size_t size, long long seconds) {
@@ -310,7 +342,8 @@ static void GoalsDrawBattleRow(Font font, Font body, const PlayerPvpBattle *batt
     Rectangle delta = {
         row.x + row.width - reserved + 12.0f, row.y, GOALS_TROPHY_COLUMN_WIDTH - GOALS_TROPHY_ICON_SIZE, row.height
     };
-    bool event = battle->banners > 0;
+    bool event = PvpBattleInEvent(battle);
+    if (event && battle->defense) return;
     int amount = event ? battle->banners : battle->trophy_delta;
     UiDrawTextRight(font, TextFormat("%+d", amount), delta, 26.0f, amount >= 0 ? GOALS_GAIN : GOALS_LOSS);
     UiDrawTexture(
@@ -342,17 +375,20 @@ GoalsAction GoalsDrawBattles(
         float y = content.y + i * stride - scroll->offset;
         if (y + GOALS_BATTLE_ROW_HEIGHT < content.y || y > content.y + content.height) continue;
         Rectangle row = {content.x, y, content.width, GOALS_BATTLE_ROW_HEIGHT};
-        GoalsDrawBattleRow(t->font, t->body, &pvp->history[i], row, now);
-        if (!PvpCanRevenge(&pvp->history[i])) continue;
+        const PlayerPvpBattle *battle = &pvp->history[i];
+        GoalsDrawBattleRow(t->font, t->body, battle, row, now);
+        bool player = PvpRevengesAPlayer(battle);
+        if (!player && !PvpCanRevenge(battle)) continue;
         Rectangle button = {
             row.x + row.width - GOALS_BUTTON_WIDTH - 6.0f,
             row.y + (row.height - GOALS_BUTTON_HEIGHT) * 0.5f,
             GOALS_BUTTON_WIDTH,
             GOALS_BUTTON_HEIGHT,
         };
-        if (ButtonDrawEx(&t->fight, button, interactive && visible && !scroll->drag_scrolled)) {
+        Color tint = player ? GoalsCooldownTint(pvp, battle->opponent_id) : WHITE;
+        if (ButtonDrawTinted(&t->fight, button, interactive && visible && !scroll->drag_scrolled, tint)) {
             t->selected = i;
-            action = GOALS_REVENGE;
+            action = player ? GOALS_REVENGE_PLAYER : GOALS_REVENGE;
         }
     }
     EndScissorMode();

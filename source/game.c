@@ -99,6 +99,7 @@ typedef struct {
     Guild guild;
     GuildView guild_view;
     GuildNoticePopup guild_notice;
+    GuildNoticePopup pvp_notice;
     MaintenanceNotice maintenance;
     bool battle_is_pvp;
     bool pvp_event;
@@ -109,6 +110,8 @@ typedef struct {
     GamePvpMatch pvp_match;
     bool pvp_match_waiting;
     bool pvp_rival_waiting;
+    bool pvp_rival_event;
+    Screen pvp_rival_screen;
     GamePvpMatchRequest pvp_match_request;
     Screen pvp_return_screen;
 
@@ -295,8 +298,9 @@ static void GamePollPvpMatch(Game *g) {
     cJSON_Delete(reply);
 }
 
-static void GameEnterFixedPvpBattle(Game *g, PvpOpponent opponent, int revenge_index, Screen return_screen) {
-    g->pvp_event = false;
+static void
+GameEnterFixedPvpBattle(Game *g, PvpOpponent opponent, int revenge_index, bool event, Screen return_screen) {
+    g->pvp_event = event;
     g->pvp_match = (GamePvpMatch){.at = ServerNow()};
     g->pvp_opponent = opponent;
     g->pvp_can_next = false;
@@ -342,11 +346,38 @@ static PvpOpponent GameDuelOpponent(const Game *g) {
     return opponent;
 }
 
+static void GameDrawPvpNotice(Game *g, bool resource_modal) {
+    UiSetInputBlocked(resource_modal);
+    if (!resource_modal) GuildNoticePopupDrawIfOpen(&g->pvp_notice);
+}
+
+static bool GameExplainAttackCooldown(Game *g, const char *id, bool event) {
+    long long left = PvpAttackCooldownLeft(&g->player.pvp, id, ServerNow());
+    if (left <= 0) return false;
+    char message[GUILD_MESSAGE_CAP];
+    const char *key = event ? "PVPEVENTINFO_DOUBLE_TAP_MESSAGE" : "LEADERBOARD_DOUBLE_TAP_MESSAGE";
+    GoalsCooldownMessage(message, sizeof(message), key, left);
+    GuildNoticePopupShow(&g->pvp_notice, "", message);
+    return true;
+}
+
+static void GameEnterDuel(Game *g, bool event, Screen return_screen) {
+    PvpOpponent opponent = GameDuelOpponent(g);
+    if (GameExplainAttackCooldown(g, opponent.duel_id, event)) return;
+    GameEnterFixedPvpBattle(g, opponent, -1, event, return_screen);
+}
+
+static void GameChallengePlayer(Game *g, const char *id, bool event) {
+    if (!id[0] || g->pvp_rival_waiting || GameExplainAttackCooldown(g, id, event)) return;
+    GuildRequestRival(&g->guild, id);
+    g->pvp_rival_waiting = true;
+    g->pvp_rival_event = event;
+    g->pvp_rival_screen = g->screen;
+}
+
 static void GameChallengeRival(Game *g, int rival) {
     const PvpLadderPlayer *player = PvpLadderPlayerAt(&pvp_ladder, rival);
-    if (!player || g->pvp_rival_waiting) return;
-    GuildRequestRival(&g->guild, player->id);
-    g->pvp_rival_waiting = true;
+    if (player) GameChallengePlayer(g, player->id, false);
 }
 
 static void GamePollRival(Game *g) {
@@ -356,8 +387,8 @@ static void GamePollRival(Game *g) {
     g->pvp_rival_waiting = false;
     if (rival != GUILD_RIVAL_READY) {
         TraceLog(LOG_WARNING, "Server: the ladder rival has no squad to fight");
-    } else if (g->screen == SCREEN_MISSIONS) {
-        GameEnterFixedPvpBattle(g, GameDuelOpponent(g), -1, SCREEN_MISSIONS);
+    } else if (g->screen == g->pvp_rival_screen) {
+        GameEnterDuel(g, g->pvp_rival_event, g->pvp_rival_screen);
     }
 }
 
@@ -1247,7 +1278,7 @@ bool GameInitialize(Game *g) {
     PvpEventSync(&g->player.pvp, ServerNow());
     if (ServerActionsActive()) {
         if (g->player.pvp.wins + g->player.pvp.losses > 0) GameSubmitSimpleAction("pvp_defend");
-    } else if (PvpSimulateDefense(&g->player.pvp, g->player.level, ServerNow()) > 0) {
+    } else if (PvpSimulateDefense(&g->player, ServerNow()) > 0) {
         ProgressionSave(&g->player);
     }
     PlayerGallerySync(&g->player);
@@ -1280,6 +1311,7 @@ bool GameInitialize(Game *g) {
     GuildInitialize(&g->guild);
     GuildViewInitialize(&g->guild_view);
     GuildNoticePopupInitialize(&g->guild_notice);
+    GuildNoticePopupInitialize(&g->pvp_notice);
     MaintenanceNoticeInitialize(&g->maintenance);
     MissionsSync(&g->player, &g->map);
     CampaignProgressSync(&g->map, &g->player.campaign_progress);
@@ -1355,6 +1387,10 @@ bool GameHandlePopupBack(Game *g) {
     if (g->screen == SCREEN_FORTIFY) return FortifyHandleBack(&g->fortify);
     if (g->screen == SCREEN_HOME && NewsHandleBack(&g->news)) return true;
     if (g->screen == SCREEN_HOME && GuildNoticePopupClose(&g->guild_notice)) return true;
+    if (GuildNoticePopupClose(&g->pvp_notice)) {
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+        return true;
+    }
     if (g->screen == SCREEN_GUILD) {
         if (!GuildViewHandleBack(&g->guild_view, &g->guild)) {
             GuildViewLeave(&g->guild_view, &g->guild);
@@ -2121,10 +2157,12 @@ void GameDraw(Game *g) {
             GameDrawSceneFx(g, g->scene.cam, dt);
 
             UiFrameBegin();
+            UiSetInputBlocked(resource_modal || GuildNoticePopupIsOpen(&g->pvp_notice));
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
             HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
             GoalsGuildAward award = GameGuildAward(g);
             MissionsAction pressed = MissionsDraw(&g->missions, &g->hud, &g->heroes, &g->player, &award, dt);
+            GameDrawPvpNotice(g, resource_modal);
             UiFrameEnd();
             if (TimedQuestViewRevealRewards(&g->missions.quests, &g->store)) {
                 g->store_return_screen = SCREEN_MISSIONS;
@@ -2140,7 +2178,9 @@ void GameDraw(Game *g) {
             } else if (pressed == MISSIONS_REVENGE) {
                 int index = g->missions.tabs.selected;
                 PvpOpponent opponent = PvpOpponentFromBattle(&g->player.pvp.history[index], g->player.pvp.trophies);
-                GameEnterFixedPvpBattle(g, opponent, index, SCREEN_MISSIONS);
+                GameEnterFixedPvpBattle(g, opponent, index, false, SCREEN_MISSIONS);
+            } else if (pressed == MISSIONS_REVENGE_PLAYER) {
+                GameChallengePlayer(g, g->player.pvp.history[g->missions.tabs.selected].opponent_id, false);
             }
             break;
         }
@@ -2182,13 +2222,15 @@ void GameDraw(Game *g) {
             GameDrawSceneFx(g, g->scene.cam, dt);
 
             UiFrameBegin();
+            UiSetInputBlocked(resource_modal || GuildNoticePopupIsOpen(&g->pvp_notice));
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
             HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
             GuildViewAction pressed = GuildViewDraw(&g->guild_view, &g->guild, &g->player);
+            GameDrawPvpNotice(g, resource_modal);
             UiFrameEnd();
             if (pressed == GUILD_VIEW_CLOSE) g->screen = SCREEN_HOME;
             if (pressed == GUILD_VIEW_ENTER_ONSLAUGHT) GameOpenPvpEvent(g);
-            if (pressed == GUILD_VIEW_DUEL) GameEnterFixedPvpBattle(g, GameDuelOpponent(g), -1, SCREEN_GUILD);
+            if (pressed == GUILD_VIEW_DUEL) GameEnterDuel(g, false, SCREEN_GUILD);
             if (pressed == GUILD_VIEW_CLAIM_ONSLAUGHT) {
                 MissionsOpen(&g->missions, &g->player, GOALS_TAB_EVENTS);
                 g->screen = SCREEN_MISSIONS;
@@ -2201,14 +2243,17 @@ void GameDraw(Game *g) {
             GameDrawSceneFx(g, g->scene.cam, dt);
 
             UiFrameBegin();
+            UiSetInputBlocked(resource_modal || GuildNoticePopupIsOpen(&g->pvp_notice));
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));
             HomeUIDraw(&g->home_ui, false, g->player.gallery.badge, 0);
             PvpEventViewAction pressed = PvpEventViewDraw(&g->pvp_event_view, &g->player);
+            GameDrawPvpNotice(g, resource_modal);
             UiFrameEnd();
             if (pressed == PVP_EVENT_VIEW_CLOSE) g->screen = SCREEN_HOME;
             if (pressed == PVP_EVENT_VIEW_ENTER) GameMatchPvp(g, true, GAME_PVP_MATCHMAKING, false, SCREEN_PVP_EVENT);
             if (pressed == PVP_EVENT_VIEW_FIGHT)
                 GameMatchPvp(g, true, g->pvp_event_view.selected_bot, false, SCREEN_PVP_EVENT);
+            if (pressed == PVP_EVENT_VIEW_FIGHT_PLAYER) GameChallengePlayer(g, g->pvp_event_view.selected_player, true);
             if (pressed == PVP_EVENT_VIEW_GALLERY) {
                 g->screen = SCREEN_HOME;
                 GalleryOpenPopup(&g->gallery, &g->player);

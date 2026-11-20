@@ -897,7 +897,9 @@ static bool ProgressionPvpAddBattle(cJSON *history, const PlayerPvpBattle *battl
         !cJSON_AddBoolToObject(entry, "defense", battle->defense) ||
         !cJSON_AddBoolToObject(entry, "won", battle->won) ||
         !cJSON_AddBoolToObject(entry, "revenged", battle->revenged) ||
-        (battle->opponent[0] && !cJSON_AddStringToObject(entry, "opponent", battle->opponent))) {
+        (battle->event && !cJSON_AddBoolToObject(entry, "event", true)) ||
+        (battle->opponent[0] && !cJSON_AddStringToObject(entry, "opponent", battle->opponent)) ||
+        (battle->opponent_id[0] && !cJSON_AddStringToObject(entry, "opponent_id", battle->opponent_id))) {
         cJSON_Delete(entry);
         return false;
     }
@@ -950,6 +952,10 @@ static cJSON *ProgressionSavePvp(const PlayerPvp *pvp) {
     for (int i = 0; ok && i < PVP_HOLD_THRESHOLD_COUNT; i++)
         ok = ProgressionJsonAddArrayNumber(held_since, (double)pvp->held_since[i]);
     for (int i = 0; ok && i < pvp->history_count; i++) ok = ProgressionPvpAddBattle(history, &pvp->history[i]);
+    cJSON *attacked = ok ? cJSON_AddObjectToObject(json, "attacked") : NULL;
+    ok = ok && attacked;
+    for (int i = 0; ok && i < pvp->attacked_count; i++)
+        ok = cJSON_AddNumberToObject(attacked, pvp->attacked[i].id, (double)pvp->attacked[i].at) != NULL;
     ok = ok && ProgressionPvpAddEvents(json, pvp);
     if (!ok) {
         cJSON_Delete(json);
@@ -1476,8 +1482,24 @@ static bool ProgressionLoadPvpBattle(const cJSON *entry, PlayerPvpBattle *battle
     battle->defense = JsonBool(entry, "defense");
     battle->won = JsonBool(entry, "won");
     battle->revenged = JsonBool(entry, "revenged");
+    battle->event = JsonBool(entry, "event");
     StrCopy(battle->opponent, sizeof(battle->opponent), JsonStr(entry, "opponent"));
+    StrCopy(battle->opponent_id, sizeof(battle->opponent_id), JsonStr(entry, "opponent_id"));
     return ok;
+}
+
+static bool ProgressionLoadPvpAttacked(const cJSON *json, PlayerPvp *pvp) {
+    const cJSON *attacked = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "attacked");
+    if (!attacked) return true;
+    if (!cJSON_IsObject(attacked)) return false;
+    const cJSON *entry = NULL;
+    cJSON_ArrayForEach(entry, (cJSON *)attacked) {
+        uint64_t at = 0;
+        if (!ProgressionJsonItemU64(entry, 0, PROGRESSION_JSON_MAX_SAFE_INTEGER, &at)) return false;
+        if (!entry->string || strlen(entry->string) >= PVP_OPPONENT_ID_CAP) continue;
+        PvpNoteAttack(pvp, entry->string, (long long)at);
+    }
+    return true;
 }
 
 static bool ProgressionLoadPvpEvents(const cJSON *json, PlayerPvp *pvp) {
@@ -1536,7 +1558,7 @@ static bool ProgressionLoadPvp(const cJSON *json, PlayerPvp *pvp) {
         if (!ok || pvp->history_count == PVP_HISTORY_CAPACITY) break;
         ok = ProgressionLoadPvpBattle(entry, &pvp->history[pvp->history_count++]);
     }
-    return ok && ProgressionLoadPvpEvents(json, pvp);
+    return ok && ProgressionLoadPvpAttacked(json, pvp) && ProgressionLoadPvpEvents(json, pvp);
 }
 
 static bool ProgressionLoadGallery(const cJSON *json, PlayerGallery *gallery) {

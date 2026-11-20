@@ -72,12 +72,12 @@ void ButtonSetLabelColor(Button *button, Color color) {
     button->label_color = color;
 }
 
-static void ButtonDrawVisual(const Button *button, Rectangle dst, bool selected) {
+static void ButtonDrawVisual(const Button *button, Rectangle dst, bool selected, Color tint) {
     if (dst.width == -1) dst.width = button->idle.width;
     if (dst.height == -1) dst.height = button->idle.height;
 
     Texture2D texture = selected ? button->active : button->idle;
-    UiDrawTexture(texture, dst, WHITE);
+    UiDrawTexture(texture, dst, tint);
 
     if (button->label) {
         float size = dst.height * button->label_scale;
@@ -97,7 +97,7 @@ static void ButtonDrawVisual(const Button *button, Rectangle dst, bool selected)
 
 void ButtonDrawSelected(Button *button, Rectangle dst) {
     button->armed = false;
-    ButtonDrawVisual(button, dst, true);
+    ButtonDrawVisual(button, dst, true, WHITE);
 }
 
 static ButtonPointer ButtonPointerNow(void) {
@@ -124,7 +124,7 @@ ButtonTouch ButtonTouchAt(Button *b, Rectangle dst, bool interactive, ButtonPoin
     return touch;
 }
 
-bool ButtonDrawEx(Button *b, Rectangle dst, bool interactive) {
+bool ButtonDrawTinted(Button *b, Rectangle dst, bool interactive, Color tint) {
     if (dst.width == -1) {
         dst.width = b->idle.width;
     }
@@ -133,11 +133,15 @@ bool ButtonDrawEx(Button *b, Rectangle dst, bool interactive) {
     }
 
     ButtonTouch touch = ButtonTouchAt(b, dst, interactive, ButtonPointerNow());
-    ButtonDrawVisual(b, dst, touch.held);
+    ButtonDrawVisual(b, dst, touch.held, tint);
     if (touch.clicked && b->click.frameCount > 0) {
         GuiSoundPlayHandle(b->click, b->click_allow_duplicate);
     }
     return touch.clicked;
+}
+
+bool ButtonDrawEx(Button *b, Rectangle dst, bool interactive) {
+    return ButtonDrawTinted(b, dst, interactive, WHITE);
 }
 
 void ButtonDrawBadge(Rectangle button, int count) {

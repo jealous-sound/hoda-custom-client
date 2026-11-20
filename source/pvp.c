@@ -13,6 +13,7 @@
 #define PVP_RUNE_SALT 0x64B8E1u
 #define PVP_DRIFT_SALT 0x1C8A77u
 #define PVP_DEFENSE_SALT 0x3D6F02u
+#define PVP_DEFENSE_SQUAD 0
 
 #define PVP_EVENT_CAPACITY 16
 #define PVP_GUILD_EVENT_CAPACITY 8
@@ -100,7 +101,7 @@ typedef struct {
     int first_rune_level, levels_per_rune, levels_per_rarity, max_rune_rarity;
     int win_gold_base, win_gold_per_level, loss_gold_pct;
     int win_xp_base, win_xp_per_level, loss_xp_pct;
-    int attack_interval_seconds, max_attacks_per_login, defense_win_pct, defense_loss_share_pct;
+    int attack_interval_seconds, max_attacks_per_login, defense_loss_share_pct;
     bool stat_budget;
 } PvpRules;
 
@@ -198,7 +199,6 @@ static void PvpRulesParse(PvpRules *r, const cJSON *root) {
     r->loss_xp_pct = PvpSectionInt(root, "rewards", "loss_xp_pct");
     r->attack_interval_seconds = PvpSectionInt(root, "defense", "attack_interval_seconds");
     r->max_attacks_per_login = PvpSectionInt(root, "defense", "max_attacks_per_login");
-    r->defense_win_pct = PvpSectionInt(root, "defense", "win_pct");
     r->defense_loss_share_pct = PvpSectionInt(root, "defense", "loss_share_pct");
     r->stat_budget = JsonBool(cJSON_GetObjectItemCaseSensitive((cJSON *)root, "battle"), "stat_budget");
 }
@@ -638,6 +638,40 @@ int PvpXpReward(const PvpOpponent *o, bool won) {
     return won ? xp : xp * r->loss_xp_pct / 100;
 }
 
+void PvpNoteAttack(PlayerPvp *pvp, const char *id, long long at) {
+    PlayerPvpAttack kept[PVP_ATTACKED_CAPACITY] = {0};
+    int count = 0, oldest = 0;
+    for (int i = 0; i < pvp->attacked_count; i++) {
+        const PlayerPvpAttack *attack = &pvp->attacked[i];
+        if (!strcmp(attack->id, id) || attack->at + PVP_REPEAT_ATTACK_SECONDS <= at) continue;
+        if (count == 0 || attack->at < kept[oldest].at) oldest = count;
+        kept[count++] = *attack;
+    }
+    if (count == PVP_ATTACKED_CAPACITY) {
+        kept[oldest] = kept[--count];
+        kept[count] = (PlayerPvpAttack){0};
+    }
+    kept[count].at = at;
+    StrCopy(kept[count].id, sizeof(kept[count].id), id);
+    memcpy(pvp->attacked, kept, sizeof(kept));
+    pvp->attacked_count = count + 1;
+}
+
+long long PvpAttackCooldownLeft(const PlayerPvp *pvp, const char *id, long long now) {
+    for (int i = 0; i < pvp->attacked_count; i++) {
+        long long left = pvp->attacked[i].at + PVP_REPEAT_ATTACK_SECONDS - now;
+        if (!strcmp(pvp->attacked[i].id, id)) return left > 0 ? left : 0;
+    }
+    return 0;
+}
+
+static void PvpNameDuelOpponent(PlayerPvp *pvp, PlayerPvpBattle *battle, const PvpOpponent *o, long long now) {
+    if (!o->duel) return;
+    StrCopy(battle->opponent, sizeof(battle->opponent), o->duel_name);
+    StrCopy(battle->opponent_id, sizeof(battle->opponent_id), o->duel_id);
+    PvpNoteAttack(pvp, o->duel_id, now);
+}
+
 PlayerPvpBattle PvpRecordAttack(PlayerPvp *pvp, const PvpOpponent *o, bool won, long long now) {
     int delta = PvpApplyTrophies(pvp, won ? o->gain : -o->loss, now);
     if (pvp->wins + pvp->losses == 0) pvp->defense_checked_at = now;
@@ -658,15 +692,19 @@ PlayerPvpBattle PvpRecordAttack(PlayerPvp *pvp, const PvpOpponent *o, bool won, 
         .seed = o->seed,
         .won = won,
     };
-    if (o->duel) StrCopy(battle.opponent, sizeof(battle.opponent), o->duel_name);
+    PvpNameDuelOpponent(pvp, &battle, o, now);
     PvpHistoryPush(pvp, &battle);
     return battle;
 }
 
+int PvpBotDefenseTrophies(int bot_trophies, int defender_trophies, bool bot_won) {
+    int share = PvpTableEnsure()->rules.defense_loss_share_pct;
+    if (bot_won) return -PvpTrophyGain(bot_trophies, defender_trophies) * share / 100;
+    return PvpTrophyLoss(bot_trophies, defender_trophies) * share / 100;
+}
+
 static void PvpRecordDefense(PlayerPvp *pvp, const PvpOpponent *o, bool won, long long at) {
-    const PvpRules *r = &PvpTableEnsure()->rules;
-    int stake = o->loss * r->defense_loss_share_pct / 100;
-    int delta = PvpApplyTrophies(pvp, won ? stake : -stake, at);
+    int delta = PvpApplyTrophies(pvp, PvpBotDefenseTrophies(o->trophies, pvp->trophies, !won), at);
     pvp->defense_wins += won;
     pvp->defense_losses += !won;
     PlayerPvpBattle battle = {
@@ -683,7 +721,17 @@ static void PvpRecordDefense(PlayerPvp *pvp, const PvpOpponent *o, bool won, lon
     PvpHistoryPush(pvp, &battle);
 }
 
-int PvpSimulateDefense(PlayerPvp *pvp, int level, long long now) {
+static bool PvpFirstSquadHolds(const Player *player, const PvpOpponent *attacker) {
+    if (PlayerSquadCount(player, PVP_DEFENSE_SQUAD) == 0) return false;
+    static BattleRoster roster;
+    static BattleSim sim;
+    PvpOpponentRoster(&roster, attacker);
+    BattleSimRunSquad(&sim, player, PVP_DEFENSE_SQUAD, &roster, attacker->seed);
+    return sim.player_won;
+}
+
+int PvpSimulateDefense(Player *player, long long now) {
+    PlayerPvp *pvp = &player->pvp;
     if (pvp->wins + pvp->losses == 0) return 0;
     const PvpRules *r = &PvpTableEnsure()->rules;
     if (pvp->defense_checked_at <= 0 || pvp->defense_checked_at > now) {
@@ -696,15 +744,23 @@ int PvpSimulateDefense(PlayerPvp *pvp, int level, long long now) {
     for (int i = 0; i < attacks; i++) {
         long long at = now - (long long)(attacks - 1 - i) * r->attack_interval_seconds;
         unsigned seed = PvpMix((unsigned)at, PVP_DEFENSE_SALT + (unsigned)i);
-        PvpOpponent o = PvpOpponentGenerate(level, pvp->trophies, PvpDay(at), seed);
-        PvpRecordDefense(pvp, &o, PvpRoll(seed, PVP_DEFENSE_SALT, 100) < r->defense_win_pct, at);
+        PvpOpponent o = PvpOpponentGenerate(player->level, pvp->trophies, PvpDay(at), seed);
+        PvpRecordDefense(pvp, &o, PvpFirstSquadHolds(player, &o), at);
     }
     pvp->defense_checked_at += due * r->attack_interval_seconds;
     return attacks;
 }
 
 bool PvpCanRevenge(const PlayerPvpBattle *battle) {
-    return battle->defense && !battle->won && !battle->revenged;
+    return battle->defense && !battle->opponent_id[0] && !battle->revenged;
+}
+
+bool PvpRevengesAPlayer(const PlayerPvpBattle *battle) {
+    return battle->defense && battle->opponent_id[0];
+}
+
+bool PvpBattleInEvent(const PlayerPvpBattle *battle) {
+    return battle->event || battle->banners > 0;
 }
 
 long long PvpEventCycle(long long now) {
@@ -940,8 +996,8 @@ PlayerPvpBattle PvpRecordEventAttack(PlayerPvp *pvp, const PvpOpponent *o, bool 
     if (pvp->win_streak > pvp->best_win_streak) pvp->best_win_streak = pvp->win_streak;
     PlayerPvpBattle battle = {
         .at = now,
-        .bot = o->bot,
-        .squad = o->squad,
+        .bot = o->duel ? 0 : o->bot,
+        .squad = o->duel ? 0 : o->squad,
         .level = o->level,
         .opponent_trophies = o->trophies,
         .gold = PvpGoldReward(o, won),
@@ -949,7 +1005,9 @@ PlayerPvpBattle PvpRecordEventAttack(PlayerPvp *pvp, const PvpOpponent *o, bool 
         .banners = PvpEventBannerReward(o, pvp->event.banners, won),
         .seed = o->seed,
         .won = won,
+        .event = true,
     };
+    PvpNameDuelOpponent(pvp, &battle, o, now);
     pvp->event.banners += battle.banners;
     PvpHistoryPush(pvp, &battle);
     return battle;

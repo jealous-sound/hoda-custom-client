@@ -18,6 +18,7 @@ typedef enum {
     PVP_EVENT_VIEW_CLOSE,
     PVP_EVENT_VIEW_ENTER,
     PVP_EVENT_VIEW_FIGHT,
+    PVP_EVENT_VIEW_FIGHT_PLAYER,
     PVP_EVENT_VIEW_GALLERY
 } PvpEventViewAction;
 
@@ -62,6 +63,7 @@ typedef struct {
     bool meter_chosen;
     bool instructions;
     int selected_bot;
+    char selected_player[PVP_DUEL_ID_CAP];
     Vector2 press;
     bool scrim_armed;
 } PvpEventView;
@@ -501,6 +503,8 @@ static void PvpEventViewDrawLeaderboard(PvpEventView *v, const Player *p, Rectan
         Rectangle slot = {list.x, y, list.width, row_height};
         const PvpRankEntry *entry = &v->ranks[i];
         bool a_bot_to_fight = entry->bot >= 0;
+        const PvpLadderPlayer *rival =
+            entry->bot == PVP_RANK_RIVAL ? PvpLadderPlayerAt(&pvp_event_ladder.rivals, entry->rival) : NULL;
         DrawRectangleRec(PvpEventFit(slot, 0.0f, 0.5f, 1.0f, 0.85f, 0.0f), PVP_EVENT_VIEW_ROW_TINT);
         Rectangle row = PvpEventFit(slot, 0.5f, 0.5f, 1.0f, 0.8f, 0.0f);
         UiDrawTextCentered(
@@ -520,9 +524,14 @@ static void PvpEventViewDrawLeaderboard(PvpEventView *v, const Player *p, Rectan
             PVP_EVENT_VIEW_TEXT
         );
         PvpEventViewDrawBannerCell(v, row, 0.725f, 0.2f, entry->trophies, PVP_EVENT_VIEW_TEXT);
-        if (!a_bot_to_fight) continue;
+        if (!a_bot_to_fight && !rival) continue;
         Rectangle button = PvpEventFit(row, 1.0f, 0.5f, 1.0f, 1.0f, 2.08f);
-        if (ButtonDrawEx(&v->fight, button, interactive && visible && !v->rank_scroll.drag_scrolled))
+        Color tint = rival ? GoalsCooldownTint(&p->pvp, rival->id) : WHITE;
+        if (!ButtonDrawTinted(&v->fight, button, interactive && visible && !v->rank_scroll.drag_scrolled, tint))
+            continue;
+        if (rival)
+            StrCopy(v->selected_player, sizeof(v->selected_player), rival->id);
+        else
             v->selected_bot = entry->bot;
     }
     EndScissorMode();
@@ -593,6 +602,7 @@ PvpEventViewDrawBannersTab(PvpEventView *v, const Player *p, Rectangle content, 
     long long elapsed = now % PvpTableEnsure()->events.duration_seconds;
     v->rank_count = PvpEventLadderBuild(&pvp_event_ladder, v->ranks, p->pvp.event.banners, p->pvp.event.cycle, elapsed);
     v->selected_bot = PVP_RANK_PLAYER;
+    v->selected_player[0] = '\0';
     PvpEventViewDrawLeaderboard(v, p, PvpEventFit(content, 0.03f, 0.0f, 0.7f, 0.98f, 0.0f), interactive);
 
     Rectangle panel = PvpEventFit(content, 1.0f, 0.0f, 0.28f, 0.98f, 0.0f);
@@ -607,6 +617,7 @@ PvpEventViewDrawBannersTab(PvpEventView *v, const Player *p, Rectangle content, 
     PvpEventViewDrawBracketList(v, PvpEventCurrentRank(&p->pvp, now), panel, interactive);
     Rectangle note = PvpEventFit(panel, 0.5f, 1.0f, 0.95f, 0.1f, 0.0f);
     HeroesDrawRich(v->body, LocGet("PVP_EVENT_TIER_REWARDS_EVENT_END"), note, 14.0f, PVP_EVENT_VIEW_DIM);
+    if (v->selected_player[0]) return PVP_EVENT_VIEW_FIGHT_PLAYER;
     return v->selected_bot == PVP_RANK_PLAYER ? PVP_EVENT_VIEW_NONE : PVP_EVENT_VIEW_FIGHT;
 }
 
@@ -659,26 +670,43 @@ static void PvpEventViewDrawRewardsTab(PvpEventView *v, Rectangle content, int r
     EndScissorMode();
 }
 
-static void PvpEventViewDrawBattlesTab(PvpEventView *v, const PlayerPvp *pvp, Rectangle content, long long now) {
+static PvpEventViewAction
+PvpEventViewDrawBattlesTab(PvpEventView *v, const PlayerPvp *pvp, Rectangle content, long long now, bool interactive) {
     Rectangle list = PvpEventFit(content, 0.5f, 0.0f, 0.98f, 0.98f, 0.0f);
     int count = 0;
-    for (int i = 0; i < pvp->history_count; i++) count += pvp->history[i].banners > 0;
+    for (int i = 0; i < pvp->history_count; i++) count += PvpBattleInEvent(&pvp->history[i]);
     if (count == 0) {
         UiDrawTextCentered(v->body, LocGet("HODA_PVP_NO_BATTLES"), list, 24.0f, PVP_EVENT_VIEW_SOFT);
-        return;
+        return PVP_EVENT_VIEW_NONE;
     }
     float stride = PVP_EVENT_VIEW_BATTLE_ROW_HEIGHT + PVP_EVENT_VIEW_ROW_GAP;
     GoalsScrollUpdate(&v->battle_scroll, list, count * stride - PVP_EVENT_VIEW_ROW_GAP);
+    bool visible = CheckCollisionPointRec(UiMouse(), list);
+    PvpEventViewAction action = PVP_EVENT_VIEW_NONE;
     GoalsBeginClip(list);
     int shown = 0;
     for (int i = 0; i < pvp->history_count; i++) {
-        if (pvp->history[i].banners <= 0) continue;
+        const PlayerPvpBattle *battle = &pvp->history[i];
+        if (!PvpBattleInEvent(battle)) continue;
         float y = list.y + shown++ * stride - v->battle_scroll.offset;
         if (y + PVP_EVENT_VIEW_BATTLE_ROW_HEIGHT < list.y || y > list.y + list.height) continue;
         Rectangle row = {list.x, y, list.width, PVP_EVENT_VIEW_BATTLE_ROW_HEIGHT};
-        GoalsDrawBattleRow(v->font, v->body, &pvp->history[i], row, now);
+        GoalsDrawBattleRow(v->font, v->body, battle, row, now);
+        if (!PvpRevengesAPlayer(battle)) continue;
+        Rectangle button = {
+            row.x + row.width - GOALS_BUTTON_WIDTH - 6.0f,
+            row.y + (row.height - GOALS_BUTTON_HEIGHT) * 0.5f,
+            GOALS_BUTTON_WIDTH,
+            GOALS_BUTTON_HEIGHT,
+        };
+        bool armed = interactive && visible && !v->battle_scroll.drag_scrolled;
+        if (ButtonDrawTinted(&v->fight, button, armed, GoalsCooldownTint(pvp, battle->opponent_id))) {
+            StrCopy(v->selected_player, sizeof(v->selected_player), battle->opponent_id);
+            action = PVP_EVENT_VIEW_FIGHT_PLAYER;
+        }
     }
     EndScissorMode();
+    return action;
 }
 
 PvpEventViewAction PvpEventViewDraw(PvpEventView *v, const Player *p) {
@@ -710,7 +738,7 @@ PvpEventViewAction PvpEventViewDraw(PvpEventView *v, const Player *p) {
     } else if (v->tab == PVP_EVENT_TAB_REWARDS) {
         PvpEventViewDrawRewardsTab(v, content, PvpEventCurrentRank(&p->pvp, now));
     } else {
-        PvpEventViewDrawBattlesTab(v, &p->pvp, content, now);
+        action = PvpEventViewDrawBattlesTab(v, &p->pvp, content, now, interactive);
     }
 
     Rectangle close = PvpEventFit(panel, 0.985f, 0.065f, 1.0f, 0.113f, 1.0f);

@@ -2328,12 +2328,19 @@ typedef struct {
     RenownBattleBonus renown;
 } BattleSimSide;
 
-static BattleSimSide SimPlayerSide(const Player *player) {
+static BattleSimSide SimPlayerSquadSide(const Player *player, int squad) {
     BattleSimSide side = {0};
-    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) side.chars[slot] = PlayerSquadCharacter(player, slot);
-    side.rune_def_count = RuneActiveDefs(&player->runes, player->current_squad, RuneNow(), side.rune_defs);
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        int unit = PlayerSquadUnitAt(player, squad, slot);
+        side.chars[slot] = unit >= 0 ? &player->roster[unit] : NULL;
+    }
+    side.rune_def_count = RuneActiveDefs(&player->runes, squad, RuneNow(), side.rune_defs);
     side.renown = RenownBattleBonusOf(&player->renown);
     return side;
+}
+
+static BattleSimSide SimPlayerSide(const Player *player) {
+    return SimPlayerSquadSide(player, player->current_squad);
 }
 
 static BattleSimSide SimRosterSide(const BattleRoster *roster) {
@@ -2424,6 +2431,12 @@ static void BattleSimRunSides(
 
 void BattleSimRun(BattleSim *s, const Player *player, const BattleRoster *enemy, unsigned seed) {
     BattleSimSide player_side = SimPlayerSide(player), enemy_side = SimRosterSide(enemy);
+    BattleSimRules rules = SimRosterRules(enemy);
+    BattleSimRunSides(s, &player_side, &enemy_side, &rules, seed);
+}
+
+void BattleSimRunSquad(BattleSim *s, const Player *player, int squad, const BattleRoster *enemy, unsigned seed) {
+    BattleSimSide player_side = SimPlayerSquadSide(player, squad), enemy_side = SimRosterSide(enemy);
     BattleSimRules rules = SimRosterRules(enemy);
     BattleSimRunSides(s, &player_side, &enemy_side, &rules, seed);
 }
