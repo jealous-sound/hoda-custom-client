@@ -1,3 +1,4 @@
+HODA_CHALLENGE_POPUP_DESC|Herausforderungen <color=orange>stellen deine Gruppe</color> auf besondere Weise <color=orange>auf die Probe</color>. Schließe eine Herausforderung so oft ab, wie du möchtest, für eine <color=orange>Chance auf Helden und Runen!</color>
 HODA_NEXUS_EVENT_BREACH_OPENS_AGAIN_TITLE|Die Bresche öffnet sich erneut
 HODA_NEXUS_EVENT_WOODLAND_SPIRITS_TITLE|Waldgeister
 HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLACK_FACTION|Die schwarze Gruppierung erhält 150 % Gesundheit & Stärke.

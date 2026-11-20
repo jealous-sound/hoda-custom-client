@@ -16,6 +16,8 @@
 #define TEXT_ALIGN_START 0.0f
 #define TEXT_ALIGN_CENTER 0.5f
 #define TEXT_ALIGN_END 1.0f
+#define BATTLE_RESULTS_RUNE_ICON_SCALE 0.781f
+#define BATTLE_RESULTS_HERO_DROP_SCALE 0.85f
 
 typedef struct {
     bool victory;
@@ -41,6 +43,7 @@ typedef struct {
     int trophy_delta;
     int banner_delta;
     PvpPayout event_payout;
+    ChallengeDropAward challenge_drop;
     BattleSquadLeveling squad;
 } BattleResultsPresentation;
 
@@ -90,6 +93,7 @@ typedef struct {
     bool animate_quantity;
     bool cool;
     Texture2D prize;
+    float prize_scale;
 } BattleResultsReward;
 
 static float BattleResultsClamp01(float x) {
@@ -213,7 +217,8 @@ static float HeroLevelBarRatio(float min, float max, float value) {
 }
 
 static int BattleResultsRewardCount(const BattleResultsPresentation *p) {
-    return (p->gems > 0) + (p->xp > 0) + (p->gold > 0) + (p->trophy_delta != 0) + (p->banner_delta != 0) +
+    return (p->challenge_drop.drop != NULL) + (p->gems > 0) + (p->xp > 0) + (p->gold > 0) + (p->trophy_delta != 0) +
+           (p->banner_delta != 0) +
            (p->event_payout.prize_count < BATTLE_RESULTS_MAX_PRIZES ? p->event_payout.prize_count
                                                                     : BATTLE_RESULTS_MAX_PRIZES);
 }
@@ -836,6 +841,14 @@ static void BattleResultsDrawNodeCompletion(const BattleResultsFlow *flow) {
 static int
 BattleResultsBuildRewards(const BattleResultsPresentation *p, BattleResultsReward rewards[BATTLE_RESULTS_MAX_REWARDS]) {
     int count = 0;
+    const ChallengeDrop *drop = p->challenge_drop.drop;
+    if (drop)
+        rewards[count++] = (BattleResultsReward){
+            .cool = true,
+            .prize = ChallengeDropTexture(drop),
+            .prize_scale =
+                drop->kind == CHALLENGE_DROP_RUNE ? BATTLE_RESULTS_RUNE_ICON_SCALE : BATTLE_RESULTS_HERO_DROP_SCALE,
+        };
     if (p->banner_delta != 0) rewards[count++] = (BattleResultsReward){GUI_PVP_BANNER, p->banner_delta, false, true};
     if (p->trophy_delta != 0)
         rewards[count++] = (BattleResultsReward){GUI_TAB_TROPHY, p->trophy_delta, false, p->trophy_delta > 0};
@@ -908,7 +921,9 @@ static void BattleResultsDrawRewardItem(
     }
     unsigned char channel = (unsigned char)(255.0f * brightness);
     Texture2D texture = reward.prize.id ? reward.prize : GuiTex(reward.icon);
-    UiDrawTexture(texture, icon, BattleResultsAlpha((Color){channel, channel, channel, 255}, alpha));
+    float shown_scale = reward.prize_scale > 0.0f ? reward.prize_scale : 1.0f;
+    Rectangle shown = UiRect(icon, 0.5f, 0.5f, shown_scale, shown_scale);
+    UiDrawTexture(texture, shown, BattleResultsAlpha((Color){channel, channel, channel, 255}, alpha));
 
     bool show_quantity = !reward.prize.id && (!reward.animate_quantity || local >= 1.0f);
     if (show_quantity) {

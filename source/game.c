@@ -30,6 +30,9 @@ typedef enum {
 #define GAME_TUTORIAL_CAMPAIGN_MAPS 2
 #define GAME_PVP_KIND_REVENGE "revenge"
 #define GAME_PVP_MATCHMAKING -1
+#define GAME_CHALLENGE_DROP_WAIT_SECONDS 6.0f
+#define GAME_CHALLENGE_DROP_SPINNER_SECONDS 0.4f
+#define GAME_CHALLENGE_DROP_SPINNER_HEIGHT 0.12f
 
 typedef struct {
     long long id;
@@ -51,7 +54,15 @@ typedef struct {
 } GameWispLoop;
 
 typedef struct {
+    bool open;
+    bool armed;
+    const char *title_key;
+    const char *message_key;
+} GameNotice;
+
+typedef struct {
     Screen screen;
+    Screen screen_drawn;
     Player player;
     Hud hud;
     HomeUI home_ui;
@@ -130,7 +141,11 @@ typedef struct {
     int nexus_award_potions;
     BattleRewardResult battle_reward;
     BattleResultsFlow battle_results;
+    bool battle_results_queued;
+    float challenge_drop_wait;
     bool battle_end_announced;
+    bool battle_back_continue;
+    GameNotice notice;
 
     Tutorial tutorial;
     bool tutorial_init_signal;
@@ -148,6 +163,8 @@ static bool GameBattleSelectionValid(const Game *g) {
 static void GameClearBattleOutcome(Game *g) {
     g->battle_outcome_committed = false;
     g->battle_reward = (BattleRewardResult){0};
+    g->battle_results_queued = false;
+    g->challenge_drop_wait = 0.0f;
 }
 
 static void GameEnterSelectedBattle(Game *g) {
@@ -170,7 +187,9 @@ static void GameEnterSelectedBattle(Game *g) {
     BattleUiSetNodeWins(&g->battle_ui, wins);
     BattleUiSetNewMapOnWin(&g->battle_ui, boss && wins == 0 && g->battle_map_index + 1 < g->map.map_count);
     g->battle_squad_index = g->player.current_squad;
-    g->battle_energy_cost = node->energy_cost;
+    g->battle_energy_cost =
+        CampaignNodeEnergyCost(&g->map, &g->player.campaign_progress, g->battle_map_index, g->battle_node_index);
+    BattleUiSetEnergyCost(&g->battle_ui, g->battle_energy_cost);
 }
 
 static void GameEnterSelectedNexusBattle(Game *g) {
@@ -421,7 +440,52 @@ static void GameSubmitBattle(const Game *g, bool won) {
     cJSON_AddNumberToObject(fields, "battle_id", (double)g->battle_server_id);
     cJSON_AddBoolToObject(fields, "won", won);
     cJSON_AddNumberToObject(fields, "crit_gold", BattlePlayCriticalGold(&g->battle_play));
-    ServerActionSubmit(fields);
+    bool drop_awaited = g->battle_reward.challenge_drop.pending;
+    ServerActionSubmitTagged(fields, drop_awaited ? SERVER_REPLY_BATTLE_RESULT : SERVER_REPLY_NONE);
+}
+
+static const CampaignNode *GameBattleCampaignNode(const Game *g) {
+    if (g->battle_is_nexus || g->battle_is_pvp || !GameBattleSelectionValid(g)) return NULL;
+    return &g->map.maps[g->battle_map_index].nodes[g->battle_node_index];
+}
+
+static void GameDiscardChallengeDropReply(void) {
+    cJSON *stale = NULL;
+    if (ServerActionsTakeSettledReply(SERVER_REPLY_BATTLE_RESULT, &stale)) cJSON_Delete(stale);
+}
+
+static void GameResolveChallengeDrop(Game *g) {
+    const CampaignNode *node = GameBattleCampaignNode(g);
+    GameDiscardChallengeDropReply();
+    if (ServerActionsActive())
+        g->battle_reward.challenge_drop.pending = CampaignChallengeDropDue(&g->battle_reward, node);
+    else
+        CampaignAwardChallengeDrop(&g->player, node, &g->battle_reward, RuneNow());
+}
+
+static void GamePollChallengeDrop(Game *g) {
+    ChallengeDropAward *award = &g->battle_reward.challenge_drop;
+    cJSON *reply = NULL;
+    if (!award->pending || !ServerActionsTakeSettledReply(SERVER_REPLY_BATTLE_RESULT, &reply)) return;
+    const CampaignNode *node = GameBattleCampaignNode(g);
+    *award = ChallengeDropAwardFromReply(node ? node->drops : NULL, reply);
+    cJSON_Delete(reply);
+}
+
+static bool GameChallengeDropSettled(Game *g, float dt) {
+    ChallengeDropAward *award = &g->battle_reward.challenge_drop;
+    if (!award->pending) return true;
+    g->challenge_drop_wait += dt;
+    if (g->challenge_drop_wait < GAME_CHALLENGE_DROP_WAIT_SECONDS) return false;
+    TraceLog(LOG_WARNING, "Campaign: no server reply for the challenge drop, showing results without it");
+    *award = (ChallengeDropAward){0};
+    return true;
+}
+
+static void GameDrawChallengeDropWait(const Game *g) {
+    if (!g->battle_results_queued || g->challenge_drop_wait < GAME_CHALLENGE_DROP_SPINNER_SECONDS) return;
+    Rectangle box = LoadingIndicatorBox(UiRoot(), 0.5f, 0.5f, GAME_CHALLENGE_DROP_SPINNER_HEIGHT);
+    LoadingIndicatorDraw(GuiTex(GUI_LOADING_RING), box);
 }
 
 static void GameAddPvpOpponent(cJSON *fields, const Game *g) {
@@ -550,6 +614,7 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
     g->battle_reward = CampaignResolveBattle(
         &g->player, &g->map, g->battle_map_index, g->battle_node_index, won, BattlePlayCriticalGold(&g->battle_play)
     );
+    GameResolveChallengeDrop(g);
     g->player.campaign_progress.pending_animation = GamePendingCampaignAnimation(&g->map, &g->battle_reward);
     GameRefreshSquadCards(g);
     MissionsSync(&g->player, &g->map);
@@ -590,6 +655,7 @@ static BattleResultsPresentation GameBattleResultsSnapshot(const Game *g) {
         .trophy_delta = g->battle_reward.trophy_delta,
         .banner_delta = g->battle_reward.banner_delta,
         .event_payout = g->battle_reward.event_payout,
+        .challenge_drop = g->battle_reward.challenge_drop,
         .squad = g->battle_reward.squad_leveling,
     };
 }
@@ -1253,6 +1319,7 @@ static bool GameLoadProgression(Game *g) {
 
 bool GameInitialize(Game *g) {
     g->screen = SCREEN_HOME;
+    g->screen_drawn = SCREEN_HOME;
     ProgressionInitializePlayerDefaults(&g->player);
 
     LoadingScreenBegin();
@@ -1343,7 +1410,7 @@ bool GameInitialize(Game *g) {
 }
 
 static bool GameResourceDialogOpen(const Game *g) {
-    return EnergyDialogIsOpen(&g->energy_dialog) || EnergyDialogIsOpen(&g->stamina_dialog) ||
+    return g->notice.open || EnergyDialogIsOpen(&g->energy_dialog) || EnergyDialogIsOpen(&g->stamina_dialog) ||
            OptionsPopupIsOpen(&g->options) || ProfilePopupIsOpen(&g->profile) || RenownViewIsOpen(&g->renown_view);
 }
 
@@ -1356,8 +1423,93 @@ static EnergyDialog *GameTopResourceDialog(Game *g) {
     return stamina_open ? &g->stamina_dialog : &g->energy_dialog;
 }
 
+static void GameOpenNotice(Game *g, const char *title_key, const char *message_key) {
+    g->notice = (GameNotice){.open = true, .title_key = title_key, .message_key = message_key};
+}
+
+static bool GameCloseNotice(Game *g) {
+    if (!g->notice.open) return false;
+    g->notice.open = false;
+    GuiSoundPlay(SND_UI_POPUP_CLOSE);
+    return true;
+}
+
+static void GameDrawNotice(Game *g) {
+    Font title_font = GuiFont(FNT_COOL), body_font = GuiFont(FNT_MENU);
+    Rectangle popup = MessagePopupDrawMessage(
+        GuiTex(GUI_STORE_OVERLAY),
+        title_font,
+        body_font,
+        g->notice.title_key ? LocGet(g->notice.title_key) : "",
+        LocGet(g->notice.message_key)
+    );
+    UiDrawTextCentered(
+        body_font,
+        LocGet("TAP_TO_CONTINUE"),
+        UiRect(MessagePopupContent(popup), 0.5f, 1.0f, 1.0f, 0.12f),
+        MESSAGE_POPUP_MESSAGE_SIZE,
+        MESSAGE_POPUP_TEXT_COLOR
+    );
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) g->notice.armed = true;
+    bool tapped = g->notice.armed && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+    if (tapped || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) GameCloseNotice(g);
+}
+
+static bool GameEnergyExceedsMax(Game *g, int cost) {
+    if (cost <= g->player.energy_max) return false;
+    GameOpenNotice(g, "REFRESH_ENERGY_MAX_CTA_TITLE", "REFRESH_ENERGY_MAX_CTA_MESSAGE");
+    return true;
+}
+
+static bool GameHandleBattleBack(Game *g) {
+    if (g->battle_is_intro) return true;
+    if (BattleResultsFlowActive(&g->battle_results)) {
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+        GameExitBattleTo(g, g->battle_is_pvp ? SCREEN_HOME : g->battle_is_nexus ? SCREEN_NEXUS : SCREEN_MAP);
+        return true;
+    }
+    if (g->battle_play.state == BP_END_SPLASH || BattlePlayFinished(&g->battle_play)) {
+        g->battle_back_continue = true;
+        return true;
+    }
+    bool starting = g->battle_start_waiting || g->battle_start_dropped || g->pvp_match_waiting;
+    if (BattlePlayActive(&g->battle_play) || starting) {
+        GameOpenNotice(g, NULL, "BACK_BUTTON_DURING_BATTLE_MESSAGE");
+        return true;
+    }
+    if (BattleUiCloseDetail(&g->battle_ui)) return true;
+    if (g->battle_ui.tactical) {
+        BattleUiSetTactical(&g->battle_ui, &g->battle, false);
+        return true;
+    }
+    if (TutorialHides(TUTORIAL_ANCHOR_BATTLE_RETREAT)) return true;
+    GuiSoundPlay(SND_UI_POPUP_CLOSE);
+    GameExitBattleTo(g, g->battle_is_pvp ? g->pvp_return_screen : g->battle_is_nexus ? SCREEN_NEXUS : SCREEN_MAP);
+    return true;
+}
+
+static bool GameBackLeave(Game *g, Screen destination, SoundId sound) {
+    if (TutorialRunning()) return true;
+    GuiSoundPlay(sound);
+    g->screen = destination;
+    return true;
+}
+
+static bool GameHandleHeroesBack(Game *g) {
+    if (TutorialRunning() || HeroesBackgroundDragActive(&g->heroes_scene)) return true;
+    if (HeroesCloseDetails(&g->heroes)) return true;
+    return GameBackLeave(g, SCREEN_HOME, SND_UI_HOME);
+}
+
+static bool GameHandleNexusMapBack(Game *g) {
+    if (TutorialRunning()) return true;
+    if (!g->player.nexus_run.committed) QuestsOpenLadder(&g->quests, g->nexus.active_event);
+    return GameBackLeave(g, SCREEN_QUESTS, SND_UI_HOME);
+}
+
 bool GameHandlePopupBack(Game *g) {
     if (ClientUpdateOnlineRefused()) return false;
+    if (GameCloseNotice(g)) return true;
     if (MaintenanceNoticeClose(&g->maintenance)) {
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return true;
@@ -1382,6 +1534,7 @@ bool GameHandlePopupBack(Game *g) {
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return true;
     }
+    if (g->screen == SCREEN_HEROES) return GameHandleHeroesBack(g);
     if (g->screen == SCREEN_RUNES) return RunesHandleBack(&g->runes);
     if (g->screen == SCREEN_CONSUME) return ConsumeHandleBack(&g->consume);
     if (g->screen == SCREEN_FORTIFY) return FortifyHandleBack(&g->fortify);
@@ -1400,6 +1553,7 @@ bool GameHandlePopupBack(Game *g) {
         return true;
     }
     if (g->screen == SCREEN_QUESTS && QuestsHandleBack(&g->quests)) return true;
+    if (g->screen == SCREEN_QUESTS) return GameBackLeave(g, SCREEN_HOME, SND_UI_POPUP_CLOSE);
     if (g->screen == SCREEN_EXPEDITIONS && ExpeditionsHandleBack(&g->expeditions)) return true;
     if (g->screen == SCREEN_MISSIONS || g->screen == SCREEN_PVP_HUB || g->screen == SCREEN_PVP_EVENT ||
         g->screen == SCREEN_EXPEDITIONS) {
@@ -1408,15 +1562,22 @@ bool GameHandlePopupBack(Game *g) {
         return true;
     }
     if (g->screen == SCREEN_MAP && CampaignHandleBack(&g->map)) return true;
+    if (g->screen == SCREEN_MAP) return GameBackLeave(g, SCREEN_HOME, SND_UI_HOME);
     if (g->screen == SCREEN_NEXUS && NexusRecapHandleBack(&g->nexus_recap, &g->hud, &g->player)) {
         if (!NexusRecapOpened(&g->nexus_recap)) g->screen = SCREEN_QUESTS;
         return true;
     }
     if (g->screen == SCREEN_NEXUS && NexusHandleBack(&g->nexus)) return true;
+    if (g->screen == SCREEN_NEXUS) return GameHandleNexusMapBack(g);
+    if (g->screen == SCREEN_BATTLE) return GameHandleBattleBack(g);
     if (g->screen == SCREEN_STORE) {
         StoreAction back = StoreHandleBack(&g->store, &g->heroes);
         if (back == STORE_ACTION_CLOSE) g->screen = SCREEN_HOME;
         if (back == STORE_ACTION_REWARDS_SHOWN) g->screen = g->store_return_screen;
+        return true;
+    }
+    if (g->screen == SCREEN_HOME) {
+        WindowSendToBack();
         return true;
     }
     return false;
@@ -1807,7 +1968,7 @@ void GameDraw(Game *g) {
     bool overlay_owns_input =
         NamePromptIsOpen(&g->name_prompt) || ClientUpdateOnlineRefused() || MaintenanceNoticeIsOpen(&g->maintenance);
     if (overlay_owns_input) UiSetInputWindow(true, (Rectangle){0});
-    Screen screen_at_frame_start = g->screen;
+    Screen previous_screen = g->screen_drawn;
     bool pvp_battle = g->screen == SCREEN_BATTLE && g->battle_is_pvp;
     g->hud.show_banners = g->screen == SCREEN_PVP_EVENT || (pvp_battle && g->pvp_event);
     g->hud.show_trophies = g->screen == SCREEN_PVP_HUB || (pvp_battle && !g->pvp_event);
@@ -1936,6 +2097,8 @@ void GameDraw(Game *g) {
                 g->screen = SCREEN_HEROES;
             } else if (store_action == STORE_ACTION_GOTO_CONSUME) {
                 GameOpenConsume(g);
+            } else if (store_action == STORE_ACTION_GOTO_RUNES) {
+                GameOpenRunes(g, SCREEN_HEROES);
             }
             break;
         }
@@ -2271,7 +2434,8 @@ void GameDraw(Game *g) {
                 int cost = CampaignSelectedEnergyCost(&g->map, &g->player.campaign_progress);
                 if (TutorialMainActive(&g->tutorial) && g->player.energy < cost)
                     g->player.energy = g->player.energy_max;
-                if (g->player.energy >= cost) {
+                bool capped = GameEnergyExceedsMax(g, cost);
+                if (!capped && g->player.energy >= cost) {
                     g->battle_map_index = g->player.campaign_progress.campaign_index;
                     g->battle_node_index = g->map.selected_node;
                     g->battle_squad_index = g->player.current_squad;
@@ -2280,7 +2444,7 @@ void GameDraw(Game *g) {
                     GameClearBattleOutcome(g);
                     GameEnterSelectedBattle(g);
                     g->screen = SCREEN_BATTLE;
-                } else {
+                } else if (!capped) {
                     GameOpenResourceDialogSilently(g, false);
                 }
             }
@@ -2295,15 +2459,21 @@ void GameDraw(Game *g) {
             if (act == NEXUS_SHOW_RECAP) GameOpenNexusRecap(g);
             UiFrameBegin();
             NexusRecapAction recap_action = NexusRecapDraw(&g->nexus_recap, &g->heroes, &g->hud, &g->player);
-            bool hud_interactive = !NexusCompletionActive(&g->nexus);
+            bool hud_interactive = !NexusCompletionActive(&g->nexus) && !NexusDialogLocksHud(&g->nexus);
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, hud_interactive, false));
             UiFrameEnd();
             if (recap_action == NEXUS_RECAP_REPLAY) GameReplayNexusMap(g);
             if (recap_action == NEXUS_RECAP_RETURN) g->screen = SCREEN_QUESTS;
+            int nexus_cost = NexusSelectedEnergyCost(&g->nexus, &g->player);
+            if (act == NEXUS_ENTER && GameEnergyExceedsMax(g, nexus_cost)) {
+                act = NEXUS_NONE;
+            }
             if (act == NEXUS_ENTER || act == NEXUS_REVIVE) {
-                int cost = NexusSelectedEnergyCost(&g->nexus, &g->player);
+                int cost = nexus_cost;
                 bool paid = act != NEXUS_REVIVE || NexusReviveRun(&g->player);
                 g->battle_nexus_revived = act == NEXUS_REVIVE && paid;
+                if (g->battle_nexus_revived)
+                    GameOpenNotice(g, "NEXUS_REVIVE_SUCCESS_TITLE", "NEXUS_REVIVE_SUCCESS_BODY");
                 if (paid && g->player.energy >= cost) {
                     g->battle_is_nexus = true;
                     g->battle_node_index = g->nexus.selected_node;
@@ -2329,6 +2499,7 @@ void GameDraw(Game *g) {
         }
         case SCREEN_BATTLE: {
             GamePollBattleStart(g);
+            GamePollChallengeDrop(g);
             bool showing_results = BattleResultsFlowActive(&g->battle_results);
             if (!showing_results) {
                 BattlePlayUpdate(&g->battle_play, &g->battle, TutorialHoldsBattle(&g->tutorial) ? 0.0f : dt);
@@ -2358,6 +2529,7 @@ void GameDraw(Game *g) {
                 if (!resource_modal && !combat && !g->battle_is_intro) a = HudDraw(&g->hud, &g->player, true, false);
                 if (!g->battle_is_intro || !g->battle_end_announced)
                     ba = BattleUiDraw(&g->battle_ui, GameBattlePlayer(g), &g->battle, &g->battle_play);
+                GameDrawChallengeDropWait(g);
                 if (combat && BattlePlayFast(&g->battle_play) != g->player.fast_battles) {
                     g->player.fast_battles = BattlePlayFast(&g->battle_play);
                     ProgressionSave(&g->player);
@@ -2416,7 +2588,7 @@ void GameDraw(Game *g) {
                             GameStartBattlePlay(g, &g->player);
                             GameCommitBattleOutcome(g, g->battle_play.sim.player_won);
                         }
-                    } else {
+                    } else if (g->battle_is_pvp || !GameEnergyExceedsMax(g, g->battle_energy_cost)) {
                         GameOpenResourceDialogSilently(g, g->battle_is_pvp);
                     }
                 }
@@ -2426,12 +2598,18 @@ void GameDraw(Game *g) {
                 }
                 leave = ba == BATTLE_UI_RETREAT;
                 bool battle_continue =
-                    !resource_modal && !g->battle_is_intro && UiClicksReachScreen() &&
-                    (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE));
+                    g->battle_back_continue ||
+                    (!resource_modal && !g->battle_is_intro && UiClicksReachScreen() &&
+                     (IsMouseButtonReleased(MOUSE_BUTTON_LEFT) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)));
+                g->battle_back_continue = false;
                 if (g->battle_play.state == BP_END_SPLASH && battle_continue) {
                     g->battle_play.state = BP_SUMMARY;
                     g->battle_play.t = 0.0f;
                 } else if (BattlePlayFinished(&g->battle_play) && battle_continue) {
+                    g->battle_results_queued = true;
+                }
+                if (g->battle_results_queued && GameChallengeDropSettled(g, dt)) {
+                    g->battle_results_queued = false;
                     BattleResultsFlowStart(&g->battle_results, GameBattleResultsSnapshot(g));
                 }
             }
@@ -2465,6 +2643,11 @@ void GameDraw(Game *g) {
             BattleResultsFlowTopUiVisible(&g->battle_results))
             popup_hud_player = BattleResultsFlowHudPlayer(&g->battle_results, &g->player);
         popup_hud_action = HudDraw(&g->hud, &popup_hud_player, resource_modal, false);
+        UiFrameEnd();
+    }
+    if (g->notice.open) {
+        UiFrameBegin();
+        GameDrawNotice(g);
         UiFrameEnd();
     }
     if (OptionsPopupIsOpen(&g->options)) {
@@ -2507,30 +2690,31 @@ void GameDraw(Game *g) {
             g->screen = SCREEN_QUESTS;
     }
     GameHandleHudAction(g, popup_hud_action);
-    if (screen_at_frame_start == SCREEN_HEROES && g->screen != SCREEN_HEROES && g->screen != SCREEN_RUNES)
+    if (previous_screen == SCREEN_HEROES && g->screen != SCREEN_HEROES && g->screen != SCREEN_RUNES)
         HeroesBackgroundClearRowBonus(&g->heroes_scene);
-    if (screen_at_frame_start == SCREEN_FORTIFY && g->screen != SCREEN_FORTIFY) {
+    if (previous_screen == SCREEN_FORTIFY && g->screen != SCREEN_FORTIFY) {
         FortifyPortraitsUnload(&g->fortify);
         HomeBackgroundMarkSquadStale(&g->scene);
     }
-    if (screen_at_frame_start == SCREEN_CONSUME && g->screen != SCREEN_CONSUME) {
+    if (previous_screen == SCREEN_CONSUME && g->screen != SCREEN_CONSUME) {
         HeroesBackgroundReloadSquad(&g->heroes_scene, &g->player);
         HomeBackgroundMarkSquadStale(&g->scene);
     }
-    if (screen_at_frame_start != g->screen) MissionsSync(&g->player, &g->map);
-    if (screen_at_frame_start == SCREEN_QUESTS && g->screen != SCREEN_QUESTS) QuestsClose(&g->quests);
-    if (screen_at_frame_start == SCREEN_MISSIONS && g->screen != SCREEN_MISSIONS)
+    if (previous_screen != g->screen) MissionsSync(&g->player, &g->map);
+    if (previous_screen == SCREEN_QUESTS && g->screen != SCREEN_QUESTS) QuestsClose(&g->quests);
+    if (previous_screen == SCREEN_MISSIONS && g->screen != SCREEN_MISSIONS)
         MissionsClose(&g->missions, &g->hud, &g->player);
     if (g->screen != SCREEN_HEROES && g->screen != SCREEN_GALLERY && GalleryPopupOpen(&g->gallery))
         GalleryClosePopup(&g->gallery);
-    if (screen_at_frame_start == SCREEN_GALLERY && g->screen != SCREEN_GALLERY && g->screen != SCREEN_STORE)
+    if (previous_screen == SCREEN_GALLERY && g->screen != SCREEN_GALLERY && g->screen != SCREEN_STORE)
         HomeBackgroundGalleryClear(&g->scene);
-    if (screen_at_frame_start == SCREEN_NEXUS && g->screen != SCREEN_NEXUS && g->screen != SCREEN_BATTLE &&
+    if (previous_screen == SCREEN_NEXUS && g->screen != SCREEN_NEXUS && g->screen != SCREEN_BATTLE &&
         NexusRunComplete(&g->nexus, &g->player.nexus_run) && !g->nexus_award_waiting) {
         NexusAwardEscrow(&g->player);
         ProgressionSave(&g->player);
         GameSubmitSimpleAction("nexus_award");
     }
+    g->screen_drawn = g->screen;
     GameDrawTutorial(g, dt);
     GameDrawNamePrompt(g, dt);
     GameDrawMaintenance(g);

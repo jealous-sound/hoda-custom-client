@@ -324,8 +324,14 @@ static void DebugPrepareNexus(Game *game, DebugShot *shot) {
         game->player.nexus_run.escrow_potions = EnvInt("HOD_NEXUS_POTIONS", 2);
         game->player.nexus_run.escrow_units[EnvInt("HOD_NEXUS_RARITY", RARITY_RARE)] = EnvInt("HOD_NEXUS_UNITS", 3);
     }
+    if (EnvFlag("HOD_NEXUS_REVIVE")) {
+        game->player.nexus_run.committed = true;
+        game->player.nexus_run.reset = true;
+        game->player.potions = EnvInt("HOD_NEXUS_POTIONS_HELD", game->player.potions);
+    }
     NexusEnterMap(&game->nexus, &game->player, event, difficulty);
-    game->nexus.quit_open = EnvFlag("HOD_NEXUS_QUIT");
+    if (EnvFlag("HOD_NEXUS_QUIT")) game->nexus.dialog = NEXUS_DIALOG_QUIT;
+    if (EnvFlag("HOD_NEXUS_DIALOG")) game->nexus.dialog = (NexusDialog)EnvInt("HOD_NEXUS_DIALOG", 0);
     shot->flow_started = true;
 }
 
@@ -374,7 +380,25 @@ static void DebugPrepareCampaignMap(Game *game, DebugShot *shot) {
     shot->flow_started = true;
 }
 
+static void DebugPrepareChallengeReveal(Game *game, DebugShot *shot) {
+    if (!DebugShotIs(shot, "map_progress_challenge")) return;
+    game->screen = SCREEN_MAP;
+    if (shot->flow_started) return;
+    PlayerCampaignProgress *progress = &game->player.campaign_progress;
+    int map_index = Clamp(EnvInt("HOD_MAP", 2) - 1, 0, game->map.map_count - 1);
+    for (int map = 0; map <= map_index; map++) {
+        int boss = CampaignBossNodeIndex(&game->map, map);
+        for (int node = map < map_index ? boss : 0; node <= boss; node++) progress->node_completions[map][node] = 1;
+    }
+    int boss = CampaignBossNodeIndex(&game->map, map_index);
+    progress->campaign_index = map_index;
+    progress->node_index = CampaignFrontierForMap(&game->map, progress, map_index);
+    CampaignBeginProgressionAnimation(&game->map, map_index, boss, map_index, progress->node_index);
+    shot->flow_started = true;
+}
+
 static void DebugPrepareMapProgress(Game *game, DebugShot *shot) {
+    DebugPrepareChallengeReveal(game, shot);
     bool is_new = DebugShotIs(shot, "map_progress_new");
     if (!is_new && !DebugShotIs(shot, "map_progress")) return;
     game->screen = SCREEN_MAP;
@@ -497,6 +521,14 @@ static BattleResultsPresentation DebugResultsPresentation(const DebugShot *shot,
     } else if (DebugShotIs(shot, "results_repeat")) {
         presentation.completions_pre = DEBUG_WINS_TO_MASTER;
         presentation.completions_post = DEBUG_WINS_TO_MASTER + 1;
+    } else if (DebugShotIs(shot, "results_challenge")) {
+        char map_id[32] = "PVE_MAP_02";
+        const char *node = getenv("HOD_NODE");
+        if (node) sscanf(node, "%31[^:]", map_id);
+        const char *drop = getenv("HOD_DROP");
+        ChallengeDropKind kind = drop && !strncmp(drop, "UNIT_", 5) ? CHALLENGE_DROP_UNIT : CHALLENGE_DROP_RUNE;
+        presentation.grind = true;
+        presentation.challenge_drop.drop = ChallengeDropFind(ChallengeDropsForMap(map_id), kind, drop);
     }
     return presentation;
 }
@@ -588,6 +620,7 @@ static void DebugPreparePvp(Game *game, DebugShot *shot) {
     game->screen = SCREEN_BATTLE;
     if (!game->battle.squads_loaded) {
         game->player.pvp.trophies = DEBUG_PVP_TROPHIES;
+        game->player.level = EnvInt("HOD_PLAYER_LEVEL", game->player.level);
         bool event = DebugShotIsAny(shot, (const char *const[]){"pvp_event_match", "pvp_event_results"}, 2);
         GameMatchPvp(game, event, GAME_PVP_MATCHMAKING, false, SCREEN_PVP_HUB);
         return;
@@ -613,7 +646,8 @@ static void DebugPrepareBattle(Game *game, DebugShot *shot) {
         "results",
         "completion_mastery",
         "results_repeat",
-        "results_loss"
+        "results_loss",
+        "results_challenge"
     };
     if (!DebugShotIsAny(shot, names, sizeof(names) / sizeof(names[0]))) return;
     game->screen = SCREEN_BATTLE;
@@ -1774,7 +1808,17 @@ static void DebugPrepareExpeditions(Game *game, DebugShot *shot) {
     }
 }
 
+static void DebugPrepareNotice(Game *game) {
+    const char *notice = getenv("HOD_NOTICE");
+    if (!notice || game->notice.open) return;
+    if (strcmp(notice, "energy") == 0)
+        GameOpenNotice(game, "REFRESH_ENERGY_MAX_CTA_TITLE", "REFRESH_ENERGY_MAX_CTA_MESSAGE");
+    if (strcmp(notice, "retreat") == 0) GameOpenNotice(game, NULL, "BACK_BUTTON_DURING_BATTLE_MESSAGE");
+    if (strcmp(notice, "revive") == 0) GameOpenNotice(game, "NEXUS_REVIVE_SUCCESS_TITLE", "NEXUS_REVIVE_SUCCESS_BODY");
+}
+
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
+    DebugPrepareNotice(game);
     if (DebugPrepareTutorial(game, shot) || DebugPrepareNamePrompt(game, shot)) return;
     if (DebugPrepareOptions(game, shot) || DebugPrepareClientUpdate(game, shot)) return;
     if (DebugPrepareProfile(game, shot) || DebugPrepareRenown(game, shot)) return;

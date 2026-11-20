@@ -49,6 +49,7 @@ typedef struct {
     Color diff_color;
     int energy_cost;
     int gold, xp, gems;
+    float reward_preview_time;
     const CampaignNode *node;
     CampaignNode nexus_node;
     bool new_map_on_win;
@@ -200,6 +201,17 @@ void BattleUiShowSquads(BattleUi *ui, const Player *player, const BattleRoster *
     }
 }
 
+bool BattleUiCloseDetail(BattleUi *ui) {
+    if (!ui->detail_open) return false;
+    ui->detail_open = false;
+    GuiSoundPlay(SND_UI_POPUP_CLOSE);
+    return true;
+}
+
+void BattleUiSetEnergyCost(BattleUi *ui, int energy_cost) {
+    ui->energy_cost = energy_cost;
+}
+
 void BattleUiEnterNode(
     BattleUi *ui,
     const Player *player,
@@ -222,6 +234,7 @@ void BattleUiEnterNode(
     ui->gold = node ? node->gold : 0;
     ui->xp = node ? node->xp : 0;
     ui->gems = node ? node->default_gems : 0;
+    ui->reward_preview_time = 0.0f;
     ui->new_map_on_win = false;
     StrCopy(ui->player_name, sizeof(ui->player_name), player->name);
     ui->player_badges = PlayerNameBadges(player);
@@ -399,6 +412,21 @@ static void BattleUiRewardRow(float right, float y, Texture2D icon, bool mirror_
     UiDrawTextRight(font, text, (Rectangle){0.0f, y, icon_dst.x - 6.0f, row_h}, fs, (Color){245, 244, 238, 255});
     Rectangle src = {0, 0, mirror_icon ? -icon.width : icon.width, icon.height};
     DrawTexturePro(icon, src, icon_dst, (Vector2){0, 0}, 0.0f, WHITE);
+}
+
+static void BattleUiChanceRow(float right, float y, const ChallengeDropTable *drops, float elapsed) {
+    Font font = GuiFont(FNT_COOL);
+    Texture2D tag = GuiTex(GUI_MM_TAG);
+    float row_h = 44 * MM_SY, icon_s = 53 * MM_SY;
+    const char *label = LocGet("REWARD_CHANCE_AT");
+    float fs = row_h * 0.45f;
+    float text_w = MeasureTextEx(font, label, fs, 1.0f).x;
+    float tag_w = fmaxf(MM_X(110), text_w + icon_s * 0.5f + MM_X(24));
+    Rectangle icon_dst = {right - icon_s, y + (row_h - icon_s) * 0.5f, icon_s, icon_s};
+    Rectangle tag_dst = {icon_dst.x + icon_s * 0.5f - tag_w, y, tag_w, row_h};
+    UiDrawTexture(tag, tag_dst, WHITE);
+    UiDrawTextRight(font, label, (Rectangle){0.0f, y, icon_dst.x - 6.0f, row_h}, fs, (Color){245, 244, 238, 255});
+    ChallengeDropsDrawPreview(drops, icon_dst, elapsed);
 }
 
 static const float RIBBON_LEFT[14][4] = {
@@ -926,11 +954,27 @@ static void BattleUiDrawCombat(BattleUi *ui, BattlePlay *bp) {
     }
 }
 
-static void BattleUiDrawCombatRunes(const BattlePlay *bp) {
+static void BattleUiDrawCombatRuneRail(const int *rune_defs, int count, float x) {
     float size = 54.0f;
-    for (int i = 0; i < bp->sim.rune_def_count; i++) {
-        Texture2D icon = RuneIconLoad(RuneDefAt(bp->sim.rune_defs[i])->icon);
-        if (icon.id != 0) UiDrawTexture(icon, (Rectangle){8.0f, 92.0f + i * (size + 4.0f), size * 0.78f, size}, WHITE);
+    for (int i = 0; i < count && i < RUNE_SLOT_COUNT; i++) {
+        Texture2D icon = RuneIconLoad(RuneDefAt(rune_defs[i])->icon);
+        if (icon.id != 0) UiDrawTexture(icon, (Rectangle){x, 92.0f + i * (size + 4.0f), size * 0.78f, size}, WHITE);
+    }
+}
+
+static void BattleUiDrawCombatRunes(const BattlePlay *bp, const BattleRoster *enemy) {
+    float width = 54.0f * 0.78f;
+    BattleUiDrawCombatRuneRail(bp->sim.rune_defs, bp->sim.rune_def_count, 8.0f);
+    BattleUiDrawCombatRuneRail(enemy->rune_defs, enemy->rune_def_count, UiWidth() - 8.0f - width);
+}
+
+static void BattleUiDrawOpponentRuneSlots(const BattleRoster *enemy) {
+    if (enemy->rune_def_count <= 0) return;
+    float width = MM_X(76);
+    for (int slot = 0; slot < enemy->rune_def_count && slot < RUNE_SLOT_COUNT; slot++) {
+        Rectangle rect = {UiWidth() - width, MM_Y(4) + slot * 97 * MM_SY, width, 98 * MM_SY};
+        Texture2D texture = RuneIconLoad(RuneDefAt(enemy->rune_defs[slot])->icon);
+        UiDrawTexture(texture.id != 0 ? texture : GuiTex(GUI_MM_RUNE_SLOT), rect, WHITE);
     }
 }
 
@@ -1020,7 +1064,7 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
         ui->detail_open = false;
         if (ui->tactical) BattleUiSetTacticalEx(ui, battle, false, false);
         BattleUiDrawCombat(ui, bp);
-        BattleUiDrawCombatRunes(bp);
+        BattleUiDrawCombatRunes(bp, &battle->enemy_roster);
         return BATTLE_UI_NONE;
     }
 
@@ -1086,6 +1130,7 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
     }
 
     if (BattleUiDrawRuneSlots(player, input_ok)) result = BATTLE_UI_RUNES;
+    BattleUiDrawOpponentRuneSlots(&battle->enemy_roster);
 
     if (!ui->tactical) {
         float row_h = 44 * MM_SY, stride = 40 * MM_SY;
@@ -1104,6 +1149,9 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
             y -= stride;
         }
         if (ui->pvp) BattleUiRewardRow(tag_right, y, GuiTex(ui->pvp_stake_icon), false, ui->pvp_gain);
+        const ChallengeDropTable *drops = !ui->pvp && ui->node ? ui->node->drops : NULL;
+        ui->reward_preview_time += GetFrameTime();
+        if (drops && drops->preview_count > 0) BattleUiChanceRow(tag_right, y, drops, ui->reward_preview_time);
     }
 
     {

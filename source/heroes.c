@@ -514,6 +514,13 @@ bool HeroesBoardInputBlocked(const Heroes *h) {
     return h->selected >= 0 || GearViewIsOpen();
 }
 
+bool HeroesCloseDetails(Heroes *h) {
+    if (h->selected < 0) return false;
+    h->selected = -1;
+    h->details_close_armed = false;
+    return true;
+}
+
 void HeroesRebuildCard(Heroes *h, const Player *p, int index) {
     Texture2D portrait = h->cards[index].portrait;
     HeroCardBuild(&h->cards[index], &p->roster[index]);
