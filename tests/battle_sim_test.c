@@ -4753,6 +4753,22 @@ static void TestMapTrayFollowsTheOriginalPrefab(void) {
     assert(CampaignTrayCanScrollBack(&campaign) && !CampaignTrayCanScrollForward(&campaign, &layout, MANY_MAPS));
 }
 
+static void TestMapTrayKeepsItsPrefabSizeAtTheSmallestUiScale(void) {
+    CampaignTrayLayout full = CampaignTrayLayoutFor(UI_DESIGN_W, UI_DESIGN_H);
+    float small_w = UI_DESIGN_W / SETTINGS_MINIMUM_UI_SCALE, small_h = UI_DESIGN_H / SETTINGS_MINIMUM_UI_SCALE;
+    UiSetChosenScale(SETTINGS_MINIMUM_UI_SCALE);
+    CampaignTrayLayout small = CampaignTrayLayoutFor(small_w, small_h);
+    UiSetChosenScale(SETTINGS_FULL_UI_SCALE);
+
+    assert(CampaignTrayItemSize(&small) == CampaignTrayItemSize(&full));
+    assert(small.list.height == full.list.height);
+    assert(small.list.y + small.list.height - small_h == full.list.y + full.list.height - UI_DESIGN_H);
+    assert(roundf(small.back_arrow.x) == full.back_arrow.x && full.back_arrow.x > 0.0f);
+    assert(small.list.x + small.list.width > full.list.x + full.list.width);
+    assert(small.background.x == 0.0f && small.background.width == small_w);
+    assert(full.background.width >= UI_DESIGN_W);
+}
+
 static void TestEveryReferencedResourceResolves(void) {
     for (int i = 0; i < GUI_COUNT; i++) assert(ResourceExists(gui_paths[i]));
     for (int i = 0; i < SND_COUNT; i++) assert(ResourceExists(sound_paths[i]));
@@ -10486,6 +10502,7 @@ int main(void) {
     TestEveryReferencedResourceResolves();
     TestSameNamedCacheTexturesResolveToTheFirstInTheirBundle();
     TestMapTrayFollowsTheOriginalPrefab();
+    TestMapTrayKeepsItsPrefabSizeAtTheSmallestUiScale();
     TestSquadSlotReferenceLayout();
     TestBattleRowBonuses();
     TestHeroRowBonusReferencePresentation();
