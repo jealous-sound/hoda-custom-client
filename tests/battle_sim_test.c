@@ -4312,8 +4312,8 @@ static void TestProgressionPersistence(void) {
 
 static void TestChallengeDropTablesCoverTheGrindMaps(void) {
     assert(ChallengeDropsLoad(CHALLENGE_DROPS_PATH, CHALLENGE_DROPS_CHARACTERS_PATH));
-    assert(!ChallengeDropsForMap("PVE_MAP_01") && !ChallengeDropsForMap("PVE_MAP_16"));
-    for (int map = 2; map <= 15; map++) {
+    assert(!ChallengeDropsForMap("PVE_MAP_01"));
+    for (int map = 2; map <= CAMPAIGN_MAX_MAPS; map++) {
         const ChallengeDropTable *table = ChallengeDropsForMap(TextFormat("PVE_MAP_%02d", map));
         assert(table && table->drop_count > 0 && table->preview_count > 0);
         int total = 0;
