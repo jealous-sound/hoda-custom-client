@@ -1,3 +1,4 @@
+HODA_CHALLENGE_POPUP_DESC|Les défis <color=orange>mettent votre équipe à l'épreuve</color> de façon particulière. Accomplissez un défi autant de fois que vous le voulez pour <color=orange>tenter de remporter des héros et des runes !</color>
 HODA_NEXUS_EVENT_BREACH_OPENS_AGAIN_TITLE|La brèche se rouvre
 HODA_NEXUS_EVENT_WOODLAND_SPIRITS_TITLE|Esprits des bois
 HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLACK_FACTION|Faction noire : Santé et Puissance +150 %.

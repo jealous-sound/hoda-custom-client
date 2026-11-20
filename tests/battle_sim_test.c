@@ -4320,6 +4320,174 @@ static void TestProgressionPersistence(void) {
     remove(temporary);
 }
 
+static void TestChallengeDropTablesCoverTheGrindMaps(void) {
+    assert(ChallengeDropsLoad(CHALLENGE_DROPS_PATH, CHALLENGE_DROPS_CHARACTERS_PATH));
+    assert(!ChallengeDropsForMap("PVE_MAP_01"));
+    for (int map = 2; map <= CAMPAIGN_MAX_MAPS; map++) {
+        const ChallengeDropTable *table = ChallengeDropsForMap(TextFormat("PVE_MAP_%02d", map));
+        assert(table && table->drop_count > 0 && table->preview_count > 0);
+        int total = 0;
+        for (int i = 0; i < table->drop_count; i++) {
+            const ChallengeDrop *drop = &table->drops[i];
+            total += drop->weight;
+            if (drop->kind == CHALLENGE_DROP_UNIT) assert(ResourceExists(GuiPortraitRef(drop->icon)));
+        }
+        assert(total > 0 && total < challenge_drops.roll_total);
+    }
+
+    const ChallengeDropTable *brecilian = ChallengeDropsForMap("PVE_MAP_02");
+    const ChallengeDrop *bear = ChallengeDropFind(brecilian, CHALLENGE_DROP_UNIT, "UNIT_BEAR");
+    assert(bear && bear->weight == 9601 && bear->rarity == RARITY_COMMON && bear->icon[0]);
+    const ChallengeDrop *health = ChallengeDropFind(brecilian, CHALLENGE_DROP_RUNE, "rune-health-2");
+    assert(health && health->rarity == RARITY_UNCOMMON && health->icon[0]);
+    ChallengeDropPreview expected[] = {
+        {CHALLENGE_DROP_UNIT, RARITY_COMMON},
+        {CHALLENGE_DROP_UNIT, RARITY_UNCOMMON},
+        {CHALLENGE_DROP_UNIT, RARITY_EPIC},
+        {CHALLENGE_DROP_RUNE, RARITY_COMMON},
+        {CHALLENGE_DROP_RUNE, RARITY_UNCOMMON},
+    };
+    assert(brecilian->preview_count == (int)(sizeof(expected) / sizeof(expected[0])));
+    for (int i = 0; i < brecilian->preview_count; i++)
+        assert(brecilian->previews[i].kind == expected[i].kind && brecilian->previews[i].rarity == expected[i].rarity);
+}
+
+static void TestChallengeDropsStayOffWithoutTheTable(void) {
+    assert(!ChallengeDropsLoad("data/missing_challenge_drops.json", CHALLENGE_DROPS_CHARACTERS_PATH));
+    assert(!ChallengeDropsForMap("PVE_MAP_02"));
+    uint32_t rng = 2;
+    assert(!ChallengeDropRoll(NULL, &rng) && rng == 2);
+    assert(ChallengeDropsLoad(CHALLENGE_DROPS_PATH, CHALLENGE_DROPS_CHARACTERS_PATH));
+}
+
+static void TestChallengeDropRollsOneStoreStreamStep(void) {
+    const ChallengeDropTable *brecilian = ChallengeDropsForMap("PVE_MAP_02");
+    struct {
+        uint32_t state;
+        const char *id;
+    } pinned[] = {{1, NULL}, {2, "UNIT_BEAR"}, {3, "rune-health-1"}};
+    for (int i = 0; i < (int)(sizeof(pinned) / sizeof(pinned[0])); i++) {
+        uint32_t rng = pinned[i].state, stepped = pinned[i].state;
+        StoreRngNext(&stepped);
+        const ChallengeDrop *drop = ChallengeDropRoll(brecilian, &rng);
+        assert(rng == stepped);
+        assert(pinned[i].id ? drop && !strcmp(drop->id, pinned[i].id) : !drop);
+    }
+
+    enum { ROLLS = 200000 };
+    const ChallengeDropTable *dalish = ChallengeDropsForMap("PVE_MAP_08");
+    int hits[CHALLENGE_DROPS_PER_MAP] = {0};
+    uint32_t rng = 0x5eed;
+    for (int n = 0; n < ROLLS; n++) {
+        const ChallengeDrop *drop = ChallengeDropRoll(dalish, &rng);
+        if (drop) hits[drop - dalish->drops]++;
+    }
+    for (int i = 0; i < dalish->drop_count; i++) {
+        double expected = (double)ROLLS * dalish->drops[i].weight / challenge_drops.roll_total;
+        assert(fabs(hits[i] - expected) <= 5.0 * sqrt(expected) + 2.0);
+    }
+}
+
+static void TestChallengeNodeWinsGrantTheRolledDrop(void) {
+    Player player = TestStarterPlayer();
+    Campaign campaign = TestProgressionCampaign();
+    CampaignNode *grind = &campaign.maps[0].nodes[3];
+    grind->drops = ChallengeDropsForMap("PVE_MAP_02");
+    for (int node = 0; node < 3; node++) player.campaign_progress.node_completions[0][node] = 1;
+
+    BattleRewardResult loss = CampaignResolveBattle(&player, &campaign, 0, 3, false, 0);
+    assert(!CampaignChallengeDropDue(&loss, grind));
+    BattleRewardResult story = CampaignResolveBattle(&player, &campaign, 0, 0, true, 0);
+    assert(!CampaignChallengeDropDue(&story, &campaign.maps[0].nodes[0]));
+
+    int roster = player.roster_count;
+    BattleRewardResult hero = CampaignResolveBattle(&player, &campaign, 0, 3, true, 0);
+    player.store_rng_state = 2;
+    CampaignAwardChallengeDrop(&player, grind, &hero, 1000);
+    assert(hero.challenge_drop.drop && !strcmp(hero.challenge_drop.drop->id, "UNIT_BEAR"));
+    assert(player.roster_count == roster + 1 && !strcmp(player.roster[roster].id, "UNIT_BEAR"));
+    assert(player.roster[roster].level == 1);
+
+    int runes = player.runes.count;
+    BattleRewardResult rune = CampaignResolveBattle(&player, &campaign, 0, 3, true, 0);
+    player.store_rng_state = 3;
+    CampaignAwardChallengeDrop(&player, grind, &rune, 1000);
+    assert(rune.challenge_drop.drop && rune.challenge_drop.drop->kind == CHALLENGE_DROP_RUNE);
+    assert(player.runes.count == runes + 1);
+    assert(!strcmp(RuneDefFor(&player.runes.items[runes])->id, "rune-health-1"));
+
+    BattleRewardResult nothing = CampaignResolveBattle(&player, &campaign, 0, 3, true, 0);
+    player.store_rng_state = 1;
+    CampaignAwardChallengeDrop(&player, grind, &nothing, 1000);
+    assert(!nothing.challenge_drop.drop && player.roster_count == roster + 1 && player.runes.count == runes + 1);
+
+    int capacity = player.roster_capacity;
+    player.roster_capacity = player.roster_count;
+    BattleRewardResult full = CampaignResolveBattle(&player, &campaign, 0, 3, true, 0);
+    player.store_rng_state = 2;
+    CampaignAwardChallengeDrop(&player, grind, &full, 1000);
+    assert(!full.challenge_drop.drop && player.roster_count == roster + 1);
+    player.roster_capacity = capacity;
+}
+
+static void TestChallengeDropAwardReadsTheServerReply(void) {
+    const ChallengeDropTable *brecilian = ChallengeDropsForMap("PVE_MAP_02");
+    cJSON *hero = cJSON_Parse(
+        "{\"granted\":{\"won\":true,\"granted\":{\"heroes\":[{\"id\":\"UNIT_WOLF\",\"instance_id\":77}]}}}"
+    );
+    ChallengeDropAward from_hero = ChallengeDropAwardFromReply(brecilian, hero);
+    assert(!from_hero.pending && from_hero.drop && !strcmp(from_hero.drop->id, "UNIT_WOLF"));
+    cJSON *rune = cJSON_Parse("{\"granted\":{\"granted\":{\"runes\":[\"rune-wounded-targeting-1\"]}}}");
+    ChallengeDropAward from_rune = ChallengeDropAwardFromReply(brecilian, rune);
+    assert(from_rune.drop && from_rune.drop->kind == CHALLENGE_DROP_RUNE);
+    cJSON *empty = cJSON_Parse("{\"granted\":{\"granted\":{\"vouchers\":{\"0\":1}}}}");
+    assert(!ChallengeDropAwardFromReply(brecilian, empty).drop);
+    assert(!ChallengeDropAwardFromReply(brecilian, NULL).drop);
+    cJSON_Delete(hero);
+    cJSON_Delete(rune);
+    cJSON_Delete(empty);
+}
+
+static void TestChallengeDropPreviewsCycleLikeTheOriginal(void) {
+    assert(ChallengeDropPreviewAlpha(0.0f, 3) == 0.0f);
+    assert(ChallengeDropPreviewAlpha(0.125f, 3) == 0.5f);
+    assert(ChallengeDropPreviewAlpha(1.0f, 3) == 1.0f);
+    assert(ChallengeDropPreviewAlpha(1.875f, 3) == 0.5f);
+    assert(ChallengeDropPreviewAlpha(2.1f, 3) == 0.0f);
+    assert(ChallengeDropPreviewAlpha(5.0f, 1) == 1.0f);
+    assert(ChallengeDropPreviewIndex(0.0f, 3) == 0);
+    assert(ChallengeDropPreviewIndex(2.3f, 3) == 1);
+    assert(ChallengeDropPreviewIndex(6.8f, 3) == 0);
+    assert(ChallengeDropPreviewIndex(9.0f, 1) == 0);
+}
+
+static void TestChallengeNodeStaysHiddenUntilTheBossFalls(void) {
+    Campaign campaign = TestProgressionCampaign();
+    PlayerCampaignProgress progress = {0};
+    assert(CampaignNodeRevealed(&campaign, &progress, 0, 2));
+    assert(!CampaignNodeRevealed(&campaign, &progress, 0, 3));
+    progress.node_completions[0][2] = 1;
+    assert(CampaignNodeRevealed(&campaign, &progress, 0, 3));
+    assert(!CampaignNodeRevealed(&campaign, &progress, 1, 2));
+
+    assert(CampaignProgressionRevealsChallenge(&campaign, 0, 2, 0, 3));
+    assert(!CampaignProgressionRevealsChallenge(&campaign, 0, 1, 0, 2));
+    assert(!CampaignProgressionRevealsChallenge(&campaign, 0, 2, 1, 0));
+    Campaign no_grind = {.map_count = 1};
+    no_grind.maps[0].node_count = 3;
+    assert(!CampaignProgressionRevealsChallenge(&no_grind, 0, 2, 0, 2));
+    assert(CampaignNodeRevealed(&no_grind, &progress, 0, 2));
+
+    Campaign *animated = calloc(1, sizeof(*animated));
+    assert(animated);
+    *animated = campaign;
+    CampaignBeginProgressionAnimation(animated, 0, 2, 0, 3);
+    assert(animated->progression_reveals_challenge);
+    CampaignBeginMasteryAnimation(animated, 0, 2, 3);
+    assert(!animated->progression_reveals_challenge);
+    free(animated);
+}
+
 static void TestRosterInstancesAndPersistence(void) {
     const char *path = "tests/roster_save_test.dat";
     const char *temporary = "tests/roster_save_test.dat.tmp";
@@ -10616,6 +10784,13 @@ int main(void) {
     TestCampaignMapRewardSchema();
     TestCampaignAndNexusTextResolves();
     TestCampaignProgressionRewards();
+    TestChallengeDropTablesCoverTheGrindMaps();
+    TestChallengeDropsStayOffWithoutTheTable();
+    TestChallengeDropRollsOneStoreStreamStep();
+    TestChallengeNodeWinsGrantTheRolledDrop();
+    TestChallengeDropAwardReadsTheServerReply();
+    TestChallengeDropPreviewsCycleLikeTheOriginal();
+    TestChallengeNodeStaysHiddenUntilTheBossFalls();
     TestProgressionPersistence();
     TestRosterInstancesAndPersistence();
     TestConsumeTablesAndCurves();

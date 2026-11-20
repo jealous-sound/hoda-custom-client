@@ -1,3 +1,4 @@
+HODA_CHALLENGE_POPUP_DESC|Los desafíos <color=orange>ponen a prueba a tu pelotón</color> de formas concretas. Completa un desafío tantas veces como quieras para <color=orange>tener la posibilidad de ganar héroes y runas.</color>
 HODA_NEXUS_EVENT_BREACH_OPENS_AGAIN_TITLE|La Brecha se abre de nuevo
 HODA_NEXUS_EVENT_WOODLAND_SPIRITS_TITLE|Espíritus del bosque
 HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLACK_FACTION|La facción negra consigue 150% a la Salud y la Fuerza.

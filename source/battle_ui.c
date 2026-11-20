@@ -49,6 +49,7 @@ typedef struct {
     Color diff_color;
     int energy_cost;
     int gold, xp, gems;
+    float reward_preview_time;
     const CampaignNode *node;
     CampaignNode nexus_node;
     bool new_map_on_win;
@@ -233,6 +234,7 @@ void BattleUiEnterNode(
     ui->gold = node ? node->gold : 0;
     ui->xp = node ? node->xp : 0;
     ui->gems = node ? node->default_gems : 0;
+    ui->reward_preview_time = 0.0f;
     ui->new_map_on_win = false;
     StrCopy(ui->player_name, sizeof(ui->player_name), player->name);
     ui->player_badges = PlayerNameBadges(player);
@@ -410,6 +412,21 @@ static void BattleUiRewardRow(float right, float y, Texture2D icon, bool mirror_
     UiDrawTextRight(font, text, (Rectangle){0.0f, y, icon_dst.x - 6.0f, row_h}, fs, (Color){245, 244, 238, 255});
     Rectangle src = {0, 0, mirror_icon ? -icon.width : icon.width, icon.height};
     DrawTexturePro(icon, src, icon_dst, (Vector2){0, 0}, 0.0f, WHITE);
+}
+
+static void BattleUiChanceRow(float right, float y, const ChallengeDropTable *drops, float elapsed) {
+    Font font = GuiFont(FNT_COOL);
+    Texture2D tag = GuiTex(GUI_MM_TAG);
+    float row_h = 44 * MM_SY, icon_s = 53 * MM_SY;
+    const char *label = LocGet("REWARD_CHANCE_AT");
+    float fs = row_h * 0.45f;
+    float text_w = MeasureTextEx(font, label, fs, 1.0f).x;
+    float tag_w = fmaxf(MM_X(110), text_w + icon_s * 0.5f + MM_X(24));
+    Rectangle icon_dst = {right - icon_s, y + (row_h - icon_s) * 0.5f, icon_s, icon_s};
+    Rectangle tag_dst = {icon_dst.x + icon_s * 0.5f - tag_w, y, tag_w, row_h};
+    UiDrawTexture(tag, tag_dst, WHITE);
+    UiDrawTextRight(font, label, (Rectangle){0.0f, y, icon_dst.x - 6.0f, row_h}, fs, (Color){245, 244, 238, 255});
+    ChallengeDropsDrawPreview(drops, icon_dst, elapsed);
 }
 
 static const float RIBBON_LEFT[14][4] = {
@@ -1132,6 +1149,9 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
             y -= stride;
         }
         if (ui->pvp) BattleUiRewardRow(tag_right, y, GuiTex(ui->pvp_stake_icon), false, ui->pvp_gain);
+        const ChallengeDropTable *drops = !ui->pvp && ui->node ? ui->node->drops : NULL;
+        ui->reward_preview_time += GetFrameTime();
+        if (drops && drops->preview_count > 0) BattleUiChanceRow(tag_right, y, drops, ui->reward_preview_time);
     }
 
     {

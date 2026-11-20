@@ -1,3 +1,4 @@
+HODA_CHALLENGE_POPUP_DESC|Le sfide <color=orange>misurano la tua squadra</color> in modi specifici. Completa una sfida tutte le volte che vuoi per <color=orange>avere la possibilità di ottenere eroi e rune!</color>
 HODA_NEXUS_EVENT_BREACH_OPENS_AGAIN_TITLE|Il Varco si riapre
 HODA_NEXUS_EVENT_WOODLAND_SPIRITS_TITLE|Spiriti dei boschi
 HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLACK_FACTION|La fazione nera ottiene 150% Salute e Potere.

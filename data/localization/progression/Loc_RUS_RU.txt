@@ -1,3 +1,4 @@
+HODA_CHALLENGE_POPUP_DESC|Испытания <color=orange>проверяют ваш отряд</color> по-особому. Проходите испытание сколько угодно раз, чтобы <color=orange>получить шанс заработать героев и руны!</color>
 HODA_NEXUS_EVENT_BREACH_OPENS_AGAIN_TITLE|Брешь открывается вновь
 HODA_NEXUS_EVENT_WOODLAND_SPIRITS_TITLE|Лесные духи
 HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLACK_FACTION|Герои "черной" фракции получают 150 % здоровья и силы.
