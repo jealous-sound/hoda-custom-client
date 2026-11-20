@@ -25,6 +25,8 @@ typedef struct {
 #define DEBUG_PVP_BATTLES 5
 #define DEBUG_PVP_BATTLE_SPACING 5400
 #define DEBUG_PVP_DEFENSE_DELAY 90000
+#define DEBUG_PVP_PLAYER_ATTACK_AGO 3600
+#define DEBUG_PVP_PLAYER_TROPHY_SWING 31
 #define DEBUG_BFX_DEFAULT_AGE 30
 #define DEBUG_PACK_FUNDS 999999
 #define DEBUG_REVEAL_STEPS_PER_SECOND 60.0f
@@ -533,11 +535,27 @@ static BattleResultsPresentation DebugResultsPresentation(const DebugShot *shot,
 
 static void DebugSeedRenown(Player *player, int rank, int free_points);
 
+static void DebugSeedPlayerDefense(PlayerPvp *pvp, const char *id, const char *name, bool won, bool event) {
+    long long at = (long long)time(NULL) - DEBUG_PVP_PLAYER_ATTACK_AGO;
+    PlayerPvpBattle line = {.at = at, .level = 100, .defense = true, .won = won, .event = event};
+    if (!event) line.trophy_delta = won ? DEBUG_PVP_PLAYER_TROPHY_SWING : -DEBUG_PVP_PLAYER_TROPHY_SWING;
+    StrCopy(line.opponent_id, sizeof(line.opponent_id), id);
+    StrCopy(line.opponent, sizeof(line.opponent), name);
+    PvpHistoryPush(pvp, &line);
+}
+
+static void DebugSeedPlayerAttacks(PlayerPvp *pvp, bool event) {
+    PvpNoteAttack(pvp, "varric", (long long)time(NULL) - DEBUG_PVP_PLAYER_ATTACK_AGO);
+    DebugSeedPlayerDefense(pvp, "varric", "Varric", true, event);
+    DebugSeedPlayerDefense(pvp, "isabela", "Isabela", false, event);
+}
+
 static void DebugSeedLadderRivals(Game *game) {
     cJSON *reply = cJSON_Parse(TextFormat(DEBUG_LADDER_RIVALS, PvpEventCycle((long long)time(NULL))));
     PvpLadderAdopt(&pvp_ladder, reply);
     PvpEventLadderAdopt(&pvp_event_ladder, reply);
     cJSON_Delete(reply);
+    PvpNoteAttack(&game->player.pvp, "varric", (long long)time(NULL) - DEBUG_PVP_PLAYER_ATTACK_AGO);
     DebugSeedRenown(&game->player, EnvInt("HOD_RENOWN_RANK", DEBUG_RENOWN_RANK), 0);
 }
 
@@ -549,7 +567,7 @@ static bool DebugPrepareDuel(Game *game, DebugShot *shot) {
     GuildHandleDuel(&game->guild, reply);
     cJSON_Delete(reply);
     DebugSeedRenown(&game->player, EnvInt("HOD_RENOWN_RANK", DEBUG_RENOWN_RANK), 0);
-    GameEnterFixedPvpBattle(game, GameDuelOpponent(game), -1, SCREEN_MISSIONS);
+    GameEnterFixedPvpBattle(game, GameDuelOpponent(game), -1, false, SCREEN_MISSIONS);
     return true;
 }
 
@@ -587,6 +605,7 @@ static void DebugPreparePvp(Game *game, DebugShot *shot) {
                 PvpOpponent opponent =
                     PvpEventOpponentGenerate(game->player.level, pvp->trophies, pvp->event.banners, now, 1);
                 PvpRecordEventAttack(pvp, &opponent, true, now);
+                DebugSeedPlayerAttacks(pvp, true);
             }
         }
         game->screen = SCREEN_PVP_EVENT;
@@ -780,7 +799,8 @@ static void DebugSeedGoals(Game *game, DebugShot *shot) {
             PvpOpponent o = PvpOpponentGenerate(game->player.level, pvp->trophies, PvpDay(now), seed);
             PvpRecordAttack(pvp, &o, seed % 3 != 0, now - seed * DEBUG_PVP_BATTLE_SPACING);
         }
-        PvpSimulateDefense(pvp, game->player.level, now + DEBUG_PVP_DEFENSE_DELAY);
+        PvpSimulateDefense(&game->player, now + DEBUG_PVP_DEFENSE_DELAY);
+        DebugSeedPlayerAttacks(pvp, false);
         pvp->event = (PlayerPvpEvent){.cycle = PvpEventCycle(now) - 1, .banners = DEBUG_PVP_BANNERS};
         if (DebugShotIs(shot, "goals_trophies_rivals")) DebugSeedLadderRivals(game);
         MissionsOpen(&game->missions, &game->player, shots[i].tab);

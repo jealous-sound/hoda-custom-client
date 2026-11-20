@@ -7075,28 +7075,75 @@ static void TestPvpNextsResetDaily(void) {
     assert(PvpNextsRemaining(&pvp, day + NEXUS_SECONDS_PER_DAY) == limit - 1);
 }
 
+typedef struct {
+    Character heroes[2];
+    Ability abilities[2];
+} TestDefenders;
+
+static void TestDefenderSquads(Player *player, TestDefenders *defenders, int strong_squad) {
+    memset(player, 0, sizeof(*player));
+    TestCharacter(&defenders->heroes[0], &defenders->abilities[0], "UNIT_A", "ABILITY_DAMAGE", TARGET_ONE, 1, 1);
+    TestCharacter(
+        &defenders->heroes[1], &defenders->abilities[1], "UNIT_B", "ABILITY_DAMAGE", TARGET_ALL, 1000000, 100000000
+    );
+    player->roster = defenders->heroes;
+    player->roster_count = 2;
+    player->level = 10;
+    for (int q = 0; q < PLAYER_MAX_SQUADS; q++)
+        for (int s = 0; s < SQUAD_SLOT_COUNT; s++) player->squads[q][s] = -1;
+    player->squads[0][0] = strong_squad == 0;
+    player->squads[1][0] = strong_squad == 1;
+    player->current_squad = 1;
+}
+
 static void TestPvpDefenseLogWaitsForFirstBattleAndCapsAttacks(void) {
     const PvpRules *rules = &PvpTableEnsure()->rules;
     long long now = 20000 * NEXUS_SECONDS_PER_DAY;
-    PlayerPvp fresh = {0};
-    assert(PvpSimulateDefense(&fresh, 10, now) == 0 && fresh.history_count == 0);
+    static Player player, copy;
+    static TestDefenders defenders, copied;
+    TestDefenderSquads(&player, &defenders, 0);
+    assert(PvpSimulateDefense(&player, now) == 0 && player.pvp.history_count == 0);
 
-    PlayerPvp pvp = {.trophies = 500};
+    PlayerPvp *pvp = &player.pvp;
+    pvp->trophies = 500;
     PvpOpponent o = PvpOpponentGenerate(10, 500, PvpDay(now), 9);
-    PvpRecordAttack(&pvp, &o, true, now);
-    assert(pvp.defense_checked_at == now);
-    assert(PvpSimulateDefense(&pvp, 10, now + rules->attack_interval_seconds - 1) == 0);
+    PvpRecordAttack(pvp, &o, true, now);
+    assert(pvp->defense_checked_at == now);
+    assert(PvpSimulateDefense(&player, now + rules->attack_interval_seconds - 1) == 0);
     long long later = now + 100LL * rules->attack_interval_seconds;
-    assert(PvpSimulateDefense(&pvp, 10, later) == rules->max_attacks_per_login);
-    assert(pvp.history_count == 1 + rules->max_attacks_per_login);
-    assert(pvp.defense_wins + pvp.defense_losses == rules->max_attacks_per_login);
-    assert(pvp.history[0].defense && pvp.history[0].at == later);
-    assert(PvpSimulateDefense(&pvp, 10, later) == 0);
+    assert(PvpSimulateDefense(&player, later) == rules->max_attacks_per_login);
+    assert(pvp->history_count == 1 + rules->max_attacks_per_login);
+    assert(pvp->defense_wins + pvp->defense_losses == rules->max_attacks_per_login);
+    assert(pvp->history[0].defense && pvp->history[0].at == later);
+    assert(PvpSimulateDefense(&player, later) == 0);
 
-    PlayerPvp copy = {.trophies = 500};
-    PvpRecordAttack(&copy, &o, true, now);
-    PvpSimulateDefense(&copy, 10, later);
-    assert(memcmp(&copy, &pvp, sizeof(copy)) == 0);
+    TestDefenderSquads(&copy, &copied, 0);
+    copy.pvp.trophies = 500;
+    PvpRecordAttack(&copy.pvp, &o, true, now);
+    PvpSimulateDefense(&copy, later);
+    assert(memcmp(&copy.pvp, pvp, sizeof(copy.pvp)) == 0);
+}
+
+static void TestPvpTheFirstSquadDefends(void) {
+    const PvpRules *rules = &PvpTableEnsure()->rules;
+    long long now = 20000 * NEXUS_SECONDS_PER_DAY;
+    long long later = now + 100LL * rules->attack_interval_seconds;
+    static Player player;
+    static TestDefenders defenders;
+    for (int strong = 0; strong <= 1; strong++) {
+        TestDefenderSquads(&player, &defenders, strong);
+        player.pvp.trophies = 500;
+        PvpOpponent o = PvpOpponentGenerate(10, 500, PvpDay(now), 9);
+        PvpRecordAttack(&player.pvp, &o, true, now);
+        int trophies = player.pvp.trophies;
+        assert(PvpSimulateDefense(&player, later) == rules->max_attacks_per_login);
+        bool held = strong == 0;
+        assert(player.pvp.defense_wins == (held ? rules->max_attacks_per_login : 0));
+        const PlayerPvpBattle *first = &player.pvp.history[rules->max_attacks_per_login - 1];
+        assert(first->won == held);
+        assert(first->trophy_delta == PvpBotDefenseTrophies(first->opponent_trophies, trophies, !held));
+        assert(held ? first->trophy_delta >= 0 : first->trophy_delta < 0);
+    }
 }
 
 static void TestPvpRevengeRebuildsTheSameOpponent(void) {
@@ -7116,7 +7163,44 @@ static void TestPvpRevengeRebuildsTheSameOpponent(void) {
     assert(!PvpCanRevenge(&battle));
     battle.revenged = false;
     battle.won = true;
-    assert(!PvpCanRevenge(&battle));
+    assert(PvpCanRevenge(&battle) && !PvpRevengesAPlayer(&battle));
+    StrCopy(battle.opponent_id, sizeof(battle.opponent_id), "attacker");
+    assert(!PvpCanRevenge(&battle) && PvpRevengesAPlayer(&battle));
+    battle.defense = false;
+    assert(!PvpRevengesAPlayer(&battle));
+}
+
+static void TestPvpTheSamePlayerCanBeAttackedOncePerDay(void) {
+    PlayerPvp pvp = {0};
+    long long now = 20000 * NEXUS_SECONDS_PER_DAY;
+    PvpOpponent rival = PvpOpponentFromDuel("rival", "Rival", 10, 900, 0, 3);
+    PlayerPvpBattle attack = PvpRecordAttack(&pvp, &rival, true, now);
+    assert(!strcmp(attack.opponent_id, "rival") && !strcmp(attack.opponent, "Rival") && !attack.event);
+    assert(PvpAttackCooldownLeft(&pvp, "rival", now + 60) == PVP_REPEAT_ATTACK_SECONDS - 60);
+    assert(PvpAttackCooldownLeft(&pvp, "rival", now + PVP_REPEAT_ATTACK_SECONDS) == 0);
+    assert(PvpAttackCooldownLeft(&pvp, "someone else", now) == 0);
+    PlayerPvpBattle event = PvpRecordEventAttack(&pvp, &rival, true, now + 10);
+    assert(event.event && !strcmp(event.opponent_id, "rival") && event.banners > 0);
+    assert(pvp.attacked_count == 1 && pvp.attacked[0].at == now + 10);
+
+    for (int i = 0; i < PVP_ATTACKED_CAPACITY + 2; i++) PvpNoteAttack(&pvp, TextFormat("player-%d", i), now + 20 + i);
+    assert(pvp.attacked_count == PVP_ATTACKED_CAPACITY);
+    assert(PvpAttackCooldownLeft(&pvp, "rival", now + 100) == 0);
+    assert(PvpAttackCooldownLeft(&pvp, TextFormat("player-%d", PVP_ATTACKED_CAPACITY + 1), now + 100) > 0);
+    PvpNoteAttack(&pvp, "late", now + PVP_REPEAT_ATTACK_SECONDS + 100);
+    assert(pvp.attacked_count == 1 && !strcmp(pvp.attacked[0].id, "late"));
+}
+
+static void TestPvpCooldownMessageNamesTheTimeLeft(void) {
+    char hours[GOALS_TEXT_SIZE], expected[GOALS_TEXT_SIZE], message[GOALS_TEXT_SIZE];
+    StrReplaceToken(hours, sizeof(hours), LocGet("HOURS"), "[number]", "5");
+    StrReplaceToken(expected, sizeof(expected), LocGet("LEADERBOARD_DOUBLE_TAP_MESSAGE"), "{0}", hours);
+    GoalsCooldownMessage(message, sizeof(message), "LEADERBOARD_DOUBLE_TAP_MESSAGE", 5 * GOALS_HOUR + 10);
+    assert(!strcmp(message, expected) && strstr(message, "{0}") == NULL);
+    char minute[GOALS_TEXT_SIZE], span[GOALS_TEXT_SIZE];
+    StrReplaceToken(minute, sizeof(minute), LocGet("MINUTE"), "[number]", "1");
+    GoalsTimeSpanText(span, sizeof(span), GOALS_MINUTE + 59);
+    assert(!strcmp(span, minute));
 }
 
 static void TestPvpEveryPooledSquadFights(void) {
@@ -7286,6 +7370,12 @@ static void TestPvpSaveRoundTrip(void) {
     PvpOpponent o = PvpOpponentGenerate(5, 0, 20000, 21);
     PvpRecordAttack(&saved.pvp, &o, true, 1700000000);
     saved.pvp.history[0].revenged = true;
+    PvpOpponent rival = PvpOpponentFromDuel("rival", "Rival", 10, 900, 0, 3);
+    PvpRecordEventAttack(&saved.pvp, &rival, true, 1700000100);
+    PlayerPvpBattle defended = {.at = 1700000200, .level = 12, .defense = true, .won = true, .event = true};
+    StrCopy(defended.opponent, sizeof(defended.opponent), "Hawke");
+    StrCopy(defended.opponent_id, sizeof(defended.opponent_id), "attacker");
+    PvpHistoryPush(&saved.pvp, &defended);
     saved.pvp.nexts_used = 2;
     saved.pvp.nexts_day = 20000;
     saved.pvp.event = (PlayerPvpEvent){.cycle = 700, .banners = 90, .milestones_paid = 1, .buffed = true};
@@ -10540,7 +10630,10 @@ int main(void) {
     TestPvpMatchWaitsForTheServersReply();
     TestPvpOpponentFromServerMatchRebuildsTheBot();
     TestPvpDefenseLogWaitsForFirstBattleAndCapsAttacks();
+    TestPvpTheFirstSquadDefends();
     TestPvpRevengeRebuildsTheSameOpponent();
+    TestPvpTheSamePlayerCanBeAttackedOncePerDay();
+    TestPvpCooldownMessageNamesTheTimeLeft();
     TestPvpEveryPooledSquadFights();
     TestNewsFeedLeadsWithAnnouncementsWhileTheyRun();
     TestAnnouncementsAndTheEventBuffCapReadInEveryLanguage();

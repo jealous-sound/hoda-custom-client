@@ -977,7 +977,7 @@ HeroesButton HeroesDrawNav(Heroes *h, HeroesButton active, bool interactive, int
     y += w + gap;
     Rectangle gallery = {x, y, w, w};
     if (ButtonDrawEx(&h->gallery, gallery, interactive)) clicked = HEROES_GALLERY;
-    if (active == HEROES_GALLERY) ButtonDrawVisual(&h->gallery, gallery, true);
+    if (active == HEROES_GALLERY) ButtonDrawVisual(&h->gallery, gallery, true, WHITE);
     ButtonDrawBadge(gallery, gallery_badge);
     y += w + gap;
     Rectangle squad = {x, y, w, w};

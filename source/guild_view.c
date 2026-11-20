@@ -2739,6 +2739,8 @@ bool GuildNoticePopupClose(GuildNoticePopup *popup) {
     return true;
 }
 
+static bool GuildNoticePopupDrawShown(GuildNoticePopup *popup);
+
 bool GuildNoticePopupDraw(GuildNoticePopup *popup, Guild *g) {
     if (!popup->open) {
         GuildNotice notice;
@@ -2746,6 +2748,14 @@ bool GuildNoticePopupDraw(GuildNoticePopup *popup, Guild *g) {
         GuildNoticeCompose(popup, &notice);
         popup->open = true;
     }
+    return GuildNoticePopupDrawShown(popup);
+}
+
+bool GuildNoticePopupDrawIfOpen(GuildNoticePopup *popup) {
+    return popup->open && GuildNoticePopupDrawShown(popup);
+}
+
+static bool GuildNoticePopupDrawShown(GuildNoticePopup *popup) {
     Rectangle frame = MessagePopupDrawFrame();
     Rectangle content = MessagePopupContent(frame);
     Font body = GuiFont(FNT_MENU);
