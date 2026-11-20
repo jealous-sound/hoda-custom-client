@@ -805,6 +805,12 @@ bool PlatformNativeFullscreen(void *window) {
 void PlatformToggleNativeFullscreen(void *window) {
     ((void (*)(id, SEL, id))objc_msgSend)((id)window, sel_registerName("toggleFullScreen:"), nil);
 }
+
+void PlatformHideApplication(void) {
+    id application =
+        ((id (*)(id, SEL))objc_msgSend)((id)objc_getClass("NSApplication"), sel_registerName("sharedApplication"));
+    ((void (*)(id, SEL, id))objc_msgSend)(application, sel_registerName("hide:"), nil);
+}
 #endif
 
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size) {

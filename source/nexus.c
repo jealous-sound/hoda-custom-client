@@ -898,6 +898,7 @@ static NexusAction NexusDrawDialog(Nexus *n, Player *player, const PlayerNexusRu
 }
 
 bool NexusHandleBack(Nexus *n) {
+    if (n->anim_active) return true;
     if (n->dialog == NEXUS_DIALOG_NONE) return false;
     if (n->revive_ticket != BACKEND_NO_TICKET) return true;
     GuiSoundPlay(SND_UI_POPUP_CLOSE);

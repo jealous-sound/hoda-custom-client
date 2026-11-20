@@ -13,6 +13,10 @@ static bool WindowFullscreen(void) {
 static void WindowSetFullscreen(bool fullscreen) {
     if (WindowFullscreen() != fullscreen) PlatformToggleNativeFullscreen(GetWindowHandle());
 }
+
+static void WindowSendToBack(void) {
+    PlatformHideApplication();
+}
 #else
 #define WINDOW_PIXEL_DENSITY_FLAGS 0
 
@@ -43,5 +47,9 @@ static bool WindowFullscreen(void) {
 static void WindowSetFullscreen(bool fullscreen) {
     if (WindowFullscreen() != fullscreen) ToggleBorderlessWindowed();
     if (fullscreen) ClearWindowState(FLAG_WINDOW_TOPMOST);
+}
+
+static void WindowSendToBack(void) {
+    MinimizeWindow();
 }
 #endif

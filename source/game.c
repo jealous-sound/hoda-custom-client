@@ -59,6 +59,7 @@ typedef struct {
 
 typedef struct {
     Screen screen;
+    Screen screen_drawn;
     Player player;
     Hud hud;
     HomeUI home_ui;
@@ -1233,6 +1234,7 @@ static bool GameLoadProgression(Game *g) {
 
 bool GameInitialize(Game *g) {
     g->screen = SCREEN_HOME;
+    g->screen_drawn = SCREEN_HOME;
     ProgressionInitializePlayerDefaults(&g->player);
 
     LoadingScreenBegin();
@@ -1400,6 +1402,25 @@ static bool GameHandleBattleBack(Game *g) {
     return true;
 }
 
+static bool GameBackLeave(Game *g, Screen destination, SoundId sound) {
+    if (TutorialRunning()) return true;
+    GuiSoundPlay(sound);
+    g->screen = destination;
+    return true;
+}
+
+static bool GameHandleHeroesBack(Game *g) {
+    if (TutorialRunning() || HeroesBackgroundDragActive(&g->heroes_scene)) return true;
+    if (HeroesCloseDetails(&g->heroes)) return true;
+    return GameBackLeave(g, SCREEN_HOME, SND_UI_HOME);
+}
+
+static bool GameHandleNexusMapBack(Game *g) {
+    if (TutorialRunning()) return true;
+    if (!g->player.nexus_run.committed) QuestsOpenLadder(&g->quests, g->nexus.active_event);
+    return GameBackLeave(g, SCREEN_QUESTS, SND_UI_HOME);
+}
+
 bool GameHandlePopupBack(Game *g) {
     if (ClientUpdateOnlineRefused()) return false;
     if (GameCloseNotice(g)) return true;
@@ -1427,6 +1448,7 @@ bool GameHandlePopupBack(Game *g) {
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return true;
     }
+    if (g->screen == SCREEN_HEROES) return GameHandleHeroesBack(g);
     if (g->screen == SCREEN_RUNES) return RunesHandleBack(&g->runes);
     if (g->screen == SCREEN_CONSUME) return ConsumeHandleBack(&g->consume);
     if (g->screen == SCREEN_FORTIFY) return FortifyHandleBack(&g->fortify);
@@ -1441,6 +1463,7 @@ bool GameHandlePopupBack(Game *g) {
         return true;
     }
     if (g->screen == SCREEN_QUESTS && QuestsHandleBack(&g->quests)) return true;
+    if (g->screen == SCREEN_QUESTS) return GameBackLeave(g, SCREEN_HOME, SND_UI_POPUP_CLOSE);
     if (g->screen == SCREEN_EXPEDITIONS && ExpeditionsHandleBack(&g->expeditions)) return true;
     if (g->screen == SCREEN_MISSIONS || g->screen == SCREEN_PVP_HUB || g->screen == SCREEN_PVP_EVENT ||
         g->screen == SCREEN_EXPEDITIONS) {
@@ -1449,16 +1472,22 @@ bool GameHandlePopupBack(Game *g) {
         return true;
     }
     if (g->screen == SCREEN_MAP && CampaignHandleBack(&g->map)) return true;
+    if (g->screen == SCREEN_MAP) return GameBackLeave(g, SCREEN_HOME, SND_UI_HOME);
     if (g->screen == SCREEN_NEXUS && NexusRecapHandleBack(&g->nexus_recap, &g->hud, &g->player)) {
         if (!NexusRecapOpened(&g->nexus_recap)) g->screen = SCREEN_QUESTS;
         return true;
     }
     if (g->screen == SCREEN_NEXUS && NexusHandleBack(&g->nexus)) return true;
+    if (g->screen == SCREEN_NEXUS) return GameHandleNexusMapBack(g);
     if (g->screen == SCREEN_BATTLE) return GameHandleBattleBack(g);
     if (g->screen == SCREEN_STORE) {
         StoreAction back = StoreHandleBack(&g->store, &g->heroes);
         if (back == STORE_ACTION_CLOSE) g->screen = SCREEN_HOME;
         if (back == STORE_ACTION_REWARDS_SHOWN) g->screen = g->store_return_screen;
+        return true;
+    }
+    if (g->screen == SCREEN_HOME) {
+        WindowSendToBack();
         return true;
     }
     return false;
@@ -1849,7 +1878,7 @@ void GameDraw(Game *g) {
     bool overlay_owns_input =
         NamePromptIsOpen(&g->name_prompt) || ClientUpdateOnlineRefused() || MaintenanceNoticeIsOpen(&g->maintenance);
     if (overlay_owns_input) UiSetInputWindow(true, (Rectangle){0});
-    Screen screen_at_frame_start = g->screen;
+    Screen previous_screen = g->screen_drawn;
     bool pvp_battle = g->screen == SCREEN_BATTLE && g->battle_is_pvp;
     g->hud.show_banners = g->screen == SCREEN_PVP_EVENT || (pvp_battle && g->pvp_event);
     g->hud.show_trophies = g->screen == SCREEN_PVP_HUB || (pvp_battle && !g->pvp_event);
@@ -2556,30 +2585,31 @@ void GameDraw(Game *g) {
             g->screen = SCREEN_QUESTS;
     }
     GameHandleHudAction(g, popup_hud_action);
-    if (screen_at_frame_start == SCREEN_HEROES && g->screen != SCREEN_HEROES && g->screen != SCREEN_RUNES)
+    if (previous_screen == SCREEN_HEROES && g->screen != SCREEN_HEROES && g->screen != SCREEN_RUNES)
         HeroesBackgroundClearRowBonus(&g->heroes_scene);
-    if (screen_at_frame_start == SCREEN_FORTIFY && g->screen != SCREEN_FORTIFY) {
+    if (previous_screen == SCREEN_FORTIFY && g->screen != SCREEN_FORTIFY) {
         FortifyPortraitsUnload(&g->fortify);
         HomeBackgroundMarkSquadStale(&g->scene);
     }
-    if (screen_at_frame_start == SCREEN_CONSUME && g->screen != SCREEN_CONSUME) {
+    if (previous_screen == SCREEN_CONSUME && g->screen != SCREEN_CONSUME) {
         HeroesBackgroundReloadSquad(&g->heroes_scene, &g->player);
         HomeBackgroundMarkSquadStale(&g->scene);
     }
-    if (screen_at_frame_start != g->screen) MissionsSync(&g->player, &g->map);
-    if (screen_at_frame_start == SCREEN_QUESTS && g->screen != SCREEN_QUESTS) QuestsClose(&g->quests);
-    if (screen_at_frame_start == SCREEN_MISSIONS && g->screen != SCREEN_MISSIONS)
+    if (previous_screen != g->screen) MissionsSync(&g->player, &g->map);
+    if (previous_screen == SCREEN_QUESTS && g->screen != SCREEN_QUESTS) QuestsClose(&g->quests);
+    if (previous_screen == SCREEN_MISSIONS && g->screen != SCREEN_MISSIONS)
         MissionsClose(&g->missions, &g->hud, &g->player);
     if (g->screen != SCREEN_HEROES && g->screen != SCREEN_GALLERY && GalleryPopupOpen(&g->gallery))
         GalleryClosePopup(&g->gallery);
-    if (screen_at_frame_start == SCREEN_GALLERY && g->screen != SCREEN_GALLERY && g->screen != SCREEN_STORE)
+    if (previous_screen == SCREEN_GALLERY && g->screen != SCREEN_GALLERY && g->screen != SCREEN_STORE)
         HomeBackgroundGalleryClear(&g->scene);
-    if (screen_at_frame_start == SCREEN_NEXUS && g->screen != SCREEN_NEXUS && g->screen != SCREEN_BATTLE &&
+    if (previous_screen == SCREEN_NEXUS && g->screen != SCREEN_NEXUS && g->screen != SCREEN_BATTLE &&
         NexusRunComplete(&g->nexus, &g->player.nexus_run) && !g->nexus_award_waiting) {
         NexusAwardEscrow(&g->player);
         ProgressionSave(&g->player);
         GameSubmitSimpleAction("nexus_award");
     }
+    g->screen_drawn = g->screen;
     GameDrawTutorial(g, dt);
     GameDrawNamePrompt(g, dt);
     GameDrawMaintenance(g);
