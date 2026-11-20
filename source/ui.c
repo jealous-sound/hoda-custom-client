@@ -45,8 +45,12 @@ Rectangle UiRoot(void) {
     return (Rectangle){0.0f, 0.0f, UiWidth(), UiHeight()};
 }
 
+float UiFullScaleWidthOf(float ui_width) {
+    return ui_width * ui_chosen_scale;
+}
+
 float UiFullScaleWidth(void) {
-    return UiWidth() * ui_chosen_scale;
+    return UiFullScaleWidthOf(UiWidth());
 }
 
 float UiSpareWidth(void) {

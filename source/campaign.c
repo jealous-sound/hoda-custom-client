@@ -86,7 +86,7 @@ static Rectangle CampaignScreenRoot(float screen_w, float screen_h) {
 }
 
 static Rectangle CampaignScreenIgui(float screen_w, float screen_h, CampaignIguiAnchor anchor) {
-    Rectangle full_scale = {0.0f, HUD_TOP_HEIGHT, UiFullScaleWidth(), UI_DESIGN_H - HUD_TOP_HEIGHT};
+    Rectangle full_scale = {0.0f, HUD_TOP_HEIGHT, UiFullScaleWidthOf(screen_w), UI_DESIGN_H - HUD_TOP_HEIGHT};
     Rectangle root = CampaignScreenRoot(screen_w, screen_h);
     Rectangle rect = CampaignIguiRect(full_scale, anchor);
     rect.x += (root.width - full_scale.width) * Clamp(anchor.x, 0.0f, 1.0f);
@@ -645,11 +645,11 @@ typedef struct {
 
 static CampaignTrayLayout CampaignTrayLayoutFor(float screen_w, float screen_h) {
     Rectangle container = CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_TRAY_CONTAINER);
-    float toggle_room = UiFullScaleWidth() - container.width;
+    float toggle_room = UiFullScaleWidthOf(screen_w) - container.width;
     container.x = toggle_room;
     container.width = screen_w - toggle_room;
     return (CampaignTrayLayout){
-        .background = HudSpanCanvasWidth(CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_TRAY_BACKGROUND)),
+        .background = HudSpanWidth(CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_TRAY_BACKGROUND), screen_w),
         .list = CampaignIguiRect(container, CAMPAIGN_TRAY_LIST),
         .back_arrow = CampaignIguiRect(container, CAMPAIGN_TRAY_BACK_ARROW),
         .forward_arrow = CampaignIguiRect(container, CAMPAIGN_TRAY_FORWARD_ARROW),
@@ -791,6 +791,7 @@ static void CampaignOpenAbout(Campaign *c) {
 }
 
 bool CampaignHandleBack(Campaign *c) {
+    if (c->progression_active && !c->progression_camera_finished) return true;
     if (c->challenge_popup == CAMPAIGN_CHALLENGE_POPUP_OPEN) {
         c->challenge_popup = CAMPAIGN_CHALLENGE_POPUP_CLOSED;
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
@@ -988,9 +989,12 @@ static int CampaignCurrentEnergyCost(const CampaignNode *node, int losses) {
     return losses > 0 ? 0 : node->energy_cost;
 }
 
-int CampaignSelectedEnergyCost(const Campaign *c, const PlayerCampaignProgress *pcp) {
-    int map = pcp->campaign_index, node = c->selected_node;
+int CampaignNodeEnergyCost(const Campaign *c, const PlayerCampaignProgress *pcp, int map, int node) {
     return CampaignCurrentEnergyCost(&c->maps[map].nodes[node], pcp->node_losses[map][node]);
+}
+
+int CampaignSelectedEnergyCost(const Campaign *c, const PlayerCampaignProgress *pcp) {
+    return CampaignNodeEnergyCost(c, pcp, pcp->campaign_index, c->selected_node);
 }
 
 const CampaignNode *CampaignFindNode(const Campaign *c, const char *map_id, int step) {

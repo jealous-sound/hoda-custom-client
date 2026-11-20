@@ -63,6 +63,7 @@ bool PlatformContinueAs(const char *executable);
 #ifdef __APPLE__
 bool PlatformNativeFullscreen(void *window);
 void PlatformToggleNativeFullscreen(void *window);
+void PlatformHideApplication(void);
 #endif
 
 #endif

@@ -257,13 +257,16 @@ static void TestFormationBonusMetadata(void) {
     assert(s.units[SQUAD_SLOT_COUNT].power == 120);
 
     BattlePlay bp = {.sim = s};
-    BpBuildIntroEvents(&bp);
-    assert(bp.intro_event_count == 1);
-    assert(bp.intro_events[0].affected_slots == 0x0fu);
+    static const BattleRoster no_runes = {0};
+    BpBuildIntroEvents(&bp, &no_runes);
+    assert(bp.intro_event_count == 2);
+    assert(bp.intro_events[0].side == 0 && bp.intro_events[0].affected_slots == 0x0fu);
     assert(strcmp(BpFactionFx(bp.intro_events[0].faction), "fx_eff_faction_charge_pre") == 0);
+    assert(bp.intro_events[1].side == 1 && bp.intro_events[1].affected_slots == 0x0fu);
 
     bp.sim.formation_bonus_pct[0] = 0.0f;
-    BpBuildIntroEvents(&bp);
+    bp.sim.formation_bonus_pct[1] = 0.0f;
+    BpBuildIntroEvents(&bp, &no_runes);
     assert(bp.intro_event_count == 0 && bp.intro_event == -1);
 }
 
@@ -283,7 +286,7 @@ static void TestFormationBonusRequiresSharedFaction(void) {
     for (int slot = 0; slot < 4; slot++) assert(s.units[slot].power == 100);
 }
 
-static void TestIntroQueueShowsOnlyPlayerFactionBonus(void) {
+static void TestIntroQueueShowsBothFactionBonusesAfterBothSidesRunes(void) {
     BattlePlay bp = {0};
     Character characters[8] = {0};
     for (int side = 0; side < 2; side++) {
@@ -298,11 +301,18 @@ static void TestIntroQueueShowsOnlyPlayerFactionBonus(void) {
     bp.sim.formation_faction[1] = 1u;
     bp.sim.formation_bonus_pct[0] = 10.0f;
     bp.sim.formation_bonus_pct[1] = 20.0f;
+    bp.sim.rune_defs[0] = 7;
+    bp.sim.rune_def_count = 1;
+    static const BattleRoster enemy = {.rune_defs = {3, 5}, .rune_def_count = 2};
 
-    BpBuildIntroEvents(&bp);
+    BpBuildIntroEvents(&bp, &enemy);
 
-    assert(bp.intro_event_count == 1);
-    assert(bp.intro_events[0].faction == 2u);
+    assert(bp.intro_event_count == 5);
+    assert(bp.intro_events[0].side == 0 && bp.intro_events[0].rune_def == 7);
+    assert(bp.intro_events[1].side == 1 && bp.intro_events[1].rune_def == 3);
+    assert(bp.intro_events[2].side == 1 && bp.intro_events[2].rune_def == 5);
+    assert(bp.intro_events[3].side == 0 && bp.intro_events[3].faction == 2u && bp.intro_events[3].rune_def < 0);
+    assert(bp.intro_events[4].side == 1 && bp.intro_events[4].faction == 1u && bp.intro_events[4].rune_def < 0);
 }
 
 static void TestProjectileTrailFollowsFlight(Battle *battle) {
@@ -4909,6 +4919,22 @@ static void TestMapTrayFollowsTheOriginalPrefab(void) {
     assert(!CampaignTrayCanScrollBack(&campaign) && CampaignTrayCanScrollForward(&campaign, &layout, MANY_MAPS));
     campaign.tray_scroll_target = CampaignTrayMaxScroll(&layout, MANY_MAPS);
     assert(CampaignTrayCanScrollBack(&campaign) && !CampaignTrayCanScrollForward(&campaign, &layout, MANY_MAPS));
+}
+
+static void TestMapTrayKeepsItsPrefabSizeAtTheSmallestUiScale(void) {
+    CampaignTrayLayout full = CampaignTrayLayoutFor(UI_DESIGN_W, UI_DESIGN_H);
+    float small_w = UI_DESIGN_W / SETTINGS_MINIMUM_UI_SCALE, small_h = UI_DESIGN_H / SETTINGS_MINIMUM_UI_SCALE;
+    UiSetChosenScale(SETTINGS_MINIMUM_UI_SCALE);
+    CampaignTrayLayout small = CampaignTrayLayoutFor(small_w, small_h);
+    UiSetChosenScale(SETTINGS_FULL_UI_SCALE);
+
+    assert(CampaignTrayItemSize(&small) == CampaignTrayItemSize(&full));
+    assert(small.list.height == full.list.height);
+    assert(small.list.y + small.list.height - small_h == full.list.y + full.list.height - UI_DESIGN_H);
+    assert(roundf(small.back_arrow.x) == full.back_arrow.x && full.back_arrow.x > 0.0f);
+    assert(small.list.x + small.list.width > full.list.x + full.list.width);
+    assert(small.background.x == 0.0f && small.background.width == small_w);
+    assert(full.background.width >= UI_DESIGN_W);
 }
 
 static void TestEveryReferencedResourceResolves(void) {
@@ -10644,12 +10670,13 @@ int main(void) {
     TestEveryReferencedResourceResolves();
     TestSameNamedCacheTexturesResolveToTheFirstInTheirBundle();
     TestMapTrayFollowsTheOriginalPrefab();
+    TestMapTrayKeepsItsPrefabSizeAtTheSmallestUiScale();
     TestSquadSlotReferenceLayout();
     TestBattleRowBonuses();
     TestHeroRowBonusReferencePresentation();
     TestFormationBonusMetadata();
     TestFormationBonusRequiresSharedFaction();
-    TestIntroQueueShowsOnlyPlayerFactionBonus();
+    TestIntroQueueShowsBothFactionBonusesAfterBothSidesRunes();
     TestFactionIntroAssetsAndText();
     TestPowerDrain();
     TestAllyPowerGain();

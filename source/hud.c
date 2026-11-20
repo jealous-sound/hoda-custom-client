@@ -121,9 +121,13 @@ static Rectangle HudFitRect(Rectangle parent, float x, float y, float width, flo
     };
 }
 
+static Rectangle HudSpanWidth(Rectangle band, float canvas_width) {
+    if (band.width >= canvas_width) return band;
+    return (Rectangle){0.0f, band.y, canvas_width, band.height};
+}
+
 static Rectangle HudSpanCanvasWidth(Rectangle band) {
-    if (band.width >= UiWidth()) return band;
-    return (Rectangle){0.0f, band.y, UiWidth(), band.height};
+    return HudSpanWidth(band, UiWidth());
 }
 
 static Rectangle HudOffsetRect(Rectangle rect, float x, float y) {
