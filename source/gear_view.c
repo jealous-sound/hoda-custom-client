@@ -281,6 +281,7 @@ Rectangle GearWornSlotsPanel(const Character *ch, Rectangle details) {
     return (Rectangle){details.x, details.y, last.x + last.width - details.x, bottom - details.y};
 }
 
+static const int GEAR_NO_WORN_SLOT = -1;
 static const Color GEAR_EMPTY_WORN_SLOT_FILL = {0, 0, 0, 140};
 static const Color GEAR_EMPTY_WORN_SLOT_FRAME = {90, 90, 90, 255};
 
@@ -293,9 +294,15 @@ static bool GearIsAscensionSlot(const Character *ch, int slot) {
     return ch->ascended && slot == GEAR_NORMAL_SLOT_MAX && !GearSlotIsPrestige(ch, slot);
 }
 
-int GearDrawWornSlots(const Character *ch, Rectangle details, int shown_slot, bool input) {
-    if (!GearWornSlotsShown(ch)) return -1;
-    int clicked = -1;
+int GearWornSlotAt(const Character *ch, Rectangle details, Vector2 point) {
+    if (!GearWornSlotsShown(ch)) return GEAR_NO_WORN_SLOT;
+    for (int slot = 0; slot < GearSlotCount(ch); slot++)
+        if (GearInSlot(ch, slot) && CheckCollisionPointRec(point, GearViewSlotRect(details, slot))) return slot;
+    return GEAR_NO_WORN_SLOT;
+}
+
+void GearDrawWornSlots(const Character *ch, Rectangle details, int shown_slot) {
+    if (!GearWornSlotsShown(ch)) return;
     for (int slot = 0; slot < GearSlotCount(ch); slot++) {
         Rectangle r = GearViewSlotRect(details, slot);
         const GearDef *worn = GearInSlot(ch, slot);
@@ -308,9 +315,7 @@ int GearDrawWornSlots(const Character *ch, Rectangle details, int shown_slot, bo
             GearViewDrawFramedSlot("tex.Ico_Gear_Slot_Deselected", worn, r, selected);
         else
             GearDrawTile(worn, r, selected);
-        if (input && worn && GearViewClicked(r)) clicked = slot;
     }
-    return clicked;
 }
 
 static const char *GearViewEquipFailure(GearEquipResult result) {

@@ -6,7 +6,6 @@
 #define MM_BOTTOM_Y(v) UiBottomY(MM_Y(v))
 
 static const GuiId BATTLE_UI_FACTION_INTRO_ICON = GUI_DETAILS_POWER;
-static const int BATTLE_UI_NO_GEAR_SLOT = -1;
 
 typedef enum {
     BATTLE_UI_NONE,
@@ -65,6 +64,8 @@ typedef struct {
     HeroCard detail_card;
     bool detail_open;
     int detail_gear_slot;
+    int detail_gear_pressed;
+    bool detail_item_close_armed;
 } BattleUi;
 
 static void BattleUiParseColored(const char *src, char *out, int cap, Color *col) {
@@ -334,7 +335,29 @@ static void BattleUiOpenPlateDetails(BattleUi *ui, const BattlePlate *plate) {
         ui->detail_card.xp_frac = 1.0f;
     }
     ui->detail_open = true;
-    ui->detail_gear_slot = BATTLE_UI_NO_GEAR_SLOT;
+    ui->detail_gear_slot = GEAR_NO_WORN_SLOT;
+    ui->detail_gear_pressed = GEAR_NO_WORN_SLOT;
+    ui->detail_item_close_armed = false;
+}
+
+static void BattleUiDetailTap(BattleUi *ui, const Character *ch, Rectangle details) {
+    if (UiInputBlocked()) return;
+    Vector2 mouse = UiMouse();
+    int under = GearWornSlotAt(ch, details, mouse);
+    bool on_card = CheckCollisionPointRec(mouse, details);
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        ui->detail_gear_pressed = under;
+        ui->detail_item_close_armed = ui->detail_gear_slot != GEAR_NO_WORN_SLOT && on_card;
+    }
+    if (!IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) return;
+    if (under != GEAR_NO_WORN_SLOT && under == ui->detail_gear_pressed) {
+        GuiClickSoundPlay();
+        ui->detail_gear_slot = under == ui->detail_gear_slot ? GEAR_NO_WORN_SLOT : under;
+    } else if (ui->detail_item_close_armed && on_card) {
+        ui->detail_gear_slot = GEAR_NO_WORN_SLOT;
+    }
+    ui->detail_gear_pressed = GEAR_NO_WORN_SLOT;
+    ui->detail_item_close_armed = false;
 }
 
 static void BattleUiDrawDetail(BattleUi *ui, float right) {
@@ -348,16 +371,8 @@ static void BattleUiDrawDetail(BattleUi *ui, float right) {
     }
     Rectangle panel = GearWornSlotsPanel(ch, details);
     bool input = !UiInputBlocked();
-    int clicked = GearDrawWornSlots(ch, details, ui->detail_gear_slot, input);
-    if (clicked >= 0) {
-        GuiClickSoundPlay();
-        ui->detail_gear_slot = clicked == ui->detail_gear_slot ? BATTLE_UI_NO_GEAR_SLOT : clicked;
-    } else if (
-        input && ui->detail_gear_slot != BATTLE_UI_NO_GEAR_SLOT && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) &&
-        CheckCollisionPointRec(UiMouse(), details)
-    ) {
-        ui->detail_gear_slot = BATTLE_UI_NO_GEAR_SLOT;
-    }
+    GearDrawWornSlots(ch, details, ui->detail_gear_slot);
+    BattleUiDetailTap(ui, ch, details);
     if (input && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         ui->detail_close_armed = !CheckCollisionPointRec(UiMouse(), panel);
     if (input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {

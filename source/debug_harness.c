@@ -567,7 +567,7 @@ static void DebugOpenEnemyDetail(Game *game) {
     if (slot < 0 || slot >= SQUAD_SLOT_COUNT || ui->detail_open || !ui->plates[1][slot].ch) return;
     BattleUiSetTacticalEx(ui, &game->battle, true, false);
     BattleUiOpenPlateDetails(ui, &ui->plates[1][slot]);
-    ui->detail_gear_slot = EnvInt("HOD_DETAIL_GEAR", BATTLE_UI_NO_GEAR_SLOT);
+    ui->detail_gear_slot = EnvInt("HOD_DETAIL_GEAR", GEAR_NO_WORN_SLOT);
 }
 
 static bool DebugPrepareDuel(Game *game, DebugShot *shot) {
