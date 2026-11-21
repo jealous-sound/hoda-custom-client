@@ -682,11 +682,11 @@ void GearDrawRevealCard(const GearDef *def, Rectangle panel) {
     GearViewDrawFittedDescription(info.description, description, side * GEAR_CARD_DESCRIPTION_TEXT);
 }
 
-void GearDrawWornItemCard(const Character *ch, int slot, Rectangle details) {
+void GearDrawWornItemCard(const Character *ch, int slot, Rectangle area) {
     const GearDef *worn = GearInSlot(ch, slot);
     if (!worn) return;
-    float side = details.width;
-    GearDrawRevealCard(worn, (Rectangle){details.x, details.y + (details.height - side) * 0.5f, side, side});
+    float side = fminf(area.width, area.height);
+    GearDrawRevealCard(worn, (Rectangle){area.x + (area.width - side) * 0.5f, area.y, side, side});
 }
 
 static float GearViewDrawBoxBand(Rectangle panel, float source_top, float source_bottom, float y, float height) {

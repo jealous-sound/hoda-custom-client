@@ -5682,6 +5682,16 @@ static void TestGearCategoriesUseOrAndAllSemantics(void) {
     assert(GearUnitCanWear(&tevinter, maul));
 }
 
+static void TestGearLimitsNameEveryCategory(void) {
+    char limits[192];
+    GearFormatLimits(GearDefAt(GearDefIndex("helm_of_the_dragon_hunter")), limits, sizeof(limits));
+    assert(strstr(limits, "Human, ") && !strstr(limits, ", ,") && !strstr(limits, "</color>, "));
+    GearFormatLimits(GearDefAt(GearDefIndex("crow_shield")), limits, sizeof(limits));
+    assert(strstr(limits, LocGet("INITIATIVE_FAST")));
+    GearFormatLimits(GearDefAt(GearDefIndex("the_ancestors_greaves")), limits, sizeof(limits));
+    assert(strstr(limits, LocGet("INITIATIVE_SLOW")) && strstr(limits, LocGet("INITIATIVE_MEDIUM")));
+}
+
 static void TestGearSellValueAndPrestigeUnlock(void) {
     GearTestReset();
     Player p = {.gems = GearPrestigeSlotGemCost() - 1};
@@ -10745,6 +10755,7 @@ int main(void) {
     TestGearCatalogIsComplete();
     TestGearSlotCountDecidesPrestigeSlot();
     TestGearEquipRules();
+    TestGearLimitsNameEveryCategory();
     TestGearCategoriesUseOrAndAllSemantics();
     TestGearSellValueAndPrestigeUnlock();
     TestGearPacksRollInsideTheirRarityRange();

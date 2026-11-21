@@ -338,9 +338,14 @@ static void BattleUiOpenPlateDetails(BattleUi *ui, const BattlePlate *plate) {
 }
 
 static void BattleUiDrawDetail(BattleUi *ui, float right) {
-    HeroesDrawDetails(&ui->detail_card, 0.0f, right);
     Rectangle details = HeroesDetailsBounds(0.0f, right);
     const Character *ch = ui->detail_card.ch;
+    if (GearInSlot(ch, ui->detail_gear_slot)) {
+        HeroesDrawDetailsHead(&ui->detail_card, details);
+        GearDrawWornItemCard(ch, ui->detail_gear_slot, HeroesDetailsBody(details));
+    } else {
+        HeroesDrawDetailsAt(&ui->detail_card, details);
+    }
     Rectangle panel = GearWornSlotsPanel(ch, details);
     bool input = !UiInputBlocked();
     int clicked = GearDrawWornSlots(ch, details, ui->detail_gear_slot, input);
@@ -353,7 +358,6 @@ static void BattleUiDrawDetail(BattleUi *ui, float right) {
     ) {
         ui->detail_gear_slot = BATTLE_UI_NO_GEAR_SLOT;
     }
-    if (ui->detail_gear_slot != BATTLE_UI_NO_GEAR_SLOT) GearDrawWornItemCard(ch, ui->detail_gear_slot, details);
     if (input && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         ui->detail_close_armed = !CheckCollisionPointRec(UiMouse(), panel);
     if (input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
