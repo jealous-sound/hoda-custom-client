@@ -87,6 +87,11 @@ MINIMUM = {id(COMMON_TIER): 'Common', id(UNCOMMON_TIER): 'Uncommon', id(RARE_TIE
            id(RARE_ONLY_TIER): 'Rare'}
 
 RARITY_NUMBER = {'Common': 1, 'Uncommon': 2, 'Rare': 3, 'Epic': 4, 'Legendary': 5}
+
+LEGENDARY_STARS = ('1', '2', '3')
+STANDARD_STARS = {'1': 2000, '2': 7000, '3': 1000}
+PREMIUM_STARS = {'1': 2000, '2': 6500, '3': 1500}
+NO_THREE_STAR = {'1': 2500, '2': 7500, '3': 0}
 WEIGHT_TOTAL = 10000
 WISP_POOL = 'WISP'
 GOAT_POOL = 'GOAT'
@@ -143,9 +148,12 @@ def voucher(name):
 
 def hero(key, loc, order, category, header, icon, offers, tier, count=1, bullets=(), info=None, opened_counter=0,
          schedule=None, rotation=None, epic=0, legendary=0, pity=True, rune_pct=0, rune=(1, 2), rune_count=1,
-         gear_pct=0, gear=(1, 3), rare=0, fixed=(), pool=None, unique=False, header_tint=None):
+         gear_pct=0, gear=(1, 3), rare=0, fixed=(), pool=None, unique=False, header_tint=None, stars=STANDARD_STARS,
+         no_dupe_across_stars=False):
+    rolls_open_legendary = not pool and (tier['Legendary'] > 0 or legendary > 0)
     optional = {'guaranteed_rare': rare, 'fixed_heroes': list(fixed), 'pool_tag': pool, 'unique_heroes': unique,
-                'header_tint': header_tint}
+                'header_tint': header_tint, 'legendary_star_weights': stars if rolls_open_legendary else None,
+                'legendary_no_dupe_across_stars': no_dupe_across_stars}
     rolled_slots = count - len(fixed) - legendary - epic - rare
     return {
         'id': key, 'kind': 'hero', **pack_text(loc, info or hero_info(count, tier)), 'category': category,
@@ -216,7 +224,7 @@ def hero_packs():
              bullets=[bullet(chance, 5)]),
         hero('grand_champion', 'GRAND_CHAMPION', 40, 'UNITS', 'cache:tex.Store_HeaderGrandChampionPack',
              icon + 'LegendaryPack', gems(270), BULK_TIER, count=10, opened_counter=3, epic=3,
-             rune_pct=100, rune=(3, 5), rune_count=10,
+             rune_pct=100, rune=(3, 5), rune_count=10, stars=PREMIUM_STARS,
              bullets=[bullet(TEN_FOR_THE_PRICE_OF_NINE), bullet('HODA_STORE_BULLET_GRAND_CHAMPION', 4)],
              info='HODA_GRAND_CHAMPION_PACK_INFO'),
         hero('mercenary', 'MERCENARY', 50, 'UNITS', SILVER, icon + 'WarriorPack', gold(5000), UNCOMMON_TIER,
@@ -224,9 +232,10 @@ def hero_packs():
         hero('knight', 'KNIGHT', 60, 'UNITS', SILVER, icon + 'GreyWardenKnight', gold(25000), RARE_TIER,
              opened_counter=1, rune_pct=100, rune=(2, 5), bullets=[bullet(chance, 5)]),
         hero('iron', 'IRON', 90, 'UNITS', GOLD, 'cache:tex.Store_IronPack', [voucher('iron')], RARE_TIER,
-             opened_counter=2, rune_pct=50, rune=(2, 4), bullets=[bullet(chance, 5)]),
+             opened_counter=2, rune_pct=50, rune=(2, 4), bullets=[bullet(chance, 5)], stars=NO_THREE_STAR),
         hero('bloodstone', 'BLOODSTONE', 100, 'UNITS', GOLD, icon + 'BloodstonePack', [voucher('bloodstone')],
-             LEGENDARY_TIER, opened_counter=2, rune_pct=50, rune=(3, 5), bullets=[bullet(GUARANTEED, 5)]),
+             LEGENDARY_TIER, opened_counter=2, rune_pct=50, rune=(3, 5), bullets=[bullet(GUARANTEED, 5)],
+             stars=PREMIUM_STARS, no_dupe_across_stars=True),
         hero('lyrium_vein', 'LYRIUM_MINE', 110, 'UNITS', GREEN, 'gui/store/tex.Voucher_LyriumMine.png',
              [voucher('lyrium_mine')], RARE_TIER, opened_counter=2, rune_pct=40, rune=(3, 4),
              bullets=[bullet(chance, 5)]),
@@ -249,7 +258,7 @@ def hero_packs():
              bullets=[bullet(chance, 4), bullet(THIS_WEEK_ONLY)]),
         hero('booster_prestige', 'HERO_BOOSTER_PRESTIGE', 210, 'UNITS', BLUE, icon + 'SpiritofFaith', gems(90),
              EPIC_TIER, opened_counter=2, rotation=weekly(BOOSTER_ROTATION, 3),
-             bullets=[bullet(chance, 5), bullet(THIS_WEEK_ONLY)]),
+             bullets=[bullet(chance, 5), bullet(THIS_WEEK_ONLY)], stars=PREMIUM_STARS),
     ]
     seasonal = (
         ('goat', 'GOAT', 'cache:tex.Voucher_Goat', 'goat', ('04-01', '04-14'), None),
@@ -281,7 +290,7 @@ def hero_packs():
     for key, loc, order, art, price, count, tier, legendary, epic in paid:
         rows.append(hero(key, loc, order, 'FEATURED', FEATURED, art, gems(price), tier, count=count,
                          opened_counter=3, legendary=legendary, epic=epic, rune_pct=100, rune=(3, 5),
-                         rune_count=count, gear_pct=40, gear=(2, 5),
+                         rune_count=count, gear_pct=40, gear=(2, 5), stars=PREMIUM_STARS,
                          bullets=[bullet(GUARANTEED, RARITY_NUMBER['Legendary' if legendary else 'Epic'])]))
     flash = ('FLASH', 'FLASH_BLACK_FRIDAY', 'FLASH_DRAGON_HUNT', 'FLASH_EXCLUSIVELY', 'FLASH_FINE_DWARVEN_CRAFTS',
              'FLASH_FIREWORKS', 'FLASH_GOOD_COMPANY', 'FLASH_STAR_STRUCK', 'FLASH_STOCKING_STUFFERS',
@@ -348,9 +357,29 @@ def text_keys(catalog):
             yield sku['banner']
 
 
+def open_legendary_stars(characters):
+    return {str(row.get('stars') or 0) for row in characters
+            if row['rarity'] == 'Legendary' and row.get('obtainable') and 'BANNER' not in row['id']
+            and WISP_POOL not in row['id']}
+
+
+def star_errors(pack, pool_stars):
+    rolls_open_legendary = not pack.get('pool_tag') and (pack['weights']['Legendary'] > 0
+                                                          or pack['guaranteed_legendary'] > 0)
+    weights = pack.get('legendary_star_weights')
+    if not rolls_open_legendary:
+        return [f"{pack['id']}: only packs that roll open Legendaries take star weights"] if weights else []
+    if not weights or set(weights) != set(LEGENDARY_STARS) or sum(weights.values()) != WEIGHT_TOTAL:
+        return [f"{pack['id']}: Legendary star weights must cover {', '.join(LEGENDARY_STARS)} and total 10000"]
+    return [f"{pack['id']}: no {stars}-star Legendary can fill its weight" for stars, weight in weights.items()
+            if weight > 0 and stars not in pool_stars]
+
+
 def validate(catalog):
     errors = []
-    heroes = {row['id'] for row in json.loads(CHARACTERS.read_text(encoding='utf-8'))['characters']}
+    characters = json.loads(CHARACTERS.read_text(encoding='utf-8'))['characters']
+    heroes = {row['id'] for row in characters}
+    pool_stars = open_legendary_stars(characters)
     tickets = {row['id'] for row in catalog['vouchers']}
     seen = set()
     for pack in catalog['packs']:
@@ -369,6 +398,8 @@ def validate(catalog):
                 errors.append(f"{pack['id']}: fixed hero {unit} is not in the catalog")
         if pack['kind'] == 'hero' and sum(pack['weights'].values()) != 10000:
             errors.append(f"{pack['id']}: weights do not total 10000")
+        if pack['kind'] == 'hero':
+            errors += star_errors(pack, pool_stars)
         if not pack['bullets'] and 'description_key' not in pack:
             errors.append(f"{pack['id']}: needs a description or a bullet")
     for group in {pack['rotation']['group'] for pack in catalog['packs'] if pack['rotation']}:
