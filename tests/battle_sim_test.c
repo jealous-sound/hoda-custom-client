@@ -6692,6 +6692,22 @@ static void TestGiveLegendsOfStars(Player *player, const Store *store, int stars
     assert(count >= 0 && PlayerRosterAppendDefinitions(player, legends, count, &first));
 }
 
+static const cJSON *TestRollLegendOfAtLeast(
+    Store *store,
+    const StorePackDef *pack,
+    const Player *player,
+    int lowest_stars,
+    const cJSON *const *rolled,
+    int rolled_count,
+    uint32_t seed
+) {
+    uint32_t rng = seed;
+    StoreHeroSlot slot = {RARITY_LEGENDARY, lowest_stars};
+    const cJSON *hero = StoreRollPackDefinition(store, pack, player, slot, rolled, rolled_count, &rng);
+    assert(hero && RarityFromString(JsonStr(hero, "rarity")) == RARITY_LEGENDARY);
+    return hero;
+}
+
 static const cJSON *TestRollLegend(
     Store *store,
     const StorePackDef *pack,
@@ -6700,10 +6716,7 @@ static const cJSON *TestRollLegend(
     int rolled_count,
     uint32_t seed
 ) {
-    uint32_t rng = seed;
-    const cJSON *hero = StoreRollPackDefinition(store, pack, player, RARITY_LEGENDARY, rolled, rolled_count, &rng);
-    assert(hero && RarityFromString(JsonStr(hero, "rarity")) == RARITY_LEGENDARY);
-    return hero;
+    return TestRollLegendOfAtLeast(store, pack, player, STORE_LEGENDARY_STAR_MIN, rolled, rolled_count, seed);
 }
 
 static void TestLegendaryStarWeightsChooseTheStarTier(void) {
@@ -6801,6 +6814,184 @@ static void TestShippedPacksMakeThreeStarLegendariesTheRarest(void) {
     StoreValidateLegendaryStars(&store);
     cJSON_Delete(root);
     TestUnloadLegendaryPool(&store);
+}
+
+static void TestStarGuaranteesRollOnlyTheirTiers(void) {
+    static Store store;
+    TestLoadLegendaryPool(&store);
+    Player player = TestStarterPlayer();
+    StorePackDef standard = {.legendary_star_weights = {0, 2000, 7000, 1000}};
+    StorePackDef no_three_star = {.legendary_star_weights = {0, STORE_WEIGHT_TOTAL - 1, 1, 0}};
+    bool rolled_two_stars = false;
+    bool rolled_three_stars = false;
+    for (uint32_t seed = 1; seed <= TEST_LEGEND_SEEDS; seed++) {
+        int stars = StoreDefinitionStars(TestRollLegendOfAtLeast(&store, &standard, &player, 2, NULL, 0, seed));
+        assert(stars >= 2);
+        rolled_two_stars |= stars == 2;
+        rolled_three_stars |= stars == 3;
+        assert(StoreDefinitionStars(TestRollLegendOfAtLeast(&store, &standard, &player, 3, NULL, 0, seed)) == 3);
+        assert(StoreDefinitionStars(TestRollLegendOfAtLeast(&store, &no_three_star, &player, 2, NULL, 0, seed)) == 2);
+    }
+    assert(rolled_two_stars && rolled_three_stars);
+
+    TestGiveLegendsOfStars(&player, &store, 3, 0);
+    StorePackDef across_stars = {
+        .legendary_star_weights = {0, 2000, 6500, 1500}, .legendary_no_dupe_across_stars = true
+    };
+    for (uint32_t seed = 1; seed <= TEST_LEGEND_SEEDS; seed++)
+        assert(StoreDefinitionStars(TestRollLegendOfAtLeast(&store, &across_stars, &player, 3, NULL, 0, seed)) == 3);
+    PlayerUnloadRoster(&player);
+    TestUnloadLegendaryPool(&store);
+}
+
+static void TestStarGuaranteesFireEveryNthPackAndDeferTheLesserOne(void) {
+    StorePackDef pack = {
+        .id = "champion",
+        .kind = STORE_KIND_HERO,
+        .hero_count = 1,
+        .legendary_pity_packs = 2,
+        .legendary_star_guarantee_packs = {0, 0, 4, 8}
+    };
+    enum { OPENED = 25 };
+    static const int fired_on[OPENED + 1] = {
+        [4] = 2, [8] = 3, [9] = 2, [13] = 2, [16] = 3, [17] = 2, [21] = 2, [24] = 3
+    };
+    StoreStarCounters counters = {0};
+    for (int opened = 1; opened <= OPENED; opened++) {
+        int fired = StoreDueStarGuarantee(&pack, counters);
+        assert(fired == (opened == OPENED ? 2 : fired_on[opened]));
+        counters = StoreStarCountersAfter(&pack, counters, fired);
+    }
+
+    Player player = {0};
+    int left = 0;
+    assert(StorePackNextStarGuarantee(&pack, &player, &left) == 2 && left == 4);
+    assert(PlayerSetPacksSinceStarGuarantee(&player, "champion", 2, 3));
+    assert(PlayerSetPacksSinceStarGuarantee(&player, "champion", 3, 7));
+    assert(StorePackNextStarGuarantee(&pack, &player, &left) == 3 && left == 1);
+    assert(StorePackPullsUntilStarGuarantee(&pack, &player, 2) == 1);
+    StoreStarCounters read = StoreReadStarCounters(&pack, &player);
+    assert(StoreDueStarGuarantee(&pack, read) == 3);
+    StoreWriteStarCounters(&pack, &player, StoreStarCountersAfter(&pack, read, 3));
+    assert(PlayerPacksSinceStarGuarantee(&player, "champion", 3) == 0);
+    assert(StorePackNextStarGuarantee(&pack, &player, &left) == 2 && left == 1);
+    assert(PlayerSetPacksSinceStarGuarantee(&player, "champion", 2, 40));
+    assert(StorePackPullsUntilStarGuarantee(&pack, &player, 2) == 1);
+    assert(StoreStarCountersAfter(&pack, StoreReadStarCounters(&pack, &player), 3).packs_since_fired[2] == 3);
+
+    StorePackDef recruit = {.id = "recruit", .kind = STORE_KIND_HERO, .hero_count = 1};
+    assert(StorePackNextStarGuarantee(&recruit, &player, &left) == 0 && left == 0);
+    assert(StoreDueStarGuarantee(&recruit, StoreReadStarCounters(&recruit, &player)) == 0);
+}
+
+static void TestDueStarGuaranteeTakesThePitySlot(void) {
+    StorePackDef grand = {
+        .id = "grand_champion",
+        .kind = STORE_KIND_HERO,
+        .hero_count = 4,
+        .guaranteed_epic = 1,
+        .legendary_pity_packs = 10,
+        .weights = {[RARITY_RARE] = STORE_WEIGHT_TOTAL},
+        .legendary_star_guarantee_packs = {0, 0, 13, 64}
+    };
+    for (uint32_t seed = 1; seed <= 20; seed++) {
+        uint32_t rng = seed;
+        for (int slot = 0; slot < grand.hero_count; slot++) {
+            Rarity rarity = StorePackSlotRarity(&grand, slot, true, &rng);
+            int lowest_stars = StorePackSlotLowestStars(&grand, slot, 3);
+            assert((rarity == RARITY_LEGENDARY) == (slot == 1));
+            assert(lowest_stars == (slot == 1 ? 3 : STORE_LEGENDARY_STAR_MIN));
+            assert(StorePackSlotLowestStars(&grand, slot, 0) == STORE_LEGENDARY_STAR_MIN);
+        }
+    }
+}
+
+static void TestShippedStarGuaranteesWaitLongerThanThePity(void) {
+    static Store store;
+    cJSON *root = JsonLoadFile("data/store_packs.json");
+    int guaranteed = 0;
+    const cJSON *json = NULL;
+    cJSON_ArrayForEach(json, cJSON_GetObjectItemCaseSensitive(root, "packs")) {
+        if (strcmp(JsonStr(json, "kind"), "hero")) continue;
+        assert(store.pack_count < STORE_PACK_CAPACITY);
+        StorePackDef *pack = &store.packs[store.pack_count++];
+        StrCopy(pack->id, sizeof(pack->id), JsonStr(json, "id"));
+        StoreLoadHeroContents(pack, json);
+        const int *every = pack->legendary_star_guarantee_packs;
+        if (!StorePackHasStarGuarantee(pack, 2) && !StorePackHasStarGuarantee(pack, 3)) continue;
+        guaranteed++;
+        assert(!strcmp(pack->id, "champion") || !strcmp(pack->id, "grand_champion"));
+        assert(pack->legendary_pity_packs < every[2] && every[2] < every[3]);
+    }
+    assert(guaranteed == 2);
+    StoreValidateStarGuaranteeCounters(&store);
+    cJSON_Delete(root);
+}
+
+static char *TestProfileWithStarGuarantees(cJSON *root, cJSON *counters) {
+    cJSON *store = cJSON_GetObjectItemCaseSensitive(root, "store");
+    cJSON_DeleteItemFromObjectCaseSensitive(store, PROGRESSION_STAR_GUARANTEE_KEY);
+    if (counters) cJSON_AddItemToObject(store, PROGRESSION_STAR_GUARANTEE_KEY, counters);
+    return cJSON_PrintUnformatted(root);
+}
+
+static cJSON *TestChampionStarCounters(const char *tier, double packs) {
+    cJSON *counters = cJSON_CreateObject();
+    cJSON *champion = cJSON_AddObjectToObject(counters, "champion");
+    cJSON_AddNumberToObject(champion, "2", 12);
+    cJSON_AddNumberToObject(champion, tier, packs);
+    return counters;
+}
+
+static bool TestLoadsStarGuarantees(cJSON *root, cJSON *counters, Player *loaded) {
+    char *text = TestProfileWithStarGuarantees(root, counters);
+    ProgressionInitializePlayerDefaults(loaded);
+    bool ok = ProgressionLoadFromText(loaded, text, "star guarantee test");
+    cJSON_free(text);
+    return ok;
+}
+
+static void TestStarGuaranteeCountersSurviveASave(void) {
+    Player saved = {0};
+    ProgressionInitializePlayerDefaults(&saved);
+    assert(PlayerSetPacksSinceStarGuarantee(&saved, "champion", 2, 12));
+    assert(PlayerSetPacksSinceStarGuarantee(&saved, "champion", 3, 412));
+    assert(PlayerSetPacksSinceStarGuarantee(&saved, "grand_champion", 3, 5));
+    char *text = ProgressionSerialize(&saved);
+    assert(text);
+    cJSON *root = cJSON_Parse(text);
+    const cJSON *store = cJSON_GetObjectItemCaseSensitive(root, "store");
+    const cJSON *champion = cJSON_GetObjectItemCaseSensitive(
+        cJSON_GetObjectItemCaseSensitive(store, PROGRESSION_STAR_GUARANTEE_KEY), "champion"
+    );
+    assert(JsonInt(champion, "2") == 12 && JsonInt(champion, "3") == 412);
+    Player loaded = {0};
+    ProgressionInitializePlayerDefaults(&loaded);
+    assert(ProgressionLoadFromText(&loaded, text, "star guarantee test"));
+    cJSON_free(text);
+    assert(loaded.star_guarantee_count == 3);
+    assert(PlayerPacksSinceStarGuarantee(&loaded, "champion", 2) == 12);
+    assert(PlayerPacksSinceStarGuarantee(&loaded, "champion", 3) == 412);
+    assert(PlayerPacksSinceStarGuarantee(&loaded, "grand_champion", 3) == 5);
+    assert(PlayerPacksSinceStarGuarantee(&loaded, "grand_champion", 2) == 0);
+
+    assert(TestLoadsStarGuarantees(root, NULL, &loaded) && loaded.star_guarantee_count == 0);
+    assert(TestLoadsStarGuarantees(root, TestChampionStarCounters("9", 4), &loaded));
+    assert(loaded.star_guarantee_count == 1 && PlayerPacksSinceStarGuarantee(&loaded, "champion", 2) == 12);
+    assert(!TestLoadsStarGuarantees(root, TestChampionStarCounters("3", -1), &loaded));
+    assert(!TestLoadsStarGuarantees(root, TestChampionStarCounters("3", 1.5), &loaded));
+    cJSON *flat = cJSON_CreateObject();
+    cJSON_AddNumberToObject(flat, "champion", 4);
+    assert(!TestLoadsStarGuarantees(root, flat, &loaded));
+    assert(!TestLoadsStarGuarantees(root, cJSON_CreateArray(), &loaded));
+    cJSON_Delete(root);
+
+    Player full = {0};
+    for (int i = 0; i < PLAYER_STAR_GUARANTEE_CAPACITY; i++)
+        assert(PlayerSetPacksSinceStarGuarantee(&full, TextFormat("pack_%d", i), 3, i));
+    assert(!PlayerCanTrackStarGuarantee(&full, "pack_0", 2));
+    assert(PlayerSetPacksSinceStarGuarantee(&full, "pack_4", 3, 40));
+    assert(PlayerPacksSinceStarGuarantee(&full, "pack_4", 3) == 40);
 }
 
 static void TestStoreDialogTextFitsRussianPackNames(void) {
@@ -10960,6 +11151,11 @@ int main(void) {
     TestLegendaryNoDupeHoldsWithinTheRolledStarTier();
     TestAcrossStarNoDupeFindsTheLastMissingLegendary();
     TestShippedPacksMakeThreeStarLegendariesTheRarest();
+    TestStarGuaranteesRollOnlyTheirTiers();
+    TestStarGuaranteesFireEveryNthPackAndDeferTheLesserOne();
+    TestDueStarGuaranteeTakesThePitySlot();
+    TestShippedStarGuaranteesWaitLongerThanThePity();
+    TestStarGuaranteeCountersSurviveASave();
     TestAscendedHeroLoadsAboveTheOldLevelCap();
     TestHeroLevelTableCoversAscendedCap();
     TestMissionSeriesPicksTheClaimableTier();

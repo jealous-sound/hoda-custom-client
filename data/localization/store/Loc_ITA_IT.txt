@@ -6,3 +6,7 @@ HODA_STORE_PITY_NEXT_PACK|Leggendario garantito nel prossimo pacchetto
 HODA_STORE_PITY_SHARED|Condiviso con gli altri pacchetti settimanali
 HODA_STORE_BULLET_PITY|Leggendario entro {0} pacchetti
 HODA_STORE_BULLET_PITY_NEXT|Leggendario al prossimo pacchetto!
+HODA_STORE_STAR_GUARANTEE_TWO_PACKS_LEFT|Leggendario a 2 o 3 stelle garantito entro {0} pacchetti
+HODA_STORE_STAR_GUARANTEE_TWO_NEXT_PACK|Leggendario a 2 o 3 stelle garantito nel prossimo pacchetto
+HODA_STORE_STAR_GUARANTEE_THREE_PACKS_LEFT|Leggendario a 3 stelle garantito entro {0} pacchetti
+HODA_STORE_STAR_GUARANTEE_THREE_NEXT_PACK|Leggendario a 3 stelle garantito nel prossimo pacchetto

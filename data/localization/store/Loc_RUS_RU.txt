@@ -6,3 +6,7 @@ HODA_STORE_PITY_NEXT_PACK|В следующем наборе гарантиро�
 HODA_STORE_PITY_SHARED|Общий счетчик для всех недельных наборов
 HODA_STORE_BULLET_PITY|Наборов до легендарного: {0}
 HODA_STORE_BULLET_PITY_NEXT|Легендарный в следующем наборе!
+HODA_STORE_STAR_GUARANTEE_TWO_PACKS_LEFT|Наборов до гарантированного легендарного героя с 2 или 3 звездами: {0}
+HODA_STORE_STAR_GUARANTEE_TWO_NEXT_PACK|В следующем наборе гарантирован легендарный герой с 2 или 3 звездами
+HODA_STORE_STAR_GUARANTEE_THREE_PACKS_LEFT|Наборов до гарантированного легендарного героя с 3 звездами: {0}
+HODA_STORE_STAR_GUARANTEE_THREE_NEXT_PACK|В следующем наборе гарантирован легендарный герой с 3 звездами

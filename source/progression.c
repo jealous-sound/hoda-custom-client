@@ -12,6 +12,7 @@
 #define PROGRESSION_JSON_MAX_SAFE_INTEGER PLAYER_INSTANCE_ID_MAX
 #define PROGRESSION_PACK_PITY_KEY "packs_since_legendary"
 #define PROGRESSION_RELEASED_CLIENT_PITY_KEY "champion_since_legendary"
+#define PROGRESSION_STAR_GUARANTEE_KEY "packs_since_star_guarantee"
 
 static long long ProgressionCumulativeXp(long long level) {
     if (level <= 0) return 0;
@@ -101,6 +102,8 @@ void ProgressionInitializePlayerDefaults(Player *p) {
     memset(p->pack_vouchers, 0, sizeof(p->pack_vouchers));
     memset(p->pack_pity, 0, sizeof(p->pack_pity));
     p->pack_pity_count = 0;
+    memset(p->star_guarantees, 0, sizeof(p->star_guarantees));
+    p->star_guarantee_count = 0;
     p->campaign_progress = (PlayerCampaignProgress){0};
     p->potions = 3;
     p->potion_max = 10;
@@ -760,6 +763,41 @@ static bool ProgressionLoadPackPity(const cJSON *store, PlayerPackPity *out, int
     return true;
 }
 
+static int ProgressionStarTier(const char *key) {
+    for (int stars = 1; stars <= STORE_LEGENDARY_STAR_MAX; stars++)
+        if (!strcmp(key, TextFormat("%d", stars))) return stars;
+    return 0;
+}
+
+static bool ProgressionLoadStarGuarantees(const cJSON *store, PlayerStarGuarantee *out, int *count) {
+    const cJSON *counters = cJSON_GetObjectItemCaseSensitive(store, PROGRESSION_STAR_GUARANTEE_KEY);
+    *count = 0;
+    if (!counters) return true;
+    if (!cJSON_IsObject(counters)) return false;
+    const cJSON *counter = NULL;
+    cJSON_ArrayForEach(counter, counters) {
+        if (!cJSON_IsObject(counter)) return false;
+        const cJSON *tier = NULL;
+        cJSON_ArrayForEach(tier, counter) {
+            int packs = 0;
+            if (!ProgressionJsonInt(counter, tier->string, 0, INT_MAX, &packs)) return false;
+            int lowest_stars = ProgressionStarTier(tier->string);
+            if (!lowest_stars || *count >= PLAYER_STAR_GUARANTEE_CAPACITY ||
+                strlen(counter->string) >= PLAYER_PACK_PITY_COUNTER_CAPACITY)
+                continue;
+            StrCopy(out[*count].counter, sizeof(out[*count].counter), counter->string);
+            out[*count].lowest_stars = lowest_stars;
+            out[(*count)++].packs_since_fired = packs;
+        }
+    }
+    return true;
+}
+
+static cJSON *ProgressionChildObject(cJSON *parent, const char *key) {
+    cJSON *child = cJSON_GetObjectItemCaseSensitive(parent, key);
+    return child ? child : cJSON_AddObjectToObject(parent, key);
+}
+
 static bool ProgressionJsonTimer(const cJSON *obj, const char *key, float *out) {
     cJSON *item = cJSON_GetObjectItemCaseSensitive((cJSON *)obj, key);
     if (!cJSON_IsNumber(item) || !isfinite(item->valuedouble) || item->valuedouble < 0.0 ||
@@ -1046,6 +1084,9 @@ char *ProgressionSerialize(const Player *player) {
         return NULL;
     for (int i = 0; i < player->pack_pity_count; i++)
         if (player->pack_pity[i].packs_since_legendary < 0) return NULL;
+    if (player->star_guarantee_count < 0 || player->star_guarantee_count > PLAYER_STAR_GUARANTEE_CAPACITY) return NULL;
+    for (int i = 0; i < player->star_guarantee_count; i++)
+        if (player->star_guarantees[i].packs_since_fired < 0) return NULL;
     int opened_sum = 0;
     for (int pack = 0; pack < PLAYER_STORE_PACK_COUNT; pack++) {
         if (player->store_opened_by_pack[pack] < 0 || opened_sum > INT_MAX - player->store_opened_by_pack[pack])
@@ -1149,6 +1190,14 @@ char *ProgressionSerialize(const Player *player) {
     if (!pack_pity) goto save_json_failed;
     for (int i = 0; i < player->pack_pity_count; i++)
         PROGRESSION_SAVE_NUMBER(pack_pity, player->pack_pity[i].counter, player->pack_pity[i].packs_since_legendary);
+    cJSON *star_guarantees = cJSON_AddObjectToObject(store, PROGRESSION_STAR_GUARANTEE_KEY);
+    if (!star_guarantees) goto save_json_failed;
+    for (int i = 0; i < player->star_guarantee_count; i++) {
+        const PlayerStarGuarantee *guarantee = &player->star_guarantees[i];
+        cJSON *tiers = ProgressionChildObject(star_guarantees, guarantee->counter);
+        if (!tiers) goto save_json_failed;
+        PROGRESSION_SAVE_NUMBER(tiers, TextFormat("%d", guarantee->lowest_stars), guarantee->packs_since_fired);
+    }
     cJSON *vouchers = cJSON_AddArrayToObject(store, "vouchers");
     if (!vouchers) goto save_json_failed;
     for (int voucher = 0; voucher < PLAYER_VOUCHER_CAPACITY; voucher++)
@@ -1720,6 +1769,9 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
     PlayerPackPity loaded_pack_pity[PLAYER_PACK_PITY_CAPACITY];
     memcpy(loaded_pack_pity, player->pack_pity, sizeof(loaded_pack_pity));
     int loaded_pack_pity_count = player->pack_pity_count;
+    PlayerStarGuarantee loaded_star_guarantees[PLAYER_STAR_GUARANTEE_CAPACITY];
+    memcpy(loaded_star_guarantees, player->star_guarantees, sizeof(loaded_star_guarantees));
+    int loaded_star_guarantee_count = player->star_guarantee_count;
     int loaded_vouchers[PLAYER_VOUCHER_CAPACITY];
     memcpy(loaded_vouchers, player->pack_vouchers, sizeof(loaded_vouchers));
     int saved_starter_count = 0;
@@ -1743,8 +1795,9 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
         uint64_t rng_value = 0;
         valid = cJSON_IsObject(store) && ProgressionJsonU64(store, "rng_state", 0, UINT32_MAX, &rng_value) &&
                 ProgressionJsonInt(store, "opened_total", 0, INT_MAX, &loaded_opened_total) &&
-                ProgressionLoadPackPity(store, loaded_pack_pity, &loaded_pack_pity_count) && cJSON_IsArray(opened) &&
-                cJSON_GetArraySize(opened) == PLAYER_STORE_PACK_COUNT;
+                ProgressionLoadPackPity(store, loaded_pack_pity, &loaded_pack_pity_count) &&
+                ProgressionLoadStarGuarantees(store, loaded_star_guarantees, &loaded_star_guarantee_count) &&
+                cJSON_IsArray(opened) && cJSON_GetArraySize(opened) == PLAYER_STORE_PACK_COUNT;
         loaded_rng = (uint32_t)rng_value;
         int opened_sum = 0;
         for (int pack = 0; pack < PLAYER_STORE_PACK_COUNT && valid; pack++) {
@@ -2040,6 +2093,8 @@ bool ProgressionLoadFromText(Player *player, const char *text, const char *origi
         memcpy(player->store_opened_by_pack, loaded_opened, sizeof(loaded_opened));
         memcpy(player->pack_pity, loaded_pack_pity, sizeof(loaded_pack_pity));
         player->pack_pity_count = loaded_pack_pity_count;
+        memcpy(player->star_guarantees, loaded_star_guarantees, sizeof(loaded_star_guarantees));
+        player->star_guarantee_count = loaded_star_guarantee_count;
         memcpy(player->pack_vouchers, loaded_vouchers, sizeof(loaded_vouchers));
         if (commit_roster) {
             int old_count = player->roster_count;
