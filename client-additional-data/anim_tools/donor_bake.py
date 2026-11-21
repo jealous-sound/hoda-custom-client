@@ -397,14 +397,21 @@ def match_rig(gltf, avatar_tt, joints, keep, par):
     return g2a
 
 
+MESH_TIER_TOKEN = re.compile(r'(_t|_tier_)\d+')
+
+
+def tierless_mesh_name(name):
+    return MESH_TIER_TOKEN.sub(r'\1', name.lower())
+
+
 def authoritative_donor(base, gltf):
     family = re.sub(r'_t\d+$', '', base).lower()
     override = AUTHORITATIVE_DONORS.get(family)
     if override is None:
         return None
     donor, mesh_name = override
-    names = {mesh.get('name', '').lower() for mesh in gltf.get('meshes', [])}
-    return donor if mesh_name in names else None
+    names = {tierless_mesh_name(mesh.get('name', '')) for mesh in gltf.get('meshes', [])}
+    return donor if tierless_mesh_name(mesh_name) in names else None
 
 
 def donor_candidates(base, gltf, joints, clip_path, cab_paths, clip_name=None):

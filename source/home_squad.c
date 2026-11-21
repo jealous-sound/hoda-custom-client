@@ -326,6 +326,15 @@ static void HomeSquadBaseName(char *base, int cap, const char *prefab) {
     if (len > 4 && strcmp(base + len - 4, "_pre") == 0) base[len - 4] = '\0';
 }
 
+static bool HomeSquadFamilyName(char *family, int cap, const char *base) {
+    StrCopy(family, (size_t)cap, base);
+    size_t len = strlen(family);
+    bool tiered =
+        len > 3 && family[len - 3] == '_' && family[len - 2] == 't' && family[len - 1] >= '1' && family[len - 1] <= '9';
+    if (tiered) family[len - 3] = '\0';
+    return tiered;
+}
+
 typedef struct {
     char base[64];
     float scale;
@@ -334,26 +343,23 @@ static UnitScaleEntry *unit_scales;
 static int unit_scale_count = -1;
 
 #define UNIT_PREFAB_SCALE 1.28853f
-static const char *const UNIT_DOUBLED_RIG_SCALE_MODELS[] = {
-    "em_bw_sentinelarcher_t1",
-    "em_bw_sentinelarcher_t4",
-    "em_mw_apostatesolas_t1",
-    "em_mw_apostatesolas_t4",
-    "em_mw_fenharel_t4",
-    "em_mw_solas_t4",
-    "hm_bw_venatorimarksman_t1",
-    "hm_bw_venatorimarksman_t4",
-    "hm_mw_macrinus_t4",
-    "hm_mw_rion_t1",
-    "hm_mw_rion_t4",
-    "hm_tw_gurdharofsen_t1",
-    "hm_tw_gurdharofsen_t4",
+static const char *const UNIT_DOUBLED_RIG_SCALE_FAMILIES[] = {
+    "em_bw_sentinelarcher",
+    "em_mw_apostatesolas",
+    "em_mw_fenharel",
+    "em_mw_solas",
+    "hm_bw_venatorimarksman",
+    "hm_mw_macrinus",
+    "hm_mw_rion",
+    "hm_tw_gurdharofsen",
 };
 
 static bool UnitRigScaleDoubled(const char *base) {
-    int count = sizeof(UNIT_DOUBLED_RIG_SCALE_MODELS) / sizeof(UNIT_DOUBLED_RIG_SCALE_MODELS[0]);
+    char family[128];
+    HomeSquadFamilyName(family, sizeof(family), base);
+    int count = sizeof(UNIT_DOUBLED_RIG_SCALE_FAMILIES) / sizeof(UNIT_DOUBLED_RIG_SCALE_FAMILIES[0]);
     for (int i = 0; i < count; i++)
-        if (!strcmp(UNIT_DOUBLED_RIG_SCALE_MODELS[i], base)) return true;
+        if (!strcmp(UNIT_DOUBLED_RIG_SCALE_FAMILIES[i], family)) return true;
     return false;
 }
 
@@ -389,12 +395,9 @@ static float UnitDisplayScale(const char *prefab) {
 static bool HomeSquadModelPath(char *out, int cap, const char *char_dir, const char *prefab) {
     char base[128];
     HomeSquadBaseName(base, sizeof(base), prefab);
-    size_t len = strlen(base);
 
     char dir[128];
-    StrCopy(dir, sizeof(dir), base);
-    bool tiered = len > 3 && dir[len - 3] == '_' && dir[len - 2] == 't' && dir[len - 1] >= '1' && dir[len - 1] <= '9';
-    if (tiered) dir[len - 3] = '\0';
+    bool tiered = HomeSquadFamilyName(dir, sizeof(dir), base);
 
     snprintf(out, (size_t)cap, "%s/%s/%s_rl.glb", char_dir, dir, base);
     if (FileExists(out)) return true;

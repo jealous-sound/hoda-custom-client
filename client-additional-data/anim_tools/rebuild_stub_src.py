@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import argparse
 import glob
-import json
 import os
 import re
 import shutil
@@ -14,7 +13,6 @@ ROOT = os.path.dirname(os.path.dirname(TOOLS))
 CHAR_PACK = os.path.join(ROOT, 'client-additional-data', 'char_pack')
 REFERENCE_FBX = os.path.join(
     ROOT, '.agents', 'skills', 'hoda-reference', 'references', 'fbx')
-CAB_PATHS = os.path.join(TOOLS, 'cache', 'cab_paths.json')
 
 import UnityPy
 from UnityPy.helpers import UnityVersion as UV
@@ -108,13 +106,13 @@ def copy_reference_textures(base, mesh_name, env, cab_paths, out_dir, reference_
     return os.path.basename(selected), method, len(candidates)
 
 
-def rebuild_source(dirname, base, tex_png=None, reference_fbx=REFERENCE_FBX,
-                   cab_paths_path=CAB_PATHS):
-    with open(cab_paths_path) as source:
-        cab_paths = json.load(source)
+def rebuild_source(dirname, base, tex_png=None, reference_fbx=REFERENCE_FBX):
+    import bake_all
+
+    cab_paths = bake_all.build_cab_paths()
     cab_key = f'cab-{base}_pre'.lower()
     if cab_key not in cab_paths:
-        raise KeyError(f'{cab_key} is absent from {cab_paths_path}')
+        raise KeyError(f'{cab_key} is absent from the CAB index in {bake_all.CACHE_DIR}')
     env = UnityPy.load(cab_paths[cab_key])
     gos, trs, best = read_prefab(env)
     smr, mesh_obj, nverts, h = best

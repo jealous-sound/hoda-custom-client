@@ -89,6 +89,38 @@ class CurrentTierModelsTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "--only, --limit, or --all"):
             models.select_targets(self.audit(), None, None, False)
 
+    def test_every_tier_audit_covers_tiers_no_roster_owns(self) -> None:
+        legendary = {
+            "id": "LEGENDARY",
+            "models": {"I": "unit.hm_sw_exact_t1_pre", "II": "unit.hm_sw_exact_t2_pre"},
+        }
+        self.catalog.write_text(json.dumps({"characters": [legendary]}))
+        self.cabs.write_text(json.dumps({"cab-hm_sw_exact_t2_pre": "/cab/exact_t2"}))
+        texture_dir = self.references / "Human Male" / "unit.hm_sw_exact_t2_pre"
+        texture_dir.mkdir(parents=True)
+        (texture_dir / "hm_sw_exact_t2_tex.png").touch()
+
+        report = models.audit_models(
+            self.catalog, None, self.char_pack, self.cabs, self.references
+        )
+
+        states = {(row["id"], row["tier"]): row["status"] for row in report["characters"]}
+        self.assertEqual(
+            states, {("LEGENDARY", "I"): "exact", ("LEGENDARY", "II"): "rebuild_ready"}
+        )
+        self.assertEqual(
+            [target["base"] for target in models.buildable_targets(report)], ["hm_sw_exact_t2"]
+        )
+
+    def test_every_catalog_tier_has_its_own_model(self) -> None:
+        report = models.audit_models(player_path=None)
+        borrowed = [
+            (row["id"], row["tier"], row["status"])
+            for row in report["characters"]
+            if row["status"] not in {"exact", "tierless_t0"}
+        ]
+        self.assertEqual(borrowed, [])
+
     def test_workspace_roster_has_its_assigned_models(self) -> None:
         report = models.audit_models()
         unresolved = [

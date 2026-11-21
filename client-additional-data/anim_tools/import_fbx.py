@@ -23,7 +23,7 @@ DEFAULT_CHAR_PACK = ROOT / "client-additional-data" / "char_pack"
 TIER_SUFFIX = re.compile(r"_t\d+$", re.IGNORECASE)
 
 SPECIAL_MANIFESTS = {
-    "c_icegiant_t1": {
+    "c_icegiant": {
         "clip_roles": {
             "idle": "c_ogre_rdy_ani",
             "attack": "c_ogre_atk_v03_ani",
@@ -34,13 +34,13 @@ SPECIAL_MANIFESTS = {
         },
         "mapping": "Exact 19-joint Giant topology; uses the validated c_giant role set.",
     },
-    "c_titanheartguardian_t1": {
+    "c_titanheartguardian": {
         "embedded_clip_roles": ["idle", "cheer", "attack", "hit", "death"],
         "embedded_source_names": ["Take 001"] * 5,
         "embedded_durations": [5.0, 2.2, 4.6667, 2.0, 2.0],
         "mapping": "Five full FBX clips in the standard idle/cheer/attack/hit/death export order.",
     },
-    "hm_nc_xenontheantiquarian_t1": {
+    "hm_nc_xenontheantiquarian": {
         "embedded_clip_roles": ["idle"],
         "embedded_source_names": ["_generic_idle_wind_ani"],
         "embedded_durations": [4.9167],
@@ -49,6 +49,10 @@ SPECIAL_MANIFESTS = {
         "mapping": "One-joint non-attacker; keeps its FBX idle and reuses it for hit.",
     },
 }
+
+
+def special_manifest(base: str) -> dict:
+    return SPECIAL_MANIFESTS.get(TIER_SUFFIX.sub("", base), {})
 
 
 class FbxFormatError(ValueError):
@@ -347,7 +351,7 @@ def import_one(
         "source_fbx": fbx.name,
         "animation_stacks": stacks,
     }
-    manifest.update(SPECIAL_MANIFESTS.get(base, {}))
+    manifest.update(special_manifest(base))
     temporary_manifest = manifest_path.with_suffix(manifest_path.suffix + ".tmp")
     temporary_manifest.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
     temporary_manifest.replace(manifest_path)

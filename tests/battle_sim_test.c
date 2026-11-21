@@ -419,6 +419,24 @@ static const FxEmitter *FactionLogoEmitter(const FxPreset *preset) {
     return NULL;
 }
 
+static void TestDoubledRigScaleCoversEveryTierOfTheFamily(void) {
+    static const char *const doubled[] = {
+        "unit.em_mw_fenharel_t3_pre",
+        "unit.em_mw_solas_t3_pre",
+        "unit.hm_mw_rion_t2_pre",
+        "unit.hm_tw_gurdharofsen_t3_pre",
+        "unit.em_bw_sentinelarcher_t2_pre",
+    };
+    for (int i = 0; i < (int)(sizeof(doubled) / sizeof(doubled[0])); i++) {
+        char base[128];
+        HomeSquadBaseName(base, sizeof(base), doubled[i]);
+        assert(UnitRigScaleDoubled(base));
+        assert(UnitDisplayScale(doubled[i]) == UNIT_PREFAB_SCALE);
+    }
+    assert(!UnitRigScaleDoubled("em_mw_fenharelbanner_t3"));
+    assert(!UnitRigScaleDoubled("c_architect_t2"));
+}
+
 static void TestFactionChargeLogoLiesOnItsBase(void) {
     Battle *battle = calloc(1, sizeof(*battle));
     assert(battle != NULL);
@@ -11197,6 +11215,7 @@ int main(void) {
     TestIntroQueueShowsBothFactionBonusesAfterBothSidesRunes();
     TestFactionIntroAssetsAndText();
     TestFactionChargeLogoLiesOnItsBase();
+    TestDoubledRigScaleCoversEveryTierOfTheFamily();
     TestPowerDrain();
     TestAllyPowerGain();
     TestAllySlow();
