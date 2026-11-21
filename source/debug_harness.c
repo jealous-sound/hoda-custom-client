@@ -19,6 +19,7 @@ typedef struct {
 #define DEBUG_EXPEDITION_JUST_LEFT 600
 #define DEBUG_TUTORIAL_SELECT_FRAME 5
 #define DEBUG_PVP_TROPHIES 640
+#define DEBUG_NO_DETAIL (-1)
 #define DEBUG_PVP_FIGHT_SEED 7
 #define DEBUG_PVP_BANNERS 320
 #define DEBUG_PVP_MILESTONES 2
@@ -55,7 +56,8 @@ typedef struct {
     "{\"id\":\"anders\",\"name\":\"Anders\",\"level\":8,\"trophies\":5775,\"banners\":9100}]}"
 #define DEBUG_DUEL_RIVAL                                                                                               \
     "{\"id\":\"isabela\",\"name\":\"Isabela\",\"level\":100,\"trophies\":900,\"renown_rank\":41,\"vault_tier\":3,"     \
-    "\"units\":[{\"slot\":0,\"id\":\"UNIT_VIVIENNE\",\"tier\":\"II\",\"level\":9},"                                    \
+    "\"hero_builds\":true,\"units\":[{\"slot\":0,\"id\":\"UNIT_VIVIENNE\",\"tier\":\"II\",\"level\":9,"                \
+    "\"gear\":[\"augurs_witchstaff\",\"cobra_crown\",\"\",\"\",\"\"]},"                                                \
     "{\"slot\":1,\"id\":\"UNIT_ELVENMAGE\",\"tier\":\"I\",\"level\":2}],\"runes\":[]}"
 #define DEBUG_RESULTS_SETTLE_FRAMES 10
 #define DEBUG_MISSION_SUMMONS 600
@@ -559,10 +561,22 @@ static void DebugSeedLadderRivals(Game *game) {
     DebugSeedRenown(&game->player, EnvInt("HOD_RENOWN_RANK", DEBUG_RENOWN_RANK), 0);
 }
 
+static void DebugOpenEnemyDetail(Game *game) {
+    int slot = EnvInt("HOD_DETAIL", DEBUG_NO_DETAIL);
+    BattleUi *ui = &game->battle_ui;
+    if (slot < 0 || slot >= SQUAD_SLOT_COUNT || ui->detail_open || !ui->plates[1][slot].ch) return;
+    BattleUiSetTacticalEx(ui, &game->battle, true, false);
+    BattleUiOpenPlateDetails(ui, &ui->plates[1][slot]);
+    ui->detail_gear_slot = EnvInt("HOD_DETAIL_GEAR", BATTLE_UI_NO_GEAR_SLOT);
+}
+
 static bool DebugPrepareDuel(Game *game, DebugShot *shot) {
     if (!DebugShotIs(shot, "pvp_duel")) return false;
     game->screen = SCREEN_BATTLE;
-    if (game->battle.squads_loaded) return true;
+    if (game->battle.squads_loaded) {
+        DebugOpenEnemyDetail(game);
+        return true;
+    }
     cJSON *reply = cJSON_Parse(DEBUG_DUEL_RIVAL);
     GuildHandleDuel(&game->guild, reply);
     cJSON_Delete(reply);
@@ -622,9 +636,10 @@ static void DebugPreparePvp(Game *game, DebugShot *shot) {
         game->player.pvp.trophies = DEBUG_PVP_TROPHIES;
         game->player.level = EnvInt("HOD_PLAYER_LEVEL", game->player.level);
         bool event = DebugShotIsAny(shot, (const char *const[]){"pvp_event_match", "pvp_event_results"}, 2);
-        GameMatchPvp(game, event, GAME_PVP_MATCHMAKING, false, SCREEN_PVP_HUB);
+        GameMatchPvp(game, event, EnvInt("HOD_PVP_BOT", GAME_PVP_MATCHMAKING), false, SCREEN_PVP_HUB);
         return;
     }
+    DebugOpenEnemyDetail(game);
     const char *fight_seed = getenv("HOD_FIGHT");
     if (DebugShotIs(shot, "pvp_fight") && fight_seed && !BattlePlayActive(&game->battle_play))
         BattlePlayStart(&game->battle_play, &game->battle, &game->player, (unsigned)atoi(fight_seed));

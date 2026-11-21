@@ -39,19 +39,37 @@ typedef struct {
     RenownBattleBonus renown;
 } BattleRoster;
 
+bool BattleGearDefsLoad(short defs[GEAR_SLOT_CAPACITY], const cJSON *worn) {
+    memset(defs, 0, sizeof(short) * GEAR_SLOT_CAPACITY);
+    int slot = 0;
+    const cJSON *gear = NULL;
+    cJSON_ArrayForEach(gear, worn) {
+        if (slot >= GEAR_SLOT_CAPACITY || !cJSON_IsString(gear)) return false;
+        int index = gear->valuestring[0] ? GearDefIndex(gear->valuestring) : -1;
+        if (gear->valuestring[0] && index < 0) return false;
+        defs[slot++] = (short)(index + 1);
+    }
+    return true;
+}
+
 bool BattleHeroBuildLoad(BattleHeroBuild *build, const cJSON *unit) {
     memset(build, 0, sizeof(*build));
     build->consume_xp = JsonInt(unit, "consume_xp");
     build->ascended = JsonBool(unit, "ascended");
-    int slot = 0;
-    const cJSON *gear = NULL;
-    cJSON_ArrayForEach(gear, cJSON_GetObjectItemCaseSensitive(unit, "gear")) {
-        if (slot >= GEAR_SLOT_CAPACITY || !cJSON_IsString(gear)) return false;
-        int index = gear->valuestring[0] ? GearDefIndex(gear->valuestring) : -1;
-        if (gear->valuestring[0] && index < 0) return false;
-        build->gear_defs[slot++] = (short)(index + 1);
-    }
+    if (!BattleGearDefsLoad(build->gear_defs, cJSON_GetObjectItemCaseSensitive(unit, "gear"))) return false;
     return FortifyChildrenParse(build->fortify, cJSON_GetObjectItemCaseSensitive(unit, "fortify"));
+}
+
+void BattleWornGearApply(Character *ch, bool ascended, const short gear_defs[GEAR_SLOT_CAPACITY]) {
+    if (ascended) GearApplyAscension(ch);
+    memcpy(ch->gear.defs, gear_defs, sizeof(ch->gear.defs));
+}
+
+bool BattleWornGearLoad(Character *ch, const cJSON *unit) {
+    short gear_defs[GEAR_SLOT_CAPACITY];
+    if (!BattleGearDefsLoad(gear_defs, cJSON_GetObjectItemCaseSensitive(unit, "gear"))) return false;
+    BattleWornGearApply(ch, JsonBool(unit, "ascended"), gear_defs);
+    return true;
 }
 
 bool BattleHeroBuildApply(Character *ch, const BattleHeroBuild *build) {

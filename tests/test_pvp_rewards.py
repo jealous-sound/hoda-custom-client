@@ -78,3 +78,69 @@ class EventLadderTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+CHARACTERS = {
+    character["id"]: character
+    for character in json.loads(build_pvp_rules.CHARACTERS.read_text(encoding="utf-8"))["characters"]
+}
+GEAR = {item["id"]: item for item in json.loads(build_pvp_rules.GEAR.read_text(encoding="utf-8"))["items"]}
+RUNES = {rune["id"]: rune for rune in json.loads(build_pvp_rules.RUNES.read_text(encoding="utf-8"))["runes"]}
+POOL = RULES["squad_pool"]
+
+
+def worn_cells(squad):
+    return [cell for cell in squad["cells"] if cell is not None and "gear" in cell]
+
+
+def mean_gear_rarity(squads):
+    rarities = [GEAR[item]["rarity"] for squad in squads for cell in worn_cells(squad) for item in cell["gear"] if item]
+    return sum(rarities) / max(len(rarities), 1)
+
+
+class BotLoadoutTest(unittest.TestCase):
+    def test_every_item_fits_its_wearer_once(self):
+        for squad in POOL:
+            for cell in worn_cells(squad):
+                character = CHARACTERS[cell["id"]]
+                worn = [GEAR[item] for item in cell["gear"] if item]
+                self.assertEqual(len(cell["gear"]), build_pvp_rules.GEAR_SLOT_CAPACITY)
+                self.assertEqual(len(worn), len({item["id"] for item in worn}))
+                self.assertTrue(all(build_pvp_rules.can_wear(character, item) for item in worn))
+                absorbers = sum(item["absorbs_damage"] for item in worn)
+                defender = build_pvp_rules.DAMAGE_ABSORBING_SPECIALTY in character["specialties"]
+                self.assertLessEqual(absorbers, 0 if defender else 1)
+                prestige = cell["gear"][
+                    build_pvp_rules.ASCENDED_PRESTIGE_GEAR_SLOT if cell.get("ascended") else
+                    build_pvp_rules.PRESTIGE_GEAR_SLOT
+                ]
+                if prestige:
+                    self.assertGreaterEqual(GEAR[prestige]["rarity"], build_pvp_rules.PRESTIGE_MIN_GEAR_RARITY)
+
+    def test_runes_follow_the_players_slot_rules(self):
+        for squad in POOL:
+            runes = [RUNES[rune] for rune in squad["runes"]]
+            normal = [rune for rune in runes if rune["rarity"] != build_pvp_rules.PRESTIGE_RUNE_RARITY]
+            self.assertLessEqual(len(normal), build_pvp_rules.NORMAL_RUNE_SLOTS)
+            self.assertEqual(runes[: len(normal)], normal)
+            self.assertFalse(any(rune["buff_type"] in build_pvp_rules.NON_BATTLE_RUNE_BUFFS for rune in runes))
+
+    def test_loadouts_grow_with_squad_strength(self):
+        campaign = sorted((squad for squad in POOL if not squad.get("elite")), key=lambda squad: squad["strength"])
+        tenth = len(campaign) // 10
+        self.assertFalse(any(worn_cells(squad) or squad["runes"] for squad in campaign[:tenth]))
+        self.assertLess(mean_gear_rarity(campaign[-3 * tenth : -2 * tenth]), mean_gear_rarity(campaign[-tenth:]))
+
+    def test_elite_squads_close_the_pool_maxed_in_mythic_gear(self):
+        elite = [index for index, squad in enumerate(POOL) if squad.get("elite")]
+        self.assertEqual(elite, list(range(len(POOL) - build_pvp_rules.ELITE_SQUAD_COUNT, len(POOL))))
+        for index in elite:
+            cells = POOL[index]["cells"]
+            self.assertTrue(all(cell is not None and cell.get("ascended") for cell in cells))
+            self.assertTrue(all(GEAR[item]["rarity"] == build_pvp_rules.ELITE_LOADOUT.gear_rarity
+                                for cell in cells for item in cell["gear"]))
+            self.assertEqual([RUNES[rune]["rarity"] for rune in POOL[index]["runes"]],
+                             [build_pvp_rules.ELITE_LOADOUT.rune_rarity] * build_pvp_rules.NORMAL_RUNE_SLOTS +
+                             [build_pvp_rules.PRESTIGE_RUNE_RARITY])
+            for cell in cells:
+                self.assertEqual(cell["level"], build_pvp_rules.ascended_level(CHARACTERS[cell["id"]]))

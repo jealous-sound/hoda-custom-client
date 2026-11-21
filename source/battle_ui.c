@@ -6,6 +6,7 @@
 #define MM_BOTTOM_Y(v) UiBottomY(MM_Y(v))
 
 static const GuiId BATTLE_UI_FACTION_INTRO_ICON = GUI_DETAILS_POWER;
+static const int BATTLE_UI_NO_GEAR_SLOT = -1;
 
 typedef enum {
     BATTLE_UI_NONE,
@@ -63,6 +64,7 @@ typedef struct {
     bool detail_close_armed;
     HeroCard detail_card;
     bool detail_open;
+    int detail_gear_slot;
 } BattleUi;
 
 static void BattleUiParseColored(const char *src, char *out, int cap, Color *col) {
@@ -332,6 +334,32 @@ static void BattleUiOpenPlateDetails(BattleUi *ui, const BattlePlate *plate) {
         ui->detail_card.xp_frac = 1.0f;
     }
     ui->detail_open = true;
+    ui->detail_gear_slot = BATTLE_UI_NO_GEAR_SLOT;
+}
+
+static void BattleUiDrawDetail(BattleUi *ui, float right) {
+    HeroesDrawDetails(&ui->detail_card, 0.0f, right);
+    Rectangle details = HeroesDetailsBounds(0.0f, right);
+    const Character *ch = ui->detail_card.ch;
+    Rectangle panel = GearWornSlotsPanel(ch, details);
+    bool input = !UiInputBlocked();
+    int clicked = GearDrawWornSlots(ch, details, ui->detail_gear_slot, input);
+    if (clicked >= 0) {
+        GuiClickSoundPlay();
+        ui->detail_gear_slot = clicked == ui->detail_gear_slot ? BATTLE_UI_NO_GEAR_SLOT : clicked;
+    } else if (
+        input && ui->detail_gear_slot != BATTLE_UI_NO_GEAR_SLOT && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) &&
+        CheckCollisionPointRec(UiMouse(), details)
+    ) {
+        ui->detail_gear_slot = BATTLE_UI_NO_GEAR_SLOT;
+    }
+    if (ui->detail_gear_slot != BATTLE_UI_NO_GEAR_SLOT) GearDrawWornItemCard(ch, ui->detail_gear_slot, details);
+    if (input && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        ui->detail_close_armed = !CheckCollisionPointRec(UiMouse(), panel);
+    if (input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+        if (ui->detail_close_armed && !CheckCollisionPointRec(UiMouse(), panel)) ui->detail_open = false;
+        ui->detail_close_armed = false;
+    }
 }
 
 static bool BattleUiDrawPlate(const BattlePlate *p, const Camera3D *cam, bool interactive) {
@@ -1230,15 +1258,6 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
         }
     }
 
-    if (ui->detail_open) {
-        HeroesDrawDetails(&ui->detail_card, 0.0f, right);
-        Rectangle details = HeroesDetailsBounds(0.0f, right);
-        if (!UiInputBlocked() && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-            ui->detail_close_armed = !CheckCollisionPointRec(UiMouse(), details);
-        if (!UiInputBlocked() && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-            if (ui->detail_close_armed && !CheckCollisionPointRec(UiMouse(), details)) ui->detail_open = false;
-            ui->detail_close_armed = false;
-        }
-    }
+    if (ui->detail_open) BattleUiDrawDetail(ui, right);
     return result;
 }

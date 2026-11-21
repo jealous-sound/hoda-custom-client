@@ -7,6 +7,13 @@ static const char *BattleReplayGearId(const Character *ch, int slot) {
     return def ? def->id : "";
 }
 
+static void BattleReplayAddWornGear(cJSON *unit, const Character *ch) {
+    cJSON_AddBoolToObject(unit, "ascended", ch->ascended);
+    cJSON *gear = cJSON_AddArrayToObject(unit, "gear");
+    for (int g = 0; gear && g < GEAR_SLOT_CAPACITY; g++)
+        cJSON_AddItemToArray(gear, cJSON_CreateString(BattleReplayGearId(ch, g)));
+}
+
 static cJSON *BattleReplayUnitJson(const Character *ch, int slot, bool player_side, bool hero_build) {
     cJSON *unit = cJSON_CreateObject();
     if (!unit) return NULL;
@@ -15,12 +22,12 @@ static cJSON *BattleReplayUnitJson(const Character *ch, int slot, bool player_si
     cJSON_AddStringToObject(unit, "id", ch->id);
     cJSON_AddStringToObject(unit, "tier", TIER_NAMES[ch->tier]);
     cJSON_AddNumberToObject(unit, "level", ch->level);
-    if (!hero_build) return unit;
+    if (!hero_build) {
+        if (GearHasEquipped(ch)) BattleReplayAddWornGear(unit, ch);
+        return unit;
+    }
     cJSON_AddNumberToObject(unit, "consume_xp", ch->consume_xp);
-    cJSON_AddBoolToObject(unit, "ascended", ch->ascended);
-    cJSON *gear = cJSON_AddArrayToObject(unit, "gear");
-    for (int g = 0; gear && g < GEAR_SLOT_CAPACITY; g++)
-        cJSON_AddItemToArray(gear, cJSON_CreateString(BattleReplayGearId(ch, g)));
+    BattleReplayAddWornGear(unit, ch);
     cJSON *fortify = FortifyChildrenJson(ch);
     if (fortify) cJSON_AddItemToObject(unit, "fortify", fortify);
     return unit;
@@ -128,6 +135,8 @@ BattleReplayUnitLoad(BattleRoster *roster, const cJSON *catalog, const cJSON *un
     if (hero_build) {
         BattleHeroBuild build;
         if (!BattleHeroBuildLoad(&build, unit) || !BattleHeroBuildApply(ch, &build)) return false;
+    } else if (!BattleWornGearLoad(ch, unit)) {
+        return false;
     }
     roster->present[slot] = true;
     return true;

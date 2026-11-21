@@ -7008,9 +7008,14 @@ static void TestPvpSquadsRankFromWeakestToStrongest(void) {
         ranked[squad] = true;
         if (rank == 0) continue;
         int weaker = table->squads_weakest_first[rank - 1];
+        bool elite = table->squads[squad].elite, after_elite = table->squads[weaker].elite;
+        assert(elite || !after_elite);
+        if (elite != after_elite) continue;
         int gap = table->squads[squad].strength - table->squads[weaker].strength;
         assert(gap > 0 || (gap == 0 && squad > weaker));
     }
+    assert(table->squads[table->squads_weakest_first[table->squad_count - 1]].elite);
+    assert(!table->squads[table->squads_weakest_first[0]].elite);
     assert(PvpBotStrengthRank(0) == 0);
     assert(PvpBotStrengthRank(table->bot_count - 1) == table->squad_count - 1);
 }
@@ -7029,6 +7034,60 @@ static void TestPvpOpponentsGrowStrongerUpTheLadder(void) {
     assert(o.level >= 1 && o.level <= 3 && o.rune_count == 0);
     PvpOpponent veteran = PvpOpponentGenerate(100, 3000, 20000, 7);
     assert(veteran.level <= PVP_LOCAL_MAX_LEVEL && veteran.rune_count > 0 && veteran.rune_count <= RUNE_SLOT_COUNT);
+}
+
+static void TestPvpBotRunesComeWithTheSquadNotTheViewersLevel(void) {
+    for (unsigned seed = 1; seed <= 40; seed++) {
+        PvpOpponent novice = PvpOpponentGenerate(1, 3000, 20000, seed);
+        PvpOpponent veteran = PvpOpponentGenerate(100, 3000, 20000, seed);
+        assert(novice.squad == veteran.squad && novice.rune_count == veteran.rune_count);
+        assert(!memcmp(novice.rune_defs, veteran.rune_defs, sizeof(novice.rune_defs)));
+    }
+}
+
+static bool TestRosterWearsGear(const BattleRoster *roster) {
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
+        if (roster->present[slot] && GearHasEquipped(&roster->chars[slot])) return true;
+    return false;
+}
+
+static void TestPvpTopBotFieldsMaxedHeroesInMythicGear(void) {
+    static BattleRoster roster;
+    const PvpTable *table = PvpTableEnsure();
+    for (unsigned seed = 1; seed <= 12; seed++) {
+        PvpOpponent o = PvpOpponentFromBot(table->bot_count - 1, 10, 0, 20000, seed);
+        PvpOpponentRoster(&roster, &o);
+        assert(o.rune_count == RUNE_SLOT_COUNT);
+        for (int i = 0; i < RUNE_NORMAL_SLOT_COUNT; i++) assert(RuneDefAt(o.rune_defs[i])->rarity == RARITY_MYTHIC);
+        assert(RuneDefAt(o.rune_defs[RUNE_PRESTIGE_SLOT])->rarity == RUNE_PRESTIGE_RARITY);
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+            const Character *ch = &roster.chars[slot];
+            assert(roster.present[slot] && ch->ascended && ch->rarity >= RARITY_EPIC);
+            assert(GearSlotCount(ch) == GEAR_SLOT_CAPACITY);
+            for (int g = 0; g < GearSlotCount(ch); g++) assert(GearInSlot(ch, g)->rarity == RARITY_MYTHIC);
+        }
+        PvpOpponent newcomer = PvpOpponentFromBot(0, 10, 0, 20000, seed);
+        PvpOpponentRoster(&roster, &newcomer);
+        assert(newcomer.rune_count == 0 && !TestRosterWearsGear(&roster));
+    }
+}
+
+static void TestPvpBotGearTravelsInTheReplay(void) {
+    static BattleRoster roster, loaded;
+    PvpOpponent o = PvpOpponentFromBot(PvpTableEnsure()->bot_count - 1, 10, 0, 20000, 5);
+    PvpOpponentRoster(&roster, &o);
+    cJSON *json = BattleReplayRosterJson(&roster, false);
+    assert(!cJSON_GetObjectItemCaseSensitive(json, BATTLE_HERO_BUILDS_FIELD));
+    cJSON *catalog_root = BattleReplayCatalogLoad();
+    assert(BattleReplayRosterLoad(&loaded, cJSON_GetObjectItemCaseSensitive(catalog_root, "characters"), json, false));
+    assert(!loaded.hero_builds && loaded.rune_def_count == roster.rune_def_count);
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        const Character *sent = &roster.chars[slot], *read = &loaded.chars[slot];
+        assert(read->ascended == sent->ascended && read->level == sent->level);
+        assert(!memcmp(read->gear.defs, sent->gear.defs, sizeof(sent->gear.defs)));
+    }
+    cJSON_Delete(catalog_root);
+    cJSON_Delete(json);
 }
 
 static void TestPvpMatchingStaysInTheTrophyWindow(void) {
@@ -10635,6 +10694,9 @@ int main(void) {
     TestPvpTheSamePlayerCanBeAttackedOncePerDay();
     TestPvpCooldownMessageNamesTheTimeLeft();
     TestPvpEveryPooledSquadFights();
+    TestPvpBotRunesComeWithTheSquadNotTheViewersLevel();
+    TestPvpTopBotFieldsMaxedHeroesInMythicGear();
+    TestPvpBotGearTravelsInTheReplay();
     TestNewsFeedLeadsWithAnnouncementsWhileTheyRun();
     TestAnnouncementsAndTheEventBuffCapReadInEveryLanguage();
     TestPvpOpponentsFightUnderTheStatBudgetOnlyWhenTheRuleIsOn();
