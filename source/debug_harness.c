@@ -224,6 +224,9 @@ static void DebugShowStorePackInfo(Store *store, Player *player) {
     store->info_pack = pack;
     const char *counter = StorePackPityCounter(&store->packs[pack]);
     PlayerSetPacksSinceLegendary(player, counter, EnvInt("HOD_PACKS_SINCE_LEGENDARY", 0));
+    for (int stars = STORE_STAR_GUARANTEE_LOWEST_STARS; stars <= STORE_LEGENDARY_STAR_MAX; stars++)
+        if (StorePackHasStarGuarantee(&store->packs[pack], stars))
+            PlayerSetPacksSinceStarGuarantee(player, counter, stars, EnvInt("HOD_PACKS_SINCE_STAR_GUARANTEE", 0));
 }
 
 static void DebugPrepareStore(Game *game, DebugShot *shot) {

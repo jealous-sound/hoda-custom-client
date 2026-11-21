@@ -6,3 +6,7 @@ HODA_STORE_PITY_NEXT_PACK|Légendaire garanti dans le prochain pack
 HODA_STORE_PITY_SHARED|Partagé avec les autres packs de la semaine
 HODA_STORE_BULLET_PITY|Légendaire d'ici {0} packs
 HODA_STORE_BULLET_PITY_NEXT|Légendaire au prochain pack !
+HODA_STORE_STAR_GUARANTEE_TWO_PACKS_LEFT|Légendaire 2 ou 3 étoiles garanti d'ici {0} packs
+HODA_STORE_STAR_GUARANTEE_TWO_NEXT_PACK|Légendaire 2 ou 3 étoiles garanti dans le prochain pack
+HODA_STORE_STAR_GUARANTEE_THREE_PACKS_LEFT|Légendaire 3 étoiles garanti d'ici {0} packs
+HODA_STORE_STAR_GUARANTEE_THREE_NEXT_PACK|Légendaire 3 étoiles garanti dans le prochain pack

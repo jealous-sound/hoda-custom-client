@@ -89,6 +89,7 @@ MINIMUM = {id(COMMON_TIER): 'Common', id(UNCOMMON_TIER): 'Uncommon', id(RARE_TIE
 RARITY_NUMBER = {'Common': 1, 'Uncommon': 2, 'Rare': 3, 'Epic': 4, 'Legendary': 5}
 
 LEGENDARY_STARS = ('1', '2', '3')
+STAR_GUARANTEE_TIERS = ('2', '3')
 STANDARD_STARS = {'1': 2000, '2': 7000, '3': 1000}
 PREMIUM_STARS = {'1': 2000, '2': 6500, '3': 1500}
 NO_THREE_STAR = {'1': 2500, '2': 7500, '3': 0}
@@ -128,14 +129,27 @@ def gear_info(count):
     return f'HODA_STORE_GEAR_PACK_INFO_{count}'
 
 
-def average_packs_per_legendary(tier, rolled_slots):
-    miss_one = Fraction(WEIGHT_TOTAL - tier['Legendary'], WEIGHT_TOTAL)
-    return math.ceil(1 / (1 - miss_one ** rolled_slots))
+def average_packs_per_hit(slot_chance, rolled_slots):
+    return math.ceil(1 / (1 - (1 - slot_chance) ** rolled_slots))
+
+
+def legendary_slot_chance(tier):
+    return Fraction(tier['Legendary'], WEIGHT_TOTAL)
 
 
 def legendary_pity_packs(tier, rolled_slots, guaranteed_legendary):
     can_miss = 0 < tier['Legendary'] < WEIGHT_TOTAL and rolled_slots > 0 and not guaranteed_legendary
-    return average_packs_per_legendary(tier, rolled_slots) if can_miss else 0
+    return average_packs_per_hit(legendary_slot_chance(tier), rolled_slots) if can_miss else 0
+
+
+def star_share(stars, lowest):
+    return Fraction(sum(weight for tier_stars, weight in stars.items() if int(tier_stars) >= int(lowest)),
+                    WEIGHT_TOTAL)
+
+
+def legendary_star_guarantees(tier, rolled_slots, stars):
+    return {lowest: average_packs_per_hit(legendary_slot_chance(tier) * star_share(stars, lowest), rolled_slots)
+            for lowest in STAR_GUARANTEE_TIERS}
 
 
 def offer(currency, price):
@@ -149,12 +163,14 @@ def voucher(name):
 def hero(key, loc, order, category, header, icon, offers, tier, count=1, bullets=(), info=None, opened_counter=0,
          schedule=None, rotation=None, epic=0, legendary=0, pity=True, rune_pct=0, rune=(1, 2), rune_count=1,
          gear_pct=0, gear=(1, 3), rare=0, fixed=(), pool=None, unique=False, header_tint=None, stars=STANDARD_STARS,
-         no_dupe_across_stars=False):
+         no_dupe_across_stars=False, star_guarantees=False):
     rolls_open_legendary = not pool and (tier['Legendary'] > 0 or legendary > 0)
+    rolled_slots = count - len(fixed) - legendary - epic - rare
     optional = {'guaranteed_rare': rare, 'fixed_heroes': list(fixed), 'pool_tag': pool, 'unique_heroes': unique,
                 'header_tint': header_tint, 'legendary_star_weights': stars if rolls_open_legendary else None,
-                'legendary_no_dupe_across_stars': no_dupe_across_stars}
-    rolled_slots = count - len(fixed) - legendary - epic - rare
+                'legendary_no_dupe_across_stars': no_dupe_across_stars,
+                'legendary_star_guarantees': legendary_star_guarantees(tier, rolled_slots, stars)
+                if star_guarantees else None}
     return {
         'id': key, 'kind': 'hero', **pack_text(loc, info or hero_info(count, tier)), 'category': category,
         'order': order, 'header': header, 'icon': icon, 'offers': offers, 'bullets': list(bullets), 'schedule': schedule,
@@ -221,10 +237,10 @@ def hero_packs():
              gold(1500) + [voucher('silver')], UNCOMMON_TIER, opened_counter=1, rune_pct=30, rune=(2, 3)),
         hero('champion', 'ITEM_GOLD_IDENTIFIER', 30, 'UNITS', CHAMPION_GOLD, icon + 'GoldPack',
              gems(30) + [voucher('champion')], RARE_TIER, opened_counter=2, rune_pct=100, rune=(3, 5),
-             bullets=[bullet(chance, 5)]),
+             bullets=[bullet(chance, 5)], star_guarantees=True),
         hero('grand_champion', 'GRAND_CHAMPION', 40, 'UNITS', 'cache:tex.Store_HeaderGrandChampionPack',
              icon + 'LegendaryPack', gems(270), BULK_TIER, count=10, opened_counter=3, epic=3,
-             rune_pct=100, rune=(3, 5), rune_count=10, stars=PREMIUM_STARS,
+             rune_pct=100, rune=(3, 5), rune_count=10, stars=PREMIUM_STARS, star_guarantees=True,
              bullets=[bullet(TEN_FOR_THE_PRICE_OF_NINE), bullet('HODA_STORE_BULLET_GRAND_CHAMPION', 4)],
              info='HODA_GRAND_CHAMPION_PACK_INFO'),
         hero('mercenary', 'MERCENARY', 50, 'UNITS', SILVER, icon + 'WarriorPack', gold(5000), UNCOMMON_TIER,
@@ -375,6 +391,22 @@ def star_errors(pack, pool_stars):
             if weight > 0 and stars not in pool_stars]
 
 
+def star_guarantee_errors(pack):
+    guarantees = pack.get('legendary_star_guarantees')
+    if not guarantees:
+        return []
+    if not pack['legendary_pity_packs']:
+        return [f"{pack['id']}: star guarantees need a Legendary pity slot"]
+    if set(guarantees) - set(STAR_GUARANTEE_TIERS):
+        return [f"{pack['id']}: a star guarantee's lowest star must be one of {', '.join(STAR_GUARANTEE_TIERS)}"]
+    intervals = [guarantees[lowest] for lowest in STAR_GUARANTEE_TIERS if lowest in guarantees]
+    errors = [f"{pack['id']}: a {lowest}-star guarantee has no star weight to roll"
+              for lowest in guarantees if star_share(pack.get('legendary_star_weights', {}), lowest) == 0]
+    if intervals[0] <= pack['legendary_pity_packs'] or intervals != sorted(set(intervals)):
+        errors.append(f"{pack['id']}: each star guarantee must wait longer than the pity and the tier below")
+    return errors
+
+
 def validate(catalog):
     errors = []
     characters = json.loads(CHARACTERS.read_text(encoding='utf-8'))['characters']
@@ -399,7 +431,7 @@ def validate(catalog):
         if pack['kind'] == 'hero' and sum(pack['weights'].values()) != 10000:
             errors.append(f"{pack['id']}: weights do not total 10000")
         if pack['kind'] == 'hero':
-            errors += star_errors(pack, pool_stars)
+            errors += star_errors(pack, pool_stars) + star_guarantee_errors(pack)
         if not pack['bullets'] and 'description_key' not in pack:
             errors.append(f"{pack['id']}: needs a description or a bullet")
     for group in {pack['rotation']['group'] for pack in catalog['packs'] if pack['rotation']}:
