@@ -182,9 +182,9 @@ static void HeroCardBuild(HeroCard *card, const Character *ch) {
         {182, 252, 240, 255},
         {255, 0, 255, 255},
     };
-    card->rarity =
-        ch->original_rarity == RARITY_MYTHIC ? LocGet("HODA_RARITY_MYTHIC") : LocGet(rarity_keys[ch->original_rarity]);
-    card->rarity_color = rarity_colors[ch->original_rarity];
+    Rarity shown = CharacterShownRarity(ch);
+    card->rarity = shown == RARITY_MYTHIC ? LocGet("HODA_RARITY_MYTHIC") : LocGet(rarity_keys[shown]);
+    card->rarity_color = rarity_colors[shown];
 
     card->speed = LocGet(
         ch->speed == SPEED_QUICK  ? "INITIATIVE_FAST"
@@ -731,7 +731,7 @@ static void HeroesDrawDetailsHead(const HeroCard *card, Rectangle bounds) {
     Rectangle head = HeroesDetailsHead(bounds);
     float w = head.width, head_h = head.height;
 
-    int plaque_id = GUI_PLAQUE_COMMON + (card->ch->original_rarity - RARITY_COMMON);
+    int plaque_id = GUI_PLAQUE_COMMON + (CharacterShownRarity(card->ch) - RARITY_COMMON);
     UiDrawTexture(GuiTex(plaque_id), head, WHITE);
 
     float cw = head_h * 0.55f;

@@ -7082,6 +7082,20 @@ static void TestPvpTopBotFieldsMaxedHeroesInMythicGear(void) {
     }
 }
 
+static void TestAscendedHeroesShowAsMythic(void) {
+    Character plain = {.rarity = RARITY_LEGENDARY, .original_rarity = RARITY_LEGENDARY};
+    assert(CharacterShownRarity(&plain) == RARITY_LEGENDARY);
+    GearApplyAscension(&plain);
+    assert(CharacterShownRarity(&plain) == RARITY_MYTHIC && plain.original_rarity == RARITY_LEGENDARY);
+
+    static BattleRoster roster;
+    static HeroCard card;
+    PvpOpponent top = PvpOpponentFromBot(PvpTableEnsure()->bot_count - 1, 10, 0, 20000, 3);
+    PvpOpponentRoster(&roster, &top);
+    HeroCardBuild(&card, &roster.chars[0]);
+    assert(!strcmp(card.rarity, LocGet("HODA_RARITY_MYTHIC")));
+}
+
 static void TestPvpBotGearTravelsInTheReplay(void) {
     static BattleRoster roster, loaded;
     PvpOpponent o = PvpOpponentFromBot(PvpTableEnsure()->bot_count - 1, 10, 0, 20000, 5);
@@ -10707,6 +10721,7 @@ int main(void) {
     TestPvpBotRunesComeWithTheSquadNotTheViewersLevel();
     TestPvpTopBotFieldsMaxedHeroesInMythicGear();
     TestPvpBotGearTravelsInTheReplay();
+    TestAscendedHeroesShowAsMythic();
     TestNewsFeedLeadsWithAnnouncementsWhileTheyRun();
     TestAnnouncementsAndTheEventBuffCapReadInEveryLanguage();
     TestPvpOpponentsFightUnderTheStatBudgetOnlyWhenTheRuleIsOn();

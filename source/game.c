@@ -625,7 +625,7 @@ static void GameCommitBattleOutcome(Game *g, bool won) {
 static void GameStageLevelUpHero(Game *g) {
     const BattleHeroLeveling *hero = BattleResultsFlowLevelUpHero(&g->battle_results);
     if (hero && hero->roster_index < g->player.roster_count)
-        BattleLevelUpStageShow(&g->battle, hero->slot, g->player.roster[hero->roster_index].original_rarity);
+        BattleLevelUpStageShow(&g->battle, hero->slot, CharacterShownRarity(&g->player.roster[hero->roster_index]));
     else
         BattleLevelUpStageHide(&g->battle);
 }

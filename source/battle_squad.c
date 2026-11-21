@@ -254,7 +254,7 @@ static void BattleSquadsLoad(
                 side == 0 ? "player" : "enemy",
                 s,
                 ch->id,
-                RarityBaseTier(ch->original_rarity)
+                RarityBaseTier(CharacterShownRarity(ch))
             );
         }
     }

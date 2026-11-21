@@ -193,7 +193,7 @@ static int RarityBaseTier(Rarity r) {
 }
 
 static int LegendaryStarRating(const Character *ch) {
-    if (!ch || ch->original_rarity != RARITY_LEGENDARY) return 0;
+    if (!ch || CharacterShownRarity(ch) != RARITY_LEGENDARY) return 0;
     return ch->stars >= 1 && ch->stars <= 3 ? ch->stars : 0;
 }
 
@@ -210,7 +210,7 @@ static const char *RarityBaseRef(Rarity r) {
 }
 
 static void SquadPadRarityLoad(const Character *ch, Texture2D *pad_tex, unsigned char *stars) {
-    *pad_tex = LoadSprite(RarityBaseRef(ch->original_rarity));
+    *pad_tex = LoadSprite(RarityBaseRef(CharacterShownRarity(ch)));
     *stars = (unsigned char)LegendaryStarRating(ch);
 }
 
