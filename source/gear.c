@@ -373,17 +373,27 @@ void GearFormatAura(const GearDef *def, char *dst, int capacity) {
         );
 }
 
+static const char *GearCategoryName(const GearCategory *category) {
+    if (category->kind == GEAR_CATEGORY_SPEED)
+        return LocGet(
+            !strcmp(category->value, "Quick")  ? "INITIATIVE_FAST"
+            : !strcmp(category->value, "Slow") ? "INITIATIVE_SLOW"
+                                               : "INITIATIVE_MEDIUM"
+        );
+    const char *name = LocGet(TextToUpper(TextFormat("GALLERY_%s_TITLE", category->value)));
+    return name[0] ? name : category->value;
+}
+
 void GearFormatLimits(const GearDef *def, char *dst, int capacity) {
     int used = snprintf(dst, (size_t)capacity, "%s", LocGet("HODA_GEAR_LIMITED_TITLE"));
     if (def->category_count == 0) {
         snprintf(dst + used, (size_t)(capacity - used), "%s", LocGet("HODA_GEAR_NO_LIMITATIONS"));
         return;
     }
-    for (int i = 0; i < def->category_count && used < capacity - 1; i++) {
-        const char *key = TextFormat("GALLERY_%s_TITLE", def->categories[i].value);
-        const char *name = LocGet(TextToUpper(key));
-        used += snprintf(dst + used, (size_t)(capacity - used), "%s%s", i ? ", " : "", name);
-    }
+    for (int i = 0; i < def->category_count && used < capacity - 1; i++)
+        used += snprintf(
+            dst + used, (size_t)(capacity - used), "%s%s", i ? ", " : "", GearCategoryName(&def->categories[i])
+        );
 }
 
 int GearCatalogCount(void) {

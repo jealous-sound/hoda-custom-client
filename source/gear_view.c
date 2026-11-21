@@ -270,6 +270,54 @@ void GearViewDrawSlots(Player *p, int hero, Rectangle details) {
     if (tome) GearViewDrawTomeSlot(p, hero, GearViewSlotRect(details, GEAR_NORMAL_SLOT_MAX), input);
 }
 
+bool GearWornSlotsShown(const Character *ch) {
+    return ch && GearHasEquipped(ch);
+}
+
+Rectangle GearWornSlotsPanel(const Character *ch, Rectangle details) {
+    if (!GearWornSlotsShown(ch)) return details;
+    Rectangle last = GearViewSlotRect(details, GearSlotCount(ch) - 1);
+    float bottom = fmaxf(details.y + details.height, last.y + last.height);
+    return (Rectangle){details.x, details.y, last.x + last.width - details.x, bottom - details.y};
+}
+
+static const int GEAR_NO_WORN_SLOT = -1;
+static const Color GEAR_EMPTY_WORN_SLOT_FILL = {0, 0, 0, 140};
+static const Color GEAR_EMPTY_WORN_SLOT_FRAME = {90, 90, 90, 255};
+
+static void GearDrawEmptyWornSlot(Rectangle r) {
+    DrawRectangleRec(UiRect(r, 0.5f, 0.5f, 0.92f, 0.92f), GEAR_EMPTY_WORN_SLOT_FILL);
+    UiDrawTexture(GearRarityFrame(RARITY_COMMON), r, GEAR_EMPTY_WORN_SLOT_FRAME);
+}
+
+static bool GearIsAscensionSlot(const Character *ch, int slot) {
+    return ch->ascended && slot == GEAR_NORMAL_SLOT_MAX && !GearSlotIsPrestige(ch, slot);
+}
+
+int GearWornSlotAt(const Character *ch, Rectangle details, Vector2 point) {
+    if (!GearWornSlotsShown(ch)) return GEAR_NO_WORN_SLOT;
+    for (int slot = 0; slot < GearSlotCount(ch); slot++)
+        if (GearInSlot(ch, slot) && CheckCollisionPointRec(point, GearViewSlotRect(details, slot))) return slot;
+    return GEAR_NO_WORN_SLOT;
+}
+
+void GearDrawWornSlots(const Character *ch, Rectangle details, int shown_slot) {
+    if (!GearWornSlotsShown(ch)) return;
+    for (int slot = 0; slot < GearSlotCount(ch); slot++) {
+        Rectangle r = GearViewSlotRect(details, slot);
+        const GearDef *worn = GearInSlot(ch, slot);
+        bool selected = slot == shown_slot;
+        if (!worn)
+            GearDrawEmptyWornSlot(r);
+        else if (GearIsAscensionSlot(ch, slot))
+            GearViewDrawFramedSlot("tex.Ico_Gear_TomeofAscension_Deselected", worn, r, selected);
+        else if (GearSlotIsPrestige(ch, slot))
+            GearViewDrawFramedSlot("tex.Ico_Gear_Slot_Deselected", worn, r, selected);
+        else
+            GearDrawTile(worn, r, selected);
+    }
+}
+
 static const char *GearViewEquipFailure(GearEquipResult result) {
     switch (result) {
         case GEAR_EQUIP_DUPLICATE:
@@ -637,6 +685,13 @@ void GearDrawRevealCard(const GearDef *def, Rectangle panel) {
     );
     Rectangle description = {band.x, y, band.width, band.y + band.height - y};
     GearViewDrawFittedDescription(info.description, description, side * GEAR_CARD_DESCRIPTION_TEXT);
+}
+
+void GearDrawWornItemCard(const Character *ch, int slot, Rectangle area) {
+    const GearDef *worn = GearInSlot(ch, slot);
+    if (!worn) return;
+    float side = fminf(area.width, area.height);
+    GearDrawRevealCard(worn, (Rectangle){area.x + (area.width - side) * 0.5f, area.y, side, side});
 }
 
 static float GearViewDrawBoxBand(Rectangle panel, float source_top, float source_bottom, float y, float height) {

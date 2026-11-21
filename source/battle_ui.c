@@ -63,6 +63,9 @@ typedef struct {
     bool detail_close_armed;
     HeroCard detail_card;
     bool detail_open;
+    int detail_gear_slot;
+    int detail_gear_pressed;
+    bool detail_item_close_armed;
 } BattleUi;
 
 static void BattleUiParseColored(const char *src, char *out, int cap, Color *col) {
@@ -332,6 +335,50 @@ static void BattleUiOpenPlateDetails(BattleUi *ui, const BattlePlate *plate) {
         ui->detail_card.xp_frac = 1.0f;
     }
     ui->detail_open = true;
+    ui->detail_gear_slot = GEAR_NO_WORN_SLOT;
+    ui->detail_gear_pressed = GEAR_NO_WORN_SLOT;
+    ui->detail_item_close_armed = false;
+}
+
+static void BattleUiDetailTap(BattleUi *ui, const Character *ch, Rectangle details) {
+    if (UiInputBlocked()) return;
+    Vector2 mouse = UiMouse();
+    int under = GearWornSlotAt(ch, details, mouse);
+    bool on_card = CheckCollisionPointRec(mouse, details);
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        ui->detail_gear_pressed = under;
+        ui->detail_item_close_armed = ui->detail_gear_slot != GEAR_NO_WORN_SLOT && on_card;
+    }
+    if (!IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) return;
+    if (under != GEAR_NO_WORN_SLOT && under == ui->detail_gear_pressed) {
+        GuiClickSoundPlay();
+        ui->detail_gear_slot = under == ui->detail_gear_slot ? GEAR_NO_WORN_SLOT : under;
+    } else if (ui->detail_item_close_armed && on_card) {
+        ui->detail_gear_slot = GEAR_NO_WORN_SLOT;
+    }
+    ui->detail_gear_pressed = GEAR_NO_WORN_SLOT;
+    ui->detail_item_close_armed = false;
+}
+
+static void BattleUiDrawDetail(BattleUi *ui, float right) {
+    Rectangle details = HeroesDetailsBounds(0.0f, right);
+    const Character *ch = ui->detail_card.ch;
+    if (GearInSlot(ch, ui->detail_gear_slot)) {
+        HeroesDrawDetailsHead(&ui->detail_card, details);
+        GearDrawWornItemCard(ch, ui->detail_gear_slot, HeroesDetailsBody(details));
+    } else {
+        HeroesDrawDetailsAt(&ui->detail_card, details);
+    }
+    Rectangle panel = GearWornSlotsPanel(ch, details);
+    bool input = !UiInputBlocked();
+    GearDrawWornSlots(ch, details, ui->detail_gear_slot);
+    BattleUiDetailTap(ui, ch, details);
+    if (input && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        ui->detail_close_armed = !CheckCollisionPointRec(UiMouse(), panel);
+    if (input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+        if (ui->detail_close_armed && !CheckCollisionPointRec(UiMouse(), panel)) ui->detail_open = false;
+        ui->detail_close_armed = false;
+    }
 }
 
 static bool BattleUiDrawPlate(const BattlePlate *p, const Camera3D *cam, bool interactive) {
@@ -1230,15 +1277,6 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
         }
     }
 
-    if (ui->detail_open) {
-        HeroesDrawDetails(&ui->detail_card, 0.0f, right);
-        Rectangle details = HeroesDetailsBounds(0.0f, right);
-        if (!UiInputBlocked() && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-            ui->detail_close_armed = !CheckCollisionPointRec(UiMouse(), details);
-        if (!UiInputBlocked() && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-            if (ui->detail_close_armed && !CheckCollisionPointRec(UiMouse(), details)) ui->detail_open = false;
-            ui->detail_close_armed = false;
-        }
-    }
+    if (ui->detail_open) BattleUiDrawDetail(ui, right);
     return result;
 }

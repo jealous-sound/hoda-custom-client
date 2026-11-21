@@ -210,7 +210,7 @@ static const char *RarityBaseRef(Rarity r) {
 }
 
 static void SquadPadRarityLoad(const Character *ch, Texture2D *pad_tex, unsigned char *stars) {
-    *pad_tex = LoadSprite(RarityBaseRef(ch->original_rarity));
+    *pad_tex = LoadSprite(RarityBaseRef(CharacterShownRarity(ch)));
     *stars = (unsigned char)LegendaryStarRating(ch);
 }
 
