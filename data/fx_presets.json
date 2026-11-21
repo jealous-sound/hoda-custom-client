@@ -164,6 +164,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -5260,6 +5261,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -7179,6 +7181,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -14337,6 +14340,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -16531,6 +16535,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -19616,6 +19621,7 @@
 "max_particles": 50,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.1,
 0.0,
@@ -20345,6 +20351,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -21667,6 +21674,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 1.0,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -22174,6 +22182,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.425,
 0.425,
@@ -23195,6 +23204,7 @@
 "one_shot": 1,
 "max_particles": 2,
 "max_screen_size": 2.0,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -23264,6 +23274,7 @@
 "one_shot": 1,
 "max_particles": 2,
 "max_screen_size": 2.0,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -24165,6 +24176,7 @@
 "one_shot": 1,
 "max_particles": 2,
 "max_screen_size": 2.0,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -24232,6 +24244,7 @@
 "one_shot": 1,
 "max_particles": 2,
 "max_screen_size": 2.0,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -27856,6 +27869,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 1.0,
+"render_scale": 0.05,
 "box": [
 1.0,
 0.0,
@@ -27928,6 +27942,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 1.0,
+"render_scale": 0.05,
 "box": [
 1.0,
 0.0,
@@ -29354,6 +29369,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.283,
@@ -30812,6 +30828,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "radius": 0.1,
 "size_curve": [
 [
@@ -31355,6 +31372,7 @@
 "max_particles": 30,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -32067,6 +32085,7 @@
 "max_particles": 10,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -32267,6 +32286,7 @@
 "max_particles": 100,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -32678,6 +32698,7 @@
 "max_particles": 10,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -35441,6 +35462,7 @@
 "max_particles": 50,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.1,
 0.0,
@@ -36217,6 +36239,7 @@
 "max_particles": 6,
 "follows_emitter": 1,
 "max_screen_size": 1.0,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -36296,6 +36319,7 @@
 "max_particles": 6,
 "follows_emitter": 1,
 "max_screen_size": 1.0,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -39722,6 +39746,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -40247,6 +40272,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -43100,6 +43126,7 @@
 "max_particles": 12,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "radius": 0.2,
 "size_curve": [
 [
@@ -45173,6 +45200,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.283,
@@ -49157,6 +49185,7 @@
 "max_particles": 100,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -50720,6 +50749,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.308,
 0.292,
@@ -53037,6 +53067,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -53092,6 +53123,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -53208,6 +53240,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -53305,6 +53338,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -53493,6 +53527,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -53557,6 +53592,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -54031,6 +54067,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -54095,6 +54132,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -54200,6 +54238,7 @@
 "max_particles": 100,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 8.0,
 "dir": [
 0.0,
 1.0,
@@ -54258,6 +54297,7 @@
 "max_particles": 100,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 8.0,
 "dir": [
 0.0,
 1.0,
@@ -54881,6 +54921,7 @@
 "max_particles": 50,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.1,
 0.0,
@@ -55481,6 +55522,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.276,
 0.329,
@@ -55755,6 +55797,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.283,
@@ -57583,6 +57626,7 @@
 "max_particles": 30,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.328,
 0.331,
@@ -59763,6 +59807,7 @@
 "max_particles": 10,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "radius": 0.1,
 "size_curve": [
 [
@@ -62581,6 +62626,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.338,
 0.333,
@@ -63479,6 +63525,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -63898,6 +63945,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.27,
 0.27,
@@ -64908,6 +64956,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -66396,6 +66445,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "radius": 0.1,
 "size_curve": [
 [
@@ -67745,6 +67795,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.301,
 0.251,
@@ -69514,6 +69565,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.283,
@@ -70450,6 +70502,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -70837,6 +70890,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -71403,6 +71457,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -73956,6 +74011,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.333,
 0.341,
@@ -75606,6 +75662,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.283,
@@ -77155,6 +77212,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.312,
 0.253,
@@ -77862,6 +77920,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.32,
 0.3,
@@ -80369,6 +80428,7 @@
 "max_particles": 100,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.301,
 0.251,
@@ -81027,6 +81087,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -82513,6 +82574,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.283,
@@ -83841,6 +83903,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -84283,6 +84346,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -85049,6 +85113,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -85656,6 +85721,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -85983,6 +86049,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -87163,6 +87230,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "radius": 0.1,
 "size_curve": [
 [
@@ -87638,6 +87706,7 @@
 "max_particles": 500,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -87711,6 +87780,7 @@
 "max_particles": 500,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 5.0,
 "radius": 0.011,
 "gravity": 9.81,
 "size_curve": [
@@ -87816,6 +87886,7 @@
 "max_particles": 500,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -88054,6 +88125,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "radius": 0.1,
 "size_curve": [
 [
@@ -88792,6 +88864,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.261,
 0.214,
@@ -90122,6 +90195,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -90523,6 +90597,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "radius": 0.1,
 "size_curve": [
 [
@@ -94603,6 +94678,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -94834,6 +94910,7 @@
 "max_particles": 30,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -96503,6 +96580,7 @@
 "max_particles": 100,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -97405,6 +97483,7 @@
 "one_shot": 1,
 "max_particles": 2,
 "max_screen_size": 2.0,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -97472,6 +97551,7 @@
 "one_shot": 1,
 "max_particles": 2,
 "max_screen_size": 2.0,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -98596,6 +98676,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "radius": 0.1,
 "size_curve": [
 [
@@ -99209,6 +99290,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "radius": 0.1,
 "size_curve": [
 [
@@ -99904,6 +99986,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "radius": 0.1,
 "size_curve": [
 [
@@ -100936,6 +101019,7 @@
 "max_particles": 30,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.287,
 0.331,
@@ -105297,6 +105381,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.314,
 0.337,
@@ -109615,6 +109700,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.283,
@@ -111071,6 +111157,7 @@
 "max_particles": 30,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.287,
 0.331,
@@ -111756,6 +111843,7 @@
 "max_particles": 50,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.1,
 0.0,
@@ -112330,6 +112418,7 @@
 "max_particles": 5,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.23,
 0.244,
@@ -113918,6 +114007,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -114030,6 +114120,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -114782,6 +114873,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -115020,6 +115112,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -115390,6 +115483,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.0,
 0.0,
@@ -117332,6 +117426,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -121647,6 +121742,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 2.0,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -121717,6 +121813,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 2.0,
+"render_scale": 0.05,
 "box": [
 0.2,
 0.2,
@@ -124028,6 +124125,7 @@
 "max_particles": 500,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 5.0,
 "dir": [
 0.0,
 1.0,
@@ -131487,6 +131585,7 @@
 "max_particles": 8,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 1.0,
 "radius": 0.01,
 "size_curve": [
 [
@@ -131542,6 +131641,7 @@
 "max_particles": 8,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 1.0,
 "radius": 0.01,
 "size_curve": [
 [
@@ -131597,6 +131697,7 @@
 "max_particles": 8,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 1.0,
 "radius": 0.01,
 "size_curve": [
 [
@@ -131652,6 +131753,7 @@
 "max_particles": 8,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 1.0,
 "radius": 0.01,
 "size_curve": [
 [
@@ -138180,6 +138282,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 10.0,
+"render_scale": 0.01,
 "size_curve": [
 [
 0.0,
@@ -138243,6 +138346,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 10.0,
+"render_scale": 0.01,
 "size_curve": [
 [
 0.0,
@@ -138603,6 +138707,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 10.0,
+"render_scale": 0.01,
 "size_curve": [
 [
 0.0,
@@ -141503,6 +141608,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 1.0,
 "radius": 0.01,
 "size_curve": [
 [
@@ -141558,6 +141664,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 1.0,
 "radius": 0.01,
 "size_curve": [
 [
@@ -141613,6 +141720,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 1.0,
 "radius": 0.01,
 "size_curve": [
 [
@@ -141668,6 +141776,7 @@
 "max_particles": 4,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 1.0,
 "radius": 0.01,
 "size_curve": [
 [
@@ -147226,6 +147335,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 10.0,
+"render_scale": 0.01,
 "size_curve": [
 [
 0.0,
@@ -147289,6 +147399,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 10.0,
+"render_scale": 0.01,
 "size_curve": [
 [
 0.0,
@@ -148387,6 +148498,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 10.0,
+"render_scale": 0.01,
 "size_curve": [
 [
 0.0,
@@ -148996,6 +149108,7 @@
 "max_particles": 8,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 1.0,
 "radius": 0.01,
 "size_curve": [
 [
@@ -149051,6 +149164,7 @@
 "max_particles": 8,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 1.0,
 "radius": 0.01,
 "size_curve": [
 [
@@ -149106,6 +149220,7 @@
 "max_particles": 8,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 1.0,
 "radius": 0.01,
 "size_curve": [
 [
@@ -149161,6 +149276,7 @@
 "max_particles": 8,
 "follows_emitter": 1,
 "max_screen_size": 0.5,
+"render_scale": 1.0,
 "radius": 0.01,
 "size_curve": [
 [
@@ -149556,6 +149672,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 10.0,
+"render_scale": 0.01,
 "size_curve": [
 [
 0.0,
@@ -149619,6 +149736,7 @@
 "max_particles": 2,
 "follows_emitter": 1,
 "max_screen_size": 10.0,
+"render_scale": 0.01,
 "size_curve": [
 [
 0.0,
@@ -149892,6 +150010,7 @@
 "max_particles": 1,
 "follows_emitter": 1,
 "max_screen_size": 10.0,
+"render_scale": 0.01,
 "size_curve": [
 [
 0.0,
