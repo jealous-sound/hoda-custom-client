@@ -46,15 +46,18 @@ RACE_PREFIXES = {'hm', 'hf', 'dm', 'df', 'em', 'ef', 'qm', 'qf', 'gm', 'gf'}
 
 
 
-def build_cab_paths():
-    p = os.path.join(CACHE_DIR, 'cab_paths.json')
-    if os.path.exists(p):
-        return json.load(open(p))
+def build_cab_paths(cache_dir=CACHE_DIR, shared=SHARED):
+    p = os.path.join(cache_dir, 'cab_paths.json')
+    stored = load_json(p, {})
+    if stored and all(os.path.exists(f) for f in stored.values()):
+        return stored
     paths = {}
-    for f in globmod.glob(os.path.join(SHARED, '*', 'CAB-*')):
-        paths.setdefault(os.path.basename(f).lower(), f)
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    json.dump(paths, open(p, 'w'))
+    for f in sorted(globmod.glob(os.path.join(shared, '*', 'CAB-*'))):
+        paths.setdefault(os.path.basename(f).lower(), os.path.realpath(f))
+    if not paths:
+        raise SystemExit(f'no CAB bundles under {shared}')
+    os.makedirs(cache_dir, exist_ok=True)
+    dump_json_atomic(p, paths)
     return paths
 
 
@@ -77,10 +80,19 @@ def obj_name(obj):
         return ''
 
 
-def build_clip_index(cab_paths):
-    p = os.path.join(CACHE_DIR, 'clip_index.json')
+def relocated_clip_index(index, cab_paths):
+    return {name: cab_lookup(cab_paths, os.path.basename(path)) or path
+            for name, path in index.items()}
+
+
+def build_clip_index(cab_paths, cache_dir=CACHE_DIR):
+    p = os.path.join(cache_dir, 'clip_index.json')
     if os.path.exists(p):
-        return json.load(open(p))
+        stored = load_json(p, {})
+        index = relocated_clip_index(stored, cab_paths)
+        if index != stored:
+            dump_json_atomic(p, index)
+        return index
     print(f'building clip index over {len(cab_paths)} CABs (one-time)...')
     idx, t0 = {}, time.time()
     for i, (cab, path) in enumerate(sorted(cab_paths.items())):
@@ -96,8 +108,8 @@ def build_clip_index(cab_paths):
             pass
         if (i + 1) % 500 == 0:
             print(f'  {i+1}/{len(cab_paths)} cabs, {len(idx)} clips, {time.time()-t0:.0f}s')
-    os.makedirs(CACHE_DIR, exist_ok=True)
-    json.dump(idx, open(p, 'w'))
+    os.makedirs(cache_dir, exist_ok=True)
+    dump_json_atomic(p, idx)
     print(f'clip index: {len(idx)} clips in {time.time()-t0:.0f}s')
     return idx
 

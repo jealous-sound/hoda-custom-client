@@ -207,6 +207,7 @@ def run(deep: bool) -> dict:
     }
     bindings = []
     unresolved = []
+    borrowed = []
     exact = tierless = fallback = 0
     for character in catalog:
         models = character.get("models", {})
@@ -238,6 +239,7 @@ def run(deep: bool) -> dict:
                 tierless += 1
             else:
                 fallback += 1
+                borrowed.append(f"{character['id']}:{tier}:{base} -> {path.name}")
             bindings.append((character["id"], tier, base, resolution, str(path) if path else None))
 
     outputs = sorted(CHAR_PACK.glob("*/*_rl.glb"))
@@ -325,6 +327,7 @@ def run(deep: bool) -> dict:
         "uint32_index_accessors": uint32_index_accessors,
         "bad_index_accessors": bad_indices,
         "unresolved_bindings": unresolved,
+        "nearest_tier_fallback_bindings": borrowed,
     }
 
 
@@ -348,6 +351,7 @@ def main() -> None:
         )
     hard_fail = (
         report["binding_resolution"]["unresolved"]
+        or report["nearest_tier_fallback_bindings"]
         or report["invalid_glbs"]
         or report["collapsed_fbx"]
         or report["flat_non_banner_models"]

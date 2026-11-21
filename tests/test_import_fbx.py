@@ -274,19 +274,37 @@ class ImportFbxTest(unittest.TestCase):
             self.assertIsNone(clips["sw_attack01_ani"])
 
     def test_special_mappings_are_explicit(self) -> None:
-        ice = import_fbx.SPECIAL_MANIFESTS["c_icegiant_t1"]
+        ice = import_fbx.SPECIAL_MANIFESTS["c_icegiant"]
         self.assertEqual(ice["clip_roles"]["idle"], "c_ogre_rdy_ani")
         self.assertEqual(ice["clip_roles"]["attack"], "c_ogre_atk_v03_ani")
 
-        titan = import_fbx.SPECIAL_MANIFESTS["c_titanheartguardian_t1"]
+        titan = import_fbx.SPECIAL_MANIFESTS["c_titanheartguardian"]
         self.assertEqual(
             titan["embedded_clip_roles"], ["idle", "cheer", "attack", "hit", "death"]
         )
         self.assertEqual(titan["embedded_durations"], [5.0, 2.2, 4.6667, 2.0, 2.0])
 
-        xenon = import_fbx.SPECIAL_MANIFESTS["hm_nc_xenontheantiquarian_t1"]
+        xenon = import_fbx.SPECIAL_MANIFESTS["hm_nc_xenontheantiquarian"]
         self.assertEqual(xenon["duplicate_embedded_clips"], {"hit": "idle"})
         self.assertEqual(xenon["intentionally_absent_roles"], ["attack", "death"])
+
+    def test_authoritative_donor_matches_every_tier_of_the_mesh(self) -> None:
+        for tier in (1, 2, 3, 4):
+            gltf = {"meshes": [{"name": f"c_desiredemon_t{tier}_tier_{tier}_0"}]}
+            self.assertEqual(
+                donor_bake.authoritative_donor(f"c_caress_t{tier}", gltf),
+                "cab-c_desiredemon_t1_pre",
+            )
+        stranger = {"meshes": [{"name": "c_imp_t2_tier_2_0"}]}
+        self.assertIsNone(donor_bake.authoritative_donor("c_caress_t2", stranger))
+
+    def test_special_mappings_cover_every_tier_of_the_family(self) -> None:
+        for tier in ("t1", "t2", "t3", "t4"):
+            self.assertEqual(
+                import_fbx.special_manifest(f"c_icegiant_{tier}"),
+                import_fbx.SPECIAL_MANIFESTS["c_icegiant"],
+            )
+        self.assertEqual(import_fbx.special_manifest("c_giant_t2"), {})
 
 
 if __name__ == "__main__":
