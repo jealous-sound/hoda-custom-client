@@ -24,7 +24,7 @@ typedef struct {
 #define STORE_POOL_TAG_CAPACITY 16
 #define STORE_ROTATION_GROUP_CAPACITY 16
 #define STORE_UNIQUE_HERO_REROLLS 32
-#define STORE_NO_DUPLICATE_RARITY RARITY_LEGENDARY
+#define STORE_LEGENDARY_STAR_MAX 3
 #define STORE_DEFAULT_POOL_EXCLUDED_TAG "WISP"
 #define STORE_NEVER_SOLD_TAG "BANNER"
 #define STORE_WEIGHT_TOTAL 10000
@@ -331,6 +331,8 @@ typedef struct {
     bool unique_heroes;
     int legendary_pity_packs;
     int weights[RARITY_LEGENDARY + 1];
+    int legendary_star_weights[STORE_LEGENDARY_STAR_MAX + 1];
+    bool legendary_no_dupe_across_stars;
     int rune_chance_pct;
     int rune_count;
     int rune_min_rarity;
@@ -664,6 +666,25 @@ int StorePackPullsUntilLegendary(const StorePackDef *pack, const Player *player)
     return left < 1 ? 1 : left;
 }
 
+static bool StorePackRollsOpenLegendary(const StorePackDef *pack) {
+    return !pack->pool_tag[0] && (pack->weights[RARITY_LEGENDARY] > 0 || pack->guaranteed_legendary > 0);
+}
+
+static void StoreLoadLegendaryStars(StorePackDef *pack, const cJSON *json) {
+    const cJSON *weights = cJSON_GetObjectItemCaseSensitive((cJSON *)json, "legendary_star_weights");
+    pack->legendary_no_dupe_across_stars = JsonBool(json, "legendary_no_dupe_across_stars");
+    int total = 0;
+    for (int stars = 1; stars <= STORE_LEGENDARY_STAR_MAX; stars++) {
+        char key[2] = {(char)('0' + stars), '\0'};
+        pack->legendary_star_weights[stars] = JsonInt(weights, key);
+        if (pack->legendary_star_weights[stars] < 0)
+            TraceLog(LOG_FATAL, "Store: %s has a negative Legendary star weight", pack->id);
+        total += pack->legendary_star_weights[stars];
+    }
+    if (StorePackRollsOpenLegendary(pack) ? total != STORE_WEIGHT_TOTAL : total != 0)
+        TraceLog(LOG_FATAL, "Store: %s Legendary star weights do not suit its Legendary rolls", pack->id);
+}
+
 static void StoreLoadHeroContents(StorePackDef *pack, const cJSON *json) {
     pack->opened_counter = JsonInt(json, "opened_counter");
     pack->hero_count = JsonInt(json, "hero_count");
@@ -705,6 +726,7 @@ static void StoreLoadHeroContents(StorePackDef *pack, const cJSON *json) {
     if (pack->legendary_pity_packs > 0 &&
         (StorePackGuaranteedSlots(pack) == pack->hero_count || pack->weights[RARITY_LEGENDARY] == 0))
         TraceLog(LOG_FATAL, "Store: %s has a Legendary pity but no rolled slot that can be Legendary", pack->id);
+    StoreLoadLegendaryStars(pack, json);
 }
 
 static void StoreLoadRuneContents(StorePackDef *pack, const cJSON *json) {
@@ -821,7 +843,32 @@ static int StoreTaggedPoolCount(const Store *store, const char *tag, Rarity rari
     return count;
 }
 
+static int StoreDefinitionStars(const cJSON *definition) {
+    return JsonInt(definition, "stars");
+}
+
+static int StoreLegendaryStarCount(const Store *store, int stars) {
+    int count = 0;
+    for (int i = 0; i < store->rarity_pool_count[RARITY_LEGENDARY]; i++)
+        count += StoreDefinitionStars(store->rarity_pool[RARITY_LEGENDARY][i]) == stars;
+    return count;
+}
+
+static void StoreValidateLegendaryStars(const Store *store) {
+    int starred = 0;
+    for (int stars = 1; stars <= STORE_LEGENDARY_STAR_MAX; stars++) starred += StoreLegendaryStarCount(store, stars);
+    if (starred != store->rarity_pool_count[RARITY_LEGENDARY])
+        TraceLog(LOG_FATAL, "Store: a Legendary in the pack pool has no 1 to %d star rating", STORE_LEGENDARY_STAR_MAX);
+    for (int i = 0; i < store->pack_count; i++) {
+        const StorePackDef *pack = &store->packs[i];
+        for (int stars = 1; stars <= STORE_LEGENDARY_STAR_MAX; stars++)
+            if (pack->legendary_star_weights[stars] > 0 && StoreLegendaryStarCount(store, stars) == 0)
+                TraceLog(LOG_FATAL, "Store: %s weights %d-star Legendaries but the pool has none", pack->id, stars);
+    }
+}
+
 static void StoreValidateHeroPools(const Store *store) {
+    StoreValidateLegendaryStars(store);
     for (int i = 0; i < store->pack_count; i++) {
         const StorePackDef *pack = &store->packs[i];
         if (pack->kind != STORE_KIND_HERO) continue;
@@ -1186,22 +1233,54 @@ StoreHeroOwnedOrRolled(const Player *player, const cJSON *definition, const cJSO
     return false;
 }
 
-static bool StorePackSparesDuplicates(const StorePackDef *pack, Rarity rarity) {
-    return rarity == STORE_NO_DUPLICATE_RARITY && !pack->pool_tag[0];
+typedef struct {
+    const Player *player;
+    const cJSON *const *rolled;
+    int rolled_count;
+} StoreRollHistory;
+
+static bool StoreLegendaryCandidate(const cJSON *definition, int stars, bool unowned_only, StoreRollHistory history) {
+    if (StoreDefinitionStars(definition) != stars) return false;
+    return !unowned_only || !StoreHeroOwnedOrRolled(history.player, definition, history.rolled, history.rolled_count);
 }
 
-static const cJSON *StoreRandomUnownedDefinition(
-    Store *store, const Player *player, Rarity rarity, const cJSON *const *rolled, int rolled_count, uint32_t *rng
-) {
-    int unowned = 0;
-    for (int i = 0; i < store->rarity_pool_count[rarity]; i++)
-        unowned += !StoreHeroOwnedOrRolled(player, store->rarity_pool[rarity][i], rolled, rolled_count);
-    if (unowned == 0) return StoreRandomDefinition(store, rarity, rng);
-    int pick = StoreRngRange(rng, unowned);
-    for (int i = 0; i < store->rarity_pool_count[rarity]; i++) {
-        const cJSON *definition = store->rarity_pool[rarity][i];
-        if (StoreHeroOwnedOrRolled(player, definition, rolled, rolled_count)) continue;
-        if (pick-- == 0) return definition;
+static int StoreLegendaryCandidateCount(const Store *store, int stars, bool unowned_only, StoreRollHistory history) {
+    int count = 0;
+    for (int i = 0; i < store->rarity_pool_count[RARITY_LEGENDARY]; i++)
+        count += StoreLegendaryCandidate(store->rarity_pool[RARITY_LEGENDARY][i], stars, unowned_only, history);
+    return count;
+}
+
+static int
+StoreRollLegendaryStars(const Store *store, const StorePackDef *pack, StoreRollHistory history, uint32_t *rng) {
+    int weights[STORE_LEGENDARY_STAR_MAX + 1] = {0};
+    int total = 0;
+    for (int stars = 1; stars <= STORE_LEGENDARY_STAR_MAX; stars++) {
+        bool open =
+            !pack->legendary_no_dupe_across_stars || StoreLegendaryCandidateCount(store, stars, true, history) > 0;
+        weights[stars] = open ? pack->legendary_star_weights[stars] : 0;
+        total += weights[stars];
+    }
+    if (total == 0) {
+        memcpy(weights, pack->legendary_star_weights, sizeof(weights));
+        total = STORE_WEIGHT_TOTAL;
+    }
+    int roll = StoreRngRange(rng, total);
+    for (int stars = 1; stars <= STORE_LEGENDARY_STAR_MAX; stars++) {
+        if (roll < weights[stars]) return stars;
+        roll -= weights[stars];
+    }
+    return STORE_LEGENDARY_STAR_MAX;
+}
+
+static const cJSON *
+StoreRandomLegendary(Store *store, const StorePackDef *pack, StoreRollHistory history, uint32_t *rng) {
+    int stars = StoreRollLegendaryStars(store, pack, history, rng);
+    bool unowned_only = StoreLegendaryCandidateCount(store, stars, true, history) > 0;
+    int pick = StoreRngRange(rng, StoreLegendaryCandidateCount(store, stars, unowned_only, history));
+    for (int i = 0; i < store->rarity_pool_count[RARITY_LEGENDARY]; i++) {
+        const cJSON *definition = store->rarity_pool[RARITY_LEGENDARY][i];
+        if (StoreLegendaryCandidate(definition, stars, unowned_only, history) && pick-- == 0) return definition;
     }
     return NULL;
 }
@@ -1216,8 +1295,8 @@ static const cJSON *StorePackDefinition(
     uint32_t *rng
 ) {
     if (pack->pool_tag[0]) return StoreRandomTaggedDefinition(store, pack->pool_tag, rarity, rng);
-    if (StorePackSparesDuplicates(pack, rarity))
-        return StoreRandomUnownedDefinition(store, player, rarity, rolled, rolled_count, rng);
+    if (rarity == RARITY_LEGENDARY)
+        return StoreRandomLegendary(store, pack, (StoreRollHistory){player, rolled, rolled_count}, rng);
     return StoreRandomDefinition(store, rarity, rng);
 }
 

@@ -6661,44 +6661,146 @@ static void TestFlashPacksRotateOnePerPeriod(void) {
     assert(active == 1);
 }
 
-static void TestLegendaryPackRollsSkipHeroesAlreadyOwned(void) {
-    static Store store;
-    memset(&store, 0, sizeof(store));
-    store.catalog_root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
-    store.catalog = cJSON_GetObjectItemCaseSensitive(store.catalog_root, "characters");
-    StoreBuildRarityPools(&store);
-    const cJSON **legends = store.rarity_pool[RARITY_LEGENDARY];
-    int legend_count = store.rarity_pool_count[RARITY_LEGENDARY];
-    assert(legend_count > 2);
+#define TEST_LEGEND_CAPACITY 64
+#define TEST_LEGEND_SEEDS 40
 
-    StorePackDef pack = {0};
-    StorePackDef wisp_pack = {.pool_tag = "WISP"};
-    assert(StorePackSparesDuplicates(&pack, RARITY_LEGENDARY));
-    assert(!StorePackSparesDuplicates(&pack, RARITY_EPIC) && !StorePackSparesDuplicates(&wisp_pack, RARITY_LEGENDARY));
+static void TestLoadLegendaryPool(Store *store) {
+    memset(store, 0, sizeof(*store));
+    store->catalog_root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
+    store->catalog = cJSON_GetObjectItemCaseSensitive(store->catalog_root, "characters");
+    StoreBuildRarityPools(store);
+    assert(store->rarity_pool_count[RARITY_LEGENDARY] <= TEST_LEGEND_CAPACITY);
+}
 
-    Player player = TestStarterPlayer();
-    const cJSON *missing = legends[legend_count - 1];
+static void TestUnloadLegendaryPool(Store *store) {
+    for (int rarity = RARITY_COMMON; rarity <= RARITY_LEGENDARY; rarity++) MemFree((void *)store->rarity_pool[rarity]);
+    cJSON_Delete(store->catalog_root);
+}
+
+static int TestLegendsOfStars(const Store *store, int stars, const cJSON **out) {
+    int count = 0;
+    for (int i = 0; i < store->rarity_pool_count[RARITY_LEGENDARY]; i++)
+        if (StoreDefinitionStars(store->rarity_pool[RARITY_LEGENDARY][i]) == stars)
+            out[count++] = store->rarity_pool[RARITY_LEGENDARY][i];
+    return count;
+}
+
+static void TestGiveLegendsOfStars(Player *player, const Store *store, int stars, int left_out) {
+    const cJSON *legends[TEST_LEGEND_CAPACITY];
+    int count = TestLegendsOfStars(store, stars, legends) - left_out;
     int first = -1;
-    assert(PlayerRosterAppendDefinitions(&player, legends, legend_count - 1, &first));
-    const cJSON *rolled[STORE_MAX_RESULTS] = {0};
-    for (uint32_t seed = 1; seed <= 40; seed++) {
-        uint32_t rng = seed;
-        assert(StoreRollPackDefinition(&store, &pack, &player, RARITY_LEGENDARY, rolled, 0, &rng) == missing);
+    assert(count >= 0 && PlayerRosterAppendDefinitions(player, legends, count, &first));
+}
+
+static const cJSON *TestRollLegend(
+    Store *store,
+    const StorePackDef *pack,
+    const Player *player,
+    const cJSON *const *rolled,
+    int rolled_count,
+    uint32_t seed
+) {
+    uint32_t rng = seed;
+    const cJSON *hero = StoreRollPackDefinition(store, pack, player, RARITY_LEGENDARY, rolled, rolled_count, &rng);
+    assert(hero && RarityFromString(JsonStr(hero, "rarity")) == RARITY_LEGENDARY);
+    return hero;
+}
+
+static void TestLegendaryStarWeightsChooseTheStarTier(void) {
+    static Store store;
+    TestLoadLegendaryPool(&store);
+    Player player = TestStarterPlayer();
+    for (int stars = 1; stars <= STORE_LEGENDARY_STAR_MAX; stars++) {
+        StorePackDef pack = {0};
+        pack.legendary_star_weights[stars] = STORE_WEIGHT_TOTAL;
+        for (uint32_t seed = 1; seed <= TEST_LEGEND_SEEDS; seed++)
+            assert(StoreDefinitionStars(TestRollLegend(&store, &pack, &player, NULL, 0, seed)) == stars);
+    }
+    PlayerUnloadRoster(&player);
+    TestUnloadLegendaryPool(&store);
+}
+
+static void TestLegendaryNoDupeHoldsWithinTheRolledStarTier(void) {
+    static Store store;
+    TestLoadLegendaryPool(&store);
+    const cJSON *three_stars[TEST_LEGEND_CAPACITY];
+    int three_count = TestLegendsOfStars(&store, 3, three_stars);
+    assert(three_count > 1);
+    const cJSON *missing = three_stars[three_count - 1];
+    Player player = TestStarterPlayer();
+    TestGiveLegendsOfStars(&player, &store, 2, 0);
+    TestGiveLegendsOfStars(&player, &store, 3, 1);
+
+    StorePackDef two_star_pack = {.legendary_star_weights = {0, 0, STORE_WEIGHT_TOTAL, 0}};
+    StorePackDef three_star_pack = {.legendary_star_weights = {0, 0, 0, STORE_WEIGHT_TOTAL}};
+    for (uint32_t seed = 1; seed <= TEST_LEGEND_SEEDS; seed++) {
+        assert(StoreDefinitionStars(TestRollLegend(&store, &two_star_pack, &player, NULL, 0, seed)) == 2);
+        assert(TestRollLegend(&store, &three_star_pack, &player, NULL, 0, seed) == missing);
     }
 
-    rolled[0] = missing;
+    const cJSON *rolled[] = {missing};
     bool repeated_an_owned_legend = false;
-    for (uint32_t seed = 1; seed <= 40; seed++) {
-        uint32_t rng = seed;
-        const cJSON *again = StoreRollPackDefinition(&store, &pack, &player, RARITY_LEGENDARY, rolled, 1, &rng);
-        assert(again && RarityFromString(JsonStr(again, "rarity")) == RARITY_LEGENDARY);
+    for (uint32_t seed = 1; seed <= TEST_LEGEND_SEEDS; seed++) {
+        const cJSON *again = TestRollLegend(&store, &three_star_pack, &player, rolled, 1, seed);
+        assert(StoreDefinitionStars(again) == 3);
         repeated_an_owned_legend |= again != missing;
     }
     assert(repeated_an_owned_legend);
-
     PlayerUnloadRoster(&player);
-    for (int rarity = RARITY_COMMON; rarity <= RARITY_LEGENDARY; rarity++) MemFree((void *)store.rarity_pool[rarity]);
-    cJSON_Delete(store.catalog_root);
+    TestUnloadLegendaryPool(&store);
+}
+
+static void TestAcrossStarNoDupeFindsTheLastMissingLegendary(void) {
+    static Store store;
+    TestLoadLegendaryPool(&store);
+    const cJSON *three_stars[TEST_LEGEND_CAPACITY];
+    const cJSON *missing = three_stars[TestLegendsOfStars(&store, 3, three_stars) - 1];
+    Player player = TestStarterPlayer();
+    TestGiveLegendsOfStars(&player, &store, 1, 0);
+    TestGiveLegendsOfStars(&player, &store, 2, 0);
+    TestGiveLegendsOfStars(&player, &store, 3, 1);
+
+    StorePackDef bloodstone = {
+        .legendary_star_weights = {0, STORE_WEIGHT_TOTAL - 1, 0, 1}, .legendary_no_dupe_across_stars = true
+    };
+    StorePackDef per_star = bloodstone;
+    per_star.legendary_no_dupe_across_stars = false;
+    const cJSON *rolled[] = {missing};
+    for (uint32_t seed = 1; seed <= TEST_LEGEND_SEEDS; seed++) {
+        assert(TestRollLegend(&store, &bloodstone, &player, NULL, 0, seed) == missing);
+        assert(StoreDefinitionStars(TestRollLegend(&store, &per_star, &player, NULL, 0, seed)) == 1);
+        assert(StoreDefinitionStars(TestRollLegend(&store, &bloodstone, &player, rolled, 1, seed)) == 1);
+    }
+    PlayerUnloadRoster(&player);
+    TestUnloadLegendaryPool(&store);
+}
+
+static void TestShippedPacksMakeThreeStarLegendariesTheRarest(void) {
+    static Store store;
+    TestLoadLegendaryPool(&store);
+    cJSON *root = JsonLoadFile("data/store_packs.json");
+    int starred = 0;
+    bool iron_skips_three_stars = false;
+    bool bloodstone_spans_every_star = false;
+    const cJSON *json = NULL;
+    cJSON_ArrayForEach(json, cJSON_GetObjectItemCaseSensitive(root, "packs")) {
+        if (strcmp(JsonStr(json, "kind"), "hero")) continue;
+        assert(store.pack_count < STORE_PACK_CAPACITY);
+        StorePackDef *pack = &store.packs[store.pack_count++];
+        StrCopy(pack->id, sizeof(pack->id), JsonStr(json, "id"));
+        StoreLoadHeroContents(pack, json);
+        if (!StorePackRollsOpenLegendary(pack)) continue;
+        starred++;
+        const int *weights = pack->legendary_star_weights;
+        assert(weights[3] < weights[1] && weights[3] < weights[2]);
+        iron_skips_three_stars |= !strcmp(pack->id, "iron") && weights[3] == 0;
+        bloodstone_spans_every_star |= !strcmp(pack->id, "bloodstone") && pack->legendary_no_dupe_across_stars;
+        assert(pack->legendary_no_dupe_across_stars == !strcmp(pack->id, "bloodstone"));
+    }
+    assert(starred > 0 && iron_skips_three_stars && bloodstone_spans_every_star);
+    StoreValidateLegendaryStars(&store);
+    cJSON_Delete(root);
+    TestUnloadLegendaryPool(&store);
 }
 
 static void TestStoreDialogTextFitsRussianPackNames(void) {
@@ -10854,7 +10956,10 @@ int main(void) {
     TestDuePackHoldsALegendaryInItsFirstRolledSlot();
     TestPackPityLoadsFromServerProfilesAndOlderSaves();
     TestStoreDialogTextFitsRussianPackNames();
-    TestLegendaryPackRollsSkipHeroesAlreadyOwned();
+    TestLegendaryStarWeightsChooseTheStarTier();
+    TestLegendaryNoDupeHoldsWithinTheRolledStarTier();
+    TestAcrossStarNoDupeFindsTheLastMissingLegendary();
+    TestShippedPacksMakeThreeStarLegendariesTheRarest();
     TestAscendedHeroLoadsAboveTheOldLevelCap();
     TestHeroLevelTableCoversAscendedCap();
     TestMissionSeriesPicksTheClaimableTier();
