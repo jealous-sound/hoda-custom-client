@@ -1,5 +1,6 @@
 
 #define HEROES_GEAR_COLUMN_WIDTH 64.0f
+#define HEROES_DETAILS_HEAD_HEIGHT 93.0f
 #define HEROES_GEAR_BUTTON_GAP 6.0f
 #define HEROES_GEAR_BUTTON_X (ROSTER_PANEL_WIDTH + HEROES_GEAR_BUTTON_GAP)
 #define HEROES_DRAG_THRESHOLD 51.0f
@@ -181,9 +182,9 @@ static void HeroCardBuild(HeroCard *card, const Character *ch) {
         {182, 252, 240, 255},
         {255, 0, 255, 255},
     };
-    card->rarity =
-        ch->original_rarity == RARITY_MYTHIC ? LocGet("HODA_RARITY_MYTHIC") : LocGet(rarity_keys[ch->original_rarity]);
-    card->rarity_color = rarity_colors[ch->original_rarity];
+    Rarity shown = CharacterShownRarity(ch);
+    card->rarity = shown == RARITY_MYTHIC ? LocGet("HODA_RARITY_MYTHIC") : LocGet(rarity_keys[shown]);
+    card->rarity_color = rarity_colors[shown];
 
     card->speed = LocGet(
         ch->speed == SPEED_QUICK  ? "INITIATIVE_FAST"
@@ -704,7 +705,7 @@ static float HeroesDrawRich(Font font, const char *text, Rectangle r, float fs, 
 
 static Rectangle HeroesDetailsBounds(float span_x, float span_w) {
     float width = 440.0f;
-    float header_height = 93.0f;
+    float header_height = HEROES_DETAILS_HEAD_HEIGHT;
     float body_height = width / 0.93f;
     return (Rectangle){
         span_x + (span_w - width) * 0.5f,
@@ -714,46 +715,48 @@ static Rectangle HeroesDetailsBounds(float span_x, float span_w) {
     };
 }
 
+static Rectangle HeroesDetailsHead(Rectangle bounds) {
+    return (Rectangle){bounds.x, bounds.y, bounds.width, HEROES_DETAILS_HEAD_HEIGHT};
+}
+
+static Rectangle HeroesDetailsBody(Rectangle bounds) {
+    return (Rectangle){
+        bounds.x, bounds.y + HEROES_DETAILS_HEAD_HEIGHT, bounds.width, bounds.height - HEROES_DETAILS_HEAD_HEIGHT
+    };
+}
+
+static void HeroesDrawDetailsHead(const HeroCard *card, Rectangle bounds) {
+    Font title_font = GuiFont(FNT_COOL);
+    Color off_white = {230, 230, 230, 255};
+    Rectangle head = HeroesDetailsHead(bounds);
+    float w = head.width, head_h = head.height;
+
+    int plaque_id = GUI_PLAQUE_COMMON + (CharacterShownRarity(card->ch) - RARITY_COMMON);
+    UiDrawTexture(GuiTex(plaque_id), head, WHITE);
+
+    float cw = head_h * 0.55f;
+    UiDrawTexture(card->coin, (Rectangle){head.x + (w - cw) * -0.02f, head.y + (head_h - cw) * -0.2f, cw, cw}, WHITE);
+
+    float fs = 24.0f;
+    Vector2 tsz = MeasureTextEx(title_font, card->name, fs, 1.0f);
+    DrawTextEx(title_font, card->name, (Vector2){head.x + (w - tsz.x) * 0.5f, head.y + 26.0f}, fs, 1.0f, off_white);
+    fs = 18.0f;
+    tsz = MeasureTextEx(title_font, card->rarity, fs, 1.0f);
+    DrawTextEx(
+        title_font, card->rarity, (Vector2){head.x + (w - tsz.x) * 0.5f, head.y + 53.0f}, fs, 1.0f, card->rarity_color
+    );
+}
+
 static void HeroesDrawDetailsAt(HeroCard *card, Rectangle bounds) {
     Font title_font = GuiFont(FNT_COOL), body_font = GuiFont(FNT_MENU);
     Color off_white = {230, 230, 230, 255}, grey = {127, 127, 127, 255};
 
-    float w = bounds.width, head_h = 93.0f, body_h = bounds.height - head_h;
-    float x = bounds.x, y = bounds.y;
-    Rectangle head = {x, y, w, head_h};
-    Rectangle body = {x, y + head_h, w, body_h};
+    Rectangle body = HeroesDetailsBody(bounds);
+    float w = body.width, body_h = body.height;
     float sx = w / 512.0f, sy = body_h / 512.0f;
 
-    {
-        Texture2D bg = GuiTex(GUI_UNIT_DETAILS);
-        UiDrawTexture(bg, body, WHITE);
-
-        int plaque_id = GUI_PLAQUE_COMMON + (card->ch->original_rarity - RARITY_COMMON);
-        Texture2D plaque = GuiTex(plaque_id);
-        UiDrawTexture(plaque, head, WHITE);
-    }
-
-    {
-        float cw = head_h * 0.55f;
-        Rectangle r = {head.x + (w - cw) * -0.02f, head.y + (head_h - cw) * -0.2f, cw, cw};
-        UiDrawTexture(card->coin, r, WHITE);
-    }
-
-    {
-        float fs = 24.0f;
-        Vector2 tsz = MeasureTextEx(title_font, card->name, fs, 1.0f);
-        DrawTextEx(title_font, card->name, (Vector2){head.x + (w - tsz.x) * 0.5f, head.y + 26.0f}, fs, 1.0f, off_white);
-        fs = 18.0f;
-        tsz = MeasureTextEx(title_font, card->rarity, fs, 1.0f);
-        DrawTextEx(
-            title_font,
-            card->rarity,
-            (Vector2){head.x + (w - tsz.x) * 0.5f, head.y + 53.0f},
-            fs,
-            1.0f,
-            card->rarity_color
-        );
-    }
+    UiDrawTexture(GuiTex(GUI_UNIT_DETAILS), body, WHITE);
+    HeroesDrawDetailsHead(card, bounds);
 
     {
         float bw = 76.0f;

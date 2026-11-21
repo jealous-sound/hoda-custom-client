@@ -5,11 +5,13 @@ import json
 import random
 import re
 import sys
+from collections import namedtuple
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "data/pvp_rules.json"
 GEAR = ROOT / "data/gear.json"
+RUNES = ROOT / "data/runes.json"
 STORE_PACKS = ROOT / "data/store_packs.json"
 RESEARCH = ROOT / "data/pvp_rewards_research.json"
 RESEARCH_SHA256 = "2378ab802a2e76bf318a77b1828524aa831fee3ad9f943bdaf654bc3047d256f"
@@ -32,6 +34,40 @@ BOT_COUNT = 240
 BOT_SEED = 1604
 BOT_TOP_TROPHIES = 6000
 BOT_AVATAR_RARITIES = {"Rare", "Epic", "Legendary"}
+
+GEAR_SLOT_CAPACITY = 5
+NORMAL_GEAR_SLOTS = (0, 1, 2)
+ASCENSION_GEAR_SLOT = 3
+PRESTIGE_GEAR_SLOT = 3
+ASCENDED_PRESTIGE_GEAR_SLOT = 4
+PRESTIGE_MIN_GEAR_RARITY = 5
+ASCENSION_BONUS_LEVELS = 5
+DAMAGE_ABSORBING_SPECIALTY = "DEFENDER"
+NORMAL_RUNE_SLOTS = 2
+PRESTIGE_RUNE_RARITY = 7
+UNROLLED_RUNE_MARKS = ("-6-", "Special")
+NON_BATTLE_RUNE_BUFFS = {"gold", "xp"}
+LOADOUT_SEED = "pvp-bot-loadout"
+ELITE_SQUAD_SEED = "pvp-elite-squad"
+ELITE_SQUAD_COUNT = 32
+ELITE_HERO_RARITY = "Legendary"
+ELITE_GIANT_RARITIES = {"Legendary", "Epic"}
+ELITE_GIANT_CHOICES = 6
+ELITE_TIER = "IV"
+
+Loadout = namedtuple(
+    "Loadout", "from_share gear_rarity gear_items prestige_rarity ascended rune_count rune_rarity prestige_rune"
+)
+LOADOUT_BANDS = (
+    Loadout(0.00, 0, 0, 0, False, 0, 0, False),
+    Loadout(0.20, 1, 1, 0, False, 1, 1, False),
+    Loadout(0.35, 2, 2, 0, False, 1, 2, False),
+    Loadout(0.50, 3, 3, 0, False, 2, 3, False),
+    Loadout(0.65, 4, 3, 0, False, 2, 4, False),
+    Loadout(0.80, 5, 3, 5, False, 2, 5, False),
+    Loadout(0.92, 5, 3, 6, False, 2, 5, True),
+)
+ELITE_LOADOUT = Loadout(1.00, 6, 4, 6, True, 2, 6, True)
 
 NAME_STARTS = (
     "Ash", "Black", "Blood", "Bright", "Cold", "Crimson", "Dark", "Dawn", "Dread", "Dusk", "Ember", "Fade", "Fel",
@@ -63,12 +99,6 @@ RULES = {
     },
     "squads": {
         "candidates": 6,
-    },
-    "runes": {
-        "first_rune_level": 5,
-        "levels_per_rune": 20,
-        "levels_per_rarity": 15,
-        "max_rarity": 6,
     },
     "rewards": {
         "win_gold_base": 60,
@@ -482,7 +512,7 @@ def pool_order(characters, cells):
     return (joined_later, catalog_stat_total(characters, cells), json.dumps(cells, sort_keys=True))
 
 
-def build_squads(characters):
+def campaign_squads(characters):
     squads = {}
     for path in ROSTER_SOURCES:
         for campaign in json.loads(path.read_text(encoding="utf-8"))["campaigns"]:
@@ -492,8 +522,180 @@ def build_squads(characters):
                 if unit_count(cells) < MIN_SQUAD_UNITS:
                     continue
                 squads[json.dumps(cells, sort_keys=True)] = cells
-    pool = sorted(squads.values(), key=lambda cells: pool_order(characters, cells))
-    return [{"strength": strength, "cells": cells} for strength, cells in zip(measured_strengths(len(pool)), pool)]
+    return sorted(squads.values(), key=lambda cells: pool_order(characters, cells))
+
+
+def fielded_stat_total(characters, cells):
+    total = 0
+    for cell in cells:
+        if cell is not None:
+            stats = characters[cell["id"]]["tiers"][cell["tier"]]
+            steps = cell["level"] - 1
+            total += stats["base_power"] + stats["power_per_level"] * steps
+            total += stats["base_health"] + stats["health_per_level"] * steps
+    return total
+
+
+def loadout_for(share):
+    return [band for band in LOADOUT_BANDS if band.from_share <= share][-1]
+
+
+def campaign_loadouts(characters, squads):
+    ranked = sorted(range(len(squads)), key=lambda index: (fielded_stat_total(characters, squads[index]), index))
+    last = max(len(squads) - 1, 1)
+    loadouts = [LOADOUT_BANDS[0]] * len(squads)
+    for rank, index in enumerate(ranked):
+        loadouts[index] = loadout_for(rank / last)
+    return loadouts
+
+
+def ascended_level(character):
+    return character["tiers"][ELITE_TIER]["max_level"] + ASCENSION_BONUS_LEVELS
+
+
+def grown_stat_product(character):
+    stats = character["tiers"][ELITE_TIER]
+    steps = ascended_level(character) - 1
+    power = stats["base_power"] + stats["power_per_level"] * steps
+    health = stats["base_health"] + stats["health_per_level"] * steps
+    return power * health
+
+
+def elite_candidates(characters, giant, rarities):
+    eligible = [
+        character
+        for character in characters.values()
+        if character["obtainable"]
+        and character["giant"] == giant
+        and character["rarity"] in rarities
+        and ELITE_TIER in character["tiers"]
+        and UPGRADE_MATERIAL_GROUP not in character["groups"]
+    ]
+    return sorted(eligible, key=lambda character: (-grown_stat_product(character), character["id"]))
+
+
+def elite_cell(character):
+    return {"id": character["id"], "tier": ELITE_TIER, "level": ascended_level(character)}
+
+
+def elite_squads(characters):
+    heroes = elite_candidates(characters, False, {ELITE_HERO_RARITY})
+    giants = elite_candidates(characters, True, ELITE_GIANT_RARITIES)[:ELITE_GIANT_CHOICES]
+    rng = random.Random(ELITE_SQUAD_SEED)
+    squads, seen = [], set()
+    while len(squads) < ELITE_SQUAD_COUNT:
+        cells = [elite_cell(hero) for hero in rng.sample(heroes, GIANT_CELL)] + [elite_cell(rng.choice(giants))]
+        key = json.dumps(cells, sort_keys=True)
+        if key not in seen:
+            seen.add(key)
+            squads.append(cells)
+    return squads
+
+
+def category_matches(character, category):
+    value = category["value"]
+    if category["kind"] == "faction":
+        return character["faction"] == "All" or value in character["faction"].split("/")
+    if category["kind"] == "specialty":
+        return value in character["specialties"]
+    if category["kind"] == "initiative":
+        return value == character["speed"]
+    return value.lower() in {group.lower() for group in character["groups"]}
+
+
+def can_wear(character, item):
+    if not item["categories"]:
+        return True
+    matched = sum(category_matches(character, category) for category in item["categories"])
+    return matched == len(item["categories"]) if item["categories_all"] else matched > 0
+
+
+def absorbs_damage(character, worn):
+    return DAMAGE_ABSORBING_SPECIALTY in character["specialties"] or any(item["absorbs_damage"] for item in worn)
+
+
+def wearable_gear(character, gear, rarity, worn):
+    taken = {item["id"] for item in worn}
+    absorbing = absorbs_damage(character, worn)
+    return [
+        item
+        for item in gear
+        if item["rarity"] == rarity
+        and item["id"] not in taken
+        and can_wear(character, item)
+        and not (item["absorbs_damage"] and absorbing)
+    ]
+
+
+def pick_gear(character, gear, rarity, floor, worn, rng):
+    for wanted in range(rarity, floor - 1, -1):
+        candidates = wearable_gear(character, gear, wanted, worn)
+        fitted = [item for item in candidates if item["categories"]]
+        if fitted or candidates:
+            item = rng.choice(fitted or candidates)
+            worn.append(item)
+            return item["id"]
+    return ""
+
+
+def dressed_cell(character, cell, loadout, gear, rng):
+    slots = [""] * GEAR_SLOT_CAPACITY
+    worn = []
+    normal = NORMAL_GEAR_SLOTS + ((ASCENSION_GEAR_SLOT,) if loadout.ascended else ())
+    for slot in normal[: loadout.gear_items]:
+        slots[slot] = pick_gear(character, gear, loadout.gear_rarity, 1, worn, rng)
+    if loadout.prestige_rarity:
+        slot = ASCENDED_PRESTIGE_GEAR_SLOT if loadout.ascended else PRESTIGE_GEAR_SLOT
+        slots[slot] = pick_gear(character, gear, loadout.prestige_rarity, PRESTIGE_MIN_GEAR_RARITY, worn, rng)
+    dressed = dict(cell)
+    if loadout.ascended:
+        dressed["ascended"] = True
+    if any(slots):
+        dressed["gear"] = slots
+    return dressed
+
+
+def battle_runes(runes, rarity):
+    return sorted(
+        (
+            rune
+            for rune in runes
+            if rune["rarity"] == rarity
+            and rune["duration_minutes"] > 0
+            and rune["buff_type"] not in NON_BATTLE_RUNE_BUFFS
+            and not any(mark in rune["id"] for mark in UNROLLED_RUNE_MARKS)
+        ),
+        key=lambda rune: rune["id"],
+    )
+
+
+def squad_runes(loadout, runes, rng):
+    normal = battle_runes(runes, loadout.rune_rarity) if loadout.rune_count else []
+    picked = rng.sample(normal, min(loadout.rune_count, NORMAL_RUNE_SLOTS, len(normal)))
+    if loadout.prestige_rune:
+        picked.append(rng.choice(battle_runes(runes, PRESTIGE_RUNE_RARITY)))
+    return [rune["id"] for rune in picked]
+
+
+def loadout_squad(characters, index, cells, loadout, gear, runes):
+    rng = random.Random(f"{LOADOUT_SEED}:{index}")
+    dressed = [
+        None if cell is None else dressed_cell(characters[cell["id"]], cell, loadout, gear, rng) for cell in cells
+    ]
+    squad = {"cells": dressed, "runes": squad_runes(loadout, runes, rng)}
+    return {**squad, "elite": True} if loadout is ELITE_LOADOUT else squad
+
+
+def build_squads(characters):
+    gear = sorted(json.loads(GEAR.read_text(encoding="utf-8"))["items"], key=lambda item: item["id"])
+    runes = json.loads(RUNES.read_text(encoding="utf-8"))["runes"]
+    campaign = campaign_squads(characters)
+    elite = elite_squads(characters)
+    pool = list(zip(campaign, campaign_loadouts(characters, campaign))) + [(cells, ELITE_LOADOUT) for cells in elite]
+    squads = [
+        loadout_squad(characters, index, cells, loadout, gear, runes) for index, (cells, loadout) in enumerate(pool)
+    ]
+    return [{"strength": strength, **squad} for strength, squad in zip(measured_strengths(len(squads)), squads)]
 
 
 def build_bots(characters):

@@ -10,7 +10,6 @@
 #define PVP_LEVEL_SALT 0x51ED27u
 #define PVP_BOT_SALT 0x7A3C11u
 #define PVP_SQUAD_SALT 0x2F90D3u
-#define PVP_RUNE_SALT 0x64B8E1u
 #define PVP_DRIFT_SALT 0x1C8A77u
 #define PVP_DEFENSE_SALT 0x3D6F02u
 #define PVP_DEFENSE_SQUAD 0
@@ -98,7 +97,6 @@ typedef struct {
     int min_gain, max_gain, min_loss, max_loss;
     int window_below, window_above, daily_nexts, bot_daily_drift, level_spread;
     int squad_candidates;
-    int first_rune_level, levels_per_rune, levels_per_rarity, max_rune_rarity;
     int win_gold_base, win_gold_per_level, loss_gold_pct;
     int win_xp_base, win_xp_per_level, loss_xp_pct;
     int attack_interval_seconds, max_attacks_per_login, defense_loss_share_pct;
@@ -116,11 +114,16 @@ typedef struct {
     Tier tier;
     int level;
     bool present;
+    bool ascended;
+    short gear_defs[GEAR_SLOT_CAPACITY];
 } PvpSquadCell;
 
 typedef struct {
     int strength;
+    bool elite;
     PvpSquadCell cells[SQUAD_SLOT_COUNT];
+    int rune_defs[RUNE_SLOT_COUNT];
+    int rune_count;
 } PvpSquad;
 
 typedef struct {
@@ -187,10 +190,6 @@ static void PvpRulesParse(PvpRules *r, const cJSON *root) {
     r->bot_daily_drift = PvpSectionInt(root, "matchmaking", "bot_daily_drift");
     r->level_spread = PvpSectionInt(root, "matchmaking", "level_spread");
     r->squad_candidates = PvpSectionInt(root, "squads", "candidates");
-    r->first_rune_level = PvpSectionInt(root, "runes", "first_rune_level");
-    r->levels_per_rune = PvpSectionInt(root, "runes", "levels_per_rune");
-    r->levels_per_rarity = PvpSectionInt(root, "runes", "levels_per_rarity");
-    r->max_rune_rarity = PvpSectionInt(root, "runes", "max_rarity");
     r->win_gold_base = PvpSectionInt(root, "rewards", "win_gold_base");
     r->win_gold_per_level = PvpSectionInt(root, "rewards", "win_gold_per_level");
     r->loss_gold_pct = PvpSectionInt(root, "rewards", "loss_gold_pct");
@@ -325,11 +324,13 @@ static void PvpBotsParse(PvpTable *t, const cJSON *root) {
 }
 
 static void PvpSquadsParse(PvpTable *t, const cJSON *root) {
+    RuneCatalogEnsure();
     const cJSON *entry = NULL;
     cJSON_ArrayForEach(entry, cJSON_GetObjectItemCaseSensitive((cJSON *)root, "squad_pool")) {
         if (t->squad_count == PVP_SQUAD_CAPACITY) TraceLog(LOG_FATAL, "Pvp: more than %d squads", PVP_SQUAD_CAPACITY);
         PvpSquad *squad = &t->squads[t->squad_count++];
         squad->strength = JsonInt(entry, "strength");
+        squad->elite = JsonBool(entry, "elite");
         int slot = 0;
         const cJSON *cell = NULL;
         cJSON_ArrayForEach(cell, cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "cells")) {
@@ -340,14 +341,29 @@ static void PvpSquadsParse(PvpTable *t, const cJSON *root) {
             target->tier = TierFromString(JsonStr(cell, "tier"));
             target->level = JsonInt(cell, "level");
             target->present = true;
+            target->ascended = JsonBool(cell, "ascended");
+            if (!BattleGearDefsLoad(target->gear_defs, cJSON_GetObjectItemCaseSensitive((cJSON *)cell, "gear")))
+                TraceLog(LOG_FATAL, "Pvp: squad %d wears unknown gear", t->squad_count - 1);
+        }
+        const cJSON *rune = NULL;
+        cJSON_ArrayForEach(rune, cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "runes")) {
+            int def = cJSON_IsString(rune) ? RuneDefIndex(rune->valuestring) : -1;
+            if (def < 0 || squad->rune_count == RUNE_SLOT_COUNT)
+                TraceLog(LOG_FATAL, "Pvp: squad %d has an unknown rune or too many", t->squad_count - 1);
+            squad->rune_defs[squad->rune_count++] = def;
         }
     }
+}
+
+static bool PvpSquadRanksBelow(const PvpSquad *squad, const PvpSquad *other) {
+    if (squad->elite != other->elite) return other->elite;
+    return squad->strength < other->strength;
 }
 
 static void PvpSquadsRankByStrength(PvpTable *t) {
     for (int squad = 0; squad < t->squad_count; squad++) {
         int rank = squad;
-        for (; rank > 0 && t->squads[squad].strength < t->squads[t->squads_weakest_first[rank - 1]].strength; rank--)
+        for (; rank > 0 && PvpSquadRanksBelow(&t->squads[squad], &t->squads[t->squads_weakest_first[rank - 1]]); rank--)
             t->squads_weakest_first[rank] = t->squads_weakest_first[rank - 1];
         t->squads_weakest_first[rank] = squad;
     }
@@ -440,31 +456,16 @@ static int PvpPickSquad(int bot, unsigned seed) {
     return t->squads_weakest_first[weakest + PvpRoll(seed, PVP_SQUAD_SALT, span)];
 }
 
-static void PvpPickRunes(PvpOpponent *o) {
-    const PvpRules *r = &PvpTableEnsure()->rules;
-    o->rune_count = 0;
-    if (o->level < r->first_rune_level) return;
-    int wanted = 1 + (o->level - r->first_rune_level) / r->levels_per_rune;
-    if (wanted > RUNE_SLOT_COUNT) wanted = RUNE_SLOT_COUNT;
-    int rarity_cap = 1 + o->level / r->levels_per_rarity;
-    if (rarity_cap > r->max_rune_rarity) rarity_cap = r->max_rune_rarity;
-
-    int pool[RUNE_CATALOG_CAPACITY], pool_count = 0;
-    for (int def = 0; def < RuneCatalogCount(); def++) {
-        const RuneDef *rune = RuneDefAt(def);
-        if (rune->rarity <= rarity_cap && RuneDefRollable(rune)) pool[pool_count++] = def;
-    }
-    for (int i = 0; i < wanted && pool_count > 0; i++) {
-        int pick = PvpRoll(o->seed, PVP_RUNE_SALT + (unsigned)i, pool_count);
-        o->rune_defs[o->rune_count++] = pool[pick];
-        pool[pick] = pool[--pool_count];
-    }
+static void PvpTakeSquadRunes(PvpOpponent *o) {
+    const PvpSquad *squad = &PvpTableEnsure()->squads[o->squad];
+    o->rune_count = squad->rune_count;
+    memcpy(o->rune_defs, squad->rune_defs, sizeof(o->rune_defs));
 }
 
 static void PvpOpponentDerive(PvpOpponent *o, int player_trophies) {
     o->gain = PvpTrophyGain(player_trophies, o->trophies);
     o->loss = PvpTrophyLoss(player_trophies, o->trophies);
-    PvpPickRunes(o);
+    PvpTakeSquadRunes(o);
 }
 
 PvpOpponent PvpOpponentFromBot(int bot, int level, int trophies, long long day, unsigned seed) {
@@ -573,6 +574,7 @@ void PvpOpponentRoster(BattleRoster *roster, const PvpOpponent *o) {
         ch->tier = cell->tier;
         ch->level = cell->level;
         if (roster->hero_builds && !BattleHeroBuildApply(ch, &o->duel_builds[slot])) continue;
+        if (!o->duel) BattleWornGearApply(ch, cell->ascended, cell->gear_defs);
         roster->present[slot] = true;
     }
     cJSON_Delete(catalog_root);

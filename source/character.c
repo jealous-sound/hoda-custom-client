@@ -431,6 +431,10 @@ static void CharacterGroupTitleKey(char *out, int capacity, const char *group) {
     for (char *c = out; *c; c++) *c = (char)toupper((unsigned char)*c);
 }
 
+Rarity CharacterShownRarity(const Character *ch) {
+    return ch->ascended ? RARITY_MYTHIC : ch->original_rarity;
+}
+
 const char *CharacterGroupTitle(const char *group) {
     char key[CHARACTER_LOC_KEY_CAPACITY];
     CharacterGroupTitleKey(key, sizeof(key), group);
