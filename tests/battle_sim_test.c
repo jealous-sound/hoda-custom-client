@@ -409,6 +409,42 @@ static void TestFactionIntroAssetsAndText(void) {
     free(battle);
 }
 
+#define AOE_PLANE_MESH_WIDTH 0.05f
+#define CHAR_BASE_MESH_WIDTH 1.6139f
+#define FACTION_LOGO_TEXTURE "faction_white_icon"
+
+static const FxEmitter *FactionLogoEmitter(const FxPreset *preset) {
+    for (int i = 0; i < preset->em_count; i++)
+        if (preset->em[i].tex && strstr(preset->em[i].tex, FACTION_LOGO_TEXTURE)) return &preset->em[i];
+    return NULL;
+}
+
+static void TestFactionChargeLogoLiesOnItsBase(void) {
+    Battle *battle = calloc(1, sizeof(*battle));
+    assert(battle != NULL);
+    BattleFxRegistryLoad(battle, "data/fx_presets.json");
+    static const unsigned factions[] = {1u, 2u, 4u, 8u};
+    float feet = BattleFeetY(1.0f);
+    for (int i = 0; i < (int)(sizeof(factions) / sizeof(factions[0])); i++) {
+        memset(battle->fxi, 0, sizeof(battle->fxi));
+        battle->rings[1][3].pos = (Vector3){3, feet, 5};
+        BpBurstFactionFx(battle, factions[i], 1, 3);
+        const FxInstance *burst = NULL;
+        for (int k = 0; k < FX_MAX_INSTANCES && !burst; k++)
+            if (battle->fxi[k].alive) burst = &battle->fxi[k];
+        assert(burst != NULL && burst->anchor == SQUAD_SLOT_COUNT + 3);
+        const FxEmitter *logo = FactionLogoEmitter(burst->pre);
+        assert(logo != NULL && logo->orient == 1);
+        assert(fabsf(logo->render_scale - AOE_PLANE_MESH_WIDTH) < 0.0001f);
+        assert(logo->size0 * logo->render_scale < CHAR_BASE_MESH_WIDTH);
+        float logo_y = burst->pos.y + burst->offset.y + logo->offset.y;
+        assert(logo_y >= feet && logo_y - feet < HOME_PAD_HALF_THICK);
+    }
+    if (battle->fx_reg) MemFree(battle->fx_reg);
+    if (battle->fx_alias) MemFree(battle->fx_alias);
+    free(battle);
+}
+
 static void TestPowerDrain(void) {
     BattleSim s = {.rng = 7};
     Character actor, enemy_a, enemy_b;
@@ -10771,6 +10807,7 @@ int main(void) {
     TestFormationBonusRequiresSharedFaction();
     TestIntroQueueShowsBothFactionBonusesAfterBothSidesRunes();
     TestFactionIntroAssetsAndText();
+    TestFactionChargeLogoLiesOnItsBase();
     TestPowerDrain();
     TestAllyPowerGain();
     TestAllySlow();

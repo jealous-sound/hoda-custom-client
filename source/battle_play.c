@@ -729,6 +729,14 @@ static const char *BpFactionFx(unsigned faction) {
     }
 }
 
+static Vector3 BpUnitRootAboveFeet(void) {
+    return (Vector3){0, BATTLE_MARKER_Y - BattleFeetY(1.0f), 0};
+}
+
+static void BpBurstFactionFx(Battle *b, unsigned faction, int side, int slot) {
+    BattleFxUnitBurst(b, BpFactionFx(faction), side, slot, BpUnitRootAboveFeet());
+}
+
 static void BpPlayIntroEvent(BattlePlay *bp, Battle *b, const BpIntroEvent *event) {
     if (event->no_event_bonus) return;
     if (event->event_bonus) {
@@ -750,9 +758,8 @@ static void BpPlayIntroEvent(BattlePlay *bp, Battle *b, const BpIntroEvent *even
         return;
     }
     BattleAudioPlayGlobal(b, "gui_bonus_faction");
-    const char *fx = BpFactionFx(event->faction);
     for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
-        if (event->affected_slots & (1u << slot)) BattleFxUnitBurst(b, fx, side, slot, (Vector3){0, 0, 0});
+        if (event->affected_slots & (1u << slot)) BpBurstFactionFx(b, event->faction, side, slot);
 }
 
 static void BpBeginNextIntroEvent(BattlePlay *bp, Battle *b) {
