@@ -67,7 +67,7 @@ class HeroRarityTable(unittest.TestCase):
 
     def test_no_reward_from_play_hands_out_a_legendary(self):
         self.assertEqual(validate_hero_rarity.shipped_play_reward_problems(validate_hero_rarity.catalog_heroes()), [])
-        nexus = [{"difficulties": [{"id": "Hard_Map", "nodes": [{"step": 2, "reward_rarity": [4, 5]}]}]}]
+        nexus = [{"difficulties": [{"id": "Hard_Map", "nodes": [{"step": 2, "reward_rarity": [1, 4]}]}]}]
         pvp = {
             "events": {
                 "catalog": [
@@ -89,10 +89,27 @@ class HeroRarityTable(unittest.TestCase):
         self.assertEqual(
             validate_hero_rarity.play_reward_problems(nexus, pvp, CATALOG),
             [
-                "Hard_Map step 2: the Nexus rolls a Legendary hero",
+                "Hard_Map step 2: the Nexus rolls rarity 4, and no hero below Legendary is shown at it",
                 "UNIT_GODDESS: a PvP prize hands out a Legendary hero",
                 "a PvP prize hands out a bloodstone voucher",
             ],
+        )
+
+    def test_the_nexus_rolls_the_rarity_a_hero_is_shown_at_but_never_hands_out_a_legendary(self):
+        nexus = [{"difficulties": [{"id": "Easy_Map", "nodes": [{"step": 1, "reward_rarity": [1, 5]}]}]}]
+        no_events = {"events": {}}
+        self.assertEqual(
+            validate_hero_rarity.play_reward_problems(nexus, no_events, CATALOG),
+            ["Easy_Map step 1: the Nexus rolls rarity 5, and no hero below Legendary is shown at it"],
+        )
+        drawn_legendary = {
+            "id": "UNIT_SPY",
+            "name": "Sister Nightingale",
+            "rarity": "Rare",
+            "original_rarity": "Legendary",
+        }
+        self.assertEqual(
+            validate_hero_rarity.play_reward_problems(nexus, no_events, dict(CATALOG, UNIT_SPY=drawn_legendary)), []
         )
 
     def test_every_hero_needs_exactly_one_row(self):

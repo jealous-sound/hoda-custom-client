@@ -14,8 +14,9 @@ NEXUS_MAPS = ROOT / "data/nexus_maps.json"
 PVP_RULES = ROOT / "data/pvp_rules.json"
 CLI_DESCRIPTION = (
     "Check the hero rarity table: every hero has one row, Legendary stays under its cap, no character "
-    "holds more than one Legendary form, the shipped catalog carries the same rarities, and no reward "
-    "from play hands out a Legendary."
+    "holds more than one Legendary form, the shipped catalog carries the same rarities, no reward "
+    "from play hands out a Legendary, and every rarity a Nexus node rolls has a hero below Legendary "
+    "shown at it."
 )
 
 RARITIES = ("Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic")
@@ -109,14 +110,30 @@ def prizes_in(node):
             yield from prizes_in(value)
 
 
+def shown_rarity(hero):
+    return hero.get("original_rarity") or hero["rarity"]
+
+
+def nexus_reward_rarities(catalog):
+    capped_rank = RARITIES.index(CAPPED_RARITY)
+    return {
+        RARITIES.index(shown_rarity(hero)) + 1
+        for hero in catalog.values()
+        if hero["rarity"] in RARITIES and RARITIES.index(hero["rarity"]) < capped_rank
+    }
+
+
 def play_reward_problems(nexus_maps, pvp_rules, catalog):
     found = []
-    capped_number = RARITIES.index(CAPPED_RARITY) + 1
+    givable = nexus_reward_rarities(catalog)
     for event in nexus_maps:
         for difficulty in event["difficulties"]:
             for node in difficulty["nodes"]:
-                if capped_number in node.get("reward_rarity", []):
-                    found.append(f"{difficulty['id']} step {node['step']}: the Nexus rolls a {CAPPED_RARITY} hero")
+                for number in sorted(set(node.get("reward_rarity", [])) - givable):
+                    found.append(
+                        f"{difficulty['id']} step {node['step']}: the Nexus rolls rarity {number}, "
+                        f"and no hero below {CAPPED_RARITY} is shown at it"
+                    )
     for prize in prizes_in(pvp_rules.get("events", {})):
         hero = catalog.get(prize["id"]) if prize["kind"] == "unit" else None
         if hero and hero["rarity"] == CAPPED_RARITY and UPGRADE_MATERIAL_GROUP not in hero.get("groups", []):

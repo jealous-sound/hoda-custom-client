@@ -655,6 +655,16 @@ BattleRewardResult NexusResolveBattle(Player *player, const Nexus *nexus, int st
     return result;
 }
 
+static Rarity ProgressionDefinitionShownRarity(const cJSON *entry) {
+    const char *original = JsonStr(entry, "original_rarity");
+    return RarityFromString(original[0] ? original : JsonStr(entry, "rarity"));
+}
+
+static bool NexusRewardHeroShownAt(const cJSON *entry, Rarity shown) {
+    return StoreHeroDefinitionEligible(entry) && RarityFromString(JsonStr(entry, "rarity")) < RARITY_LEGENDARY &&
+           ProgressionDefinitionShownRarity(entry) == shown;
+}
+
 static void NexusGrantEscrowUnits(Player *player, const int *escrow_units, NexusAward *award) {
     int wanted = 0;
     for (int rarity = RARITY_COMMON; rarity <= RARITY_MYTHIC; rarity++) wanted += escrow_units[rarity];
@@ -667,13 +677,11 @@ static void NexusGrantEscrowUnits(Player *player, const int *escrow_units, Nexus
     for (int rarity = RARITY_COMMON; rarity <= RARITY_MYTHIC && count < NEXUS_MAX_NODES; rarity++) {
         int pool = 0;
         cJSON *entry = NULL;
-        cJSON_ArrayForEach(entry, catalog) pool +=
-            StoreHeroDefinitionEligible(entry) && RarityFromString(JsonStr(entry, "rarity")) == rarity;
+        cJSON_ArrayForEach(entry, catalog) pool += NexusRewardHeroShownAt(entry, (Rarity)rarity);
         for (int n = 0; n < escrow_units[rarity] && pool > 0 && count < NEXUS_MAX_NODES; n++) {
             int pick = StoreRngRange(&player->store_rng_state, pool);
             cJSON_ArrayForEach(entry, catalog) {
-                if (!StoreHeroDefinitionEligible(entry) || RarityFromString(JsonStr(entry, "rarity")) != rarity)
-                    continue;
+                if (!NexusRewardHeroShownAt(entry, (Rarity)rarity)) continue;
                 if (pick-- == 0) break;
             }
             if (entry) definitions[count++] = entry;

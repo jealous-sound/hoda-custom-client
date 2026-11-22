@@ -5167,6 +5167,27 @@ static void TestNexusAwardReadsTheServerReply(void) {
     cJSON_Delete(reply);
 }
 
+static void TestNexusAwardGrantsHeroesAtTheRarityTheyShow(void) {
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    ProgressionInitializePlayerDefaults(&player);
+    const Rarity escrowed[] = {RARITY_COMMON, RARITY_EPIC, RARITY_LEGENDARY, RARITY_LEGENDARY, RARITY_LEGENDARY};
+    const int escrowed_count = (int)(sizeof(escrowed) / sizeof(escrowed[0]));
+    for (uint32_t seed = 1; seed <= 20; seed++) {
+        PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+        int roster_before = player.roster_count;
+        player.store_rng_state = seed;
+        player.nexus_run = (PlayerNexusRun){.committed = true};
+        for (int n = 0; n < escrowed_count; n++) player.nexus_run.escrow_units[escrowed[n]]++;
+        NexusAward award = NexusAwardEscrow(&player);
+        assert(award.unit_count == escrowed_count && player.roster_count == roster_before + escrowed_count);
+        for (int n = 0; n < award.unit_count; n++) {
+            const Character *hero = &player.roster[award.unit_roster[n]];
+            assert(CharacterShownRarity(hero) == escrowed[n] && hero->rarity < RARITY_LEGENDARY);
+        }
+    }
+}
+
 static void TestServerActionsStayLocalWithoutABackend(void) {
     ServerActionSubmit(ServerActionCreate("battle"));
     assert(ServerActionsDrained());
@@ -11195,6 +11216,7 @@ int main(void) {
     TestRuneCrafting();
     TestServerActionsStayLocalWithoutABackend();
     TestNexusAwardReadsTheServerReply();
+    TestNexusAwardGrantsHeroesAtTheRarityTheyShow();
     TestRuneBonusStacksAndScalesRewards();
     TestRuneMitigationAndRetaliation();
     TestRuneResistsBlockAilments();

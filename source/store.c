@@ -921,8 +921,16 @@ static void StoreLoadGemSku(StoreGemSku *sku, const cJSON *json, int index) {
         TraceLog(LOG_FATAL, "Store: invalid gem sku at index %d", index);
 }
 
+static bool StoreHeroDefinitionHasPlayableTier(const cJSON *entry) {
+    const cJSON *tier = NULL;
+    cJSON_ArrayForEach(tier, cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "tiers")) {
+        if (JsonInt(tier, "max_level") >= 1) return true;
+    }
+    return false;
+}
+
 static bool StoreHeroDefinitionSellable(const cJSON *entry) {
-    if (!JsonBool(entry, "obtainable")) return false;
+    if (!JsonBool(entry, "obtainable") || !StoreHeroDefinitionHasPlayableTier(entry)) return false;
     if (strstr(JsonStr(entry, "id"), STORE_NEVER_SOLD_TAG)) return false;
     Rarity rarity = RarityFromString(JsonStr(entry, "rarity"));
     return rarity >= RARITY_COMMON && rarity <= RARITY_LEGENDARY;
