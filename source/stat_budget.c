@@ -274,17 +274,17 @@ static Tier StatBudgetGrownTier(const Character *ch) {
 }
 
 static int StatBudgetGrownLevel(const Character *ch, Tier tier) {
-    int level = ch->stats[tier].max_level - (ch->ascended ? GEAR_ASCENSION_BONUS_LEVELS : 0);
+    int level = ch->stats[tier].catalog_max_level;
     return level > 1 ? level : 1;
 }
 
 StatBudgetStats StatBudgetGrownStats(const Character *ch) {
     Tier tier = StatBudgetGrownTier(ch);
     const TierStats *st = &ch->stats[tier];
-    int steps = StatBudgetGrownLevel(ch, tier) - 1;
+    int level = StatBudgetGrownLevel(ch, tier);
     return (StatBudgetStats){
-        .power = st->base_power + steps * st->power_per_level,
-        .health = st->base_health + steps * st->health_per_level,
+        .power = TierPowerAtLevel(st, level),
+        .health = TierHealthAtLevel(st, level),
     };
 }
 
