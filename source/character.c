@@ -112,9 +112,10 @@ typedef struct {
 typedef struct {
     int base_power;
     int base_health;
+    int max_power;
+    int max_health;
     int max_level;
-    int power_per_level;
-    int health_per_level;
+    int catalog_max_level;
 } TierStats;
 
 #define GEAR_SLOT_CAPACITY 5
@@ -348,9 +349,10 @@ static void CharacterParse(const cJSON *c, Character *ch, Ability *ab) {
         TierStats *s = &ch->stats[t];
         s->base_power = JsonInt(tier, "base_power");
         s->base_health = JsonInt(tier, "base_health");
+        s->max_power = JsonInt(tier, "max_power");
+        s->max_health = JsonInt(tier, "max_health");
         s->max_level = JsonInt(tier, "max_level");
-        s->power_per_level = JsonInt(tier, "power_per_level");
-        s->health_per_level = JsonInt(tier, "health_per_level");
+        s->catalog_max_level = s->max_level;
     }
     ch->max_tier = TierFromString(JsonStr(c, "max_tier"));
 }
@@ -375,14 +377,26 @@ static const char *CharacterDataId(const Character *ch) {
 int FortifyBonusPower(const Character *ch);
 int FortifyBonusHealth(const Character *ch);
 
+static int TierStatAtLevel(int base, int max_stat, int catalog_max_level, int level) {
+    int growth_levels = catalog_max_level - 1;
+    if (growth_levels < 1) return base;
+    return base + ((level - 1) * (max_stat - base) + growth_levels / 2) / growth_levels;
+}
+
+int TierPowerAtLevel(const TierStats *st, int level) {
+    return TierStatAtLevel(st->base_power, st->max_power, st->catalog_max_level, level);
+}
+
+int TierHealthAtLevel(const TierStats *st, int level) {
+    return TierStatAtLevel(st->base_health, st->max_health, st->catalog_max_level, level);
+}
+
 int CharacterLevelPower(const Character *ch) {
-    const TierStats *st = &ch->stats[ch->tier];
-    return st->base_power + (ch->level - 1) * st->power_per_level;
+    return TierPowerAtLevel(&ch->stats[ch->tier], ch->level);
 }
 
 int CharacterLevelHealth(const Character *ch) {
-    const TierStats *st = &ch->stats[ch->tier];
-    return st->base_health + (ch->level - 1) * st->health_per_level;
+    return TierHealthAtLevel(&ch->stats[ch->tier], ch->level);
 }
 
 int CharacterStatPower(const Character *ch) {
