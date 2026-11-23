@@ -11,6 +11,8 @@ game prefers `*_rl.glb` over the raw pack GLBs.
 - `glb_writer.py`: rewrites a pack GLB with the baked skeleton and animation channels.
 - `bake_idle.py`, `bake_all.py`: per-unit and batch bakers.
 - `rebuild_stub_src.py`: rebuilds one exact-tier source GLB from its CAB.
+- `unit_texture.py`: bakes `_MainTex` opaque when the original material uses the built-in `Unlit/Texture` shader,
+  which ignores alpha; the game's unit shader discards texels below 0.5 alpha.
 - `import_fbx.py`: imports a post-4.4 reference FBX (requires Assimp) and writes its take manifest.
 
 ## Commands

@@ -10,6 +10,8 @@ import re
 import struct
 from urllib.parse import unquote
 
+from PIL import Image
+
 
 CLI_DESCRIPTION = 'Audit every runtime character GLB and every catalog tier binding'
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +20,7 @@ CHAR_PACK = ROOT / "client-additional-data" / "char_pack"
 TIERS = ("I", "II", "III", "IV")
 TIER_SUFFIX = re.compile(r"_t\d+$", re.IGNORECASE)
 COMPONENT = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
+UNIT_SHADER_ALPHA_CUTOFF = 128
 
 
 def prefab_base(prefab: str) -> str:
@@ -154,6 +157,34 @@ def index_errors(gltf: dict, blob: memoryview) -> tuple[int, int, list[str]]:
     return total, uint32, errors
 
 
+def base_color_uris(gltf: dict) -> list[str]:
+    textures = gltf.get("textures", [])
+    images = gltf.get("images", [])
+    uris = []
+    for material in gltf.get("materials", []):
+        texture = material.get("pbrMetallicRoughness", {}).get("baseColorTexture", {}).get("index")
+        if texture is None:
+            continue
+        uri = images[textures[texture]["source"]].get("uri")
+        if uri and not uri.startswith("data:") and uri not in uris:
+            uris.append(uri)
+    return uris
+
+
+def never_reaches_alpha_cutoff(path: Path) -> bool:
+    with Image.open(path) as image:
+        if "A" not in image.getbands() and "transparency" not in image.info:
+            return False
+        return image.convert("RGBA").getchannel("A").getextrema()[1] < UNIT_SHADER_ALPHA_CUTOFF
+
+
+def invisible_images(gltf: dict, directory: Path) -> list[str]:
+    return [
+        uri for uri in base_color_uris(gltf)
+        if (directory / unquote(uri)).is_file() and never_reaches_alpha_cutoff(directory / unquote(uri))
+    ]
+
+
 def audit_output(path: Path, deep: bool) -> dict:
     gltf, blob = load_glb(path, with_blob=deep)
     animations = [animation.get("name", "") for animation in gltf.get("animations", [])]
@@ -178,6 +209,7 @@ def audit_output(path: Path, deep: bool) -> dict:
         "flatness": min(extents) / max(extents) if extents else 0.0,
         "unskinned_mesh_nodes": unskinned,
         "missing_images": missing_images,
+        "invisible_images": invisible_images(gltf, path.parent),
         "bad_weights": bad_weights,
         "weight_rows": weight_rows,
         "index_accessors": index_accessors,
@@ -247,6 +279,7 @@ def run(deep: bool) -> dict:
     bad_weights = missing_images = unskinned = weight_rows = 0
     index_accessors = uint32_index_accessors = 0
     bad_indices = []
+    invisible = []
     output_rows = {}
     for path in outputs:
         try:
@@ -263,6 +296,7 @@ def run(deep: bool) -> dict:
         uint32_index_accessors += row["uint32_index_accessors"]
         bad_indices.extend(f"{path}: {error}" for error in row["bad_indices"])
         missing_images += len(row["missing_images"])
+        invisible.extend(f"{path}: {uri}" for uri in row["invisible_images"])
         unskinned += row["unskinned_mesh_nodes"]
 
     collapsed = []
@@ -321,6 +355,7 @@ def run(deep: bool) -> dict:
         "attack_models_without_attack_clip": attack_models_without_attack_clip,
         "unskinned_mesh_nodes": unskinned,
         "missing_external_images": missing_images,
+        "invisible_models": invisible,
         "weight_rows": weight_rows,
         "bad_weight_rows": bad_weights,
         "index_accessors": index_accessors,
@@ -358,6 +393,7 @@ def main() -> None:
         or report["attack_models_without_attack_clip"]
         or report["unskinned_mesh_nodes"]
         or report["missing_external_images"]
+        or report["invisible_models"]
         or report["bad_weight_rows"]
         or report["bad_index_accessors"]
     )
