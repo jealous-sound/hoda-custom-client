@@ -39,6 +39,7 @@ def _patched_from_str(cls, version):
 UV.UnityVersion.from_str = classmethod(_patched_from_str)
 
 import glb_writer
+import unit_texture
 from bake_idle import bake_humanoid
 from bake_generic import bake_generic_unit
 
@@ -747,7 +748,8 @@ def fix_textures(env, dst_glb, out_dir, base, cab_paths):
         return notes
 
     try:
-        texenvs = material_texenvs(material_obj.read_typetree())
+        material_tt = material_obj.read_typetree()
+        texenvs = material_texenvs(material_tt)
     except Exception as e:
         notes.append(f'renderer material read failed: {type(e).__name__}')
         return notes
@@ -770,6 +772,10 @@ def fix_textures(env, dst_glb, out_dir, base, cab_paths):
         notes.append(f'used reference FBX texture {os.path.basename(fallback)} -> {main_name}')
     else:
         notes.append(f'exported renderer _MainTex -> {main_name}')
+    main_img, ignores_alpha = unit_texture.runtime_main_texture(main_img, material_obj, material_tt)
+    if ignores_alpha:
+        main_img.save(main_path)
+        notes.append('opaque Unlit/Texture material, _MainTex alpha dropped')
 
     material_index = primitive.get('material')
     materials = gltf.get('materials') or []
@@ -799,7 +805,7 @@ def fix_textures(env, dst_glb, out_dir, base, cab_paths):
         pbr['baseColorTexture'] = {'index': texture_index}
         notes.append('created missing glTF base-color image')
 
-    if alpha_pptr.get('m_PathID'):
+    if alpha_pptr.get('m_PathID') and not ignores_alpha:
         alpha_img = export_texture(env, alpha_pptr, cab_paths, None)
         if alpha_img is not None:
             rgb = main_img.convert('RGB')
