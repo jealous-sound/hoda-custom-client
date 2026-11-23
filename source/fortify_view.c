@@ -1217,10 +1217,8 @@ static void FortifyDrawCelebration(FortifyScreen *f, Heroes *h, const Player *p,
     );
     Rectangle max_stats = FortifyFit(max, FORTIFY_CELEBRATION_MAX_STATS);
     const TierStats *st = &parent->stats[parent->tier];
-    int max_power =
-        st->base_power + (st->max_level - 1) * st->power_per_level + FortifyMaxBonus(parent, FORTIFY_STAT_POWER);
-    int max_health =
-        st->base_health + (st->max_level - 1) * st->health_per_level + FortifyMaxBonus(parent, FORTIFY_STAT_HEALTH);
+    int max_power = TierPowerAtLevel(st, st->max_level) + FortifyMaxBonus(parent, FORTIFY_STAT_POWER);
+    int max_health = TierHealthAtLevel(st, st->max_level) + FortifyMaxBonus(parent, FORTIFY_STAT_HEALTH);
     const FortifyAnchor *anchors[2] = {&FORTIFY_CELEBRATION_MAX_POWER, &FORTIFY_CELEBRATION_MAX_HEALTH};
     GuiId icons[2] = {GUI_DETAILS_POWER, GUI_FORTIFY_HEALTH_ICON};
     int values[2] = {max_power, max_health};

@@ -188,8 +188,8 @@ static int FortifyRound(float value) {
 
 static float FortifyParentMaxStat(const Character *parent, FortifyStat stat) {
     const TierStats *st = &parent->stats[parent->tier];
-    int value = stat == FORTIFY_STAT_HEALTH ? st->base_health + (st->max_level - 1) * st->health_per_level
-                                            : st->base_power + (st->max_level - 1) * st->power_per_level;
+    int value =
+        stat == FORTIFY_STAT_HEALTH ? TierHealthAtLevel(st, st->max_level) : TierPowerAtLevel(st, st->max_level);
     return (float)value;
 }
 

@@ -4,12 +4,6 @@
  "top_band_over_base_pct": 140,
  "bands": {
   "Common": {
-   "level_caps": {
-    "I": 15,
-    "II": 20,
-    "III": 25,
-    "IV": 30
-   },
    "costs": {
     "hero": {
      "I": 1388,
@@ -26,12 +20,6 @@
    }
   },
   "Uncommon": {
-   "level_caps": {
-    "I": 20,
-    "II": 25,
-    "III": 30,
-    "IV": 35
-   },
    "costs": {
     "hero": {
      "I": 2784,
@@ -48,12 +36,6 @@
    }
   },
   "Rare": {
-   "level_caps": {
-    "I": 30,
-    "II": 35,
-    "III": 40,
-    "IV": 45
-   },
    "costs": {
     "hero": {
      "I": 3984,
@@ -70,12 +52,6 @@
    }
   },
   "Epic": {
-   "level_caps": {
-    "I": 50,
-    "II": 55,
-    "III": 60,
-    "IV": 65
-   },
    "costs": {
     "hero": {
      "I": 6169,
@@ -92,12 +68,6 @@
    }
   },
   "Legendary": {
-   "level_caps": {
-    "I": 70,
-    "II": 75,
-    "III": 80,
-    "IV": 85
-   },
    "costs": {
     "hero": {
      "I": 8637,
