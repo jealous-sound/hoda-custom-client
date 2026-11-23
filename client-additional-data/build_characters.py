@@ -126,17 +126,6 @@ def name_tier(uid, u):
     m = re.search(r"(IV|III|II|I)$", src)
     return m.group(1) if m else "IV"
 
-def stat_step(u, step_field, base_field, max_field, t):
-    step = tget(u, step_field, t)
-    if step is not None:
-        return step
-    base = tget(u, base_field, t)
-    maximum = tget(u, max_field, t)
-    levels = tget(u, "MaxLevel", t)
-    if all(isinstance(value, (int, float)) for value in (base, maximum, levels)) and levels > 1:
-        return max(0, int((maximum - base) / (levels - 1) + 0.5))
-    return 0
-
 def tier_stats(u, uid):
     bh = u.get("BaseHealth")
     keys = list(bh.keys()) if isinstance(bh, dict) else [name_tier(uid, u)]
@@ -148,8 +137,6 @@ def tier_stats(u, uid):
             "base_health":       tget(u, "BaseHealth", t),
             "max_health":        tget(u, "HealthAtMaxLevel", t),
             "max_level":         tget(u, "MaxLevel", t),
-            "power_per_level":   stat_step(u, "PowerChangePerLevel", "BasePower", "PowerAtMaxLevel", t),
-            "health_per_level":  stat_step(u, "HealthChangePerLevel", "BaseHealth", "HealthAtMaxLevel", t),
             "max_fortify_power": tget(u, "MaxFortifyPowerBonus", t),
             "max_fortify_health":tget(u, "MaxFortifyHealthBonus", t),
         }

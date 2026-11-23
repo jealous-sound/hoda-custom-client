@@ -234,10 +234,12 @@ for row in characters:
         fail(f"{uid}: has gear slots but the original unit wears no gear")
 
     for tier_name, stats in row.get("tiers", {}).items():
-        for field in ("power_per_level", "health_per_level"):
-            value = stats.get(field)
-            if not isinstance(value, int) or value < 0:
-                fail(f"{uid} tier {tier_name}: invalid {field} {value!r}")
+        if (stats.get("max_level") or 0) <= 1:
+            continue
+        for stat in ("power", "health"):
+            base, maximum = stats.get(f"base_{stat}"), stats.get(f"max_{stat}")
+            if not isinstance(base, int) or not isinstance(maximum, int) or maximum < base:
+                fail(f"{uid} tier {tier_name}: {stat} must grow from {base!r} to {maximum!r}")
 
 by_id = {row["id"]: row for row in characters}
 if "POWER_DRAIN" not in by_id["UNIT_SHAPESHIFTERMORRIGANI"]["ability"]["mechanics"]:

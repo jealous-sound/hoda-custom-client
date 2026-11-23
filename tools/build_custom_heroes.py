@@ -23,8 +23,8 @@ CLI_DESCRIPTION = (
 
 CATALOG_VERSION = 1
 TIERS = ("I", "II", "III", "IV")
-POWER_FIELDS = ("base_power", "max_power", "power_per_level", "max_fortify_power")
-HEALTH_FIELDS = ("base_health", "max_health", "health_per_level", "max_fortify_health")
+POWER_FIELDS = ("base_power", "max_power", "max_fortify_power")
+HEALTH_FIELDS = ("base_health", "max_health", "max_fortify_health")
 RUNTIME_ID_CAPACITY = 64
 RUNTIME_NAME_CAPACITY = 64
 SPEC_FIELDS = {"id", "based_on", "prefab", "character", "stat_scale", "look"}

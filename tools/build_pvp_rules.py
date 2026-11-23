@@ -8,6 +8,8 @@ import sys
 from collections import namedtuple
 from pathlib import Path
 
+import hero_stats
+
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "data/pvp_rules.json"
 GEAR = ROOT / "data/gear.json"
@@ -481,9 +483,7 @@ def catalog_stat_total(characters, roster):
         if cell is None:
             continue
         stats = characters[cell["id"]]["tiers"][cell["tier"]]
-        steps = min(cell["level"], stats["max_level"]) - 1
-        total += stats["base_power"] + stats["power_per_level"] * steps
-        total += stats["base_health"] + stats["health_per_level"] * steps
+        total += hero_stats.stat_total_at_level(stats, min(cell["level"], stats["max_level"]))
     return total
 
 
@@ -530,9 +530,7 @@ def fielded_stat_total(characters, cells):
     for cell in cells:
         if cell is not None:
             stats = characters[cell["id"]]["tiers"][cell["tier"]]
-            steps = cell["level"] - 1
-            total += stats["base_power"] + stats["power_per_level"] * steps
-            total += stats["base_health"] + stats["health_per_level"] * steps
+            total += hero_stats.stat_total_at_level(stats, cell["level"])
     return total
 
 
@@ -555,10 +553,8 @@ def ascended_level(character):
 
 def grown_stat_product(character):
     stats = character["tiers"][ELITE_TIER]
-    steps = ascended_level(character) - 1
-    power = stats["base_power"] + stats["power_per_level"] * steps
-    health = stats["base_health"] + stats["health_per_level"] * steps
-    return power * health
+    level = ascended_level(character)
+    return hero_stats.stat_at_level(stats, "power", level) * hero_stats.stat_at_level(stats, "health", level)
 
 
 def elite_candidates(characters, giant, rarities):

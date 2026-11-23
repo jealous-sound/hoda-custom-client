@@ -1962,18 +1962,56 @@ static void TestCatalogStatGrowth(void) {
     CharacterParse(CatalogFindCharacter(catalog, "UNIT_CARTASMUGGLER"), &ch, &ability);
     ch.tier = TIER_II;
     ch.level = 20;
-    assert(ch.stats[TIER_II].power_per_level == 9);
     assert(CharacterStatPower(&ch) == 278);
     assert(CharacterStatHealth(&ch) == 534);
 
     CharacterParse(CatalogFindCharacter(catalog, "UNIT_ELVENMAGE"), &ch, &ability);
     ch.tier = TIER_II;
     ch.level = 25;
-    assert(ch.stats[TIER_II].power_per_level == 10);
     assert(CharacterStatPower(&ch) == 395);
     assert(CharacterStatHealth(&ch) == 1278);
 
     cJSON_Delete(root);
+}
+
+static void TestLegendaryLevelCapsFollowTheirStars(void) {
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    static const struct {
+        const char *id;
+        int tier_i_cap;
+    } legendaries[] = {{"UNIT_SISTERNIGHTINGALE", 70}, {"UNIT_MERRILL", 75}, {"UNIT_VIVIENNE", 80}};
+    for (size_t i = 0; i < sizeof(legendaries) / sizeof(legendaries[0]); i++) {
+        Character ch;
+        Ability ability;
+        CharacterParse(CatalogFindCharacter(catalog, legendaries[i].id), &ch, &ability);
+        for (int tier = TIER_I; tier <= TIER_IV; tier++) {
+            const TierStats *st = &ch.stats[tier];
+            assert(st->max_level == legendaries[i].tier_i_cap + 5 * tier);
+            assert(TierPowerAtLevel(st, 1) == st->base_power && TierHealthAtLevel(st, 1) == st->base_health);
+            assert(TierPowerAtLevel(st, st->max_level) == st->max_power);
+            assert(TierHealthAtLevel(st, st->max_level) == st->max_health);
+        }
+    }
+    cJSON_Delete(root);
+}
+
+static void TestTierStatsGrowEvenlyToTheCapAndOnThroughAscension(void) {
+    Character hero;
+    Ability ability;
+    TestCharacter(&hero, &ability, "grower", "ABILITY_DAMAGE_ONE", TARGET_ONE, 0, 100);
+    hero.stats[TIER_I].max_power = 10;
+    hero.stats[TIER_I].max_health = 130;
+    hero.stats[TIER_I].max_level = hero.stats[TIER_I].catalog_max_level = 4;
+    static const int powers[] = {0, 3, 7, 10}, healths[] = {100, 110, 120, 130};
+    for (int level = 1; level <= 4; level++) {
+        hero.level = level;
+        assert(CharacterLevelPower(&hero) == powers[level - 1] && CharacterLevelHealth(&hero) == healths[level - 1]);
+    }
+
+    GearApplyAscension(&hero);
+    hero.level = hero.stats[TIER_I].max_level;
+    assert(hero.level == 9 && CharacterLevelPower(&hero) == 27 && CharacterLevelHealth(&hero) == 180);
 }
 
 static const StatBudget TEST_STAT_BUDGET = {
@@ -2271,11 +2309,16 @@ static void TestStatBudgetKeepsTheShareOfGrowthAHeroHasEarned(void) {
     TestCharacter(&hero, &ability, "grower", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 500);
     hero.has_tier[TIER_I] = hero.has_tier[TIER_II] = true;
     hero.max_tier = TIER_II;
-    hero.stats[TIER_I].max_level = 10;
-    hero.stats[TIER_I].power_per_level = 10;
-    hero.stats[TIER_I].health_per_level = 50;
+    hero.stats[TIER_I].max_power = 190;
+    hero.stats[TIER_I].max_health = 950;
+    hero.stats[TIER_I].max_level = hero.stats[TIER_I].catalog_max_level = 10;
     hero.stats[TIER_II] = (TierStats){
-        .base_power = 200, .base_health = 1000, .max_level = 11, .power_per_level = 20, .health_per_level = 100
+        .base_power = 200,
+        .base_health = 1000,
+        .max_power = 400,
+        .max_health = 2000,
+        .max_level = 11,
+        .catalog_max_level = 11
     };
     StatBudgetStats grown = StatBudgetGrownStats(&hero);
     assert(grown.power == 400 && grown.health == 2000);
@@ -4769,6 +4812,38 @@ static void TestConsumeCommitCompactsRoster(void) {
     assert(loaded.squads[2][0] == moved);
     remove(path);
     PlayerUnloadRoster(&loaded);
+    PlayerUnloadRoster(&player);
+    cJSON_Delete(root);
+}
+
+static void TestGalleryShowsTiersACombineSkips(void) {
+    cJSON *root = ProgressionLoadCharacterCatalog();
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    const char *rare = ConsumeTestFirstId(catalog, "Rare", false, true);
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    int target, seed;
+    ConsumeTestAdd(&player, catalog, rare, &target);
+    ConsumeTestAdd(&player, catalog, rare, &seed);
+    for (int i = 0; i < 2; i++) {
+        Character *copy = &player.roster[i ? seed : target];
+        copy->tier = TIER_II;
+        ConsumeNormalizeCharacter(copy);
+    }
+    GalleryRecordOwned(&player.gallery, rare, TIER_II, false);
+    const GalleryRecord *record = GalleryRecordFind(&player.gallery, rare);
+    assert(!GalleryRecordShowsTier(record, TIER_III));
+
+    int seeds[] = {seed};
+    int moved = PlayerConsumeUnits(&player, target, seeds, 1);
+    assert(moved >= 0 && player.roster[moved].tier == TIER_IV);
+    record = GalleryRecordFind(&player.gallery, rare);
+    assert(!(record->owned_tiers & (1u << TIER_III)));
+    assert(GalleryRecordShowsTier(record, TIER_II) && GalleryRecordShowsTier(record, TIER_III));
+    assert(GalleryRecordShowsTier(record, TIER_IV) && !GalleryRecordShowsTier(record, TIER_I));
+    assert(!GalleryRecordShowsTier(NULL, TIER_I));
+
     PlayerUnloadRoster(&player);
     cJSON_Delete(root);
 }
@@ -8987,14 +9062,14 @@ static void TestFortifyBonusesFollowThe544Calculator(void) {
     );
     Character golem = FortifyTestHero(catalog, "UNIT_INFERNOGOLEM", TIER_IV);
     GearApplyAscension(&golem);
-    AssertFortifyBonus(&golem, 2, FortifyTestChild("UNIT_OGRE", TIER_III, false), FORTIFY_STAT_HEALTH, 222, 33, 44);
+    AssertFortifyBonus(&golem, 2, FortifyTestChild("UNIT_OGRE", TIER_III, false), FORTIFY_STAT_HEALTH, 218, 33, 44);
 
     int power = CharacterStatPower(&golem), health = CharacterStatHealth(&golem);
     golem.fortify[2] = FortifyTestChild("UNIT_OGRE", TIER_III, false);
     golem.fortify[1] = FortifyTestChild("UNIT_ELVENMAGE", TIER_I, false);
     int power_bonus = FortifyBonusTotal(FortifySlotBonus(&golem, 1, &golem.fortify[1]));
-    assert(power_bonus > 0 && FortifyBonusPower(&golem) == power_bonus && FortifyBonusHealth(&golem) == 299);
-    assert(CharacterStatPower(&golem) == power + power_bonus && CharacterStatHealth(&golem) == health + 299);
+    assert(power_bonus > 0 && FortifyBonusPower(&golem) == power_bonus && FortifyBonusHealth(&golem) == 295);
+    assert(CharacterStatPower(&golem) == power + power_bonus && CharacterStatHealth(&golem) == health + 295);
     assert(CharacterLevelPower(&golem) == power && CharacterLevelHealth(&golem) == health);
     cJSON_Delete(root);
 }
@@ -11210,6 +11285,7 @@ int main(void) {
     TestGalleryCatalogMatchesReferenceRules();
     TestGalleryRecordsBattleCasualties();
     TestGalleryPersistence();
+    TestGalleryShowsTiersACombineSkips();
     TestRuneCatalogCraftChains();
     TestRuneSlotRulesAndReplacement();
     TestRuneExpiry();
@@ -11280,6 +11356,8 @@ int main(void) {
     TestTimelineCapacity();
     TestLegendaryStars();
     TestCatalogStatGrowth();
+    TestLegendaryLevelCapsFollowTheirStars();
+    TestTierStatsGrowEvenlyToTheCapAndOnThroughAscension();
     TestStatBudgetPricesEveryGrownHeroAtOneCostAndKeepsItsShape();
     TestStatBudgetKeepsTheShareOfGrowthAHeroHasEarned();
     TestStatBudgetGivesEachRarityItsShare();

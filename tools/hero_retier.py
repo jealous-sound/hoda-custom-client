@@ -17,16 +17,8 @@ NATIVE_BAND_RARITIES = ("Common", "Uncommon", "Rare", "Epic")
 TOP_BAND_RARITY = "Legendary"
 TOP_BAND_BASE_RARITY = "Epic"
 TOP_BAND_OVER_BASE_PCT = 140
-LEVEL_CAPS = {
-    "Common": (15, 20, 25, 30),
-    "Uncommon": (20, 25, 30, 35),
-    "Rare": (30, 35, 40, 45),
-    "Epic": (50, 55, 60, 65),
-    "Legendary": (70, 75, 80, 85),
-}
 UPGRADE_MATERIAL_GROUP = "Wisp"
 BANNER_NAME_SUFFIX = " Banner"
-BASE_STATS = ("base_power", "base_health")
 HERO_KIND = "hero"
 ORIGINAL_RARITY_FIELD = "original_rarity"
 GIANT_KIND = "giant"
@@ -90,7 +82,6 @@ def bands_from(cohorts):
     bands = {}
     for rarity in NATIVE_BAND_RARITIES:
         bands[rarity] = {
-            "level_caps": dict(zip(TIERS, LEVEL_CAPS[rarity])),
             "costs": {
                 kind: {tier: rounded(cohorts[(rarity, 0, kind)][tier]) for tier in TIERS}
                 for kind in (HERO_KIND, GIANT_KIND)
@@ -98,7 +89,6 @@ def bands_from(cohorts):
         }
     base = bands[TOP_BAND_BASE_RARITY]["costs"]
     bands[TOP_BAND_RARITY] = {
-        "level_caps": dict(zip(TIERS, LEVEL_CAPS[TOP_BAND_RARITY])),
         "costs": {
             kind: {tier: rounded(cost * TOP_BAND_OVER_BASE_PCT / 100) for tier, cost in tiers.items()}
             for kind, tiers in base.items()
@@ -133,23 +123,14 @@ def fortify_maximum(stat):
     return build_fortify_tables.slot_maximum(stat, *fortify_rules())
 
 
-def level_step(base, target_maximum, level_cap):
-    if level_cap <= 1:
-        return 0
-    return max(0, rounded((target_maximum - base) / (level_cap - 1)))
-
-
-def rescaled_tier(stats, scale, level_cap):
+def rescaled_tier(stats, scale):
     scaled = dict(stats)
-    for key in BASE_STATS:
-        scaled[key] = rounded(stats[key] * scale)
     for stat in ("power", "health"):
-        step = level_step(scaled[f"base_{stat}"], stats[f"max_{stat}"] * scale, level_cap)
-        scaled[f"{stat}_per_level"] = step
-        scaled[f"max_{stat}"] = scaled[f"base_{stat}"] + (level_cap - 1) * step
+        base = rounded(stats[f"base_{stat}"] * scale)
+        scaled[f"base_{stat}"] = base
+        scaled[f"max_{stat}"] = max(base, rounded(stats[f"max_{stat}"] * scale))
         if isinstance(stats.get(f"max_fortify_{stat}"), int):
             scaled[f"max_fortify_{stat}"] = fortify_maximum(scaled[f"max_{stat}"])
-    scaled["max_level"] = level_cap
     return scaled
 
 
@@ -158,7 +139,7 @@ def retiered(row, rarity, source_costs, band):
     for tier, stats in row["tiers"].items():
         if has_stats(stats) and tier in source_costs:
             scale = band["costs"][kind_of(row)][tier] / source_costs[tier]
-            tiers[tier] = rescaled_tier(stats, scale, band["level_caps"][tier])
+            tiers[tier] = rescaled_tier(stats, scale)
         else:
             tiers[tier] = stats
     return {**row, "rarity": rarity, "tiers": tiers}
