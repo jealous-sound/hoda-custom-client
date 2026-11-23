@@ -673,7 +673,7 @@ static void GalleryShowCurrentUnit(Gallery *g, Player *p, HomeBackground *scene)
 
     if (GalleryRecordClearNew(&p->gallery, definition->id)) ProgressionSave(p);
     const GalleryRecord *record = GalleryRecordFind(&p->gallery, definition->id);
-    bool owned = record && (record->owned_tiers & GalleryTierBit(tier));
+    bool owned = GalleryRecordShowsTier(record, tier);
     g->spin_yaw = 0.0f;
     HomeBackgroundGalleryShow(scene, &g->shown_unit, !owned, g->spin_yaw);
 }

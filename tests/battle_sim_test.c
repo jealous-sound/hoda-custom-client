@@ -4816,6 +4816,38 @@ static void TestConsumeCommitCompactsRoster(void) {
     cJSON_Delete(root);
 }
 
+static void TestGalleryShowsTiersACombineSkips(void) {
+    cJSON *root = ProgressionLoadCharacterCatalog();
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    const char *rare = ConsumeTestFirstId(catalog, "Rare", false, true);
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    int target, seed;
+    ConsumeTestAdd(&player, catalog, rare, &target);
+    ConsumeTestAdd(&player, catalog, rare, &seed);
+    for (int i = 0; i < 2; i++) {
+        Character *copy = &player.roster[i ? seed : target];
+        copy->tier = TIER_II;
+        ConsumeNormalizeCharacter(copy);
+    }
+    GalleryRecordOwned(&player.gallery, rare, TIER_II, false);
+    const GalleryRecord *record = GalleryRecordFind(&player.gallery, rare);
+    assert(!GalleryRecordShowsTier(record, TIER_III));
+
+    int seeds[] = {seed};
+    int moved = PlayerConsumeUnits(&player, target, seeds, 1);
+    assert(moved >= 0 && player.roster[moved].tier == TIER_IV);
+    record = GalleryRecordFind(&player.gallery, rare);
+    assert(!(record->owned_tiers & (1u << TIER_III)));
+    assert(GalleryRecordShowsTier(record, TIER_II) && GalleryRecordShowsTier(record, TIER_III));
+    assert(GalleryRecordShowsTier(record, TIER_IV) && !GalleryRecordShowsTier(record, TIER_I));
+    assert(!GalleryRecordShowsTier(NULL, TIER_I));
+
+    PlayerUnloadRoster(&player);
+    cJSON_Delete(root);
+}
+
 static void TestWispWorthFollowsReferenceMultipliers(void) {
     Character wisp = {.rarity = RARITY_RARE, .tier = TIER_I};
     StrCopy(wisp.id, sizeof(wisp.id), "UNIT_RAREWHITEWISP");
@@ -11253,6 +11285,7 @@ int main(void) {
     TestGalleryCatalogMatchesReferenceRules();
     TestGalleryRecordsBattleCasualties();
     TestGalleryPersistence();
+    TestGalleryShowsTiersACombineSkips();
     TestRuneCatalogCraftChains();
     TestRuneSlotRulesAndReplacement();
     TestRuneExpiry();
