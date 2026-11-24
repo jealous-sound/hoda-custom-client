@@ -12,6 +12,7 @@
 #define GALLERY_FIRST_MULTIBYTE 0x80
 #define GALLERY_LORE_FONT_SIZE 17.0f
 #define GALLERY_LABEL_FONT_SIZE 18.0f
+#define GALLERY_TIER_CAPTION_CENTRE_OFFSET 12.0f
 #define GALLERY_TITLE_FONT_SIZE 34.0f
 #define GALLERY_HEADER_FONT_SIZE 21.0f
 #define GALLERY_NAME_FONT_SIZE 14.0f
@@ -302,7 +303,7 @@ static void GalleryDrawCountRow(Rectangle row, const char *caption, int owned, i
     UiDrawTexture(GuiTex(GUI_GALLERY_ROW_FILL), fill, Fade(WHITE, 0.65f));
     UiDrawTextRight(font, TextFormat("(%d/%d)", owned, total), row, GALLERY_LABEL_FONT_SIZE, WHITE);
     if (caption) {
-        Rectangle label = {row.x - 30.0f, row.y, 60.0f, row.height};
+        Rectangle label = {row.x + GALLERY_TIER_CAPTION_CENTRE_OFFSET - 30.0f, row.y, 60.0f, row.height};
         UiDrawTextCentered(GuiFont(FNT_COOL), caption, label, GALLERY_LABEL_FONT_SIZE, WHITE);
     }
 }
