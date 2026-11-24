@@ -1,6 +1,7 @@
 
 #define HEROES_GEAR_COLUMN_WIDTH 64.0f
 #define HEROES_DETAILS_HEAD_HEIGHT 93.0f
+#define HEROES_DETAILS_LEVEL_RIGHT 460.0f
 #define HEROES_GEAR_BUTTON_GAP 6.0f
 #define HEROES_GEAR_BUTTON_X (ROSTER_PANEL_WIDTH + HEROES_GEAR_BUTTON_GAP)
 #define HEROES_DRAG_THRESHOLD 51.0f
@@ -793,11 +794,11 @@ static void HeroesDrawDetailsAt(HeroCard *card, Rectangle bounds) {
         snprintf(cur, sizeof(cur), "%s/", TIER_NAMES[tier]);
         Vector2 max_sz = MeasureTextEx(title_font, max_num, fs, 1.0f);
         Vector2 cur_sz = MeasureTextEx(title_font, cur, fs, 1.0f);
-        float lx = body.x + 460.0f * sx - max_sz.x - cur_sz.x;
+        float lx = body.x + HEROES_DETAILS_LEVEL_RIGHT * sx - max_sz.x - cur_sz.x;
         DrawTextEx(title_font, cur, (Vector2){lx, py0 - 3.0f}, fs, 1.0f, WHITE);
         DrawTextEx(title_font, max_num, (Vector2){lx + cur_sz.x, py0 - 3.0f}, fs, 1.0f, grey);
 
-        Rectangle bar = {px0, body.y + 68.0f * sy, 466.0f * sx - 232.0f * sx, 14.0f};
+        Rectangle bar = {px0, body.y + 68.0f * sy, body.x + HEROES_DETAILS_LEVEL_RIGHT * sx - px0, 14.0f};
         Texture2D bar_bg = GuiTex(GUI_DETAILS_BAR);
         UiDrawTexture(bar_bg, bar, (Color){62, 62, 62, 255});
         if (card->xp_frac > 0.0f) {
@@ -1063,6 +1064,18 @@ void GearViewDrawSlots(Player *p, int hero, Rectangle details);
 void GearViewDrawPanel(Player *p);
 void GearViewDrawDialogs(Player *p);
 int GearViewTakeChangedHero(void);
+int GearViewShownWornSlot(int hero);
+void GearDrawWornItemCard(const Character *ch, int slot, Rectangle area);
+
+static void HeroesDrawSelectedDetails(HeroCard *card, int hero, Rectangle details) {
+    int worn_slot = GearViewShownWornSlot(hero);
+    if (GearInSlot(card->ch, worn_slot)) {
+        HeroesDrawDetailsHead(card, details);
+        GearDrawWornItemCard(card->ch, worn_slot, HeroesDetailsBody(details));
+    } else {
+        HeroesDrawDetailsAt(card, details);
+    }
+}
 
 static const Rectangle HEROES_SQUAD_TABS = {8.0f, 644.0f, 246.0f, 64.0f};
 
@@ -1152,10 +1165,10 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
     }
 
     if (h->selected >= 0) {
-        HeroesDrawDetails(&h->cards[h->selected], 156.0f, UiWidth() - 256.0f);
-        GearViewDrawSlots(
-            p, (int)(h->cards[h->selected].ch - p->roster), HeroesDetailsBounds(156.0f, UiWidth() - 256.0f)
-        );
+        int hero = (int)(h->cards[h->selected].ch - p->roster);
+        Rectangle details = HeroesDetailsBounds(156.0f, UiWidth() - 256.0f);
+        HeroesDrawSelectedDetails(&h->cards[h->selected], hero, details);
+        GearViewDrawSlots(p, hero, details);
     }
     GearViewDrawDialogs(p);
     int changed_hero = GearViewTakeChangedHero();
