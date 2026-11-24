@@ -6,6 +6,8 @@ import struct
 from hoda_anim import Xform, to_gltf_t, to_gltf_q
 
 SINGULAR_DETERMINANT = 1e-18
+UNIFORM_SCALE_TOLERANCE = 1e-4
+STRAY_FOLD_DECADE_TOLERANCE = 0.32
 COMP_FMT = {5120: 'b', 5121: 'B', 5122: 'h', 5123: 'H', 5125: 'I', 5126: 'f'}
 NCOMP = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4, 'MAT4': 16}
 
@@ -161,6 +163,73 @@ def joint_bind_in_mesh(inverse_bind):
         for r in range(3)
     )
     return origin, abs(determinant) ** (-1.0 / 3.0)
+
+
+def bind_world_scales(gltf, blob):
+    skins = gltf.get('skins') or []
+    if not skins or skins[0].get('inverseBindMatrices') is None:
+        return {}
+    skin = skins[0]
+    nodes = gltf.get('nodes', [])
+    scales = {}
+    for ni, inverse_bind in zip(skin.get('joints', []),
+                                read_accessor(gltf, blob, skin['inverseBindMatrices'])):
+        name = nodes[ni].get('name')
+        bind = joint_bind_in_mesh(inverse_bind)
+        if name and bind is not None:
+            scales.setdefault(name, bind[1])
+    return scales
+
+
+def is_uniform_scale(s, tolerance=UNIFORM_SCALE_TOLERANCE):
+    return abs(s['x'] - s['y']) < tolerance and abs(s['x'] - s['z']) < tolerance
+
+
+def avatar_with_default_pose(avatar_json, poses):
+    wrapped = 'm_Avatar' in avatar_json
+    avatar = avatar_json['m_Avatar'] if wrapped else avatar_json
+    default_pose = avatar['m_DefaultPose']
+    avatar = dict(avatar, m_DefaultPose=dict(default_pose, data=dict(default_pose['data'], m_X=poses)))
+    return dict(avatar_json, m_Avatar=avatar) if wrapped else avatar
+
+
+def stray_fold_unfolding(scale, fold_above, own_bind, parent_bind):
+    if scale is None or own_bind is None or parent_bind is None or scale <= 0.0 or fold_above <= 0.0:
+        return 1.0
+    if abs(math.log10(fold_above)) < STRAY_FOLD_DECADE_TOLERANCE:
+        return 1.0
+    log_ratio = math.log10(scale * parent_bind / own_bind)
+    decade = round(log_ratio)
+    if decade == 0 or abs(log_ratio - decade) > STRAY_FOLD_DECADE_TOLERANCE:
+        return 1.0
+    return 10.0 ** -decade
+
+
+def drop_stray_scale_folds(avatar_json, hash_to_name, bind_scales):
+    avatar = avatar_json['m_Avatar'] if 'm_Avatar' in avatar_json else avatar_json
+    skeleton = avatar['m_AvatarSkeleton']['data']
+    names = [hash_to_name.get(h) for h in skeleton['m_ID']]
+    poses = avatar['m_DefaultPose']['data']['m_X']
+    accumulated = []
+    unfold = {}
+    for i, pose in enumerate(poses):
+        parent = skeleton['m_Node'][i]['m_ParentId']
+        fold_above = accumulated[parent] if parent >= 0 else 1.0
+        scale = pose['s']['x'] if is_uniform_scale(pose['s']) else None
+        factor = stray_fold_unfolding(
+            scale, fold_above, bind_scales.get(names[i]),
+            bind_scales.get(names[parent]) if parent >= 0 else None)
+        if factor != 1.0:
+            unfold[i] = factor
+        accumulated.append(fold_above * (1.0 if scale is None else scale) * factor)
+    if not unfold:
+        return avatar_json, {}
+    fixed = [
+        dict(pose, s=dict(pose['s'], **{axis: pose['s'][axis] * unfold[i] for axis in 'xyz'}))
+        if i in unfold else pose
+        for i, pose in enumerate(poses)
+    ]
+    return avatar_with_default_pose(avatar_json, fixed), {names[i]: unfold[i] for i in unfold}
 
 
 def infer_bind_unit_correction(gltf, blob, avatar):

@@ -13,15 +13,16 @@ import audit_character_models as audit
 
 
 TRIANGLES = (0, 1, 2, 0, 2, 3, 0, 3, 1, 1, 3, 2)
+REWOUND_TRIANGLES = (0, 2, 1, 0, 3, 2, 0, 1, 3, 1, 2, 3)
 TETRAHEDRON = ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
 
 
-def skinned_tetrahedron(positions):
+def skinned_tetrahedron(positions, triangles=TRIANGLES):
     blob = bytearray()
     for position in positions:
         blob += struct.pack("<3f", *position)
     index_offset = len(blob)
-    blob += struct.pack(f"<{len(TRIANGLES)}H", *TRIANGLES)
+    blob += struct.pack(f"<{len(triangles)}H", *triangles)
     gltf = {
         "meshes": [{
             "name": "body",
@@ -33,7 +34,7 @@ def skinned_tetrahedron(positions):
         ],
         "accessors": [
             {"bufferView": 0, "componentType": 5126, "count": len(positions), "type": "VEC3"},
-            {"bufferView": 1, "componentType": 5123, "count": len(TRIANGLES), "type": "SCALAR"},
+            {"bufferView": 1, "componentType": 5123, "count": len(triangles), "type": "SCALAR"},
         ],
     }
     return gltf, memoryview(bytes(blob))
@@ -57,7 +58,14 @@ class TornSkinAuditTest(unittest.TestCase):
         source, source_blob = skinned_tetrahedron(TETRAHEDRON)
         source["meshes"][0]["name"] = "other"
         output, output_blob = skinned_tetrahedron(TETRAHEDRON)
-        self.assertEqual(audit.torn_edge_share(source, source_blob, output, output_blob), 0.0)
+        self.assertIsNone(audit.torn_edge_share(source, source_blob, output, output_blob))
+
+    def test_a_source_with_other_triangles_is_not_judged(self) -> None:
+        source, source_blob = skinned_tetrahedron(TETRAHEDRON, REWOUND_TRIANGLES)
+        flung = list(TETRAHEDRON)
+        flung[3] = (0.0, 0.0, 9.0)
+        output, output_blob = skinned_tetrahedron(flung)
+        self.assertIsNone(audit.torn_edge_share(source, source_blob, output, output_blob))
 
 
 if __name__ == "__main__":
