@@ -10,6 +10,7 @@ from muscle_solver import HumanSolver
 from bake_generic import promote_skeleton_joints
 import body_frame
 import glb_writer
+import human_muscles
 
 CHAR_PACK = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'char_pack')
 UNITS = [
@@ -134,13 +135,15 @@ def _promoted_hips_basis_fix(gltf, avatar, solver, hips_a_node):
 def bake_humanoid(src, dst, avatar_json, clip_json, use_tos=False,
                   display_scale=None, extra_clips=None):
     import math
-    gltf, _ = glb_writer.load_glb(src)
+    gltf, blob = glb_writer.load_glb(src)
     h2n = glb_hash_to_name(gltf)
     if use_tos and avatar_json.get('m_TOS'):
         merged = {h: p.split('/')[-1] for h, p in avatar_json['m_TOS']}
         merged.update(h2n)
         h2n = merged
 
+    avatar_json, unfolded = glb_writer.drop_stray_scale_folds(
+        avatar_json, h2n, glb_writer.bind_world_scales(gltf, blob))
     avatar = Avatar(avatar_json, h2n)
     solver = HumanSolver(avatar)
 
@@ -175,7 +178,7 @@ def bake_humanoid(src, dst, avatar_json, clip_json, use_tos=False,
                 v = curves.value(attr, t)
                 if v is not None:
                     dof[attr] = v
-            node_q, hips_x = solver.solve_frame(dof)
+            node_q, hips_x = solver.solve_frame(human_muscles.muscles_for_rig(dof, solver.bone_node))
             hips_t, hips_q = body_frame.body_in_tpose_frame(
                 hips_x.t, hips_x.q, dof, solver.root_x.q, solver.scale * solver.units_per_meter)
             raw.append((node_q, Xform(tuple(c / solver.units_per_meter for c in hips_t), hips_q, (1, 1, 1))))
@@ -277,7 +280,7 @@ def bake_humanoid(src, dst, avatar_json, clip_json, use_tos=False,
     return {
         'neutral_check': solver.neutral_check(), 'units_per_meter': solver.units_per_meter,
         'unresolved': unresolved, 'frames': n_frames, 'hips0': hx.t, 'post_scale': post_scale,
-        'avatar_rescale': avatar_rescale, 'clips': [c[0] for c in clips],
+        'avatar_rescale': avatar_rescale, 'unfolded_scales': unfolded, 'clips': [c[0] for c in clips],
         'bind_unit_correction': getattr(avatar, 'last_bind_unit_correction', 1.0),
         'stripped_root_helpers': getattr(avatar, 'last_stripped_root_helpers', 0),
         'rehung_joints': getattr(avatar, 'last_rehung_joints', []),
