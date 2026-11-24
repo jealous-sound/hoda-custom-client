@@ -53,6 +53,7 @@ typedef struct {
 #define GEAR_VIEW_FOOTER_HINT_ICON 22.0f
 #define GEAR_VIEW_FOOTER_HINT_ICON_GAP 5.0f
 #define GEAR_VIEW_FOOTER_HINT_MAX_LINES 2
+#define GEAR_VIEW_PAGE_BUTTON_ART_MARGIN 2.0f
 #define GEAR_DIALOG_TILE_TOP 0.08f
 #define GEAR_DIALOG_TILE_SIZE 0.2f
 #define GEAR_DIALOG_TITLE_TOP 0.3f
@@ -788,8 +789,9 @@ static void GearViewDrawFooter(bool input) {
         GEAR_VIEW_FOOTER_HINT_MAX_LINES,
         LIGHTGRAY
     );
-    if (ButtonDrawEx(&gear_view.store, UiRect(footer, 1.0f, 0.0f, GEAR_VIEW_FOOTER_STORE_WIDTH, 1.0f), input))
-        gear_view.store_requested = true;
+    Rectangle store = UiRect(footer, 1.0f, 0.0f, GEAR_VIEW_FOOTER_STORE_WIDTH, 1.0f);
+    store.x -= GEAR_VIEW_PAGE_BUTTON_ART_MARGIN;
+    if (ButtonDrawEx(&gear_view.store, store, input)) gear_view.store_requested = true;
 }
 
 static void GearViewDrawPageButton(Button *button, char *label, const char *key, Rectangle r, bool input, int delta) {
