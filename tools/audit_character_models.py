@@ -21,6 +21,7 @@ TIERS = ("I", "II", "III", "IV")
 TIER_SUFFIX = re.compile(r"_t\d+$", re.IGNORECASE)
 COMPONENT = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
 UNIT_SHADER_ALPHA_CUTOFF = 128
+SHRUNK_MODEL_HEIGHT_METERS = 0.4
 
 
 def prefab_base(prefab: str) -> str:
@@ -76,6 +77,10 @@ def primitive_extents(gltf: dict, skinned_only: bool = True) -> tuple[float, flo
     if any(not math.isfinite(value) for value in low + high):
         return None
     return tuple(high[axis] - low[axis] for axis in range(3))
+
+
+def shrunk_model(extents: tuple[float, float, float] | None) -> bool:
+    return extents is not None and extents[1] < SHRUNK_MODEL_HEIGHT_METERS
 
 
 def normalized_shape(extents: tuple[float, float, float]) -> tuple[float, float, float]:
@@ -301,10 +306,13 @@ def run(deep: bool) -> dict:
 
     collapsed = []
     flat_non_banner = []
+    shrunk = []
     attack_models_without_attack_clip = []
     for path, row in output_rows.items():
         base = path.name.removesuffix("_rl.glb")
         extents = row["extents"]
+        if shrunk_model(extents):
+            shrunk.append(f"{base}: height={extents[1]:.3f}m")
         if (extents and not base.lower().startswith("b_")
                 and extents[0] > 0.2 and extents[1] > 0.2
                 and (extents[2] < 0.12 or extents[2] / extents[1] < 0.10)):
@@ -352,6 +360,7 @@ def run(deep: bool) -> dict:
         "invalid_glbs": invalid,
         "collapsed_fbx": collapsed,
         "flat_non_banner_models": flat_non_banner,
+        "shrunk_models": shrunk,
         "attack_models_without_attack_clip": attack_models_without_attack_clip,
         "unskinned_mesh_nodes": unskinned,
         "missing_external_images": missing_images,
@@ -390,6 +399,7 @@ def main() -> None:
         or report["invalid_glbs"]
         or report["collapsed_fbx"]
         or report["flat_non_banner_models"]
+        or report["shrunk_models"]
         or report["attack_models_without_attack_clip"]
         or report["unskinned_mesh_nodes"]
         or report["missing_external_images"]

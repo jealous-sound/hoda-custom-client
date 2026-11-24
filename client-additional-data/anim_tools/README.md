@@ -13,6 +13,9 @@ game prefers `*_rl.glb` over the raw pack GLBs.
   (about 4 degrees for human rigs, 8 for dwarves).
 - `glb_writer.py`: rewrites a pack GLB with the baked skeleton and animation channels.
 - `bake_idle.py`, `bake_all.py`: per-unit and batch bakers.
+- `prefab_scaffold.py`: reads a unit's display scale off its prefab. A cm-folded rig scales its skeleton by 0.01
+  under the `_fbx` wrapper; only a small-scaled node that carries skinned bones counts as that fold, so a VFX
+  attachment under a hand bone (Ketojan, Crassius Servis, the Spirits) leaves a meter rig at its wrapper scale.
 - `rebuild_stub_src.py`: rebuilds one exact-tier source GLB from its CAB.
 - `unit_texture.py`: bakes `_MainTex` opaque when the original material uses the built-in `Unlit/Texture` shader,
   which ignores alpha; the game's unit shader discards texels below 0.5 alpha.

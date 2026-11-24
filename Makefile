@@ -152,7 +152,7 @@ ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(S
 
 test: ci-test $(TEST_TARGET)
 	python3 client-additional-data/validate_characters.py
-	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py tests/test_build_dist.py tests/test_build_custom_heroes.py tests/test_content_packs.py tests/test_hero_rarity.py tests/test_level_caps.py tests/test_unit_texture.py tests/test_body_frame.py
+	python3 -m unittest tests/test_current_tier_models.py tests/test_import_fbx.py tests/test_pvp_rewards.py tests/test_build_dist.py tests/test_build_custom_heroes.py tests/test_content_packs.py tests/test_hero_rarity.py tests/test_level_caps.py tests/test_unit_texture.py tests/test_body_frame.py tests/test_prefab_scaffold.py
 	python3 tools/audit_character_models.py --deep
 	python3 tools/validate_unit_audio.py
 	python3 tools/validate_unit_vfx.py

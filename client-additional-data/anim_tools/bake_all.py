@@ -39,6 +39,7 @@ def _patched_from_str(cls, version):
 UV.UnityVersion.from_str = classmethod(_patched_from_str)
 
 import glb_writer
+import prefab_scaffold
 import unit_texture
 from bake_idle import bake_humanoid
 from bake_generic import bake_generic_unit
@@ -510,67 +511,25 @@ def prefab_path_hashes(env):
 
 def display_scaffolding(env):
     gos = {o.path_id: o for o in env.objects if o.type.name == 'GameObject'}
-    trs, names = {}, {}
+    nodes, bones = {}, set()
     for o in env.objects:
-        if o.type.name != 'Transform':
+        if o.type.name not in ('Transform', 'SkinnedMeshRenderer'):
             continue
         try:
             tt = o.read_typetree()
-            trs[o.path_id] = tt
+            if o.type.name == 'SkinnedMeshRenderer':
+                bones.update(b['m_PathID'] for b in tt.get('m_Bones', []) if b.get('m_FileID', 0) == 0)
+                continue
             go = gos.get(tt['m_GameObject']['m_PathID'])
-            names[o.path_id] = go.read_typetree().get('m_Name', '') if go else ''
+            nodes[o.path_id] = prefab_scaffold.PrefabNode(
+                name=go.read_typetree().get('m_Name', '') if go else '',
+                scale=tt['m_LocalScale']['x'],
+                y=tt['m_LocalPosition']['y'],
+                parent=tt['m_Father']['m_PathID'],
+                children=[c['m_PathID'] for c in tt['m_Children']])
         except Exception:
             continue
-
-    roots = [pid for pid, tt in trs.items()
-             if tt['m_Father']['m_PathID'] == 0 and names[pid].startswith('unit.')]
-    if not roots:
-        return None, None, 'no unit.* root transform'
-    root = roots[0]
-
-    def children(pid):
-        return [c['m_PathID'] for c in trs[pid]['m_Children'] if c['m_PathID'] in trs]
-
-    def sy(pid):
-        return trs[pid]['m_LocalScale']['x'], trs[pid]['m_LocalPosition']['y']
-
-    def n_desc(pid):
-        stack, n = children(pid), 0
-        while stack:
-            n += 1
-            stack.extend(children(stack.pop()))
-        return n
-
-    frontier = [(c, [c]) for c in children(root)]
-    sk_path = None
-    while frontier and sk_path is None:
-        cand = [(pid, path) for pid, path in frontier if sy(pid)[0] < 0.1 and children(pid)]
-        if cand:
-            sk_path = max(cand, key=lambda cp: n_desc(cp[0]))[1]
-            break
-        frontier = [(cc, path + [cc]) for pid, path in frontier for cc in children(pid)]
-    if sk_path is None:
-        kids = [c for c in children(root) if not names[c].endswith('_loc_marker')]
-        fbx = [c for c in kids if names[c].endswith('_fbx')]
-        carrier = fbx[0] if fbx else (max(kids, key=n_desc) if kids else None)
-        if carrier is None:
-            return None, None, 'no cm-folded skeleton root under unit root'
-        s, y = sy(carrier)
-        return round(s, 6), round(y, 6), 'meter-rig _fbx wrapper (no cm fold)'
-
-    s = 1.0
-    for pid in sk_path:
-        s *= sy(pid)[0]
-    s = round(s * 100.0, 6)
-
-    y = sum(sy(pid)[1] for pid in sk_path[:-1])
-    if abs(y) < 1e-6:
-        sibs = [c for p in ([root] + sk_path[:-1]) for c in children(p)
-                if c not in sk_path and abs(sy(c)[0] - 0.01) < 1e-6 and not children(c)]
-        if sibs:
-            y = sy(sibs[0])[1]
-    note = '' if names[sk_path[0]].endswith('_fbx') else 'no _fbx wrapper'
-    return s, round(y, 6), note
+    return prefab_scaffold.display_scaffolding(nodes, bones)
 
 
 
