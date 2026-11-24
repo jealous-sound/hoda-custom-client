@@ -141,24 +141,32 @@ def triangle_edges(indices: list[int]) -> set[tuple[int, int]]:
     return edges
 
 
-def torn_edge_share(source: dict, source_blob: memoryview, output: dict, output_blob: memoryview) -> float:
+def torn_edge_share(
+    source: dict, source_blob: memoryview, output: dict, output_blob: memoryview
+) -> float | None:
     source_meshes = {mesh.get("name"): mesh for mesh in source.get("meshes", [])}
     pairs = []
+    same_topology = False
     for mesh in output.get("meshes", []):
         source_mesh = source_meshes.get(mesh.get("name"))
         if source_mesh is None:
             continue
         for primitive, source_primitive in zip(mesh.get("primitives", []), source_mesh.get("primitives", [])):
             attributes = primitive.get("attributes", {})
-            if "JOINTS_0" not in attributes or primitive.get("indices") is None:
+            if ("JOINTS_0" not in attributes or primitive.get("indices") is None
+                    or source_primitive.get("indices") is None):
                 continue
             after = read_rows(output, output_blob, attributes["POSITION"])
             before = read_rows(source, source_blob, source_primitive["attributes"]["POSITION"])
-            if len(after) != len(before):
-                continue
             indices = [row[0] for row in read_rows(output, output_blob, primitive["indices"])]
+            source_indices = [row[0] for row in read_rows(source, source_blob, source_primitive["indices"])]
+            if len(after) != len(before) or indices != source_indices:
+                continue
+            same_topology = True
             for u, v in triangle_edges(indices):
                 pairs.append((math.dist(before[u], before[v]), math.dist(after[u], after[v])))
+    if not same_topology:
+        return None
     longest = max((before for before, _ in pairs), default=0.0)
     ratios = sorted(
         after / before for before, after in pairs if before > longest * DEGENERATE_EDGE_SHARE
@@ -370,6 +378,22 @@ def run(deep: bool) -> dict:
             )
 
     torn = []
+    edge_compared = 0
+    if deep:
+        for output in output_rows:
+            source_glb = output.with_name(output.name.removesuffix("_rl.glb") + ".glb")
+            if not source_glb.is_file():
+                continue
+            share = torn_edge_share(*load_glb(source_glb, with_blob=True), *load_glb(output, with_blob=True))
+            if share is None:
+                continue
+            edge_compared += 1
+            if share > TORN_SKIN_EDGE_SHARE:
+                torn.append(
+                    f"{output.name.removesuffix('_rl.glb')}: {share:.1%} of mesh edges changed length over "
+                    f"{TORN_EDGE_FACTOR:g}x in the bake"
+                )
+
     manifests = sorted(CHAR_PACK.glob("*/*_fbx_takes.json"))
     for manifest in manifests:
         base = manifest.name.removesuffix("_fbx_takes.json")
@@ -379,15 +403,6 @@ def run(deep: bool) -> dict:
         if source is None or row is None or row["extents"] is None:
             collapsed.append(f"{base}: missing source/output audit")
             continue
-        source_glb = manifest.parent / f"{base}.glb"
-        if deep and source_glb.is_file():
-            source_with_blob, source_blob = load_glb(source_glb, with_blob=True)
-            output_with_blob, output_blob = load_glb(output, with_blob=True)
-            share = torn_edge_share(source_with_blob, source_blob, output_with_blob, output_blob)
-            if share > TORN_SKIN_EDGE_SHARE:
-                torn.append(
-                    f"{base}: {share:.1%} of mesh edges changed length over {TORN_EDGE_FACTOR:g}x in the bake"
-                )
         source_extents = primitive_extents(source)
         if source_extents is None:
             collapsed.append(f"{base}: source has no skinned bounds")
@@ -416,7 +431,8 @@ def run(deep: bool) -> dict:
         "fbx_imports": len(manifests),
         "invalid_glbs": invalid,
         "collapsed_fbx": collapsed,
-        "torn_fbx_skins": torn,
+        "edge_compared_glbs": edge_compared,
+        "torn_skins": torn,
         "flat_non_banner_models": flat_non_banner,
         "attack_models_without_attack_clip": attack_models_without_attack_clip,
         "unskinned_mesh_nodes": unskinned,
@@ -436,7 +452,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
     parser.add_argument(
         "--deep", action="store_true",
-        help="scan every binary WEIGHTS_0 row and compare each FBX import edge by edge",
+        help="scan every binary WEIGHTS_0 row and compare each bake with its same-named source edge by edge",
     )
     parser.add_argument("--json", type=Path, help="write the detailed summary")
     parser.add_argument(
@@ -458,7 +474,7 @@ def main() -> None:
         or report["nearest_tier_fallback_bindings"]
         or report["invalid_glbs"]
         or report["collapsed_fbx"]
-        or report["torn_fbx_skins"]
+        or report["torn_skins"]
         or report["flat_non_banner_models"]
         or report["attack_models_without_attack_clip"]
         or report["unskinned_mesh_nodes"]

@@ -134,13 +134,15 @@ def _promoted_hips_basis_fix(gltf, avatar, solver, hips_a_node):
 def bake_humanoid(src, dst, avatar_json, clip_json, use_tos=False,
                   display_scale=None, extra_clips=None):
     import math
-    gltf, _ = glb_writer.load_glb(src)
+    gltf, blob = glb_writer.load_glb(src)
     h2n = glb_hash_to_name(gltf)
     if use_tos and avatar_json.get('m_TOS'):
         merged = {h: p.split('/')[-1] for h, p in avatar_json['m_TOS']}
         merged.update(h2n)
         h2n = merged
 
+    avatar_json, unfolded = glb_writer.drop_stray_scale_folds(
+        avatar_json, h2n, glb_writer.bind_world_scales(gltf, blob))
     avatar = Avatar(avatar_json, h2n)
     solver = HumanSolver(avatar)
 
@@ -277,7 +279,7 @@ def bake_humanoid(src, dst, avatar_json, clip_json, use_tos=False,
     return {
         'neutral_check': solver.neutral_check(), 'units_per_meter': solver.units_per_meter,
         'unresolved': unresolved, 'frames': n_frames, 'hips0': hx.t, 'post_scale': post_scale,
-        'avatar_rescale': avatar_rescale, 'clips': [c[0] for c in clips],
+        'avatar_rescale': avatar_rescale, 'unfolded_scales': unfolded, 'clips': [c[0] for c in clips],
         'bind_unit_correction': getattr(avatar, 'last_bind_unit_correction', 1.0),
         'stripped_root_helpers': getattr(avatar, 'last_stripped_root_helpers', 0),
         'clip_errors': clip_errors,
