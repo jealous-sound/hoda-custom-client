@@ -1,7 +1,6 @@
 import json
 import os
 import struct
-import sys
 import zlib
 
 EXTRACT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'extracted')
@@ -9,6 +8,7 @@ EXTRACT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'extracte
 from hoda_anim import Avatar, MuscleCurves, Xform, qnorm, qmul, qconj, qrot
 from muscle_solver import HumanSolver
 from bake_generic import promote_skeleton_joints
+import body_frame
 import glb_writer
 
 CHAR_PACK = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'char_pack')
@@ -24,7 +24,6 @@ UNITS = [
     ('c_revenant', 'c_revenant_t4', 'c_revenant_t4_avatar.json', 'c_revenant_ready_ani.json', 'c_revenant_t1'),
 ]
 FPS = 30.0
-USE_ROOTX = '--rootx' in sys.argv
 
 
 def glb_hash_to_name(gltf):
@@ -132,7 +131,7 @@ def _promoted_hips_basis_fix(gltf, avatar, solver, hips_a_node):
     }
 
 
-def bake_humanoid(src, dst, avatar_json, clip_json, use_rootx=False, use_tos=False,
+def bake_humanoid(src, dst, avatar_json, clip_json, use_tos=False,
                   display_scale=None, extra_clips=None):
     import math
     gltf, _ = glb_writer.load_glb(src)
@@ -156,9 +155,6 @@ def bake_humanoid(src, dst, avatar_json, clip_json, use_rootx=False, use_tos=Fal
 
     unresolved = [n for n in avatar.node_name if n.startswith('#')]
 
-
-    root_x = solver.root_x if use_rootx else Xform()
-
     hips_h_node = solver.bone_node[0]
     hips_a_node = avatar.h_to_avatar[hips_h_node]
     hips_name = avatar.node_name[hips_a_node]
@@ -180,8 +176,9 @@ def bake_humanoid(src, dst, avatar_json, clip_json, use_rootx=False, use_tos=Fal
                 if v is not None:
                     dof[attr] = v
             node_q, hips_x = solver.solve_frame(dof)
-            hips_m = Xform(tuple(c / solver.units_per_meter for c in hips_x.t), hips_x.q, (1, 1, 1))
-            raw.append((node_q, root_x.mul(hips_m)))
+            hips_t, hips_q = body_frame.body_in_tpose_frame(
+                hips_x.t, hips_x.q, dof, solver.root_x.q, solver.scale * solver.units_per_meter)
+            raw.append((node_q, Xform(tuple(c / solver.units_per_meter for c in hips_t), hips_q, (1, 1, 1))))
         return raw
 
     def shared_clip_fix(reference_raw):
@@ -302,7 +299,7 @@ def main():
         dst = f'{CHAR_PACK}/{dirname}/{out_base}_rl.glb'
         avatar_json = json.load(open(os.path.join(EXTRACT_DIR, avatar_file)))
         clip_json = json.load(open(os.path.join(EXTRACT_DIR, clip_file)))
-        info = bake_humanoid(src, dst, avatar_json, clip_json, use_rootx=USE_ROOTX)
+        info = bake_humanoid(src, dst, avatar_json, clip_json)
         print(f"== {base}: neutral_check={info['neutral_check']:.6f} "
               f"units/m={info['units_per_meter']} unresolved_nodes={info['unresolved']}")
         hx, hd = info['hips0'], info['hips_default']
