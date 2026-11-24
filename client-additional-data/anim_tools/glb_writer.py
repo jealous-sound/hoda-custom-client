@@ -337,6 +337,36 @@ def strip_root_helper_meshes(gltf):
     return stripped
 
 
+def hang_joints_from_avatar_parents(gltf, avatar):
+    nodes = gltf['nodes']
+    joints = gltf['skins'][0]['joints']
+    holder_of = {child: index for index, node in enumerate(nodes) for child in node.get('children', [])}
+    avatar_index = {name: index for index, name in enumerate(avatar.node_name)}
+    joint_set = set(joints)
+    joint_named = {}
+    for joint in joints:
+        joint_named.setdefault(nodes[joint].get('name'), joint)
+    rehung = []
+    for joint in joints:
+        name = nodes[joint].get('name')
+        holder = holder_of.get(joint)
+        if name not in avatar_index or holder is None or holder in joint_set:
+            continue
+        avatar_parent = avatar.node_parent[avatar_index[name]]
+        if avatar_parent < 0:
+            continue
+        parent_name = avatar.node_name[avatar_parent]
+        adopter = joint_named.get(parent_name)
+        if adopter is None or nodes[holder].get('name') == parent_name:
+            continue
+        nodes[holder]['children'].remove(joint)
+        if not nodes[holder]['children']:
+            del nodes[holder]['children']
+        nodes[adopter].setdefault('children', []).append(joint)
+        rehung.append(name)
+    return rehung
+
+
 def rebuild_glb(src_path, dst_path, avatar, anim_locals, anim_fps, anim_name='idle'):
     if anim_locals and isinstance(anim_locals[0], (tuple, list)):
         clips = [(name, frames) for name, frames in anim_locals]
@@ -344,6 +374,7 @@ def rebuild_glb(src_path, dst_path, avatar, anim_locals, anim_fps, anim_name='id
         clips = [(anim_name, anim_locals)]
     gltf, blob = load_glb(src_path)
     stripped_root_helpers = strip_root_helper_meshes(gltf)
+    rehung_joints = hang_joints_from_avatar_parents(gltf, avatar)
     skin = gltf['skins'][0]
     nodes = gltf['nodes']
 
@@ -664,4 +695,5 @@ def rebuild_glb(src_path, dst_path, avatar, anim_locals, anim_fps, anim_name='id
     save_glb(dst_path, gltf, blob)
     avatar.last_bind_unit_correction = bind_unit_correction
     avatar.last_stripped_root_helpers = stripped_root_helpers
+    avatar.last_rehung_joints = rehung_joints
     return dst_path

@@ -957,6 +957,8 @@ def process_target(dirname, base, cab_paths, clip_index, force=False):
                 notes.append(f"promoted={info['promoted']}")
             if info.get('promote_skipped'):
                 notes.append(f"promote_skipped={info['promote_skipped']}")
+            if info.get('rehung_joints'):
+                notes.append(f"rehung={info['rehung_joints']}")
             if info.get('hips_basis'):
                 basis = info['hips_basis']
                 notes.append('hips basis '

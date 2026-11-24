@@ -13,7 +13,9 @@ game prefers `*_rl.glb` over the raw pack GLBs.
   (about 4 degrees for human rigs, 8 for dwarves).
 - `human_muscles.py`: on a rig with no Chest bone (the dwarf-male rig) adds the clip's chest muscles to the
   spine, as Unity does for a missing optional bone. Dropping them tipped those dwarves 15 to 25 degrees forward.
-- `glb_writer.py`: rewrites a pack GLB with the baked skeleton and animation channels.
+- `glb_writer.py`: rewrites a pack GLB with the baked skeleton and animation channels. A joint that the source
+  parks behind a stray plain node (Wintersend Cullen's `HumanMale_` neck twin) is hung back under its avatar parent;
+  raylib binds the skin from the joints' rest nodes, not the inverse bind matrices, so a skipped neck drops the head.
 - `bake_idle.py`, `bake_all.py`: per-unit and batch bakers.
 - `prefab_scaffold.py`: reads a unit's display scale off its prefab. A cm-folded rig scales its skeleton by 0.01
   under the `_fbx` wrapper; only a small-scaled node that carries skinned bones counts as that fold, so a VFX

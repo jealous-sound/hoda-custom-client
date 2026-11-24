@@ -2244,8 +2244,8 @@ void GameDraw(Game *g) {
             HomeBackgroundUpdate(&g->scene, dt);
             HomeBackgroundSetGalleryView(&g->scene, true);
             HomeBackgroundDraw(&g->scene);
+            GameDrawSceneFx(g, HomeBackgroundViewCamera(&g->scene), dt);
             HomeBackgroundSetGalleryView(&g->scene, false);
-            GameDrawSceneFx(g, g->scene.cam, dt);
 
             UiFrameBegin();
             if (!resource_modal) GameHandleHudAction(g, HudDraw(&g->hud, &g->player, true, false));

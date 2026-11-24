@@ -363,6 +363,15 @@ static bool UnitRigScaleDoubled(const char *base) {
     return false;
 }
 
+static bool UnitScaleFind(const char *base, float *scale) {
+    for (int i = 0; i < unit_scale_count; i++) {
+        if (strcmp(unit_scales[i].base, base) != 0) continue;
+        *scale = unit_scales[i].scale;
+        return true;
+    }
+    return false;
+}
+
 static float UnitDisplayScale(const char *prefab) {
     if (unit_scale_count < 0) {
         unit_scale_count = 0;
@@ -387,8 +396,11 @@ static float UnitDisplayScale(const char *prefab) {
     char base[128];
     HomeSquadBaseName(base, sizeof(base), prefab);
     if (UnitRigScaleDoubled(base)) return UNIT_PREFAB_SCALE;
-    for (int i = 0; i < unit_scale_count; i++)
-        if (!strcmp(unit_scales[i].base, base)) return unit_scales[i].scale;
+    float scale;
+    if (UnitScaleFind(base, &scale)) return scale;
+    char family[128];
+    if (!HomeSquadFamilyName(family, sizeof(family), base) && UnitScaleFind(TextFormat("%s_t0", base), &scale))
+        return scale;
     return 1.2885f;
 }
 
@@ -605,22 +617,44 @@ static int UnitVertexMainBone(const Mesh *mesh, int vertex) {
     return mesh->boneIds[vertex * 4 + best];
 }
 
-static float UnitLowestVertexY(Model model, bool posed, bool (*bone_counts)(const char *)) {
+static float UnitLowestVertexOnBones(Model model, bool posed, const bool *bone_counts) {
     float lowest = INFINITY;
     for (int m = 0; m < model.meshCount; m++) {
         const Mesh *mesh = &model.meshes[m];
         const float *positions = posed ? mesh->animVertices : mesh->vertices;
         if (!positions || !mesh->boneIds || !mesh->boneWeights) continue;
         for (int v = 0; v < mesh->vertexCount; v++) {
-            if (!bone_counts(model.bones[UnitVertexMainBone(mesh, v)].name)) continue;
+            if (!bone_counts[UnitVertexMainBone(mesh, v)]) continue;
             lowest = fminf(lowest, positions[v * 3 + 1]);
         }
     }
     return lowest;
 }
 
+static float UnitLowestVertexY(Model model, bool posed, bool (*bone_counts)(const char *)) {
+    bool *counted = MemAlloc(model.boneCount * sizeof(bool));
+    for (int bone = 0; bone < model.boneCount; bone++) counted[bone] = bone_counts(model.bones[bone].name);
+    float lowest = UnitLowestVertexOnBones(model, posed, counted);
+    MemFree(counted);
+    return lowest;
+}
+
+static float UnitLowestSoleY(Model model, bool posed) {
+    float feet = UnitLowestVertexY(model, posed, UnitBoneIsFoot);
+    if (!isinf(feet)) return feet;
+    bool *foot_holders = MemAlloc(model.boneCount * sizeof(bool));
+    for (int bone = 0; bone < model.boneCount; bone++) {
+        int holder = model.bones[bone].parent;
+        if (holder >= 0 && UnitBoneIsFoot(model.bones[bone].name) && !UnitBoneIsFoot(model.bones[holder].name))
+            foot_holders[holder] = true;
+    }
+    float soles = UnitLowestVertexOnBones(model, posed, foot_holders);
+    MemFree(foot_holders);
+    return soles;
+}
+
 static float UnitGroundContactY(Model model) {
-    float feet = UnitLowestVertexY(model, true, UnitBoneIsFoot);
+    float feet = UnitLowestSoleY(model, true);
     if (feet <= 0.0f) return feet;
     return fmaxf(0.0f, fminf(feet, UnitLowestVertexY(model, true, UnitBoneIsBody)));
 }
@@ -813,7 +847,7 @@ static void UnitPlantIdleFeet(ModelAnimation idle, const int *bone_order, const 
 static void HomeSquadUnitPlantHangingFeet(HomeSquadUnit *unit) {
     if (!UnitIsHumanoidRace(unit->path)) return;
     UnitLeg legs[2];
-    float rest_sole_y = UnitLowestVertexY(unit->model, false, UnitBoneIsFoot);
+    float rest_sole_y = UnitLowestSoleY(unit->model, false);
     if (isinf(rest_sole_y) || !UnitLegFind(unit->model, "Left", rest_sole_y, &legs[0]) ||
         !UnitLegFind(unit->model, "Right", rest_sole_y, &legs[1]))
         return;

@@ -818,6 +818,8 @@ def process(dirname, base, row, cab_paths, clip_index, force, H):
                 bnotes.append(f"frames={info['frames']} neutral={info['neutral_check']:.4f}")
                 if info['unresolved']:
                     bnotes.append(f"unresolved_nodes={len(info['unresolved'])}")
+                if info.get('rehung_joints'):
+                    bnotes.append(f"rehung={info['rehung_joints']}")
                 if info.get('ground_shift'):
                     bnotes.append(f"grounded feet {info['ground_shift']:+.3f}")
             else:
