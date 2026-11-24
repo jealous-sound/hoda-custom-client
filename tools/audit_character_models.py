@@ -20,7 +20,12 @@ CHAR_PACK = ROOT / "client-additional-data" / "char_pack"
 TIERS = ("I", "II", "III", "IV")
 TIER_SUFFIX = re.compile(r"_t\d+$", re.IGNORECASE)
 COMPONENT = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
+ACCESSOR_WIDTH = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}
 UNIT_SHADER_ALPHA_CUTOFF = 128
+TORN_EDGE_FACTOR = 2.0
+TORN_SKIN_EDGE_SHARE = 0.03
+DEGENERATE_EDGE_SHARE = 1e-9
+SHRUNK_MODEL_HEIGHT_METERS = 0.4
 
 
 def prefab_base(prefab: str) -> str:
@@ -78,6 +83,10 @@ def primitive_extents(gltf: dict, skinned_only: bool = True) -> tuple[float, flo
     return tuple(high[axis] - low[axis] for axis in range(3))
 
 
+def shrunk_model(extents: tuple[float, float, float] | None) -> bool:
+    return extents is not None and extents[1] < SHRUNK_MODEL_HEIGHT_METERS
+
+
 def normalized_shape(extents: tuple[float, float, float]) -> tuple[float, float, float]:
     ordered = sorted(extents)
     scale = max(ordered[-1], 1e-9)
@@ -116,6 +125,65 @@ def weight_errors(gltf: dict, blob: memoryview) -> tuple[int, int]:
                         or abs(weight_sum - 1.0) > 0.02):
                     bad += 1
     return bad, total
+
+
+def read_rows(gltf: dict, blob: memoryview, index: int) -> list[tuple]:
+    accessor = gltf["accessors"][index]
+    view = gltf["bufferViews"][accessor["bufferView"]]
+    fmt = COMPONENT[accessor["componentType"]] * ACCESSOR_WIDTH[accessor["type"]]
+    start = view.get("byteOffset", 0) + accessor.get("byteOffset", 0)
+    stride = view.get("byteStride", struct.calcsize("<" + fmt))
+    return list(accessor_rows(blob, fmt, start, stride, accessor["count"]))
+
+
+def triangle_edges(indices: list[int]) -> set[tuple[int, int]]:
+    edges = set()
+    for corner in range(0, len(indices) - 2, 3):
+        a, b, c = indices[corner:corner + 3]
+        for u, v in ((a, b), (b, c), (c, a)):
+            if u != v:
+                edges.add((min(u, v), max(u, v)))
+    return edges
+
+
+def torn_edge_share(
+    source: dict, source_blob: memoryview, output: dict, output_blob: memoryview
+) -> float | None:
+    source_meshes = {mesh.get("name"): mesh for mesh in source.get("meshes", [])}
+    pairs = []
+    same_topology = False
+    for mesh in output.get("meshes", []):
+        source_mesh = source_meshes.get(mesh.get("name"))
+        if source_mesh is None:
+            continue
+        for primitive, source_primitive in zip(mesh.get("primitives", []), source_mesh.get("primitives", [])):
+            attributes = primitive.get("attributes", {})
+            if ("JOINTS_0" not in attributes or primitive.get("indices") is None
+                    or source_primitive.get("indices") is None):
+                continue
+            after = read_rows(output, output_blob, attributes["POSITION"])
+            before = read_rows(source, source_blob, source_primitive["attributes"]["POSITION"])
+            indices = [row[0] for row in read_rows(output, output_blob, primitive["indices"])]
+            source_indices = [row[0] for row in read_rows(source, source_blob, source_primitive["indices"])]
+            if len(after) != len(before) or indices != source_indices:
+                continue
+            same_topology = True
+            for u, v in triangle_edges(indices):
+                pairs.append((math.dist(before[u], before[v]), math.dist(after[u], after[v])))
+    if not same_topology:
+        return None
+    longest = max((before for before, _ in pairs), default=0.0)
+    ratios = sorted(
+        after / before for before, after in pairs if before > longest * DEGENERATE_EDGE_SHARE
+    )
+    if not ratios or ratios[len(ratios) // 2] <= 0.0:
+        return 0.0
+    median = ratios[len(ratios) // 2]
+    torn = sum(
+        1 for ratio in ratios
+        if ratio > median * TORN_EDGE_FACTOR or ratio * TORN_EDGE_FACTOR < median
+    )
+    return torn / len(ratios)
 
 
 def index_errors(gltf: dict, blob: memoryview) -> tuple[int, int, list[str]]:
@@ -312,10 +380,13 @@ def run(deep: bool) -> dict:
 
     collapsed = []
     flat_non_banner = []
+    shrunk = []
     attack_models_without_attack_clip = []
     for path, row in output_rows.items():
         base = path.name.removesuffix("_rl.glb")
         extents = row["extents"]
+        if shrunk_model(extents):
+            shrunk.append(f"{base}: height={extents[1]:.3f}m")
         if (extents and not base.lower().startswith("b_")
                 and extents[0] > 0.2 and extents[1] > 0.2
                 and (extents[2] < 0.12 or extents[2] / extents[1] < 0.10)):
@@ -324,6 +395,23 @@ def run(deep: bool) -> dict:
             attack_models_without_attack_clip.append(
                 f"{base}: animations={row['animations']}"
             )
+
+    torn = []
+    edge_compared = 0
+    if deep:
+        for output in output_rows:
+            source_glb = output.with_name(output.name.removesuffix("_rl.glb") + ".glb")
+            if not source_glb.is_file():
+                continue
+            share = torn_edge_share(*load_glb(source_glb, with_blob=True), *load_glb(output, with_blob=True))
+            if share is None:
+                continue
+            edge_compared += 1
+            if share > TORN_SKIN_EDGE_SHARE:
+                torn.append(
+                    f"{output.name.removesuffix('_rl.glb')}: {share:.1%} of mesh edges changed length over "
+                    f"{TORN_EDGE_FACTOR:g}x in the bake"
+                )
 
     manifests = sorted(CHAR_PACK.glob("*/*_fbx_takes.json"))
     for manifest in manifests:
@@ -362,7 +450,10 @@ def run(deep: bool) -> dict:
         "fbx_imports": len(manifests),
         "invalid_glbs": invalid,
         "collapsed_fbx": collapsed,
+        "edge_compared_glbs": edge_compared,
+        "torn_skins": torn,
         "flat_non_banner_models": flat_non_banner,
+        "shrunk_models": shrunk,
         "attack_models_without_attack_clip": attack_models_without_attack_clip,
         "unskinned_mesh_nodes": unskinned,
         "missing_external_images": missing_images,
@@ -380,7 +471,10 @@ def run(deep: bool) -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
-    parser.add_argument("--deep", action="store_true", help="scan every binary WEIGHTS_0 row")
+    parser.add_argument(
+        "--deep", action="store_true",
+        help="scan every binary WEIGHTS_0 row and compare each bake with its same-named source edge by edge",
+    )
     parser.add_argument("--json", type=Path, help="write the detailed summary")
     parser.add_argument(
         "--loadtest-list", type=Path,
@@ -401,7 +495,9 @@ def main() -> None:
         or report["nearest_tier_fallback_bindings"]
         or report["invalid_glbs"]
         or report["collapsed_fbx"]
+        or report["torn_skins"]
         or report["flat_non_banner_models"]
+        or report["shrunk_models"]
         or report["attack_models_without_attack_clip"]
         or report["unskinned_mesh_nodes"]
         or report["missing_external_images"]
