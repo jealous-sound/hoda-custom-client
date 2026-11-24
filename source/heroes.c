@@ -1063,6 +1063,18 @@ void GearViewDrawSlots(Player *p, int hero, Rectangle details);
 void GearViewDrawPanel(Player *p);
 void GearViewDrawDialogs(Player *p);
 int GearViewTakeChangedHero(void);
+int GearViewShownWornSlot(int hero);
+void GearDrawWornItemCard(const Character *ch, int slot, Rectangle area);
+
+static void HeroesDrawSelectedDetails(HeroCard *card, int hero, Rectangle details) {
+    int worn_slot = GearViewShownWornSlot(hero);
+    if (GearInSlot(card->ch, worn_slot)) {
+        HeroesDrawDetailsHead(card, details);
+        GearDrawWornItemCard(card->ch, worn_slot, HeroesDetailsBody(details));
+    } else {
+        HeroesDrawDetailsAt(card, details);
+    }
+}
 
 static const Rectangle HEROES_SQUAD_TABS = {8.0f, 644.0f, 246.0f, 64.0f};
 
@@ -1152,10 +1164,10 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
     }
 
     if (h->selected >= 0) {
-        HeroesDrawDetails(&h->cards[h->selected], 156.0f, UiWidth() - 256.0f);
-        GearViewDrawSlots(
-            p, (int)(h->cards[h->selected].ch - p->roster), HeroesDetailsBounds(156.0f, UiWidth() - 256.0f)
-        );
+        int hero = (int)(h->cards[h->selected].ch - p->roster);
+        Rectangle details = HeroesDetailsBounds(156.0f, UiWidth() - 256.0f);
+        HeroesDrawSelectedDetails(&h->cards[h->selected], hero, details);
+        GearViewDrawSlots(p, hero, details);
     }
     GearViewDrawDialogs(p);
     int changed_hero = GearViewTakeChangedHero();

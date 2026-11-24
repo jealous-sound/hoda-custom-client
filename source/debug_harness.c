@@ -978,6 +978,10 @@ static void DebugPrepareGear(Game *game, DebugShot *shot) {
         if (DebugShotIs(shot, "gear_sell")) GearViewRequestSell();
         return;
     }
+    if (DebugShotIs(shot, "gear_worn")) {
+        GearViewShow(hero, 0);
+        return;
+    }
     GearViewShow(hero, 1);
     int items[GEAR_CATALOG_CAPACITY];
     if (DebugShotIs(shot, "gear_list")) return;
