@@ -10,6 +10,7 @@ from muscle_solver import HumanSolver
 from bake_generic import promote_skeleton_joints
 import body_frame
 import glb_writer
+import human_muscles
 
 CHAR_PACK = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'char_pack')
 UNITS = [
@@ -175,7 +176,7 @@ def bake_humanoid(src, dst, avatar_json, clip_json, use_tos=False,
                 v = curves.value(attr, t)
                 if v is not None:
                     dof[attr] = v
-            node_q, hips_x = solver.solve_frame(dof)
+            node_q, hips_x = solver.solve_frame(human_muscles.muscles_for_rig(dof, solver.bone_node))
             hips_t, hips_q = body_frame.body_in_tpose_frame(
                 hips_x.t, hips_x.q, dof, solver.root_x.q, solver.scale * solver.units_per_meter)
             raw.append((node_q, Xform(tuple(c / solver.units_per_meter for c in hips_t), hips_q, (1, 1, 1))))
