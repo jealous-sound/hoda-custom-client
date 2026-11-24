@@ -967,6 +967,8 @@ def process_target(dirname, base, cab_paths, clip_index, force=False):
                 notes.append(f"scale_ignored={info['scale_ignored']}")
         if info.get('avatar_rescale', 1.0) != 1.0:
             notes.append(f"stale decade fold: avatar repaired x{info['avatar_rescale']:g}")
+        for name, factor in info.get('unfolded_scales', {}).items():
+            notes.append(f"stray scale fold on {name}: bound scale restored x{factor:g}")
         if info.get('post_scale', 1.0) != 1.0:
             notes.append(f"unit normalization: post-scaled x{info['post_scale']:g}")
         if info.get('clip_errors'):

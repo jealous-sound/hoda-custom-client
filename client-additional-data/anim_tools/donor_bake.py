@@ -20,6 +20,7 @@ AUTHORITATIVE_DONORS = {
     'c_theformlessone': ('cab-c_riftwraith_t4_pre', 'c_riftwraith_t1234_fbx'),
     'c_caress': ('cab-c_desiredemon_t1_pre', 'c_desiredemon_t1_tier_1_0'),
     'c_icegiant': ('cab-c_giant_t1_pre', 'c_icegiant_t1_mesh_0'),
+    'c_wryme': ('cab-c_pridedemon_t1_pre', 'c_wryme_t1_mesh_0'),
 }
 
 ABOMINATION_SKIN_BONES = {
