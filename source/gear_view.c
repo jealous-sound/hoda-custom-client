@@ -45,8 +45,14 @@ typedef struct {
 #define GEAR_DETAILS_LIMITS_TEXT 11.5f
 #define GEAR_DETAILS_BUTTON_ROW 38.0f
 #define GEAR_DETAILS_BUTTON_GAP 4.0f
+#define GEAR_VIEW_FOOTER_TOP 758.0f
+#define GEAR_VIEW_FOOTER_HEIGHT 56.0f
+#define GEAR_VIEW_FOOTER_GAP 8.0f
 #define GEAR_VIEW_FOOTER_HINT_TEXT 12.5f
-#define GEAR_VIEW_FOOTER_STORE_WIDTH 0.46f
+#define GEAR_VIEW_FOOTER_STORE_WIDTH 0.38f
+#define GEAR_VIEW_FOOTER_HINT_ICON 22.0f
+#define GEAR_VIEW_FOOTER_HINT_ICON_GAP 5.0f
+#define GEAR_VIEW_FOOTER_HINT_MAX_LINES 2
 #define GEAR_DIALOG_TILE_TOP 0.08f
 #define GEAR_DIALOG_TILE_SIZE 0.2f
 #define GEAR_DIALOG_TITLE_TOP 0.3f
@@ -706,8 +712,13 @@ static float GearViewDrawBoxBand(Rectangle panel, float source_top, float source
     return y + height;
 }
 
-static void GearViewDrawMiddleText(const char *text, Rectangle area, float size, Color color) {
+static int GearViewRichLineCount(Font font, const char *text, Rectangle area, float size) {
+    return (int)lroundf(HeroesRichLayout(font, text, area, size, WHITE, false) / (size * HEROES_RICH_LINE_HEIGHT));
+}
+
+static void GearViewDrawMiddleText(const char *text, Rectangle area, float size, int max_lines, Color color) {
     Font body = GuiFont(FNT_MENU);
+    while (size > GEAR_VIEW_DETAILS_FONT_MIN && GearViewRichLineCount(body, text, area, size) > max_lines) size -= 0.5f;
     float leading_below_last_line = size * (HEROES_RICH_LINE_HEIGHT - 1.0f);
     float height = HeroesRichLayout(body, text, area, size, color, false) - leading_below_last_line;
     Rectangle lines = {area.x, area.y + fmaxf(0.0f, (area.height - height) * 0.5f), area.width, height};
@@ -764,9 +775,19 @@ static void GearViewDrawDetails(Player *p, bool input) {
 }
 
 static void GearViewDrawFooter(bool input) {
-    Rectangle footer = RosterPxAt(ROSTER_BOTTOM_LEFT, 16.0f, 764.0f, 372.0f, 56.0f);
+    Rectangle footer = RosterPxAt(ROSTER_BOTTOM_LEFT, 16.0f, GEAR_VIEW_FOOTER_TOP, 372.0f, GEAR_VIEW_FOOTER_HEIGHT);
     Rectangle hint = UiRect(footer, 0.0f, 0.0f, 1.0f - GEAR_VIEW_FOOTER_STORE_WIDTH - 0.04f, 1.0f);
-    GearViewDrawMiddleText(LocGet("HODA_GEAR_INVENTORY_FOOTER_TEXT"), hint, GEAR_VIEW_FOOTER_HINT_TEXT, LIGHTGRAY);
+    Rectangle icon = UiRect(hint, 0.0f, 0.5f, GEAR_VIEW_FOOTER_HINT_ICON, GEAR_VIEW_FOOTER_HINT_ICON);
+    UiDrawTexture(GuiTex(GUI_GEAR_INFO), icon, WHITE);
+    float text_left = GEAR_VIEW_FOOTER_HINT_ICON + GEAR_VIEW_FOOTER_HINT_ICON_GAP;
+    Rectangle text = {hint.x + text_left, hint.y, hint.width - text_left, hint.height};
+    GearViewDrawMiddleText(
+        LocGet("HODA_GEAR_INVENTORY_FOOTER_TEXT"),
+        text,
+        GEAR_VIEW_FOOTER_HINT_TEXT,
+        GEAR_VIEW_FOOTER_HINT_MAX_LINES,
+        LIGHTGRAY
+    );
     if (ButtonDrawEx(&gear_view.store, UiRect(footer, 1.0f, 0.0f, GEAR_VIEW_FOOTER_STORE_WIDTH, 1.0f), input))
         gear_view.store_requested = true;
 }
@@ -810,7 +831,7 @@ void GearViewDrawPanel(Player *p) {
     if (gear_view.selected >= 0 && p->gear.counts[gear_view.selected] <= 0) gear_view.selected = -1;
 
     bool details = gear_view.selected >= 0;
-    float top = 124.0f, bottom = details ? 456.0f : 756.0f;
+    float top = 124.0f, bottom = details ? 456.0f : GEAR_VIEW_FOOTER_TOP - GEAR_VIEW_FOOTER_GAP;
     bool has_prev = gear_view.page > 0, has_next = gear_view.page + 1 < pages;
     if (has_prev) {
         GearViewDrawPageButton(
