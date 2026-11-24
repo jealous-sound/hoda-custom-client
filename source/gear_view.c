@@ -285,6 +285,10 @@ static const int GEAR_NO_WORN_SLOT = -1;
 static const Color GEAR_EMPTY_WORN_SLOT_FILL = {0, 0, 0, 140};
 static const Color GEAR_EMPTY_WORN_SLOT_FRAME = {90, 90, 90, 255};
 
+int GearViewShownWornSlot(int hero) {
+    return gear_view.open && gear_view.hero == hero ? gear_view.slot : GEAR_NO_WORN_SLOT;
+}
+
 static void GearDrawEmptyWornSlot(Rectangle r) {
     DrawRectangleRec(UiRect(r, 0.5f, 0.5f, 0.92f, 0.92f), GEAR_EMPTY_WORN_SLOT_FILL);
     UiDrawTexture(GearRarityFrame(RARITY_COMMON), r, GEAR_EMPTY_WORN_SLOT_FRAME);
@@ -704,7 +708,8 @@ static float GearViewDrawBoxBand(Rectangle panel, float source_top, float source
 
 static void GearViewDrawMiddleText(const char *text, Rectangle area, float size, Color color) {
     Font body = GuiFont(FNT_MENU);
-    float height = HeroesRichLayout(body, text, area, size, color, false);
+    float leading_below_last_line = size * (HEROES_RICH_LINE_HEIGHT - 1.0f);
+    float height = HeroesRichLayout(body, text, area, size, color, false) - leading_below_last_line;
     Rectangle lines = {area.x, area.y + fmaxf(0.0f, (area.height - height) * 0.5f), area.width, height};
     HeroesDrawRich(body, text, lines, size, color);
 }
