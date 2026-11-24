@@ -8,6 +8,11 @@ game prefers `*_rl.glb` over the raw pack GLBs.
 
 - `extract_hoda.py`: dumps Avatars, bone lists and AnimationClips from the OBB cache into `extracted/`.
 - `hoda_anim.py`, `muscle_solver.py`: clip evaluation and muscle-to-rotation solving.
+- `body_frame.py`: turns the solved body by the avatar's T-pose body frame (`m_RootX`), which Unity's clip root
+  rotation is relative to, pivoting on the planted feet. Without it every humanoid leans forward by that angle
+  (about 4 degrees for human rigs, 8 for dwarves).
+- `human_muscles.py`: on a rig with no Chest bone (the dwarf-male rig) adds the clip's chest muscles to the
+  spine, as Unity does for a missing optional bone. Dropping them tipped those dwarves 15 to 25 degrees forward.
 - `glb_writer.py`: rewrites a pack GLB with the baked skeleton and animation channels.
 - `bake_idle.py`, `bake_all.py`: per-unit and batch bakers.
 - `rebuild_stub_src.py`: rebuilds one exact-tier source GLB from its CAB.

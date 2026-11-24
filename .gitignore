@@ -38,7 +38,9 @@ client-additional-data/*
 client-additional-data/anim_tools/*
 !client-additional-data/anim_tools/bake_all.py
 !client-additional-data/anim_tools/bake_idle.py
+!client-additional-data/anim_tools/body_frame.py
 !client-additional-data/anim_tools/glb_writer.py
+!client-additional-data/anim_tools/human_muscles.py
 !client-additional-data/anim_tools/donor_bake.py
 !client-additional-data/anim_tools/extract_legendary_stars.py
 !client-additional-data/anim_tools/import_fbx.py
