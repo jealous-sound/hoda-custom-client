@@ -724,9 +724,9 @@ def renderer_material_for_mesh(env, mesh_name, material_slot, cab_paths, base):
 
     unique = {}
     for hit, mat_obj in matches:
-        unique[(id(hit[0]), hit[1])] = mat_obj
+        unique[(id(hit[0]), hit[1])] = (hit[0], mat_obj)
     if len(unique) > 1:
-        names = sorted({obj_name(o) for o in unique.values()})
+        names = sorted({obj_name(o) for _, o in unique.values()})
         return None, f'ambiguous renderer materials for {mesh_name}: {names}'
     return next(iter(unique.values())), None
 
@@ -741,11 +741,12 @@ def fix_textures(env, dst_glb, out_dir, base, cab_paths):
     mesh = meshes[0]
     primitive = mesh['primitives'][0]
     material_slot = 0
-    material_obj, error = renderer_material_for_mesh(
+    material, error = renderer_material_for_mesh(
         env, mesh.get('name', ''), material_slot, cab_paths, base)
-    if material_obj is None:
+    if material is None:
         notes.append(error)
         return notes
+    material_env, material_obj = material
 
     try:
         material_tt = material_obj.read_typetree()
@@ -762,20 +763,20 @@ def fix_textures(env, dst_glb, out_dir, base, cab_paths):
     os.makedirs(out_dir, exist_ok=True)
     main_name = f'{base}_main.png'
     main_path = os.path.join(out_dir, main_name)
-    main_img = export_texture(env, main_pptr, cab_paths, main_path)
+    main_img = export_texture(material_env, main_pptr, cab_paths, main_path)
     if main_img is None:
         main_img, fallback = reference_texture(
-            base, texture_name(env, main_pptr, cab_paths), main_path)
+            base, texture_name(material_env, main_pptr, cab_paths), main_path)
         if main_img is None:
             notes.append('renderer _MainTex export failed')
             return notes
         notes.append(f'used reference FBX texture {os.path.basename(fallback)} -> {main_name}')
     else:
         notes.append(f'exported renderer _MainTex -> {main_name}')
-    main_img, ignores_alpha = unit_texture.runtime_main_texture(main_img, material_obj, material_tt)
-    if ignores_alpha:
+    main_img, shader_note = unit_texture.runtime_main_texture(main_img, material_obj, material_tt)
+    if shader_note:
         main_img.save(main_path)
-        notes.append('opaque Unlit/Texture material, _MainTex alpha dropped')
+        notes.append(shader_note)
 
     material_index = primitive.get('material')
     materials = gltf.get('materials') or []
@@ -805,8 +806,8 @@ def fix_textures(env, dst_glb, out_dir, base, cab_paths):
         pbr['baseColorTexture'] = {'index': texture_index}
         notes.append('created missing glTF base-color image')
 
-    if alpha_pptr.get('m_PathID') and not ignores_alpha:
-        alpha_img = export_texture(env, alpha_pptr, cab_paths, None)
+    if alpha_pptr.get('m_PathID') and not shader_note:
+        alpha_img = export_texture(material_env, alpha_pptr, cab_paths, None)
         if alpha_img is not None:
             rgb = main_img.convert('RGB')
             a = alpha_img.convert('RGB').getchannel('R').resize(rgb.size)
@@ -873,14 +874,14 @@ def check_glb(path, display_scale=None):
 
 
 
-def ensure_src_glb(dirname, base):
+def ensure_src_glb(dirname, base, borrow_sibling=True):
     p = f'{CHAR_PACK}/{dirname}/{base}.glb'
     if os.path.exists(p):
         return p
     g = f'{CHAR_PACK}/{dirname}/{base}.gltf'
     if not os.path.exists(g):
         m = re.match(r'(.*)_t\d$', base)
-        if not m:
+        if not m or not borrow_sibling:
             return None
         for tier in ('t4', 't3', 't2', 't1'):
             sib = f'{m.group(1)}_{tier}'
@@ -901,6 +902,15 @@ def ensure_src_glb(dirname, base):
     tmp = os.path.join(SCRATCH, base + '_packed.glb')
     glb_writer.save_glb(tmp, gltf, blob)
     return tmp
+
+
+def rebuild_exact_source(dirname, base):
+    import rebuild_stub_src
+    try:
+        rebuild_stub_src.rebuild_source(dirname, base)
+    except (KeyError, ValueError, FileNotFoundError, AssertionError) as e:
+        return None, f'no exact source and its CAB rebuild failed: {type(e).__name__}: {e}'
+    return ensure_src_glb(dirname, base, borrow_sibling=False), 'rebuilt exact source from its CAB'
 
 
 def process_target(dirname, base, cab_paths, clip_index, force=False):
@@ -941,7 +951,10 @@ def process_target(dirname, base, cab_paths, clip_index, force=False):
             row['detail'] = '; '.join(notes)
             return row, scale_entry
 
-        src = ensure_src_glb(dirname, base)
+        src = ensure_src_glb(dirname, base, borrow_sibling=False)
+        if src is None:
+            src, source_note = rebuild_exact_source(dirname, base)
+            notes.append(source_note)
         if src is None:
             row['status'] = 'no-src'
             row['detail'] = '; '.join(notes)
