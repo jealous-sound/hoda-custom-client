@@ -12,6 +12,9 @@
 #define GALLERY_FIRST_MULTIBYTE 0x80
 #define GALLERY_LORE_FONT_SIZE 17.0f
 #define GALLERY_LABEL_FONT_SIZE 18.0f
+#define GALLERY_COUNT_ROW_X 591.0f
+#define GALLERY_RARITY_ICON_CENTRE_X 573.5f
+#define GALLERY_TIER_CAPTION_WIDTH 40.0f
 #define GALLERY_TITLE_FONT_SIZE 34.0f
 #define GALLERY_HEADER_FONT_SIZE 21.0f
 #define GALLERY_NAME_FONT_SIZE 14.0f
@@ -294,17 +297,13 @@ static void GalleryDrawCenteredWrapped(Font font, const char *text, Rectangle r,
     }
 }
 
-static void GalleryDrawCountRow(Rectangle row, const char *caption, int owned, int total) {
+static void GalleryDrawCountRow(Rectangle row, int owned, int total) {
     Font font = GuiFont(FNT_MENU);
     DrawRectangleRec(row, Fade(BLACK, 0.8f));
     float fraction = total > 0 ? (float)owned / (float)total : 0.0f;
     Rectangle fill = {row.x, row.y, row.width * fraction, row.height};
     UiDrawTexture(GuiTex(GUI_GALLERY_ROW_FILL), fill, Fade(WHITE, 0.65f));
     UiDrawTextRight(font, TextFormat("(%d/%d)", owned, total), row, GALLERY_LABEL_FONT_SIZE, WHITE);
-    if (caption) {
-        Rectangle label = {row.x - 30.0f, row.y, 60.0f, row.height};
-        UiDrawTextCentered(GuiFont(FNT_COOL), caption, label, GALLERY_LABEL_FONT_SIZE, WHITE);
-    }
 }
 
 static void GalleryDrawStats(const Gallery *g) {
@@ -312,17 +311,23 @@ static void GalleryDrawStats(const Gallery *g) {
     static const float tier_rows[TIER_COUNT] = {261.0f, 230.0f, 199.0f, 167.0f};
     static const float rarity_rows[RARITY_LEGENDARY] = {457.0f, 426.0f, 395.0f, 366.0f, 334.0f};
     const GalleryTotals *totals = &g->totals;
-    for (int tier = 0; tier < TIER_COUNT; tier++)
+    for (int tier = 0; tier < TIER_COUNT; tier++) {
         GalleryDrawCountRow(
-            GalleryRect(591.0f, tier_rows[tier], 155.0f, 20.0f),
-            TIER_NAMES[tier],
+            GalleryRect(GALLERY_COUNT_ROW_X, tier_rows[tier], 155.0f, 20.0f),
             totals->tier_owned[tier],
             totals->tier_total[tier]
         );
+        Rectangle caption = GalleryRect(
+            GALLERY_RARITY_ICON_CENTRE_X - GALLERY_TIER_CAPTION_WIDTH * 0.5f,
+            tier_rows[tier],
+            GALLERY_TIER_CAPTION_WIDTH,
+            20.0f
+        );
+        UiDrawTextCentered(GuiFont(FNT_COOL), TIER_NAMES[tier], caption, GALLERY_LABEL_FONT_SIZE, WHITE);
+    }
     for (int rarity = 0; rarity < RARITY_LEGENDARY; rarity++)
         GalleryDrawCountRow(
-            GalleryRect(591.0f, rarity_rows[rarity], 155.0f, 20.0f),
-            NULL,
+            GalleryRect(GALLERY_COUNT_ROW_X, rarity_rows[rarity], 155.0f, 20.0f),
             totals->rarity_owned[rarity],
             totals->rarity_total[rarity]
         );
