@@ -766,6 +766,11 @@ void HomeBackgroundSetGalleryView(HomeBackground *scene, bool active)
     scene->gallery_view = active;
 }
 
+Camera3D HomeBackgroundViewCamera(const HomeBackground *scene)
+{
+    return scene->gallery_view ? scene->gallery_cam : scene->cam;
+}
+
 void HomeBackgroundMarkSquadStale(HomeBackground *scene)
 {
     scene->squad_stale = true;
@@ -800,7 +805,7 @@ void HomeBackgroundDraw(HomeBackground *scene)
     float tnow = (float)GetTime();
     int   n    = SCENE_PIECE_COUNT;
     Camera3D home_cam = scene->cam;
-    if (scene->gallery_view) scene->cam = scene->gallery_cam;
+    scene->cam = HomeBackgroundViewCamera(scene);
 
     ClearBackground(BLACK);
     BeginMode3D(scene->cam);

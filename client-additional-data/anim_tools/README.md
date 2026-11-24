@@ -11,7 +11,9 @@ game prefers `*_rl.glb` over the raw pack GLBs.
 - `body_frame.py`: turns the solved body by the avatar's T-pose body frame (`m_RootX`), which Unity's clip root
   rotation is relative to, pivoting on the planted feet. Without it every humanoid leans forward by that angle
   (about 4 degrees for human rigs, 8 for dwarves).
-- `glb_writer.py`: rewrites a pack GLB with the baked skeleton and animation channels.
+- `glb_writer.py`: rewrites a pack GLB with the baked skeleton and animation channels. A joint that the source
+  parks behind a stray plain node (Wintersend Cullen's `HumanMale_` neck twin) is hung back under its avatar parent;
+  raylib binds the skin from the joints' rest nodes, not the inverse bind matrices, so a skipped neck drops the head.
 - `bake_idle.py`, `bake_all.py`: per-unit and batch bakers.
 - `rebuild_stub_src.py`: rebuilds one exact-tier source GLB from its CAB.
 - `unit_texture.py`: bakes `_MainTex` opaque when the original material uses the built-in `Unlit/Texture` shader,

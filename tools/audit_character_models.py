@@ -21,6 +21,7 @@ TIERS = ("I", "II", "III", "IV")
 TIER_SUFFIX = re.compile(r"_t\d+$", re.IGNORECASE)
 COMPONENT = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
 UNIT_SHADER_ALPHA_CUTOFF = 128
+BIND_OFFSET_TOLERANCE_METERS = 0.001
 
 
 def prefab_base(prefab: str) -> str:
@@ -157,6 +158,94 @@ def index_errors(gltf: dict, blob: memoryview) -> tuple[int, int, list[str]]:
     return total, uint32, errors
 
 
+def node_local_matrix(node: dict) -> list[list[float]]:
+    if "matrix" in node:
+        values = node["matrix"]
+        return [[values[column * 4 + row] for column in range(4)] for row in range(4)]
+    tx, ty, tz = node.get("translation", (0.0, 0.0, 0.0))
+    qx, qy, qz, qw = node.get("rotation", (0.0, 0.0, 0.0, 1.0))
+    sx, sy, sz = node.get("scale", (1.0, 1.0, 1.0))
+    rotation = (
+        (1 - 2 * (qy * qy + qz * qz), 2 * (qx * qy - qz * qw), 2 * (qx * qz + qy * qw)),
+        (2 * (qx * qy + qz * qw), 1 - 2 * (qx * qx + qz * qz), 2 * (qy * qz - qx * qw)),
+        (2 * (qx * qz - qy * qw), 2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)),
+    )
+    scale = (sx, sy, sz)
+    return [
+        [rotation[row][column] * scale[column] for column in range(3)] + [(tx, ty, tz)[row]]
+        for row in range(3)
+    ] + [[0.0, 0.0, 0.0, 1.0]]
+
+
+def matrix_product(left: list[list[float]], right: list[list[float]]) -> list[list[float]]:
+    return [[sum(left[row][k] * right[k][column] for k in range(4)) for column in range(4)] for row in range(4)]
+
+
+def affine_point(matrix: list[list[float]], point: tuple[float, float, float]) -> tuple[float, float, float]:
+    return tuple(sum(matrix[row][k] * point[k] for k in range(3)) + matrix[row][3] for row in range(3))
+
+
+def affine_inverse(matrix: list[list[float]]) -> list[list[float]]:
+    a = [row[:3] for row in matrix[:3]]
+    cofactors = [
+        [a[(row + 1) % 3][(column + 1) % 3] * a[(row + 2) % 3][(column + 2) % 3]
+         - a[(row + 1) % 3][(column + 2) % 3] * a[(row + 2) % 3][(column + 1) % 3]
+         for column in range(3)]
+        for row in range(3)
+    ]
+    determinant = sum(a[0][column] * cofactors[0][column] for column in range(3))
+    inverse = [[cofactors[column][row] / determinant for column in range(3)] for row in range(3)]
+    translation = [-sum(inverse[row][k] * matrix[k][3] for k in range(3)) for row in range(3)]
+    return [inverse[row] + [translation[row]] for row in range(3)] + [[0.0, 0.0, 0.0, 1.0]]
+
+
+def node_world_matrices(gltf: dict) -> list[list[list[float]]]:
+    nodes = gltf.get("nodes", [])
+    holder = {child: index for index, node in enumerate(nodes) for child in node.get("children", [])}
+    worlds: list = [None] * len(nodes)
+
+    def world(index: int) -> list[list[float]]:
+        if worlds[index] is None:
+            local = node_local_matrix(nodes[index])
+            worlds[index] = local if index not in holder else matrix_product(world(holder[index]), local)
+        return worlds[index]
+
+    return [world(index) for index in range(len(nodes))]
+
+
+def drifting_bind_offsets(gltf: dict, blob: memoryview) -> list[str]:
+    drifts = []
+    worlds = node_world_matrices(gltf)
+    nodes = gltf.get("nodes", [])
+    holder = {child: index for index, node in enumerate(nodes) for child in node.get("children", [])}
+    for skin in gltf.get("skins", []):
+        joints = skin.get("joints", [])
+        accessor = gltf["accessors"][skin["inverseBindMatrices"]]
+        view = gltf["bufferViews"][accessor["bufferView"]]
+        start = view.get("byteOffset", 0) + accessor.get("byteOffset", 0)
+        inverse_binds = [
+            [[values[column * 4 + row] for column in range(4)] for row in range(4)]
+            for values in accessor_rows(blob, "f" * 16, start, view.get("byteStride", 64), accessor["count"])
+        ]
+        slot = {joint: index for index, joint in enumerate(joints)}
+        for joint in joints:
+            parent = holder.get(joint)
+            while parent is not None and parent not in slot:
+                parent = holder.get(parent)
+            if parent is None:
+                continue
+            parent_world = worlds[parent]
+            joint_origin = tuple(worlds[joint][row][3] for row in range(3))
+            from_nodes = affine_point(affine_inverse(parent_world), joint_origin)
+            bound_origin = tuple(affine_inverse(inverse_binds[slot[joint]])[row][3] for row in range(3))
+            from_binds = affine_point(inverse_binds[slot[parent]], bound_origin)
+            parent_scale = math.sqrt(sum(parent_world[row][0] ** 2 for row in range(3)))
+            drift = math.dist(from_nodes, from_binds) * parent_scale
+            if drift > BIND_OFFSET_TOLERANCE_METERS:
+                drifts.append(f"{nodes[joint].get('name')} {drift:.3f} m from {nodes[parent].get('name')}")
+    return drifts
+
+
 def base_color_uris(gltf: dict) -> list[str]:
     textures = gltf.get("textures", [])
     images = gltf.get("images", [])
@@ -198,9 +287,11 @@ def audit_output(path: Path, deep: bool) -> dict:
             missing_images.append(uri)
     bad_weights = weight_rows = index_accessors = uint32_index_accessors = 0
     bad_indices = []
+    bind_drifts = []
     if deep and blob is not None:
         bad_weights, weight_rows = weight_errors(gltf, blob)
         index_accessors, uint32_index_accessors, bad_indices = index_errors(gltf, blob)
+        bind_drifts = drifting_bind_offsets(gltf, blob)
     valid = bool(gltf.get("meshes") and gltf.get("skins") and animations[:1] == ["idle"] and extents)
     return {
         "valid": valid,
@@ -215,6 +306,7 @@ def audit_output(path: Path, deep: bool) -> dict:
         "index_accessors": index_accessors,
         "uint32_index_accessors": uint32_index_accessors,
         "bad_indices": bad_indices,
+        "bind_drifts": bind_drifts,
     }
 
 
@@ -279,6 +371,7 @@ def run(deep: bool) -> dict:
     bad_weights = missing_images = unskinned = weight_rows = 0
     index_accessors = uint32_index_accessors = 0
     bad_indices = []
+    bind_drifts = []
     invisible = []
     output_rows = {}
     for path in outputs:
@@ -295,6 +388,7 @@ def run(deep: bool) -> dict:
         index_accessors += row["index_accessors"]
         uint32_index_accessors += row["uint32_index_accessors"]
         bad_indices.extend(f"{path}: {error}" for error in row["bad_indices"])
+        bind_drifts.extend(f"{path}: {drift}" for drift in row["bind_drifts"])
         missing_images += len(row["missing_images"])
         invisible.extend(f"{path}: {uri}" for uri in row["invisible_images"])
         unskinned += row["unskinned_mesh_nodes"]
@@ -361,6 +455,7 @@ def run(deep: bool) -> dict:
         "index_accessors": index_accessors,
         "uint32_index_accessors": uint32_index_accessors,
         "bad_index_accessors": bad_indices,
+        "drifting_bind_offsets": bind_drifts,
         "unresolved_bindings": unresolved,
         "nearest_tier_fallback_bindings": borrowed,
     }
@@ -396,6 +491,7 @@ def main() -> None:
         or report["invisible_models"]
         or report["bad_weight_rows"]
         or report["bad_index_accessors"]
+        or report["drifting_bind_offsets"]
     )
     if hard_fail:
         raise SystemExit(1)

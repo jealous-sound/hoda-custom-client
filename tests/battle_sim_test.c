@@ -3717,6 +3717,11 @@ static void TestDisplayScaleManifestIsFullyLoaded(void) {
     int expected = cJSON_GetArraySize(root);
     assert(fabsf(UnitDisplayScale("unit.c_titanheartguardian_t1_pre") - 0.65f) < 0.0001f);
     assert(unit_scale_count == expected);
+    float tierless_wisp = (float)cJSON_GetNumberValue(
+        cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(root, "c_wisp_epic_t0"), "scale")
+    );
+    assert(tierless_wisp > 0.0f && UnitDisplayScale("unit.c_wisp_epic_pre") == tierless_wisp);
+    assert(UnitDisplayScale("unit.c_wisp_epic_t9_pre") == 1.2885f);
     cJSON_Delete(root);
 }
 
@@ -8631,6 +8636,46 @@ static void TestCreatureClipFramesStayOnIdleGround(void) {
     assert(!UnitClipsHoldGround("c_wisp_common_t1_rl.glb"));
 }
 
+static void TestBootsSkinnedToTheShinStillStandOnTheGround(void) {
+    BoneInfo bones[3] = {
+        {.name = "HumanFemale_LeftUpperLeg", .parent = -1},
+        {.name = "HumanFemale_LeftLowerLeg", .parent = 0},
+        {.name = "HumanFemale_LeftFoot", .parent = 1},
+    };
+    float rest[9] = {0.0f, 0.9f, 0.0f, 0.0f, 0.4f, 0.0f, 0.0f, 0.0f, 0.1f};
+    float idle[9] = {0.0f, 0.8f, 0.0f, 0.0f, 0.3f, 0.0f, 0.0f, -0.1f, 0.1f};
+    unsigned char bone_ids[12] = {0, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0};
+    float bone_weights[12] = {1, 0, 0, 0, 1, 0, 0, 0, 0.8f, 0.2f, 0, 0};
+    Mesh mesh = {
+        .vertexCount = 3, .vertices = rest, .animVertices = idle, .boneIds = bone_ids, .boneWeights = bone_weights
+    };
+    Model model = {.meshCount = 1, .meshes = &mesh, .boneCount = 3, .bones = bones};
+    assert(isinf(UnitLowestVertexY(model, false, UnitBoneIsFoot)));
+    assert(UnitLowestSoleY(model, false) == 0.0f);
+    assert(UnitLowestSoleY(model, true) == -0.1f);
+    assert(UnitGroundContactY(model) == -0.1f);
+
+    idle[4] = -0.2f;
+    bone_weights[8] = 0.2f;
+    bone_weights[9] = 0.8f;
+    assert(UnitLowestSoleY(model, true) == -0.1f);
+
+    BoneInfo creature_bones[3] = {
+        {.name = "Ogre_Hips", .parent = -1}, {.name = "Ogre_Calf", .parent = 0}, {.name = "Ogre_Claw", .parent = 1}
+    };
+    model.bones = creature_bones;
+    assert(isinf(UnitLowestSoleY(model, true)));
+}
+
+static void TestGalleryFxPlayOnTheGalleryCamera(void) {
+    HomeBackground scene = {0};
+    scene.cam.position = (Vector3){-0.53f, 1.87f, 15.89f};
+    scene.gallery_cam.position = (Vector3){-197.80f, 2.40f, 12.29f};
+    assert(Vector3Equals(HomeBackgroundViewCamera(&scene).position, scene.cam.position));
+    HomeBackgroundSetGalleryView(&scene, true);
+    assert(Vector3Equals(HomeBackgroundViewCamera(&scene).position, scene.gallery_cam.position));
+}
+
 static void TestStillRootHandsItsSkinToTheMovingHips(void) {
     BoneInfo bones[3] = {
         {.name = "DwarfMale_Root", .parent = -1},
@@ -11443,6 +11488,8 @@ int main(void) {
     TestWispIdleDriftsLikeTheOriginalFx();
     TestFxKeyoutPreservesSourceTransparency();
     TestCreatureClipFramesStayOnIdleGround();
+    TestBootsSkinnedToTheShinStillStandOnTheGround();
+    TestGalleryFxPlayOnTheGalleryCamera();
     TestStillRootHandsItsSkinToTheMovingHips();
     TestHangingIdleFeetArePlantedOnTheGround();
     TestJointsBehindPlainNodesFollowTheirAnimatedChain();
