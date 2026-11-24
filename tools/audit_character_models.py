@@ -239,6 +239,13 @@ def base_color_uris(gltf: dict) -> list[str]:
     return uris
 
 
+def untextured(gltf: dict) -> bool:
+    return not any(
+        material.get("pbrMetallicRoughness", {}).get("baseColorTexture")
+        for material in gltf.get("materials", [])
+    )
+
+
 def never_reaches_alpha_cutoff(path: Path) -> bool:
     with Image.open(path) as image:
         if "A" not in image.getbands() and "transparency" not in image.info:
@@ -278,6 +285,7 @@ def audit_output(path: Path, deep: bool) -> dict:
         "unskinned_mesh_nodes": unskinned,
         "missing_images": missing_images,
         "invisible_images": invisible_images(gltf, path.parent),
+        "untextured": untextured(gltf),
         "bad_weights": bad_weights,
         "weight_rows": weight_rows,
         "index_accessors": index_accessors,
@@ -348,6 +356,7 @@ def run(deep: bool) -> dict:
     index_accessors = uint32_index_accessors = 0
     bad_indices = []
     invisible = []
+    untextured_models = []
     output_rows = {}
     for path in outputs:
         try:
@@ -365,6 +374,8 @@ def run(deep: bool) -> dict:
         bad_indices.extend(f"{path}: {error}" for error in row["bad_indices"])
         missing_images += len(row["missing_images"])
         invisible.extend(f"{path}: {uri}" for uri in row["invisible_images"])
+        if row["untextured"]:
+            untextured_models.append(str(path))
         unskinned += row["unskinned_mesh_nodes"]
 
     collapsed = []
@@ -447,6 +458,7 @@ def run(deep: bool) -> dict:
         "unskinned_mesh_nodes": unskinned,
         "missing_external_images": missing_images,
         "invisible_models": invisible,
+        "untextured_models": untextured_models,
         "weight_rows": weight_rows,
         "bad_weight_rows": bad_weights,
         "index_accessors": index_accessors,
@@ -490,6 +502,7 @@ def main() -> None:
         or report["unskinned_mesh_nodes"]
         or report["missing_external_images"]
         or report["invisible_models"]
+        or report["untextured_models"]
         or report["bad_weight_rows"]
         or report["bad_index_accessors"]
     )
