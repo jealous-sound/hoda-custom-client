@@ -5,6 +5,7 @@ import struct
 
 from hoda_anim import Xform, to_gltf_t, to_gltf_q
 
+SINGULAR_DETERMINANT = 1e-18
 COMP_FMT = {5120: 'b', 5121: 'B', 5122: 'h', 5123: 'H', 5125: 'I', 5126: 'f'}
 NCOMP = {'SCALAR': 1, 'VEC2': 2, 'VEC3': 3, 'VEC4': 4, 'MAT4': 16}
 
@@ -143,28 +144,62 @@ def xform_world_map(avatar):
     return {avatar.node_name[i]: worlds[i] for i in range(len(worlds))}
 
 
-def infer_bind_unit_correction(gltf, avatar):
+def joint_bind_in_mesh(inverse_bind):
+    rows = [[float(inverse_bind[column * 4 + row]) for column in range(3)] for row in range(3)]
+    offset = [float(inverse_bind[12 + row]) for row in range(3)]
+    cofactors = [
+        [rows[(r + 1) % 3][(c + 1) % 3] * rows[(r + 2) % 3][(c + 2) % 3]
+         - rows[(r + 1) % 3][(c + 2) % 3] * rows[(r + 2) % 3][(c + 1) % 3]
+         for c in range(3)]
+        for r in range(3)
+    ]
+    determinant = sum(rows[0][c] * cofactors[0][c] for c in range(3))
+    if not math.isfinite(determinant) or abs(determinant) < SINGULAR_DETERMINANT:
+        return None
+    origin = tuple(
+        -sum(cofactors[c][r] * offset[c] for c in range(3)) / determinant
+        for r in range(3)
+    )
+    return origin, abs(determinant) ** (-1.0 / 3.0)
+
+
+def infer_bind_unit_correction(gltf, blob, avatar):
     if not gltf.get('skins'):
         return 1.0
     nodes = gltf.get('nodes', [])
+    skin = gltf['skins'][0]
+    if skin.get('inverseBindMatrices') is None:
+        return 1.0
+    parent = {}
+    for i, n in enumerate(nodes):
+        for c in n.get('children', []):
+            parent[c] = i
     avatar_index = {name: i for i, name in enumerate(avatar.node_name)}
-    logs = []
-    for ni in gltf['skins'][0].get('joints', []):
-        node = nodes[ni]
-        name = node.get('name')
+    worlds = avatar.avatar_worlds()
+    inverse_binds = read_accessor(gltf, blob, skin['inverseBindMatrices'])
+    binds = {}
+    for ni, inverse_bind in zip(skin.get('joints', []), inverse_binds):
+        name = nodes[ni].get('name')
         ai = avatar_index.get(name)
         if ai is None:
             ai = avatar_index.get(re.sub(r' \d+$', '', name or ''))
-        if ai is None:
+        bind = joint_bind_in_mesh(inverse_bind)
+        if ai is not None and bind is not None:
+            binds[ni] = (ai, bind)
+    logs = []
+    for ni, (ai, (origin, bind_scale)) in binds.items():
+        pi = parent.get(ni)
+        while pi is not None and pi not in binds:
+            pi = parent.get(pi)
+        if pi is None:
             continue
-        src = node.get('translation', [0.0, 0.0, 0.0])
-        src_len = math.sqrt(sum(float(c) * float(c) for c in src))
-        dst = avatar.default_local[ai].t
-        dst_len = math.sqrt(sum(float(c) * float(c) for c in dst))
-        current = abs(float(avatar.acc_scale[ai]))
-        if src_len < 1e-5 or dst_len < 1e-5 or current < 1e-8:
+        pai, (parent_origin, _) = binds[pi]
+        bind_len = math.dist(origin, parent_origin)
+        avatar_len = math.dist(worlds[ai].t, worlds[pai].t)
+        mesh_unit = abs(float(avatar.acc_scale[ai])) / bind_scale
+        if bind_len < 1e-5 or avatar_len < 1e-5 or mesh_unit < 1e-8:
             continue
-        ratio = dst_len / (src_len * current)
+        ratio = avatar_len / (bind_len * mesh_unit)
         if math.isfinite(ratio) and ratio > 0:
             logs.append(math.log10(ratio))
     if len(logs) < 3:
@@ -267,7 +302,7 @@ def rebuild_glb(src_path, dst_path, avatar, anim_locals, anim_fps, anim_name='id
         r = residual[i] if residual else (1.0, 1.0, 1.0)
         acc_by_name[name] = (a*r[0], a*r[1], a*r[2])
 
-    bind_unit_correction = infer_bind_unit_correction(gltf, avatar)
+    bind_unit_correction = infer_bind_unit_correction(gltf, blob, avatar)
     if bind_unit_correction != 1.0:
         acc_by_name = {
             name: tuple(c * bind_unit_correction for c in scale)
