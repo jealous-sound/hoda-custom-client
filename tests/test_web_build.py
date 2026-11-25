@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from functools import partial
+import http.client
 from pathlib import Path
 import sys
 import tempfile
+import threading
 import unittest
 from unittest import mock
 
@@ -73,6 +76,70 @@ class BuildWebTest(unittest.TestCase):
             index.write_text("hoda-resource-index 1\n")
             with self.assertRaises(SystemExit):
                 build_web.build(base, base, index, SERVED_INDEX)
+
+
+class ServeWebTest(unittest.TestCase):
+    PAGE_ORIGIN = "http://localhost:8080"
+
+    def serve(self, allowed_origin: str) -> None:
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        root = Path(temporary.name)
+        (root / "index.html").write_text("page")
+        (root / "game" / "data").mkdir(parents=True)
+        (root / "game" / "data" / "rules.json").write_text("0123456789")
+        handler = type(
+            "QuietHandler",
+            (serve_web.GameHandler,),
+            {"allowed_origin": allowed_origin, "stats": serve_web.Stats(), "log_message": lambda *_: None},
+        )
+        server = serve_web.ThreadingHTTPServer(("127.0.0.1", 0), partial(handler, directory=str(root)))
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        self.port = server.server_address[1]
+
+    def ask(self, method: str, path: str, headers: dict[str, str] | None = None) -> http.client.HTTPResponse:
+        connection = http.client.HTTPConnection("127.0.0.1", self.port)
+        self.addCleanup(connection.close)
+        connection.request(method, path, headers=headers or {})
+        response = connection.getresponse()
+        response.read()
+        return response
+
+    def test_page_is_isolated_and_doubled_slashes_miss_like_on_the_cdn(self) -> None:
+        self.serve("")
+        found = self.ask("GET", "/game/data/rules.json")
+        self.assertEqual(found.status, 200)
+        self.assertEqual(found.getheader("Cross-Origin-Embedder-Policy"), "require-corp")
+        self.assertEqual(self.ask("HEAD", "/game/data//rules.json").status, 404)
+        self.assertEqual(self.ask("GET", "/game//data/rules.json").status, 404)
+
+    def test_cdn_answers_ranged_head_with_cors_for_the_page_origin(self) -> None:
+        self.serve(self.PAGE_ORIGIN)
+        reply = self.ask("HEAD", "/game/data/rules.json", {"Origin": self.PAGE_ORIGIN, "Range": "bytes=0-"})
+        self.assertEqual(reply.status, 206)
+        self.assertEqual(reply.getheader("Access-Control-Allow-Origin"), self.PAGE_ORIGIN)
+        self.assertIn("Accept-Ranges", reply.getheader("Access-Control-Expose-Headers"))
+        self.assertIsNone(reply.getheader("Cross-Origin-Embedder-Policy"))
+        stranger = self.ask("GET", "/game/data/rules.json", {"Origin": "https://elsewhere.test"})
+        self.assertIsNone(stranger.getheader("Access-Control-Allow-Origin"))
+
+    def test_cdn_preflight_allows_only_ranged_reads_from_the_page_origin(self) -> None:
+        self.serve(self.PAGE_ORIGIN)
+        ranged = {"Origin": self.PAGE_ORIGIN, "Access-Control-Request-Method": "HEAD"}
+        allowed = self.ask("OPTIONS", "/game/data/rules.json", {**ranged, "Access-Control-Request-Headers": "range"})
+        self.assertEqual(allowed.status, 204)
+        self.assertEqual(allowed.getheader("Access-Control-Allow-Origin"), self.PAGE_ORIGIN)
+        self.assertIn("HEAD", allowed.getheader("Access-Control-Allow-Methods"))
+        refused = [
+            {**ranged, "Access-Control-Request-Headers": "authorization"},
+            {**ranged, "Access-Control-Request-Method": "PUT"},
+            {**ranged, "Origin": "https://elsewhere.test"},
+        ]
+        for headers in refused:
+            with self.subTest(headers=headers):
+                self.assertEqual(self.ask("OPTIONS", "/game/data/rules.json", headers).status, 403)
 
 
 if __name__ == "__main__":

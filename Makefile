@@ -43,20 +43,26 @@ WEB_RAYLIB_SRC ?= build/raylib-$(WEB_RAYLIB_VERSION)-src
 WEB_RAYLIB_DIR ?= build/raylib-web
 WEB_RAYLIB = $(WEB_RAYLIB_DIR)/libraylib.a
 WEB_SHELL = packaging/web/shell.html
+WEB_FETCH_SHIM = packaging/web/single_slash_fetch.js
 WEB_PAGE = $(WEB_DIR)/index.html
 WEB_RESOURCE_INDEX = client-additional-data/resource_index.txt
 WEB_RESOURCE_INDEX_BUILD = build/resource_index.txt
 WEB_PORT ?= 8077
 WEB_BACKEND ?=
+WEB_RELEASE ?=
+WEB_PREVIOUS ?=
+WEB_DRY_RUN ?=
+WEB_FILES_URL = $(if $(WEB_RELEASE),$(CONTENT_URL)/web/$(WEB_RELEASE)/,)
+WEB_BAKED = $(WEB_DIR)-baked.txt
 WEB_CFLAGS = -Wall -O2 -std=c99 -ffp-contract=off -D_DEFAULT_SOURCE -pthread -I$(WEB_RAYLIB_DIR) \
 	-DHOD_CONTENT_URL='"$(CONTENT_URL)"' -DHOD_SERVER_URL='"$(SERVER_URL)"' -DHOD_VERSION='"$(CLIENT_VERSION)"' \
 	-DHOD_RELEASE_URL='"$(RELEASE_URL)"' -DHOD_RELEASE_PUBLIC_KEY='"$(RELEASE_PUBLIC_KEY)"' \
-	-DHOD_RESOURCE_INDEX='"$(WEB_RESOURCE_INDEX)"' $(EXTRA_CFLAGS)
+	-DHOD_RESOURCE_INDEX='"$(WEB_RESOURCE_INDEX)"' -DHOD_GAME_FILES_URL='"$(WEB_FILES_URL)"' $(EXTRA_CFLAGS)
 WEB_LDFLAGS = -L$(WEB_RAYLIB_DIR) -lraylib -pthread -sENVIRONMENT=web,worker -sUSE_GLFW=3 \
 	-sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3 -sWASMFS -sFETCH -sASYNCIFY -sASYNCIFY_STACK_SIZE=262144 \
 	-sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=512MB -sMAXIMUM_MEMORY=4GB -sSTACK_SIZE=8MB \
 	-sDEFAULT_PTHREAD_STACK_SIZE=2MB -sPTHREAD_POOL_SIZE=24 -sEXPORTED_RUNTIME_METHODS=ENV,HEAPF32 \
-	--shell-file $(WEB_SHELL)
+	--shell-file $(WEB_SHELL) --pre-js $(WEB_FETCH_SHIM)
 .DEFAULT_GOAL := app
 
 ifeq ($(PLATFORM),macos)
@@ -162,7 +168,7 @@ ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(S
 	python3 tools/validate_localization.py
 	python3 tools/validate_roster_levels.py
 	python3 tools/validate_enemy_rosters.py
-	python3 -m unittest tests/test_release_manifest.py tests/test_roster_levels.py tests/test_enemy_rosters.py tests/test_patch_notes.py tests/test_nexus_scenes.py tests/test_campaign_scenes.py tests/test_map_particles.py tests/test_build_hero_auras.py tests/test_web_build.py
+	python3 -m unittest tests/test_release_manifest.py tests/test_roster_levels.py tests/test_enemy_rosters.py tests/test_patch_notes.py tests/test_nexus_scenes.py tests/test_campaign_scenes.py tests/test_map_particles.py tests/test_build_hero_auras.py tests/test_web_build.py tests/test_publish_web.py
 	./$(CONTENT_TEST_TARGET)
 	./$(UPDATE_TEST_TARGET)
 	./$(INSTALL_TEST_TARGET)
@@ -219,7 +225,12 @@ $(WEB_RAYLIB):
 		CUSTOM_CFLAGS="-pthread -O2" RAYLIB_BUILD_MODE=RELEASE RAYLIB_RELEASE_PATH="$(CURDIR)/$(WEB_RAYLIB_DIR)"
 	cp "$(WEB_RAYLIB_SRC)/src/raylib.h" "$(WEB_RAYLIB_SRC)/src/raymath.h" "$(WEB_RAYLIB_SRC)/src/rlgl.h" "$(WEB_RAYLIB_DIR)/"
 
-$(WEB_PAGE): $(DEPS) $(WEB_SHELL) $(WEB_RAYLIB) Makefile
+$(WEB_BAKED): FORCE
+	mkdir -p "$(dir $@)"
+	echo "$(CONTENT_URL) $(SERVER_URL) $(WEB_FILES_URL) $(CLIENT_VERSION)" | cmp -s - "$@" || \
+		echo "$(CONTENT_URL) $(SERVER_URL) $(WEB_FILES_URL) $(CLIENT_VERSION)" > "$@"
+
+$(WEB_PAGE): $(DEPS) $(WEB_SHELL) $(WEB_FETCH_SHIM) $(WEB_BAKED) $(WEB_RAYLIB) Makefile
 	mkdir -p "$(WEB_DIR)"
 	$(WEB_CC) $(WEB_CFLAGS) $(SRC) -o $(WEB_PAGE) $(WEB_LDFLAGS)
 
@@ -234,6 +245,12 @@ web: $(WEB_PAGE) $(WEB_RESOURCE_INDEX_BUILD)
 web-serve: web
 	python3 tools/serve_web.py --root "$(WEB_DIR)" --port $(WEB_PORT) $(if $(WEB_BACKEND),--backend "$(WEB_BACKEND)")
 
+web-publish: web
+	python3 tools/publish_web.py --root "$(WEB_DIR)" --bucket "$(CONTENT_BUCKET)" --content-url "$(CONTENT_URL)" \
+		--release "$(WEB_RELEASE)" $(if $(WEB_PREVIOUS),--previous "$(WEB_PREVIOUS)") $(if $(WEB_DRY_RUN),--dry-run)
+
+FORCE:
+
 clean:
 	rm -rf "$(APP_NAME).app" build $(TEST_TARGET) $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(SERVER_ACTIONS_TEST_TARGET) $(BUTTON_TEST_TARGET) $(GOLDEN_TARGET) $(BALANCE_TARGET) $(STRENGTH_TARGET)
 
@@ -246,4 +263,4 @@ format-check:
 release-public-key:
 	@echo $(RELEASE_PUBLIC_KEY)
 
-.PHONY: app run play dist content web web-serve ci-test test golden squad-strength clean format format-check release-public-key
+.PHONY: app run play dist content web web-serve web-publish FORCE ci-test test golden squad-strength clean format format-check release-public-key

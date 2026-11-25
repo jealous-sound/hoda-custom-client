@@ -474,6 +474,10 @@ static const char *const platform_curl_libraries[] = {"libcurl.so.4", "libcurl-g
 #endif
 
 #ifdef __EMSCRIPTEN__
+#ifndef HOD_GAME_FILES_URL
+#define HOD_GAME_FILES_URL ""
+#endif
+#define PLATFORM_WEB_FILES_URL_ENV "HOD_GAME_FILES_URL"
 #define PLATFORM_WEB_ROOT "/"
 #define PLATFORM_WEB_NODE_ROOT "."
 #define PLATFORM_WEB_FILE_LIST "game_files.txt"
@@ -493,7 +497,7 @@ static const char *const platform_curl_libraries[] = {"libcurl.so.4", "libcurl-g
 #define PLATFORM_HTTP_GET "GET"
 
 typedef struct {
-    char page_url[PLATFORM_WEB_URL_CAP];
+    char files_url[PLATFORM_WEB_URL_CAP];
     bool prepared;
     int created;
     volatile int finished;
@@ -648,7 +652,7 @@ static bool PlatformWebMakeParents(const char *path, char *made, size_t capacity
     return true;
 }
 
-static bool PlatformWebMount(PlatformWebMounts *mounts, const char *page_url, const char *relative) {
+static bool PlatformWebMount(PlatformWebMounts *mounts, const char *files_url, const char *relative) {
     const char *slash = strchr(relative, '/');
     size_t length = slash ? (size_t)(slash - relative) : strlen(relative);
     if (!slash || length == 0 || length >= PLATFORM_WEB_PATH_CAP) return false;
@@ -659,7 +663,7 @@ static bool PlatformWebMount(PlatformWebMounts *mounts, const char *page_url, co
     memcpy(name, relative, length);
     name[length] = '\0';
     char base[PLATFORM_WEB_URL_CAP], mount[PLATFORM_WEB_PATH_CAP];
-    if ((size_t)snprintf(base, sizeof(base), "%s%s%s", page_url, PLATFORM_WEB_FILES_PATH, name) >= sizeof(base) ||
+    if ((size_t)snprintf(base, sizeof(base), "%s%s%s", files_url, PLATFORM_WEB_FILES_PATH, name) >= sizeof(base) ||
         (size_t)snprintf(mount, sizeof(mount), "%s%s", PLATFORM_WEB_ROOT, name) >= sizeof(mount))
         return false;
     backend_t backend = wasmfs_create_fetch_backend(base, PLATFORM_WEB_FETCH_CHUNK_BYTES);
@@ -683,7 +687,7 @@ static bool PlatformWebCreateFiles(PlatformWebFiles *files, char *list) {
     char made[PLATFORM_WEB_PATH_CAP] = "";
     for (char *line = strtok(list, "\r\n"); line; line = strtok(NULL, "\r\n")) {
         if (!line[0]) continue;
-        if (!PlatformWebMount(&mounts, files->page_url, line) || !PlatformWebCreateFile(line, made, sizeof(made))) {
+        if (!PlatformWebMount(&mounts, files->files_url, line) || !PlatformWebCreateFile(line, made, sizeof(made))) {
             fprintf(stderr, "Platform: could not expose %s\n", line);
             return false;
         }
@@ -700,7 +704,7 @@ backend_t wasmfs_create_root_dir(void) {
 static void *PlatformWebPrepare(void *argument) {
     PlatformWebFiles *files = argument;
     char url[PLATFORM_WEB_URL_CAP];
-    snprintf(url, sizeof(url), "%s%s", files->page_url, PLATFORM_WEB_FILE_LIST);
+    snprintf(url, sizeof(url), "%s%s", files->files_url, PLATFORM_WEB_FILE_LIST);
     PlatformHttpRequest request = {
         .method = PLATFORM_HTTP_GET,
         .url = url,
@@ -715,19 +719,27 @@ static void *PlatformWebPrepare(void *argument) {
     return NULL;
 }
 
+static bool PlatformWebFilesUrl(char *out, size_t capacity) {
+    const char *chosen = getenv(PLATFORM_WEB_FILES_URL_ENV);
+    const char *configured = chosen && chosen[0] ? chosen : HOD_GAME_FILES_URL;
+    if (!configured[0]) return PlatformWebPageUrl(out, (int)capacity);
+    const char *separator = configured[strlen(configured) - 1] == '/' ? "" : "/";
+    return (size_t)snprintf(out, capacity, "%s%s", configured, separator) < capacity;
+}
+
 bool PlatformPrepareGameFiles(void) {
     static PlatformWebFiles files;
-    if (!PlatformWebPageUrl(files.page_url, sizeof(files.page_url))) return false;
+    if (!PlatformWebFilesUrl(files.files_url, sizeof(files.files_url))) return false;
     pthread_t thread;
     if (pthread_create(&thread, NULL, PlatformWebPrepare, &files) != 0) return false;
     while (!__atomic_load_n(&files.finished, __ATOMIC_ACQUIRE))
         emscripten_sleep(PLATFORM_WEB_PREPARE_POLL_MILLISECONDS);
     pthread_join(thread, NULL);
     if (!files.prepared) {
-        fprintf(stderr, "Platform: could not prepare the game files from %s\n", files.page_url);
+        fprintf(stderr, "Platform: could not prepare the game files from %s\n", files.files_url);
         return false;
     }
-    printf("Platform: exposed %d game files from %s%s\n", files.created, files.page_url, PLATFORM_WEB_FILES_PATH);
+    printf("Platform: exposed %d game files from %s%s\n", files.created, files.files_url, PLATFORM_WEB_FILES_PATH);
     return chdir(PLATFORM_WEB_ROOT) == 0;
 }
 
