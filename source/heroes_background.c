@@ -52,7 +52,7 @@ static HeroRole HeroRoleForMat(int m) {
 #define HERO_MAX_FLAGS 8
 #define HERO_FLAG_MESH_PATH "MainMenuContainer/ply_vertexcolor/trainscrn_flag.ply"
 
-static const char *const FS_HERO_MIX = "#version 330\n"
+static const char *const FS_HERO_MIX = SHADER_GLSL_HEADER
                                        "in vec2 fragTexCoord; in vec4 fragColor;\n"
                                        "uniform sampler2D texture0;\n"
                                        "uniform sampler2D texture1;\n"
@@ -66,7 +66,7 @@ static const char *const FS_HERO_MIX = "#version 330\n"
                                        "  vec3 col = mix(g, st, m) * (10.0*(fragColor.rgb + 0.1)) * uBright;\n"
                                        "  finalColor = vec4(col, 1.0);\n"
                                        "}\n";
-static const char *const FS_HERO_ROCK = "#version 330\n"
+static const char *const FS_HERO_ROCK = SHADER_GLSL_HEADER
                                         "in vec2 fragTexCoord; in vec4 fragColor; in vec3 fragNormal;\n"
                                         "uniform sampler2D texture0;\n"
                                         "uniform sampler2D texture1;\n"
@@ -80,7 +80,7 @@ static const char *const FS_HERO_ROCK = "#version 330\n"
                                         "  finalColor = vec4(col, 1.0);\n"
                                         "}\n";
 static const char *const FS_HERO_DIFF =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec2 fragTexCoord; in vec4 fragColor;\n"
     "uniform sampler2D texture0; uniform float uBright;\n"
     "out vec4 finalColor;\n"
@@ -89,14 +89,14 @@ static const char *const FS_HERO_DIFF =
     "  finalColor = vec4(col, 1.0);\n"
     "}\n";
 static const char *const FS_HERO_WIND =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec2 fragTexCoord; in vec4 fragColor;\n"
     "uniform sampler2D texture0; uniform vec3 uTint; uniform float uCutoff, uVcScale, uVcShift;\n"
     "out vec4 finalColor;\n"
     "void main(){ vec4 c = texture(texture0, fragTexCoord); if (c.a < uCutoff) discard;\n"
     "  finalColor = vec4(c.rgb * uTint * (fragColor.rgb*uVcScale + uVcShift), c.a);\n"
     "}\n";
-static const char *const FS_HERO_DECAL = "#version 330\n"
+static const char *const FS_HERO_DECAL = SHADER_GLSL_HEADER
                                          "in vec2 fragTexCoord; in vec4 fragColor;\n"
                                          "uniform sampler2D texture0;\n"
                                          "out vec4 finalColor;\n"

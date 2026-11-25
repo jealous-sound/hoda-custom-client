@@ -71,12 +71,12 @@ typedef struct {
     bool seed_bound[CONSUME_MAX_SEEDS];
 } ConsumeEnv;
 
-static const char *const FS_CONSUME_UNLIT = "#version 330\n"
+static const char *const FS_CONSUME_UNLIT = SHADER_GLSL_HEADER
                                             "in vec2 fragTexCoord;\n"
                                             "uniform sampler2D texture0;\n"
                                             "out vec4 finalColor;\n"
                                             "void main(){ finalColor = texture(texture0, fragTexCoord); }\n";
-static const char *const FS_CONSUME_HELIX = "#version 330\n"
+static const char *const FS_CONSUME_HELIX = SHADER_GLSL_HEADER
                                             "in vec2 fragTexCoord;\n"
                                             "uniform sampler2D texture0;\n"
                                             "uniform float uScroll;\n"

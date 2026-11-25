@@ -29,6 +29,7 @@ Without a local copy the game downloads its data on first launch (see [Content](
 | `make format-check` | clang-format check; `make format` rewrites |
 | `make dist` | a playable copy in `../hoda-custom-dist` (`DIST_DIR=`, `DIST_BACKEND_URL=`) |
 | `make content` | publishes the data packs to R2 (`CONTENT_BUCKET=`, default `hoda-assets`; `npx wrangler login` once) |
+| `make web`, `make web-serve` | the experimental [browser build](#browser-build) in `build/web/`, and a local server for it |
 | `python3 tools/check_comments.py` | fails on any comment or docstring in owned code |
 
 Build variables: `SERVER_URL` (default `https://api.hodareborn.com`; empty means local play only), `CONTENT_URL`
@@ -216,6 +217,32 @@ downloads only the packs that changed.
 changed packs, and uploads the manifest last. `python3 tools/publish_content.py --dry-run` builds the packs without
 uploading them. Whenever a data table changes shape, bump `CONTENT_MANIFEST_FORMAT` in `source/content_update.c`
 and `MANIFEST_FORMAT` in `tools/build_content_packs.py` together.
+
+## Browser build
+
+Experimental: the same C code compiled to WebAssembly with Emscripten (`brew install emscripten`), WebGL2 and
+pthreads. Needs the local asset cache.
+
+```sh
+make web-serve
+```
+
+Then open http://127.0.0.1:8077/ in Chrome. `WEB_BACKEND=http://127.0.0.1:<port>` makes the server forward `/api/`
+to a backend; add `?HOD_BACKEND_URL=http://127.0.0.1:8077/api` to the page URL to play Online through it. Any
+`HOD_*` query parameter becomes an environment variable for the game.
+
+- `make web` clones raylib 5.5 into `build/` once and builds it for the web. It writes `build/web/index.{html,js,wasm}`,
+  a `game/` tree of links to the files `make dist` ships, and `game_files.txt`, the list the page mounts.
+- Game files are not downloaded up front. The page mounts them over HTTP and fetches each file the first time the
+  game reads it, so the server must answer `Range` requests. Reaching the tutorial battle reads about 190 MB.
+- The native game writes `resource_index.txt` (`HOD_RESOURCE_INDEX_OUT=<path>`), the cache bundle catalog. The
+  browser build loads it instead of opening all 4,716 bundles at startup.
+- Threads need cross-origin isolation: the page must be served with `Cross-Origin-Opener-Policy: same-origin` and
+  `Cross-Origin-Embedder-Policy: require-corp`. `tools/serve_web.py` sends both.
+- Local Game saves, `account.dat` and `settings.json` live in the browser's origin-private file system.
+- Not done yet: hosting the files on the CDN (the fetch layer asks for `dir//file` paths and needs CORS and
+  CORP headers), CORS on the backend, and a frame loop driven by `requestAnimationFrame` (frames now yield with a
+  16 ms sleep, about 50 fps).
 
 ## Releases
 
