@@ -22,6 +22,19 @@ import serve_web
 
 FILE_SIZE = 100
 SERVED_INDEX = "client-additional-data/resource_index.txt"
+SHIPPED_BUNDLE = "cache/a/CAB-hud"
+DROPPED_BUNDLE = "cache/b/CAB-c_hero_t1_pre"
+LATER_BUNDLE = "cache/c/CAB-store"
+FULL_INDEX = (
+    "hoda-resource-index 1\n"
+    f"bundles 3\n{SHIPPED_BUNDLE}\n{DROPPED_BUNDLE}\n{LATER_BUNDLE}\n"
+    "objects 4\n0 100 20 28 Btn_Close\n1 200 30 28 hero skin (1)\n2 300 40 83 click\n1 400 50 28 Btn_Close\n"
+)
+SHIPPED_INDEX = (
+    "hoda-resource-index 1\n"
+    f"bundles 2\n{SHIPPED_BUNDLE}\n{LATER_BUNDLE}\n"
+    "objects 2\n0 100 20 28 Btn_Close\n1 300 40 83 click\n"
+)
 WEB_PACKAGING = ROOT / "packaging" / "web"
 PNG_SIZE_FIELDS = slice(16, 24)
 
@@ -71,12 +84,26 @@ class ParseRangeTest(unittest.TestCase):
                 self.assertIsNone(serve_web.parse_range(header, FILE_SIZE))
 
 
+class ShippedIndexTest(unittest.TestCase):
+    def test_drops_bundles_that_do_not_ship_and_renumbers_the_rest(self) -> None:
+        self.assertEqual(build_web.shipped_index(FULL_INDEX, {SHIPPED_BUNDLE, LATER_BUNDLE}), SHIPPED_INDEX)
+
+    def test_keeps_an_index_whose_bundles_all_ship(self) -> None:
+        shipped = {SHIPPED_BUNDLE, DROPPED_BUNDLE, LATER_BUNDLE}
+        self.assertEqual(build_web.shipped_index(FULL_INDEX, shipped), FULL_INDEX)
+
+    def test_refuses_text_that_is_not_an_index(self) -> None:
+        for text in ("", "hoda-resource-index 1\n", "hoda-resource-index 1\nbundles 2\nonly-one\n"):
+            with self.subTest(text=text), self.assertRaises(SystemExit):
+                build_web.shipped_index(text, set())
+
+
 class BuildWebTest(unittest.TestCase):
     def test_lists_links_and_index_the_page_mounts(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             base = Path(temporary)
             root, out = base / "repo", base / "web"
-            runtime = ["data/rules.json", "client-additional-data/characters.json"]
+            runtime = ["data/rules.json", "client-additional-data/characters.json", SHIPPED_BUNDLE, LATER_BUNDLE]
             for relative in runtime:
                 (root / relative).parent.mkdir(parents=True, exist_ok=True)
                 (root / relative).write_text(relative)
@@ -84,7 +111,7 @@ class BuildWebTest(unittest.TestCase):
             for name in build_web.PAGE_FILES:
                 (out / name).write_text(name)
             index = base / "resource_index.txt"
-            index.write_text("hoda-resource-index 1\n")
+            index.write_text(FULL_INDEX)
             with mock.patch.object(build_web.build_dist, "content_files", return_value=runtime):
                 count, _ = build_web.build(root, out, index, SERVED_INDEX)
 
@@ -95,7 +122,7 @@ class BuildWebTest(unittest.TestCase):
             for relative in runtime:
                 self.assertTrue((tree / relative).is_symlink())
                 self.assertEqual((tree / relative).read_text(), relative)
-            self.assertEqual((tree / SERVED_INDEX).read_text(), index.read_text())
+            self.assertEqual((tree / SERVED_INDEX).read_text(), SHIPPED_INDEX)
 
     def test_refuses_an_output_without_the_compiled_page(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

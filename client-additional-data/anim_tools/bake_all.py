@@ -8,6 +8,7 @@ import struct
 import sys
 import time
 import traceback
+from pathlib import Path
 
 from PIL import Image
 
@@ -40,6 +41,7 @@ UV.UnityVersion.from_str = classmethod(_patched_from_str)
 
 import glb_writer
 import prefab_scaffold
+import shared_textures
 import unit_texture
 from bake_idle import bake_humanoid
 from bake_generic import bake_generic_unit
@@ -1138,6 +1140,8 @@ def main():
     for r in report:
         counts[r['status']] = counts.get(r['status'], 0) + 1
     print('report totals:', counts)
+    families = [Path(CHAR_PACK) / d for d, _ in todo]
+    print(shared_textures.report(shared_textures.share_families(families)))
 
 
 if __name__ == '__main__':

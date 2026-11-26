@@ -170,7 +170,7 @@ ci-test: $(CONTENT_TEST_TARGET) $(UPDATE_TEST_TARGET) $(INSTALL_TEST_TARGET) $(S
 	python3 tools/validate_localization.py
 	python3 tools/validate_roster_levels.py
 	python3 tools/validate_enemy_rosters.py
-	python3 -m unittest tests/test_release_manifest.py tests/test_roster_levels.py tests/test_enemy_rosters.py tests/test_patch_notes.py tests/test_nexus_scenes.py tests/test_campaign_scenes.py tests/test_map_particles.py tests/test_build_hero_auras.py tests/test_web_build.py tests/test_publish_web.py
+	python3 -m unittest tests/test_release_manifest.py tests/test_roster_levels.py tests/test_enemy_rosters.py tests/test_patch_notes.py tests/test_nexus_scenes.py tests/test_campaign_scenes.py tests/test_map_particles.py tests/test_build_hero_auras.py tests/test_web_build.py tests/test_publish_web.py tests/test_cache_reach.py tests/test_shared_textures.py
 	./$(CONTENT_TEST_TARGET)
 	./$(UPDATE_TEST_TARGET)
 	./$(INSTALL_TEST_TARGET)

@@ -12,6 +12,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import cache_reach
+
 CLI_DESCRIPTION = (
     "Assemble a playable copy of the game: the app bundle with raylib inside, data/ and only the parts of "
     "client-additional-data the game reads at runtime."
@@ -57,11 +59,41 @@ SINGLE_FILES = (
 )
 WHOLE_TREES = (
     "data",
-    ORIGINAL_BUNDLES,
     EXTRA_DIR,
 )
+SOURCE_DIR = "source"
+NAME_DATA_SUFFIXES = (".json", ".txt")
+LOCALIZATION_FILE_PREFIX = "Loc_"
 MESH_DIR = f"{ASSETS}/meshes"
-MESH_RUNTIME_SUFFIXES = frozenset({".obj", ".ply", ".png", ".glb", ".json", ".bin", ".mp3"})
+HOME_SCENE_PIECES = (
+    "ground",
+    "main_terrain_top_04",
+    "rocks",
+    "spikes",
+    "grass_a",
+    "ferns",
+    "env_flag_cloth1",
+    "env_flag_cloth2",
+    "env_flag_poles",
+)
+LEGENDARY_STAR_COUNT = 3
+RUNTIME_MESHES = (
+    "main_screen_scene_pre/pPlane1.obj",
+    "main_screen_scene_pre/pPlane1_1.obj",
+    *(f"main_screen_scene_pre/ply_vertexcolor/{piece}.ply" for piece in HOME_SCENE_PIECES),
+    "MainMenuContainer/MainMenuContainer_vertexcolor.glb",
+    "MainMenuContainer/pPlane1.obj",
+    "MainMenuContainer/ply_vertexcolor/trainscrn_flag.ply",
+    "charbase_t1_pre/char_base.obj",
+    "charbase_t1_pre/plane_primitive.obj",
+    *(f"legendary_base/stars_{star}.obj" for star in range(1, LEGENDARY_STAR_COUNT + 1)),
+    "PackOpening_pre/PackOpening_pre_vertexcolor.glb",
+    "bg_plains_01_pre/reconstructed/scene.json",
+    "bg_plains_01_pre/reconstructed/scene.bin",
+)
+CONSUME_SCENE = "data/consume_scene.json"
+CONSUME_MESH_FIELD = "mesh"
+CONSUME_MESH_DIR = "TrainingAndPromotionsContainer"
 CHAR_PACK_DIR = f"{ASSETS}/char_pack"
 RUNTIME_MODEL_SUFFIX = "_rl.glb"
 GLB_HEADER_BYTES = 12
@@ -111,15 +143,40 @@ def portable_path(relative: str) -> bool:
     )
 
 
+def field_values(value: object, name: str) -> set[str]:
+    if isinstance(value, dict):
+        found = {value[name]} if isinstance(value.get(name), str) else set()
+        return found.union(*(field_values(child, name) for child in value.values()))
+    if isinstance(value, list):
+        return set().union(*(field_values(child, name) for child in value))
+    return set()
+
+
+def consume_mesh_path(root: Path, name: str) -> str:
+    vertex_colored = f"{CONSUME_MESH_DIR}/ply_vertexcolor/{name}.ply"
+    return vertex_colored if (root / MESH_DIR / vertex_colored).is_file() else f"{CONSUME_MESH_DIR}/{name}.obj"
+
+
 def mesh_files(root: Path) -> list[str]:
-    return [
-        path
-        for path in tree_files(root, MESH_DIR)
-        if Path(path).suffix in MESH_RUNTIME_SUFFIXES and portable_path(path)
-    ]
+    scene = json.loads((root / CONSUME_SCENE).read_text())
+    consume = sorted(field_values(scene, CONSUME_MESH_FIELD))
+    meshes = [*RUNTIME_MESHES, *(consume_mesh_path(root, name) for name in consume)]
+    files = []
+    for mesh in meshes:
+        relative = f"{MESH_DIR}/{mesh}"
+        if not (root / relative).is_file():
+            raise SystemExit(f"missing {root / relative}")
+        files.append(relative)
+        if mesh.endswith(".glb"):
+            files += [f"{MESH_DIR}/{Path(mesh).parent / uri}" for uri in glb_image_uris(root / relative)]
+    return files
 
 
-def content_files(root: Path) -> list[str]:
+def names_data(relative: str) -> bool:
+    return relative.endswith(NAME_DATA_SUFFIXES) and not Path(relative).name.startswith(LOCALIZATION_FILE_PREFIX)
+
+
+def loose_content_files(root: Path) -> list[str]:
     files = []
     for relative in SINGLE_FILES:
         if not (root / relative).is_file():
@@ -130,6 +187,17 @@ def content_files(root: Path) -> list[str]:
     files += mesh_files(root)
     files += character_files(root)
     return sorted(set(files))
+
+
+def runtime_bundle_files(root: Path, loose: list[str]) -> list[str]:
+    reach = cache_reach.game_reach(root / SOURCE_DIR, [root / relative for relative in loose if names_data(relative)])
+    bundles = cache_reach.load_bundles(root, cache_reach.bundle_files(root, ORIGINAL_BUNDLES))
+    return sorted(cache_reach.reachable_bundles(bundles, reach))
+
+
+def content_files(root: Path) -> list[str]:
+    loose = loose_content_files(root)
+    return sorted(set(loose + runtime_bundle_files(root, loose)))
 
 
 def runtime_files(root: Path) -> list[str]:

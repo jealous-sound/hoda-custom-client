@@ -82,6 +82,14 @@ Name every original object with `CACHE_RESOURCE("name")`, `CACHE_BUNDLE_RESOURCE
 `tools/validate_cache_refs.py` rejects literal refs that miss the cache. Prefer an original object, and put anything
 the 4.4.0 data lacks in `client-additional-data/extra/`.
 
+`make dist`, `make content` and `make web` ship only the cache bundles the game can read (`tools/cache_reach.py`):
+the first bundle holding a name that a C string or a shipped JSON or text file (translations aside) spells, a bundle
+a `bundle/name` string points into, or a bundle the C code names that holds a name some string spells. A new ref in
+code or data ships its bundle by itself; a name built at runtime from pieces needs a `%` format or a `#define`d
+prefix ending in `_` or `.` for the check to see it. Meshes are an explicit list, `RUNTIME_MESHES` in
+`tools/build_dist.py`, plus the consume scene's meshes, and `make test` fails when C code names a mesh that is not
+on it.
+
 Text comes from the original `Loc_*.txt` tables. New strings go in `data/localization/<area>/Loc_*.txt`, one file per
 language for all twelve languages, with `HODA_` keys. `tools/validate_localization.py` checks keys and placeholders,
 checks that every key the C code looks up exists, and rejects Russian literals in C outside the debug harness.
@@ -245,7 +253,7 @@ to a backend; add `?HOD_BACKEND_URL=http://127.0.0.1:8077/api` to the page URL t
 - raylib 5.5 resizes the canvas without telling GLFW, which then maps the mouse into the window's creation size.
   `WindowFitToDisplay` follows browser resizes through `SetWindowSize` instead.
 - The native game writes `resource_index.txt` (`HOD_RESOURCE_INDEX_OUT=<path>`), the cache bundle catalog. The
-  browser build loads it instead of opening all 4,716 bundles at startup.
+  browser build loads it, cut down to the bundles that ship, instead of opening every bundle at startup.
 - Threads need cross-origin isolation: the page must be served with `Cross-Origin-Opener-Policy: same-origin` and
   `Cross-Origin-Embedder-Policy: require-corp`. `tools/serve_web.py` sends both.
 - Local Game saves, `account.dat` and `settings.json` are copied into the browser's origin-private file system
