@@ -250,12 +250,21 @@ to a backend; add `?HOD_BACKEND_URL=http://127.0.0.1:8077/api` to the page URL t
   `Cross-Origin-Embedder-Policy: require-corp`. `tools/serve_web.py` sends both.
 - Local Game saves, `account.dat` and `settings.json` are copied into the browser's origin-private file system
   (`/saves`) after each `PlatformReplaceFile` and restored at startup.
+- Phones: the page ships `manifest.json` (fullscreen, landscape) and icons from `packaging/web/`, so Add to Home
+  Screen opens the game without browser bars, held sideways on Android. In a phone browser the first tap asks for
+  fullscreen and a landscape lock where the browser has them (Android Chrome; iPhone Safari has neither). An upright
+  touch screen turns the page's stage a quarter turn (`Module.hodPageTurned`) and `WindowPointer` turns pointer input
+  back. The web build leaves out `FLAG_WINDOW_RESIZABLE`, so raylib's own resize handler, which would size the
+  canvas to the upright window, stays off and `WindowFillPage` alone sizes it from the canvas's layout box.
+- A phone needs HTTPS for cross-origin isolation, so `http://<LAN address>:8077` does not start there; test through
+  an HTTPS tunnel such as `cloudflared tunnel --url http://localhost:8077`.
 - Not done yet: a frame loop driven by `requestAnimationFrame` (frames now yield with a 16 ms sleep, about 50 fps).
 
 ### Hosting
 
-The page is `https://hodareborn.com/play/` (the website pulls `index.{html,js,wasm}` for a pinned release), the game
-files are on the CDN under `web/<release>/`, and the backend answers CORS for that origin (`-web-origins`).
+The page is `https://hodareborn.com/play/` (the website pulls `index.{html,js,wasm}`, `manifest.json` and the
+`icon-*.png` files for a pinned release), the game files are on the CDN under `web/<release>/`, and the backend
+answers CORS for that origin (`-web-origins`).
 
 ```sh
 make web WEB_RELEASE=2026-11-26
@@ -273,8 +282,9 @@ from `WEB_PREVIOUS` on the server and the local asset cache is not read.
   packs are untouched. It needs `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` from an R2 API token
   with Object Read & Write on the bucket.
 - Game files go first, copied inside the bucket from `WEB_PREVIOUS` when their MD5 matches its `game_files.md5`, then
-  `game_files.md5`, `game_files.txt` and the page last. Everything is `immutable`. A rerun skips what is there and an
-  object already published with other bytes stops it, so a changed build needs a new release.
+  `game_files.md5`, `game_files.txt` and the page files, `index.html` last. Everything is `immutable`. A rerun
+  skips what is there and an object already published with other bytes stops it, so a changed build needs a new
+  release.
 - The bucket's CORS policy must allow the page's origin: `GET` and `HEAD`, header `Range`, exposing
   `Content-Length`, `Content-Range`, `Accept-Ranges` and `ETag`.
 - To rehearse locally on three origins, serve the published folder as the CDN with
