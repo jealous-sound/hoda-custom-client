@@ -46,6 +46,7 @@ client-additional-data/anim_tools/*
 !client-additional-data/anim_tools/extract_legendary_stars.py
 !client-additional-data/anim_tools/import_fbx.py
 !client-additional-data/anim_tools/rebuild_stub_src.py
+!client-additional-data/anim_tools/shared_textures.py
 !client-additional-data/anim_tools/unit_texture.py
 !client-additional-data/anim_tools/README.md
 !client-additional-data/vfx_tools/

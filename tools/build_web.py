@@ -10,13 +10,53 @@ import build_dist
 
 CLI_DESCRIPTION = (
     "Lay out the browser build's game files: a game/ tree of links to the files the game reads at runtime, the "
-    "prebuilt resource index, and game_files.txt, the list the page mounts lazily over HTTP."
+    "prebuilt resource index cut down to the bundles that ship, and game_files.txt, the list the page mounts lazily "
+    "over HTTP."
 )
 
 ROOT = build_dist.ROOT
 GAME_TREE = "game"
 FILE_LIST = "game_files.txt"
 PAGE_FILES = ("index.html", "index.js", "index.wasm")
+INDEX_HEADER = "hoda-resource-index 1"
+INDEX_BUNDLES_LABEL = "bundles"
+INDEX_OBJECTS_LABEL = "objects"
+
+
+def index_section(lines: list[str], at: int, label: str) -> tuple[list[str], int]:
+    name, _, count = lines[at].partition(" ") if at < len(lines) else ("", "", "")
+    if name != label or not count.isdigit() or at + 1 + int(count) > len(lines):
+        raise SystemExit(f"resource index line {at + 1} should start the {label} section")
+    end = at + 1 + int(count)
+    return lines[at + 1 : end], end
+
+
+def shipped_index(text: str, shipped: set[str]) -> str:
+    lines = text.splitlines()
+    if not lines or lines[0] != INDEX_HEADER:
+        raise SystemExit("not a resource index")
+    bundles, at = index_section(lines, 1, INDEX_BUNDLES_LABEL)
+    objects, _ = index_section(lines, at, INDEX_OBJECTS_LABEL)
+    renumbered: dict[str, str] = {}
+    for container, path in enumerate(bundles):
+        if path in shipped:
+            renumbered[str(container)] = str(len(renumbered))
+    kept_objects = []
+    for line in objects:
+        container, _, rest = line.partition(" ")
+        if container in renumbered:
+            kept_objects.append(f"{renumbered[container]} {rest}")
+    kept_bundles = [path for path in bundles if path in shipped]
+    return "\n".join(
+        [
+            INDEX_HEADER,
+            f"{INDEX_BUNDLES_LABEL} {len(kept_bundles)}",
+            *kept_bundles,
+            f"{INDEX_OBJECTS_LABEL} {len(kept_objects)}",
+            *kept_objects,
+            "",
+        ]
+    )
 
 
 def link_tree(root: Path, tree: Path, files: list[str]) -> int:
@@ -43,7 +83,7 @@ def build(root: Path, out: Path, resource_index: Path, served_index: str) -> tup
     total = link_tree(root, tree, files)
     index_target = tree / served_index
     index_target.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(resource_index, index_target)
+    index_target.write_text(shipped_index(resource_index.read_text(), set(files)))
     total += index_target.stat().st_size
     listed = sorted(files + [served_index])
     (out / FILE_LIST).write_text("".join(f"{relative}\n" for relative in listed))
