@@ -264,6 +264,12 @@ to a backend; add `?HOD_BACKEND_URL=http://127.0.0.1:8077/api` to the page URL t
   touch screen turns the page's stage a quarter turn (`Module.hodPageTurned`) and `WindowPointer` turns pointer input
   back. The web build leaves out `FLAG_WINDOW_RESIZABLE`, so raylib's own resize handler, which would size the
   canvas to the upright window, stays off and `WindowFillPage` alone sizes it from the canvas's layout box.
+- `WindowFillPage` sizes the canvas in device pixels (layout box × `devicePixelRatio`, at most 2), since raylib 5.5's
+  web backend has no high-DPI support. The UI scales with screen height, so a denser canvas only looks sharper.
+- Every frame is drawn into a 4× multisampled offscreen framebuffer and copied to the canvas whole
+  (`WindowBeginFrame` / `WindowEndFrame`). A download that yields mid-frame then leaves the last finished frame on
+  screen; drawing straight to the canvas showed the half-drawn frame, a white flash on each first-time attack effect.
+  Screens call the window pair, never raylib's `BeginDrawing` / `EndDrawing` (`tests/test_web_build.py` checks).
 - A phone needs HTTPS for cross-origin isolation, so `http://<LAN address>:8077` does not start there; test through
   an HTTPS tunnel such as `cloudflared tunnel --url http://localhost:8077`.
 - Not done yet: a frame loop driven by `requestAnimationFrame` (frames now yield with a 16 ms sleep, about 50 fps).

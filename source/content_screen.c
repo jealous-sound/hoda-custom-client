@@ -385,12 +385,12 @@ static bool ContentScreenRun(void) {
             break;
         }
         if (screen.entered) ContentArtLoadWhenInstalled(&screen.art);
-        BeginDrawing();
+        WindowBeginFrame();
         ClearBackground(CONTENT_BLANK_BACKGROUND);
         UiFrameBegin();
         ContentScreenChoice choice = ContentScreenDraw(&screen, &progress);
         UiFrameEnd();
-        EndDrawing();
+        WindowEndFrame();
         if (choice == CONTENT_SCREEN_QUIT) break;
         if (choice != CONTENT_SCREEN_RETRY) continue;
         if (running) ContentUpdateStop(&update, false);

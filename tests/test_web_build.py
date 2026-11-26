@@ -37,6 +37,7 @@ SHIPPED_INDEX = (
 )
 WEB_PACKAGING = ROOT / "packaging" / "web"
 PNG_SIZE_FIELDS = slice(16, 24)
+WINDOW_SOURCE = "window.c"
 
 
 def png_size(path: Path) -> str:
@@ -60,6 +61,18 @@ class AppFilesTest(unittest.TestCase):
         copied = re.search(r"^WEB_APP_FILES = (.+)$", makefile, re.MULTILINE).group(1).split()
         self.assertEqual([Path(path).name for path in copied], list(build_web.APP_FILES))
         self.assertEqual(png_size(WEB_PACKAGING / "icon-180.png"), "180x180")
+
+
+class WholeFramesTest(unittest.TestCase):
+    def test_every_screen_draws_its_frames_through_the_window(self) -> None:
+        raylib_frames = re.compile(r"\b(?:Begin|End)Drawing\(")
+        bypassing = sorted(
+            path.name
+            for path in (ROOT / "source").glob("*.c")
+            if path.name != WINDOW_SOURCE and raylib_frames.search(path.read_text(errors="replace"))
+        )
+        self.assertEqual(bypassing, [])
+        self.assertTrue(raylib_frames.search((ROOT / "source" / WINDOW_SOURCE).read_text()))
 
 
 class ParseRangeTest(unittest.TestCase):

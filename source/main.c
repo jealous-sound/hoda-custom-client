@@ -149,12 +149,12 @@ static bool RunLoadedGame(Game *game) {
         if (mouse_override) SetMousePosition((int)(mouse_x * UiScale()), (int)(mouse_y * UiScale()));
         if (shot.output) DebugShotPrepare(game, &shot);
 
-        BeginDrawing();
+        WindowBeginFrame();
         GameDraw(game);
         GameBusyOverlayDraw();
         if (!shot.output) OptionsFrameRateCounterDraw();
         bool captured = shot.output && DebugShotCapture(&shot);
-        EndDrawing();
+        WindowEndFrame();
 
         if (captured || game->restart_requested || game->quit_requested) break;
     }
@@ -201,7 +201,7 @@ int main(void) {
     if (win) sscanf(win, "%dx%d", &win_w, &win_h);
 
     bool player_window = !win && !screenshot_mode;
-    unsigned int flags = FLAG_MSAA_4X_HINT | WINDOW_RESIZE_FLAGS | WINDOW_PIXEL_DENSITY_FLAGS;
+    unsigned int flags = WINDOW_SAMPLING_FLAGS | WINDOW_RESIZE_FLAGS | WINDOW_PIXEL_DENSITY_FLAGS;
     if (screenshot_mode) flags |= FLAG_WINDOW_HIDDEN | FLAG_WINDOW_UNFOCUSED;
     if (!screenshot_mode && SettingsSwitchOn(SETTINGS_SWITCH_VSYNC)) flags |= FLAG_VSYNC_HINT;
     SetConfigFlags(flags);

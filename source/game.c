@@ -1157,12 +1157,12 @@ static bool GameAwaitServerRetry(void) {
         0.34f
     );
     while (!WindowShouldClose() && !IsKeyPressed(KEY_ESCAPE)) {
-        BeginDrawing();
+        WindowBeginFrame();
         ClearBackground(BLACK);
         UiFrameBegin();
         bool retried = GameDrawConnectionError(&retry);
         UiFrameEnd();
-        EndDrawing();
+        WindowEndFrame();
         if (retried) {
             BackendRetryNow();
             return true;
@@ -1217,10 +1217,10 @@ static void GameDrawMaintenance(Game *g) {
 
 static void GameAwaitClientUpdate(Game *g) {
     while (!g->quit_requested && !WindowShouldClose() && !IsKeyPressed(KEY_ESCAPE)) {
-        BeginDrawing();
+        WindowBeginFrame();
         ClearBackground(BLACK);
         GameDrawClientUpdate(g);
-        EndDrawing();
+        WindowEndFrame();
     }
 }
 
@@ -1269,12 +1269,12 @@ static bool GameChooseAccount(const char *message_key) {
     AccountGateInitialize(&gate, LoadingScreenSplash(), message_key);
     AccountGateChoice choice = ACCOUNT_GATE_UNDECIDED;
     while (choice == ACCOUNT_GATE_UNDECIDED && !WindowShouldClose()) {
-        BeginDrawing();
+        WindowBeginFrame();
         ClearBackground(BLACK);
         UiFrameBegin();
         choice = AccountGateDraw(&gate);
         UiFrameEnd();
-        EndDrawing();
+        WindowEndFrame();
     }
     if (choice == ACCOUNT_GATE_GUEST) BackendAllowGuest();
     return choice == ACCOUNT_GATE_GUEST || choice == ACCOUNT_GATE_SIGNED_IN;

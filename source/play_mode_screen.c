@@ -185,12 +185,12 @@ static bool PlayModeScreenRun(void) {
     PlayModeScreenLoad(&screen);
     PlayModeChoice choice = PLAY_MODE_UNDECIDED;
     while (choice == PLAY_MODE_UNDECIDED && !WindowShouldClose()) {
-        BeginDrawing();
+        WindowBeginFrame();
         ClearBackground(BLACK);
         UiFrameBegin();
         choice = PlayModeScreenDraw(&screen);
         UiFrameEnd();
-        EndDrawing();
+        WindowEndFrame();
     }
     PlayModeScreenUnload(&screen);
     if (choice == PLAY_MODE_ONLINE) BackendConnect(server);
