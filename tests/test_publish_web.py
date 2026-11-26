@@ -37,6 +37,8 @@ def write_build(root: Path, release: str, files: dict[str, bytes], content_url: 
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(body)
     (out / build_web.FILE_LIST).write_text("".join(f"{relative}\n" for relative in sorted(files)))
+    for name in build_web.APP_FILES:
+        (out / name).write_bytes(name.encode())
     (out / "index.html").write_text("<script src=index.js></script>")
     (out / "index.js").write_text("var Module = {};")
     (out / "index.wasm").write_bytes(b"\0asm" + publish_web.files_url(content_url, release).encode())
@@ -109,7 +111,7 @@ class PublishTest(unittest.TestCase):
         self.assertTrue(all(key.startswith("web/v1/") for key in keys))
         game = [f"web/v1/game/{relative}" for relative in GAME_FILES]
         self.assertCountEqual(keys[: len(game)], game)
-        endings = ["game_files.md5", "game_files.txt", "index.wasm", "index.js", "index.html"]
+        endings = ["game_files.md5", "game_files.txt", "index.wasm", "index.js", *build_web.APP_FILES, "index.html"]
         self.assertEqual(keys[len(game) :], [f"web/v1/{name}" for name in endings])
         for relative, body in GAME_FILES.items():
             self.assertEqual(self.s3.stored(f"web/v1/game/{relative}").read_bytes(), body)
@@ -177,7 +179,8 @@ class PublishTest(unittest.TestCase):
         built = publish_web.read_release(out, "v1", "", CONTENT_URL, workers=2)
         plan, sent = publish_web.publish(self.bucket, built, dry_run=False, workers=2)
         self.assertIn(
-            "published game_files.md5, game_files.txt, index.wasm, index.js, index.html last",
+            "published game_files.md5, game_files.txt, index.wasm, index.js, manifest.json, icon-180.png, "
+            "icon-192.png, icon-512.png, index.html last",
             publish_web.summary(built, plan, sent, dry_run=False),
         )
 

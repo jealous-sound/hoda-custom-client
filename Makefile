@@ -43,6 +43,8 @@ WEB_RAYLIB_SRC ?= build/raylib-$(WEB_RAYLIB_VERSION)-src
 WEB_RAYLIB_DIR ?= build/raylib-web
 WEB_RAYLIB = $(WEB_RAYLIB_DIR)/libraylib.a
 WEB_SHELL = packaging/web/shell.html
+WEB_APP_FILES = packaging/web/manifest.json packaging/web/icon-180.png packaging/web/icon-192.png \
+	packaging/web/icon-512.png
 WEB_PAGE = $(WEB_DIR)/index.html
 WEB_RESOURCE_INDEX = client-additional-data/resource_index.txt
 WEB_RESOURCE_INDEX_BUILD = build/resource_index.txt
@@ -230,8 +232,9 @@ $(WEB_BAKED): FORCE
 	echo "$(CONTENT_URL) $(SERVER_URL) $(WEB_FILES_URL) $(CLIENT_VERSION)" | cmp -s - "$@" || \
 		echo "$(CONTENT_URL) $(SERVER_URL) $(WEB_FILES_URL) $(CLIENT_VERSION)" > "$@"
 
-$(WEB_PAGE): $(DEPS) $(WEB_SHELL) $(WEB_BAKED) $(WEB_RAYLIB) Makefile
+$(WEB_PAGE): $(DEPS) $(WEB_SHELL) $(WEB_APP_FILES) $(WEB_BAKED) $(WEB_RAYLIB) Makefile
 	mkdir -p "$(WEB_DIR)"
+	cp $(WEB_APP_FILES) "$(WEB_DIR)/"
 	$(WEB_CC) $(WEB_CFLAGS) $(SRC) -o $(WEB_PAGE) $(WEB_LDFLAGS)
 
 $(WEB_RESOURCE_INDEX_BUILD): $(TARGET)

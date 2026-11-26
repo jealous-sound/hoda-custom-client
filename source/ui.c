@@ -84,7 +84,7 @@ void UiSetInputWindow(bool active, Rectangle window) {
 }
 
 Vector2 UiPointer(void) {
-    Vector2 m = GetMousePosition();
+    Vector2 m = WindowPointer();
     float s = UiScale();
     return (Vector2){m.x / s, m.y / s};
 }
@@ -104,7 +104,7 @@ Vector2 UiMouse(void) {
 
 Vector2 UiMouseDelta(void) {
     if (UiInputBlocked() || UiPointerOutsideWindow()) return (Vector2){0, 0};
-    Vector2 d = GetMouseDelta();
+    Vector2 d = WindowPointerDelta();
     float s = UiScale();
     return (Vector2){d.x / s, d.y / s};
 }

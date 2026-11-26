@@ -16,7 +16,9 @@ CLI_DESCRIPTION = (
 ROOT = build_dist.ROOT
 GAME_TREE = "game"
 FILE_LIST = "game_files.txt"
-PAGE_FILES = ("index.html", "index.js", "index.wasm")
+ENTRY_PAGE = "index.html"
+APP_FILES = ("manifest.json", "icon-180.png", "icon-192.png", "icon-512.png")
+PAGE_FILES = ("index.wasm", "index.js", *APP_FILES, ENTRY_PAGE)
 
 
 def link_tree(root: Path, tree: Path, files: list[str]) -> int:

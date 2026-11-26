@@ -21,17 +21,23 @@ static void WindowSendToBack(void) {
 #define WINDOW_PIXEL_DENSITY_FLAGS 0
 
 #ifdef __EMSCRIPTEN__
+#include <emscripten/em_js.h>
 #include <emscripten/html5.h>
 
-#define WINDOW_PAGE_CANVAS "#canvas"
+#define WINDOW_RESIZE_FLAGS 0
+
+// clang-format off
+EM_JS(int, WindowPageTurned, (void), { return Module.hodPageTurned ? 1 : 0; });
+EM_JS(int, WindowPageWidth, (void), { return Module.canvas.clientWidth; });
+EM_JS(int, WindowPageHeight, (void), { return Module.canvas.clientHeight; });
+// clang-format on
 
 static EM_BOOL WindowFillPage(int event_type, const EmscriptenUiEvent *event, void *user_data) {
     (void)event_type;
     (void)event;
     (void)user_data;
-    double width = 0.0, height = 0.0;
-    emscripten_get_element_css_size(WINDOW_PAGE_CANVAS, &width, &height);
-    if (width >= 1.0 && height >= 1.0) SetWindowSize((int)width, (int)height);
+    int width = WindowPageWidth(), height = WindowPageHeight();
+    if (width >= 1 && height >= 1) SetWindowSize(width, height);
     return EM_TRUE;
 }
 
@@ -74,3 +80,26 @@ static void WindowSendToBack(void) {
     MinimizeWindow();
 }
 #endif
+
+#ifndef __EMSCRIPTEN__
+#define WINDOW_RESIZE_FLAGS FLAG_WINDOW_RESIZABLE
+
+static int WindowPageTurned(void) {
+    return 0;
+}
+#endif
+
+static Vector2 WindowPointer(void) {
+    Vector2 page = GetMousePosition();
+    if (!WindowPageTurned()) return page;
+    float width = (float)GetScreenWidth(), height = (float)GetScreenHeight();
+    return (Vector2){page.y * width / height, height - page.x * height / width};
+}
+
+static Vector2 WindowPointerDelta(void) {
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) return (Vector2){0.0f, 0.0f};
+    Vector2 page = GetMouseDelta();
+    if (!WindowPageTurned()) return page;
+    float width = (float)GetScreenWidth(), height = (float)GetScreenHeight();
+    return (Vector2){page.y * width / height, -page.x * height / width};
+}

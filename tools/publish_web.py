@@ -29,7 +29,6 @@ CLI_DESCRIPTION = (
 
 WEB_PREFIX = "web"
 HASH_LIST = "game_files.md5"
-PAGE_ORDER = ("index.wasm", "index.js", "index.html")
 RELEASE_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*$")
 IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable"
 DEFAULT_CONTENT_TYPE = "application/octet-stream"
@@ -312,14 +311,14 @@ def read_release(
     if expected.encode() not in (root / "index.wasm").read_bytes():
         raise SystemExit(f"{root}/index.wasm was not built to read {expected}; run make web WEB_RELEASE={name}")
     if reuse_game_files:
-        pages = {page: ((root / page).read_bytes(), content_type(page)) for page in PAGE_ORDER}
+        pages = {page: ((root / page).read_bytes(), content_type(page)) for page in build_web.PAGE_FILES}
         return Release(root, name, previous, {}, pages, reused=True)
     listed = (root / build_web.FILE_LIST).read_text().split()
     tree = root / build_web.GAME_TREE
     with ThreadPoolExecutor(max_workers=workers) as pool:
         digests = dict(zip(listed, pool.map(lambda relative: file_md5(tree / relative), listed)))
     endings = {HASH_LIST: (hash_list(digests), content_type(HASH_LIST))}
-    for page in (build_web.FILE_LIST, *PAGE_ORDER):
+    for page in (build_web.FILE_LIST, *build_web.PAGE_FILES):
         endings[page] = ((root / page).read_bytes(), content_type(page))
     return Release(root, name, previous, digests, endings)
 
