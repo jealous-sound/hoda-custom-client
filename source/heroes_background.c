@@ -845,7 +845,7 @@ static void HeroFxDraw(HeroesBackground *scene) {
 }
 
 static Vector3 HeroMouseOnPlane(const HeroesBackground *scene, float plane_y, bool *ok) {
-    Ray ray = GetScreenToWorldRay(GetMousePosition(), scene->cam);
+    Ray ray = GetScreenToWorldRay(WindowPointer(), scene->cam);
     *ok = false;
     if (fabsf(ray.direction.y) < 1e-4f) return (Vector3){0};
     float t = (plane_y - ray.position.y) / ray.direction.y;
@@ -905,7 +905,7 @@ void HeroesBackgroundConsumeDragMove(HeroesBackground *scene, bool over_tray) {
     if (!scene->drag.active) return;
     scene->drag.shown = false;
     if (over_tray) return;
-    Ray ray = GetScreenToWorldRay(GetMousePosition(), scene->consume_env.camera);
+    Ray ray = GetScreenToWorldRay(WindowPointer(), scene->consume_env.camera);
     if (fabsf(ray.direction.y) < 1e-4f) return;
     float t = (HERO_CONSUME_DRAG_PLANE_Y - ray.position.y) / ray.direction.y;
     if (t <= 0.0f) return;
@@ -937,7 +937,7 @@ void HeroesBackgroundConsumeDragEnd(HeroesBackground *scene) {
 }
 
 int HeroesBackgroundConsumeSpotAtMouse(const HeroesBackground *scene) {
-    Ray ray = GetScreenToWorldRay(GetMousePosition(), scene->consume_env.camera);
+    Ray ray = GetScreenToWorldRay(WindowPointer(), scene->consume_env.camera);
     if (fabsf(ray.direction.y) < 1e-4f) return -1;
     for (int s = 0; s < HERO_SCENE_UNIT_COUNT; s++) {
         if (!scene->units[s].active) continue;

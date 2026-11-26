@@ -37,6 +37,8 @@ def write_build(root: Path, release: str, files: dict[str, bytes], content_url: 
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(body)
     (out / build_web.FILE_LIST).write_text("".join(f"{relative}\n" for relative in sorted(files)))
+    for name in build_web.APP_FILES:
+        (out / name).write_bytes(name.encode())
     (out / "index.html").write_text("<script src=index.js></script>")
     (out / "index.js").write_text("var Module = {};")
     (out / "index.wasm").write_bytes(b"\0asm" + publish_web.files_url(content_url, release).encode())
@@ -109,7 +111,7 @@ class PublishTest(unittest.TestCase):
         self.assertTrue(all(key.startswith("web/v1/") for key in keys))
         game = [f"web/v1/game/{relative}" for relative in GAME_FILES]
         self.assertCountEqual(keys[: len(game)], game)
-        endings = ["game_files.md5", "game_files.txt", "index.wasm", "index.js", "index.html"]
+        endings = ["game_files.md5", "game_files.txt", "index.wasm", "index.js", *build_web.APP_FILES, "index.html"]
         self.assertEqual(keys[len(game) :], [f"web/v1/{name}" for name in endings])
         for relative, body in GAME_FILES.items():
             self.assertEqual(self.s3.stored(f"web/v1/game/{relative}").read_bytes(), body)
@@ -177,7 +179,8 @@ class PublishTest(unittest.TestCase):
         built = publish_web.read_release(out, "v1", "", CONTENT_URL, workers=2)
         plan, sent = publish_web.publish(self.bucket, built, dry_run=False, workers=2)
         self.assertIn(
-            "published game_files.md5, game_files.txt, index.wasm, index.js, index.html last",
+            "published game_files.md5, game_files.txt, index.wasm, index.js, manifest.json, icon-180.png, "
+            "icon-192.png, icon-512.png, index.html last",
             publish_web.summary(built, plan, sent, dry_run=False),
         )
 
@@ -194,6 +197,39 @@ class PublishTest(unittest.TestCase):
     def test_previous_release_must_be_published(self) -> None:
         with self.assertRaises(SystemExit):
             self.publish("v2", GAME_FILES, previous="v1")
+
+    def test_page_only_release_copies_every_game_file_and_ignores_the_local_cache(self) -> None:
+        self.publish("v1", GAME_FILES)
+        self.written()
+        changed_locally = {**GAME_FILES, "data/rules.json": b'{"rules": 2}', "data/new.json": b"{}"}
+        out = write_build(self.base / "v2", "v2", changed_locally)
+        built = publish_web.read_release(out, "v2", "v1", CONTENT_URL, workers=2, reuse_game_files=True)
+
+        plan, sent = publish_web.publish(self.bucket, built, dry_run=False, workers=2)
+
+        self.assertEqual((plan.upload, sent), ([], 0))
+        self.assertEqual(sorted(plan.copy), sorted(GAME_FILES))
+        self.assertEqual(self.s3.stored("web/v2/game/data/rules.json").read_bytes(), GAME_FILES["data/rules.json"])
+        self.assertFalse(self.s3.stored("web/v2/game/data/new.json").exists())
+        for listed in (build_web.FILE_LIST, publish_web.HASH_LIST):
+            self.assertEqual(
+                self.s3.stored(f"web/v2/{listed}").read_bytes(), self.s3.stored(f"web/v1/{listed}").read_bytes()
+            )
+        self.assertEqual(self.s3.stored("web/v2/index.js").read_bytes(), b"var Module = {};")
+
+    def test_page_only_release_stops_when_a_reused_file_is_gone(self) -> None:
+        self.publish("v1", GAME_FILES)
+        self.s3.stored("web/v1/game/data/rules.json").unlink()
+        out = write_build(self.base / "v2", "v2", GAME_FILES)
+        built = publish_web.read_release(out, "v2", "v1", CONTENT_URL, workers=2, reuse_game_files=True)
+
+        with self.assertRaises(SystemExit):
+            publish_web.publish(self.bucket, built, dry_run=False, workers=2)
+
+    def test_page_only_release_needs_a_previous_release(self) -> None:
+        out = write_build(self.base / "v2", "v2", GAME_FILES)
+        with self.assertRaises(SystemExit):
+            publish_web.read_release(out, "v2", "", CONTENT_URL, workers=2, reuse_game_files=True)
 
 
 class ReadReleaseTest(unittest.TestCase):

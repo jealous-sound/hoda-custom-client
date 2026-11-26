@@ -2,22 +2,39 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="HoDA Reborn">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
 <title>Heroes of Dragon Age</title>
 <style>
-html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
-canvas.emscripten { display: block; width: 100vw; height: 100vh; border: 0; background: #000; outline: none; }
-#status { position: fixed; left: 0; right: 0; bottom: 24px; text-align: center; color: #ddd;
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; overscroll-behavior: none;
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+#stage { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; transform-origin: 0 0; }
+canvas.emscripten { display: block; width: 100%; height: 100%; border: 0; background: #000; outline: none;
+  touch-action: none; }
+#status { position: absolute; left: 0; right: 0; bottom: 24px; text-align: center; color: #ddd;
   font: 15px/1.4 system-ui, sans-serif; pointer-events: none; }
 </style>
 </head>
 <body>
+<div id="stage">
 <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
 <div id="status">Loading…</div>
+</div>
 <script>
 var hodStatus = document.getElementById("status");
+var hodStage = document.getElementById("stage");
+var hodTouchScreen = window.matchMedia("(pointer: coarse)");
+var hodInstalled = window.matchMedia("(display-mode: fullscreen), (display-mode: standalone)");
 var Module = {
   canvas: document.getElementById("canvas"),
+  hodPageTurned: false,
   preRun: [function () {
     var query = new URLSearchParams(location.search);
     query.forEach(function (value, name) {
@@ -29,8 +46,32 @@ var Module = {
   onRuntimeInitialized: function () { hodStatus.textContent = ""; },
   onAbort: function (reason) { hodStatus.textContent = "The game stopped: " + reason; },
 };
+function hodLayOutStage() {
+  var width = window.innerWidth, height = window.innerHeight;
+  var turned = hodTouchScreen.matches && height > width;
+  Module.hodPageTurned = turned;
+  hodStage.style.width = (turned ? height : width) + "px";
+  hodStage.style.height = (turned ? width : height) + "px";
+  hodStage.style.transform = turned ? "translateX(" + width + "px) rotate(90deg)" : "none";
+}
+function hodFillScreen() {
+  if (!hodTouchScreen.matches || hodInstalled.matches || navigator.standalone) return;
+  if (document.fullscreenElement || document.webkitFullscreenElement) return;
+  var root = document.documentElement;
+  var request = root.requestFullscreen || root.webkitRequestFullscreen;
+  if (!request) return;
+  new Promise(function (resolve) { resolve(request.call(root, { navigationUI: "hide" })); }).then(function () {
+    if (screen.orientation && screen.orientation.lock) return screen.orientation.lock("landscape");
+  }).catch(function () {});
+}
+window.addEventListener("resize", hodLayOutStage);
+window.addEventListener("touchend", hodFillScreen, true);
+hodLayOutStage();
 window.addEventListener("error", function (event) {
   hodStatus.textContent = "The game stopped: " + (event.message || event.error);
+});
+window.addEventListener("unhandledrejection", function (event) {
+  hodStatus.textContent = "The game stopped: " + event.reason;
 });
 if (!self.crossOriginIsolated) {
   hodStatus.textContent = "This page needs cross-origin isolation (COOP/COEP headers) to run.";

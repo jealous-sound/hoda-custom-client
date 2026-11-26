@@ -43,7 +43,8 @@ WEB_RAYLIB_SRC ?= build/raylib-$(WEB_RAYLIB_VERSION)-src
 WEB_RAYLIB_DIR ?= build/raylib-web
 WEB_RAYLIB = $(WEB_RAYLIB_DIR)/libraylib.a
 WEB_SHELL = packaging/web/shell.html
-WEB_FETCH_SHIM = packaging/web/single_slash_fetch.js
+WEB_APP_FILES = packaging/web/manifest.json packaging/web/icon-180.png packaging/web/icon-192.png \
+	packaging/web/icon-512.png
 WEB_PAGE = $(WEB_DIR)/index.html
 WEB_RESOURCE_INDEX = client-additional-data/resource_index.txt
 WEB_RESOURCE_INDEX_BUILD = build/resource_index.txt
@@ -52,6 +53,7 @@ WEB_BACKEND ?=
 WEB_RELEASE ?=
 WEB_PREVIOUS ?=
 WEB_DRY_RUN ?=
+WEB_REUSE_GAME_FILES ?=
 WEB_FILES_URL = $(if $(WEB_RELEASE),$(CONTENT_URL)/web/$(WEB_RELEASE)/,)
 WEB_BAKED = $(WEB_DIR)-baked.txt
 WEB_CFLAGS = -Wall -O2 -std=c99 -ffp-contract=off -D_DEFAULT_SOURCE -pthread -I$(WEB_RAYLIB_DIR) \
@@ -61,8 +63,8 @@ WEB_CFLAGS = -Wall -O2 -std=c99 -ffp-contract=off -D_DEFAULT_SOURCE -pthread -I$
 WEB_LDFLAGS = -L$(WEB_RAYLIB_DIR) -lraylib -pthread -sENVIRONMENT=web,worker -sUSE_GLFW=3 \
 	-sMIN_WEBGL_VERSION=2 -sMAX_WEBGL_VERSION=2 -sFULL_ES3 -sWASMFS -sFETCH -sASYNCIFY -sASYNCIFY_STACK_SIZE=262144 \
 	-sALLOW_MEMORY_GROWTH -sINITIAL_MEMORY=512MB -sMAXIMUM_MEMORY=4GB -sSTACK_SIZE=8MB \
-	-sDEFAULT_PTHREAD_STACK_SIZE=2MB -sPTHREAD_POOL_SIZE=24 -sEXPORTED_RUNTIME_METHODS=ENV,HEAPF32 \
-	--shell-file $(WEB_SHELL) --pre-js $(WEB_FETCH_SHIM)
+	-sDEFAULT_PTHREAD_STACK_SIZE=2MB -sPTHREAD_POOL_SIZE=32 -sEXPORTED_RUNTIME_METHODS=ENV,HEAPF32 \
+	--shell-file $(WEB_SHELL) -Wl,--wrap=fopen
 .DEFAULT_GOAL := app
 
 ifeq ($(PLATFORM),macos)
@@ -230,8 +232,9 @@ $(WEB_BAKED): FORCE
 	echo "$(CONTENT_URL) $(SERVER_URL) $(WEB_FILES_URL) $(CLIENT_VERSION)" | cmp -s - "$@" || \
 		echo "$(CONTENT_URL) $(SERVER_URL) $(WEB_FILES_URL) $(CLIENT_VERSION)" > "$@"
 
-$(WEB_PAGE): $(DEPS) $(WEB_SHELL) $(WEB_FETCH_SHIM) $(WEB_BAKED) $(WEB_RAYLIB) Makefile
+$(WEB_PAGE): $(DEPS) $(WEB_SHELL) $(WEB_APP_FILES) $(WEB_BAKED) $(WEB_RAYLIB) Makefile
 	mkdir -p "$(WEB_DIR)"
+	cp $(WEB_APP_FILES) "$(WEB_DIR)/"
 	$(WEB_CC) $(WEB_CFLAGS) $(SRC) -o $(WEB_PAGE) $(WEB_LDFLAGS)
 
 $(WEB_RESOURCE_INDEX_BUILD): $(TARGET)
@@ -247,7 +250,7 @@ web-serve: web
 
 web-publish: web
 	python3 tools/publish_web.py --root "$(WEB_DIR)" --bucket "$(CONTENT_BUCKET)" --content-url "$(CONTENT_URL)" \
-		--release "$(WEB_RELEASE)" $(if $(WEB_PREVIOUS),--previous "$(WEB_PREVIOUS)") $(if $(WEB_DRY_RUN),--dry-run)
+		--release "$(WEB_RELEASE)" $(if $(WEB_PREVIOUS),--previous "$(WEB_PREVIOUS)") $(if $(WEB_DRY_RUN),--dry-run) $(if $(WEB_REUSE_GAME_FILES),--reuse-game-files)
 
 FORCE:
 

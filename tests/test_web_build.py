@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from functools import partial
 import http.client
+import json
 from pathlib import Path
+import re
+import struct
 import sys
 import tempfile
 import threading
@@ -32,6 +35,31 @@ SHIPPED_INDEX = (
     f"bundles 2\n{SHIPPED_BUNDLE}\n{LATER_BUNDLE}\n"
     "objects 2\n0 100 20 28 Btn_Close\n1 300 40 83 click\n"
 )
+WEB_PACKAGING = ROOT / "packaging" / "web"
+PNG_SIZE_FIELDS = slice(16, 24)
+
+
+def png_size(path: Path) -> str:
+    width, height = struct.unpack(">II", path.read_bytes()[PNG_SIZE_FIELDS])
+    return f"{width}x{height}"
+
+
+class AppFilesTest(unittest.TestCase):
+    def test_manifest_icons_ship_at_the_sizes_they_claim(self) -> None:
+        manifest = json.loads((WEB_PACKAGING / "manifest.json").read_text())
+        self.assertEqual((manifest["display"], manifest["orientation"]), ("fullscreen", "landscape"))
+        for icon in manifest["icons"]:
+            self.assertIn(icon["src"], build_web.APP_FILES)
+            self.assertEqual(png_size(WEB_PACKAGING / icon["src"]), icon["sizes"])
+
+    def test_the_page_links_only_app_files_the_build_copies(self) -> None:
+        linked = re.findall(r'<link [^>]*href="([^"]+)"', (WEB_PACKAGING / "shell.html").read_text())
+        self.assertTrue(linked)
+        self.assertLessEqual(set(linked), set(build_web.APP_FILES))
+        makefile = (ROOT / "Makefile").read_text().replace("\\\n", " ")
+        copied = re.search(r"^WEB_APP_FILES = (.+)$", makefile, re.MULTILINE).group(1).split()
+        self.assertEqual([Path(path).name for path in copied], list(build_web.APP_FILES))
+        self.assertEqual(png_size(WEB_PACKAGING / "icon-180.png"), "180x180")
 
 
 class ParseRangeTest(unittest.TestCase):

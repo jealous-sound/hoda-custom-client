@@ -201,12 +201,12 @@ int main(void) {
     if (win) sscanf(win, "%dx%d", &win_w, &win_h);
 
     bool player_window = !win && !screenshot_mode;
-    unsigned int flags = FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | WINDOW_PIXEL_DENSITY_FLAGS;
+    unsigned int flags = FLAG_MSAA_4X_HINT | WINDOW_RESIZE_FLAGS | WINDOW_PIXEL_DENSITY_FLAGS;
     if (screenshot_mode) flags |= FLAG_WINDOW_HIDDEN | FLAG_WINDOW_UNFOCUSED;
     if (!screenshot_mode && SettingsSwitchOn(SETTINGS_SWITCH_VSYNC)) flags |= FLAG_VSYNC_HINT;
     SetConfigFlags(flags);
     InitWindow(win_w, win_h, APP_NAME);
-    if (player_window) WindowGrowToMonitorDensity();
+    if (player_window) WindowFitToDisplay();
     UiSetChosenScale(screenshot_mode ? EnvFloat("HOD_UI_SCALE", SETTINGS_FULL_UI_SCALE) : SettingsUiScale());
     if (player_window && SettingsSwitchOn(SETTINGS_SWITCH_FULLSCREEN)) WindowSetFullscreen(true);
     SetExitKey(KEY_NULL);

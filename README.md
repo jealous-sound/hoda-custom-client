@@ -235,33 +235,54 @@ pthreads. Needs the local asset cache.
 make web-serve
 ```
 
-Then open http://127.0.0.1:8077/ in Chrome. `WEB_BACKEND=http://127.0.0.1:<port>` makes the server forward `/api/`
+Then open http://127.0.0.1:8077/ in Chrome or Safari. `--latency-ms 90` on `tools/serve_web.py` acts like the CDN's
+round trip. `WEB_BACKEND=http://127.0.0.1:<port>` makes the server forward `/api/`
 to a backend; add `?HOD_BACKEND_URL=http://127.0.0.1:8077/api` to the page URL to play Online through it. Any
 `HOD_*` query parameter becomes an environment variable for the game.
 
 - `make web` clones raylib 5.5 into `build/` once and builds it for the web. It writes `build/web/index.{html,js,wasm}`,
   a `game/` tree of links to the files `make dist` ships, and `game_files.txt`, the list the page mounts.
-- Game files are not downloaded up front. The page mounts them over HTTP and fetches each file the first time the
-  game reads it, so the server must answer `Range` requests. Reaching the tutorial battle reads about 190 MB.
+- Game files are not downloaded up front. They start as empty files in memory; `fopen` is wrapped
+  (`-Wl,--wrap=fopen`) so the first open of a game file downloads it whole with one GET. On the main thread the
+  download yields to the browser through Asyncify; worker threads use a synchronous request. Reaching the tutorial
+  battle reads about 735 files, 155 MB.
+- WebKit (Safari and every iPhone browser) sends worker threads' requests and storage calls through the page's main
+  thread, so the main thread must never wait for a worker that is waiting on the network or on storage. That is why
+  main-thread downloads yield, `PlatformJoinThread` yields while it waits, browser storage is mounted from a worker
+  and saves are copied into it by a background thread.
+- raylib 5.5 resizes the canvas without telling GLFW, which then maps the mouse into the window's creation size.
+  `WindowFitToDisplay` follows browser resizes through `SetWindowSize` instead.
 - The native game writes `resource_index.txt` (`HOD_RESOURCE_INDEX_OUT=<path>`), the cache bundle catalog. The
   browser build loads it, cut down to the bundles that ship, instead of opening every bundle at startup.
 - Threads need cross-origin isolation: the page must be served with `Cross-Origin-Opener-Policy: same-origin` and
   `Cross-Origin-Embedder-Policy: require-corp`. `tools/serve_web.py` sends both.
-- Local Game saves, `account.dat` and `settings.json` live in the browser's origin-private file system.
-- Emscripten's fetch layer asks for `<base>//<file>`. `packaging/web/single_slash_fetch.js` (`--pre-js`) collapses
-  repeated slashes in every thread's `fetch`, and `tools/serve_web.py` answers `//` with 404 as R2 does.
+- Local Game saves, `account.dat` and `settings.json` are copied into the browser's origin-private file system
+  (`/saves`) after each `PlatformReplaceFile` and restored at startup.
+- Phones: the page ships `manifest.json` (fullscreen, landscape) and icons from `packaging/web/`, so Add to Home
+  Screen opens the game without browser bars, held sideways on Android. In a phone browser the first tap asks for
+  fullscreen and a landscape lock where the browser has them (Android Chrome; iPhone Safari has neither). An upright
+  touch screen turns the page's stage a quarter turn (`Module.hodPageTurned`) and `WindowPointer` turns pointer input
+  back. The web build leaves out `FLAG_WINDOW_RESIZABLE`, so raylib's own resize handler, which would size the
+  canvas to the upright window, stays off and `WindowFillPage` alone sizes it from the canvas's layout box.
+- A phone needs HTTPS for cross-origin isolation, so `http://<LAN address>:8077` does not start there; test through
+  an HTTPS tunnel such as `cloudflared tunnel --url http://localhost:8077`.
 - Not done yet: a frame loop driven by `requestAnimationFrame` (frames now yield with a 16 ms sleep, about 50 fps).
 
 ### Hosting
 
-The page is `https://hodareborn.com/play/` (the website pulls `index.{html,js,wasm}` for a pinned release), the game
-files are on the CDN under `web/<release>/`, and the backend answers CORS for that origin (`-web-origins`).
+The page is `https://hodareborn.com/play/` (the website pulls `index.{html,js,wasm}`, `manifest.json` and the
+`icon-*.png` files for a pinned release), the game files are on the CDN under `web/<release>/`, and the backend
+answers CORS for that origin (`-web-origins`).
 
 ```sh
-make web WEB_RELEASE=v0.32.0
-make web-publish WEB_RELEASE=v0.32.0 WEB_PREVIOUS=v0.31.0 WEB_DRY_RUN=1
-make web-publish WEB_RELEASE=v0.32.0 WEB_PREVIOUS=v0.31.0
+make web WEB_RELEASE=2026-11-26
+make web-publish WEB_RELEASE=2026-11-26 WEB_PREVIOUS=2026-11-20 WEB_DRY_RUN=1
+make web-publish WEB_RELEASE=2026-11-26 WEB_PREVIOUS=2026-11-20
 ```
+
+Name releases by date: a published folder is never replaced, so a version name would block that tag's own web
+release later. `WEB_REUSE_GAME_FILES=1` publishes a page-only release: every game file and both lists are copied
+from `WEB_PREVIOUS` on the server and the local asset cache is not read.
 
 - `WEB_RELEASE` bakes `HOD_GAME_FILES_URL=$(CONTENT_URL)/web/$(WEB_RELEASE)/` into the page; without it the files are
   read next to the page. `?HOD_GAME_FILES_URL=` overrides it.
@@ -269,8 +290,9 @@ make web-publish WEB_RELEASE=v0.32.0 WEB_PREVIOUS=v0.31.0
   packs are untouched. It needs `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` from an R2 API token
   with Object Read & Write on the bucket.
 - Game files go first, copied inside the bucket from `WEB_PREVIOUS` when their MD5 matches its `game_files.md5`, then
-  `game_files.md5`, `game_files.txt` and the page last. Everything is `immutable`. A rerun skips what is there and an
-  object already published with other bytes stops it, so a changed build needs a new release.
+  `game_files.md5`, `game_files.txt` and the page files, `index.html` last. Everything is `immutable`. A rerun
+  skips what is there and an object already published with other bytes stops it, so a changed build needs a new
+  release.
 - The bucket's CORS policy must allow the page's origin: `GET` and `HEAD`, header `Range`, exposing
   `Content-Length`, `Content-Range`, `Accept-Ranges` and `ETag`.
 - To rehearse locally on three origins, serve the published folder as the CDN with

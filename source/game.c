@@ -2036,7 +2036,7 @@ void GameDraw(Game *g) {
             UiFrameEnd();
             if (pressed == HOME_NONE && home_interactive && !news_open && !resource_modal &&
                 IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-                HomeBackgroundSquadClick(&g->scene, GetMousePosition());
+                HomeBackgroundSquadClick(&g->scene, WindowPointer());
             if (pressed == HOME_HEROES) {
                 g->screen = SCREEN_HEROES;
             } else if (pressed == HOME_STORE) {

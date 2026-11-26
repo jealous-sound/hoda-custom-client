@@ -182,7 +182,7 @@ static void ResourceIndexBundles(void) {
     for (int i = 1; i < worker_count; i++) threaded[i] = ResourceThreadStart(&threads[i], ResourceBundleWorker, &jobs[i]) == 0;
     ResourceBundleWorker(&jobs[0]);
     for (int i = 0; i < worker_count; i++) {
-        if (i > 0 && threaded[i]) pthread_join(threads[i], NULL);
+        if (i > 0 && threaded[i]) PlatformJoinThread(threads[i]);
         for (int e = 0; e < jobs[i].catalog.count; e++) {
             const ResourceEntry *entry = &jobs[i].catalog.entries[e];
             ResourceCatalogAdd(&resource_cache, entry->name, entry->container, entry->object);
@@ -459,7 +459,7 @@ static void ResourceIndexSources(const char *const *refs, int count) {
     bool apk_threaded = needs_apk && ResourceThreadStart(&apk_thread, ResourceApkIndexWorker, NULL) == 0;
     if (needs_apk && !apk_threaded) ResourceIndexApk();
     if (needs_cache) ResourceIndexCache();
-    if (apk_threaded) pthread_join(apk_thread, NULL);
+    if (apk_threaded) PlatformJoinThread(apk_thread);
 }
 
 static Image ResourceDecodeImage(const char *ref) {
@@ -496,7 +496,7 @@ static void ResourceDecodeImages(const char *const *refs, int count, Image *imag
     for (int i = 1; i < worker_count; i++)
         if (ResourceThreadStart(&workers[started], ResourceImageWorker, &job) == 0) started++;
     ResourceImageWorker(&job);
-    for (int i = 0; i < started; i++) pthread_join(workers[i], NULL);
+    for (int i = 0; i < started; i++) PlatformJoinThread(workers[i]);
 }
 
 static bool ResourceIsRecordable(const char *ref) {

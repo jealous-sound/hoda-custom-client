@@ -6,6 +6,7 @@ import json
 import re
 import sys
 import threading
+import time
 import urllib.error
 import urllib.request
 from functools import partial
@@ -83,6 +84,7 @@ class GameHandler(SimpleHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     backend: str = ""
     allowed_origin: str = ""
+    latency_seconds: float = 0.0
     stats: Stats
 
     def end_headers(self) -> None:
@@ -153,6 +155,7 @@ class GameHandler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def send_file(self, include_body: bool) -> None:
+        time.sleep(self.latency_seconds)
         path = Path(self.translate_path(self.path))
         if path.is_dir():
             path = path / PAGE
@@ -227,12 +230,16 @@ def main() -> int:
     parser.add_argument(
         "--allow-origin", default="", help="serve as the CDN for a page on this origin, e.g. http://localhost:8080"
     )
+    parser.add_argument(
+        "--latency-ms", type=float, default=0.0, help="delay before each file answer, to act like a distant CDN"
+    )
     args = parser.parse_args()
     root = args.root.resolve()
     if not args.allow_origin and not (root / PAGE).is_file():
         raise SystemExit(f"{root} has no {PAGE}; run make web")
     GameHandler.backend = args.backend
     GameHandler.allowed_origin = args.allow_origin
+    GameHandler.latency_seconds = args.latency_ms / 1000.0
     GameHandler.stats = Stats()
     server = ThreadingHTTPServer(("127.0.0.1", args.port), partial(GameHandler, directory=str(root)))
     role = f", the CDN for {args.allow_origin}" if args.allow_origin else ""
