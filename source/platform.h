@@ -42,6 +42,7 @@ bool PlatformPrepareGameFiles(void);
 bool PlatformHttpSend(const PlatformHttpRequest *request, PlatformHttpResponse *response);
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size);
 bool PlatformReplaceFile(const char *source, const char *target);
+bool PlatformRemoveFile(const char *path);
 int PlatformProcessorCount(void);
 time_t PlatformTimeFromUtc(struct tm *utc);
 PlatformDownloadResult PlatformDownload(

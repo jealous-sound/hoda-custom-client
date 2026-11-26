@@ -206,7 +206,7 @@ int main(void) {
     if (!screenshot_mode && SettingsSwitchOn(SETTINGS_SWITCH_VSYNC)) flags |= FLAG_VSYNC_HINT;
     SetConfigFlags(flags);
     InitWindow(win_w, win_h, APP_NAME);
-    if (player_window) WindowGrowToMonitorDensity();
+    if (player_window) WindowFitToDisplay();
     UiSetChosenScale(screenshot_mode ? EnvFloat("HOD_UI_SCALE", SETTINGS_FULL_UI_SCALE) : SettingsUiScale());
     if (player_window && SettingsSwitchOn(SETTINGS_SWITCH_FULLSCREEN)) WindowSetFullscreen(true);
     SetExitKey(KEY_NULL);

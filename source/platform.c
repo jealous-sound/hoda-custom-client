@@ -54,6 +54,10 @@ bool PlatformReplaceFile(const char *source, const char *target) {
     return MoveFileExA(source, target, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) != 0;
 }
 
+bool PlatformRemoveFile(const char *path) {
+    return remove(path) == 0;
+}
+
 bool PlatformMoveEntry(const char *source, const char *target) {
     return MoveFileExA(source, target, MOVEFILE_COPY_ALLOWED) != 0;
 }
@@ -484,7 +488,10 @@ static const char *const platform_curl_libraries[] = {"libcurl.so.4", "libcurl-g
 #define PLATFORM_WEB_FILES_PATH "game/"
 #define PLATFORM_WEB_URL_CAP 2048
 #define PLATFORM_WEB_PATH_CAP 1024
-#define PLATFORM_WEB_FETCH_CHUNK_BYTES (4u * 1024u * 1024u)
+#define PLATFORM_WEB_SAVES_DIR "/saves"
+#define PLATFORM_WEB_STAGED_SUFFIX ".staged"
+#define PLATFORM_WEB_COPY_BYTES 65536
+#define PLATFORM_WEB_WHOLE_FILES 0u
 #define PLATFORM_WEB_PREPARE_POLL_MILLISECONDS 10
 #define PLATFORM_WEB_LIST_TIMEOUT_SECONDS 60
 #define PLATFORM_WEB_DOWNLOAD_TIMEOUT_SECONDS 600
@@ -493,13 +500,14 @@ static const char *const platform_curl_libraries[] = {"libcurl.so.4", "libcurl-g
 #define PLATFORM_WEB_MOUNT_CAP 16
 #define PLATFORM_WEB_HEADER_SLOTS 16
 #define PLATFORM_WEB_HEADER_CAP 512
-#define PLATFORM_WEB_PROCESSOR_CAP 4
+#define PLATFORM_WEB_PROCESSOR_CAP 16
 #define PLATFORM_HTTP_GET "GET"
 
 typedef struct {
     char files_url[PLATFORM_WEB_URL_CAP];
     bool prepared;
     int created;
+    int restored;
     volatile int finished;
 } PlatformWebFiles;
 
@@ -666,7 +674,7 @@ static bool PlatformWebMount(PlatformWebMounts *mounts, const char *files_url, c
     if ((size_t)snprintf(base, sizeof(base), "%s%s%s", files_url, PLATFORM_WEB_FILES_PATH, name) >= sizeof(base) ||
         (size_t)snprintf(mount, sizeof(mount), "%s%s", PLATFORM_WEB_ROOT, name) >= sizeof(mount))
         return false;
-    backend_t backend = wasmfs_create_fetch_backend(base, PLATFORM_WEB_FETCH_CHUNK_BYTES);
+    backend_t backend = wasmfs_create_fetch_backend(base, PLATFORM_WEB_WHOLE_FILES);
     if (!backend || wasmfs_create_directory(mount, PLATFORM_WEB_DIRECTORY_MODE, backend) != 0) return false;
     mounts->count++;
     return true;
@@ -697,12 +705,81 @@ static bool PlatformWebCreateFiles(PlatformWebFiles *files, char *list) {
 }
 
 backend_t wasmfs_create_root_dir(void) {
-    if (PlatformWebRunsInNode()) return wasmfs_create_node_backend(PLATFORM_WEB_NODE_ROOT);
-    return PlatformWebHasOpfs() ? wasmfs_create_opfs_backend() : wasmfs_create_memory_backend();
+    return PlatformWebRunsInNode() ? wasmfs_create_node_backend(PLATFORM_WEB_NODE_ROOT)
+                                   : wasmfs_create_memory_backend();
+}
+
+static bool platform_web_saves_mounted;
+
+static bool PlatformWebCopyFile(const char *source, const char *target) {
+    FILE *from = fopen(source, "rb");
+    FILE *to = from ? fopen(target, "wb") : NULL;
+    bool copied = from && to;
+    char buffer[PLATFORM_WEB_COPY_BYTES];
+    for (size_t read = copied ? fread(buffer, 1, sizeof(buffer), from) : 0; copied && read > 0;
+         read = fread(buffer, 1, sizeof(buffer), from))
+        copied = fwrite(buffer, 1, read, to) == read;
+    copied = copied && !ferror(from);
+    if (to && fclose(to) != 0) copied = false;
+    if (from) fclose(from);
+    return copied;
+}
+
+static bool PlatformWebSavedPath(const char *path, char *out, size_t capacity) {
+    if (!platform_web_saves_mounted || !path[0] || strchr(path, '/')) return false;
+    return (size_t)snprintf(out, capacity, "%s/%s", PLATFORM_WEB_SAVES_DIR, path) < capacity;
+}
+
+static bool PlatformWebKeepSaved(const char *path) {
+    char saved[PLATFORM_WEB_PATH_CAP], staged[PLATFORM_WEB_PATH_CAP];
+    if (!PlatformWebSavedPath(path, saved, sizeof(saved))) return true;
+    if ((size_t)snprintf(staged, sizeof(staged), "%s%s", saved, PLATFORM_WEB_STAGED_SUFFIX) >= sizeof(staged))
+        return false;
+    bool kept = PlatformWebCopyFile(path, staged) && rename(staged, saved) == 0;
+    if (!kept) fprintf(stderr, "Platform: could not keep %s in browser storage\n", path);
+    return kept;
+}
+
+static void PlatformWebForgetSaved(const char *path) {
+    char saved[PLATFORM_WEB_PATH_CAP];
+    if (PlatformWebSavedPath(path, saved, sizeof(saved))) remove(saved);
+}
+
+static bool PlatformWebStagedName(const char *name) {
+    size_t length = strlen(name), suffix = strlen(PLATFORM_WEB_STAGED_SUFFIX);
+    return length >= suffix && strcmp(name + length - suffix, PLATFORM_WEB_STAGED_SUFFIX) == 0;
+}
+
+static int PlatformWebRestoreSaves(void) {
+    DIR *directory = opendir(PLATFORM_WEB_SAVES_DIR);
+    if (!directory) return 0;
+    int restored = 0;
+    for (struct dirent *entry = readdir(directory); entry; entry = readdir(directory)) {
+        if (entry->d_type != DT_REG || PlatformWebStagedName(entry->d_name)) continue;
+        char saved[PLATFORM_WEB_PATH_CAP];
+        if ((size_t)snprintf(saved, sizeof(saved), "%s/%s", PLATFORM_WEB_SAVES_DIR, entry->d_name) >= sizeof(saved))
+            continue;
+        char restored_path[PLATFORM_WEB_PATH_CAP];
+        if ((size_t)snprintf(restored_path, sizeof(restored_path), "%s%s", PLATFORM_WEB_ROOT, entry->d_name) >=
+            sizeof(restored_path))
+            continue;
+        restored += PlatformWebCopyFile(saved, restored_path);
+    }
+    closedir(directory);
+    return restored;
+}
+
+static void PlatformWebMountSaves(PlatformWebFiles *files) {
+    if (!PlatformWebHasOpfs()) return;
+    backend_t saves = wasmfs_create_opfs_backend();
+    if (!saves || wasmfs_create_directory(PLATFORM_WEB_SAVES_DIR, PLATFORM_WEB_DIRECTORY_MODE, saves) != 0) return;
+    platform_web_saves_mounted = true;
+    files->restored = PlatformWebRestoreSaves();
 }
 
 static void *PlatformWebPrepare(void *argument) {
     PlatformWebFiles *files = argument;
+    PlatformWebMountSaves(files);
     char url[PLATFORM_WEB_URL_CAP];
     snprintf(url, sizeof(url), "%s%s", files->files_url, PLATFORM_WEB_FILE_LIST);
     PlatformHttpRequest request = {
@@ -739,7 +816,13 @@ bool PlatformPrepareGameFiles(void) {
         fprintf(stderr, "Platform: could not prepare the game files from %s\n", files.files_url);
         return false;
     }
-    printf("Platform: exposed %d game files from %s%s\n", files.created, files.files_url, PLATFORM_WEB_FILES_PATH);
+    printf(
+        "Platform: exposed %d game files from %s%s, restored %d saved files\n",
+        files.created,
+        files.files_url,
+        PLATFORM_WEB_FILES_PATH,
+        files.restored
+    );
     return chdir(PLATFORM_WEB_ROOT) == 0;
 }
 
@@ -1116,9 +1199,24 @@ bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size) {
     return pread(fileno(file), out, size, (off_t)offset) == (ssize_t)size;
 }
 
+#ifdef __EMSCRIPTEN__
+bool PlatformReplaceFile(const char *source, const char *target) {
+    return rename(source, target) == 0 && PlatformWebKeepSaved(target);
+}
+
+bool PlatformRemoveFile(const char *path) {
+    PlatformWebForgetSaved(path);
+    return remove(path) == 0;
+}
+#else
 bool PlatformReplaceFile(const char *source, const char *target) {
     return rename(source, target) == 0;
 }
+
+bool PlatformRemoveFile(const char *path) {
+    return remove(path) == 0;
+}
+#endif
 
 #ifdef __EMSCRIPTEN__
 int PlatformProcessorCount(void) {

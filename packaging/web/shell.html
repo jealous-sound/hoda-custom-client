@@ -32,6 +32,9 @@ var Module = {
 window.addEventListener("error", function (event) {
   hodStatus.textContent = "The game stopped: " + (event.message || event.error);
 });
+window.addEventListener("unhandledrejection", function (event) {
+  hodStatus.textContent = "The game stopped: " + event.reason;
+});
 if (!self.crossOriginIsolated) {
   hodStatus.textContent = "This page needs cross-origin isolation (COOP/COEP headers) to run.";
 }

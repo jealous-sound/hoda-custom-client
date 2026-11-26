@@ -3,7 +3,7 @@
 #if defined(__APPLE__)
 #define WINDOW_PIXEL_DENSITY_FLAGS FLAG_WINDOW_HIGHDPI
 
-static void WindowGrowToMonitorDensity(void) {
+static void WindowFitToDisplay(void) {
 }
 
 static bool WindowFullscreen(void) {
@@ -20,13 +20,33 @@ static void WindowSendToBack(void) {
 #else
 #define WINDOW_PIXEL_DENSITY_FLAGS 0
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/html5.h>
+
+#define WINDOW_PAGE_CANVAS "#canvas"
+
+static EM_BOOL WindowFillPage(int event_type, const EmscriptenUiEvent *event, void *user_data) {
+    (void)event_type;
+    (void)event;
+    (void)user_data;
+    double width = 0.0, height = 0.0;
+    emscripten_get_element_css_size(WINDOW_PAGE_CANVAS, &width, &height);
+    if (width >= 1.0 && height >= 1.0) SetWindowSize((int)width, (int)height);
+    return EM_TRUE;
+}
+
+static void WindowFitToDisplay(void) {
+    emscripten_set_resize_callback(EMSCRIPTEN_EVENT_TARGET_WINDOW, NULL, EM_TRUE, WindowFillPage);
+    WindowFillPage(EMSCRIPTEN_EVENT_RESIZE, NULL, NULL);
+}
+#else
 static float WindowGrowthForDensity(Vector2 density, Vector2 window, Vector2 monitor) {
     float wanted = fminf(density.x, density.y);
     float room = fminf(monitor.x / window.x, monitor.y / window.y) * WINDOW_MONITOR_SHARE_LIMIT;
     return fminf(wanted, room);
 }
 
-static void WindowGrowToMonitorDensity(void) {
+static void WindowFitToDisplay(void) {
     int monitor = GetCurrentMonitor();
     Vector2 window = {(float)GetScreenWidth(), (float)GetScreenHeight()};
     Vector2 monitor_size = {(float)GetMonitorWidth(monitor), (float)GetMonitorHeight(monitor)};
@@ -39,6 +59,7 @@ static void WindowGrowToMonitorDensity(void) {
         (int)origin.x + ((int)monitor_size.x - width) / 2, (int)origin.y + ((int)monitor_size.y - height) / 2
     );
 }
+#endif
 
 static bool WindowFullscreen(void) {
     return IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE);
