@@ -1,3 +1,6 @@
+#ifdef __EMSCRIPTEN__
+#define _GNU_SOURCE
+#endif
 #include "platform.h"
 #include "client_version.h"
 
@@ -40,6 +43,10 @@
 
 bool PlatformPrepareGameFiles(void) {
     return true;
+}
+
+void PlatformJoinThread(pthread_t thread) {
+    pthread_join(thread, NULL);
 }
 
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size) {
@@ -491,13 +498,13 @@ static const char *const platform_curl_libraries[] = {"libcurl.so.4", "libcurl-g
 #define PLATFORM_WEB_SAVES_DIR "/saves"
 #define PLATFORM_WEB_STAGED_SUFFIX ".staged"
 #define PLATFORM_WEB_COPY_BYTES 65536
-#define PLATFORM_WEB_WHOLE_FILES 0u
+#define PLATFORM_WEB_SAVE_QUEUE_CAP 16
 #define PLATFORM_WEB_PREPARE_POLL_MILLISECONDS 10
+#define PLATFORM_WEB_JOIN_POLL_MILLISECONDS 1
 #define PLATFORM_WEB_LIST_TIMEOUT_SECONDS 60
 #define PLATFORM_WEB_DOWNLOAD_TIMEOUT_SECONDS 600
 #define PLATFORM_WEB_DIRECTORY_MODE 0777
 #define PLATFORM_WEB_FILE_MODE 0444
-#define PLATFORM_WEB_MOUNT_CAP 16
 #define PLATFORM_WEB_HEADER_SLOTS 16
 #define PLATFORM_WEB_HEADER_CAP 512
 #define PLATFORM_WEB_PROCESSOR_CAP 16
@@ -506,15 +513,9 @@ static const char *const platform_curl_libraries[] = {"libcurl.so.4", "libcurl-g
 typedef struct {
     char files_url[PLATFORM_WEB_URL_CAP];
     bool prepared;
-    int created;
     int restored;
     volatile int finished;
 } PlatformWebFiles;
-
-typedef struct {
-    char names[PLATFORM_WEB_MOUNT_CAP][PLATFORM_WEB_PATH_CAP];
-    int count;
-} PlatformWebMounts;
 
 // clang-format off
 EM_JS(int, PlatformWebPageUrl, (char *out, int capacity), {
@@ -640,9 +641,62 @@ PlatformDownload(const char *url, const char *path, bool resume, PlatformDownloa
     return result;
 }
 
+typedef enum {
+    PLATFORM_WEB_FILE_MISSING,
+    PLATFORM_WEB_FILE_LOADING,
+    PLATFORM_WEB_FILE_READY,
+} PlatformWebFileState;
+
+typedef struct {
+    char files_url[PLATFORM_WEB_URL_CAP];
+    char *list;
+    char **paths;
+    int *states;
+    int count;
+} PlatformWebGameFiles;
+
+static PlatformWebGameFiles platform_web_game_files;
+
+EM_JS_DEPS(platform_web_downloads, "malloc");
+
+// clang-format off
+EM_ASYNC_JS(int, PlatformWebDownloadYielding, (const char *url, unsigned char **data, int *size), {
+    try {
+        var response = await fetch(UTF8ToString(url));
+        if (!response.ok) return response.status;
+        var bytes = new Uint8Array(await response.arrayBuffer());
+        var pointer = _malloc(bytes.length || 1);
+        HEAPU8.set(bytes, pointer);
+        HEAPU32[data >> 2] = pointer;
+        HEAP32[size >> 2] = bytes.length;
+        return response.status;
+    } catch (failure) {
+        return 0;
+    }
+});
+
+EM_JS(int, PlatformWebDownloadBlocking, (const char *url, unsigned char **data, int *size), {
+    var request = new XMLHttpRequest();
+    request.open("GET", UTF8ToString(url), false);
+    request.responseType = "arraybuffer";
+    try {
+        request.send(null);
+    } catch (failure) {
+        return 0;
+    }
+    if (request.status < 200 || request.status >= 300) return request.status;
+    var bytes = new Uint8Array(request.response);
+    var pointer = _malloc(bytes.length || 1);
+    HEAPU8.set(bytes, pointer);
+    HEAPU32[data >> 2] = pointer;
+    HEAP32[size >> 2] = bytes.length;
+    return request.status;
+});
+// clang-format on
+
 static bool PlatformWebMakeParents(const char *path, char *made, size_t capacity) {
     const char *slash = strrchr(path, '/');
-    if (!slash) return true;
+    if (!slash || slash == path) return true;
     size_t parent_length = (size_t)(slash - path);
     if (parent_length >= capacity) return false;
     if (strlen(made) == parent_length && strncmp(made, path, parent_length) == 0) return true;
@@ -660,48 +714,152 @@ static bool PlatformWebMakeParents(const char *path, char *made, size_t capacity
     return true;
 }
 
-static bool PlatformWebMount(PlatformWebMounts *mounts, const char *files_url, const char *relative) {
-    const char *slash = strchr(relative, '/');
-    size_t length = slash ? (size_t)(slash - relative) : strlen(relative);
-    if (!slash || length == 0 || length >= PLATFORM_WEB_PATH_CAP) return false;
-    for (int i = 0; i < mounts->count; i++)
-        if (strlen(mounts->names[i]) == length && strncmp(mounts->names[i], relative, length) == 0) return true;
-    if (mounts->count == PLATFORM_WEB_MOUNT_CAP) return false;
-    char *name = mounts->names[mounts->count];
-    memcpy(name, relative, length);
-    name[length] = '\0';
-    char base[PLATFORM_WEB_URL_CAP], mount[PLATFORM_WEB_PATH_CAP];
-    if ((size_t)snprintf(base, sizeof(base), "%s%s%s", files_url, PLATFORM_WEB_FILES_PATH, name) >= sizeof(base) ||
-        (size_t)snprintf(mount, sizeof(mount), "%s%s", PLATFORM_WEB_ROOT, name) >= sizeof(mount))
-        return false;
-    backend_t backend = wasmfs_create_fetch_backend(base, PLATFORM_WEB_WHOLE_FILES);
-    if (!backend || wasmfs_create_directory(mount, PLATFORM_WEB_DIRECTORY_MODE, backend) != 0) return false;
-    mounts->count++;
-    return true;
+static bool PlatformWebAbsolutePath(const char *relative, char *out, size_t capacity) {
+    return (size_t)snprintf(out, capacity, "%s%s", PLATFORM_WEB_ROOT, relative) < capacity;
 }
 
-static bool PlatformWebCreateFile(const char *relative, char *made, size_t capacity) {
+static bool PlatformWebCreatePlaceholder(const char *relative, char *made, size_t capacity) {
     char path[PLATFORM_WEB_PATH_CAP];
-    if ((size_t)snprintf(path, sizeof(path), "%s%s", PLATFORM_WEB_ROOT, relative) >= sizeof(path)) return false;
-    if (!PlatformWebMakeParents(path, made, capacity)) return false;
-    int descriptor = open(path, O_CREAT | O_RDONLY, PLATFORM_WEB_FILE_MODE);
+    if (!PlatformWebAbsolutePath(relative, path, sizeof(path)) || !PlatformWebMakeParents(path, made, capacity))
+        return false;
+    int descriptor = open(path, O_CREAT | O_WRONLY, PLATFORM_WEB_FILE_MODE);
     if (descriptor < 0) return false;
     close(descriptor);
     return true;
 }
 
-static bool PlatformWebCreateFiles(PlatformWebFiles *files, char *list) {
-    PlatformWebMounts mounts = {0};
+static int PlatformWebComparePaths(const void *a, const void *b) {
+    return strcmp(*(char *const *)a, *(char *const *)b);
+}
+
+static bool PlatformWebListGameFiles(PlatformWebGameFiles *game, char *list) {
+    int capacity = 1;
+    for (const char *cursor = list; *cursor; cursor++) capacity += *cursor == '\n';
+    game->list = list;
+    game->paths = malloc(sizeof(*game->paths) * (size_t)capacity);
+    if (!game->paths) return false;
     char made[PLATFORM_WEB_PATH_CAP] = "";
     for (char *line = strtok(list, "\r\n"); line; line = strtok(NULL, "\r\n")) {
         if (!line[0]) continue;
-        if (!PlatformWebMount(&mounts, files->files_url, line) || !PlatformWebCreateFile(line, made, sizeof(made))) {
+        if (!PlatformWebCreatePlaceholder(line, made, sizeof(made))) {
             fprintf(stderr, "Platform: could not expose %s\n", line);
             return false;
         }
-        files->created++;
+        game->paths[game->count++] = line;
     }
-    return files->created > 0;
+    qsort(game->paths, (size_t)game->count, sizeof(*game->paths), PlatformWebComparePaths);
+    game->states = calloc((size_t)(game->count > 0 ? game->count : 1), sizeof(*game->states));
+    return game->states && game->count > 0;
+}
+
+static bool PlatformWebRelativePath(const char *path, char *out, size_t capacity) {
+    char joined[PLATFORM_WEB_PATH_CAP];
+    if (path[0] == '/') {
+        if ((size_t)snprintf(joined, sizeof(joined), "%s", path) >= sizeof(joined)) return false;
+    } else {
+        char directory[PLATFORM_WEB_PATH_CAP];
+        if (!getcwd(directory, sizeof(directory))) return false;
+        if ((size_t)snprintf(joined, sizeof(joined), "%s/%s", directory, path) >= sizeof(joined)) return false;
+    }
+    size_t length = 0;
+    for (const char *segment = joined; *segment;) {
+        const char *slash = strchr(segment, '/');
+        size_t size = slash ? (size_t)(slash - segment) : strlen(segment);
+        bool current = size == 1 && segment[0] == '.';
+        bool parent = size == 2 && segment[0] == '.' && segment[1] == '.';
+        if (parent) {
+            while (length > 0 && out[length - 1] != '/') length--;
+            if (length > 0) length--;
+        } else if (size > 0 && !current) {
+            if (length + size + 2 > capacity) return false;
+            if (length > 0) out[length++] = '/';
+            memcpy(out + length, segment, size);
+            length += size;
+        }
+        segment += size;
+        if (*segment == '/') segment++;
+    }
+    out[length] = '\0';
+    return length > 0;
+}
+
+static int PlatformWebGameFileIndex(const PlatformWebGameFiles *game, const char *relative) {
+    int low = 0, high = game->count - 1;
+    while (low <= high) {
+        int middle = low + (high - low) / 2;
+        int order = strcmp(game->paths[middle], relative);
+        if (order == 0) return middle;
+        if (order < 0)
+            low = middle + 1;
+        else
+            high = middle - 1;
+    }
+    return -1;
+}
+
+static bool PlatformWebStoreGameFile(const char *relative, const unsigned char *data, int size) {
+    char path[PLATFORM_WEB_PATH_CAP], staged[PLATFORM_WEB_PATH_CAP];
+    if (!PlatformWebAbsolutePath(relative, path, sizeof(path)) ||
+        (size_t)snprintf(staged, sizeof(staged), "%s%s", path, PLATFORM_WEB_STAGED_SUFFIX) >= sizeof(staged))
+        return false;
+    FILE *file = fopen(staged, "wb");
+    if (!file) return false;
+    bool written = size == 0 || fwrite(data, 1, (size_t)size, file) == (size_t)size;
+    written = fclose(file) == 0 && written;
+    return written && rename(staged, path) == 0;
+}
+
+static bool PlatformWebLoadGameFile(const PlatformWebGameFiles *game, const char *relative) {
+    char url[PLATFORM_WEB_URL_CAP];
+    if ((size_t)snprintf(url, sizeof(url), "%s%s%s", game->files_url, PLATFORM_WEB_FILES_PATH, relative) >= sizeof(url))
+        return false;
+    unsigned char *data = NULL;
+    int size = 0;
+    int status = emscripten_is_main_browser_thread() ? PlatformWebDownloadYielding(url, &data, &size)
+                                                     : PlatformWebDownloadBlocking(url, &data, &size);
+    bool loaded = status >= 200 && status < 300 && PlatformWebStoreGameFile(relative, data, size);
+    free(data);
+    if (!loaded) fprintf(stderr, "Platform: could not download %s (HTTP %d)\n", url, status);
+    return loaded;
+}
+
+static void PlatformWebAwaitOtherDownload(void) {
+    if (emscripten_is_main_browser_thread())
+        emscripten_sleep(PLATFORM_WEB_JOIN_POLL_MILLISECONDS);
+    else
+        usleep(PLATFORM_WEB_JOIN_POLL_MILLISECONDS * 1000);
+}
+
+static bool PlatformWebEnsureGameFile(const char *path) {
+    PlatformWebGameFiles *game = &platform_web_game_files;
+    char relative[PLATFORM_WEB_PATH_CAP];
+    if (game->count == 0 || !PlatformWebRelativePath(path, relative, sizeof(relative))) return true;
+    int index = PlatformWebGameFileIndex(game, relative);
+    if (index < 0) return true;
+    int *state = &game->states[index];
+    for (;;) {
+        int seen = __atomic_load_n(state, __ATOMIC_ACQUIRE);
+        if (seen == PLATFORM_WEB_FILE_READY) return true;
+        if (seen == PLATFORM_WEB_FILE_MISSING &&
+            __atomic_compare_exchange_n(
+                state, &seen, PLATFORM_WEB_FILE_LOADING, false, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE
+            ))
+            break;
+        PlatformWebAwaitOtherDownload();
+    }
+    bool loaded = PlatformWebLoadGameFile(game, relative);
+    __atomic_store_n(state, loaded ? PLATFORM_WEB_FILE_READY : PLATFORM_WEB_FILE_MISSING, __ATOMIC_RELEASE);
+    return loaded;
+}
+
+FILE *__real_fopen(const char *path, const char *mode);
+
+FILE *__wrap_fopen(const char *path, const char *mode) {
+    if (mode[0] == 'r' && !PlatformWebEnsureGameFile(path)) {
+        errno = EIO;
+        return NULL;
+    }
+    return __real_fopen(path, mode);
 }
 
 backend_t wasmfs_create_root_dir(void) {
@@ -730,19 +888,75 @@ static bool PlatformWebSavedPath(const char *path, char *out, size_t capacity) {
     return (size_t)snprintf(out, capacity, "%s/%s", PLATFORM_WEB_SAVES_DIR, path) < capacity;
 }
 
-static bool PlatformWebKeepSaved(const char *path) {
+typedef struct {
+    char path[PLATFORM_WEB_PATH_CAP];
+    bool removal;
+} PlatformWebSaveChange;
+
+typedef struct {
+    pthread_mutex_t lock;
+    pthread_cond_t wake;
+    PlatformWebSaveChange changes[PLATFORM_WEB_SAVE_QUEUE_CAP];
+    int count;
+    bool keeper_started;
+} PlatformWebSaveQueue;
+
+static PlatformWebSaveQueue platform_web_save_queue = {
+    .lock = PTHREAD_MUTEX_INITIALIZER,
+    .wake = PTHREAD_COND_INITIALIZER,
+};
+
+static void PlatformWebApplySaveChange(const PlatformWebSaveChange *change) {
     char saved[PLATFORM_WEB_PATH_CAP], staged[PLATFORM_WEB_PATH_CAP];
-    if (!PlatformWebSavedPath(path, saved, sizeof(saved))) return true;
-    if ((size_t)snprintf(staged, sizeof(staged), "%s%s", saved, PLATFORM_WEB_STAGED_SUFFIX) >= sizeof(staged))
-        return false;
-    bool kept = PlatformWebCopyFile(path, staged) && rename(staged, saved) == 0;
-    if (!kept) fprintf(stderr, "Platform: could not keep %s in browser storage\n", path);
-    return kept;
+    if (!PlatformWebSavedPath(change->path, saved, sizeof(saved))) return;
+    if (change->removal) {
+        remove(saved);
+        return;
+    }
+    bool kept = (size_t)snprintf(staged, sizeof(staged), "%s%s", saved, PLATFORM_WEB_STAGED_SUFFIX) < sizeof(staged) &&
+                PlatformWebCopyFile(change->path, staged) && rename(staged, saved) == 0;
+    if (!kept) fprintf(stderr, "Platform: could not keep %s in browser storage\n", change->path);
 }
 
-static void PlatformWebForgetSaved(const char *path) {
+static void *PlatformWebKeepSaves(void *argument) {
+    PlatformWebSaveQueue *queue = argument;
+    for (;;) {
+        pthread_mutex_lock(&queue->lock);
+        while (queue->count == 0) pthread_cond_wait(&queue->wake, &queue->lock);
+        PlatformWebSaveChange change = queue->changes[0];
+        queue->count--;
+        memmove(queue->changes, queue->changes + 1, sizeof(*queue->changes) * (size_t)queue->count);
+        pthread_mutex_unlock(&queue->lock);
+        PlatformWebApplySaveChange(&change);
+    }
+    return NULL;
+}
+
+static bool PlatformWebSaveQueued(const PlatformWebSaveQueue *queue, const PlatformWebSaveChange *change) {
+    for (int i = 0; i < queue->count; i++)
+        if (queue->changes[i].removal == change->removal && strcmp(queue->changes[i].path, change->path) == 0)
+            return true;
+    return false;
+}
+
+static void PlatformWebQueueSaveChange(const char *path, bool removal) {
     char saved[PLATFORM_WEB_PATH_CAP];
-    if (PlatformWebSavedPath(path, saved, sizeof(saved))) remove(saved);
+    if (!PlatformWebSavedPath(path, saved, sizeof(saved))) return;
+    PlatformWebSaveChange change = {.removal = removal};
+    snprintf(change.path, sizeof(change.path), "%s", path);
+    PlatformWebSaveQueue *queue = &platform_web_save_queue;
+    pthread_mutex_lock(&queue->lock);
+    if (!queue->keeper_started) {
+        pthread_t keeper;
+        queue->keeper_started = pthread_create(&keeper, NULL, PlatformWebKeepSaves, queue) == 0;
+        if (queue->keeper_started) pthread_detach(keeper);
+    }
+    if (queue->keeper_started && !PlatformWebSaveQueued(queue, &change) && queue->count < PLATFORM_WEB_SAVE_QUEUE_CAP)
+        queue->changes[queue->count++] = change;
+    else if (!queue->keeper_started || queue->count == PLATFORM_WEB_SAVE_QUEUE_CAP)
+        fprintf(stderr, "Platform: could not queue %s for browser storage\n", path);
+    pthread_cond_signal(&queue->wake);
+    pthread_mutex_unlock(&queue->lock);
 }
 
 static bool PlatformWebStagedName(const char *name) {
@@ -789,8 +1003,9 @@ static void *PlatformWebPrepare(void *argument) {
     };
     PlatformHttpResponse response;
     if (PlatformHttpSend(&request, &response)) {
-        files->prepared = response.status == 200 && PlatformWebCreateFiles(files, response.body);
-        free(response.body);
+        snprintf(platform_web_game_files.files_url, sizeof(platform_web_game_files.files_url), "%s", files->files_url);
+        files->prepared = response.status == 200 && PlatformWebListGameFiles(&platform_web_game_files, response.body);
+        if (!files->prepared) free(response.body);
     }
     __atomic_store_n(&files->finished, 1, __ATOMIC_RELEASE);
     return NULL;
@@ -802,6 +1017,14 @@ static bool PlatformWebFilesUrl(char *out, size_t capacity) {
     if (!configured[0]) return PlatformWebPageUrl(out, (int)capacity);
     const char *separator = configured[strlen(configured) - 1] == '/' ? "" : "/";
     return (size_t)snprintf(out, capacity, "%s%s", configured, separator) < capacity;
+}
+
+void PlatformJoinThread(pthread_t thread) {
+    if (!emscripten_is_main_browser_thread()) {
+        pthread_join(thread, NULL);
+        return;
+    }
+    while (pthread_tryjoin_np(thread, NULL) == EBUSY) emscripten_sleep(PLATFORM_WEB_JOIN_POLL_MILLISECONDS);
 }
 
 bool PlatformPrepareGameFiles(void) {
@@ -818,7 +1041,7 @@ bool PlatformPrepareGameFiles(void) {
     }
     printf(
         "Platform: exposed %d game files from %s%s, restored %d saved files\n",
-        files.created,
+        platform_web_game_files.count,
         files.files_url,
         PLATFORM_WEB_FILES_PATH,
         files.restored
@@ -829,6 +1052,10 @@ bool PlatformPrepareGameFiles(void) {
 #else
 bool PlatformPrepareGameFiles(void) {
     return true;
+}
+
+void PlatformJoinThread(pthread_t thread) {
+    pthread_join(thread, NULL);
 }
 
 typedef struct {
@@ -1201,11 +1428,13 @@ bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size) {
 
 #ifdef __EMSCRIPTEN__
 bool PlatformReplaceFile(const char *source, const char *target) {
-    return rename(source, target) == 0 && PlatformWebKeepSaved(target);
+    if (rename(source, target) != 0) return false;
+    PlatformWebQueueSaveChange(target, false);
+    return true;
 }
 
 bool PlatformRemoveFile(const char *path) {
-    PlatformWebForgetSaved(path);
+    PlatformWebQueueSaveChange(path, true);
     return remove(path) == 0;
 }
 #else

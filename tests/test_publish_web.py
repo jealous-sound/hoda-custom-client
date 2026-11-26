@@ -195,6 +195,39 @@ class PublishTest(unittest.TestCase):
         with self.assertRaises(SystemExit):
             self.publish("v2", GAME_FILES, previous="v1")
 
+    def test_page_only_release_copies_every_game_file_and_ignores_the_local_cache(self) -> None:
+        self.publish("v1", GAME_FILES)
+        self.written()
+        changed_locally = {**GAME_FILES, "data/rules.json": b'{"rules": 2}', "data/new.json": b"{}"}
+        out = write_build(self.base / "v2", "v2", changed_locally)
+        built = publish_web.read_release(out, "v2", "v1", CONTENT_URL, workers=2, reuse_game_files=True)
+
+        plan, sent = publish_web.publish(self.bucket, built, dry_run=False, workers=2)
+
+        self.assertEqual((plan.upload, sent), ([], 0))
+        self.assertEqual(sorted(plan.copy), sorted(GAME_FILES))
+        self.assertEqual(self.s3.stored("web/v2/game/data/rules.json").read_bytes(), GAME_FILES["data/rules.json"])
+        self.assertFalse(self.s3.stored("web/v2/game/data/new.json").exists())
+        for listed in (build_web.FILE_LIST, publish_web.HASH_LIST):
+            self.assertEqual(
+                self.s3.stored(f"web/v2/{listed}").read_bytes(), self.s3.stored(f"web/v1/{listed}").read_bytes()
+            )
+        self.assertEqual(self.s3.stored("web/v2/index.js").read_bytes(), b"var Module = {};")
+
+    def test_page_only_release_stops_when_a_reused_file_is_gone(self) -> None:
+        self.publish("v1", GAME_FILES)
+        self.s3.stored("web/v1/game/data/rules.json").unlink()
+        out = write_build(self.base / "v2", "v2", GAME_FILES)
+        built = publish_web.read_release(out, "v2", "v1", CONTENT_URL, workers=2, reuse_game_files=True)
+
+        with self.assertRaises(SystemExit):
+            publish_web.publish(self.bucket, built, dry_run=False, workers=2)
+
+    def test_page_only_release_needs_a_previous_release(self) -> None:
+        out = write_build(self.base / "v2", "v2", GAME_FILES)
+        with self.assertRaises(SystemExit):
+            publish_web.read_release(out, "v2", "", CONTENT_URL, workers=2, reuse_game_files=True)
+
 
 class ReadReleaseTest(unittest.TestCase):
     def test_page_built_for_another_release_is_refused(self) -> None:

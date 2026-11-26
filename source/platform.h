@@ -1,6 +1,7 @@
 #ifndef HOD_PLATFORM_H
 #define HOD_PLATFORM_H
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -39,6 +40,7 @@ typedef struct {
 } PlatformHttpResponse;
 
 bool PlatformPrepareGameFiles(void);
+void PlatformJoinThread(pthread_t thread);
 bool PlatformHttpSend(const PlatformHttpRequest *request, PlatformHttpResponse *response);
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size);
 bool PlatformReplaceFile(const char *source, const char *target);
