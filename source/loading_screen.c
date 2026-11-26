@@ -90,12 +90,12 @@ static void LoadingScreenDraw(void) {
 }
 
 void LoadingScreenPresent(void) {
-    BeginDrawing();
+    WindowBeginFrame();
     ClearBackground(BLACK);
     UiFrameBegin();
     LoadingScreenDraw();
     UiFrameEnd();
-    EndDrawing();
+    WindowEndFrame();
 }
 
 void LoadingScreenEnd(void) {

@@ -21,24 +21,113 @@ static void WindowSendToBack(void) {
 #define WINDOW_PIXEL_DENSITY_FLAGS 0
 
 #ifdef __EMSCRIPTEN__
+#include <GLES3/gl3.h>
 #include <emscripten/em_js.h>
 #include <emscripten/html5.h>
 
 #define WINDOW_RESIZE_FLAGS 0
+#define WINDOW_SAMPLING_FLAGS 0
+#define WINDOW_PAGE_DENSITY_LIMIT 2.0
+#define WINDOW_FRAME_SAMPLES 4
+
+typedef struct {
+    GLuint framebuffer;
+    GLuint color;
+    GLuint depth;
+    int width;
+    int height;
+} WindowFrame;
+
+static WindowFrame window_frame;
 
 // clang-format off
 EM_JS(int, WindowPageTurned, (void), { return Module.hodPageTurned ? 1 : 0; });
 EM_JS(int, WindowPageWidth, (void), { return Module.canvas.clientWidth; });
 EM_JS(int, WindowPageHeight, (void), { return Module.canvas.clientHeight; });
+EM_JS(double, WindowPageDensity, (void), { return window.devicePixelRatio || 1; });
 // clang-format on
+
+static int WindowDevicePixels(int page_pixels) {
+    double density = fmin(fmax(WindowPageDensity(), 1.0), WINDOW_PAGE_DENSITY_LIMIT);
+    return (int)lround(page_pixels * density);
+}
 
 static EM_BOOL WindowFillPage(int event_type, const EmscriptenUiEvent *event, void *user_data) {
     (void)event_type;
     (void)event;
     (void)user_data;
     int width = WindowPageWidth(), height = WindowPageHeight();
-    if (width >= 1 && height >= 1) SetWindowSize(width, height);
+    if (width >= 1 && height >= 1) SetWindowSize(WindowDevicePixels(width), WindowDevicePixels(height));
     return EM_TRUE;
+}
+
+static void WindowFrameRelease(WindowFrame *frame) {
+    if (frame->framebuffer) glDeleteFramebuffers(1, &frame->framebuffer);
+    if (frame->color) glDeleteRenderbuffers(1, &frame->color);
+    if (frame->depth) glDeleteRenderbuffers(1, &frame->depth);
+    *frame = (WindowFrame){0};
+}
+
+static GLuint WindowFrameStorage(GLenum format, GLsizei samples, int width, int height) {
+    GLuint storage = 0;
+    glGenRenderbuffers(1, &storage);
+    glBindRenderbuffer(GL_RENDERBUFFER, storage);
+    glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, format, width, height);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+    return storage;
+}
+
+static bool WindowFrameFit(WindowFrame *frame, int width, int height) {
+    if (frame->framebuffer && frame->width == width && frame->height == height) return true;
+    WindowFrameRelease(frame);
+    if (width < 1 || height < 1) return false;
+    GLint most_samples = 0;
+    glGetIntegerv(GL_MAX_SAMPLES, &most_samples);
+    GLsizei samples = most_samples < WINDOW_FRAME_SAMPLES ? most_samples : WINDOW_FRAME_SAMPLES;
+    frame->color = WindowFrameStorage(GL_RGBA8, samples, width, height);
+    frame->depth = WindowFrameStorage(GL_DEPTH24_STENCIL8, samples, width, height);
+    glGenFramebuffers(1, &frame->framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, frame->framebuffer);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_RENDERBUFFER, frame->color);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, frame->depth);
+    bool complete = glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE;
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if (!complete) {
+        WindowFrameRelease(frame);
+        return false;
+    }
+    frame->width = width;
+    frame->height = height;
+    return true;
+}
+
+static void WindowBeginFrame(void) {
+    BeginDrawing();
+    if (WindowFrameFit(&window_frame, GetRenderWidth(), GetRenderHeight()))
+        glBindFramebuffer(GL_FRAMEBUFFER, window_frame.framebuffer);
+}
+
+static void WindowEndFrame(void) {
+    if (window_frame.framebuffer) {
+        rlDrawRenderBatchActive();
+        rlDisableScissorTest();
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, window_frame.framebuffer);
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        glBlitFramebuffer(
+            0,
+            0,
+            window_frame.width,
+            window_frame.height,
+            0,
+            0,
+            window_frame.width,
+            window_frame.height,
+            GL_COLOR_BUFFER_BIT,
+            GL_NEAREST
+        );
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+    EndDrawing();
 }
 
 static void WindowFitToDisplay(void) {
@@ -83,9 +172,18 @@ static void WindowSendToBack(void) {
 
 #ifndef __EMSCRIPTEN__
 #define WINDOW_RESIZE_FLAGS FLAG_WINDOW_RESIZABLE
+#define WINDOW_SAMPLING_FLAGS FLAG_MSAA_4X_HINT
 
 static int WindowPageTurned(void) {
     return 0;
+}
+
+static void WindowBeginFrame(void) {
+    BeginDrawing();
+}
+
+static void WindowEndFrame(void) {
+    EndDrawing();
 }
 #endif
 

@@ -172,12 +172,12 @@ static void DebugRenderNexusScene(const char *scene_name) {
     for (float settled = 0.0f; settled < DEBUG_NEXUS_SCENE_SETTLE_SECONDS; settled += MAP_SCENE_STEP)
         NexusBackgroundUpdate(&bg, MAP_SCENE_STEP);
     for (int frame = 0; frame < 4; frame++) {
-        BeginDrawing();
+        WindowBeginFrame();
         ClearBackground(BLACK);
         BeginMode3D(bg.cam);
         NexusBackgroundDraw(&bg);
         EndMode3D();
-        EndDrawing();
+        WindowEndFrame();
     }
     const char *output = getenv("HOD_SHOT");
     if (output) TakeScreenshot(GetFileName(output));
@@ -1210,7 +1210,7 @@ static bool DebugRenderPlayMode(const char *screen_name, const char *output) {
     bool install_started = false;
     for (int frame = 0; frame < frames && !WindowShouldClose(); frame++) {
         bool last = frame + 1 == frames || (live && DebugLiveInstallSettled(&install_started));
-        BeginDrawing();
+        WindowBeginFrame();
         ClearBackground(BLACK);
         UiFrameBegin();
         PlayModeScreenDraw(&screen);
@@ -1219,7 +1219,7 @@ static bool DebugRenderPlayMode(const char *screen_name, const char *output) {
             rlDrawRenderBatchActive();
             TakeScreenshot(output);
         }
-        EndDrawing();
+        WindowEndFrame();
         if (last) break;
     }
     PlayModeScreenUnload(&screen);
@@ -1324,7 +1324,7 @@ static bool DebugRenderAccountGate(const char *screen_name, const char *output) 
     int frames = EnvInt("HOD_SHOT_FRAMES", DEBUG_SHOT_DEFAULT_FRAMES);
     for (int frame = 0; frame < frames && !WindowShouldClose(); frame++) {
         bool last = frame + 1 == frames;
-        BeginDrawing();
+        WindowBeginFrame();
         ClearBackground(BLACK);
         UiFrameBegin();
         AccountGateDraw(&gate);
@@ -1333,7 +1333,7 @@ static bool DebugRenderAccountGate(const char *screen_name, const char *output) 
             rlDrawRenderBatchActive();
             TakeScreenshot(output);
         }
-        EndDrawing();
+        WindowEndFrame();
     }
     LocUnload();
     AssetsUnload();
