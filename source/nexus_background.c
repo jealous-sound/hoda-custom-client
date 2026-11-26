@@ -27,7 +27,7 @@
 #define NEXUS_OPAQUE_QUEUE 0
 #define NEXUS_MAX_DRAWS (NEXUS_BG_MAX_LAYERS + MAP_SCENE_MAX_EMITTERS)
 
-static const char *const NEXUS_FS_LAYER = "#version 330\n"
+static const char *const NEXUS_FS_LAYER = SHADER_GLSL_HEADER
                                           "in vec2 fragTexCoord;\n"
                                           "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"
                                           "uniform float opaque; uniform float cutoff;\n"

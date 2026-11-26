@@ -38,6 +38,7 @@ typedef struct {
     char reply_header_value[PLATFORM_HTTP_HEADER_VALUE_CAP];
 } PlatformHttpResponse;
 
+bool PlatformPrepareGameFiles(void);
 bool PlatformHttpSend(const PlatformHttpRequest *request, PlatformHttpResponse *response);
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size);
 bool PlatformReplaceFile(const char *source, const char *target);

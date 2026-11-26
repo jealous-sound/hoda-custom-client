@@ -29,6 +29,7 @@ Without a local copy the game downloads its data on first launch (see [Content](
 | `make format-check` | clang-format check; `make format` rewrites |
 | `make dist` | a playable copy in `../hoda-custom-dist` (`DIST_DIR=`, `DIST_BACKEND_URL=`) |
 | `make content` | publishes the data packs to R2 (`CONTENT_BUCKET=`, default `hoda-assets`; `npx wrangler login` once) |
+| `make web`, `make web-serve`, `make web-publish` | the experimental [browser build](#browser-build) in `build/web/`, a local server for it, and its upload to the CDN |
 | `python3 tools/check_comments.py` | fails on any comment or docstring in owned code |
 
 Build variables: `SERVER_URL` (default `https://api.hodareborn.com`; empty means local play only), `CONTENT_URL`
@@ -216,6 +217,57 @@ downloads only the packs that changed.
 changed packs, and uploads the manifest last. `python3 tools/publish_content.py --dry-run` builds the packs without
 uploading them. Whenever a data table changes shape, bump `CONTENT_MANIFEST_FORMAT` in `source/content_update.c`
 and `MANIFEST_FORMAT` in `tools/build_content_packs.py` together.
+
+## Browser build
+
+Experimental: the same C code compiled to WebAssembly with Emscripten (`brew install emscripten`), WebGL2 and
+pthreads. Needs the local asset cache.
+
+```sh
+make web-serve
+```
+
+Then open http://127.0.0.1:8077/ in Chrome. `WEB_BACKEND=http://127.0.0.1:<port>` makes the server forward `/api/`
+to a backend; add `?HOD_BACKEND_URL=http://127.0.0.1:8077/api` to the page URL to play Online through it. Any
+`HOD_*` query parameter becomes an environment variable for the game.
+
+- `make web` clones raylib 5.5 into `build/` once and builds it for the web. It writes `build/web/index.{html,js,wasm}`,
+  a `game/` tree of links to the files `make dist` ships, and `game_files.txt`, the list the page mounts.
+- Game files are not downloaded up front. The page mounts them over HTTP and fetches each file the first time the
+  game reads it, so the server must answer `Range` requests. Reaching the tutorial battle reads about 190 MB.
+- The native game writes `resource_index.txt` (`HOD_RESOURCE_INDEX_OUT=<path>`), the cache bundle catalog. The
+  browser build loads it instead of opening all 4,716 bundles at startup.
+- Threads need cross-origin isolation: the page must be served with `Cross-Origin-Opener-Policy: same-origin` and
+  `Cross-Origin-Embedder-Policy: require-corp`. `tools/serve_web.py` sends both.
+- Local Game saves, `account.dat` and `settings.json` live in the browser's origin-private file system.
+- Emscripten's fetch layer asks for `<base>//<file>`. `packaging/web/single_slash_fetch.js` (`--pre-js`) collapses
+  repeated slashes in every thread's `fetch`, and `tools/serve_web.py` answers `//` with 404 as R2 does.
+- Not done yet: a frame loop driven by `requestAnimationFrame` (frames now yield with a 16 ms sleep, about 50 fps).
+
+### Hosting
+
+The page is `https://hodareborn.com/play/` (the website pulls `index.{html,js,wasm}` for a pinned release), the game
+files are on the CDN under `web/<release>/`, and the backend answers CORS for that origin (`-web-origins`).
+
+```sh
+make web WEB_RELEASE=v0.32.0
+make web-publish WEB_RELEASE=v0.32.0 WEB_PREVIOUS=v0.31.0 WEB_DRY_RUN=1
+make web-publish WEB_RELEASE=v0.32.0 WEB_PREVIOUS=v0.31.0
+```
+
+- `WEB_RELEASE` bakes `HOD_GAME_FILES_URL=$(CONTENT_URL)/web/$(WEB_RELEASE)/` into the page; without it the files are
+  read next to the page. `?HOD_GAME_FILES_URL=` overrides it.
+- `tools/publish_web.py` writes only under `web/<release>/` through R2's S3 API, so `manifest.json` and the content
+  packs are untouched. It needs `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` from an R2 API token
+  with Object Read & Write on the bucket.
+- Game files go first, copied inside the bucket from `WEB_PREVIOUS` when their MD5 matches its `game_files.md5`, then
+  `game_files.md5`, `game_files.txt` and the page last. Everything is `immutable`. A rerun skips what is there and an
+  object already published with other bytes stops it, so a changed build needs a new release.
+- The bucket's CORS policy must allow the page's origin: `GET` and `HEAD`, header `Range`, exposing
+  `Content-Length`, `Content-Range`, `Accept-Ranges` and `ETag`.
+- To rehearse locally on three origins, serve the published folder as the CDN with
+  `tools/serve_web.py --root <bucket> --port 8078 --allow-origin http://localhost:8080`; `tests/fake_s3.py` is an S3
+  endpoint that writes into such a folder.
 
 ## Releases
 

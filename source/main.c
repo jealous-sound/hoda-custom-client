@@ -22,6 +22,18 @@
 #define HOD_CACHE "client-additional-data/"
 #endif
 
+#ifndef HOD_RESOURCE_INDEX
+#define HOD_RESOURCE_INDEX ""
+#endif
+
+#define RESOURCE_INDEX_OUT_ENV "HOD_RESOURCE_INDEX_OUT"
+
+#ifdef __EMSCRIPTEN__
+#define SHADER_GLSL_HEADER "#version 300 es\nprecision highp float;\n"
+#else
+#define SHADER_GLSL_HEADER "#version 330\n"
+#endif
+
 #include "config.c"
 #include "window.c"
 #include "vendors/cJSON.c"
@@ -178,7 +190,9 @@ static void RunSelectedMode(void) {
 }
 
 int main(void) {
+    if (!PlatformPrepareGameFiles()) return 1;
     AppBundleEnterParentDirectory();
+    if (getenv(RESOURCE_INDEX_OUT_ENV)) return ResourceWriteIndex(getenv(RESOURCE_INDEX_OUT_ENV)) ? 0 : 1;
     if (ClientInstallHandOver()) return 0;
     bool screenshot_mode = EnvFlag("HOD_SHOT");
     if (screenshot_mode) SetTraceLogLevel(LOG_WARNING);

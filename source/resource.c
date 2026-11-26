@@ -18,6 +18,10 @@
 #define RESOURCE_WORKERS_MAX 16
 #define RESOURCE_REF_MAX 256
 #define RESOURCE_WORKER_STACK (8 * 1024 * 1024)
+#define RESOURCE_INDEX_HEADER "hoda-resource-index 1"
+#define RESOURCE_INDEX_BUNDLES_LABEL "bundles"
+#define RESOURCE_INDEX_OBJECTS_LABEL "objects"
+#define RESOURCE_INDEX_OBJECT_FIELDS 4
 
 typedef enum {
     RESOURCE_FILE,
@@ -188,10 +192,122 @@ static void ResourceIndexBundles(void) {
     MemFree(jobs);
 }
 
+static bool ResourceIndexReadLine(char **cursor, char *line, size_t capacity) {
+    char *end = strchr(*cursor, '\n');
+    if (!end) return false;
+    size_t length = (size_t)(end - *cursor);
+    if (length >= capacity) return false;
+    memcpy(line, *cursor, length);
+    line[length] = '\0';
+    *cursor = end + 1;
+    return true;
+}
+
+static bool ResourceIndexReadCount(char **cursor, const char *label, int *count) {
+    char line[RESOURCE_REF_MAX];
+    char expected[RESOURCE_REF_MAX];
+    snprintf(expected, sizeof(expected), "%s %%d", label);
+    return ResourceIndexReadLine(cursor, line, sizeof(line)) && sscanf(line, expected, count) == 1 && *count >= 0;
+}
+
+static bool ResourceIndexReadBundles(char **cursor) {
+    int count = 0;
+    if (!ResourceIndexReadCount(cursor, RESOURCE_INDEX_BUNDLES_LABEL, &count)) return false;
+    resource_bundle_files = (FilePathList){
+        .capacity = (unsigned int)count,
+        .paths = MemAlloc(sizeof(char *) * (count > 0 ? count : 1)),
+    };
+    char line[RESOURCE_REF_MAX];
+    for (int i = 0; i < count; i++) {
+        if (!ResourceIndexReadLine(cursor, line, sizeof(line))) return false;
+        size_t length = strlen(line) + 1;
+        char *path = MemAlloc((unsigned int)length);
+        memcpy(path, line, length);
+        resource_bundle_files.paths[resource_bundle_files.count++] = path;
+    }
+    return true;
+}
+
+static bool ResourceIndexReadObjects(char **cursor) {
+    int count = 0;
+    if (!ResourceIndexReadCount(cursor, RESOURCE_INDEX_OBJECTS_LABEL, &count)) return false;
+    char line[RESOURCE_REF_MAX];
+    for (int i = 0; i < count; i++) {
+        if (!ResourceIndexReadLine(cursor, line, sizeof(line))) return false;
+        int container = 0, name_start = 0;
+        UnityObject object = {0};
+        int fields =
+            sscanf(line, "%d %u %u %d %n", &container, &object.offset, &object.size, &object.class_id, &name_start);
+        if (fields != RESOURCE_INDEX_OBJECT_FIELDS) return false;
+        if (container < 0 || container >= (int)resource_bundle_files.count) return false;
+        ResourceCatalogAdd(&resource_cache, line + name_start, container, object);
+    }
+    return true;
+}
+
+static bool ResourceLoadIndex(const char *path) {
+    if (!path[0] || !FileExists(path)) return false;
+    char *text = LoadFileText(path);
+    if (!text) return false;
+    char *cursor = text;
+    char line[RESOURCE_REF_MAX];
+    bool loaded = ResourceIndexReadLine(&cursor, line, sizeof(line)) && strcmp(line, RESOURCE_INDEX_HEADER) == 0 &&
+                  ResourceIndexReadBundles(&cursor) && ResourceIndexReadObjects(&cursor);
+    UnloadFileText(text);
+    if (!loaded) TraceLog(LOG_WARNING, "Resource: %s is not a resource index", path);
+    return loaded;
+}
+
+static bool ResourceIndexNameWritable(const char *name) {
+    return name[0] && !strchr(name, '\n') && !strchr(name, '\r');
+}
+
+static void ResourceIndexCache(void);
+
+static bool ResourceWriteIndex(const char *path) {
+    ResourceIndexCache();
+    FILE *file = fopen(path, "wb");
+    if (!file) return false;
+    int writable = 0;
+    for (int i = 0; i < resource_cache.count; i++)
+        writable += ResourceIndexNameWritable(resource_cache.entries[i].name);
+    fprintf(file, "%s\n%s %u\n", RESOURCE_INDEX_HEADER, RESOURCE_INDEX_BUNDLES_LABEL, resource_bundle_files.count);
+    for (unsigned int i = 0; i < resource_bundle_files.count; i++)
+        fprintf(file, "%s\n", resource_bundle_files.paths[i]);
+    fprintf(file, "%s %d\n", RESOURCE_INDEX_OBJECTS_LABEL, writable);
+    for (int i = 0; i < resource_cache.count; i++) {
+        const ResourceEntry *entry = &resource_cache.entries[i];
+        if (!ResourceIndexNameWritable(entry->name)) continue;
+        fprintf(
+            file,
+            "%d %u %u %d %s\n",
+            entry->container,
+            entry->object.offset,
+            entry->object.size,
+            entry->object.class_id,
+            entry->name
+        );
+    }
+    bool written = !ferror(file);
+    written = fclose(file) == 0 && written;
+    TraceLog(LOG_INFO, "Resource: wrote %d objects in %u bundles to %s", writable, resource_bundle_files.count, path);
+    return written;
+}
+
 static void ResourceIndexCache(void) {
     if (resource_cache.indexed) return;
     ResourceCatalogReset(&resource_cache);
     resource_cache.indexed = true;
+    if (ResourceLoadIndex(HOD_RESOURCE_INDEX)) {
+        TraceLog(
+            LOG_INFO,
+            "Resource: loaded %d objects in %u cache bundles from %s",
+            resource_cache.count,
+            resource_bundle_files.count,
+            HOD_RESOURCE_INDEX
+        );
+        return;
+    }
     FilePathList bundle_dirs = LoadDirectoryFiles(ORIGINAL_BUNDLE_DIR);
     resource_bundle_files = (FilePathList){
         .capacity = bundle_dirs.count,

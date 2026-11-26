@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heroes of Dragon Age</title>
+<style>
+html, body { margin: 0; height: 100%; overflow: hidden; background: #000; }
+canvas.emscripten { display: block; width: 100vw; height: 100vh; border: 0; background: #000; outline: none; }
+#status { position: fixed; left: 0; right: 0; bottom: 24px; text-align: center; color: #ddd;
+  font: 15px/1.4 system-ui, sans-serif; pointer-events: none; }
+</style>
+</head>
+<body>
+<canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+<div id="status">Loading…</div>
+<script>
+var hodStatus = document.getElementById("status");
+var Module = {
+  canvas: document.getElementById("canvas"),
+  preRun: [function () {
+    var query = new URLSearchParams(location.search);
+    query.forEach(function (value, name) {
+      if (name.indexOf("HOD_") === 0) Module.ENV[name] = value;
+    });
+  }],
+  setStatus: function (text) { hodStatus.textContent = text || ""; },
+  monitorRunDependencies: function () {},
+  onRuntimeInitialized: function () { hodStatus.textContent = ""; },
+  onAbort: function (reason) { hodStatus.textContent = "The game stopped: " + reason; },
+};
+window.addEventListener("error", function (event) {
+  hodStatus.textContent = "The game stopped: " + (event.message || event.error);
+});
+if (!self.crossOriginIsolated) {
+  hodStatus.textContent = "This page needs cross-origin isolation (COOP/COEP headers) to run.";
+}
+window.addEventListener("click", function () { Module.canvas.focus(); });
+</script>
+{{{ SCRIPT }}}
+</body>
+</html>

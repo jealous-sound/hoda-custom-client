@@ -38,6 +38,10 @@
 #define PLATFORM_PATH_CAP 1024
 #define PLATFORM_COMMAND_CAP 1100
 
+bool PlatformPrepareGameFiles(void) {
+    return true;
+}
+
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size) {
     HANDLE handle = (HANDLE)_get_osfhandle(_fileno(file));
     if (handle == INVALID_HANDLE_VALUE) return false;
@@ -427,15 +431,24 @@ bool PlatformContinueAs(const char *executable) {
 
 #else
 #include <ctype.h>
-#include <curl/curl.h>
 #include <dirent.h>
-#include <dlfcn.h>
 #include <errno.h>
 #include <pthread.h>
-#include <spawn.h>
 #include <strings.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#include <emscripten/fetch.h>
+#include <emscripten/threading.h>
+#include <emscripten/wasmfs.h>
+#include <fcntl.h>
+#else
+#include <curl/curl.h>
+#include <dlfcn.h>
+#include <spawn.h>
+#endif
 
 extern char **environ;
 
@@ -453,10 +466,287 @@ extern char **environ;
 #include <CoreFoundation/CoreFoundation.h>
 #define PLATFORM_USER_DATA_SUFFIX "Library/Application Support"
 static const char *const platform_curl_libraries[] = {"/usr/lib/libcurl.4.dylib", "libcurl.4.dylib"};
+#elif defined(__EMSCRIPTEN__)
+#define PLATFORM_USER_DATA_SUFFIX ".local/share"
 #else
 #define PLATFORM_USER_DATA_SUFFIX ".local/share"
 static const char *const platform_curl_libraries[] = {"libcurl.so.4", "libcurl-gnutls.so.4", "libcurl.so"};
 #endif
+
+#ifdef __EMSCRIPTEN__
+#ifndef HOD_GAME_FILES_URL
+#define HOD_GAME_FILES_URL ""
+#endif
+#define PLATFORM_WEB_FILES_URL_ENV "HOD_GAME_FILES_URL"
+#define PLATFORM_WEB_ROOT "/"
+#define PLATFORM_WEB_NODE_ROOT "."
+#define PLATFORM_WEB_FILE_LIST "game_files.txt"
+#define PLATFORM_WEB_FILES_PATH "game/"
+#define PLATFORM_WEB_URL_CAP 2048
+#define PLATFORM_WEB_PATH_CAP 1024
+#define PLATFORM_WEB_FETCH_CHUNK_BYTES (4u * 1024u * 1024u)
+#define PLATFORM_WEB_PREPARE_POLL_MILLISECONDS 10
+#define PLATFORM_WEB_LIST_TIMEOUT_SECONDS 60
+#define PLATFORM_WEB_DOWNLOAD_TIMEOUT_SECONDS 600
+#define PLATFORM_WEB_DIRECTORY_MODE 0777
+#define PLATFORM_WEB_FILE_MODE 0444
+#define PLATFORM_WEB_MOUNT_CAP 16
+#define PLATFORM_WEB_HEADER_SLOTS 16
+#define PLATFORM_WEB_HEADER_CAP 512
+#define PLATFORM_WEB_PROCESSOR_CAP 4
+#define PLATFORM_HTTP_GET "GET"
+
+typedef struct {
+    char files_url[PLATFORM_WEB_URL_CAP];
+    bool prepared;
+    int created;
+    volatile int finished;
+} PlatformWebFiles;
+
+typedef struct {
+    char names[PLATFORM_WEB_MOUNT_CAP][PLATFORM_WEB_PATH_CAP];
+    int count;
+} PlatformWebMounts;
+
+// clang-format off
+EM_JS(int, PlatformWebPageUrl, (char *out, int capacity), {
+    var url = new URL(".", location.href).href;
+    if (lengthBytesUTF8(url) >= capacity) return 0;
+    stringToUTF8(url, out, capacity);
+    return 1;
+});
+
+EM_JS(int, PlatformWebHasOpfs, (void), {
+    var storage = typeof navigator !== "undefined" && navigator.storage;
+    return storage && typeof storage.getDirectory === "function" ? 1 : 0;
+});
+
+EM_JS(int, PlatformWebRunsInNode, (void), {
+    return typeof process === "object" && process.versions && process.versions.node ? 1 : 0;
+});
+// clang-format on
+
+static bool PlatformWebSplitHeader(const char *header, char *name, char *value, size_t capacity) {
+    const char *colon = strchr(header, ':');
+    if (!colon || (size_t)(colon - header) >= capacity) return false;
+    memcpy(name, header, (size_t)(colon - header));
+    name[colon - header] = '\0';
+    const char *start = colon + 1;
+    while (*start && isspace((unsigned char)*start)) start++;
+    return (size_t)snprintf(value, capacity, "%s", start) < capacity;
+}
+
+static void PlatformWebReplyHeader(emscripten_fetch_t *fetch, const char *name, char *out, size_t capacity) {
+    out[0] = '\0';
+    if (!name || !name[0]) return;
+    size_t length = emscripten_fetch_get_response_headers_length(fetch);
+    char *raw = malloc(length + 1);
+    if (!raw) return;
+    emscripten_fetch_get_response_headers(fetch, raw, length + 1);
+    char **pairs = emscripten_fetch_unpack_response_headers(raw);
+    for (int i = 0; pairs && pairs[i] && pairs[i + 1]; i += 2) {
+        if (strcasecmp(pairs[i], name) != 0) continue;
+        const char *value = pairs[i + 1];
+        while (*value && isspace((unsigned char)*value)) value++;
+        snprintf(out, capacity, "%s", value);
+        size_t end = strlen(out);
+        while (end > 0 && isspace((unsigned char)out[end - 1])) out[--end] = '\0';
+        break;
+    }
+    if (pairs) emscripten_fetch_free_unpacked_response_headers(pairs);
+    free(raw);
+}
+
+static emscripten_fetch_t *PlatformWebFetch(const PlatformHttpRequest *request) {
+    if (emscripten_is_main_browser_thread()) return NULL;
+    char names[PLATFORM_WEB_HEADER_SLOTS][PLATFORM_WEB_HEADER_CAP];
+    char values[PLATFORM_WEB_HEADER_SLOTS][PLATFORM_WEB_HEADER_CAP];
+    const char *fields[PLATFORM_WEB_HEADER_SLOTS * 2 + 1];
+    int field_count = 0;
+    for (int i = 0; i < request->header_count && i < PLATFORM_WEB_HEADER_SLOTS; i++) {
+        if (!PlatformWebSplitHeader(request->headers[i], names[i], values[i], PLATFORM_WEB_HEADER_CAP)) continue;
+        fields[field_count++] = names[i];
+        fields[field_count++] = values[i];
+    }
+    fields[field_count] = NULL;
+    emscripten_fetch_attr_t attributes;
+    emscripten_fetch_attr_init(&attributes);
+    snprintf(attributes.requestMethod, sizeof(attributes.requestMethod), "%s", request->method);
+    attributes.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY | EMSCRIPTEN_FETCH_SYNCHRONOUS | EMSCRIPTEN_FETCH_REPLACE;
+    attributes.timeoutMSecs = (uint32_t)request->timeout_seconds * 1000u;
+    attributes.requestHeaders = fields;
+    if (request->body || strcmp(request->method, PLATFORM_HTTP_GET) != 0) {
+        attributes.requestData = request->body ? request->body : "";
+        attributes.requestDataSize = strlen(attributes.requestData);
+    }
+    emscripten_fetch_t *fetch = emscripten_fetch(&attributes, request->url);
+    if (fetch && fetch->status == 0) {
+        emscripten_fetch_close(fetch);
+        return NULL;
+    }
+    return fetch;
+}
+
+static bool PlatformWebSucceeded(const emscripten_fetch_t *fetch) {
+    return fetch->status >= 200 && fetch->status < 300;
+}
+
+bool PlatformHttpSend(const PlatformHttpRequest *request, PlatformHttpResponse *response) {
+    *response = (PlatformHttpResponse){0};
+    emscripten_fetch_t *fetch = PlatformWebFetch(request);
+    bool answered = fetch != NULL;
+    if (answered) {
+        response->status = fetch->status;
+        response->body = malloc((size_t)fetch->numBytes + 1);
+        if (response->body) {
+            if (fetch->numBytes > 0) memcpy(response->body, fetch->data, (size_t)fetch->numBytes);
+            response->body[fetch->numBytes] = '\0';
+        }
+        PlatformWebReplyHeader(
+            fetch, request->reply_header, response->reply_header_value, sizeof(response->reply_header_value)
+        );
+    }
+    if (fetch) emscripten_fetch_close(fetch);
+    return answered && response->body;
+}
+
+PlatformDownloadResult
+PlatformDownload(const char *url, const char *path, bool resume, PlatformDownloadProgress progress, void *context) {
+    (void)resume;
+    PlatformHttpRequest request = {
+        .method = PLATFORM_HTTP_GET,
+        .url = url,
+        .timeout_seconds = PLATFORM_WEB_DOWNLOAD_TIMEOUT_SECONDS,
+    };
+    emscripten_fetch_t *fetch = PlatformWebFetch(&request);
+    if (!fetch) return PLATFORM_DOWNLOAD_NETWORK_ERROR;
+    PlatformDownloadResult result = PlatformWebSucceeded(fetch) ? PLATFORM_DOWNLOAD_OK : PLATFORM_DOWNLOAD_SERVER_ERROR;
+    size_t length = (size_t)fetch->numBytes;
+    FILE *file = result == PLATFORM_DOWNLOAD_OK ? fopen(path, "wb") : NULL;
+    if (result == PLATFORM_DOWNLOAD_OK && (!file || fwrite(fetch->data, 1, length, file) != length))
+        result = PlatformDiskFull() ? PLATFORM_DOWNLOAD_DISK_FULL : PLATFORM_DOWNLOAD_FILE_ERROR;
+    if (file && fclose(file) != 0 && result == PLATFORM_DOWNLOAD_OK) result = PLATFORM_DOWNLOAD_FILE_ERROR;
+    if (result == PLATFORM_DOWNLOAD_OK && progress && !progress(context, (long long)length))
+        result = PLATFORM_DOWNLOAD_CANCELLED;
+    emscripten_fetch_close(fetch);
+    return result;
+}
+
+static bool PlatformWebMakeParents(const char *path, char *made, size_t capacity) {
+    const char *slash = strrchr(path, '/');
+    if (!slash) return true;
+    size_t parent_length = (size_t)(slash - path);
+    if (parent_length >= capacity) return false;
+    if (strlen(made) == parent_length && strncmp(made, path, parent_length) == 0) return true;
+    char parent[PLATFORM_WEB_PATH_CAP];
+    memcpy(parent, path, parent_length);
+    parent[parent_length] = '\0';
+    for (char *cursor = parent + 1; *cursor; cursor++) {
+        if (*cursor != '/') continue;
+        *cursor = '\0';
+        if (mkdir(parent, PLATFORM_WEB_DIRECTORY_MODE) != 0 && errno != EEXIST) return false;
+        *cursor = '/';
+    }
+    if (mkdir(parent, PLATFORM_WEB_DIRECTORY_MODE) != 0 && errno != EEXIST) return false;
+    snprintf(made, capacity, "%s", parent);
+    return true;
+}
+
+static bool PlatformWebMount(PlatformWebMounts *mounts, const char *files_url, const char *relative) {
+    const char *slash = strchr(relative, '/');
+    size_t length = slash ? (size_t)(slash - relative) : strlen(relative);
+    if (!slash || length == 0 || length >= PLATFORM_WEB_PATH_CAP) return false;
+    for (int i = 0; i < mounts->count; i++)
+        if (strlen(mounts->names[i]) == length && strncmp(mounts->names[i], relative, length) == 0) return true;
+    if (mounts->count == PLATFORM_WEB_MOUNT_CAP) return false;
+    char *name = mounts->names[mounts->count];
+    memcpy(name, relative, length);
+    name[length] = '\0';
+    char base[PLATFORM_WEB_URL_CAP], mount[PLATFORM_WEB_PATH_CAP];
+    if ((size_t)snprintf(base, sizeof(base), "%s%s%s", files_url, PLATFORM_WEB_FILES_PATH, name) >= sizeof(base) ||
+        (size_t)snprintf(mount, sizeof(mount), "%s%s", PLATFORM_WEB_ROOT, name) >= sizeof(mount))
+        return false;
+    backend_t backend = wasmfs_create_fetch_backend(base, PLATFORM_WEB_FETCH_CHUNK_BYTES);
+    if (!backend || wasmfs_create_directory(mount, PLATFORM_WEB_DIRECTORY_MODE, backend) != 0) return false;
+    mounts->count++;
+    return true;
+}
+
+static bool PlatformWebCreateFile(const char *relative, char *made, size_t capacity) {
+    char path[PLATFORM_WEB_PATH_CAP];
+    if ((size_t)snprintf(path, sizeof(path), "%s%s", PLATFORM_WEB_ROOT, relative) >= sizeof(path)) return false;
+    if (!PlatformWebMakeParents(path, made, capacity)) return false;
+    int descriptor = open(path, O_CREAT | O_RDONLY, PLATFORM_WEB_FILE_MODE);
+    if (descriptor < 0) return false;
+    close(descriptor);
+    return true;
+}
+
+static bool PlatformWebCreateFiles(PlatformWebFiles *files, char *list) {
+    PlatformWebMounts mounts = {0};
+    char made[PLATFORM_WEB_PATH_CAP] = "";
+    for (char *line = strtok(list, "\r\n"); line; line = strtok(NULL, "\r\n")) {
+        if (!line[0]) continue;
+        if (!PlatformWebMount(&mounts, files->files_url, line) || !PlatformWebCreateFile(line, made, sizeof(made))) {
+            fprintf(stderr, "Platform: could not expose %s\n", line);
+            return false;
+        }
+        files->created++;
+    }
+    return files->created > 0;
+}
+
+backend_t wasmfs_create_root_dir(void) {
+    if (PlatformWebRunsInNode()) return wasmfs_create_node_backend(PLATFORM_WEB_NODE_ROOT);
+    return PlatformWebHasOpfs() ? wasmfs_create_opfs_backend() : wasmfs_create_memory_backend();
+}
+
+static void *PlatformWebPrepare(void *argument) {
+    PlatformWebFiles *files = argument;
+    char url[PLATFORM_WEB_URL_CAP];
+    snprintf(url, sizeof(url), "%s%s", files->files_url, PLATFORM_WEB_FILE_LIST);
+    PlatformHttpRequest request = {
+        .method = PLATFORM_HTTP_GET,
+        .url = url,
+        .timeout_seconds = PLATFORM_WEB_LIST_TIMEOUT_SECONDS,
+    };
+    PlatformHttpResponse response;
+    if (PlatformHttpSend(&request, &response)) {
+        files->prepared = response.status == 200 && PlatformWebCreateFiles(files, response.body);
+        free(response.body);
+    }
+    __atomic_store_n(&files->finished, 1, __ATOMIC_RELEASE);
+    return NULL;
+}
+
+static bool PlatformWebFilesUrl(char *out, size_t capacity) {
+    const char *chosen = getenv(PLATFORM_WEB_FILES_URL_ENV);
+    const char *configured = chosen && chosen[0] ? chosen : HOD_GAME_FILES_URL;
+    if (!configured[0]) return PlatformWebPageUrl(out, (int)capacity);
+    const char *separator = configured[strlen(configured) - 1] == '/' ? "" : "/";
+    return (size_t)snprintf(out, capacity, "%s%s", configured, separator) < capacity;
+}
+
+bool PlatformPrepareGameFiles(void) {
+    static PlatformWebFiles files;
+    if (!PlatformWebFilesUrl(files.files_url, sizeof(files.files_url))) return false;
+    pthread_t thread;
+    if (pthread_create(&thread, NULL, PlatformWebPrepare, &files) != 0) return false;
+    while (!__atomic_load_n(&files.finished, __ATOMIC_ACQUIRE))
+        emscripten_sleep(PLATFORM_WEB_PREPARE_POLL_MILLISECONDS);
+    pthread_join(thread, NULL);
+    if (!files.prepared) {
+        fprintf(stderr, "Platform: could not prepare the game files from %s\n", files.files_url);
+        return false;
+    }
+    printf("Platform: exposed %d game files from %s%s\n", files.created, files.files_url, PLATFORM_WEB_FILES_PATH);
+    return chdir(PLATFORM_WEB_ROOT) == 0;
+}
+
+#else
+bool PlatformPrepareGameFiles(void) {
+    return true;
+}
 
 typedef struct {
     CURLcode (*global_init)(long flags);
@@ -694,6 +984,7 @@ bool PlatformHttpSend(const PlatformHttpRequest *request, PlatformHttpResponse *
     memcpy(response->reply_header_value, reply.header_value, sizeof(reply.header_value));
     return response->body != NULL;
 }
+#endif
 
 bool PlatformUserDataDirectory(const char *app_name, char *out, size_t capacity) {
     const char *xdg = getenv(PLATFORM_XDG_DATA_ENV);
@@ -745,7 +1036,7 @@ static const char *const platform_fallback_fonts[] = {
     "/System/Library/Fonts/Supplemental/Songti.ttc",
     "/System/Library/Fonts/AppleSDGothicNeo.ttc",
 };
-#else
+#elif !defined(__EMSCRIPTEN__)
 static const char *const platform_fallback_fonts[] = {
     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
     "/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc",
@@ -759,6 +1050,13 @@ static const char *const platform_fallback_fonts[] = {
 };
 #endif
 
+#ifdef __EMSCRIPTEN__
+int PlatformFallbackFonts(char paths[][PLATFORM_FONT_PATH_CAP], int capacity) {
+    (void)paths;
+    (void)capacity;
+    return 0;
+}
+#else
 int PlatformFallbackFonts(char paths[][PLATFORM_FONT_PATH_CAP], int capacity) {
     int count = 0;
     for (size_t i = 0; i < sizeof(platform_fallback_fonts) / sizeof(platform_fallback_fonts[0]) && count < capacity;
@@ -766,6 +1064,7 @@ int PlatformFallbackFonts(char paths[][PLATFORM_FONT_PATH_CAP], int capacity) {
         snprintf(paths[count++], PLATFORM_FONT_PATH_CAP, "%s", platform_fallback_fonts[i]);
     return count;
 }
+#endif
 
 #ifdef __APPLE__
 bool PlatformPreferredLanguage(char *out, size_t capacity) {
@@ -821,10 +1120,17 @@ bool PlatformReplaceFile(const char *source, const char *target) {
     return rename(source, target) == 0;
 }
 
+#ifdef __EMSCRIPTEN__
+int PlatformProcessorCount(void) {
+    int count = emscripten_num_logical_cores();
+    return count < 1 ? 1 : count < PLATFORM_WEB_PROCESSOR_CAP ? count : PLATFORM_WEB_PROCESSOR_CAP;
+}
+#else
 int PlatformProcessorCount(void) {
     long count = sysconf(_SC_NPROCESSORS_ONLN);
     return count > 0 ? (int)count : 1;
 }
+#endif
 
 time_t PlatformTimeFromUtc(struct tm *utc) {
     return timegm(utc);
@@ -851,6 +1157,17 @@ bool PlatformRemoveTree(const char *path) {
     return rmdir(path) == 0 && emptied;
 }
 
+#ifdef __EMSCRIPTEN__
+bool PlatformStartProgram(const char *executable) {
+    (void)executable;
+    return false;
+}
+
+bool PlatformContinueAs(const char *executable) {
+    (void)executable;
+    return false;
+}
+#else
 bool PlatformStartProgram(const char *executable) {
     char *arguments[] = {(char *)executable, NULL};
     pid_t child;
@@ -862,4 +1179,5 @@ bool PlatformContinueAs(const char *executable) {
     execv(executable, arguments);
     return false;
 }
+#endif
 #endif
