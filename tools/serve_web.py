@@ -15,7 +15,9 @@ from pathlib import Path
 
 CLI_DESCRIPTION = (
     "Serve the browser build on localhost with the cross-origin isolation headers threads need, byte ranges for "
-    "lazily read game files, and an optional /api/ proxy to a backend."
+    "lazily read game files, and an optional /api/ proxy to a backend. With --allow-origin it stands in for the CDN "
+    "instead: paths are taken as they come, as R2 does, and a page on that origin gets the CORS answers the bucket "
+    "policy gives."
 )
 
 ISOLATION_HEADERS = {
@@ -23,6 +25,10 @@ ISOLATION_HEADERS = {
     "Cross-Origin-Embedder-Policy": "require-corp",
     "Cross-Origin-Resource-Policy": "same-origin",
 }
+CDN_ALLOWED_METHODS = ("GET", "HEAD")
+CDN_ALLOWED_HEADERS = frozenset({"range"})
+CDN_EXPOSED_HEADERS = "Content-Length, Content-Range, Accept-Ranges, ETag"
+CDN_PREFLIGHT_MAX_AGE_SECONDS = 86400
 PAGE = "index.html"
 API_PREFIX = "/api/"
 STATS_PATH = "/__stats"
@@ -39,15 +45,20 @@ class Stats:
         self.lock = threading.Lock()
         self.requests = 0
         self.bytes = 0
+        self.preflights = 0
 
     def add(self, sent: int) -> None:
         with self.lock:
             self.requests += 1
             self.bytes += sent
 
+    def add_preflight(self) -> None:
+        with self.lock:
+            self.preflights += 1
+
     def snapshot(self) -> dict[str, int]:
         with self.lock:
-            return {"requests": self.requests, "bytes": self.bytes}
+            return {"requests": self.requests, "bytes": self.bytes, "preflights": self.preflights}
 
 
 def parse_range(header: str, size: int) -> tuple[int, int] | None:
@@ -64,22 +75,53 @@ def parse_range(header: str, size: int) -> tuple[int, int] | None:
     return (start, end) if start <= end else None
 
 
+def requested_headers(header: str) -> set[str]:
+    return {name.strip().lower() for name in header.split(",") if name.strip()}
+
+
 class GameHandler(SimpleHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
     backend: str = ""
+    allowed_origin: str = ""
     stats: Stats
 
     def end_headers(self) -> None:
-        for name, value in ISOLATION_HEADERS.items():
-            self.send_header(name, value)
+        if self.allowed_origin:
+            self.send_cors_headers()
+        else:
+            for name, value in ISOLATION_HEADERS.items():
+                self.send_header(name, value)
         self.send_header("Cache-Control", "no-cache")
         super().end_headers()
 
-    def normalized_path(self) -> str:
-        return re.sub(r"/{2,}", "/", self.path)
+    def from_allowed_origin(self) -> bool:
+        return bool(self.allowed_origin) and self.headers.get("Origin") == self.allowed_origin
+
+    def send_cors_headers(self) -> None:
+        self.send_header("Vary", "Origin")
+        if self.from_allowed_origin():
+            self.send_header("Access-Control-Allow-Origin", self.allowed_origin)
+            self.send_header("Access-Control-Expose-Headers", CDN_EXPOSED_HEADERS)
+
+    def preflight_allowed(self) -> bool:
+        method = self.headers.get("Access-Control-Request-Method", "")
+        headers = requested_headers(self.headers.get("Access-Control-Request-Headers", ""))
+        return self.from_allowed_origin() and method in CDN_ALLOWED_METHODS and headers <= CDN_ALLOWED_HEADERS
+
+    def do_OPTIONS(self) -> None:
+        self.stats.add_preflight()
+        if not self.preflight_allowed():
+            self.send_response(HTTPStatus.FORBIDDEN)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        self.send_response(HTTPStatus.NO_CONTENT)
+        self.send_header("Access-Control-Allow-Methods", ", ".join(CDN_ALLOWED_METHODS))
+        self.send_header("Access-Control-Allow-Headers", ", ".join(sorted(CDN_ALLOWED_HEADERS)))
+        self.send_header("Access-Control-Max-Age", str(CDN_PREFLIGHT_MAX_AGE_SECONDS))
+        self.end_headers()
 
     def do_GET(self) -> None:
-        self.path = self.normalized_path()
         if self.path == STATS_PATH:
             self.send_json(self.stats.snapshot())
         elif self.path.startswith(API_PREFIX):
@@ -88,22 +130,18 @@ class GameHandler(SimpleHTTPRequestHandler):
             self.send_file(include_body=True)
 
     def do_HEAD(self) -> None:
-        self.path = self.normalized_path()
         if self.path.startswith(API_PREFIX):
             self.proxy()
         else:
             self.send_file(include_body=False)
 
     def do_POST(self) -> None:
-        self.path = self.normalized_path()
         self.proxy()
 
     def do_PUT(self) -> None:
-        self.path = self.normalized_path()
         self.proxy()
 
     def do_DELETE(self) -> None:
-        self.path = self.normalized_path()
         self.proxy()
 
     def send_json(self, payload: dict[str, int]) -> None:
@@ -118,7 +156,7 @@ class GameHandler(SimpleHTTPRequestHandler):
         path = Path(self.translate_path(self.path))
         if path.is_dir():
             path = path / PAGE
-        if not path.is_file():
+        if "//" in self.path.split("?", 1)[0] or not path.is_file():
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         size = path.stat().st_size
@@ -186,15 +224,20 @@ def main() -> int:
     parser.add_argument("--root", type=Path, required=True, help="folder made by make web")
     parser.add_argument("--port", type=int, default=8077, help="localhost port (default 8077)")
     parser.add_argument("--backend", default="", help="backend URL that /api/ forwards to, e.g. http://127.0.0.1:8080")
+    parser.add_argument(
+        "--allow-origin", default="", help="serve as the CDN for a page on this origin, e.g. http://localhost:8080"
+    )
     args = parser.parse_args()
     root = args.root.resolve()
-    if not (root / "index.html").is_file():
-        raise SystemExit(f"{root} has no index.html; run make web")
+    if not args.allow_origin and not (root / PAGE).is_file():
+        raise SystemExit(f"{root} has no {PAGE}; run make web")
     GameHandler.backend = args.backend
+    GameHandler.allowed_origin = args.allow_origin
     GameHandler.stats = Stats()
     server = ThreadingHTTPServer(("127.0.0.1", args.port), partial(GameHandler, directory=str(root)))
+    role = f", the CDN for {args.allow_origin}" if args.allow_origin else ""
     backend = f", /api/ -> {args.backend}" if args.backend else ""
-    print(f"Serving {root} at http://127.0.0.1:{args.port}/{backend}", flush=True)
+    print(f"Serving {root} at http://127.0.0.1:{args.port}/{role}{backend}", flush=True)
     try:
         server.serve_forever()
     except KeyboardInterrupt:
