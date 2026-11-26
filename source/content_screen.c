@@ -168,7 +168,7 @@ static void ContentArtLoad(ContentArt *art) {
     LocLoadPreferred();
     art->splash = LoadingScreenTexture(LOADING_SCREEN_SPLASH);
     art->plate = LoadingScreenTexture(LOADING_SCREEN_PLATE);
-    art->ring = LoadingScreenTexture(LOADING_INDICATOR_RING);
+    art->ring = LoadingScreenRingTexture();
     art->track = LoadingScreenTexture(CONTENT_TRACK_TEXTURE);
     art->fill = LoadingScreenTexture(CONTENT_FILL_TEXTURE);
     art->alert_frame = LoadingScreenTexture(CONTENT_ALERT_FRAME);
@@ -318,10 +318,7 @@ static ContentScreenChoice ContentDrawDownloadAlert(ContentArt *art, const Conte
 static ContentScreenChoice ContentDrawArt(ContentArt *art, const ContentProgress *progress) {
     Rectangle root = UiRoot();
     UiDrawTexture(art->splash, root, WHITE);
-    LoadingIndicatorDraw(
-        art->ring,
-        LoadingIndicatorBox(root, LOADING_SCREEN_SPINNER_X, LOADING_SCREEN_SPINNER_Y, LOADING_SCREEN_SPINNER_HEIGHT)
-    );
+    LoadingScreenDrawRing(art->ring, root);
     ContentDrawLoadingMessage(art, progress, root);
     if (progress->packs_total > 0) {
         int percent = ContentPercent(progress);

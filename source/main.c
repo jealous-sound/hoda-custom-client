@@ -212,7 +212,7 @@ int main(void) {
     SetExitKey(KEY_NULL);
     InitAudioDevice();
     if (screenshot_mode || EnvFlag("HOD_MUTE")) SetMasterVolume(0.0f);
-    SetTargetFPS(screenshot_mode ? SETTINGS_DEFAULT_FRAME_RATE : SettingsFrameRateLimit());
+    WindowSetFrameRateLimit(screenshot_mode ? SETTINGS_DEFAULT_FRAME_RATE : SettingsFrameRateLimit());
     ClientInstallConfirmLaunch();
 
     if (!screenshot_mode) ClientUpdateCheckStart(BackendUrlOverride() ? BackendUrlOverride() : BackendDefaultUrl());

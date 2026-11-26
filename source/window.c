@@ -29,6 +29,10 @@ static void WindowSendToBack(void) {
 #define WINDOW_SAMPLING_FLAGS 0
 #define WINDOW_PAGE_DENSITY_LIMIT 2.0
 #define WINDOW_FRAME_SAMPLES 4
+#define WINDOW_MILLISECONDS_PER_SECOND 1000.0
+#define WINDOW_FRAME_LIMIT_SLACK_MILLISECONDS 4.0
+#define WINDOW_HIDDEN_PAGE_FRAME_MILLISECONDS 100
+#define WINDOW_LOADER_ART_FORMAT ".png"
 
 typedef struct {
     GLuint framebuffer;
@@ -39,13 +43,64 @@ typedef struct {
 } WindowFrame;
 
 static WindowFrame window_frame;
+static double window_frame_interval_milliseconds;
+static bool window_loader_wanted;
 
 // clang-format off
 EM_JS(int, WindowPageTurned, (void), { return Module.hodPageTurned ? 1 : 0; });
 EM_JS(int, WindowPageWidth, (void), { return Module.canvas.clientWidth; });
 EM_JS(int, WindowPageHeight, (void), { return Module.canvas.clientHeight; });
 EM_JS(double, WindowPageDensity, (void), { return window.devicePixelRatio || 1; });
+EM_JS(void, WindowPagePublishLoader, (int wanted), { Module.hodLoaderWanted = wanted !== 0; });
+
+EM_JS(void, WindowPageLoaderArt, (const unsigned char *png, int size), {
+    if (typeof Module.hodSetLoaderArt !== "function") return;
+    Module.hodSetLoaderArt(new Blob([HEAPU8.slice(png, png + size)], { type: "image/png" }));
+});
+
+EM_ASYNC_JS(void, WindowAwaitPageFrame, (double interval, double slack, int hidden_page_wait), {
+    await new Promise(function (resolve) {
+        var frame = 0, fallback = 0;
+        function show(time) {
+            cancelAnimationFrame(frame);
+            clearTimeout(fallback);
+            Module.hodFrameShown = time;
+            resolve();
+        }
+        function tick(time) {
+            if (time - (Module.hodFrameShown || 0) + slack < interval) frame = requestAnimationFrame(tick);
+            else show(time);
+        }
+        frame = requestAnimationFrame(tick);
+        fallback = setTimeout(function () { show(performance.now()); }, hidden_page_wait);
+    });
+});
 // clang-format on
+
+bool __wrap_WindowShouldClose(void) {
+    WindowAwaitPageFrame(
+        window_frame_interval_milliseconds, WINDOW_FRAME_LIMIT_SLACK_MILLISECONDS, WINDOW_HIDDEN_PAGE_FRAME_MILLISECONDS
+    );
+    return false;
+}
+
+static void WindowSetFrameRateLimit(int frames_per_second) {
+    window_frame_interval_milliseconds =
+        frames_per_second > 0 ? WINDOW_MILLISECONDS_PER_SECOND / frames_per_second : 0.0;
+    SetTargetFPS(0);
+}
+
+static void WindowSetLoaderArt(Image ring) {
+    int size = 0;
+    unsigned char *png = ExportImageToMemory(ring, WINDOW_LOADER_ART_FORMAT, &size);
+    if (png && size > 0) WindowPageLoaderArt(png, size);
+    MemFree(png);
+}
+
+static bool WindowShowPageLoader(void) {
+    window_loader_wanted = true;
+    return true;
+}
 
 static int WindowDevicePixels(int page_pixels) {
     double density = fmin(fmax(WindowPageDensity(), 1.0), WINDOW_PAGE_DENSITY_LIMIT);
@@ -103,6 +158,7 @@ static bool WindowFrameFit(WindowFrame *frame, int width, int height) {
 
 static void WindowBeginFrame(void) {
     BeginDrawing();
+    window_loader_wanted = false;
     if (WindowFrameFit(&window_frame, GetRenderWidth(), GetRenderHeight()))
         glBindFramebuffer(GL_FRAMEBUFFER, window_frame.framebuffer);
 }
@@ -127,6 +183,7 @@ static void WindowEndFrame(void) {
         );
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
     }
+    WindowPagePublishLoader(window_loader_wanted);
     EndDrawing();
 }
 
@@ -176,6 +233,18 @@ static void WindowSendToBack(void) {
 
 static int WindowPageTurned(void) {
     return 0;
+}
+
+static void WindowSetFrameRateLimit(int frames_per_second) {
+    SetTargetFPS(frames_per_second);
+}
+
+static void WindowSetLoaderArt(Image ring) {
+    (void)ring;
+}
+
+static bool WindowShowPageLoader(void) {
+    return false;
 }
 
 static void WindowBeginFrame(void) {

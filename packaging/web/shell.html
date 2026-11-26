@@ -20,16 +20,26 @@ canvas.emscripten { display: block; width: 100%; height: 100%; border: 0; backgr
   touch-action: none; }
 #status { position: absolute; left: 0; right: 0; bottom: 24px; text-align: center; color: #ddd;
   font: 15px/1.4 system-ui, sans-serif; pointer-events: none; }
+#loader { position: absolute; left: 1%; top: 1.7%; height: 15%; aspect-ratio: 1; pointer-events: none;
+  background: center / contain no-repeat url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cg fill='none' stroke='%23fbefcc' stroke-width='11'%3E%3Ccircle cx='50' cy='50' r='35' stroke-dasharray='170 50'/%3E%3Ccircle cx='50' cy='50' r='35' stroke-opacity='.45' stroke-dasharray='0 176 38 6'/%3E%3C/g%3E%3C/svg%3E");
+  animation: hod-loader-turn 1s linear infinite; will-change: transform; }
+@keyframes hod-loader-turn { to { transform: rotate(-360deg); } }
 </style>
 </head>
 <body>
 <div id="stage">
 <canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+<div id="loader"></div>
 <div id="status">Loading…</div>
 </div>
 <script>
 var hodStatus = document.getElementById("status");
 var hodStage = document.getElementById("stage");
+var hodLoader = document.getElementById("loader");
+var hodLoaderArt = "";
+var hodStopped = false;
+var HOD_STALLED_FRAME_MS = 400;
+var HOD_BYTES_PER_MB = 1e6;
 var hodTouchScreen = window.matchMedia("(pointer: coarse)");
 var hodInstalled = window.matchMedia("(display-mode: fullscreen), (display-mode: standalone)");
 var Module = {
@@ -41,11 +51,35 @@ var Module = {
       if (name.indexOf("HOD_") === 0) Module.ENV[name] = value;
     });
   }],
-  setStatus: function (text) { hodStatus.textContent = text || ""; },
+  hodLoaderWanted: true,
+  hodSetLoaderArt: function (art) {
+    if (hodLoaderArt) URL.revokeObjectURL(hodLoaderArt);
+    hodLoaderArt = URL.createObjectURL(art);
+    hodLoader.style.backgroundImage = "url(" + hodLoaderArt + ")";
+  },
+  setStatus: function () {},
   monitorRunDependencies: function () {},
-  onRuntimeInitialized: function () { hodStatus.textContent = ""; },
-  onAbort: function (reason) { hodStatus.textContent = "The game stopped: " + reason; },
+  onAbort: function (reason) { hodStop("The game stopped: " + reason); },
 };
+function hodStop(text) {
+  hodStopped = true;
+  hodLoader.hidden = true;
+  hodStatus.textContent = text;
+}
+function hodLoadingText() {
+  var bytes = Module.hodDownloadedBytes ? Module.hodDownloadedBytes() : 0;
+  return bytes > 0 ? "Loading… " + Math.round(bytes / HOD_BYTES_PER_MB) + " MB" : "Loading…";
+}
+function hodWatchLoader(now) {
+  if (hodStopped) return;
+  var stalled = !(Module.hodFrameShown > 0) || now - Module.hodFrameShown > HOD_STALLED_FRAME_MS;
+  var loading = Module.hodLoaderWanted || !(Module.hodFrameShown > 0);
+  var hidden = !(loading || stalled), text = loading ? hodLoadingText() : "";
+  if (hodLoader.hidden !== hidden) hodLoader.hidden = hidden;
+  if (hodStatus.textContent !== text) hodStatus.textContent = text;
+  requestAnimationFrame(hodWatchLoader);
+}
+requestAnimationFrame(hodWatchLoader);
 function hodLayOutStage() {
   var width = window.innerWidth, height = window.innerHeight;
   var turned = hodTouchScreen.matches && height > width;
@@ -68,13 +102,13 @@ window.addEventListener("resize", hodLayOutStage);
 window.addEventListener("touchend", hodFillScreen, true);
 hodLayOutStage();
 window.addEventListener("error", function (event) {
-  hodStatus.textContent = "The game stopped: " + (event.message || event.error);
+  hodStop("The game stopped: " + (event.message || event.error));
 });
 window.addEventListener("unhandledrejection", function (event) {
-  hodStatus.textContent = "The game stopped: " + event.reason;
+  hodStop("The game stopped: " + event.reason);
 });
 if (!self.crossOriginIsolated) {
-  hodStatus.textContent = "This page needs cross-origin isolation (COOP/COEP headers) to run.";
+  hodStop("This page needs cross-origin isolation (COOP/COEP headers) to run.");
 }
 window.addEventListener("click", function () { Module.canvas.focus(); });
 </script>
