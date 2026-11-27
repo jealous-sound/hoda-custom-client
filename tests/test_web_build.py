@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
+import hashlib
 import http.client
 import json
 from pathlib import Path
@@ -17,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 import build_web
+import publish_web
 import serve_web
 
 
@@ -143,31 +145,61 @@ class ShippedIndexTest(unittest.TestCase):
                 build_web.shipped_index(text, set())
 
 
+def md5(text: str) -> str:
+    return hashlib.md5(text.encode(), usedforsecurity=False).hexdigest()
+
+
 class BuildWebTest(unittest.TestCase):
-    def test_lists_links_and_index_the_page_mounts(self) -> None:
+    RUNTIME = ["data/rules.json", "client-additional-data/characters.json", SHIPPED_BUNDLE, LATER_BUNDLE]
+    TWIN = "data/rules-twin.json"
+
+    def build(self, base: Path) -> tuple[Path, int]:
+        root, out = base / "repo", base / "web"
+        for relative in self.RUNTIME:
+            (root / relative).parent.mkdir(parents=True, exist_ok=True)
+            (root / relative).write_text(relative)
+        (root / self.TWIN).write_text("data/rules.json")
+        out.mkdir(exist_ok=True)
+        for name in build_web.PAGE_FILES:
+            (out / name).write_text(name)
+        index = base / "resource_index.txt"
+        index.write_text(FULL_INDEX)
+        with mock.patch.object(build_web.build_dist, "content_files", return_value=[*self.RUNTIME, self.TWIN]):
+            count, _ = build_web.build(root, out, index, SERVED_INDEX, workers=2)
+        return out, count
+
+    def test_lists_each_file_the_page_mounts_beside_the_object_holding_its_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            base = Path(temporary)
-            root, out = base / "repo", base / "web"
-            runtime = ["data/rules.json", "client-additional-data/characters.json", SHIPPED_BUNDLE, LATER_BUNDLE]
-            for relative in runtime:
-                (root / relative).parent.mkdir(parents=True, exist_ok=True)
-                (root / relative).write_text(relative)
-            out.mkdir()
-            for name in build_web.PAGE_FILES:
-                (out / name).write_text(name)
-            index = base / "resource_index.txt"
-            index.write_text(FULL_INDEX)
-            with mock.patch.object(build_web.build_dist, "content_files", return_value=runtime):
-                count, _ = build_web.build(root, out, index, SERVED_INDEX)
+            out, count = self.build(Path(temporary))
 
             listed = (out / build_web.FILE_LIST).read_text().splitlines()
-            self.assertEqual(count, len(runtime) + 1)
-            self.assertEqual(listed, sorted(runtime + [SERVED_INDEX]))
-            tree = out / build_web.GAME_TREE
-            for relative in runtime:
-                self.assertTrue((tree / relative).is_symlink())
-                self.assertEqual((tree / relative).read_text(), relative)
-            self.assertEqual((tree / SERVED_INDEX).read_text(), SHIPPED_INDEX)
+            mounted = sorted([*self.RUNTIME, self.TWIN, SERVED_INDEX])
+            self.assertEqual(count, len(mounted))
+            self.assertEqual([line.partition(build_web.LIST_SEPARATOR)[2] for line in listed], mounted)
+            digests = build_web.list_digests("\n".join(listed), build_web.LOCAL_OBJECTS)
+            for relative in self.RUNTIME:
+                self.assertEqual(digests[relative], md5(relative))
+                self.assertTrue((out / build_web.OBJECTS_TREE / md5(relative)).is_symlink())
+                self.assertEqual((out / build_web.LOCAL_OBJECTS / digests[relative]).read_text(), relative)
+            self.assertEqual((out / build_web.LOCAL_OBJECTS / digests[SERVED_INDEX]).read_text(), SHIPPED_INDEX)
+
+    def test_identical_files_share_one_object(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            out, _ = self.build(Path(temporary))
+
+            digests = build_web.list_digests((out / build_web.FILE_LIST).read_text(), build_web.LOCAL_OBJECTS)
+            self.assertEqual(digests[self.TWIN], digests["data/rules.json"])
+            self.assertEqual(len(list((out / build_web.OBJECTS_TREE).iterdir())), len(self.RUNTIME) + 1)
+
+    def test_a_rebuild_drops_objects_no_file_holds_any_more(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            out, _ = self.build(Path(temporary))
+            stale = out / build_web.OBJECTS_TREE / md5("gone")
+            stale.write_text("gone")
+
+            out, _ = self.build(Path(temporary))
+
+            self.assertFalse(stale.exists())
 
     def test_refuses_an_output_without_the_compiled_page(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -176,6 +208,27 @@ class BuildWebTest(unittest.TestCase):
             index.write_text("hoda-resource-index 1\n")
             with self.assertRaises(SystemExit):
                 build_web.build(base, base, index, SERVED_INDEX)
+
+
+class FileListTest(unittest.TestCase):
+    DIGESTS = {"data/rules.json": md5("rules"), "data/with space.json": md5("space")}
+
+    def test_reads_back_what_it_writes(self) -> None:
+        for objects in (build_web.LOCAL_OBJECTS, "../objects/"):
+            with self.subTest(objects=objects):
+                text = build_web.file_list(self.DIGESTS, objects)
+                self.assertEqual(build_web.list_digests(text, objects), self.DIGESTS)
+
+    def test_lines_are_sorted_by_path_with_the_location_first(self) -> None:
+        self.assertEqual(
+            build_web.file_list(self.DIGESTS, "objects/").splitlines(),
+            [f"objects/{md5('rules')}  data/rules.json", f"objects/{md5('space')}  data/with space.json"],
+        )
+
+    def test_refuses_lines_that_name_no_object(self) -> None:
+        for line in ("data/rules.json", f"objects/{md5('rules')}  ", f"elsewhere/{md5('rules')}  a", "objects/xyz  a"):
+            with self.subTest(line=line), self.assertRaises(SystemExit):
+                build_web.list_digests(line, build_web.LOCAL_OBJECTS)
 
 
 class ServeWebTest(unittest.TestCase):
@@ -212,6 +265,7 @@ class ServeWebTest(unittest.TestCase):
         found = self.ask("GET", "/game/data/rules.json")
         self.assertEqual(found.status, 200)
         self.assertEqual(found.getheader("Cross-Origin-Embedder-Policy"), "require-corp")
+        self.assertEqual(found.getheader("Cache-Control"), serve_web.LOCAL_CACHE_CONTROL)
         self.assertEqual(self.ask("HEAD", "/game/data//rules.json").status, 404)
         self.assertEqual(self.ask("GET", "/game//data/rules.json").status, 404)
 
@@ -224,6 +278,14 @@ class ServeWebTest(unittest.TestCase):
         self.assertIsNone(reply.getheader("Cross-Origin-Embedder-Policy"))
         stranger = self.ask("GET", "/game/data/rules.json", {"Origin": "https://elsewhere.test"})
         self.assertIsNone(stranger.getheader("Access-Control-Allow-Origin"))
+
+    def test_cdn_files_carry_the_cache_control_the_publisher_stores_and_misses_do_not(self) -> None:
+        self.serve(self.PAGE_ORIGIN)
+        found = self.ask("GET", "/game/data/rules.json", {"Origin": self.PAGE_ORIGIN})
+        self.assertEqual(found.getheader("Cache-Control"), publish_web.IMMUTABLE_CACHE_CONTROL)
+        missing = self.ask("GET", "/game/data/absent.json", {"Origin": self.PAGE_ORIGIN})
+        self.assertEqual(missing.status, 404)
+        self.assertIsNone(missing.getheader("Cache-Control"))
 
     def test_cdn_preflight_allows_only_ranged_reads_from_the_page_origin(self) -> None:
         self.serve(self.PAGE_ORIGIN)

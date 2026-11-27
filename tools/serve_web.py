@@ -16,9 +16,10 @@ from pathlib import Path
 
 CLI_DESCRIPTION = (
     "Serve the browser build on localhost with the cross-origin isolation headers threads need, byte ranges for "
-    "lazily read game files, and an optional /api/ proxy to a backend. With --allow-origin it stands in for the CDN "
-    "instead: paths are taken as they come, as R2 does, and a page on that origin gets the CORS answers the bucket "
-    "policy gives."
+    "lazily read game files, and an optional /api/ proxy to a backend; every answer is revalidated, so a rebuilt "
+    "file shows on reload. With --allow-origin it stands in for the CDN instead: paths are taken as they come, as R2 "
+    "does, a page on that origin gets the CORS answers the bucket policy gives, and each file comes with the "
+    "immutable Cache-Control the publisher stores, so the browser keeps game files across releases as it would."
 )
 
 ISOLATION_HEADERS = {
@@ -30,6 +31,8 @@ CDN_ALLOWED_METHODS = ("GET", "HEAD")
 CDN_ALLOWED_HEADERS = frozenset({"range"})
 CDN_EXPOSED_HEADERS = "Content-Length, Content-Range, Accept-Ranges, ETag"
 CDN_PREFLIGHT_MAX_AGE_SECONDS = 86400
+CDN_CACHE_CONTROL = "public, max-age=31536000, immutable"
+LOCAL_CACHE_CONTROL = "no-cache"
 PAGE = "index.html"
 API_PREFIX = "/api/"
 STATS_PATH = "/__stats"
@@ -93,7 +96,7 @@ class GameHandler(SimpleHTTPRequestHandler):
         else:
             for name, value in ISOLATION_HEADERS.items():
                 self.send_header(name, value)
-        self.send_header("Cache-Control", "no-cache")
+            self.send_header("Cache-Control", LOCAL_CACHE_CONTROL)
         super().end_headers()
 
     def from_allowed_origin(self) -> bool:
@@ -173,6 +176,8 @@ class GameHandler(SimpleHTTPRequestHandler):
         start, end = span if span else (0, size - 1)
         length = max(end - start + 1, 0)
         self.send_response(HTTPStatus.PARTIAL_CONTENT if span else HTTPStatus.OK)
+        if self.allowed_origin:
+            self.send_header("Cache-Control", CDN_CACHE_CONTROL)
         self.send_header("Content-Type", self.guess_type(str(path)))
         self.send_header("Accept-Ranges", "bytes")
         self.send_header("Content-Length", str(length if include_body or span else size))

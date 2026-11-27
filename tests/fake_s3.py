@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import argparse
 import base64
 import hashlib
 import shutil
+import sys
 import threading
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -10,9 +12,16 @@ from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 from xml.sax.saxutils import escape
 
+CLI_DESCRIPTION = (
+    "Run a local S3 endpoint that keeps each object as a file under --root, for rehearsing tools/publish_web.py "
+    "with --endpoint before serving --root as the CDN with tools/serve_web.py --allow-origin."
+)
+
 NAMESPACE = "http://s3.amazonaws.com/doc/2006-03-01/"
 SIGNED = "AWS4-HMAC-SHA256 Credential="
 DEFAULT_PAGE_SIZE = 1000
+DEFAULT_BUCKET = "hoda-assets"
+STORED_HEADERS = ("Content-Type", "Cache-Control")
 
 
 class FakeS3:
@@ -21,6 +30,7 @@ class FakeS3:
         self.lock = threading.Lock()
         self.writes: list[tuple[str, str]] = []
         self.etags: dict[str, str] = {}
+        self.headers: dict[str, dict[str, str]] = {}
         self.server = ThreadingHTTPServer(("127.0.0.1", port), self.handler())
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
 
@@ -50,10 +60,15 @@ class FakeS3:
         found = (path.relative_to(self.root).as_posix() for path in self.root.rglob("*") if path.is_file())
         return sorted(key for key in found if key.startswith(prefix))
 
-    def remember(self, action: str, key: str, etag: str) -> None:
+    def stored_headers(self, key: str) -> dict[str, str]:
+        with self.lock:
+            return dict(self.headers.get(key, {}))
+
+    def remember(self, action: str, key: str, etag: str, headers: dict[str, str]) -> None:
         with self.lock:
             self.writes.append((action, key))
             self.etags[key] = etag
+            self.headers[key] = headers
 
     def handler(self) -> type[BaseHTTPRequestHandler]:
         store = self
@@ -95,7 +110,8 @@ class FakeS3:
                 if not key:
                     self.listing(query)
                 elif store.stored(key).is_file():
-                    self.reply(HTTPStatus.OK, store.stored(key).read_bytes(), {"ETag": f'"{store.etag(key)}"'})
+                    headers = {**store.stored_headers(key), "ETag": f'"{store.etag(key)}"'}
+                    self.reply(HTTPStatus.OK, store.stored(key).read_bytes(), headers)
                 else:
                     self.missing()
 
@@ -131,7 +147,7 @@ class FakeS3:
                     destination.parent.mkdir(parents=True, exist_ok=True)
                     shutil.copyfile(store.stored(source_key), destination)
                     etag = store.etag(source_key)
-                    store.remember("copy", key, etag)
+                    store.remember("copy", key, etag, store.stored_headers(source_key))
                     self.reply(
                         HTTPStatus.OK, f"<CopyObjectResult><ETag>&quot;{etag}&quot;</ETag></CopyObjectResult>".encode()
                     )
@@ -143,7 +159,27 @@ class FakeS3:
                     return
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 destination.write_bytes(body)
-                store.remember("upload", key, digest.hexdigest())
+                headers = {name: self.headers[name] for name in STORED_HEADERS if self.headers.get(name)}
+                store.remember("upload", key, digest.hexdigest(), headers)
                 self.reply(HTTPStatus.OK, headers={"ETag": f'"{digest.hexdigest()}"'})
 
         return Handler
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
+    parser.add_argument("--root", type=Path, required=True, help="folder that holds the objects, one file per key")
+    parser.add_argument("--bucket", default=DEFAULT_BUCKET, help=f"bucket name (default {DEFAULT_BUCKET})")
+    parser.add_argument("--port", type=int, default=8079, help="localhost port (default 8079)")
+    args = parser.parse_args()
+    with FakeS3(args.root.resolve(), args.bucket, port=args.port) as store:
+        print(f"S3 endpoint {store.endpoint} keeps bucket {args.bucket} in {args.root.resolve()}", flush=True)
+        try:
+            store.thread.join()
+        except KeyboardInterrupt:
+            pass
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
