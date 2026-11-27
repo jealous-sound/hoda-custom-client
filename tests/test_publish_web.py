@@ -301,6 +301,7 @@ class PublishTest(unittest.TestCase):
         self.assertEqual(
             self.s3.stored("web/v2/game_files.txt").read_bytes(), self.s3.stored("web/v1/game_files.txt").read_bytes()
         )
+        self.assertIn("3 game files in 3 objects", publish_web.summary(built, plan, sent, dry_run=False))
         self.assertEqual(self.s3.stored("web/v2/index.js").read_bytes(), b"var Module = {};")
 
     def test_page_only_release_after_a_legacy_one_moves_its_game_files_into_objects(self) -> None:

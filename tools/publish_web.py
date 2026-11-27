@@ -267,6 +267,7 @@ def first_paths(digests: dict[str, str]) -> dict[str, str]:
 
 @dataclass
 class Plan:
+    files: int = 0
     upload: list[str] = field(default_factory=list)
     copy: dict[str, str] = field(default_factory=dict)
     present: list[str] = field(default_factory=list)
@@ -335,7 +336,7 @@ def release_endings(release: Release) -> dict[str, tuple[bytes, str]]:
 
 
 def plan_objects(release: Release, stored: dict[str, str], previous: Previous) -> Plan:
-    plan = Plan()
+    plan = Plan(files=len(release.digests))
     legacy_sources = first_paths(previous.digests) if previous.legacy_tree else {}
     for digest in sorted(set(release.digests.values())):
         key = object_key(digest)
@@ -414,7 +415,7 @@ def summary(release: Release, plan: Plan, sent: int, dry_run: bool) -> str:
     else:
         ending = f"{'would publish' if dry_run else 'published'} {', '.join(plan.endings)} last"
     return (
-        f"{release_key(release.name, '')}: {len(release.digests)} game files in {objects} objects under "
+        f"{release_key(release.name, '')}: {plan.files} game files in {objects} objects under "
         f"{OBJECTS_PREFIX}; {verb} {len(plan.upload)} ({sent / MEGABYTE:.1f} MB){copied}, "
         f"{len(plan.present)} already there; {ending}"
     )
