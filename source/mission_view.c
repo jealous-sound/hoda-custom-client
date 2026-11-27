@@ -24,6 +24,7 @@ typedef enum {
     MISSIONS_FIGHT_BOT,
     MISSIONS_FIGHT_RIVAL,
     MISSIONS_REVENGE,
+    MISSIONS_REVENGE_PLAYER,
     MISSIONS_CLAIM_GUILD_EVENT,
 } MissionsAction;
 
@@ -390,6 +391,7 @@ MissionsDraw(MissionsScreen *s, Hud *hud, Heroes *heroes, Player *p, const Goals
     if (goal == GOALS_FIGHT_BOT) action = MISSIONS_FIGHT_BOT;
     if (goal == GOALS_FIGHT_RIVAL) action = MISSIONS_FIGHT_RIVAL;
     if (goal == GOALS_REVENGE) action = MISSIONS_REVENGE;
+    if (goal == GOALS_REVENGE_PLAYER) action = MISSIONS_REVENGE_PLAYER;
     if (goal == GOALS_CLAIM_GUILD_EVENT) action = MISSIONS_CLAIM_GUILD_EVENT;
 
     float close_size = 61.0f;

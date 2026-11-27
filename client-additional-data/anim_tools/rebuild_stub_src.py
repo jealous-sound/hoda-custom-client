@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import argparse
 import glob
-import json
 import os
 import re
 import shutil
@@ -14,7 +13,6 @@ ROOT = os.path.dirname(os.path.dirname(TOOLS))
 CHAR_PACK = os.path.join(ROOT, 'client-additional-data', 'char_pack')
 REFERENCE_FBX = os.path.join(
     ROOT, '.agents', 'skills', 'hoda-reference', 'references', 'fbx')
-CAB_PATHS = os.path.join(TOOLS, 'cache', 'cab_paths.json')
 
 import UnityPy
 from UnityPy.helpers import UnityVersion as UV
@@ -65,23 +63,58 @@ def read_prefab(env):
         h = MeshHandler(mo.read())
         h.process()
         n = len(h.m_Vertices or [])
-        if best is None or n > best[2]:
-            best = (smr, mo, n, h)
+        rank = (renders_a_material(smr), n)
+        if best is None or rank > best[4]:
+            best = (smr, mo, n, h, rank)
     if best is None:
         raise ValueError('CAB has no readable skinned mesh')
-    return gos, trs, best
+    return gos, trs, best[:4]
 
 
-def material_texture_name(env, base, mesh_name, cab_paths):
+def renders_a_material(smr):
+    return any(material.get('m_PathID') for material in smr.get('m_Materials', []))
+
+
+def renderer_main_texture(env, base, mesh_name, cab_paths):
     import bake_all
 
     material, error = bake_all.renderer_material_for_mesh(
         env, mesh_name, 0, cab_paths, base)
     if material is None:
+        return None, {}, error
+    material_env, material_obj = material
+    texenvs = bake_all.material_texenvs(material_obj.read_typetree())
+    return material_env, texenvs.get('_MainTex', {}).get('m_Texture', {}), None
+
+
+def material_texture_name(env, base, mesh_name, cab_paths):
+    import bake_all
+
+    material_env, main, error = renderer_main_texture(env, base, mesh_name, cab_paths)
+    if material_env is None:
         return '', error
-    texenvs = bake_all.material_texenvs(material.read_typetree())
-    main = texenvs.get('_MainTex', {}).get('m_Texture', {})
-    return bake_all.texture_name(env, main, cab_paths), None
+    return bake_all.texture_name(material_env, main, cab_paths), None
+
+
+def export_cab_texture(base, mesh_name, env, cab_paths, out_dir):
+    import bake_all
+
+    material_env, main, error = renderer_main_texture(env, base, mesh_name, cab_paths)
+    if material_env is None:
+        raise FileNotFoundError(f'no reference textures for unit.{base}_pre and {error}')
+    name = bake_all.texture_name(material_env, main, cab_paths) or f'{base}_tex'
+    file_name = f'{name}.png'
+    os.makedirs(out_dir, exist_ok=True)
+    if bake_all.export_texture(material_env, main, cab_paths, os.path.join(out_dir, file_name)) is None:
+        raise FileNotFoundError(f'no reference textures for unit.{base}_pre and no exportable _MainTex')
+    return file_name, f'CAB _MainTex {name}, no reference textures', 1
+
+
+def source_textures(base, mesh_name, env, cab_paths, out_dir, reference_fbx):
+    unit_dir = f'unit.{base}_pre'
+    if glob.glob(os.path.join(reference_fbx, '*', unit_dir, '*.png')):
+        return copy_reference_textures(base, mesh_name, env, cab_paths, out_dir, reference_fbx)
+    return export_cab_texture(base, mesh_name, env, cab_paths, out_dir)
 
 
 def copy_reference_textures(base, mesh_name, env, cab_paths, out_dir, reference_fbx):
@@ -108,13 +141,13 @@ def copy_reference_textures(base, mesh_name, env, cab_paths, out_dir, reference_
     return os.path.basename(selected), method, len(candidates)
 
 
-def rebuild_source(dirname, base, tex_png=None, reference_fbx=REFERENCE_FBX,
-                   cab_paths_path=CAB_PATHS):
-    with open(cab_paths_path) as source:
-        cab_paths = json.load(source)
+def rebuild_source(dirname, base, tex_png=None, reference_fbx=REFERENCE_FBX):
+    import bake_all
+
+    cab_paths = bake_all.build_cab_paths()
     cab_key = f'cab-{base}_pre'.lower()
     if cab_key not in cab_paths:
-        raise KeyError(f'{cab_key} is absent from {cab_paths_path}')
+        raise KeyError(f'{cab_key} is absent from the CAB index in {bake_all.CACHE_DIR}')
     env = UnityPy.load(cab_paths[cab_key])
     gos, trs, best = read_prefab(env)
     smr, mesh_obj, nverts, h = best
@@ -127,7 +160,7 @@ def rebuild_source(dirname, base, tex_png=None, reference_fbx=REFERENCE_FBX,
     texture_note = 'explicit texture'
     texture_count = 1
     if tex_png is None:
-        tex_png, texture_note, texture_count = copy_reference_textures(
+        tex_png, texture_note, texture_count = source_textures(
             base, mesh_tt['m_Name'], env, cab_paths, out_dir, reference_fbx)
     else:
         source_texture = os.path.abspath(tex_png)

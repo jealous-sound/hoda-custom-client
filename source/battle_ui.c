@@ -3,6 +3,7 @@
 #define MM_SY (648.0f / 564.0f)
 #define MM_X(v) ((v) * MM_SX)
 #define MM_Y(v) (72.0f + (v) * MM_SY)
+#define MM_BOTTOM_Y(v) UiBottomY(MM_Y(v))
 
 static const GuiId BATTLE_UI_FACTION_INTRO_ICON = GUI_DETAILS_POWER;
 
@@ -48,6 +49,7 @@ typedef struct {
     Color diff_color;
     int energy_cost;
     int gold, xp, gems;
+    float reward_preview_time;
     const CampaignNode *node;
     CampaignNode nexus_node;
     bool new_map_on_win;
@@ -61,6 +63,9 @@ typedef struct {
     bool detail_close_armed;
     HeroCard detail_card;
     bool detail_open;
+    int detail_gear_slot;
+    int detail_gear_pressed;
+    bool detail_item_close_armed;
 } BattleUi;
 
 static void BattleUiParseColored(const char *src, char *out, int cap, Color *col) {
@@ -199,6 +204,17 @@ void BattleUiShowSquads(BattleUi *ui, const Player *player, const BattleRoster *
     }
 }
 
+bool BattleUiCloseDetail(BattleUi *ui) {
+    if (!ui->detail_open) return false;
+    ui->detail_open = false;
+    GuiSoundPlay(SND_UI_POPUP_CLOSE);
+    return true;
+}
+
+void BattleUiSetEnergyCost(BattleUi *ui, int energy_cost) {
+    ui->energy_cost = energy_cost;
+}
+
 void BattleUiEnterNode(
     BattleUi *ui,
     const Player *player,
@@ -221,6 +237,7 @@ void BattleUiEnterNode(
     ui->gold = node ? node->gold : 0;
     ui->xp = node ? node->xp : 0;
     ui->gems = node ? node->default_gems : 0;
+    ui->reward_preview_time = 0.0f;
     ui->new_map_on_win = false;
     StrCopy(ui->player_name, sizeof(ui->player_name), player->name);
     ui->player_badges = PlayerNameBadges(player);
@@ -318,6 +335,50 @@ static void BattleUiOpenPlateDetails(BattleUi *ui, const BattlePlate *plate) {
         ui->detail_card.xp_frac = 1.0f;
     }
     ui->detail_open = true;
+    ui->detail_gear_slot = GEAR_NO_WORN_SLOT;
+    ui->detail_gear_pressed = GEAR_NO_WORN_SLOT;
+    ui->detail_item_close_armed = false;
+}
+
+static void BattleUiDetailTap(BattleUi *ui, const Character *ch, Rectangle details) {
+    if (UiInputBlocked()) return;
+    Vector2 mouse = UiMouse();
+    int under = GearWornSlotAt(ch, details, mouse);
+    bool on_card = CheckCollisionPointRec(mouse, details);
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+        ui->detail_gear_pressed = under;
+        ui->detail_item_close_armed = ui->detail_gear_slot != GEAR_NO_WORN_SLOT && on_card;
+    }
+    if (!IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) return;
+    if (under != GEAR_NO_WORN_SLOT && under == ui->detail_gear_pressed) {
+        GuiClickSoundPlay();
+        ui->detail_gear_slot = under == ui->detail_gear_slot ? GEAR_NO_WORN_SLOT : under;
+    } else if (ui->detail_item_close_armed && on_card) {
+        ui->detail_gear_slot = GEAR_NO_WORN_SLOT;
+    }
+    ui->detail_gear_pressed = GEAR_NO_WORN_SLOT;
+    ui->detail_item_close_armed = false;
+}
+
+static void BattleUiDrawDetail(BattleUi *ui, float right) {
+    Rectangle details = HeroesDetailsBounds(0.0f, right);
+    const Character *ch = ui->detail_card.ch;
+    if (GearInSlot(ch, ui->detail_gear_slot)) {
+        HeroesDrawDetailsHead(&ui->detail_card, details);
+        GearDrawWornItemCard(ch, ui->detail_gear_slot, HeroesDetailsBody(details));
+    } else {
+        HeroesDrawDetailsAt(&ui->detail_card, details);
+    }
+    Rectangle panel = GearWornSlotsPanel(ch, details);
+    bool input = !UiInputBlocked();
+    GearDrawWornSlots(ch, details, ui->detail_gear_slot);
+    BattleUiDetailTap(ui, ch, details);
+    if (input && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        ui->detail_close_armed = !CheckCollisionPointRec(UiMouse(), panel);
+    if (input && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+        if (ui->detail_close_armed && !CheckCollisionPointRec(UiMouse(), panel)) ui->detail_open = false;
+        ui->detail_close_armed = false;
+    }
 }
 
 static bool BattleUiDrawPlate(const BattlePlate *p, const Camera3D *cam, bool interactive) {
@@ -398,6 +459,21 @@ static void BattleUiRewardRow(float right, float y, Texture2D icon, bool mirror_
     UiDrawTextRight(font, text, (Rectangle){0.0f, y, icon_dst.x - 6.0f, row_h}, fs, (Color){245, 244, 238, 255});
     Rectangle src = {0, 0, mirror_icon ? -icon.width : icon.width, icon.height};
     DrawTexturePro(icon, src, icon_dst, (Vector2){0, 0}, 0.0f, WHITE);
+}
+
+static void BattleUiChanceRow(float right, float y, const ChallengeDropTable *drops, float elapsed) {
+    Font font = GuiFont(FNT_COOL);
+    Texture2D tag = GuiTex(GUI_MM_TAG);
+    float row_h = 44 * MM_SY, icon_s = 53 * MM_SY;
+    const char *label = LocGet("REWARD_CHANCE_AT");
+    float fs = row_h * 0.45f;
+    float text_w = MeasureTextEx(font, label, fs, 1.0f).x;
+    float tag_w = fmaxf(MM_X(110), text_w + icon_s * 0.5f + MM_X(24));
+    Rectangle icon_dst = {right - icon_s, y + (row_h - icon_s) * 0.5f, icon_s, icon_s};
+    Rectangle tag_dst = {icon_dst.x + icon_s * 0.5f - tag_w, y, tag_w, row_h};
+    UiDrawTexture(tag, tag_dst, WHITE);
+    UiDrawTextRight(font, label, (Rectangle){0.0f, y, icon_dst.x - 6.0f, row_h}, fs, (Color){245, 244, 238, 255});
+    ChallengeDropsDrawPreview(drops, icon_dst, elapsed);
 }
 
 static const float RIBBON_LEFT[14][4] = {
@@ -684,7 +760,7 @@ static void BattleUiDrawSummaryStats(const BattlePlay *bp, Rectangle background,
 
 static void BattleUiDrawSummary(const BattleUi *ui, const BattlePlay *bp, float W, float H) {
     unsigned char alpha = (unsigned char)(255.0f * Clamp(bp->t / SUMMARY_FADE_TIME, 0.0f, 1.0f));
-    Rectangle screen = {0.0f, 0.0f, W, H};
+    Rectangle screen = UiFullScaleRoot();
     DrawRectangle(0, 0, (int)W + 1, (int)H + 1, (Color){0, 0, 0, (unsigned char)(SUMMARY_SCRIM_OPACITY * alpha)});
     BattleUiDrawSummaryNames(ui, bp, screen, alpha);
 
@@ -925,11 +1001,27 @@ static void BattleUiDrawCombat(BattleUi *ui, BattlePlay *bp) {
     }
 }
 
-static void BattleUiDrawCombatRunes(const BattlePlay *bp) {
+static void BattleUiDrawCombatRuneRail(const int *rune_defs, int count, float x) {
     float size = 54.0f;
-    for (int i = 0; i < bp->sim.rune_def_count; i++) {
-        Texture2D icon = RuneIconLoad(RuneDefAt(bp->sim.rune_defs[i])->icon);
-        if (icon.id != 0) UiDrawTexture(icon, (Rectangle){8.0f, 92.0f + i * (size + 4.0f), size * 0.78f, size}, WHITE);
+    for (int i = 0; i < count && i < RUNE_SLOT_COUNT; i++) {
+        Texture2D icon = RuneIconLoad(RuneDefAt(rune_defs[i])->icon);
+        if (icon.id != 0) UiDrawTexture(icon, (Rectangle){x, 92.0f + i * (size + 4.0f), size * 0.78f, size}, WHITE);
+    }
+}
+
+static void BattleUiDrawCombatRunes(const BattlePlay *bp, const BattleRoster *enemy) {
+    float width = 54.0f * 0.78f;
+    BattleUiDrawCombatRuneRail(bp->sim.rune_defs, bp->sim.rune_def_count, 8.0f);
+    BattleUiDrawCombatRuneRail(enemy->rune_defs, enemy->rune_def_count, UiWidth() - 8.0f - width);
+}
+
+static void BattleUiDrawOpponentRuneSlots(const BattleRoster *enemy) {
+    if (enemy->rune_def_count <= 0) return;
+    float width = MM_X(76);
+    for (int slot = 0; slot < enemy->rune_def_count && slot < RUNE_SLOT_COUNT; slot++) {
+        Rectangle rect = {UiWidth() - width, MM_Y(4) + slot * 97 * MM_SY, width, 98 * MM_SY};
+        Texture2D texture = RuneIconLoad(RuneDefAt(enemy->rune_defs[slot])->icon);
+        UiDrawTexture(texture.id != 0 ? texture : GuiTex(GUI_MM_RUNE_SLOT), rect, WHITE);
     }
 }
 
@@ -1019,7 +1111,7 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
         ui->detail_open = false;
         if (ui->tactical) BattleUiSetTacticalEx(ui, battle, false, false);
         BattleUiDrawCombat(ui, bp);
-        BattleUiDrawCombatRunes(bp);
+        BattleUiDrawCombatRunes(bp, &battle->enemy_roster);
         return BATTLE_UI_NONE;
     }
 
@@ -1085,11 +1177,12 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
     }
 
     if (BattleUiDrawRuneSlots(player, input_ok)) result = BATTLE_UI_RUNES;
+    BattleUiDrawOpponentRuneSlots(&battle->enemy_roster);
 
     if (!ui->tactical) {
         float row_h = 44 * MM_SY, stride = 40 * MM_SY;
         float tag_right = right - MM_X(9);
-        float y = MM_Y(478) - row_h;
+        float y = MM_BOTTOM_Y(478) - row_h;
         if (ui->gems > 0) {
             BattleUiRewardRow(tag_right, y, GuiTex(GUI_MAP_GEMS), false, ui->gems);
             y -= stride;
@@ -1103,18 +1196,21 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
             y -= stride;
         }
         if (ui->pvp) BattleUiRewardRow(tag_right, y, GuiTex(ui->pvp_stake_icon), false, ui->pvp_gain);
+        const ChallengeDropTable *drops = !ui->pvp && ui->node ? ui->node->drops : NULL;
+        ui->reward_preview_time += GetFrameTime();
+        if (drops && drops->preview_count > 0) BattleUiChanceRow(tag_right, y, drops, ui->reward_preview_time);
     }
 
     {
         Texture2D frame = GuiTex(GUI_MM_SQUAD_FRAME);
-        Rectangle frame_dst = {MM_X(23), MM_Y(502), MM_X(248), 62 * MM_SY};
+        Rectangle frame_dst = {MM_X(23), MM_BOTTOM_Y(502), MM_X(248), 62 * MM_SY};
         UiDrawTexture(frame, frame_dst, WHITE);
 
         Font tab_font = GuiFont(FNT_MENU);
         float size = 60 * MM_SY, stride = MM_X(60);
         bool tab_released = input_ok && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
         for (int q = 0; q < PLAYER_MAX_SQUADS; q++) {
-            Rectangle r = {MM_X(26) + q * stride, MM_Y(504), stride, size};
+            Rectangle r = {MM_X(26) + q * stride, MM_BOTTOM_Y(504), stride, size};
             bool active = player->current_squad == q;
             if (tab_released && !active && CheckCollisionPointRec(UiMouse(), r)) {
                 if (PlayerSquadCount(player, q) > 0) {
@@ -1142,18 +1238,18 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
             UiDrawTextCentered(tab_font, num, (Rectangle){r.x, r.y, r.width, size}, fs, WHITE);
         }
 
-        Rectangle retreat_dst = {right - MM_X(480), MM_Y(497), MM_X(240), 60 * MM_SY};
+        Rectangle retreat_dst = {right - MM_X(480), MM_BOTTOM_Y(497), MM_X(240), 60 * MM_SY};
         if (ui->pvp && ui->pvp_can_next) {
             retreat_dst.x = right - MM_X(600);
             retreat_dst.width = MM_X(180);
-            Rectangle next_dst = {right - MM_X(420), MM_Y(497), MM_X(180), 60 * MM_SY};
+            Rectangle next_dst = {right - MM_X(420), MM_BOTTOM_Y(497), MM_X(180), 60 * MM_SY};
             if (ButtonDrawEx(&ui->next, next_dst, input_ok && ui->pvp_nexts > 0)) result = BATTLE_UI_NEXT;
         }
         TutorialAnchorSet(TUTORIAL_ANCHOR_BATTLE_RETREAT, retreat_dst);
         if (!TutorialHides(TUTORIAL_ANCHOR_BATTLE_RETREAT) && ButtonDrawEx(&ui->retreat, retreat_dst, input_ok))
             result = BATTLE_UI_RETREAT;
 
-        Rectangle fight_dst = {right - MM_X(240), MM_Y(497), MM_X(240), 60 * MM_SY};
+        Rectangle fight_dst = {right - MM_X(240), MM_BOTTOM_Y(497), MM_X(240), 60 * MM_SY};
         TutorialAnchorSet(TUTORIAL_ANCHOR_BATTLE_FIGHT, fight_dst);
         bool fight_shown = !TutorialHides(TUTORIAL_ANCHOR_BATTLE_FIGHT);
         if (ui->energy_cost <= 0) {
@@ -1177,19 +1273,10 @@ BattleUiAction BattleUiDraw(BattleUi *ui, const Player *player, Battle *battle, 
 
             Texture2D potion = GuiTex(ui->pvp ? GUI_HUD_STAMINA : GUI_MM_POTION);
             float ps = 39 * MM_SY;
-            UiDrawTexture(potion, (Rectangle){fight_dst.x + MM_X(185), MM_Y(508), ps, ps}, WHITE);
+            UiDrawTexture(potion, (Rectangle){fight_dst.x + MM_X(185), MM_BOTTOM_Y(508), ps, ps}, WHITE);
         }
     }
 
-    if (ui->detail_open) {
-        HeroesDrawDetails(&ui->detail_card, 0.0f, right);
-        Rectangle details = HeroesDetailsBounds(0.0f, right);
-        if (!UiInputBlocked() && IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-            ui->detail_close_armed = !CheckCollisionPointRec(UiMouse(), details);
-        if (!UiInputBlocked() && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
-            if (ui->detail_close_armed && !CheckCollisionPointRec(UiMouse(), details)) ui->detail_open = false;
-            ui->detail_close_armed = false;
-        }
-    }
+    if (ui->detail_open) BattleUiDrawDetail(ui, right);
     return result;
 }

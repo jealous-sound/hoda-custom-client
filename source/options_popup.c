@@ -18,7 +18,7 @@
 #define OPTIONS_COUNTER_FONT_SIZE 16.0f
 #define OPTIONS_BUTTON_LABEL_SCALE 0.4f
 #define OPTIONS_OK_LABEL_SCALE (20.0f / 76.0f)
-#define OPTIONS_SECTION_ROW_COUNT 4
+#define OPTIONS_SECTION_ROW_COUNT 5
 #define OPTIONS_ROW_STEP 56.0f
 #define OPTIONS_ROW_HEIGHT 48.0f
 #define OPTIONS_ROW_PADDING 12.0f
@@ -49,20 +49,21 @@
 #define LANGUAGE_SCROLL_STEP 40.0f
 #define LANGUAGE_SYSTEM_ROW 0
 
-static const Rectangle OPTIONS_PANEL = {108.0f, 110.0f, 1064.0f, 500.0f};
-static const Rectangle OPTIONS_TITLE = {108.0f, 132.0f, 1064.0f, 60.0f};
-static const Rectangle OPTIONS_CLOSE = {1085.0f, 92.0f, 73.0f, 73.0f};
+static const Rectangle OPTIONS_PANEL = {108.0f, 82.0f, 1064.0f, 556.0f};
+static const Rectangle OPTIONS_TITLE = {108.0f, 104.0f, 1064.0f, 60.0f};
+static const Rectangle OPTIONS_CLOSE = {1085.0f, 64.0f, 73.0f, 73.0f};
 static const float OPTIONS_COLUMN_X[] = {196.0f, 660.0f};
 static const float OPTIONS_COLUMN_WIDTH = 424.0f;
-static const float OPTIONS_HEADING_Y = 200.0f;
+static const float OPTIONS_HEADING_Y = 172.0f;
 static const float OPTIONS_HEADING_HEIGHT = 34.0f;
 static const float OPTIONS_HEADING_RULE_HEIGHT = 6.0f;
-static const float OPTIONS_FIRST_ROW_Y = 246.0f;
-static const Rectangle OPTIONS_DIVIDER = {639.0f, 208.0f, 2.0f, 254.0f};
-static const Rectangle OPTIONS_FOOTER_RULE = {196.0f, 478.0f, 888.0f, 6.0f};
-static const float OPTIONS_FOOTER_ROW_Y = 496.0f;
+static const float OPTIONS_FIRST_ROW_Y = 218.0f;
+static const Rectangle OPTIONS_DIVIDER = {639.0f, 180.0f, 2.0f, 310.0f};
+static const Rectangle OPTIONS_FOOTER_RULE = {196.0f, 506.0f, 888.0f, 6.0f};
+static const float OPTIONS_FOOTER_ROW_Y = 524.0f;
 
 static const Rectangle LANGUAGE_PANEL = {108.0f, 110.0f, 1064.0f, 500.0f};
+static const Rectangle LANGUAGE_CLOSE = {1085.0f, 92.0f, 73.0f, 73.0f};
 static const Rectangle LANGUAGE_TITLE = {108.0f, 136.0f, 1065.0f, 76.0f};
 static const Rectangle LANGUAGE_LIST = {196.0f, 200.0f, 904.0f, 275.0f};
 static const Rectangle LANGUAGE_OK = {489.0f, 485.0f, 304.0f, 76.0f};
@@ -96,6 +97,7 @@ typedef enum {
 
 typedef enum {
     OPTIONS_CHOICE_DISPLAY_MODE,
+    OPTIONS_CHOICE_UI_SCALE,
     OPTIONS_CHOICE_FRAME_RATE,
     OPTIONS_CHOICE_COUNT,
 } OptionsChoice;
@@ -118,6 +120,7 @@ typedef enum {
     OPTIONS_ROW_SOUND_VOLUME,
     OPTIONS_ROW_MUTE_IN_BACKGROUND,
     OPTIONS_ROW_DISPLAY_MODE,
+    OPTIONS_ROW_UI_SCALE,
     OPTIONS_ROW_FRAME_RATE,
     OPTIONS_ROW_VSYNC,
     OPTIONS_ROW_SHOW_FPS,
@@ -161,19 +164,25 @@ static const OptionsRowSpec OPTIONS_ROWS[OPTIONS_ROW_COUNT] = {
          OPTIONS_COLUMN_DISPLAY,
          0,
          .choice = OPTIONS_CHOICE_DISPLAY_MODE},
+    [OPTIONS_ROW_UI_SCALE] =
+        {"HODA_SETTINGS_UI_SCALE",
+         OPTIONS_CONTROL_CHOICE,
+         OPTIONS_COLUMN_DISPLAY,
+         1,
+         .choice = OPTIONS_CHOICE_UI_SCALE},
     [OPTIONS_ROW_FRAME_RATE] =
         {"HODA_SETTINGS_FRAME_RATE",
          OPTIONS_CONTROL_CHOICE,
          OPTIONS_COLUMN_DISPLAY,
-         1,
+         2,
          .choice = OPTIONS_CHOICE_FRAME_RATE},
     [OPTIONS_ROW_VSYNC] =
-        {"HODA_SETTINGS_VSYNC", OPTIONS_CONTROL_SWITCH, OPTIONS_COLUMN_DISPLAY, 2, .setting = SETTINGS_SWITCH_VSYNC},
+        {"HODA_SETTINGS_VSYNC", OPTIONS_CONTROL_SWITCH, OPTIONS_COLUMN_DISPLAY, 3, .setting = SETTINGS_SWITCH_VSYNC},
     [OPTIONS_ROW_SHOW_FPS] =
         {"HODA_SETTINGS_SHOW_FPS",
          OPTIONS_CONTROL_SWITCH,
          OPTIONS_COLUMN_DISPLAY,
-         3,
+         4,
          .setting = SETTINGS_SWITCH_SHOW_FPS},
     [OPTIONS_ROW_LANGUAGE] =
         {"HODA_OPTIONS_LANGUAGE", OPTIONS_CONTROL_LANGUAGE, OPTIONS_COLUMN_AUDIO, OPTIONS_FOOTER_SLOT},
@@ -294,7 +303,7 @@ bool OptionsPopupBack(OptionsPopup *o) {
 
 static Rectangle OptionsPlace(Rectangle design) {
     float offset = (UiWidth() - OPTIONS_DESIGN_WIDTH) * 0.5f;
-    return (Rectangle){design.x + offset, design.y, design.width, design.height};
+    return (Rectangle){design.x + offset, UiCentredY(design.y), design.width, design.height};
 }
 
 static bool OptionsScrimClicked(OptionsPopup *o, Rectangle panel) {
@@ -327,15 +336,19 @@ int OptionsSteppedFrameRate(int current, OptionsStep step) {
     return OPTIONS_FRAME_RATES[(index + OPTIONS_FRAME_RATE_COUNT) % OPTIONS_FRAME_RATE_COUNT];
 }
 
-static bool OptionsFullscreen(void) {
-    return IsWindowState(FLAG_BORDERLESS_WINDOWED_MODE);
+void OptionsStepUiScale(OptionsStep step) {
+    float change = (float)(1.0 / SETTINGS_UI_SCALE_STEPS);
+    SettingsSetUiScale(SettingsUiScale() + (step == OPTIONS_STEP_FORWARD ? change : -change));
+    UiSetChosenScale(SettingsUiScale());
 }
 
 static void OptionsChoiceText(OptionsChoice choice, char *out, size_t capacity) {
+    if (choice == OPTIONS_CHOICE_UI_SCALE) {
+        snprintf(out, capacity, "%d%%", (int)roundf(SettingsUiScale() * OPTIONS_PERCENT));
+        return;
+    }
     if (choice == OPTIONS_CHOICE_DISPLAY_MODE) {
-        StrCopy(
-            out, (int)capacity, LocGet(OptionsFullscreen() ? "HODA_SETTINGS_FULLSCREEN" : "HODA_SETTINGS_WINDOWED")
-        );
+        StrCopy(out, (int)capacity, LocGet(WindowFullscreen() ? "HODA_SETTINGS_FULLSCREEN" : "HODA_SETTINGS_WINDOWED"));
         return;
     }
     int frame_rate = SettingsFrameRateLimit();
@@ -348,12 +361,17 @@ static void OptionsChoiceText(OptionsChoice choice, char *out, size_t capacity) 
 
 static void OptionsStepChoice(OptionsChoice choice, OptionsStep step) {
     if (choice == OPTIONS_CHOICE_DISPLAY_MODE) {
-        ToggleBorderlessWindowed();
-        SettingsSetSwitch(SETTINGS_SWITCH_FULLSCREEN, OptionsFullscreen());
+        bool fullscreen = !WindowFullscreen();
+        WindowSetFullscreen(fullscreen);
+        SettingsSetSwitch(SETTINGS_SWITCH_FULLSCREEN, fullscreen);
+        return;
+    }
+    if (choice == OPTIONS_CHOICE_UI_SCALE) {
+        OptionsStepUiScale(step);
         return;
     }
     SettingsSetFrameRateLimit(OptionsSteppedFrameRate(SettingsFrameRateLimit(), step));
-    SetTargetFPS(SettingsFrameRateLimit());
+    WindowSetFrameRateLimit(SettingsFrameRateLimit());
 }
 
 static void OptionsApplySwitch(SettingsSwitch setting, bool on) {
@@ -665,7 +683,7 @@ static OptionsAction OptionsDrawLanguages(OptionsPopup *o) {
         OptionsPopupClose(o);
         return OPTIONS_ACTION_RESTART;
     }
-    if (ButtonDraw(&o->close, OptionsPlace(OPTIONS_CLOSE))) o->page = OPTIONS_PAGE_SETTINGS;
+    if (ButtonDraw(&o->close, OptionsPlace(LANGUAGE_CLOSE))) o->page = OPTIONS_PAGE_SETTINGS;
     if (OptionsScrimClicked(o, panel)) {
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         o->page = OPTIONS_PAGE_SETTINGS;

@@ -19,6 +19,11 @@ description: Write player-facing patch notes for a game release and post them to
    heading from the release's publish date, refuses a version that already has notes, and refuses a message over
    Discord's 2000 characters.
 
+A change that goes live without a release (a backend deploy or a content publish) has no tag to post under. Use
+`python3 tools/patch_notes.py update notes.txt --dry-run`, then without `--dry-run`. It posts under a
+`## Server update · 22 Nov 2026` heading dated today (UTC), and refuses notes identical to a message already in the
+channel. These posts count as no release's notes, so `missing` keeps listing releases that lack their own.
+
 Posting is visible to every player at once and the tool cannot edit or delete. Unless the user already told you to
 post, show them the dry-run text first.
 

@@ -10,6 +10,8 @@ import re
 import struct
 from urllib.parse import unquote
 
+from PIL import Image
+
 
 CLI_DESCRIPTION = 'Audit every runtime character GLB and every catalog tier binding'
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +20,13 @@ CHAR_PACK = ROOT / "client-additional-data" / "char_pack"
 TIERS = ("I", "II", "III", "IV")
 TIER_SUFFIX = re.compile(r"_t\d+$", re.IGNORECASE)
 COMPONENT = {5120: "b", 5121: "B", 5122: "h", 5123: "H", 5125: "I", 5126: "f"}
+ACCESSOR_WIDTH = {"SCALAR": 1, "VEC2": 2, "VEC3": 3, "VEC4": 4, "MAT4": 16}
+UNIT_SHADER_ALPHA_CUTOFF = 128
+TORN_EDGE_FACTOR = 2.0
+TORN_SKIN_EDGE_SHARE = 0.03
+DEGENERATE_EDGE_SHARE = 1e-9
+SHRUNK_MODEL_HEIGHT_METERS = 0.4
+BIND_OFFSET_TOLERANCE_METERS = 0.001
 
 
 def prefab_base(prefab: str) -> str:
@@ -75,6 +84,10 @@ def primitive_extents(gltf: dict, skinned_only: bool = True) -> tuple[float, flo
     return tuple(high[axis] - low[axis] for axis in range(3))
 
 
+def shrunk_model(extents: tuple[float, float, float] | None) -> bool:
+    return extents is not None and extents[1] < SHRUNK_MODEL_HEIGHT_METERS
+
+
 def normalized_shape(extents: tuple[float, float, float]) -> tuple[float, float, float]:
     ordered = sorted(extents)
     scale = max(ordered[-1], 1e-9)
@@ -113,6 +126,65 @@ def weight_errors(gltf: dict, blob: memoryview) -> tuple[int, int]:
                         or abs(weight_sum - 1.0) > 0.02):
                     bad += 1
     return bad, total
+
+
+def read_rows(gltf: dict, blob: memoryview, index: int) -> list[tuple]:
+    accessor = gltf["accessors"][index]
+    view = gltf["bufferViews"][accessor["bufferView"]]
+    fmt = COMPONENT[accessor["componentType"]] * ACCESSOR_WIDTH[accessor["type"]]
+    start = view.get("byteOffset", 0) + accessor.get("byteOffset", 0)
+    stride = view.get("byteStride", struct.calcsize("<" + fmt))
+    return list(accessor_rows(blob, fmt, start, stride, accessor["count"]))
+
+
+def triangle_edges(indices: list[int]) -> set[tuple[int, int]]:
+    edges = set()
+    for corner in range(0, len(indices) - 2, 3):
+        a, b, c = indices[corner:corner + 3]
+        for u, v in ((a, b), (b, c), (c, a)):
+            if u != v:
+                edges.add((min(u, v), max(u, v)))
+    return edges
+
+
+def torn_edge_share(
+    source: dict, source_blob: memoryview, output: dict, output_blob: memoryview
+) -> float | None:
+    source_meshes = {mesh.get("name"): mesh for mesh in source.get("meshes", [])}
+    pairs = []
+    same_topology = False
+    for mesh in output.get("meshes", []):
+        source_mesh = source_meshes.get(mesh.get("name"))
+        if source_mesh is None:
+            continue
+        for primitive, source_primitive in zip(mesh.get("primitives", []), source_mesh.get("primitives", [])):
+            attributes = primitive.get("attributes", {})
+            if ("JOINTS_0" not in attributes or primitive.get("indices") is None
+                    or source_primitive.get("indices") is None):
+                continue
+            after = read_rows(output, output_blob, attributes["POSITION"])
+            before = read_rows(source, source_blob, source_primitive["attributes"]["POSITION"])
+            indices = [row[0] for row in read_rows(output, output_blob, primitive["indices"])]
+            source_indices = [row[0] for row in read_rows(source, source_blob, source_primitive["indices"])]
+            if len(after) != len(before) or indices != source_indices:
+                continue
+            same_topology = True
+            for u, v in triangle_edges(indices):
+                pairs.append((math.dist(before[u], before[v]), math.dist(after[u], after[v])))
+    if not same_topology:
+        return None
+    longest = max((before for before, _ in pairs), default=0.0)
+    ratios = sorted(
+        after / before for before, after in pairs if before > longest * DEGENERATE_EDGE_SHARE
+    )
+    if not ratios or ratios[len(ratios) // 2] <= 0.0:
+        return 0.0
+    median = ratios[len(ratios) // 2]
+    torn = sum(
+        1 for ratio in ratios
+        if ratio > median * TORN_EDGE_FACTOR or ratio * TORN_EDGE_FACTOR < median
+    )
+    return torn / len(ratios)
 
 
 def index_errors(gltf: dict, blob: memoryview) -> tuple[int, int, list[str]]:
@@ -154,6 +226,129 @@ def index_errors(gltf: dict, blob: memoryview) -> tuple[int, int, list[str]]:
     return total, uint32, errors
 
 
+def node_local_matrix(node: dict) -> list[list[float]]:
+    if "matrix" in node:
+        values = node["matrix"]
+        return [[values[column * 4 + row] for column in range(4)] for row in range(4)]
+    tx, ty, tz = node.get("translation", (0.0, 0.0, 0.0))
+    qx, qy, qz, qw = node.get("rotation", (0.0, 0.0, 0.0, 1.0))
+    sx, sy, sz = node.get("scale", (1.0, 1.0, 1.0))
+    rotation = (
+        (1 - 2 * (qy * qy + qz * qz), 2 * (qx * qy - qz * qw), 2 * (qx * qz + qy * qw)),
+        (2 * (qx * qy + qz * qw), 1 - 2 * (qx * qx + qz * qz), 2 * (qy * qz - qx * qw)),
+        (2 * (qx * qz - qy * qw), 2 * (qy * qz + qx * qw), 1 - 2 * (qx * qx + qy * qy)),
+    )
+    scale = (sx, sy, sz)
+    return [
+        [rotation[row][column] * scale[column] for column in range(3)] + [(tx, ty, tz)[row]]
+        for row in range(3)
+    ] + [[0.0, 0.0, 0.0, 1.0]]
+
+
+def matrix_product(left: list[list[float]], right: list[list[float]]) -> list[list[float]]:
+    return [[sum(left[row][k] * right[k][column] for k in range(4)) for column in range(4)] for row in range(4)]
+
+
+def affine_point(matrix: list[list[float]], point: tuple[float, float, float]) -> tuple[float, float, float]:
+    return tuple(sum(matrix[row][k] * point[k] for k in range(3)) + matrix[row][3] for row in range(3))
+
+
+def affine_inverse(matrix: list[list[float]]) -> list[list[float]]:
+    a = [row[:3] for row in matrix[:3]]
+    cofactors = [
+        [a[(row + 1) % 3][(column + 1) % 3] * a[(row + 2) % 3][(column + 2) % 3]
+         - a[(row + 1) % 3][(column + 2) % 3] * a[(row + 2) % 3][(column + 1) % 3]
+         for column in range(3)]
+        for row in range(3)
+    ]
+    determinant = sum(a[0][column] * cofactors[0][column] for column in range(3))
+    inverse = [[cofactors[column][row] / determinant for column in range(3)] for row in range(3)]
+    translation = [-sum(inverse[row][k] * matrix[k][3] for k in range(3)) for row in range(3)]
+    return [inverse[row] + [translation[row]] for row in range(3)] + [[0.0, 0.0, 0.0, 1.0]]
+
+
+def node_world_matrices(gltf: dict) -> list[list[list[float]]]:
+    nodes = gltf.get("nodes", [])
+    holder = {child: index for index, node in enumerate(nodes) for child in node.get("children", [])}
+    worlds: list = [None] * len(nodes)
+
+    def world(index: int) -> list[list[float]]:
+        if worlds[index] is None:
+            local = node_local_matrix(nodes[index])
+            worlds[index] = local if index not in holder else matrix_product(world(holder[index]), local)
+        return worlds[index]
+
+    return [world(index) for index in range(len(nodes))]
+
+
+def drifting_bind_offsets(gltf: dict, blob: memoryview) -> list[str]:
+    drifts = []
+    worlds = node_world_matrices(gltf)
+    nodes = gltf.get("nodes", [])
+    holder = {child: index for index, node in enumerate(nodes) for child in node.get("children", [])}
+    for skin in gltf.get("skins", []):
+        joints = skin.get("joints", [])
+        accessor = gltf["accessors"][skin["inverseBindMatrices"]]
+        view = gltf["bufferViews"][accessor["bufferView"]]
+        start = view.get("byteOffset", 0) + accessor.get("byteOffset", 0)
+        inverse_binds = [
+            [[values[column * 4 + row] for column in range(4)] for row in range(4)]
+            for values in accessor_rows(blob, "f" * 16, start, view.get("byteStride", 64), accessor["count"])
+        ]
+        slot = {joint: index for index, joint in enumerate(joints)}
+        for joint in joints:
+            parent = holder.get(joint)
+            while parent is not None and parent not in slot:
+                parent = holder.get(parent)
+            if parent is None:
+                continue
+            parent_world = worlds[parent]
+            joint_origin = tuple(worlds[joint][row][3] for row in range(3))
+            from_nodes = affine_point(affine_inverse(parent_world), joint_origin)
+            bound_origin = tuple(affine_inverse(inverse_binds[slot[joint]])[row][3] for row in range(3))
+            from_binds = affine_point(inverse_binds[slot[parent]], bound_origin)
+            parent_scale = math.sqrt(sum(parent_world[row][0] ** 2 for row in range(3)))
+            drift = math.dist(from_nodes, from_binds) * parent_scale
+            if drift > BIND_OFFSET_TOLERANCE_METERS:
+                drifts.append(f"{nodes[joint].get('name')} {drift:.3f} m from {nodes[parent].get('name')}")
+    return drifts
+
+
+def base_color_uris(gltf: dict) -> list[str]:
+    textures = gltf.get("textures", [])
+    images = gltf.get("images", [])
+    uris = []
+    for material in gltf.get("materials", []):
+        texture = material.get("pbrMetallicRoughness", {}).get("baseColorTexture", {}).get("index")
+        if texture is None:
+            continue
+        uri = images[textures[texture]["source"]].get("uri")
+        if uri and not uri.startswith("data:") and uri not in uris:
+            uris.append(uri)
+    return uris
+
+
+def untextured(gltf: dict) -> bool:
+    return not any(
+        material.get("pbrMetallicRoughness", {}).get("baseColorTexture")
+        for material in gltf.get("materials", [])
+    )
+
+
+def never_reaches_alpha_cutoff(path: Path) -> bool:
+    with Image.open(path) as image:
+        if "A" not in image.getbands() and "transparency" not in image.info:
+            return False
+        return image.convert("RGBA").getchannel("A").getextrema()[1] < UNIT_SHADER_ALPHA_CUTOFF
+
+
+def invisible_images(gltf: dict, directory: Path) -> list[str]:
+    return [
+        uri for uri in base_color_uris(gltf)
+        if (directory / unquote(uri)).is_file() and never_reaches_alpha_cutoff(directory / unquote(uri))
+    ]
+
+
 def audit_output(path: Path, deep: bool) -> dict:
     gltf, blob = load_glb(path, with_blob=deep)
     animations = [animation.get("name", "") for animation in gltf.get("animations", [])]
@@ -167,9 +362,11 @@ def audit_output(path: Path, deep: bool) -> dict:
             missing_images.append(uri)
     bad_weights = weight_rows = index_accessors = uint32_index_accessors = 0
     bad_indices = []
+    bind_drifts = []
     if deep and blob is not None:
         bad_weights, weight_rows = weight_errors(gltf, blob)
         index_accessors, uint32_index_accessors, bad_indices = index_errors(gltf, blob)
+        bind_drifts = drifting_bind_offsets(gltf, blob)
     valid = bool(gltf.get("meshes") and gltf.get("skins") and animations[:1] == ["idle"] and extents)
     return {
         "valid": valid,
@@ -178,11 +375,14 @@ def audit_output(path: Path, deep: bool) -> dict:
         "flatness": min(extents) / max(extents) if extents else 0.0,
         "unskinned_mesh_nodes": unskinned,
         "missing_images": missing_images,
+        "invisible_images": invisible_images(gltf, path.parent),
+        "untextured": untextured(gltf),
         "bad_weights": bad_weights,
         "weight_rows": weight_rows,
         "index_accessors": index_accessors,
         "uint32_index_accessors": uint32_index_accessors,
         "bad_indices": bad_indices,
+        "bind_drifts": bind_drifts,
     }
 
 
@@ -207,6 +407,7 @@ def run(deep: bool) -> dict:
     }
     bindings = []
     unresolved = []
+    borrowed = []
     exact = tierless = fallback = 0
     for character in catalog:
         models = character.get("models", {})
@@ -238,6 +439,7 @@ def run(deep: bool) -> dict:
                 tierless += 1
             else:
                 fallback += 1
+                borrowed.append(f"{character['id']}:{tier}:{base} -> {path.name}")
             bindings.append((character["id"], tier, base, resolution, str(path) if path else None))
 
     outputs = sorted(CHAR_PACK.glob("*/*_rl.glb"))
@@ -245,6 +447,9 @@ def run(deep: bool) -> dict:
     bad_weights = missing_images = unskinned = weight_rows = 0
     index_accessors = uint32_index_accessors = 0
     bad_indices = []
+    bind_drifts = []
+    invisible = []
+    untextured_models = []
     output_rows = {}
     for path in outputs:
         try:
@@ -260,15 +465,22 @@ def run(deep: bool) -> dict:
         index_accessors += row["index_accessors"]
         uint32_index_accessors += row["uint32_index_accessors"]
         bad_indices.extend(f"{path}: {error}" for error in row["bad_indices"])
+        bind_drifts.extend(f"{path}: {drift}" for drift in row["bind_drifts"])
         missing_images += len(row["missing_images"])
+        invisible.extend(f"{path}: {uri}" for uri in row["invisible_images"])
+        if row["untextured"]:
+            untextured_models.append(str(path))
         unskinned += row["unskinned_mesh_nodes"]
 
     collapsed = []
     flat_non_banner = []
+    shrunk = []
     attack_models_without_attack_clip = []
     for path, row in output_rows.items():
         base = path.name.removesuffix("_rl.glb")
         extents = row["extents"]
+        if shrunk_model(extents):
+            shrunk.append(f"{base}: height={extents[1]:.3f}m")
         if (extents and not base.lower().startswith("b_")
                 and extents[0] > 0.2 and extents[1] > 0.2
                 and (extents[2] < 0.12 or extents[2] / extents[1] < 0.10)):
@@ -277,6 +489,23 @@ def run(deep: bool) -> dict:
             attack_models_without_attack_clip.append(
                 f"{base}: animations={row['animations']}"
             )
+
+    torn = []
+    edge_compared = 0
+    if deep:
+        for output in output_rows:
+            source_glb = output.with_name(output.name.removesuffix("_rl.glb") + ".glb")
+            if not source_glb.is_file():
+                continue
+            share = torn_edge_share(*load_glb(source_glb, with_blob=True), *load_glb(output, with_blob=True))
+            if share is None:
+                continue
+            edge_compared += 1
+            if share > TORN_SKIN_EDGE_SHARE:
+                torn.append(
+                    f"{output.name.removesuffix('_rl.glb')}: {share:.1%} of mesh edges changed length over "
+                    f"{TORN_EDGE_FACTOR:g}x in the bake"
+                )
 
     manifests = sorted(CHAR_PACK.glob("*/*_fbx_takes.json"))
     for manifest in manifests:
@@ -315,22 +544,32 @@ def run(deep: bool) -> dict:
         "fbx_imports": len(manifests),
         "invalid_glbs": invalid,
         "collapsed_fbx": collapsed,
+        "edge_compared_glbs": edge_compared,
+        "torn_skins": torn,
         "flat_non_banner_models": flat_non_banner,
+        "shrunk_models": shrunk,
         "attack_models_without_attack_clip": attack_models_without_attack_clip,
         "unskinned_mesh_nodes": unskinned,
         "missing_external_images": missing_images,
+        "invisible_models": invisible,
+        "untextured_models": untextured_models,
         "weight_rows": weight_rows,
         "bad_weight_rows": bad_weights,
         "index_accessors": index_accessors,
         "uint32_index_accessors": uint32_index_accessors,
         "bad_index_accessors": bad_indices,
+        "drifting_bind_offsets": bind_drifts,
         "unresolved_bindings": unresolved,
+        "nearest_tier_fallback_bindings": borrowed,
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
-    parser.add_argument("--deep", action="store_true", help="scan every binary WEIGHTS_0 row")
+    parser.add_argument(
+        "--deep", action="store_true",
+        help="scan every binary WEIGHTS_0 row and compare each bake with its same-named source edge by edge",
+    )
     parser.add_argument("--json", type=Path, help="write the detailed summary")
     parser.add_argument(
         "--loadtest-list", type=Path,
@@ -348,14 +587,20 @@ def main() -> None:
         )
     hard_fail = (
         report["binding_resolution"]["unresolved"]
+        or report["nearest_tier_fallback_bindings"]
         or report["invalid_glbs"]
         or report["collapsed_fbx"]
+        or report["torn_skins"]
         or report["flat_non_banner_models"]
+        or report["shrunk_models"]
         or report["attack_models_without_attack_clip"]
         or report["unskinned_mesh_nodes"]
         or report["missing_external_images"]
+        or report["invisible_models"]
+        or report["untextured_models"]
         or report["bad_weight_rows"]
         or report["bad_index_accessors"]
+        or report["drifting_bind_offsets"]
     )
     if hard_fail:
         raise SystemExit(1)

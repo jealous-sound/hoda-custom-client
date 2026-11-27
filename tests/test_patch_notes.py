@@ -14,6 +14,12 @@ class PatchNotesTest(unittest.TestCase):
             "## v0.19.0 · 15 Nov 2026\n- New settings window.\n- Flags wave.",
         )
 
+    def test_a_server_update_is_dated_and_owes_no_release_its_notes(self):
+        note = patch_notes.server_update_note("2026-11-22T01:04:40+00:00", ["Nexus drops match their cards."])
+        self.assertEqual(note, "## Server update · 22 Nov 2026\n- Nexus drops match their cards.")
+        self.assertEqual(patch_notes.posted_versions([note]), set())
+        self.assertEqual(patch_notes.missing_versions(["v0.29.0"], [note]), ["v0.29.0"])
+
     def test_note_lines_drop_bullets_and_blank_lines(self):
         self.assertEqual(patch_notes.note_lines("- one\n\n* two\n  three  \n"), ["one", "two", "three"])
 

@@ -45,8 +45,15 @@ typedef struct {
 #define GEAR_DETAILS_LIMITS_TEXT 11.5f
 #define GEAR_DETAILS_BUTTON_ROW 38.0f
 #define GEAR_DETAILS_BUTTON_GAP 4.0f
+#define GEAR_VIEW_FOOTER_TOP 758.0f
+#define GEAR_VIEW_FOOTER_HEIGHT 56.0f
+#define GEAR_VIEW_FOOTER_GAP 8.0f
 #define GEAR_VIEW_FOOTER_HINT_TEXT 12.5f
-#define GEAR_VIEW_FOOTER_STORE_WIDTH 0.46f
+#define GEAR_VIEW_FOOTER_STORE_WIDTH 0.38f
+#define GEAR_VIEW_FOOTER_HINT_ICON 22.0f
+#define GEAR_VIEW_FOOTER_HINT_ICON_GAP 5.0f
+#define GEAR_VIEW_FOOTER_HINT_MAX_LINES 2
+#define GEAR_VIEW_PAGE_BUTTON_ART_MARGIN 2.0f
 #define GEAR_DIALOG_TILE_TOP 0.08f
 #define GEAR_DIALOG_TILE_SIZE 0.2f
 #define GEAR_DIALOG_TITLE_TOP 0.3f
@@ -268,6 +275,58 @@ void GearViewDrawSlots(Player *p, int hero, Rectangle details) {
         }
     }
     if (tome) GearViewDrawTomeSlot(p, hero, GearViewSlotRect(details, GEAR_NORMAL_SLOT_MAX), input);
+}
+
+bool GearWornSlotsShown(const Character *ch) {
+    return ch && GearHasEquipped(ch);
+}
+
+Rectangle GearWornSlotsPanel(const Character *ch, Rectangle details) {
+    if (!GearWornSlotsShown(ch)) return details;
+    Rectangle last = GearViewSlotRect(details, GearSlotCount(ch) - 1);
+    float bottom = fmaxf(details.y + details.height, last.y + last.height);
+    return (Rectangle){details.x, details.y, last.x + last.width - details.x, bottom - details.y};
+}
+
+static const int GEAR_NO_WORN_SLOT = -1;
+static const Color GEAR_EMPTY_WORN_SLOT_FILL = {0, 0, 0, 140};
+static const Color GEAR_EMPTY_WORN_SLOT_FRAME = {90, 90, 90, 255};
+
+int GearViewShownWornSlot(int hero) {
+    return gear_view.open && gear_view.hero == hero ? gear_view.slot : GEAR_NO_WORN_SLOT;
+}
+
+static void GearDrawEmptyWornSlot(Rectangle r) {
+    DrawRectangleRec(UiRect(r, 0.5f, 0.5f, 0.92f, 0.92f), GEAR_EMPTY_WORN_SLOT_FILL);
+    UiDrawTexture(GearRarityFrame(RARITY_COMMON), r, GEAR_EMPTY_WORN_SLOT_FRAME);
+}
+
+static bool GearIsAscensionSlot(const Character *ch, int slot) {
+    return ch->ascended && slot == GEAR_NORMAL_SLOT_MAX && !GearSlotIsPrestige(ch, slot);
+}
+
+int GearWornSlotAt(const Character *ch, Rectangle details, Vector2 point) {
+    if (!GearWornSlotsShown(ch)) return GEAR_NO_WORN_SLOT;
+    for (int slot = 0; slot < GearSlotCount(ch); slot++)
+        if (GearInSlot(ch, slot) && CheckCollisionPointRec(point, GearViewSlotRect(details, slot))) return slot;
+    return GEAR_NO_WORN_SLOT;
+}
+
+void GearDrawWornSlots(const Character *ch, Rectangle details, int shown_slot) {
+    if (!GearWornSlotsShown(ch)) return;
+    for (int slot = 0; slot < GearSlotCount(ch); slot++) {
+        Rectangle r = GearViewSlotRect(details, slot);
+        const GearDef *worn = GearInSlot(ch, slot);
+        bool selected = slot == shown_slot;
+        if (!worn)
+            GearDrawEmptyWornSlot(r);
+        else if (GearIsAscensionSlot(ch, slot))
+            GearViewDrawFramedSlot("tex.Ico_Gear_TomeofAscension_Deselected", worn, r, selected);
+        else if (GearSlotIsPrestige(ch, slot))
+            GearViewDrawFramedSlot("tex.Ico_Gear_Slot_Deselected", worn, r, selected);
+        else
+            GearDrawTile(worn, r, selected);
+    }
 }
 
 static const char *GearViewEquipFailure(GearEquipResult result) {
@@ -639,6 +698,13 @@ void GearDrawRevealCard(const GearDef *def, Rectangle panel) {
     GearViewDrawFittedDescription(info.description, description, side * GEAR_CARD_DESCRIPTION_TEXT);
 }
 
+void GearDrawWornItemCard(const Character *ch, int slot, Rectangle area) {
+    const GearDef *worn = GearInSlot(ch, slot);
+    if (!worn) return;
+    float side = fminf(area.width, area.height);
+    GearDrawRevealCard(worn, (Rectangle){area.x + (area.width - side) * 0.5f, area.y, side, side});
+}
+
 static float GearViewDrawBoxBand(Rectangle panel, float source_top, float source_bottom, float y, float height) {
     Texture2D box = GearUiTexture("Gear_Details_Box");
     Rectangle source = {0.0f, box.height * source_top, (float)box.width, box.height * (source_bottom - source_top)};
@@ -647,15 +713,21 @@ static float GearViewDrawBoxBand(Rectangle panel, float source_top, float source
     return y + height;
 }
 
-static void GearViewDrawMiddleText(const char *text, Rectangle area, float size, Color color) {
+static int GearViewRichLineCount(Font font, const char *text, Rectangle area, float size) {
+    return (int)lroundf(HeroesRichLayout(font, text, area, size, WHITE, false) / (size * HEROES_RICH_LINE_HEIGHT));
+}
+
+static void GearViewDrawMiddleText(const char *text, Rectangle area, float size, int max_lines, Color color) {
     Font body = GuiFont(FNT_MENU);
-    float height = HeroesRichLayout(body, text, area, size, color, false);
+    while (size > GEAR_VIEW_DETAILS_FONT_MIN && GearViewRichLineCount(body, text, area, size) > max_lines) size -= 0.5f;
+    float leading_below_last_line = size * (HEROES_RICH_LINE_HEIGHT - 1.0f);
+    float height = HeroesRichLayout(body, text, area, size, color, false) - leading_below_last_line;
     Rectangle lines = {area.x, area.y + fmaxf(0.0f, (area.height - height) * 0.5f), area.width, height};
     HeroesDrawRich(body, text, lines, size, color);
 }
 
 static Rectangle GearViewDetailsPanel(void) {
-    return RosterPx(8.0f, 461.0f, 378.0f, 359.0f);
+    return RosterPxAt(ROSTER_BOTTOM_LEFT, 8.0f, 461.0f, 378.0f, 359.0f);
 }
 
 static void GearViewDrawDetails(Player *p, bool input) {
@@ -704,11 +776,22 @@ static void GearViewDrawDetails(Player *p, bool input) {
 }
 
 static void GearViewDrawFooter(bool input) {
-    Rectangle footer = RosterPx(16.0f, 764.0f, 372.0f, 56.0f);
+    Rectangle footer = RosterPxAt(ROSTER_BOTTOM_LEFT, 16.0f, GEAR_VIEW_FOOTER_TOP, 372.0f, GEAR_VIEW_FOOTER_HEIGHT);
     Rectangle hint = UiRect(footer, 0.0f, 0.0f, 1.0f - GEAR_VIEW_FOOTER_STORE_WIDTH - 0.04f, 1.0f);
-    GearViewDrawMiddleText(LocGet("HODA_GEAR_INVENTORY_FOOTER_TEXT"), hint, GEAR_VIEW_FOOTER_HINT_TEXT, LIGHTGRAY);
-    if (ButtonDrawEx(&gear_view.store, UiRect(footer, 1.0f, 0.0f, GEAR_VIEW_FOOTER_STORE_WIDTH, 1.0f), input))
-        gear_view.store_requested = true;
+    Rectangle icon = UiRect(hint, 0.0f, 0.5f, GEAR_VIEW_FOOTER_HINT_ICON, GEAR_VIEW_FOOTER_HINT_ICON);
+    UiDrawTexture(GuiTex(GUI_GEAR_INFO), icon, WHITE);
+    float text_left = GEAR_VIEW_FOOTER_HINT_ICON + GEAR_VIEW_FOOTER_HINT_ICON_GAP;
+    Rectangle text = {hint.x + text_left, hint.y, hint.width - text_left, hint.height};
+    GearViewDrawMiddleText(
+        LocGet("HODA_GEAR_INVENTORY_FOOTER_TEXT"),
+        text,
+        GEAR_VIEW_FOOTER_HINT_TEXT,
+        GEAR_VIEW_FOOTER_HINT_MAX_LINES,
+        LIGHTGRAY
+    );
+    Rectangle store = UiRect(footer, 1.0f, 0.0f, GEAR_VIEW_FOOTER_STORE_WIDTH, 1.0f);
+    store.x -= GEAR_VIEW_PAGE_BUTTON_ART_MARGIN;
+    if (ButtonDrawEx(&gear_view.store, store, input)) gear_view.store_requested = true;
 }
 
 static void GearViewDrawPageButton(Button *button, char *label, const char *key, Rectangle r, bool input, int delta) {
@@ -722,7 +805,7 @@ static void GearViewDrawPageButton(Button *button, char *label, const char *key,
 void GearViewDrawPanel(Player *p) {
     GearViewLoadButtons();
     bool input = GearViewAcceptsInput();
-    UiDrawTexture(GuiTex(GUI_CONSUME_TRAY), RosterPx(-7.0f, 0.0f, 455.0f, 938.0f), WHITE);
+    RosterDrawTray();
 
     int items[GEAR_CATALOG_CAPACITY];
     int count = GearViewFilteredItems(p, gear_view.filter, gear_view.reversed, items);
@@ -750,7 +833,7 @@ void GearViewDrawPanel(Player *p) {
     if (gear_view.selected >= 0 && p->gear.counts[gear_view.selected] <= 0) gear_view.selected = -1;
 
     bool details = gear_view.selected >= 0;
-    float top = 124.0f, bottom = details ? 456.0f : 756.0f;
+    float top = 124.0f, bottom = details ? 456.0f : GEAR_VIEW_FOOTER_TOP - GEAR_VIEW_FOOTER_GAP;
     bool has_prev = gear_view.page > 0, has_next = gear_view.page + 1 < pages;
     if (has_prev) {
         GearViewDrawPageButton(
@@ -769,12 +852,13 @@ void GearViewDrawPanel(Player *p) {
             &gear_view.next,
             gear_view.next_label,
             "HODA_GEAR_SHOW_NEXT",
-            RosterPx(16.0f, bottom + 2.0f, 372.0f, 60.0f),
+            RosterPxAt(ROSTER_BOTTOM_LEFT, 16.0f, bottom + 2.0f, 372.0f, 60.0f),
             input,
             1
         );
     }
-    bool tile_tapped = GearViewDrawGrid(p, items, count, RosterPx(8.0f, top, 378.0f, bottom - top), input);
+    bool tile_tapped =
+        GearViewDrawGrid(p, items, count, RosterPxAt(ROSTER_FILL_LEFT, 8.0f, top, 378.0f, bottom - top), input);
     bool tapped_away = input && !tile_tapped && IsMouseButtonReleased(MOUSE_BUTTON_LEFT) &&
                        !CheckCollisionPointRec(UiMouse(), GearViewDetailsPanel());
     if (details && tapped_away) gear_view.selected = -1;

@@ -19,8 +19,6 @@ BASE_TIER = {
     "base_health": 1000,
     "max_health": 3000,
     "max_level": 20,
-    "power_per_level": 10,
-    "health_per_level": 100,
     "max_fortify_power": 900,
     "max_fortify_health": 2900,
 }
@@ -75,7 +73,7 @@ class CatalogRowTest(unittest.TestCase):
         row = build_custom_heroes.catalog_row(spec(stat_scale={"power": 1.06, "health": 0.95}), shipped_base())
         tier = row["tiers"]["IV"]
         self.assertEqual(tier["base_power"], 106)
-        self.assertEqual(tier["power_per_level"], 11)
+        self.assertEqual(tier["max_power"], 318)
         self.assertEqual(tier["max_fortify_power"], 954)
         self.assertEqual(tier["base_health"], 950)
         self.assertEqual(tier["max_fortify_health"], 2755)
@@ -84,10 +82,7 @@ class CatalogRowTest(unittest.TestCase):
     def test_a_hero_placed_above_its_base_takes_that_band(self):
         bands = {
             "Legendary": {"costs": {"hero": {tier: 1000 for tier in "I II III IV".split()}}},
-            "Mythic": {
-                "costs": {"hero": {tier: 2000 for tier in "I II III IV".split()}},
-                "level_caps": {tier: 11 for tier in "I II III IV".split()},
-            },
+            "Mythic": {"costs": {"hero": {tier: 2000 for tier in "I II III IV".split()}}},
         }
         plain = build_custom_heroes.catalog_row(spec(), shipped_base())
         raised = build_custom_heroes.catalog_row(spec(), shipped_base(), {spec()["id"]: "Mythic"}, bands)
@@ -95,9 +90,9 @@ class CatalogRowTest(unittest.TestCase):
         self.assertEqual(raised["original_rarity"], "Mythic")
         self.assertEqual(plain["original_rarity"], plain["rarity"])
         for tier, stats in raised["tiers"].items():
-            self.assertEqual(stats["max_level"], 11)
+            self.assertEqual(stats["max_level"], plain["tiers"][tier]["max_level"])
             self.assertEqual(stats["base_power"], plain["tiers"][tier]["base_power"] * 2)
-            self.assertEqual(stats["max_power"], stats["base_power"] + 10 * stats["power_per_level"])
+            self.assertEqual(stats["max_power"], plain["tiers"][tier]["max_power"] * 2)
         same = build_custom_heroes.catalog_row(spec(), shipped_base(), {spec()["id"]: "Legendary"}, bands)
         self.assertEqual(same, plain)
 

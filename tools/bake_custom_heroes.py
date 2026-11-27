@@ -13,6 +13,7 @@ from PIL import Image, ImageFilter
 
 import original_cache
 from build_custom_heroes import (
+    ANIM_TOOLS,
     CHAR_PACK,
     DISPLAY_SCALES,
     PORTRAIT_DIR,
@@ -23,6 +24,9 @@ from build_custom_heroes import (
     shipped_rows,
     tier_base,
 )
+
+sys.path.append(str(ANIM_TOOLS))
+import shared_textures
 
 CLI_DESCRIPTION = (
     "Bake the runtime models, clips, textures and portraits of the custom heroes in data/custom_heroes/ "
@@ -1073,6 +1077,7 @@ def main():
     DISPLAY_SCALES.write_text(json.dumps(scales, indent=1) + "\n")
     for spec in baked:
         bake_stamp_path(spec["prefab"]).write_text(json.dumps(bake_stamp(spec), indent=1) + "\n")
+    print(shared_textures.report(shared_textures.share_families([CHAR_PACK / spec["prefab"] for spec in baked])))
     return 0
 
 

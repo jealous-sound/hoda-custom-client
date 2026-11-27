@@ -7,7 +7,7 @@
 
 #define NEXUS_COVER_ROWS 24
 #define NEXUS_COVER_EDGE_NDC 0.998f
-#define NEXUS_COVER_TOP_NDC (1.0f - 2.0f * HUD_TOP_HEIGHT / UI_DESIGN_H)
+#define NEXUS_COVER_TOP_NDC (1.0f - 2.0f * HUD_TOP_HEIGHT / UiHeight())
 #define NEXUS_COVER_STEP 0.25f
 #define NEXUS_COVER_REFINE_STEPS 12
 #define NEXUS_COVER_ALPHA 0.5f
@@ -27,7 +27,7 @@
 #define NEXUS_OPAQUE_QUEUE 0
 #define NEXUS_MAX_DRAWS (NEXUS_BG_MAX_LAYERS + MAP_SCENE_MAX_EMITTERS)
 
-static const char *const NEXUS_FS_LAYER = "#version 330\n"
+static const char *const NEXUS_FS_LAYER = SHADER_GLSL_HEADER
                                           "in vec2 fragTexCoord;\n"
                                           "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"
                                           "uniform float opaque; uniform float cutoff;\n"

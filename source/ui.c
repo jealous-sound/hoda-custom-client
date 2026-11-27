@@ -1,8 +1,14 @@
 #define UI_DESIGN_W 1280.0f
 #define UI_DESIGN_H 720.0f
 
+static float ui_chosen_scale = SETTINGS_FULL_UI_SCALE;
+
+void UiSetChosenScale(float scale) {
+    ui_chosen_scale = scale;
+}
+
 float UiScale(void) {
-    return GetScreenHeight() / UI_DESIGN_H;
+    return GetScreenHeight() / UI_DESIGN_H * ui_chosen_scale;
 }
 
 float UiWidth(void) {
@@ -13,8 +19,46 @@ float UiHeight(void) {
     return GetScreenHeight() / UiScale();
 }
 
+float UiSpareHeight(void) {
+    return UiHeight() - UI_DESIGN_H;
+}
+
+float UiCentredY(float design_y) {
+    return design_y + UiSpareHeight() * 0.5f;
+}
+
+float UiBottomY(float design_y) {
+    return design_y + UiSpareHeight();
+}
+
+Rectangle UiCentredRect(Rectangle design) {
+    design.y = UiCentredY(design.y);
+    return design;
+}
+
+Rectangle UiBottomRect(Rectangle design) {
+    design.y = UiBottomY(design.y);
+    return design;
+}
+
 Rectangle UiRoot(void) {
     return (Rectangle){0.0f, 0.0f, UiWidth(), UiHeight()};
+}
+
+float UiFullScaleWidthOf(float ui_width) {
+    return ui_width * ui_chosen_scale;
+}
+
+float UiFullScaleWidth(void) {
+    return UiFullScaleWidthOf(UiWidth());
+}
+
+float UiSpareWidth(void) {
+    return UiWidth() - UiFullScaleWidth();
+}
+
+Rectangle UiFullScaleRoot(void) {
+    return (Rectangle){UiSpareWidth() * 0.5f, UiSpareHeight() * 0.5f, UiFullScaleWidth(), UI_DESIGN_H};
 }
 
 static bool ui_input_blocked = false;
@@ -40,7 +84,7 @@ void UiSetInputWindow(bool active, Rectangle window) {
 }
 
 Vector2 UiPointer(void) {
-    Vector2 m = GetMousePosition();
+    Vector2 m = WindowPointer();
     float s = UiScale();
     return (Vector2){m.x / s, m.y / s};
 }
@@ -60,7 +104,7 @@ Vector2 UiMouse(void) {
 
 Vector2 UiMouseDelta(void) {
     if (UiInputBlocked() || UiPointerOutsideWindow()) return (Vector2){0, 0};
-    Vector2 d = GetMouseDelta();
+    Vector2 d = WindowPointerDelta();
     float s = UiScale();
     return (Vector2){d.x / s, d.y / s};
 }

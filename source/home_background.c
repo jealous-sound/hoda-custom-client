@@ -7,14 +7,14 @@
     "}\n"
 
 static const char *const VS_UNLIT =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec3 vertexPosition; in vec2 vertexTexCoord; in vec4 vertexColor;\n"
     "uniform mat4 mvp;\n"
     "out vec2 fragTexCoord; out vec4 fragColor;\n"
     "void main(){ fragTexCoord=vertexTexCoord; fragColor=vertexColor;\n"
     "  gl_Position = mvp*vec4(vertexPosition,1.0);}\n";
 static const char *const VS_LIT =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec3 vertexPosition; in vec3 vertexNormal; in vec2 vertexTexCoord; in vec4 vertexColor;\n"
     "uniform mat4 mvp; uniform mat4 matModel;\n"
     "out vec2 fragTexCoord; out vec4 fragColor; out vec3 fragNormal;\n"
@@ -22,7 +22,7 @@ static const char *const VS_LIT =
     "  fragNormal = mat3(matModel)*vertexNormal;\n"
     "  gl_Position = mvp*vec4(vertexPosition,1.0);}\n";
 static const char *const FS_PLAIN =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec2 fragTexCoord;\n"
     "uniform sampler2D texture0; uniform float brightness;\n"
     "uniform vec4 colDiffuse;\n"
@@ -31,14 +31,14 @@ static const char *const FS_PLAIN =
     "  if (t.a < 0.5) discard;\n"
     "  finalColor=vec4(t.rgb*colDiffuse.rgb*brightness, t.a*colDiffuse.a);}\n";
 static const char *const FS_MULTIPLY =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec2 fragTexCoord; in vec4 fragColor;\n"
     "uniform sampler2D texture0;\n"
     "out vec4 finalColor;\n"
     "void main(){ vec4 t = texture(texture0, fragTexCoord);\n"
     "  finalColor = vec4(mix(vec3(1.0), t.rgb, t.a), 1.0); }\n";
 static const char *const VS_WIND =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec3 vertexPosition; in vec2 vertexTexCoord; in vec4 vertexColor;\n"
     "uniform mat4 mvp;\n"
     "uniform vec4 uWind, uPhaseA, uPhaseB; uniform vec3 uPhaseOrigin;\n"
@@ -51,7 +51,7 @@ static const char *const VS_WIND =
     "}\n";
 
 static const char *const FS_HOME_MIX =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec2 fragTexCoord; in vec4 fragColor;\n"
     "uniform sampler2D texture0;\n"
     "uniform sampler2D texture1;\n"
@@ -65,7 +65,7 @@ static const char *const FS_HOME_MIX =
     "  finalColor = vec4(mix(st, g, m) * (10.0*(fragColor.rgb + 0.05)) * uBright, 1.0);\n"
     "}\n";
 static const char *const FS_HOME_ROCK =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec2 fragTexCoord; in vec4 fragColor; in vec3 fragNormal;\n"
     "uniform sampler2D texture0;\n"
     "uniform sampler2D texture1;\n"
@@ -78,7 +78,7 @@ static const char *const FS_HOME_ROCK =
     "  finalColor = vec4(mix(top, side, f) * (16.0*(fragColor.rgb - 0.02)) * uBright, 1.0);\n"
     "}\n";
 static const char *const FS_HOME_DIFF =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec2 fragTexCoord; in vec4 fragColor;\n"
     "uniform sampler2D texture0; uniform float uBright;\n"
     "out vec4 finalColor;\n"
@@ -86,7 +86,7 @@ static const char *const FS_HOME_DIFF =
     "  finalColor = vec4(texture(texture0, fragTexCoord).rgb * (10.0*(fragColor.rgb + 0.1)) * uBright, 1.0);\n"
     "}\n";
 static const char *const FS_HOME_WIND =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec2 fragTexCoord; in vec4 fragColor;\n"
     "uniform sampler2D texture0; uniform vec3 uTint; uniform float uCutoff, uVcScale, uVcShift;\n"
     "out vec4 finalColor;\n"
@@ -766,6 +766,11 @@ void HomeBackgroundSetGalleryView(HomeBackground *scene, bool active)
     scene->gallery_view = active;
 }
 
+Camera3D HomeBackgroundViewCamera(const HomeBackground *scene)
+{
+    return scene->gallery_view ? scene->gallery_cam : scene->cam;
+}
+
 void HomeBackgroundMarkSquadStale(HomeBackground *scene)
 {
     scene->squad_stale = true;
@@ -800,7 +805,7 @@ void HomeBackgroundDraw(HomeBackground *scene)
     float tnow = (float)GetTime();
     int   n    = SCENE_PIECE_COUNT;
     Camera3D home_cam = scene->cam;
-    if (scene->gallery_view) scene->cam = scene->gallery_cam;
+    scene->cam = HomeBackgroundViewCamera(scene);
 
     ClearBackground(BLACK);
     BeginMode3D(scene->cam);

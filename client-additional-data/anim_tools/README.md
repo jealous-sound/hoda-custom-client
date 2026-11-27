@@ -8,9 +8,24 @@ game prefers `*_rl.glb` over the raw pack GLBs.
 
 - `extract_hoda.py`: dumps Avatars, bone lists and AnimationClips from the OBB cache into `extracted/`.
 - `hoda_anim.py`, `muscle_solver.py`: clip evaluation and muscle-to-rotation solving.
-- `glb_writer.py`: rewrites a pack GLB with the baked skeleton and animation channels.
+- `body_frame.py`: turns the solved body by the avatar's T-pose body frame (`m_RootX`), which Unity's clip root
+  rotation is relative to, pivoting on the planted feet. Without it every humanoid leans forward by that angle
+  (about 4 degrees for human rigs, 8 for dwarves).
+- `human_muscles.py`: on a rig with no Chest bone (the dwarf-male rig) adds the clip's chest muscles to the
+  spine, as Unity does for a missing optional bone. Dropping them tipped those dwarves 15 to 25 degrees forward.
+- `glb_writer.py`: rewrites a pack GLB with the baked skeleton and animation channels. A joint that the source
+  parks behind a stray plain node (Wintersend Cullen's `HumanMale_` neck twin) is hung back under its avatar parent;
+  raylib binds the skin from the joints' rest nodes, not the inverse bind matrices, so a skipped neck drops the head.
 - `bake_idle.py`, `bake_all.py`: per-unit and batch bakers.
+- `shared_textures.py`: points every tier model of a family at one copy of a byte-identical texture, a file
+  named `shared_<sha256>.png`; `bake_all.py` and `tools/bake_custom_heroes.py` run it after baking. Tiers I-IV
+  often use the same pixels, and the copy each bake writes stays on disk but no longer ships.
+- `prefab_scaffold.py`: reads a unit's display scale off its prefab. A cm-folded rig scales its skeleton by 0.01
+  under the `_fbx` wrapper; only a small-scaled node that carries skinned bones counts as that fold, so a VFX
+  attachment under a hand bone (Ketojan, Crassius Servis, the Spirits) leaves a meter rig at its wrapper scale.
 - `rebuild_stub_src.py`: rebuilds one exact-tier source GLB from its CAB.
+- `unit_texture.py`: bakes `_MainTex` opaque when the original material uses the built-in `Unlit/Texture` shader,
+  which ignores alpha; the game's unit shader discards texels below 0.5 alpha.
 - `import_fbx.py`: imports a post-4.4 reference FBX (requires Assimp) and writes its take manifest.
 
 ## Commands

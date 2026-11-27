@@ -4,6 +4,9 @@
 #define CAMPAIGN_WHEEL_UNITS 0.7f
 #define CAMPAIGN_FOCUS_SPEED 6.0f
 #define CAMPAIGN_FOCUS_SETTLED 0.01f
+#define CAMPAIGN_EDGE_RETURN_UNITS_PER_SECOND 0.5f
+#define CAMPAIGN_MAP_INDICATOR_FADE_SECONDS 0.25f
+#define CAMPAIGN_MAP_INDICATOR_PULSE 0.25f
 #define CAMPAIGN_OFFLINE_MASTERY_GEMS 1
 #define CAMPAIGN_ID_PREFIX "PVE_MAP_"
 #define CAMPAIGN_TRAY_ICON_PREFIX "tex.Btn_MapPVE_map_"
@@ -17,16 +20,23 @@
 #define CAMPAIGN_CTA_TITLE_OF_LABEL 0.7f
 #define CAMPAIGN_CTA_BODY_SIZE 17.0f
 #define CAMPAIGN_CTA_BODY_MIN_SIZE 11.0f
+#define CAMPAIGN_CHALLENGE_POPUP_DELAY_SECONDS 0.5f
+#define CAMPAIGN_CHANCE_TEXT_SIZE 20.0f
+#define CAMPAIGN_CHANCE_TAG_PADDING 40.0f
 
 typedef struct {
     float x, y, width, height, aspect;
 } CampaignIguiAnchor;
 
 static const CampaignIguiAnchor CAMPAIGN_TRAY_BACKGROUND = {0.5f, 1.055f, 1.9f, 0.25f, 8.0f};
-static const CampaignIguiAnchor CAMPAIGN_TRAY_CONTAINER = {1.0f, 0.5f, 0.897f, 1.0f, 0.0f};
+static const CampaignIguiAnchor CAMPAIGN_TRAY_CONTAINER = {1.0f, 1.0f, 0.897f, 1.0f, 0.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_LIST = {0.44f, 1.0f, 0.84f, 0.16f, 0.0f};
+static const CampaignIguiAnchor CAMPAIGN_TRAY_MAP_BUTTON = {0.0f, 0.5f, 1.0f, 1.3f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_BACK_ARROW = {0.0f, 0.97f, 1.0f, 0.1f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_FORWARD_ARROW = {0.98f, 0.97f, 1.0f, 0.1f, 1.0f};
+static const Vector2 CAMPAIGN_TRAY_BACKGROUND_SCALE = {1.0f, -1.0f};
+static const Vector2 CAMPAIGN_TRAY_BACK_ARROW_SCALE = {-1.0f, 1.0f};
+static const Vector2 CAMPAIGN_TRAY_FORWARD_ARROW_SCALE = {1.0f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_TOGGLE_CONTAINER = {0.0f, 1.0f, 1.0f, 0.15f, 1.1f};
 static const CampaignIguiAnchor CAMPAIGN_TRAY_TOGGLE = {0.0f, 0.0f, 1.0f, 1.0f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_CTA_PANEL = {0.0f, 0.04f, 1.0f, 0.32f, 2.251f};
@@ -34,6 +44,10 @@ static const CampaignIguiAnchor CAMPAIGN_CTA_TITLE = {0.1f, 0.2f, 0.8f, 0.2f, 0.
 static const CampaignIguiAnchor CAMPAIGN_CTA_BODY = {0.775f, 0.725f, 0.725f, 0.38f, 0.0f};
 static const CampaignIguiAnchor CAMPAIGN_CTA_INFO = {0.925f, 0.175f, 1.0f, 0.275f, 1.0f};
 static const CampaignIguiAnchor CAMPAIGN_CTA_ICON = {-0.025f, 0.775f, 1.0f, 0.55f, 1.0f};
+static const CampaignIguiAnchor CAMPAIGN_PREVIOUS_MAP_INDICATOR = {0.0818f, 0.5f, 0.2795f, 0.22f, 1.0f};
+static const CampaignIguiAnchor CAMPAIGN_NEXT_MAP_INDICATOR = {0.9f, 0.5f, 0.2795f, 0.22f, 1.0f};
+static const float CAMPAIGN_PREVIOUS_MAP_ARROW_ROTATION = 90.0f;
+static const float CAMPAIGN_NEXT_MAP_ARROW_ROTATION = -90.0f;
 
 #define CAMPAIGN_ABOUT_CANVAS_WIDTH 1280.0f
 #define CAMPAIGN_ABOUT_TITLE_SIZE 34.0f
@@ -71,7 +85,43 @@ static Rectangle CampaignScreenRoot(float screen_w, float screen_h) {
     return (Rectangle){0.0f, HUD_TOP_HEIGHT, screen_w, screen_h - HUD_TOP_HEIGHT};
 }
 
+static Rectangle CampaignScreenIgui(float screen_w, float screen_h, CampaignIguiAnchor anchor) {
+    Rectangle full_scale = {0.0f, HUD_TOP_HEIGHT, UiFullScaleWidthOf(screen_w), UI_DESIGN_H - HUD_TOP_HEIGHT};
+    Rectangle root = CampaignScreenRoot(screen_w, screen_h);
+    Rectangle rect = CampaignIguiRect(full_scale, anchor);
+    rect.x += (root.width - full_scale.width) * Clamp(anchor.x, 0.0f, 1.0f);
+    rect.y += (root.height - full_scale.height) * Clamp(anchor.y, 0.0f, 1.0f);
+    return rect;
+}
+
 typedef enum { CAMPAIGN_NONE = 0, CAMPAIGN_ENTER } CampaignAction;
+
+typedef enum {
+    CAMPAIGN_CHALLENGE_POPUP_CLOSED,
+    CAMPAIGN_CHALLENGE_POPUP_QUEUED,
+    CAMPAIGN_CHALLENGE_POPUP_OPEN,
+} CampaignChallengePopup;
+
+typedef struct {
+    bool active;
+    float from;
+    float to;
+    float elapsed;
+    float duration;
+} CampaignEdgeReturn;
+
+typedef struct {
+    float opacity;
+    float from;
+    float target;
+    float elapsed;
+} CampaignIndicatorFade;
+
+typedef enum {
+    CAMPAIGN_SWIPE_INSIDE,
+    CAMPAIGN_SWIPE_AT_LOW_EDGE,
+    CAMPAIGN_SWIPE_AT_HIGH_EDGE,
+} CampaignSwipeEdge;
 
 typedef struct {
     char name[80];
@@ -88,6 +138,7 @@ typedef struct {
     int grind_gold, grind_xp, grind_gems;
     int wins_to_master;
     bool grind;
+    const ChallengeDropTable *drops;
 } CampaignNode;
 
 typedef struct {
@@ -128,9 +179,8 @@ typedef struct {
     Texture2D tray_bg;
     Texture2D tray_node;
     Texture2D tray_node_selected;
-    Texture2D tray_arrow;
-    Texture2D tray_arrow_on;
     Texture2D cta_bg;
+    Texture2D map_indicator_arrow;
     Texture2D about_frame;
     Texture2D about_quote_bg;
     Texture2D about_cta_bg;
@@ -142,6 +192,8 @@ typedef struct {
     bool about_open;
     bool about_opening_release;
     Button change_map;
+    Button tray_back;
+    Button tray_forward;
     Button enter_map;
     bool tray_open;
     bool press_blocked;
@@ -149,14 +201,28 @@ typedef struct {
     float tray_scroll;
     float tray_scroll_target;
     float scroll_x;
+    CampaignEdgeReturn edge_return;
+    CampaignSwipeEdge swipe_edge;
+    bool arrive_at_first_node;
+    CampaignIndicatorFade previous_map_indicator;
+    CampaignIndicatorFade next_map_indicator;
+    float map_indicator_pulse_time;
     int scroll_map;
     int scroll_node;
     int selected_node;
     Vector2 press_pos;
     bool dragged;
 
+    CampaignChallengePopup challenge_popup;
+    float challenge_popup_wait;
+    Button challenge_try_now;
+    Button challenge_next_map;
+    float reward_preview_time;
+    const CampaignNode *reward_preview_node;
+
     bool progression_active;
     bool progression_unlock_next;
+    bool progression_reveals_challenge;
     bool progression_camera_finished;
     float progression_time;
     bool progression_next_sound_played;
@@ -306,6 +372,7 @@ void CampaignMapsInitialize(Campaign *c, const char *path) {
             node->grind_xp = JsonInt(n, "grind_xp");
             node->grind_gems = JsonInt(n, "grind_gems");
             node->grind = JsonBool(n, "grind");
+            node->drops = node->grind ? ChallengeDropsForMap(id) : NULL;
 
             node->wins_to_master = JsonInt(n, "wins_to_master");
             cJSON *mastery_gems = cJSON_GetObjectItemCaseSensitive(n, "mastery_gems");
@@ -379,9 +446,10 @@ void CampaignInitialize(Campaign *c, const char *maps_path) {
     c->tray_bg = GuiTex(GUI_MAP_TRAY_BG);
     c->tray_node = GuiTex(GUI_MAP_TRAY_NODE);
     c->tray_node_selected = GuiTex(GUI_MAP_TRAY_NODE_SELECTED);
-    c->tray_arrow = GuiTex(GUI_MAP_TRAY_ARROW);
-    c->tray_arrow_on = GuiTex(GUI_MAP_TRAY_ARROW_ON);
+    c->tray_back = ButtonLoad(GUI_MAP_TRAY_ARROW, GUI_MAP_TRAY_ARROW_ON);
+    c->tray_forward = ButtonLoad(GUI_MAP_TRAY_ARROW, GUI_MAP_TRAY_ARROW_ON);
     c->cta_bg = GuiTex(GUI_MAP_TRAY_CTA_BG);
+    c->map_indicator_arrow = GuiTex(GUI_MAP_INDICATOR_ARROW);
     c->about_frame = GuiTex(GUI_QUESTS_BG);
     c->about_quote_bg = GuiTex(GUI_MAP_ABOUT_QUOTE_BG);
     c->about_cta_bg = GuiTex(GUI_MAP_ABOUT_CTA_BG);
@@ -397,7 +465,7 @@ void CampaignInitialize(Campaign *c, const char *maps_path) {
     c->tray_scroll_target = 0.0f;
     c->change_map = ButtonLoadText(
         GUI_BTN_MAPS,
-        GUI_BTN_MAPS,
+        GUI_BTN_MAPS_ON,
         LocGet("PVE_MAP_LABEL"),
         c->font,
         (Vector2){0.5f, CAMPAIGN_TRAY_TOGGLE_LABEL_ANCHOR_Y},
@@ -406,6 +474,14 @@ void CampaignInitialize(Campaign *c, const char *maps_path) {
     c->enter_map =
         ButtonLoadText(GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("PVE_MAP_ENTER"), c->font, (Vector2){0.5f, 0.5f}, 0.35f);
     ButtonDisableClickSound(&c->change_map);
+    c->challenge_popup = CAMPAIGN_CHALLENGE_POPUP_CLOSED;
+    c->challenge_try_now = ButtonLoadText(
+        GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("CHALLENGEPOPUP_TRY_NOW_BUTTON"), c->font, (Vector2){0.5f, 0.5f}, 0.35f
+    );
+    c->challenge_next_map = ButtonLoadText(
+        GUI_BTN_GREY, GUI_BTN_GREY_ON, LocGet("CHALLENGEPOPUP_NEXT_MAP_BUTTON"), c->font, (Vector2){0.5f, 0.5f}, 0.35f
+    );
+    c->reward_preview_node = NULL;
 
     CampaignMapsInitialize(c, maps_path);
 }
@@ -424,6 +500,17 @@ static int CampaignGrindNodeIndex(const Campaign *c, int map_index) {
     const CampaignMap *m = &c->maps[map_index];
     int last = m->node_count - 1;
     return last >= 0 && m->nodes[last].grind ? last : -1;
+}
+
+bool CampaignNodeRevealed(const Campaign *c, const PlayerCampaignProgress *pcp, int map_index, int node) {
+    if (!c || !pcp || node != CampaignGrindNodeIndex(c, map_index)) return true;
+    int boss = CampaignBossNodeIndex(c, map_index);
+    return boss >= 0 && pcp->node_completions[map_index][boss] > 0;
+}
+
+bool CampaignProgressionRevealsChallenge(const Campaign *c, int from_map, int from_node, int to_map, int to_node) {
+    int grind = CampaignGrindNodeIndex(c, from_map);
+    return from_map == to_map && grind >= 0 && to_node == grind && from_node == CampaignBossNodeIndex(c, from_map);
 }
 
 static Texture2D
@@ -485,6 +572,7 @@ void CampaignBeginProgressionAnimation(Campaign *c, int from_map, int from_node,
     c->progression_from_node = from_node;
     c->progression_to_map = to_map;
     c->progression_to_node = to_node;
+    c->progression_reveals_challenge = CampaignProgressionRevealsChallenge(c, from_map, from_node, to_map, to_node);
     c->progression_next_sound_played = false;
     c->selected_node = to_node;
     c->scroll_map = -1;
@@ -497,6 +585,7 @@ void CampaignBeginProgressionAnimation(Campaign *c, int from_map, int from_node,
 void CampaignBeginMasteryAnimation(Campaign *c, int map, int completed_node, int selected_node) {
     CampaignBeginProgressionAnimation(c, map, completed_node, map, selected_node);
     c->progression_unlock_next = false;
+    c->progression_reveals_challenge = false;
 }
 
 static float CampaignEaseInOutQuad(float t) {
@@ -555,10 +644,12 @@ typedef struct {
 } CampaignTrayLayout;
 
 static CampaignTrayLayout CampaignTrayLayoutFor(float screen_w, float screen_h) {
-    Rectangle root = CampaignScreenRoot(screen_w, screen_h);
-    Rectangle container = CampaignIguiRect(root, CAMPAIGN_TRAY_CONTAINER);
+    Rectangle container = CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_TRAY_CONTAINER);
+    float toggle_room = UiFullScaleWidthOf(screen_w) - container.width;
+    container.x = toggle_room;
+    container.width = screen_w - toggle_room;
     return (CampaignTrayLayout){
-        .background = CampaignIguiRect(root, CAMPAIGN_TRAY_BACKGROUND),
+        .background = HudSpanWidth(CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_TRAY_BACKGROUND), screen_w),
         .list = CampaignIguiRect(container, CAMPAIGN_TRAY_LIST),
         .back_arrow = CampaignIguiRect(container, CAMPAIGN_TRAY_BACK_ARROW),
         .forward_arrow = CampaignIguiRect(container, CAMPAIGN_TRAY_FORWARD_ARROW),
@@ -566,7 +657,7 @@ static CampaignTrayLayout CampaignTrayLayoutFor(float screen_w, float screen_h) 
 }
 
 static Rectangle CampaignTrayToggleRect(float screen_w, float screen_h) {
-    Rectangle container = CampaignIguiRect(CampaignScreenRoot(screen_w, screen_h), CAMPAIGN_TRAY_TOGGLE_CONTAINER);
+    Rectangle container = CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_TRAY_TOGGLE_CONTAINER);
     return CampaignIguiRect(container, CAMPAIGN_TRAY_TOGGLE);
 }
 
@@ -576,8 +667,12 @@ static int CampaignUnlockedMapCount(const Campaign *c, const PlayerCampaignProgr
     return count;
 }
 
+static Rectangle CampaignTrayButtonRow(const CampaignTrayLayout *layout) {
+    return CampaignIguiRect(layout->list, CAMPAIGN_TRAY_MAP_BUTTON);
+}
+
 static float CampaignTrayItemSize(const CampaignTrayLayout *layout) {
-    return layout->list.height;
+    return CampaignTrayButtonRow(layout).width;
 }
 
 static float CampaignTrayStride(float list_w, float item_size, int count) {
@@ -604,13 +699,23 @@ static void CampaignTrayRevealMap(Campaign *c, const CampaignTrayLayout *layout,
     c->tray_scroll = c->tray_scroll_target;
 }
 
-static bool CampaignDrawTrayArrow(const Campaign *c, Rectangle rect, bool back, bool enabled, bool interactive) {
-    bool hover = enabled && interactive && CheckCollisionPointRec(UiMouse(), rect);
-    Texture2D texture = hover ? c->tray_arrow_on : c->tray_arrow;
-    Rectangle src = {0.0f, 0.0f, (float)texture.width, (float)texture.height};
-    if (back) src.width = -src.width;
-    DrawTexturePro(texture, src, rect, (Vector2){0}, 0.0f, enabled ? WHITE : (Color){110, 110, 110, 140});
-    return hover && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+static bool CampaignTrayCanScrollBack(const Campaign *c) {
+    return c->tray_scroll_target > 0.0f;
+}
+
+static bool CampaignTrayCanScrollForward(const Campaign *c, const CampaignTrayLayout *layout, int count) {
+    return c->tray_scroll_target < CampaignTrayMaxScroll(layout, count);
+}
+
+static Rectangle CampaignMirroredSource(Texture2D texture, Vector2 scale) {
+    return (Rectangle){0.0f, 0.0f, copysignf((float)texture.width, scale.x), copysignf((float)texture.height, scale.y)};
+}
+
+static bool CampaignDrawTrayArrow(Button *arrow, Rectangle rect, Vector2 scale, bool interactive) {
+    ButtonTouch touch = ButtonTouchAt(arrow, rect, interactive, ButtonPointerNow());
+    Texture2D texture = touch.held ? arrow->active : arrow->idle;
+    DrawTexturePro(texture, CampaignMirroredSource(texture, scale), rect, (Vector2){0}, 0.0f, WHITE);
+    return touch.clicked;
 }
 
 static int CampaignDrawTray(
@@ -619,13 +724,24 @@ static int CampaignDrawTray(
     int count = CampaignUnlockedMapCount(c, pcp);
     float stride = CampaignTrayStride(layout->list.width, CampaignTrayItemSize(layout), count);
     float max_scroll = CampaignTrayMaxScroll(layout, count);
-    UiDrawTexture(c->tray_bg, layout->background, WHITE);
+    DrawTexturePro(
+        c->tray_bg,
+        CampaignMirroredSource(c->tray_bg, CAMPAIGN_TRAY_BACKGROUND_SCALE),
+        layout->background,
+        (Vector2){0},
+        0.0f,
+        WHITE
+    );
 
-    if (CampaignDrawTrayArrow(c, layout->back_arrow, true, c->tray_scroll_target > 0.0f, interactive)) {
+    if (CampaignTrayCanScrollBack(c) &&
+        CampaignDrawTrayArrow(&c->tray_back, layout->back_arrow, CAMPAIGN_TRAY_BACK_ARROW_SCALE, interactive)) {
         c->tray_scroll_target -= CAMPAIGN_TRAY_SCROLL_ITEMS * stride;
         GuiSoundPlay(SND_UI_TAB);
     }
-    if (CampaignDrawTrayArrow(c, layout->forward_arrow, false, c->tray_scroll_target < max_scroll, interactive)) {
+    if (CampaignTrayCanScrollForward(c, layout, count) &&
+        CampaignDrawTrayArrow(
+            &c->tray_forward, layout->forward_arrow, CAMPAIGN_TRAY_FORWARD_ARROW_SCALE, interactive
+        )) {
         c->tray_scroll_target += CAMPAIGN_TRAY_SCROLL_ITEMS * stride;
         GuiSoundPlay(SND_UI_TAB);
     }
@@ -635,18 +751,19 @@ static int CampaignDrawTray(
     c->tray_scroll += (c->tray_scroll_target - c->tray_scroll) * fminf(1.0f, dt * CAMPAIGN_TRAY_SCROLL_SPEED);
 
     int clicked = -1;
-    float item_size = CampaignTrayItemSize(layout);
+    Rectangle row = CampaignTrayButtonRow(layout);
+    float item_size = row.width;
     float scale = UiScale();
     BeginScissorMode(
         (int)(layout->list.x * scale),
-        (int)(layout->list.y * scale),
+        (int)(row.y * scale),
         (int)(layout->list.width * scale),
-        (int)(layout->list.height * scale)
+        (int)(row.height * scale)
     );
     for (int map = 0; map < count; map++) {
         Rectangle item = {
             layout->list.x + map * stride - c->tray_scroll + (stride - item_size) * 0.5f,
-            layout->list.y + (layout->list.height - item_size) * 0.5f,
+            row.y,
             item_size,
             item_size,
         };
@@ -674,10 +791,70 @@ static void CampaignOpenAbout(Campaign *c) {
 }
 
 bool CampaignHandleBack(Campaign *c) {
+    if (c->progression_active && !c->progression_camera_finished) return true;
+    if (c->challenge_popup == CAMPAIGN_CHALLENGE_POPUP_OPEN) {
+        c->challenge_popup = CAMPAIGN_CHALLENGE_POPUP_CLOSED;
+        GuiSoundPlay(SND_UI_POPUP_CLOSE);
+        return true;
+    }
     if (!c->about_open) return false;
     c->about_open = false;
     GuiSoundPlay(SND_UI_POPUP_CLOSE);
     return true;
+}
+
+static void CampaignDrawChanceRow(
+    const Campaign *c, const ChallengeDropTable *drops, float icon_x, float cy, float icon_box, float tag_h
+) {
+    const char *label = LocGet("REWARD_CHANCE_AT");
+    float size = CAMPAIGN_CHANCE_TEXT_SIZE, spacing = 1.0f;
+    Vector2 tw = MeasureTextEx(c->font, label, size, spacing);
+    float tag_w = tw.x + CAMPAIGN_CHANCE_TAG_PADDING;
+    Rectangle tag = {icon_x - tag_w, cy - tag_h / 2.0f, tag_w, tag_h};
+    Rectangle tag_src = {0, 0, c->reward_tag.width, c->reward_tag.height};
+    DrawTexturePro(c->reward_tag, tag_src, tag, (Vector2){0, 0}, 0.0f, WHITE);
+    DrawTextEx(
+        c->font, label, (Vector2){icon_x - 6.0f - tw.x, cy - tw.y / 2.0f}, size, spacing, (Color){245, 244, 238, 255}
+    );
+    ChallengeDropsDrawPreview(
+        drops, (Rectangle){icon_x, cy - icon_box / 2.0f, icon_box, icon_box}, c->reward_preview_time
+    );
+}
+
+static void CampaignOpenNextMap(Campaign *c, PlayerCampaignProgress *pcp) {
+    int from = pcp->campaign_index;
+    CampaignSelectMap(c, pcp, from + 1);
+    CampaignBeginProgressionAnimation(c, from, CampaignBossNodeIndex(c, from), from + 1, 0);
+}
+
+static CampaignAction CampaignDrawChallengePopup(Campaign *c, PlayerCampaignProgress *pcp) {
+    bool next_map = CampaignMapUnlocked(c, pcp, pcp->campaign_index + 1);
+    c->challenge_next_map.label = LocGet(next_map ? "CHALLENGEPOPUP_NEXT_MAP_BUTTON" : "CHALLENGEPOPUP_CLOSE_BUTTON");
+    MessagePopupChoice choice = MessagePopupDrawChoice(
+        GuiTex(GUI_STORE_OVERLAY),
+        c->font,
+        GuiFont(FNT_MENU),
+        LocGet("CHALLENGEPOPUP_TITLE_TEXT"),
+        LocGetOr("HODA_CHALLENGE_POPUP_DESC", LocGet("CHALLENGEPOPUP_DESC_TEXT")),
+        &c->challenge_next_map,
+        &c->challenge_try_now
+    );
+    if (choice == MESSAGE_POPUP_CHOICE_NONE) return CAMPAIGN_NONE;
+    c->challenge_popup = CAMPAIGN_CHALLENGE_POPUP_CLOSED;
+    if (choice == MESSAGE_POPUP_CHOICE_ACCEPT) {
+        c->selected_node = CampaignGrindNodeIndex(c, pcp->campaign_index);
+        return c->selected_node >= 0 ? CAMPAIGN_ENTER : CAMPAIGN_NONE;
+    }
+    GuiSoundPlay(SND_UI_POPUP_CLOSE);
+    if (next_map) CampaignOpenNextMap(c, pcp);
+    return CAMPAIGN_NONE;
+}
+
+static void CampaignUpdateChallengePopup(Campaign *c, float dt) {
+    if (c->challenge_popup != CAMPAIGN_CHALLENGE_POPUP_QUEUED) return;
+    c->challenge_popup_wait += dt;
+    if (c->challenge_popup_wait >= CAMPAIGN_CHALLENGE_POPUP_DELAY_SECONDS)
+        c->challenge_popup = CAMPAIGN_CHALLENGE_POPUP_OPEN;
 }
 
 static float CampaignFitWrappedSize(Font font, const char *text, Rectangle box, float size, float min_size) {
@@ -686,7 +863,7 @@ static float CampaignFitWrappedSize(Font font, const char *text, Rectangle box, 
 }
 
 static Rectangle CampaignDrawTrayCallToAction(const Campaign *c, const CampaignMap *m, float screen_w, float screen_h) {
-    Rectangle panel = CampaignIguiRect(CampaignScreenRoot(screen_w, screen_h), CAMPAIGN_CTA_PANEL);
+    Rectangle panel = CampaignScreenIgui(screen_w, screen_h, CAMPAIGN_CTA_PANEL);
     Rectangle title_box = CampaignIguiRect(panel, CAMPAIGN_CTA_TITLE);
     Rectangle body_box = CampaignIguiRect(panel, CAMPAIGN_CTA_BODY);
     Rectangle icon_box = CampaignIguiRect(panel, CAMPAIGN_CTA_ICON);
@@ -711,6 +888,7 @@ static Rectangle CampaignDrawTrayCallToAction(const Campaign *c, const CampaignM
 
 static Rectangle CampaignAboutRect(Rectangle rect, float offset_x) {
     rect.x += offset_x;
+    rect.y = UiCentredY(rect.y);
     return rect;
 }
 
@@ -811,9 +989,12 @@ static int CampaignCurrentEnergyCost(const CampaignNode *node, int losses) {
     return losses > 0 ? 0 : node->energy_cost;
 }
 
-int CampaignSelectedEnergyCost(const Campaign *c, const PlayerCampaignProgress *pcp) {
-    int map = pcp->campaign_index, node = c->selected_node;
+int CampaignNodeEnergyCost(const Campaign *c, const PlayerCampaignProgress *pcp, int map, int node) {
     return CampaignCurrentEnergyCost(&c->maps[map].nodes[node], pcp->node_losses[map][node]);
+}
+
+int CampaignSelectedEnergyCost(const Campaign *c, const PlayerCampaignProgress *pcp) {
+    return CampaignNodeEnergyCost(c, pcp, pcp->campaign_index, c->selected_node);
 }
 
 const CampaignNode *CampaignFindNode(const Campaign *c, const char *map_id, int step) {
@@ -834,18 +1015,142 @@ static void CampaignShowMapScene(Campaign *c, int map_index) {
     c->scene_map = map_index;
 }
 
-static void CampaignScrollLimits(const Campaign *c, float *out_lo, float *out_hi) {
+static void CampaignNodeSpan(const Campaign *c, float *out_lo, float *out_hi) {
     float lo = MapSceneNodeX(&c->scene, 0), hi = lo;
     for (int i = 1; i < c->scene.node_count; i++) {
         lo = fminf(lo, MapSceneNodeX(&c->scene, i));
         hi = fmaxf(hi, MapSceneNodeX(&c->scene, i));
     }
-    *out_lo = lo - CAMPAIGN_SWIPE_MARGIN;
-    *out_hi = hi + CAMPAIGN_SWIPE_MARGIN;
+    *out_lo = lo;
+    *out_hi = hi;
+}
+
+static void CampaignScrollLimits(const Campaign *c, float *out_lo, float *out_hi) {
+    CampaignNodeSpan(c, out_lo, out_hi);
+    *out_lo -= CAMPAIGN_SWIPE_MARGIN;
+    *out_hi += CAMPAIGN_SWIPE_MARGIN;
+}
+
+static float CampaignEaseOutExpo(float t) {
+    if (t <= 0.0f) return 0.0f;
+    if (t >= 1.0f) return 1.0f;
+    return 1.0f - powf(2.0f, -10.0f * t);
+}
+
+static void CampaignReturnFromEdge(Campaign *c, bool steered, float dt) {
+    CampaignEdgeReturn *edge = &c->edge_return;
+    if (steered) {
+        edge->active = false;
+        return;
+    }
+    if (!edge->active) {
+        float lo = 0.0f, hi = 0.0f;
+        CampaignNodeSpan(c, &lo, &hi);
+        float rest = Clamp(c->scroll_x, lo, hi);
+        if (rest == c->scroll_x) return;
+        float duration = fabsf(rest - c->scroll_x) / CAMPAIGN_EDGE_RETURN_UNITS_PER_SECOND;
+        *edge = (CampaignEdgeReturn){.active = true, .from = c->scroll_x, .to = rest, .duration = duration};
+    }
+    edge->elapsed += dt;
+    c->scroll_x = Lerp(edge->from, edge->to, CampaignEaseOutExpo(edge->elapsed / edge->duration));
+    if (edge->elapsed >= edge->duration) edge->active = false;
 }
 
 static bool CampaignInputLocked(const Campaign *c) {
-    return (c->progression_active && !c->progression_camera_finished) || UiInputBlocked() || c->about_open;
+    return (c->progression_active && !c->progression_camera_finished) || UiInputBlocked() || c->about_open ||
+           c->challenge_popup != CAMPAIGN_CHALLENGE_POPUP_CLOSED;
+}
+
+static CampaignSwipeEdge CampaignSwipeEdgeAt(float scroll_x, float lo, float hi) {
+    if (scroll_x <= lo) return CAMPAIGN_SWIPE_AT_LOW_EDGE;
+    if (scroll_x >= hi) return CAMPAIGN_SWIPE_AT_HIGH_EDGE;
+    return CAMPAIGN_SWIPE_INSIDE;
+}
+
+static bool CampaignSwipeEndedAtEdge(const Campaign *c) {
+    return c->swipe_edge != CAMPAIGN_SWIPE_INSIDE && c->dragged && !c->press_blocked && !CampaignInputLocked(c) &&
+           IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
+}
+
+static int CampaignSwipeMapStep(const Campaign *c) {
+    bool path_ends_high = MapSceneNodeX(&c->scene, c->scene.node_count - 1) > MapSceneNodeX(&c->scene, 0);
+    bool toward_path_end = (c->swipe_edge == CAMPAIGN_SWIPE_AT_HIGH_EDGE) == path_ends_high;
+    return toward_path_end ? 1 : -1;
+}
+
+static void CampaignSwipeToNeighbourMap(Campaign *c, PlayerCampaignProgress *pcp) {
+    bool ended_at_edge = CampaignSwipeEndedAtEdge(c) && c->scene.loaded && c->scene_map == pcp->campaign_index;
+    if (!ended_at_edge) return;
+    int step = CampaignSwipeMapStep(c);
+    int map = pcp->campaign_index + step;
+    c->swipe_edge = CAMPAIGN_SWIPE_INSIDE;
+    if (!CampaignMapUnlocked(c, pcp, map)) return;
+    GuiSoundPlay(SND_MAP_TRANSITION);
+    CampaignSelectMap(c, pcp, map);
+    c->arrive_at_first_node = step > 0;
+}
+
+static float CampaignEaseInOutQuart(float t) {
+    if (t < 0.5f) return 8.0f * powf(t, 4.0f);
+    return 1.0f - 8.0f * powf(t - 1.0f, 4.0f);
+}
+
+static void CampaignIndicatorFadeTo(CampaignIndicatorFade *fade, float target) {
+    if (fade->target == target) return;
+    *fade = (CampaignIndicatorFade){.opacity = fade->opacity, .from = fade->opacity, .target = target};
+}
+
+static void CampaignIndicatorFadeUpdate(CampaignIndicatorFade *fade, float dt) {
+    if (fade->opacity == fade->target) return;
+    fade->elapsed += dt;
+    float progress = fminf(fade->elapsed / CAMPAIGN_MAP_INDICATOR_FADE_SECONDS, 1.0f);
+    fade->opacity = Lerp(fade->from, fade->target, CampaignEaseInOutQuart(progress));
+}
+
+static void CampaignAimMapIndicators(Campaign *c, const PlayerCampaignProgress *pcp, bool swiping) {
+    int step = swiping && c->swipe_edge != CAMPAIGN_SWIPE_INSIDE ? CampaignSwipeMapStep(c) : 0;
+    bool neighbour = step != 0 && CampaignMapUnlocked(c, pcp, pcp->campaign_index + step);
+    CampaignIndicatorFadeTo(&c->previous_map_indicator, neighbour && step < 0 ? 1.0f : 0.0f);
+    CampaignIndicatorFadeTo(&c->next_map_indicator, neighbour && step > 0 ? 1.0f : 0.0f);
+}
+
+static void CampaignUpdateMapIndicators(Campaign *c, float dt) {
+    CampaignIndicatorFadeUpdate(&c->previous_map_indicator, dt);
+    CampaignIndicatorFadeUpdate(&c->next_map_indicator, dt);
+    bool shown = c->previous_map_indicator.opacity > 0.0f || c->next_map_indicator.opacity > 0.0f;
+    c->map_indicator_pulse_time = shown ? c->map_indicator_pulse_time + dt : 0.0f;
+}
+
+static void CampaignDrawMapIndicator(
+    const Campaign *c,
+    const CampaignIndicatorFade *fade,
+    CampaignIguiAnchor anchor,
+    float rotation,
+    float screen_w,
+    float screen_h
+) {
+    if (fade->opacity <= 0.0f) return;
+    Rectangle box = CampaignScreenIgui(screen_w, screen_h, anchor);
+    float scale = 1.0f + sinf(c->map_indicator_pulse_time) * CAMPAIGN_MAP_INDICATOR_PULSE;
+    Vector2 size = {box.width * scale, box.height * scale};
+    Rectangle dst = {box.x + box.width * 0.5f, box.y + box.height * 0.5f, size.x, size.y};
+    Texture2D arrow = c->map_indicator_arrow;
+    Rectangle src = {0.0f, 0.0f, (float)arrow.width, (float)arrow.height};
+    DrawTexturePro(arrow, src, dst, Vector2Scale(size, 0.5f), rotation, Fade(WHITE, fade->opacity));
+}
+
+static void CampaignDrawMapIndicators(const Campaign *c, float screen_w, float screen_h) {
+    CampaignDrawMapIndicator(
+        c,
+        &c->previous_map_indicator,
+        CAMPAIGN_PREVIOUS_MAP_INDICATOR,
+        CAMPAIGN_PREVIOUS_MAP_ARROW_ROTATION,
+        screen_w,
+        screen_h
+    );
+    CampaignDrawMapIndicator(
+        c, &c->next_map_indicator, CAMPAIGN_NEXT_MAP_INDICATOR, CAMPAIGN_NEXT_MAP_ARROW_ROTATION, screen_w, screen_h
+    );
 }
 
 void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
@@ -853,6 +1158,7 @@ void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
     if (pcp->campaign_index < 0 || pcp->campaign_index >= c->map_count ||
         !CampaignMapUnlocked(c, pcp, pcp->campaign_index))
         pcp->campaign_index = 0;
+    CampaignSwipeToNeighbourMap(c, pcp);
     pcp->node_index = CampaignFrontierForMap(c, pcp, pcp->campaign_index);
     CampaignMap *m = &c->maps[pcp->campaign_index];
     CampaignShowMapScene(c, pcp->campaign_index);
@@ -872,7 +1178,11 @@ void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
     bool map_changed = c->scroll_map != pcp->campaign_index;
     if (map_changed) {
         c->scroll_map = pcp->campaign_index;
-        c->selected_node = c->progression_active ? c->progression_to_node : pcp->node_index;
+        int arrival_node = c->arrive_at_first_node ? 0 : pcp->node_index;
+        c->selected_node = c->progression_active ? c->progression_to_node : arrival_node;
+        c->arrive_at_first_node = false;
+        c->previous_map_indicator = (CampaignIndicatorFade){0};
+        c->next_map_indicator = (CampaignIndicatorFade){0};
     }
     if (c->selected_node >= m->node_count) c->selected_node = m->node_count - 1;
 
@@ -881,7 +1191,8 @@ void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
     float target = Clamp(MapSceneNodeX(&c->scene, c->selected_node), lo, hi);
     if (c->progression_active && !c->progression_camera_finished && c->progression_to_map == pcp->campaign_index) {
         bool same_map = c->progression_from_map == c->progression_to_map;
-        int from_node = same_map ? Clamp(c->progression_from_node, 0, m->node_count - 1) : m->node_count - 1;
+        int from_node = same_map ? Clamp(c->progression_from_node, 0, m->node_count - 1)
+                                 : CampaignBossNodeIndex(c, pcp->campaign_index);
         float from_scroll = Clamp(MapSceneNodeX(&c->scene, from_node), lo, hi);
         float pan = same_map ? CampaignEaseInOutQuad(c->progression_time - 1.0f)
                              : CampaignEaseInOutQuad((c->progression_time - 1.5f) / 2.0f);
@@ -908,16 +1219,23 @@ void CampaignDrawWorld(Campaign *c, PlayerCampaignProgress *pcp) {
         c->dragged = false;
         c->tray_pressed = over_tray;
         c->press_blocked = over_tray || CheckCollisionPointRec(c->press_pos, toggle_rect);
+        c->swipe_edge = CAMPAIGN_SWIPE_INSIDE;
     }
+    bool swiping = !input_locked && IsMouseButtonDown(MOUSE_BUTTON_LEFT) && !c->press_blocked;
     if (!input_locked && IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
         if (fabsf(UiMouse().x - c->press_pos.x) > 6.0f) c->dragged = true;
-        if (!c->press_blocked) {
+        if (swiping) {
             c->scroll_x += UiMouseDelta().x / screen_w * CAMPAIGN_SWIPE_UNITS_PER_SCREEN;
             c->scroll_node = c->selected_node;
         }
     }
-    if (!input_locked && !over_tray) c->scroll_x += GetMouseWheelMove() * CAMPAIGN_WHEEL_UNITS;
-    c->scroll_x = Clamp(c->scroll_x, lo, hi);
+    float wheel = !input_locked && !over_tray ? GetMouseWheelMove() : 0.0f;
+    c->scroll_x = Clamp(c->scroll_x + wheel * CAMPAIGN_WHEEL_UNITS, lo, hi);
+    if (swiping) c->swipe_edge = CampaignSwipeEdgeAt(c->scroll_x, lo, hi);
+    CampaignAimMapIndicators(c, pcp, swiping);
+    CampaignUpdateMapIndicators(c, dt);
+    bool focusing = c->scroll_node != c->selected_node;
+    CampaignReturnFromEdge(c, swiping || wheel != 0.0f || focusing || map_changed, dt);
 
     MapSceneSetCameraX(&c->scene, c->scroll_x);
     MapSceneUpdate(&c->scene, dt);
@@ -939,7 +1257,9 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
         !progression_input_locked && !c->dragged && !c->press_blocked && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
     Vector2 mouse = UiMouse();
 
+    int arrival_node = CampaignBossNodeIndex(c, pcp->campaign_index);
     for (int j = 0; j < m->node_count; j++) {
+        if (!CampaignNodeRevealed(c, pcp, pcp->campaign_index, j)) continue;
         int frontier = pcp->node_index;
         int completions = pcp->node_completions[pcp->campaign_index][j];
         float flip_scale = 1.0f;
@@ -964,11 +1284,13 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
             flip_scale = CampaignFlipScale(phase);
             if (phase < 0.5f) frontier = c->progression_from_node;
         }
-        if (new_map_progression && j == m->node_count - 1) {
+        if (new_map_progression && j == arrival_node) {
             float phase = c->progression_time - 0.5f;
             transition_phase = phase;
             flip_scale = CampaignFlipScale(phase);
         }
+        bool emerging = c->progression_reveals_challenge && same_map_progression && j == c->progression_to_node &&
+                        transition_phase < 0.5f;
         bool selected = j == c->selected_node && !c->tray_open;
         Texture2D icon = CampaignNodeIcon(c, m, j, frontier, completions, selected);
         Vector2 centre = MapSceneNodeScreen(&c->scene, j);
@@ -987,6 +1309,7 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
             );
             EndBlendMode();
         }
+        if (emerging) continue;
         UiDrawTexture(icon, dst, WHITE);
 
         int energy_cost = CampaignCurrentEnergyCost(&m->nodes[j], pcp->node_losses[pcp->campaign_index][j]);
@@ -1092,10 +1415,17 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
             CampaignRewards rewards = CampaignNodeRewardsForWins(n, wins);
             int values[3] = {rewards.gold, rewards.xp, rewards.gems};
             int count = rewards.gems > 0 ? 3 : 2;
+            bool chance = n->drops && n->drops->preview_count > 0;
+            if (c->reward_preview_node != n) {
+                c->reward_preview_node = n;
+                c->reward_preview_time = 0.0f;
+            }
+            c->reward_preview_time += dt;
 
             float icon_box = 44.0f, row_h = 42.0f, tag_w = 96.0f, tag_h = 36.0f;
             float icon_x = screen_w - 44.0f - icon_box;
             float start_y = screen_h - 84.0f - count * row_h;
+            if (chance) CampaignDrawChanceRow(c, n->drops, icon_x, start_y - row_h / 2.0f, icon_box, tag_h);
 
             for (int i = 0; i < count; i++) {
                 float cy = start_y + i * row_h + row_h / 2.0f;
@@ -1116,11 +1446,20 @@ CampaignAction CampaignDraw(Campaign *c, PlayerCampaignProgress *pcp) {
         }
     }
 
+    CampaignDrawMapIndicators(c, screen_w, screen_h);
     if (c->progression_active) {
         float duration =
             c->progression_from_map == c->progression_to_map ? (c->progression_unlock_next ? 3.0f : 2.0f) : 3.5f;
-        if (c->progression_time >= duration) c->progression_active = false;
+        if (c->progression_time >= duration) {
+            c->progression_active = false;
+            if (c->progression_reveals_challenge) {
+                c->challenge_popup = CAMPAIGN_CHALLENGE_POPUP_QUEUED;
+                c->challenge_popup_wait = 0.0f;
+            }
+        }
     }
+    CampaignUpdateChallengePopup(c, dt);
+    if (c->challenge_popup == CAMPAIGN_CHALLENGE_POPUP_OPEN) action = CampaignDrawChallengePopup(c, pcp);
     if (c->about_open) CampaignDrawAbout(c, pcp, pcp->campaign_index, screen_w);
     return action;
 }

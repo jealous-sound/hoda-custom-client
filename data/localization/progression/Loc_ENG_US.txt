@@ -1,3 +1,4 @@
+HODA_CHALLENGE_POPUP_DESC|Challenges <color=orange>test your squad</color> in specific ways. Complete a challenge as many times as you like for <color=orange>a chance to earn heroes and runes!</color>
 HODA_NEXUS_EVENT_BREACH_OPENS_AGAIN_TITLE|The Breach Opens Again
 HODA_NEXUS_EVENT_WOODLAND_SPIRITS_TITLE|Woodland Spirits
 HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLACK_FACTION|Black Faction gains 150% Health and Power.

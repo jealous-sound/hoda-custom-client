@@ -257,13 +257,16 @@ static void TestFormationBonusMetadata(void) {
     assert(s.units[SQUAD_SLOT_COUNT].power == 120);
 
     BattlePlay bp = {.sim = s};
-    BpBuildIntroEvents(&bp);
-    assert(bp.intro_event_count == 1);
-    assert(bp.intro_events[0].affected_slots == 0x0fu);
+    static const BattleRoster no_runes = {0};
+    BpBuildIntroEvents(&bp, &no_runes);
+    assert(bp.intro_event_count == 2);
+    assert(bp.intro_events[0].side == 0 && bp.intro_events[0].affected_slots == 0x0fu);
     assert(strcmp(BpFactionFx(bp.intro_events[0].faction), "fx_eff_faction_charge_pre") == 0);
+    assert(bp.intro_events[1].side == 1 && bp.intro_events[1].affected_slots == 0x0fu);
 
     bp.sim.formation_bonus_pct[0] = 0.0f;
-    BpBuildIntroEvents(&bp);
+    bp.sim.formation_bonus_pct[1] = 0.0f;
+    BpBuildIntroEvents(&bp, &no_runes);
     assert(bp.intro_event_count == 0 && bp.intro_event == -1);
 }
 
@@ -283,7 +286,7 @@ static void TestFormationBonusRequiresSharedFaction(void) {
     for (int slot = 0; slot < 4; slot++) assert(s.units[slot].power == 100);
 }
 
-static void TestIntroQueueShowsOnlyPlayerFactionBonus(void) {
+static void TestIntroQueueShowsBothFactionBonusesAfterBothSidesRunes(void) {
     BattlePlay bp = {0};
     Character characters[8] = {0};
     for (int side = 0; side < 2; side++) {
@@ -298,11 +301,18 @@ static void TestIntroQueueShowsOnlyPlayerFactionBonus(void) {
     bp.sim.formation_faction[1] = 1u;
     bp.sim.formation_bonus_pct[0] = 10.0f;
     bp.sim.formation_bonus_pct[1] = 20.0f;
+    bp.sim.rune_defs[0] = 7;
+    bp.sim.rune_def_count = 1;
+    static const BattleRoster enemy = {.rune_defs = {3, 5}, .rune_def_count = 2};
 
-    BpBuildIntroEvents(&bp);
+    BpBuildIntroEvents(&bp, &enemy);
 
-    assert(bp.intro_event_count == 1);
-    assert(bp.intro_events[0].faction == 2u);
+    assert(bp.intro_event_count == 5);
+    assert(bp.intro_events[0].side == 0 && bp.intro_events[0].rune_def == 7);
+    assert(bp.intro_events[1].side == 1 && bp.intro_events[1].rune_def == 3);
+    assert(bp.intro_events[2].side == 1 && bp.intro_events[2].rune_def == 5);
+    assert(bp.intro_events[3].side == 0 && bp.intro_events[3].faction == 2u && bp.intro_events[3].rune_def < 0);
+    assert(bp.intro_events[4].side == 1 && bp.intro_events[4].faction == 1u && bp.intro_events[4].rune_def < 0);
 }
 
 static void TestProjectileTrailFollowsFlight(Battle *battle) {
@@ -394,6 +404,60 @@ static void TestFactionIntroAssetsAndText(void) {
     assert(strcmp(text, "Бонус за фракцию! +10 %") == 0);
     LocUnload();
 
+    if (battle->fx_reg) MemFree(battle->fx_reg);
+    if (battle->fx_alias) MemFree(battle->fx_alias);
+    free(battle);
+}
+
+#define AOE_PLANE_MESH_WIDTH 0.05f
+#define CHAR_BASE_MESH_WIDTH 1.6139f
+#define FACTION_LOGO_TEXTURE "faction_white_icon"
+
+static const FxEmitter *FactionLogoEmitter(const FxPreset *preset) {
+    for (int i = 0; i < preset->em_count; i++)
+        if (preset->em[i].tex && strstr(preset->em[i].tex, FACTION_LOGO_TEXTURE)) return &preset->em[i];
+    return NULL;
+}
+
+static void TestDoubledRigScaleCoversEveryTierOfTheFamily(void) {
+    static const char *const doubled[] = {
+        "unit.em_mw_fenharel_t3_pre",
+        "unit.em_mw_solas_t3_pre",
+        "unit.hm_mw_rion_t2_pre",
+        "unit.hm_tw_gurdharofsen_t3_pre",
+        "unit.em_bw_sentinelarcher_t2_pre",
+    };
+    for (int i = 0; i < (int)(sizeof(doubled) / sizeof(doubled[0])); i++) {
+        char base[128];
+        HomeSquadBaseName(base, sizeof(base), doubled[i]);
+        assert(UnitRigScaleDoubled(base));
+        assert(UnitDisplayScale(doubled[i]) == UNIT_PREFAB_SCALE);
+    }
+    assert(!UnitRigScaleDoubled("em_mw_fenharelbanner_t3"));
+    assert(!UnitRigScaleDoubled("c_architect_t2"));
+}
+
+static void TestFactionChargeLogoLiesOnItsBase(void) {
+    Battle *battle = calloc(1, sizeof(*battle));
+    assert(battle != NULL);
+    BattleFxRegistryLoad(battle, "data/fx_presets.json");
+    static const unsigned factions[] = {1u, 2u, 4u, 8u};
+    float feet = BattleFeetY(1.0f);
+    for (int i = 0; i < (int)(sizeof(factions) / sizeof(factions[0])); i++) {
+        memset(battle->fxi, 0, sizeof(battle->fxi));
+        battle->rings[1][3].pos = (Vector3){3, feet, 5};
+        BpBurstFactionFx(battle, factions[i], 1, 3);
+        const FxInstance *burst = NULL;
+        for (int k = 0; k < FX_MAX_INSTANCES && !burst; k++)
+            if (battle->fxi[k].alive) burst = &battle->fxi[k];
+        assert(burst != NULL && burst->anchor == SQUAD_SLOT_COUNT + 3);
+        const FxEmitter *logo = FactionLogoEmitter(burst->pre);
+        assert(logo != NULL && logo->orient == 1);
+        assert(fabsf(logo->render_scale - AOE_PLANE_MESH_WIDTH) < 0.0001f);
+        assert(logo->size0 * logo->render_scale < CHAR_BASE_MESH_WIDTH);
+        float logo_y = burst->pos.y + burst->offset.y + logo->offset.y;
+        assert(logo_y >= feet && logo_y - feet < HOME_PAD_HALF_THICK);
+    }
     if (battle->fx_reg) MemFree(battle->fx_reg);
     if (battle->fx_alias) MemFree(battle->fx_alias);
     free(battle);
@@ -1898,18 +1962,56 @@ static void TestCatalogStatGrowth(void) {
     CharacterParse(CatalogFindCharacter(catalog, "UNIT_CARTASMUGGLER"), &ch, &ability);
     ch.tier = TIER_II;
     ch.level = 20;
-    assert(ch.stats[TIER_II].power_per_level == 9);
     assert(CharacterStatPower(&ch) == 278);
     assert(CharacterStatHealth(&ch) == 534);
 
     CharacterParse(CatalogFindCharacter(catalog, "UNIT_ELVENMAGE"), &ch, &ability);
     ch.tier = TIER_II;
     ch.level = 25;
-    assert(ch.stats[TIER_II].power_per_level == 10);
     assert(CharacterStatPower(&ch) == 395);
     assert(CharacterStatHealth(&ch) == 1278);
 
     cJSON_Delete(root);
+}
+
+static void TestLegendaryLevelCapsFollowTheirStars(void) {
+    cJSON *root = JsonLoadFile(HOD_CACHE "characters.json");
+    cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    static const struct {
+        const char *id;
+        int tier_i_cap;
+    } legendaries[] = {{"UNIT_SISTERNIGHTINGALE", 70}, {"UNIT_MERRILL", 75}, {"UNIT_VIVIENNE", 80}};
+    for (size_t i = 0; i < sizeof(legendaries) / sizeof(legendaries[0]); i++) {
+        Character ch;
+        Ability ability;
+        CharacterParse(CatalogFindCharacter(catalog, legendaries[i].id), &ch, &ability);
+        for (int tier = TIER_I; tier <= TIER_IV; tier++) {
+            const TierStats *st = &ch.stats[tier];
+            assert(st->max_level == legendaries[i].tier_i_cap + 5 * tier);
+            assert(TierPowerAtLevel(st, 1) == st->base_power && TierHealthAtLevel(st, 1) == st->base_health);
+            assert(TierPowerAtLevel(st, st->max_level) == st->max_power);
+            assert(TierHealthAtLevel(st, st->max_level) == st->max_health);
+        }
+    }
+    cJSON_Delete(root);
+}
+
+static void TestTierStatsGrowEvenlyToTheCapAndOnThroughAscension(void) {
+    Character hero;
+    Ability ability;
+    TestCharacter(&hero, &ability, "grower", "ABILITY_DAMAGE_ONE", TARGET_ONE, 0, 100);
+    hero.stats[TIER_I].max_power = 10;
+    hero.stats[TIER_I].max_health = 130;
+    hero.stats[TIER_I].max_level = hero.stats[TIER_I].catalog_max_level = 4;
+    static const int powers[] = {0, 3, 7, 10}, healths[] = {100, 110, 120, 130};
+    for (int level = 1; level <= 4; level++) {
+        hero.level = level;
+        assert(CharacterLevelPower(&hero) == powers[level - 1] && CharacterLevelHealth(&hero) == healths[level - 1]);
+    }
+
+    GearApplyAscension(&hero);
+    hero.level = hero.stats[TIER_I].max_level;
+    assert(hero.level == 9 && CharacterLevelPower(&hero) == 27 && CharacterLevelHealth(&hero) == 180);
 }
 
 static const StatBudget TEST_STAT_BUDGET = {
@@ -2207,11 +2309,16 @@ static void TestStatBudgetKeepsTheShareOfGrowthAHeroHasEarned(void) {
     TestCharacter(&hero, &ability, "grower", "ABILITY_DAMAGE_ONE", TARGET_ONE, 100, 500);
     hero.has_tier[TIER_I] = hero.has_tier[TIER_II] = true;
     hero.max_tier = TIER_II;
-    hero.stats[TIER_I].max_level = 10;
-    hero.stats[TIER_I].power_per_level = 10;
-    hero.stats[TIER_I].health_per_level = 50;
+    hero.stats[TIER_I].max_power = 190;
+    hero.stats[TIER_I].max_health = 950;
+    hero.stats[TIER_I].max_level = hero.stats[TIER_I].catalog_max_level = 10;
     hero.stats[TIER_II] = (TierStats){
-        .base_power = 200, .base_health = 1000, .max_level = 11, .power_per_level = 20, .health_per_level = 100
+        .base_power = 200,
+        .base_health = 1000,
+        .max_power = 400,
+        .max_health = 2000,
+        .max_level = 11,
+        .catalog_max_level = 11
     };
     StatBudgetStats grown = StatBudgetGrownStats(&hero);
     assert(grown.power == 400 && grown.health == 2000);
@@ -3610,6 +3717,11 @@ static void TestDisplayScaleManifestIsFullyLoaded(void) {
     int expected = cJSON_GetArraySize(root);
     assert(fabsf(UnitDisplayScale("unit.c_titanheartguardian_t1_pre") - 0.65f) < 0.0001f);
     assert(unit_scale_count == expected);
+    float tierless_wisp = (float)cJSON_GetNumberValue(
+        cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(root, "c_wisp_epic_t0"), "scale")
+    );
+    assert(tierless_wisp > 0.0f && UnitDisplayScale("unit.c_wisp_epic_pre") == tierless_wisp);
+    assert(UnitDisplayScale("unit.c_wisp_epic_t9_pre") == 1.2885f);
     cJSON_Delete(root);
 }
 
@@ -4230,7 +4342,7 @@ static void TestProgressionPersistence(void) {
     source.store_opened_by_pack[1] = 2;
     source.store_opened_by_pack[2] = 3;
     source.store_opened_by_pack[3] = 4;
-    source.champion_since_legendary = 2;
+    assert(PlayerSetPacksSinceLegendary(&source, "champion", 2));
     source.campaign_progress.campaign_index = 1;
     source.campaign_progress.node_index = 1;
     source.campaign_progress.node_completions[0][0] = 3;
@@ -4251,6 +4363,7 @@ static void TestProgressionPersistence(void) {
     char *json = LoadFileText(path);
     assert(json && strstr(json, "\"version\"") && strstr(json, "\"completions\""));
     assert(strstr(json, "\"roster\"") && strstr(json, "\"store\""));
+    assert(strstr(json, "\"" PROGRESSION_RELEASED_CLIENT_PITY_KEY "\":\t0"));
     UnloadFileText(json);
 
     Character sentinel_roster = {0};
@@ -4265,7 +4378,8 @@ static void TestProgressionPersistence(void) {
     assert(loaded.gold == 9876 && loaded.gems == 77);
     assert(loaded.store_rng_state == 0x1234abcdu && loaded.store_opened_total == 10);
     assert(loaded.store_opened_by_pack[0] == 1 && loaded.store_opened_by_pack[3] == 4);
-    assert(loaded.champion_since_legendary == 2);
+    assert(loaded.pack_pity_count == 1 && PlayerPacksSinceLegendary(&loaded, "champion") == 2);
+    assert(PlayerPacksSinceLegendary(&loaded, "knight") == 0);
     assert(loaded.campaign_progress.node_completions[0][0] == 3);
     assert(loaded.campaign_progress.node_completions[1][0] == 2);
     assert(loaded.campaign_progress.node_losses[1][2] == 4);
@@ -4306,6 +4420,174 @@ static void TestProgressionPersistence(void) {
 
     remove(path);
     remove(temporary);
+}
+
+static void TestChallengeDropTablesCoverTheGrindMaps(void) {
+    assert(ChallengeDropsLoad(CHALLENGE_DROPS_PATH, CHALLENGE_DROPS_CHARACTERS_PATH));
+    assert(!ChallengeDropsForMap("PVE_MAP_01"));
+    for (int map = 2; map <= CAMPAIGN_MAX_MAPS; map++) {
+        const ChallengeDropTable *table = ChallengeDropsForMap(TextFormat("PVE_MAP_%02d", map));
+        assert(table && table->drop_count > 0 && table->preview_count > 0);
+        int total = 0;
+        for (int i = 0; i < table->drop_count; i++) {
+            const ChallengeDrop *drop = &table->drops[i];
+            total += drop->weight;
+            if (drop->kind == CHALLENGE_DROP_UNIT) assert(ResourceExists(GuiPortraitRef(drop->icon)));
+        }
+        assert(total > 0 && total < challenge_drops.roll_total);
+    }
+
+    const ChallengeDropTable *brecilian = ChallengeDropsForMap("PVE_MAP_02");
+    const ChallengeDrop *bear = ChallengeDropFind(brecilian, CHALLENGE_DROP_UNIT, "UNIT_BEAR");
+    assert(bear && bear->weight == 9601 && bear->rarity == RARITY_COMMON && bear->icon[0]);
+    const ChallengeDrop *health = ChallengeDropFind(brecilian, CHALLENGE_DROP_RUNE, "rune-health-2");
+    assert(health && health->rarity == RARITY_UNCOMMON && health->icon[0]);
+    ChallengeDropPreview expected[] = {
+        {CHALLENGE_DROP_UNIT, RARITY_COMMON},
+        {CHALLENGE_DROP_UNIT, RARITY_UNCOMMON},
+        {CHALLENGE_DROP_UNIT, RARITY_EPIC},
+        {CHALLENGE_DROP_RUNE, RARITY_COMMON},
+        {CHALLENGE_DROP_RUNE, RARITY_UNCOMMON},
+    };
+    assert(brecilian->preview_count == (int)(sizeof(expected) / sizeof(expected[0])));
+    for (int i = 0; i < brecilian->preview_count; i++)
+        assert(brecilian->previews[i].kind == expected[i].kind && brecilian->previews[i].rarity == expected[i].rarity);
+}
+
+static void TestChallengeDropsStayOffWithoutTheTable(void) {
+    assert(!ChallengeDropsLoad("data/missing_challenge_drops.json", CHALLENGE_DROPS_CHARACTERS_PATH));
+    assert(!ChallengeDropsForMap("PVE_MAP_02"));
+    uint32_t rng = 2;
+    assert(!ChallengeDropRoll(NULL, &rng) && rng == 2);
+    assert(ChallengeDropsLoad(CHALLENGE_DROPS_PATH, CHALLENGE_DROPS_CHARACTERS_PATH));
+}
+
+static void TestChallengeDropRollsOneStoreStreamStep(void) {
+    const ChallengeDropTable *brecilian = ChallengeDropsForMap("PVE_MAP_02");
+    struct {
+        uint32_t state;
+        const char *id;
+    } pinned[] = {{1, NULL}, {2, "UNIT_BEAR"}, {3, "rune-health-1"}};
+    for (int i = 0; i < (int)(sizeof(pinned) / sizeof(pinned[0])); i++) {
+        uint32_t rng = pinned[i].state, stepped = pinned[i].state;
+        StoreRngNext(&stepped);
+        const ChallengeDrop *drop = ChallengeDropRoll(brecilian, &rng);
+        assert(rng == stepped);
+        assert(pinned[i].id ? drop && !strcmp(drop->id, pinned[i].id) : !drop);
+    }
+
+    enum { ROLLS = 200000 };
+    const ChallengeDropTable *dalish = ChallengeDropsForMap("PVE_MAP_08");
+    int hits[CHALLENGE_DROPS_PER_MAP] = {0};
+    uint32_t rng = 0x5eed;
+    for (int n = 0; n < ROLLS; n++) {
+        const ChallengeDrop *drop = ChallengeDropRoll(dalish, &rng);
+        if (drop) hits[drop - dalish->drops]++;
+    }
+    for (int i = 0; i < dalish->drop_count; i++) {
+        double expected = (double)ROLLS * dalish->drops[i].weight / challenge_drops.roll_total;
+        assert(fabs(hits[i] - expected) <= 5.0 * sqrt(expected) + 2.0);
+    }
+}
+
+static void TestChallengeNodeWinsGrantTheRolledDrop(void) {
+    Player player = TestStarterPlayer();
+    Campaign campaign = TestProgressionCampaign();
+    CampaignNode *grind = &campaign.maps[0].nodes[3];
+    grind->drops = ChallengeDropsForMap("PVE_MAP_02");
+    for (int node = 0; node < 3; node++) player.campaign_progress.node_completions[0][node] = 1;
+
+    BattleRewardResult loss = CampaignResolveBattle(&player, &campaign, 0, 3, false, 0);
+    assert(!CampaignChallengeDropDue(&loss, grind));
+    BattleRewardResult story = CampaignResolveBattle(&player, &campaign, 0, 0, true, 0);
+    assert(!CampaignChallengeDropDue(&story, &campaign.maps[0].nodes[0]));
+
+    int roster = player.roster_count;
+    BattleRewardResult hero = CampaignResolveBattle(&player, &campaign, 0, 3, true, 0);
+    player.store_rng_state = 2;
+    CampaignAwardChallengeDrop(&player, grind, &hero, 1000);
+    assert(hero.challenge_drop.drop && !strcmp(hero.challenge_drop.drop->id, "UNIT_BEAR"));
+    assert(player.roster_count == roster + 1 && !strcmp(player.roster[roster].id, "UNIT_BEAR"));
+    assert(player.roster[roster].level == 1);
+
+    int runes = player.runes.count;
+    BattleRewardResult rune = CampaignResolveBattle(&player, &campaign, 0, 3, true, 0);
+    player.store_rng_state = 3;
+    CampaignAwardChallengeDrop(&player, grind, &rune, 1000);
+    assert(rune.challenge_drop.drop && rune.challenge_drop.drop->kind == CHALLENGE_DROP_RUNE);
+    assert(player.runes.count == runes + 1);
+    assert(!strcmp(RuneDefFor(&player.runes.items[runes])->id, "rune-health-1"));
+
+    BattleRewardResult nothing = CampaignResolveBattle(&player, &campaign, 0, 3, true, 0);
+    player.store_rng_state = 1;
+    CampaignAwardChallengeDrop(&player, grind, &nothing, 1000);
+    assert(!nothing.challenge_drop.drop && player.roster_count == roster + 1 && player.runes.count == runes + 1);
+
+    int capacity = player.roster_capacity;
+    player.roster_capacity = player.roster_count;
+    BattleRewardResult full = CampaignResolveBattle(&player, &campaign, 0, 3, true, 0);
+    player.store_rng_state = 2;
+    CampaignAwardChallengeDrop(&player, grind, &full, 1000);
+    assert(!full.challenge_drop.drop && player.roster_count == roster + 1);
+    player.roster_capacity = capacity;
+}
+
+static void TestChallengeDropAwardReadsTheServerReply(void) {
+    const ChallengeDropTable *brecilian = ChallengeDropsForMap("PVE_MAP_02");
+    cJSON *hero = cJSON_Parse(
+        "{\"granted\":{\"won\":true,\"granted\":{\"heroes\":[{\"id\":\"UNIT_WOLF\",\"instance_id\":77}]}}}"
+    );
+    ChallengeDropAward from_hero = ChallengeDropAwardFromReply(brecilian, hero);
+    assert(!from_hero.pending && from_hero.drop && !strcmp(from_hero.drop->id, "UNIT_WOLF"));
+    cJSON *rune = cJSON_Parse("{\"granted\":{\"granted\":{\"runes\":[\"rune-wounded-targeting-1\"]}}}");
+    ChallengeDropAward from_rune = ChallengeDropAwardFromReply(brecilian, rune);
+    assert(from_rune.drop && from_rune.drop->kind == CHALLENGE_DROP_RUNE);
+    cJSON *empty = cJSON_Parse("{\"granted\":{\"granted\":{\"vouchers\":{\"0\":1}}}}");
+    assert(!ChallengeDropAwardFromReply(brecilian, empty).drop);
+    assert(!ChallengeDropAwardFromReply(brecilian, NULL).drop);
+    cJSON_Delete(hero);
+    cJSON_Delete(rune);
+    cJSON_Delete(empty);
+}
+
+static void TestChallengeDropPreviewsCycleLikeTheOriginal(void) {
+    assert(ChallengeDropPreviewAlpha(0.0f, 3) == 0.0f);
+    assert(ChallengeDropPreviewAlpha(0.125f, 3) == 0.5f);
+    assert(ChallengeDropPreviewAlpha(1.0f, 3) == 1.0f);
+    assert(ChallengeDropPreviewAlpha(1.875f, 3) == 0.5f);
+    assert(ChallengeDropPreviewAlpha(2.1f, 3) == 0.0f);
+    assert(ChallengeDropPreviewAlpha(5.0f, 1) == 1.0f);
+    assert(ChallengeDropPreviewIndex(0.0f, 3) == 0);
+    assert(ChallengeDropPreviewIndex(2.3f, 3) == 1);
+    assert(ChallengeDropPreviewIndex(6.8f, 3) == 0);
+    assert(ChallengeDropPreviewIndex(9.0f, 1) == 0);
+}
+
+static void TestChallengeNodeStaysHiddenUntilTheBossFalls(void) {
+    Campaign campaign = TestProgressionCampaign();
+    PlayerCampaignProgress progress = {0};
+    assert(CampaignNodeRevealed(&campaign, &progress, 0, 2));
+    assert(!CampaignNodeRevealed(&campaign, &progress, 0, 3));
+    progress.node_completions[0][2] = 1;
+    assert(CampaignNodeRevealed(&campaign, &progress, 0, 3));
+    assert(!CampaignNodeRevealed(&campaign, &progress, 1, 2));
+
+    assert(CampaignProgressionRevealsChallenge(&campaign, 0, 2, 0, 3));
+    assert(!CampaignProgressionRevealsChallenge(&campaign, 0, 1, 0, 2));
+    assert(!CampaignProgressionRevealsChallenge(&campaign, 0, 2, 1, 0));
+    Campaign no_grind = {.map_count = 1};
+    no_grind.maps[0].node_count = 3;
+    assert(!CampaignProgressionRevealsChallenge(&no_grind, 0, 2, 0, 2));
+    assert(CampaignNodeRevealed(&no_grind, &progress, 0, 2));
+
+    Campaign *animated = calloc(1, sizeof(*animated));
+    assert(animated);
+    *animated = campaign;
+    CampaignBeginProgressionAnimation(animated, 0, 2, 0, 3);
+    assert(animated->progression_reveals_challenge);
+    CampaignBeginMasteryAnimation(animated, 0, 2, 3);
+    assert(!animated->progression_reveals_challenge);
+    free(animated);
 }
 
 static void TestRosterInstancesAndPersistence(void) {
@@ -4370,7 +4652,7 @@ static void TestRosterInstancesAndPersistence(void) {
     source.store_opened_by_pack[1] = 2;
     source.store_opened_by_pack[2] = 3;
     source.store_opened_by_pack[3] = 4;
-    source.champion_since_legendary = 2;
+    assert(PlayerSetPacksSinceLegendary(&source, "champion", 2));
     assert(PlayerSquadPlace(&source, 2, 0, first));
     PlayerSquadSelect(&source, 2);
     assert(ProgressionSaveToPath(&source, path));
@@ -4389,7 +4671,7 @@ static void TestRosterInstancesAndPersistence(void) {
     assert(loaded.roster[first].ability == &loaded.roster_abilities[first]);
     assert(PlayerRosterDefinitionCount(&loaded, "UNIT_ELVENMAGE") == definition_count + 2);
     assert(loaded.store_rng_state == source.store_rng_state && loaded.store_opened_total == 10);
-    assert(loaded.store_opened_by_pack[2] == 3 && loaded.champion_since_legendary == 2);
+    assert(loaded.store_opened_by_pack[2] == 3 && PlayerPacksSinceLegendary(&loaded, "champion") == 2);
     assert(loaded.current_squad == 2 && loaded.squads[2][0] == first);
 
     Character addition_before = loaded.roster[first];
@@ -4535,6 +4817,38 @@ static void TestConsumeCommitCompactsRoster(void) {
     assert(loaded.squads[2][0] == moved);
     remove(path);
     PlayerUnloadRoster(&loaded);
+    PlayerUnloadRoster(&player);
+    cJSON_Delete(root);
+}
+
+static void TestGalleryShowsTiersACombineSkips(void) {
+    cJSON *root = ProgressionLoadCharacterCatalog();
+    const cJSON *catalog = cJSON_GetObjectItemCaseSensitive(root, "characters");
+    const char *rare = ConsumeTestFirstId(catalog, "Rare", false, true);
+    Player player = {0};
+    ProgressionInitializePlayerDefaults(&player);
+    PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+    int target, seed;
+    ConsumeTestAdd(&player, catalog, rare, &target);
+    ConsumeTestAdd(&player, catalog, rare, &seed);
+    for (int i = 0; i < 2; i++) {
+        Character *copy = &player.roster[i ? seed : target];
+        copy->tier = TIER_II;
+        ConsumeNormalizeCharacter(copy);
+    }
+    GalleryRecordOwned(&player.gallery, rare, TIER_II, false);
+    const GalleryRecord *record = GalleryRecordFind(&player.gallery, rare);
+    assert(!GalleryRecordShowsTier(record, TIER_III));
+
+    int seeds[] = {seed};
+    int moved = PlayerConsumeUnits(&player, target, seeds, 1);
+    assert(moved >= 0 && player.roster[moved].tier == TIER_IV);
+    record = GalleryRecordFind(&player.gallery, rare);
+    assert(!(record->owned_tiers & (1u << TIER_III)));
+    assert(GalleryRecordShowsTier(record, TIER_II) && GalleryRecordShowsTier(record, TIER_III));
+    assert(GalleryRecordShowsTier(record, TIER_IV) && !GalleryRecordShowsTier(record, TIER_I));
+    assert(!GalleryRecordShowsTier(NULL, TIER_I));
+
     PlayerUnloadRoster(&player);
     cJSON_Delete(root);
 }
@@ -4711,6 +5025,52 @@ static void TestOriginalResourcesDecodeLikeUnityPy(void) {
     assert(!ResourceExists(CACHE_RESOURCE("no_such_texture")));
 }
 
+static void TestSameNamedCacheTexturesResolveToTheFirstInTheirBundle(void) {
+    static const int full_maps_with_label_plate_size = 128;
+    Image maps = ResourceLoadImage(gui_paths[GUI_BTN_MAPS]);
+    assert(maps.data && maps.width == full_maps_with_label_plate_size);
+    assert(maps.height == full_maps_with_label_plate_size);
+    UnloadImage(maps);
+}
+
+static void TestMapTrayFollowsTheOriginalPrefab(void) {
+    CampaignTrayLayout layout = CampaignTrayLayoutFor(1280.0f, 720.0f);
+    float item = CampaignTrayItemSize(&layout);
+    assert(item == ceilf(layout.list.height * 1.3f) && item > layout.list.height);
+    Rectangle row = CampaignTrayButtonRow(&layout);
+    assert(row.y + row.height * 0.5f == layout.list.y + layout.list.height * 0.5f);
+
+    Texture2D texture = {.width = 64, .height = 32};
+    Rectangle background = CampaignMirroredSource(texture, CAMPAIGN_TRAY_BACKGROUND_SCALE);
+    assert(background.width == 64.0f && background.height == -32.0f);
+    Rectangle back = CampaignMirroredSource(texture, CAMPAIGN_TRAY_BACK_ARROW_SCALE);
+    assert(back.width == -64.0f && back.height == 32.0f);
+
+    static Campaign campaign;
+    enum { FEW_MAPS = 3, MANY_MAPS = 12 };
+    campaign.tray_scroll_target = 0.0f;
+    assert(!CampaignTrayCanScrollBack(&campaign) && !CampaignTrayCanScrollForward(&campaign, &layout, FEW_MAPS));
+    assert(!CampaignTrayCanScrollBack(&campaign) && CampaignTrayCanScrollForward(&campaign, &layout, MANY_MAPS));
+    campaign.tray_scroll_target = CampaignTrayMaxScroll(&layout, MANY_MAPS);
+    assert(CampaignTrayCanScrollBack(&campaign) && !CampaignTrayCanScrollForward(&campaign, &layout, MANY_MAPS));
+}
+
+static void TestMapTrayKeepsItsPrefabSizeAtTheSmallestUiScale(void) {
+    CampaignTrayLayout full = CampaignTrayLayoutFor(UI_DESIGN_W, UI_DESIGN_H);
+    float small_w = UI_DESIGN_W / SETTINGS_MINIMUM_UI_SCALE, small_h = UI_DESIGN_H / SETTINGS_MINIMUM_UI_SCALE;
+    UiSetChosenScale(SETTINGS_MINIMUM_UI_SCALE);
+    CampaignTrayLayout small = CampaignTrayLayoutFor(small_w, small_h);
+    UiSetChosenScale(SETTINGS_FULL_UI_SCALE);
+
+    assert(CampaignTrayItemSize(&small) == CampaignTrayItemSize(&full));
+    assert(small.list.height == full.list.height);
+    assert(small.list.y + small.list.height - small_h == full.list.y + full.list.height - UI_DESIGN_H);
+    assert(roundf(small.back_arrow.x) == full.back_arrow.x && full.back_arrow.x > 0.0f);
+    assert(small.list.x + small.list.width > full.list.x + full.list.width);
+    assert(small.background.x == 0.0f && small.background.width == small_w);
+    assert(full.background.width >= UI_DESIGN_W);
+}
+
 static void TestEveryReferencedResourceResolves(void) {
     for (int i = 0; i < GUI_COUNT; i++) assert(ResourceExists(gui_paths[i]));
     for (int i = 0; i < SND_COUNT; i++) assert(ResourceExists(sound_paths[i]));
@@ -4885,6 +5245,27 @@ static void TestNexusAwardReadsTheServerReply(void) {
     assert(award.gold == 500 && award.potions == 2 && award.unit_count == 1);
     assert(award.unit_roster[0] == player.roster_count - 1);
     cJSON_Delete(reply);
+}
+
+static void TestNexusAwardGrantsHeroesAtTheRarityTheyShow(void) {
+    static Player player;
+    memset(&player, 0, sizeof(player));
+    ProgressionInitializePlayerDefaults(&player);
+    const Rarity escrowed[] = {RARITY_COMMON, RARITY_EPIC, RARITY_LEGENDARY, RARITY_LEGENDARY, RARITY_LEGENDARY};
+    const int escrowed_count = (int)(sizeof(escrowed) / sizeof(escrowed[0]));
+    for (uint32_t seed = 1; seed <= 20; seed++) {
+        PlayerLoadRoster(&player, HOD_CACHE "characters.json", HOD_CACHE "player_starter.json");
+        int roster_before = player.roster_count;
+        player.store_rng_state = seed;
+        player.nexus_run = (PlayerNexusRun){.committed = true};
+        for (int n = 0; n < escrowed_count; n++) player.nexus_run.escrow_units[escrowed[n]]++;
+        NexusAward award = NexusAwardEscrow(&player);
+        assert(award.unit_count == escrowed_count && player.roster_count == roster_before + escrowed_count);
+        for (int n = 0; n < award.unit_count; n++) {
+            const Character *hero = &player.roster[award.unit_roster[n]];
+            assert(CharacterShownRarity(hero) == escrowed[n] && hero->rarity < RARITY_LEGENDARY);
+        }
+    }
 }
 
 static void TestServerActionsStayLocalWithoutABackend(void) {
@@ -5454,6 +5835,16 @@ static void TestGearCategoriesUseOrAndAllSemantics(void) {
     Character tevinter = {.group_count = 1};
     StrCopy(tevinter.groups[0], sizeof(tevinter.groups[0]), "Tevinter");
     assert(GearUnitCanWear(&tevinter, maul));
+}
+
+static void TestGearLimitsNameEveryCategory(void) {
+    char limits[192];
+    GearFormatLimits(GearDefAt(GearDefIndex("helm_of_the_dragon_hunter")), limits, sizeof(limits));
+    assert(strstr(limits, "Human, ") && !strstr(limits, ", ,") && !strstr(limits, "</color>, "));
+    GearFormatLimits(GearDefAt(GearDefIndex("crow_shield")), limits, sizeof(limits));
+    assert(strstr(limits, LocGet("INITIATIVE_FAST")));
+    GearFormatLimits(GearDefAt(GearDefIndex("the_ancestors_greaves")), limits, sizeof(limits));
+    assert(strstr(limits, LocGet("INITIATIVE_SLOW")) && strstr(limits, LocGet("INITIATIVE_MEDIUM")));
 }
 
 static void TestGearSellValueAndPrestigeUnlock(void) {
@@ -6389,44 +6780,337 @@ static void TestFlashPacksRotateOnePerPeriod(void) {
     assert(active == 1);
 }
 
-static void TestLegendaryPackRollsSkipHeroesAlreadyOwned(void) {
-    static Store store;
-    memset(&store, 0, sizeof(store));
-    store.catalog_root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
-    store.catalog = cJSON_GetObjectItemCaseSensitive(store.catalog_root, "characters");
-    StoreBuildRarityPools(&store);
-    const cJSON **legends = store.rarity_pool[RARITY_LEGENDARY];
-    int legend_count = store.rarity_pool_count[RARITY_LEGENDARY];
-    assert(legend_count > 2);
+#define TEST_LEGEND_CAPACITY 64
+#define TEST_LEGEND_SEEDS 40
 
-    StorePackDef pack = {0};
-    StorePackDef wisp_pack = {.pool_tag = "WISP"};
-    assert(StorePackSparesDuplicates(&pack, RARITY_LEGENDARY));
-    assert(!StorePackSparesDuplicates(&pack, RARITY_EPIC) && !StorePackSparesDuplicates(&wisp_pack, RARITY_LEGENDARY));
+static void TestLoadLegendaryPool(Store *store) {
+    memset(store, 0, sizeof(*store));
+    store->catalog_root = CharacterCatalogAddCustomHeroes(JsonLoadFile(HOD_CACHE "characters.json"));
+    store->catalog = cJSON_GetObjectItemCaseSensitive(store->catalog_root, "characters");
+    StoreBuildRarityPools(store);
+    assert(store->rarity_pool_count[RARITY_LEGENDARY] <= TEST_LEGEND_CAPACITY);
+}
 
-    Player player = TestStarterPlayer();
-    const cJSON *missing = legends[legend_count - 1];
+static void TestUnloadLegendaryPool(Store *store) {
+    for (int rarity = RARITY_COMMON; rarity <= RARITY_LEGENDARY; rarity++) MemFree((void *)store->rarity_pool[rarity]);
+    cJSON_Delete(store->catalog_root);
+}
+
+static int TestLegendsOfStars(const Store *store, int stars, const cJSON **out) {
+    int count = 0;
+    for (int i = 0; i < store->rarity_pool_count[RARITY_LEGENDARY]; i++)
+        if (StoreDefinitionStars(store->rarity_pool[RARITY_LEGENDARY][i]) == stars)
+            out[count++] = store->rarity_pool[RARITY_LEGENDARY][i];
+    return count;
+}
+
+static void TestGiveLegendsOfStars(Player *player, const Store *store, int stars, int left_out) {
+    const cJSON *legends[TEST_LEGEND_CAPACITY];
+    int count = TestLegendsOfStars(store, stars, legends) - left_out;
     int first = -1;
-    assert(PlayerRosterAppendDefinitions(&player, legends, legend_count - 1, &first));
-    const cJSON *rolled[STORE_MAX_RESULTS] = {0};
-    for (uint32_t seed = 1; seed <= 40; seed++) {
-        uint32_t rng = seed;
-        assert(StoreRollPackDefinition(&store, &pack, &player, RARITY_LEGENDARY, rolled, 0, &rng) == missing);
+    assert(count >= 0 && PlayerRosterAppendDefinitions(player, legends, count, &first));
+}
+
+static const cJSON *TestRollLegendOfAtLeast(
+    Store *store,
+    const StorePackDef *pack,
+    const Player *player,
+    int lowest_stars,
+    const cJSON *const *rolled,
+    int rolled_count,
+    uint32_t seed
+) {
+    uint32_t rng = seed;
+    StoreHeroSlot slot = {RARITY_LEGENDARY, lowest_stars};
+    const cJSON *hero = StoreRollPackDefinition(store, pack, player, slot, rolled, rolled_count, &rng);
+    assert(hero && RarityFromString(JsonStr(hero, "rarity")) == RARITY_LEGENDARY);
+    return hero;
+}
+
+static const cJSON *TestRollLegend(
+    Store *store,
+    const StorePackDef *pack,
+    const Player *player,
+    const cJSON *const *rolled,
+    int rolled_count,
+    uint32_t seed
+) {
+    return TestRollLegendOfAtLeast(store, pack, player, STORE_LEGENDARY_STAR_MIN, rolled, rolled_count, seed);
+}
+
+static void TestLegendaryStarWeightsChooseTheStarTier(void) {
+    static Store store;
+    TestLoadLegendaryPool(&store);
+    Player player = TestStarterPlayer();
+    for (int stars = 1; stars <= STORE_LEGENDARY_STAR_MAX; stars++) {
+        StorePackDef pack = {0};
+        pack.legendary_star_weights[stars] = STORE_WEIGHT_TOTAL;
+        for (uint32_t seed = 1; seed <= TEST_LEGEND_SEEDS; seed++)
+            assert(StoreDefinitionStars(TestRollLegend(&store, &pack, &player, NULL, 0, seed)) == stars);
+    }
+    PlayerUnloadRoster(&player);
+    TestUnloadLegendaryPool(&store);
+}
+
+static void TestLegendaryNoDupeHoldsWithinTheRolledStarTier(void) {
+    static Store store;
+    TestLoadLegendaryPool(&store);
+    const cJSON *three_stars[TEST_LEGEND_CAPACITY];
+    int three_count = TestLegendsOfStars(&store, 3, three_stars);
+    assert(three_count > 1);
+    const cJSON *missing = three_stars[three_count - 1];
+    Player player = TestStarterPlayer();
+    TestGiveLegendsOfStars(&player, &store, 2, 0);
+    TestGiveLegendsOfStars(&player, &store, 3, 1);
+
+    StorePackDef two_star_pack = {.legendary_star_weights = {0, 0, STORE_WEIGHT_TOTAL, 0}};
+    StorePackDef three_star_pack = {.legendary_star_weights = {0, 0, 0, STORE_WEIGHT_TOTAL}};
+    for (uint32_t seed = 1; seed <= TEST_LEGEND_SEEDS; seed++) {
+        assert(StoreDefinitionStars(TestRollLegend(&store, &two_star_pack, &player, NULL, 0, seed)) == 2);
+        assert(TestRollLegend(&store, &three_star_pack, &player, NULL, 0, seed) == missing);
     }
 
-    rolled[0] = missing;
+    const cJSON *rolled[] = {missing};
     bool repeated_an_owned_legend = false;
-    for (uint32_t seed = 1; seed <= 40; seed++) {
-        uint32_t rng = seed;
-        const cJSON *again = StoreRollPackDefinition(&store, &pack, &player, RARITY_LEGENDARY, rolled, 1, &rng);
-        assert(again && RarityFromString(JsonStr(again, "rarity")) == RARITY_LEGENDARY);
+    for (uint32_t seed = 1; seed <= TEST_LEGEND_SEEDS; seed++) {
+        const cJSON *again = TestRollLegend(&store, &three_star_pack, &player, rolled, 1, seed);
+        assert(StoreDefinitionStars(again) == 3);
         repeated_an_owned_legend |= again != missing;
     }
     assert(repeated_an_owned_legend);
-
     PlayerUnloadRoster(&player);
-    for (int rarity = RARITY_COMMON; rarity <= RARITY_LEGENDARY; rarity++) MemFree((void *)store.rarity_pool[rarity]);
-    cJSON_Delete(store.catalog_root);
+    TestUnloadLegendaryPool(&store);
+}
+
+static void TestAcrossStarNoDupeFindsTheLastMissingLegendary(void) {
+    static Store store;
+    TestLoadLegendaryPool(&store);
+    const cJSON *three_stars[TEST_LEGEND_CAPACITY];
+    const cJSON *missing = three_stars[TestLegendsOfStars(&store, 3, three_stars) - 1];
+    Player player = TestStarterPlayer();
+    TestGiveLegendsOfStars(&player, &store, 1, 0);
+    TestGiveLegendsOfStars(&player, &store, 2, 0);
+    TestGiveLegendsOfStars(&player, &store, 3, 1);
+
+    StorePackDef bloodstone = {
+        .legendary_star_weights = {0, STORE_WEIGHT_TOTAL - 1, 0, 1}, .legendary_no_dupe_across_stars = true
+    };
+    StorePackDef per_star = bloodstone;
+    per_star.legendary_no_dupe_across_stars = false;
+    const cJSON *rolled[] = {missing};
+    for (uint32_t seed = 1; seed <= TEST_LEGEND_SEEDS; seed++) {
+        assert(TestRollLegend(&store, &bloodstone, &player, NULL, 0, seed) == missing);
+        assert(StoreDefinitionStars(TestRollLegend(&store, &per_star, &player, NULL, 0, seed)) == 1);
+        assert(StoreDefinitionStars(TestRollLegend(&store, &bloodstone, &player, rolled, 1, seed)) == 1);
+    }
+    PlayerUnloadRoster(&player);
+    TestUnloadLegendaryPool(&store);
+}
+
+static void TestShippedPacksMakeThreeStarLegendariesTheRarest(void) {
+    static Store store;
+    TestLoadLegendaryPool(&store);
+    cJSON *root = JsonLoadFile("data/store_packs.json");
+    int starred = 0;
+    bool iron_skips_three_stars = false;
+    bool bloodstone_spans_every_star = false;
+    const cJSON *json = NULL;
+    cJSON_ArrayForEach(json, cJSON_GetObjectItemCaseSensitive(root, "packs")) {
+        if (strcmp(JsonStr(json, "kind"), "hero")) continue;
+        assert(store.pack_count < STORE_PACK_CAPACITY);
+        StorePackDef *pack = &store.packs[store.pack_count++];
+        StrCopy(pack->id, sizeof(pack->id), JsonStr(json, "id"));
+        StoreLoadHeroContents(pack, json);
+        if (!StorePackRollsOpenLegendary(pack)) continue;
+        starred++;
+        const int *weights = pack->legendary_star_weights;
+        assert(weights[3] < weights[1] && weights[3] < weights[2]);
+        iron_skips_three_stars |= !strcmp(pack->id, "iron") && weights[3] == 0;
+        bloodstone_spans_every_star |= !strcmp(pack->id, "bloodstone") && pack->legendary_no_dupe_across_stars;
+        assert(pack->legendary_no_dupe_across_stars == !strcmp(pack->id, "bloodstone"));
+    }
+    assert(starred > 0 && iron_skips_three_stars && bloodstone_spans_every_star);
+    StoreValidateLegendaryStars(&store);
+    cJSON_Delete(root);
+    TestUnloadLegendaryPool(&store);
+}
+
+static void TestStarGuaranteesRollOnlyTheirTiers(void) {
+    static Store store;
+    TestLoadLegendaryPool(&store);
+    Player player = TestStarterPlayer();
+    StorePackDef standard = {.legendary_star_weights = {0, 2000, 7000, 1000}};
+    StorePackDef no_three_star = {.legendary_star_weights = {0, STORE_WEIGHT_TOTAL - 1, 1, 0}};
+    bool rolled_two_stars = false;
+    bool rolled_three_stars = false;
+    for (uint32_t seed = 1; seed <= TEST_LEGEND_SEEDS; seed++) {
+        int stars = StoreDefinitionStars(TestRollLegendOfAtLeast(&store, &standard, &player, 2, NULL, 0, seed));
+        assert(stars >= 2);
+        rolled_two_stars |= stars == 2;
+        rolled_three_stars |= stars == 3;
+        assert(StoreDefinitionStars(TestRollLegendOfAtLeast(&store, &standard, &player, 3, NULL, 0, seed)) == 3);
+        assert(StoreDefinitionStars(TestRollLegendOfAtLeast(&store, &no_three_star, &player, 2, NULL, 0, seed)) == 2);
+    }
+    assert(rolled_two_stars && rolled_three_stars);
+
+    TestGiveLegendsOfStars(&player, &store, 3, 0);
+    StorePackDef across_stars = {
+        .legendary_star_weights = {0, 2000, 6500, 1500}, .legendary_no_dupe_across_stars = true
+    };
+    for (uint32_t seed = 1; seed <= TEST_LEGEND_SEEDS; seed++)
+        assert(StoreDefinitionStars(TestRollLegendOfAtLeast(&store, &across_stars, &player, 3, NULL, 0, seed)) == 3);
+    PlayerUnloadRoster(&player);
+    TestUnloadLegendaryPool(&store);
+}
+
+static void TestStarGuaranteesFireEveryNthPackAndDeferTheLesserOne(void) {
+    StorePackDef pack = {
+        .id = "champion",
+        .kind = STORE_KIND_HERO,
+        .hero_count = 1,
+        .legendary_pity_packs = 2,
+        .legendary_star_guarantee_packs = {0, 0, 4, 8}
+    };
+    enum { OPENED = 25 };
+    static const int fired_on[OPENED + 1] = {
+        [4] = 2, [8] = 3, [9] = 2, [13] = 2, [16] = 3, [17] = 2, [21] = 2, [24] = 3
+    };
+    StoreStarCounters counters = {0};
+    for (int opened = 1; opened <= OPENED; opened++) {
+        int fired = StoreDueStarGuarantee(&pack, counters);
+        assert(fired == (opened == OPENED ? 2 : fired_on[opened]));
+        counters = StoreStarCountersAfter(&pack, counters, fired);
+    }
+
+    Player player = {0};
+    int left = 0;
+    assert(StorePackNextStarGuarantee(&pack, &player, &left) == 2 && left == 4);
+    assert(PlayerSetPacksSinceStarGuarantee(&player, "champion", 2, 3));
+    assert(PlayerSetPacksSinceStarGuarantee(&player, "champion", 3, 7));
+    assert(StorePackNextStarGuarantee(&pack, &player, &left) == 3 && left == 1);
+    assert(StorePackPullsUntilStarGuarantee(&pack, &player, 2) == 1);
+    StoreStarCounters read = StoreReadStarCounters(&pack, &player);
+    assert(StoreDueStarGuarantee(&pack, read) == 3);
+    StoreWriteStarCounters(&pack, &player, StoreStarCountersAfter(&pack, read, 3));
+    assert(PlayerPacksSinceStarGuarantee(&player, "champion", 3) == 0);
+    assert(StorePackNextStarGuarantee(&pack, &player, &left) == 2 && left == 1);
+    assert(PlayerSetPacksSinceStarGuarantee(&player, "champion", 2, 40));
+    assert(StorePackPullsUntilStarGuarantee(&pack, &player, 2) == 1);
+    assert(StoreStarCountersAfter(&pack, StoreReadStarCounters(&pack, &player), 3).packs_since_fired[2] == 3);
+
+    StorePackDef recruit = {.id = "recruit", .kind = STORE_KIND_HERO, .hero_count = 1};
+    assert(StorePackNextStarGuarantee(&recruit, &player, &left) == 0 && left == 0);
+    assert(StoreDueStarGuarantee(&recruit, StoreReadStarCounters(&recruit, &player)) == 0);
+}
+
+static void TestDueStarGuaranteeTakesThePitySlot(void) {
+    StorePackDef grand = {
+        .id = "grand_champion",
+        .kind = STORE_KIND_HERO,
+        .hero_count = 4,
+        .guaranteed_epic = 1,
+        .legendary_pity_packs = 10,
+        .weights = {[RARITY_RARE] = STORE_WEIGHT_TOTAL},
+        .legendary_star_guarantee_packs = {0, 0, 13, 64}
+    };
+    for (uint32_t seed = 1; seed <= 20; seed++) {
+        uint32_t rng = seed;
+        for (int slot = 0; slot < grand.hero_count; slot++) {
+            Rarity rarity = StorePackSlotRarity(&grand, slot, true, &rng);
+            int lowest_stars = StorePackSlotLowestStars(&grand, slot, 3);
+            assert((rarity == RARITY_LEGENDARY) == (slot == 1));
+            assert(lowest_stars == (slot == 1 ? 3 : STORE_LEGENDARY_STAR_MIN));
+            assert(StorePackSlotLowestStars(&grand, slot, 0) == STORE_LEGENDARY_STAR_MIN);
+        }
+    }
+}
+
+static void TestShippedStarGuaranteesWaitLongerThanThePity(void) {
+    static Store store;
+    cJSON *root = JsonLoadFile("data/store_packs.json");
+    int guaranteed = 0;
+    const cJSON *json = NULL;
+    cJSON_ArrayForEach(json, cJSON_GetObjectItemCaseSensitive(root, "packs")) {
+        if (strcmp(JsonStr(json, "kind"), "hero")) continue;
+        assert(store.pack_count < STORE_PACK_CAPACITY);
+        StorePackDef *pack = &store.packs[store.pack_count++];
+        StrCopy(pack->id, sizeof(pack->id), JsonStr(json, "id"));
+        StoreLoadHeroContents(pack, json);
+        const int *every = pack->legendary_star_guarantee_packs;
+        if (!StorePackHasStarGuarantee(pack, 2) && !StorePackHasStarGuarantee(pack, 3)) continue;
+        guaranteed++;
+        assert(!strcmp(pack->id, "champion") || !strcmp(pack->id, "grand_champion"));
+        assert(pack->legendary_pity_packs < every[2] && every[2] < every[3]);
+    }
+    assert(guaranteed == 2);
+    StoreValidateStarGuaranteeCounters(&store);
+    cJSON_Delete(root);
+}
+
+static char *TestProfileWithStarGuarantees(cJSON *root, cJSON *counters) {
+    cJSON *store = cJSON_GetObjectItemCaseSensitive(root, "store");
+    cJSON_DeleteItemFromObjectCaseSensitive(store, PROGRESSION_STAR_GUARANTEE_KEY);
+    if (counters) cJSON_AddItemToObject(store, PROGRESSION_STAR_GUARANTEE_KEY, counters);
+    return cJSON_PrintUnformatted(root);
+}
+
+static cJSON *TestChampionStarCounters(const char *tier, double packs) {
+    cJSON *counters = cJSON_CreateObject();
+    cJSON *champion = cJSON_AddObjectToObject(counters, "champion");
+    cJSON_AddNumberToObject(champion, "2", 12);
+    cJSON_AddNumberToObject(champion, tier, packs);
+    return counters;
+}
+
+static bool TestLoadsStarGuarantees(cJSON *root, cJSON *counters, Player *loaded) {
+    char *text = TestProfileWithStarGuarantees(root, counters);
+    ProgressionInitializePlayerDefaults(loaded);
+    bool ok = ProgressionLoadFromText(loaded, text, "star guarantee test");
+    cJSON_free(text);
+    return ok;
+}
+
+static void TestStarGuaranteeCountersSurviveASave(void) {
+    Player saved = {0};
+    ProgressionInitializePlayerDefaults(&saved);
+    assert(PlayerSetPacksSinceStarGuarantee(&saved, "champion", 2, 12));
+    assert(PlayerSetPacksSinceStarGuarantee(&saved, "champion", 3, 412));
+    assert(PlayerSetPacksSinceStarGuarantee(&saved, "grand_champion", 3, 5));
+    char *text = ProgressionSerialize(&saved);
+    assert(text);
+    cJSON *root = cJSON_Parse(text);
+    const cJSON *store = cJSON_GetObjectItemCaseSensitive(root, "store");
+    const cJSON *champion = cJSON_GetObjectItemCaseSensitive(
+        cJSON_GetObjectItemCaseSensitive(store, PROGRESSION_STAR_GUARANTEE_KEY), "champion"
+    );
+    assert(JsonInt(champion, "2") == 12 && JsonInt(champion, "3") == 412);
+    Player loaded = {0};
+    ProgressionInitializePlayerDefaults(&loaded);
+    assert(ProgressionLoadFromText(&loaded, text, "star guarantee test"));
+    cJSON_free(text);
+    assert(loaded.star_guarantee_count == 3);
+    assert(PlayerPacksSinceStarGuarantee(&loaded, "champion", 2) == 12);
+    assert(PlayerPacksSinceStarGuarantee(&loaded, "champion", 3) == 412);
+    assert(PlayerPacksSinceStarGuarantee(&loaded, "grand_champion", 3) == 5);
+    assert(PlayerPacksSinceStarGuarantee(&loaded, "grand_champion", 2) == 0);
+
+    assert(TestLoadsStarGuarantees(root, NULL, &loaded) && loaded.star_guarantee_count == 0);
+    assert(TestLoadsStarGuarantees(root, TestChampionStarCounters("9", 4), &loaded));
+    assert(loaded.star_guarantee_count == 1 && PlayerPacksSinceStarGuarantee(&loaded, "champion", 2) == 12);
+    assert(!TestLoadsStarGuarantees(root, TestChampionStarCounters("3", -1), &loaded));
+    assert(!TestLoadsStarGuarantees(root, TestChampionStarCounters("3", 1.5), &loaded));
+    cJSON *flat = cJSON_CreateObject();
+    cJSON_AddNumberToObject(flat, "champion", 4);
+    assert(!TestLoadsStarGuarantees(root, flat, &loaded));
+    assert(!TestLoadsStarGuarantees(root, cJSON_CreateArray(), &loaded));
+    cJSON_Delete(root);
+
+    Player full = {0};
+    for (int i = 0; i < PLAYER_STAR_GUARANTEE_CAPACITY; i++)
+        assert(PlayerSetPacksSinceStarGuarantee(&full, TextFormat("pack_%d", i), 3, i));
+    assert(!PlayerCanTrackStarGuarantee(&full, "pack_0", 2));
+    assert(PlayerSetPacksSinceStarGuarantee(&full, "pack_4", 3, 40));
+    assert(PlayerPacksSinceStarGuarantee(&full, "pack_4", 3) == 40);
 }
 
 static void TestStoreDialogTextFitsRussianPackNames(void) {
@@ -6448,6 +7132,110 @@ static void TestVoucherOfferWinsOnlyWhenOwned(void) {
     pack.has_paid_offer = false;
     StoreOffer find = StoreActiveOffer(&pack, &player);
     assert(find.voucher == 3 && !StoreOfferAffordable(find, &player));
+}
+
+static void TestPackPityCountsPacksOnEachPacksOwnCounter(void) {
+    StorePackDef champion = {.id = "champion", .kind = STORE_KIND_HERO, .hero_count = 1, .legendary_pity_packs = 100};
+    StorePackDef booster = {
+        .id = "booster_giant",
+        .rotation_group = "booster",
+        .kind = STORE_KIND_HERO,
+        .hero_count = 1,
+        .legendary_pity_packs = 100
+    };
+    StorePackDef recruit = {.id = "recruit", .kind = STORE_KIND_HERO, .hero_count = 1};
+    assert(!strcmp(StorePackPityCounter(&champion), "champion") && !strcmp(StorePackPityCounter(&booster), "booster"));
+
+    Player player = {0};
+    assert(StorePackPullsUntilLegendary(&champion, &player) == 100);
+    assert(PlayerSetPacksSinceLegendary(&player, "champion", 97));
+    assert(StorePackPullsUntilLegendary(&champion, &player) == 3);
+    assert(StorePackPullsUntilLegendary(&booster, &player) == 100);
+    assert(StorePackPullsUntilLegendary(&recruit, &player) == 0 && !StorePackPityDue(&recruit, 1000));
+    assert(!StorePackPityDue(&champion, 98) && StorePackPityDue(&champion, 99));
+    assert(PlayerSetPacksSinceLegendary(&player, "champion", 140));
+    assert(StorePackPullsUntilLegendary(&champion, &player) == 1 && player.pack_pity_count == 1);
+
+    Rarity missed[] = {RARITY_RARE, RARITY_EPIC, RARITY_RARE};
+    Rarity found[] = {RARITY_RARE, RARITY_LEGENDARY};
+    assert(StorePacksSinceLegendaryAfter(5, missed, 3) == 6);
+    assert(StorePacksSinceLegendaryAfter(5, found, 2) == 0);
+
+    Player full = {0};
+    for (int i = 0; i < PLAYER_PACK_PITY_CAPACITY; i++)
+        assert(PlayerSetPacksSinceLegendary(&full, TextFormat("pack_%d", i), i));
+    assert(!PlayerCanTrackPackPity(&full, "one_more") && !PlayerSetPacksSinceLegendary(&full, "one_more", 1));
+    assert(PlayerSetPacksSinceLegendary(&full, "pack_3", 30) && PlayerPacksSinceLegendary(&full, "pack_3") == 30);
+}
+
+static void TestDuePackHoldsALegendaryInItsFirstRolledSlot(void) {
+    StorePackDef flash = {
+        .id = "flash",
+        .kind = STORE_KIND_HERO,
+        .hero_count = 3,
+        .guaranteed_epic = 1,
+        .legendary_pity_packs = 4,
+        .weights = {[RARITY_RARE] = STORE_WEIGHT_TOTAL}
+    };
+    for (uint32_t seed = 1; seed <= 20; seed++) {
+        uint32_t due_rng = seed, early_rng = seed;
+        Rarity due[3], early[3];
+        for (int slot = 0; slot < 3; slot++) {
+            due[slot] = StorePackSlotRarity(&flash, slot, StorePackPityDue(&flash, 3), &due_rng);
+            early[slot] = StorePackSlotRarity(&flash, slot, StorePackPityDue(&flash, 2), &early_rng);
+        }
+        assert(due[0] == RARITY_EPIC && due[1] == RARITY_LEGENDARY && due[2] == RARITY_RARE);
+        assert(early[0] == RARITY_EPIC && early[1] == RARITY_RARE && early[2] == RARITY_RARE);
+    }
+}
+
+static char *TestProfileWithPackPity(cJSON *root, cJSON *counters) {
+    cJSON *store = cJSON_GetObjectItemCaseSensitive(root, "store");
+    cJSON_DeleteItemFromObjectCaseSensitive(store, PROGRESSION_PACK_PITY_KEY);
+    if (counters) cJSON_AddItemToObject(store, PROGRESSION_PACK_PITY_KEY, counters);
+    return cJSON_PrintUnformatted(root);
+}
+
+static void TestPackPityLoadsFromServerProfilesAndOlderSaves(void) {
+    Player defaults = {0};
+    ProgressionInitializePlayerDefaults(&defaults);
+    char *text = ProgressionSerialize(&defaults);
+    assert(text);
+    cJSON *root = cJSON_Parse(text);
+    cJSON_free(text);
+    cJSON_DeleteItemFromObjectCaseSensitive(
+        cJSON_GetObjectItemCaseSensitive(root, "store"), PROGRESSION_RELEASED_CLIENT_PITY_KEY
+    );
+
+    char *older = TestProfileWithPackPity(root, NULL);
+    Player from_older = {0};
+    ProgressionInitializePlayerDefaults(&from_older);
+    assert(ProgressionLoadFromText(&from_older, older, "pity test") && from_older.pack_pity_count == 0);
+    cJSON_free(older);
+
+    cJSON *counters = cJSON_CreateObject();
+    cJSON_AddNumberToObject(counters, "flash", 63);
+    cJSON_AddNumberToObject(counters, "grand_champion", 9);
+    char *server = TestProfileWithPackPity(root, counters);
+    Player from_server = {0};
+    ProgressionInitializePlayerDefaults(&from_server);
+    assert(ProgressionLoadFromText(&from_server, server, "pity test"));
+    assert(PlayerPacksSinceLegendary(&from_server, "flash") == 63);
+    assert(PlayerPacksSinceLegendary(&from_server, "grand_champion") == 9);
+    cJSON_free(server);
+
+    cJSON *negative_counters = cJSON_CreateObject();
+    cJSON_AddNumberToObject(negative_counters, "flash", -1);
+    char *negative = TestProfileWithPackPity(root, negative_counters);
+    Player rejected = {0};
+    ProgressionInitializePlayerDefaults(&rejected);
+    assert(!ProgressionLoadFromText(&rejected, negative, "pity test") && rejected.pack_pity_count == 0);
+    cJSON_free(negative);
+
+    char *listed = TestProfileWithPackPity(root, cJSON_CreateArray());
+    assert(!ProgressionLoadFromText(&rejected, listed, "pity test"));
+    cJSON_free(listed);
+    cJSON_Delete(root);
 }
 
 static void TestAscendedHeroLoadsAboveTheOldLevelCap(void) {
@@ -6678,6 +7466,9 @@ static void PvpTestListRanksWeakestFirst(const PvpSquadList *list) {
         ranked[squad] = true;
         if (rank == 0) continue;
         int weaker = list->squads[rank - 1];
+        bool elite = table->squads[squad].elite, after_elite = table->squads[weaker].elite;
+        assert(elite || !after_elite);
+        if (elite != after_elite) continue;
         int gap = table->squads[squad].strength - table->squads[weaker].strength;
         assert(gap > 0 || (gap == 0 && squad > weaker));
     }
@@ -6686,6 +7477,8 @@ static void PvpTestListRanksWeakestFirst(const PvpSquadList *list) {
 static void TestPvpSquadsRankFromWeakestToStrongest(void) {
     const PvpTable *table = PvpTableEnsure();
     PvpTestListRanksWeakestFirst(&table->ladder);
+    assert(table->squads[table->ladder.squads[table->ladder.count - 1]].elite);
+    assert(!table->squads[table->ladder.squads[0]].elite);
     assert(PvpBotStrengthRank(0) == 0);
     assert(PvpBotStrengthRank(table->bot_count - 1) == table->ladder.count - 1);
 }
@@ -6716,6 +7509,74 @@ static void TestPvpOpponentsGrowStrongerUpTheLadder(void) {
     assert(o.level >= 1 && o.level <= 3 && o.rune_count == 0);
     PvpOpponent veteran = PvpOpponentGenerate(100, 3000, 20000, 7);
     assert(veteran.level <= PVP_LOCAL_MAX_LEVEL && veteran.rune_count > 0 && veteran.rune_count <= RUNE_SLOT_COUNT);
+}
+
+static void TestPvpBotRunesComeWithTheSquadNotTheViewersLevel(void) {
+    for (unsigned seed = 1; seed <= 40; seed++) {
+        PvpOpponent novice = PvpOpponentGenerate(1, 3000, 20000, seed);
+        PvpOpponent veteran = PvpOpponentGenerate(100, 3000, 20000, seed);
+        assert(novice.squad == veteran.squad && novice.rune_count == veteran.rune_count);
+        assert(!memcmp(novice.rune_defs, veteran.rune_defs, sizeof(novice.rune_defs)));
+    }
+}
+
+static bool TestRosterWearsGear(const BattleRoster *roster) {
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++)
+        if (roster->present[slot] && GearHasEquipped(&roster->chars[slot])) return true;
+    return false;
+}
+
+static void TestPvpTopBotFieldsMaxedHeroesInMythicGear(void) {
+    static BattleRoster roster;
+    const PvpTable *table = PvpTableEnsure();
+    for (unsigned seed = 1; seed <= 12; seed++) {
+        PvpOpponent o = PvpOpponentFromBot(table->bot_count - 1, 10, 0, 20000, seed);
+        PvpOpponentRoster(&roster, &o);
+        assert(o.rune_count == RUNE_SLOT_COUNT);
+        for (int i = 0; i < RUNE_NORMAL_SLOT_COUNT; i++) assert(RuneDefAt(o.rune_defs[i])->rarity == RARITY_MYTHIC);
+        assert(RuneDefAt(o.rune_defs[RUNE_PRESTIGE_SLOT])->rarity == RUNE_PRESTIGE_RARITY);
+        for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+            const Character *ch = &roster.chars[slot];
+            assert(roster.present[slot] && ch->ascended && ch->rarity >= RARITY_EPIC);
+            assert(GearSlotCount(ch) == GEAR_SLOT_CAPACITY);
+            for (int g = 0; g < GearSlotCount(ch); g++) assert(GearInSlot(ch, g)->rarity == RARITY_MYTHIC);
+        }
+        PvpOpponent newcomer = PvpOpponentFromBot(0, 10, 0, 20000, seed);
+        PvpOpponentRoster(&roster, &newcomer);
+        assert(newcomer.rune_count == 0 && !TestRosterWearsGear(&roster));
+    }
+}
+
+static void TestAscendedHeroesShowAsMythic(void) {
+    Character plain = {.rarity = RARITY_LEGENDARY, .original_rarity = RARITY_LEGENDARY};
+    assert(CharacterShownRarity(&plain) == RARITY_LEGENDARY);
+    GearApplyAscension(&plain);
+    assert(CharacterShownRarity(&plain) == RARITY_MYTHIC && plain.original_rarity == RARITY_LEGENDARY);
+
+    static BattleRoster roster;
+    static HeroCard card;
+    PvpOpponent top = PvpOpponentFromBot(PvpTableEnsure()->bot_count - 1, 10, 0, 20000, 3);
+    PvpOpponentRoster(&roster, &top);
+    HeroCardBuild(&card, &roster.chars[0]);
+    assert(!strcmp(card.rarity, LocGet("HODA_RARITY_MYTHIC")));
+}
+
+static void TestPvpBotGearTravelsInTheReplay(void) {
+    static BattleRoster roster, loaded;
+    PvpOpponent o = PvpOpponentFromBot(PvpTableEnsure()->bot_count - 1, 10, 0, 20000, 5);
+    PvpOpponentRoster(&roster, &o);
+    cJSON *json = BattleReplayRosterJson(&roster, false);
+    assert(!cJSON_GetObjectItemCaseSensitive(json, BATTLE_HERO_BUILDS_FIELD));
+    cJSON *catalog_root = BattleReplayCatalogLoad();
+    assert(BattleReplayRosterLoad(&loaded, cJSON_GetObjectItemCaseSensitive(catalog_root, "characters"), json, false));
+    assert(!loaded.hero_builds && loaded.rune_def_count == roster.rune_def_count);
+    for (int slot = 0; slot < SQUAD_SLOT_COUNT; slot++) {
+        const Character *sent = &roster.chars[slot], *read = &loaded.chars[slot];
+        assert(read->ascended == sent->ascended && read->level == sent->level);
+        assert(!memcmp(read->gear.defs, sent->gear.defs, sizeof(sent->gear.defs)));
+    }
+    cJSON_Delete(catalog_root);
+    cJSON_Delete(json);
 }
 
 static void TestPvpMatchingStaysInTheTrophyWindow(void) {
@@ -6762,28 +7623,75 @@ static void TestPvpNextsResetDaily(void) {
     assert(PvpNextsRemaining(&pvp, day + NEXUS_SECONDS_PER_DAY) == limit - 1);
 }
 
+typedef struct {
+    Character heroes[2];
+    Ability abilities[2];
+} TestDefenders;
+
+static void TestDefenderSquads(Player *player, TestDefenders *defenders, int strong_squad) {
+    memset(player, 0, sizeof(*player));
+    TestCharacter(&defenders->heroes[0], &defenders->abilities[0], "UNIT_A", "ABILITY_DAMAGE", TARGET_ONE, 1, 1);
+    TestCharacter(
+        &defenders->heroes[1], &defenders->abilities[1], "UNIT_B", "ABILITY_DAMAGE", TARGET_ALL, 1000000, 100000000
+    );
+    player->roster = defenders->heroes;
+    player->roster_count = 2;
+    player->level = 10;
+    for (int q = 0; q < PLAYER_MAX_SQUADS; q++)
+        for (int s = 0; s < SQUAD_SLOT_COUNT; s++) player->squads[q][s] = -1;
+    player->squads[0][0] = strong_squad == 0;
+    player->squads[1][0] = strong_squad == 1;
+    player->current_squad = 1;
+}
+
 static void TestPvpDefenseLogWaitsForFirstBattleAndCapsAttacks(void) {
     const PvpRules *rules = &PvpTableEnsure()->rules;
     long long now = 20000 * NEXUS_SECONDS_PER_DAY;
-    PlayerPvp fresh = {0};
-    assert(PvpSimulateDefense(&fresh, 10, now) == 0 && fresh.history_count == 0);
+    static Player player, copy;
+    static TestDefenders defenders, copied;
+    TestDefenderSquads(&player, &defenders, 0);
+    assert(PvpSimulateDefense(&player, now) == 0 && player.pvp.history_count == 0);
 
-    PlayerPvp pvp = {.trophies = 500};
+    PlayerPvp *pvp = &player.pvp;
+    pvp->trophies = 500;
     PvpOpponent o = PvpOpponentGenerate(10, 500, PvpDay(now), 9);
-    PvpRecordAttack(&pvp, &o, true, now);
-    assert(pvp.defense_checked_at == now);
-    assert(PvpSimulateDefense(&pvp, 10, now + rules->attack_interval_seconds - 1) == 0);
+    PvpRecordAttack(pvp, &o, true, now);
+    assert(pvp->defense_checked_at == now);
+    assert(PvpSimulateDefense(&player, now + rules->attack_interval_seconds - 1) == 0);
     long long later = now + 100LL * rules->attack_interval_seconds;
-    assert(PvpSimulateDefense(&pvp, 10, later) == rules->max_attacks_per_login);
-    assert(pvp.history_count == 1 + rules->max_attacks_per_login);
-    assert(pvp.defense_wins + pvp.defense_losses == rules->max_attacks_per_login);
-    assert(pvp.history[0].defense && pvp.history[0].at == later);
-    assert(PvpSimulateDefense(&pvp, 10, later) == 0);
+    assert(PvpSimulateDefense(&player, later) == rules->max_attacks_per_login);
+    assert(pvp->history_count == 1 + rules->max_attacks_per_login);
+    assert(pvp->defense_wins + pvp->defense_losses == rules->max_attacks_per_login);
+    assert(pvp->history[0].defense && pvp->history[0].at == later);
+    assert(PvpSimulateDefense(&player, later) == 0);
 
-    PlayerPvp copy = {.trophies = 500};
-    PvpRecordAttack(&copy, &o, true, now);
-    PvpSimulateDefense(&copy, 10, later);
-    assert(memcmp(&copy, &pvp, sizeof(copy)) == 0);
+    TestDefenderSquads(&copy, &copied, 0);
+    copy.pvp.trophies = 500;
+    PvpRecordAttack(&copy.pvp, &o, true, now);
+    PvpSimulateDefense(&copy, later);
+    assert(memcmp(&copy.pvp, pvp, sizeof(copy.pvp)) == 0);
+}
+
+static void TestPvpTheFirstSquadDefends(void) {
+    const PvpRules *rules = &PvpTableEnsure()->rules;
+    long long now = 20000 * NEXUS_SECONDS_PER_DAY;
+    long long later = now + 100LL * rules->attack_interval_seconds;
+    static Player player;
+    static TestDefenders defenders;
+    for (int strong = 0; strong <= 1; strong++) {
+        TestDefenderSquads(&player, &defenders, strong);
+        player.pvp.trophies = 500;
+        PvpOpponent o = PvpOpponentGenerate(10, 500, PvpDay(now), 9);
+        PvpRecordAttack(&player.pvp, &o, true, now);
+        int trophies = player.pvp.trophies;
+        assert(PvpSimulateDefense(&player, later) == rules->max_attacks_per_login);
+        bool held = strong == 0;
+        assert(player.pvp.defense_wins == (held ? rules->max_attacks_per_login : 0));
+        const PlayerPvpBattle *first = &player.pvp.history[rules->max_attacks_per_login - 1];
+        assert(first->won == held);
+        assert(first->trophy_delta == PvpBotDefenseTrophies(first->opponent_trophies, trophies, !held));
+        assert(held ? first->trophy_delta >= 0 : first->trophy_delta < 0);
+    }
 }
 
 static void TestPvpRevengeRebuildsTheSameOpponent(void) {
@@ -6803,7 +7711,44 @@ static void TestPvpRevengeRebuildsTheSameOpponent(void) {
     assert(!PvpCanRevenge(&battle));
     battle.revenged = false;
     battle.won = true;
-    assert(!PvpCanRevenge(&battle));
+    assert(PvpCanRevenge(&battle) && !PvpRevengesAPlayer(&battle));
+    StrCopy(battle.opponent_id, sizeof(battle.opponent_id), "attacker");
+    assert(!PvpCanRevenge(&battle) && PvpRevengesAPlayer(&battle));
+    battle.defense = false;
+    assert(!PvpRevengesAPlayer(&battle));
+}
+
+static void TestPvpTheSamePlayerCanBeAttackedOncePerDay(void) {
+    PlayerPvp pvp = {0};
+    long long now = 20000 * NEXUS_SECONDS_PER_DAY;
+    PvpOpponent rival = PvpOpponentFromDuel("rival", "Rival", 10, 900, 0, 3);
+    PlayerPvpBattle attack = PvpRecordAttack(&pvp, &rival, true, now);
+    assert(!strcmp(attack.opponent_id, "rival") && !strcmp(attack.opponent, "Rival") && !attack.event);
+    assert(PvpAttackCooldownLeft(&pvp, "rival", now + 60) == PVP_REPEAT_ATTACK_SECONDS - 60);
+    assert(PvpAttackCooldownLeft(&pvp, "rival", now + PVP_REPEAT_ATTACK_SECONDS) == 0);
+    assert(PvpAttackCooldownLeft(&pvp, "someone else", now) == 0);
+    PlayerPvpBattle event = PvpRecordEventAttack(&pvp, &rival, true, now + 10);
+    assert(event.event && !strcmp(event.opponent_id, "rival") && event.banners > 0);
+    assert(pvp.attacked_count == 1 && pvp.attacked[0].at == now + 10);
+
+    for (int i = 0; i < PVP_ATTACKED_CAPACITY + 2; i++) PvpNoteAttack(&pvp, TextFormat("player-%d", i), now + 20 + i);
+    assert(pvp.attacked_count == PVP_ATTACKED_CAPACITY);
+    assert(PvpAttackCooldownLeft(&pvp, "rival", now + 100) == 0);
+    assert(PvpAttackCooldownLeft(&pvp, TextFormat("player-%d", PVP_ATTACKED_CAPACITY + 1), now + 100) > 0);
+    PvpNoteAttack(&pvp, "late", now + PVP_REPEAT_ATTACK_SECONDS + 100);
+    assert(pvp.attacked_count == 1 && !strcmp(pvp.attacked[0].id, "late"));
+}
+
+static void TestPvpCooldownMessageNamesTheTimeLeft(void) {
+    char hours[GOALS_TEXT_SIZE], expected[GOALS_TEXT_SIZE], message[GOALS_TEXT_SIZE];
+    StrReplaceToken(hours, sizeof(hours), LocGet("HOURS"), "[number]", "5");
+    StrReplaceToken(expected, sizeof(expected), LocGet("LEADERBOARD_DOUBLE_TAP_MESSAGE"), "{0}", hours);
+    GoalsCooldownMessage(message, sizeof(message), "LEADERBOARD_DOUBLE_TAP_MESSAGE", 5 * GOALS_HOUR + 10);
+    assert(!strcmp(message, expected) && strstr(message, "{0}") == NULL);
+    char minute[GOALS_TEXT_SIZE], span[GOALS_TEXT_SIZE];
+    StrReplaceToken(minute, sizeof(minute), LocGet("MINUTE"), "[number]", "1");
+    GoalsTimeSpanText(span, sizeof(span), GOALS_MINUTE + 59);
+    assert(!strcmp(span, minute));
 }
 
 static void TestPvpEveryPooledSquadFights(void) {
@@ -6973,6 +7918,12 @@ static void TestPvpSaveRoundTrip(void) {
     PvpOpponent o = PvpOpponentGenerate(5, 0, 20000, 21);
     PvpRecordAttack(&saved.pvp, &o, true, 1700000000);
     saved.pvp.history[0].revenged = true;
+    PvpOpponent rival = PvpOpponentFromDuel("rival", "Rival", 10, 900, 0, 3);
+    PvpRecordEventAttack(&saved.pvp, &rival, true, 1700000100);
+    PlayerPvpBattle defended = {.at = 1700000200, .level = 12, .defense = true, .won = true, .event = true};
+    StrCopy(defended.opponent, sizeof(defended.opponent), "Hawke");
+    StrCopy(defended.opponent_id, sizeof(defended.opponent_id), "attacker");
+    PvpHistoryPush(&saved.pvp, &defended);
     saved.pvp.nexts_used = 2;
     saved.pvp.nexts_day = 20000;
     saved.pvp.event = (PlayerPvpEvent){.cycle = 700, .banners = 90, .milestones_paid = 1, .buffed = true};
@@ -7687,6 +8638,7 @@ static Character PvpTestHero(const char *id, Rarity rarity, Faction faction, boo
     Character ch = {0};
     StrCopy(ch.id, sizeof(ch.id), id);
     ch.rarity = rarity;
+    ch.original_rarity = rarity;
     ch.faction = faction;
     ch.giant = giant;
     if (group) StrCopy(ch.groups[ch.group_count++], sizeof(ch.groups[0]), group);
@@ -7742,6 +8694,21 @@ static void TestPvpSquadRulesCapAndListRarities(void) {
     PvpSquadRules open = {0};
     assert(PvpTestJudge(&open, &rare, &rare, &legendary_giant, NULL, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_ALLOWED);
     assert(PvpTestJudge(&capped, NULL, NULL, NULL, NULL, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_EMPTY);
+}
+
+static void TestPvpSquadRulesJudgeTheRarityOnTheCard(void) {
+    PvpSquadRules rares = PvpTestRules(
+        "{\"max_rarity\":\"\",\"rarities\":[\"Rare\"],\"unique_heroes\":false,"
+        "\"members\":{\"factions\":[],\"groups\":[]},\"sides\":[]}"
+    );
+    Character drawn_legendary = PvpTestHero("UNIT_A", RARITY_RARE, FACTION_RED, false, NULL);
+    drawn_legendary.original_rarity = RARITY_LEGENDARY;
+    Character drawn_rare = PvpTestHero("UNIT_B", RARITY_EPIC, FACTION_RED, false, NULL);
+    drawn_rare.original_rarity = RARITY_RARE;
+    assert(PvpTestJudge(&rares, &drawn_legendary, NULL, NULL, NULL, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_RARITY);
+    assert(PvpTestJudge(&rares, &drawn_rare, NULL, NULL, NULL, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_ALLOWED);
+    drawn_rare.ascended = true;
+    assert(PvpTestJudge(&rares, &drawn_rare, NULL, NULL, NULL, PVP_RULE_ANY_SIDE).kind == PVP_SQUAD_RARITY);
 }
 
 static void TestPvpSquadRulesFactionsLetLargeCreaturesJoinButGroupsDoNot(void) {
@@ -7800,6 +8767,7 @@ static void PvpTestFieldPooledSquad(
         const cJSON *def = CatalogFindCharacter(catalog, cell->id);
         assert(def);
         CharacterParse(def, &heroes[slot], &ability);
+        heroes[slot].ascended = cell->ascended;
         fielded[slot] = &heroes[slot];
     }
 }
@@ -8008,6 +8976,46 @@ static void TestCreatureClipFramesStayOnIdleGround(void) {
     assert(UnitClipsHoldGround("mnt_sw_greywardenknight_t1_rl.glb"));
     assert(!UnitClipsHoldGround("client-additional-data/char_pack/x/hm_sw_advisorcullen_t1_rl.glb"));
     assert(!UnitClipsHoldGround("c_wisp_common_t1_rl.glb"));
+}
+
+static void TestBootsSkinnedToTheShinStillStandOnTheGround(void) {
+    BoneInfo bones[3] = {
+        {.name = "HumanFemale_LeftUpperLeg", .parent = -1},
+        {.name = "HumanFemale_LeftLowerLeg", .parent = 0},
+        {.name = "HumanFemale_LeftFoot", .parent = 1},
+    };
+    float rest[9] = {0.0f, 0.9f, 0.0f, 0.0f, 0.4f, 0.0f, 0.0f, 0.0f, 0.1f};
+    float idle[9] = {0.0f, 0.8f, 0.0f, 0.0f, 0.3f, 0.0f, 0.0f, -0.1f, 0.1f};
+    unsigned char bone_ids[12] = {0, 0, 0, 0, 1, 0, 0, 0, 1, 2, 0, 0};
+    float bone_weights[12] = {1, 0, 0, 0, 1, 0, 0, 0, 0.8f, 0.2f, 0, 0};
+    Mesh mesh = {
+        .vertexCount = 3, .vertices = rest, .animVertices = idle, .boneIds = bone_ids, .boneWeights = bone_weights
+    };
+    Model model = {.meshCount = 1, .meshes = &mesh, .boneCount = 3, .bones = bones};
+    assert(isinf(UnitLowestVertexY(model, false, UnitBoneIsFoot)));
+    assert(UnitLowestSoleY(model, false) == 0.0f);
+    assert(UnitLowestSoleY(model, true) == -0.1f);
+    assert(UnitGroundContactY(model) == -0.1f);
+
+    idle[4] = -0.2f;
+    bone_weights[8] = 0.2f;
+    bone_weights[9] = 0.8f;
+    assert(UnitLowestSoleY(model, true) == -0.1f);
+
+    BoneInfo creature_bones[3] = {
+        {.name = "Ogre_Hips", .parent = -1}, {.name = "Ogre_Calf", .parent = 0}, {.name = "Ogre_Claw", .parent = 1}
+    };
+    model.bones = creature_bones;
+    assert(isinf(UnitLowestSoleY(model, true)));
+}
+
+static void TestGalleryFxPlayOnTheGalleryCamera(void) {
+    HomeBackground scene = {0};
+    scene.cam.position = (Vector3){-0.53f, 1.87f, 15.89f};
+    scene.gallery_cam.position = (Vector3){-197.80f, 2.40f, 12.29f};
+    assert(Vector3Equals(HomeBackgroundViewCamera(&scene).position, scene.cam.position));
+    HomeBackgroundSetGalleryView(&scene, true);
+    assert(Vector3Equals(HomeBackgroundViewCamera(&scene).position, scene.gallery_cam.position));
 }
 
 static void TestStillRootHandsItsSkinToTheMovingHips(void) {
@@ -8441,14 +9449,14 @@ static void TestFortifyBonusesFollowThe544Calculator(void) {
     );
     Character golem = FortifyTestHero(catalog, "UNIT_INFERNOGOLEM", TIER_IV);
     GearApplyAscension(&golem);
-    AssertFortifyBonus(&golem, 2, FortifyTestChild("UNIT_OGRE", TIER_III, false), FORTIFY_STAT_HEALTH, 222, 33, 44);
+    AssertFortifyBonus(&golem, 2, FortifyTestChild("UNIT_OGRE", TIER_III, false), FORTIFY_STAT_HEALTH, 218, 33, 44);
 
     int power = CharacterStatPower(&golem), health = CharacterStatHealth(&golem);
     golem.fortify[2] = FortifyTestChild("UNIT_OGRE", TIER_III, false);
     golem.fortify[1] = FortifyTestChild("UNIT_ELVENMAGE", TIER_I, false);
     int power_bonus = FortifyBonusTotal(FortifySlotBonus(&golem, 1, &golem.fortify[1]));
-    assert(power_bonus > 0 && FortifyBonusPower(&golem) == power_bonus && FortifyBonusHealth(&golem) == 299);
-    assert(CharacterStatPower(&golem) == power + power_bonus && CharacterStatHealth(&golem) == health + 299);
+    assert(power_bonus > 0 && FortifyBonusPower(&golem) == power_bonus && FortifyBonusHealth(&golem) == 295);
+    assert(CharacterStatPower(&golem) == power + power_bonus && CharacterStatHealth(&golem) == health + 295);
     assert(CharacterLevelPower(&golem) == power && CharacterLevelHealth(&golem) == health);
     cJSON_Delete(root);
 }
@@ -10509,6 +11517,7 @@ int main(void) {
     TestPvpEventResultsKeepNineteenUnclaimedFirst();
     TestPvpEventMatchmakingFollowsBanners();
     TestPvpSquadRulesCapAndListRarities();
+    TestPvpSquadRulesJudgeTheRarityOnTheCard();
     TestPvpSquadRulesFactionsLetLargeCreaturesJoinButGroupsDoNot();
     TestPvpSquadRulesSidesPickTheFirstSideTheWholeSquadFits();
     TestPvpRuleEventBotsDefendWithSquadsTheRuleAllows();
@@ -10554,8 +11563,15 @@ int main(void) {
     TestPvpMatchWaitsForTheServersReply();
     TestPvpOpponentFromServerMatchRebuildsTheBot();
     TestPvpDefenseLogWaitsForFirstBattleAndCapsAttacks();
+    TestPvpTheFirstSquadDefends();
     TestPvpRevengeRebuildsTheSameOpponent();
+    TestPvpTheSamePlayerCanBeAttackedOncePerDay();
+    TestPvpCooldownMessageNamesTheTimeLeft();
     TestPvpEveryPooledSquadFights();
+    TestPvpBotRunesComeWithTheSquadNotTheViewersLevel();
+    TestPvpTopBotFieldsMaxedHeroesInMythicGear();
+    TestPvpBotGearTravelsInTheReplay();
+    TestAscendedHeroesShowAsMythic();
     TestNewsFeedLeadsWithAnnouncementsWhileTheyRun();
     TestAnnouncementsAndTheEventBuffCapReadInEveryLanguage();
     TestPvpOpponentsFightUnderTheStatBudgetOnlyWhenTheRuleIsOn();
@@ -10604,6 +11620,7 @@ int main(void) {
     TestGearCatalogIsComplete();
     TestGearSlotCountDecidesPrestigeSlot();
     TestGearEquipRules();
+    TestGearLimitsNameEveryCategory();
     TestGearCategoriesUseOrAndAllSemantics();
     TestGearSellValueAndPrestigeUnlock();
     TestGearPacksRollInsideTheirRarityRange();
@@ -10647,8 +11664,19 @@ int main(void) {
     TestSeasonalPackFollowsTheCalendar();
     TestFlashPacksRotateOnePerPeriod();
     TestVoucherOfferWinsOnlyWhenOwned();
+    TestPackPityCountsPacksOnEachPacksOwnCounter();
+    TestDuePackHoldsALegendaryInItsFirstRolledSlot();
+    TestPackPityLoadsFromServerProfilesAndOlderSaves();
     TestStoreDialogTextFitsRussianPackNames();
-    TestLegendaryPackRollsSkipHeroesAlreadyOwned();
+    TestLegendaryStarWeightsChooseTheStarTier();
+    TestLegendaryNoDupeHoldsWithinTheRolledStarTier();
+    TestAcrossStarNoDupeFindsTheLastMissingLegendary();
+    TestShippedPacksMakeThreeStarLegendariesTheRarest();
+    TestStarGuaranteesRollOnlyTheirTiers();
+    TestStarGuaranteesFireEveryNthPackAndDeferTheLesserOne();
+    TestDueStarGuaranteeTakesThePitySlot();
+    TestShippedStarGuaranteesWaitLongerThanThePity();
+    TestStarGuaranteeCountersSurviveASave();
     TestAscendedHeroLoadsAboveTheOldLevelCap();
     TestHeroLevelTableCoversAscendedCap();
     TestMissionSeriesPicksTheClaimableTier();
@@ -10664,12 +11692,14 @@ int main(void) {
     TestGalleryCatalogMatchesReferenceRules();
     TestGalleryRecordsBattleCasualties();
     TestGalleryPersistence();
+    TestGalleryShowsTiersACombineSkips();
     TestRuneCatalogCraftChains();
     TestRuneSlotRulesAndReplacement();
     TestRuneExpiry();
     TestRuneCrafting();
     TestServerActionsStayLocalWithoutABackend();
     TestNexusAwardReadsTheServerReply();
+    TestNexusAwardGrantsHeroesAtTheRarityTheyShow();
     TestRuneBonusStacksAndScalesRewards();
     TestRuneMitigationAndRetaliation();
     TestRuneResistsBlockAilments();
@@ -10679,13 +11709,18 @@ int main(void) {
     TestRuneActivationFx();
     TestOriginalResourcesDecodeLikeUnityPy();
     TestEveryReferencedResourceResolves();
+    TestSameNamedCacheTexturesResolveToTheFirstInTheirBundle();
+    TestMapTrayFollowsTheOriginalPrefab();
+    TestMapTrayKeepsItsPrefabSizeAtTheSmallestUiScale();
     TestSquadSlotReferenceLayout();
     TestBattleRowBonuses();
     TestHeroRowBonusReferencePresentation();
     TestFormationBonusMetadata();
     TestFormationBonusRequiresSharedFaction();
-    TestIntroQueueShowsOnlyPlayerFactionBonus();
+    TestIntroQueueShowsBothFactionBonusesAfterBothSidesRunes();
     TestFactionIntroAssetsAndText();
+    TestFactionChargeLogoLiesOnItsBase();
+    TestDoubledRigScaleCoversEveryTierOfTheFamily();
     TestPowerDrain();
     TestAllyPowerGain();
     TestAllySlow();
@@ -10728,6 +11763,8 @@ int main(void) {
     TestTimelineCapacity();
     TestLegendaryStars();
     TestCatalogStatGrowth();
+    TestLegendaryLevelCapsFollowTheirStars();
+    TestTierStatsGrowEvenlyToTheCapAndOnThroughAscension();
     TestStatBudgetPricesEveryGrownHeroAtOneCostAndKeepsItsShape();
     TestStatBudgetKeepsTheShareOfGrowthAHeroHasEarned();
     TestStatBudgetGivesEachRarityItsShare();
@@ -10792,6 +11829,13 @@ int main(void) {
     TestCampaignMapRewardSchema();
     TestCampaignAndNexusTextResolves();
     TestCampaignProgressionRewards();
+    TestChallengeDropTablesCoverTheGrindMaps();
+    TestChallengeDropsStayOffWithoutTheTable();
+    TestChallengeDropRollsOneStoreStreamStep();
+    TestChallengeNodeWinsGrantTheRolledDrop();
+    TestChallengeDropAwardReadsTheServerReply();
+    TestChallengeDropPreviewsCycleLikeTheOriginal();
+    TestChallengeNodeStaysHiddenUntilTheBossFalls();
     TestProgressionPersistence();
     TestRosterInstancesAndPersistence();
     TestConsumeTablesAndCurves();
@@ -10806,6 +11850,8 @@ int main(void) {
     TestWispIdleDriftsLikeTheOriginalFx();
     TestFxKeyoutPreservesSourceTransparency();
     TestCreatureClipFramesStayOnIdleGround();
+    TestBootsSkinnedToTheShinStillStandOnTheGround();
+    TestGalleryFxPlayOnTheGalleryCamera();
     TestStillRootHandsItsSkinToTheMovingHips();
     TestHangingIdleFeetArePlantedOnTheGround();
     TestJointsBehindPlainNodesFollowTheirAnimatedChain();

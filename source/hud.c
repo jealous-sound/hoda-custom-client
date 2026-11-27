@@ -121,6 +121,15 @@ static Rectangle HudFitRect(Rectangle parent, float x, float y, float width, flo
     };
 }
 
+static Rectangle HudSpanWidth(Rectangle band, float canvas_width) {
+    if (band.width >= canvas_width) return band;
+    return (Rectangle){0.0f, band.y, canvas_width, band.height};
+}
+
+static Rectangle HudSpanCanvasWidth(Rectangle band) {
+    return HudSpanWidth(band, UiWidth());
+}
+
 static Rectangle HudOffsetRect(Rectangle rect, float x, float y) {
     rect.x += x;
     rect.y += y;
@@ -129,9 +138,8 @@ static Rectangle HudOffsetRect(Rectangle rect, float x, float y) {
 
 static HudLayout HudGetLayout(void) {
     HudLayout l = {0};
-    Rectangle screen = UiRoot();
-
-    l.background = HudFitRect(screen, 0.5f, 0.0f, 1.9f, 0.12f, 16.0f);
+    Rectangle design_band = {0.0f, 0.0f, UiWidth(), UI_DESIGN_H};
+    l.background = HudSpanCanvasWidth(HudFitRect(design_band, 0.5f, 0.0f, 1.9f, 0.12f, 16.0f));
 
     Rectangle sizing = {2.0f, 0.0f, fmaxf(0.0f, ceilf(UiWidth()) - 2.0f), HUD_TOP_HEIGHT};
     Rectangle left = HudFitRect(sizing, 0.0f, 0.0f, 1.0f, 0.9f, 8.0f);

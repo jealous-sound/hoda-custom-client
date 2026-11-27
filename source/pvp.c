@@ -10,9 +10,9 @@
 #define PVP_LEVEL_SALT 0x51ED27u
 #define PVP_BOT_SALT 0x7A3C11u
 #define PVP_SQUAD_SALT 0x2F90D3u
-#define PVP_RUNE_SALT 0x64B8E1u
 #define PVP_DRIFT_SALT 0x1C8A77u
 #define PVP_DEFENSE_SALT 0x3D6F02u
+#define PVP_DEFENSE_SQUAD 0
 
 #define PVP_EVENT_CAPACITY 16
 #define PVP_GUILD_EVENT_CAPACITY 8
@@ -141,10 +141,9 @@ typedef struct {
     int min_gain, max_gain, min_loss, max_loss;
     int window_below, window_above, daily_nexts, bot_daily_drift, level_spread;
     int squad_candidates;
-    int first_rune_level, levels_per_rune, levels_per_rarity, max_rune_rarity;
     int win_gold_base, win_gold_per_level, loss_gold_pct;
     int win_xp_base, win_xp_per_level, loss_xp_pct;
-    int attack_interval_seconds, max_attacks_per_login, defense_win_pct, defense_loss_share_pct;
+    int attack_interval_seconds, max_attacks_per_login, defense_loss_share_pct;
     bool stat_budget;
 } PvpRules;
 
@@ -159,12 +158,17 @@ typedef struct {
     Tier tier;
     int level;
     bool present;
+    bool ascended;
+    short gear_defs[GEAR_SLOT_CAPACITY];
 } PvpSquadCell;
 
 typedef struct {
     int strength;
     bool events_only;
+    bool elite;
     PvpSquadCell cells[SQUAD_SLOT_COUNT];
+    int rune_defs[RUNE_SLOT_COUNT];
+    int rune_count;
 } PvpSquad;
 
 typedef struct {
@@ -231,10 +235,6 @@ static void PvpRulesParse(PvpRules *r, const cJSON *root) {
     r->bot_daily_drift = PvpSectionInt(root, "matchmaking", "bot_daily_drift");
     r->level_spread = PvpSectionInt(root, "matchmaking", "level_spread");
     r->squad_candidates = PvpSectionInt(root, "squads", "candidates");
-    r->first_rune_level = PvpSectionInt(root, "runes", "first_rune_level");
-    r->levels_per_rune = PvpSectionInt(root, "runes", "levels_per_rune");
-    r->levels_per_rarity = PvpSectionInt(root, "runes", "levels_per_rarity");
-    r->max_rune_rarity = PvpSectionInt(root, "runes", "max_rarity");
     r->win_gold_base = PvpSectionInt(root, "rewards", "win_gold_base");
     r->win_gold_per_level = PvpSectionInt(root, "rewards", "win_gold_per_level");
     r->loss_gold_pct = PvpSectionInt(root, "rewards", "loss_gold_pct");
@@ -243,7 +243,6 @@ static void PvpRulesParse(PvpRules *r, const cJSON *root) {
     r->loss_xp_pct = PvpSectionInt(root, "rewards", "loss_xp_pct");
     r->attack_interval_seconds = PvpSectionInt(root, "defense", "attack_interval_seconds");
     r->max_attacks_per_login = PvpSectionInt(root, "defense", "max_attacks_per_login");
-    r->defense_win_pct = PvpSectionInt(root, "defense", "win_pct");
     r->defense_loss_share_pct = PvpSectionInt(root, "defense", "loss_share_pct");
     r->stat_budget = JsonBool(cJSON_GetObjectItemCaseSensitive((cJSON *)root, "battle"), "stat_budget");
 }
@@ -366,8 +365,9 @@ static bool PvpHeroFilterPasses(const PvpHeroFilter *filter, const Character *ch
 }
 
 static bool PvpRarityAllowed(const PvpSquadRules *rules, const Character *ch) {
-    if (ch->rarity > rules->max_rarity) return false;
-    return !rules->rarity_mask || (rules->rarity_mask & PvpRarityBit(ch->rarity));
+    Rarity shown = CharacterShownRarity(ch);
+    if (shown > rules->max_rarity) return false;
+    return !rules->rarity_mask || (rules->rarity_mask & PvpRarityBit(shown));
 }
 
 static int PvpSquadSideMisfit(const PvpSquadRules *rules, const Character *const heroes[SQUAD_SLOT_COUNT], int side) {
@@ -470,12 +470,14 @@ static void PvpBotsParse(PvpTable *t, const cJSON *root) {
 }
 
 static void PvpSquadsParse(PvpTable *t, const cJSON *root) {
+    RuneCatalogEnsure();
     const cJSON *entry = NULL;
     cJSON_ArrayForEach(entry, cJSON_GetObjectItemCaseSensitive((cJSON *)root, "squad_pool")) {
         if (t->squad_count == PVP_SQUAD_CAPACITY) TraceLog(LOG_FATAL, "Pvp: more than %d squads", PVP_SQUAD_CAPACITY);
         PvpSquad *squad = &t->squads[t->squad_count++];
         squad->strength = JsonInt(entry, "strength");
         squad->events_only = JsonBool(entry, "events_only");
+        squad->elite = JsonBool(entry, "elite");
         int slot = 0;
         const cJSON *cell = NULL;
         cJSON_ArrayForEach(cell, cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "cells")) {
@@ -486,13 +488,28 @@ static void PvpSquadsParse(PvpTable *t, const cJSON *root) {
             target->tier = TierFromString(JsonStr(cell, "tier"));
             target->level = JsonInt(cell, "level");
             target->present = true;
+            target->ascended = JsonBool(cell, "ascended");
+            if (!BattleGearDefsLoad(target->gear_defs, cJSON_GetObjectItemCaseSensitive((cJSON *)cell, "gear")))
+                TraceLog(LOG_FATAL, "Pvp: squad %d wears unknown gear", t->squad_count - 1);
+        }
+        const cJSON *rune = NULL;
+        cJSON_ArrayForEach(rune, cJSON_GetObjectItemCaseSensitive((cJSON *)entry, "runes")) {
+            int def = cJSON_IsString(rune) ? RuneDefIndex(rune->valuestring) : -1;
+            if (def < 0 || squad->rune_count == RUNE_SLOT_COUNT)
+                TraceLog(LOG_FATAL, "Pvp: squad %d has an unknown rune or too many", t->squad_count - 1);
+            squad->rune_defs[squad->rune_count++] = def;
         }
     }
 }
 
+static bool PvpSquadRanksBelow(const PvpSquad *squad, const PvpSquad *other) {
+    if (squad->elite != other->elite) return other->elite;
+    return squad->strength < other->strength;
+}
+
 static void PvpSquadListAddByStrength(PvpSquadList *list, const PvpTable *t, int squad) {
     int rank = list->count++;
-    for (; rank > 0 && t->squads[squad].strength < t->squads[list->squads[rank - 1]].strength; rank--)
+    for (; rank > 0 && PvpSquadRanksBelow(&t->squads[squad], &t->squads[list->squads[rank - 1]]); rank--)
         list->squads[rank] = list->squads[rank - 1];
     list->squads[rank] = squad;
 }
@@ -502,10 +519,13 @@ static void PvpSquadsRankByStrength(PvpTable *t) {
         if (!t->squads[squad].events_only) PvpSquadListAddByStrength(&t->ladder, t, squad);
 }
 
-static Character PvpRuleHero(const cJSON *def) {
+static Character PvpRuleHero(const cJSON *def, bool ascended) {
     Character ch = {0};
     StrCopy(ch.id, sizeof(ch.id), JsonStr(def, "id"));
     ch.rarity = RarityFromString(JsonStr(def, "rarity"));
+    const char *original_rarity = JsonStr(def, "original_rarity");
+    ch.original_rarity = original_rarity[0] ? RarityFromString(original_rarity) : ch.rarity;
+    ch.ascended = ascended;
     ch.giant = JsonBool(def, "giant");
     ch.faction = FactionFromString(JsonStr(def, "faction"));
     const cJSON *group = NULL;
@@ -540,7 +560,7 @@ static void PvpEventPoolsBuild(PvpTable *t, PvpEvent *events, int event_count, c
             const PvpSquadCell *cell = &t->squads[squad].cells[slot];
             const cJSON *def = cell->present ? CatalogFindCharacter(catalog, cell->id) : NULL;
             if (cell->present && !def) TraceLog(LOG_FATAL, "Pvp: unit %s is not in the catalog", cell->id);
-            heroes[slot] = def ? PvpRuleHero(def) : (Character){0};
+            heroes[slot] = def ? PvpRuleHero(def, cell->ascended) : (Character){0};
         }
         for (int e = 0; e < event_count; e++) {
             PvpEvent *event = &events[e];
@@ -677,31 +697,16 @@ PvpSquadVerdict PvpEventJudgeSquad(const PvpEvent *event, const Player *p, int s
     return PvpSquadRulesJudge(&event->rules, heroes, side);
 }
 
-static void PvpPickRunes(PvpOpponent *o) {
-    const PvpRules *r = &PvpTableEnsure()->rules;
-    o->rune_count = 0;
-    if (o->level < r->first_rune_level) return;
-    int wanted = 1 + (o->level - r->first_rune_level) / r->levels_per_rune;
-    if (wanted > RUNE_SLOT_COUNT) wanted = RUNE_SLOT_COUNT;
-    int rarity_cap = 1 + o->level / r->levels_per_rarity;
-    if (rarity_cap > r->max_rune_rarity) rarity_cap = r->max_rune_rarity;
-
-    int pool[RUNE_CATALOG_CAPACITY], pool_count = 0;
-    for (int def = 0; def < RuneCatalogCount(); def++) {
-        const RuneDef *rune = RuneDefAt(def);
-        if (rune->rarity <= rarity_cap && RuneDefRollable(rune)) pool[pool_count++] = def;
-    }
-    for (int i = 0; i < wanted && pool_count > 0; i++) {
-        int pick = PvpRoll(o->seed, PVP_RUNE_SALT + (unsigned)i, pool_count);
-        o->rune_defs[o->rune_count++] = pool[pick];
-        pool[pick] = pool[--pool_count];
-    }
+static void PvpTakeSquadRunes(PvpOpponent *o) {
+    const PvpSquad *squad = &PvpTableEnsure()->squads[o->squad];
+    o->rune_count = squad->rune_count;
+    memcpy(o->rune_defs, squad->rune_defs, sizeof(o->rune_defs));
 }
 
 static void PvpOpponentDerive(PvpOpponent *o, int player_trophies) {
     o->gain = PvpTrophyGain(player_trophies, o->trophies);
     o->loss = PvpTrophyLoss(player_trophies, o->trophies);
-    PvpPickRunes(o);
+    PvpTakeSquadRunes(o);
 }
 
 PvpOpponent
@@ -815,6 +820,7 @@ void PvpOpponentRoster(BattleRoster *roster, const PvpOpponent *o) {
         ch->tier = cell->tier;
         ch->level = cell->level;
         if (roster->hero_builds && !BattleHeroBuildApply(ch, &o->duel_builds[slot])) continue;
+        if (!o->duel) BattleWornGearApply(ch, cell->ascended, cell->gear_defs);
         roster->present[slot] = true;
     }
     cJSON_Delete(catalog_root);
@@ -880,6 +886,40 @@ int PvpXpReward(const PvpOpponent *o, bool won) {
     return won ? xp : xp * r->loss_xp_pct / 100;
 }
 
+void PvpNoteAttack(PlayerPvp *pvp, const char *id, long long at) {
+    PlayerPvpAttack kept[PVP_ATTACKED_CAPACITY] = {0};
+    int count = 0, oldest = 0;
+    for (int i = 0; i < pvp->attacked_count; i++) {
+        const PlayerPvpAttack *attack = &pvp->attacked[i];
+        if (!strcmp(attack->id, id) || attack->at + PVP_REPEAT_ATTACK_SECONDS <= at) continue;
+        if (count == 0 || attack->at < kept[oldest].at) oldest = count;
+        kept[count++] = *attack;
+    }
+    if (count == PVP_ATTACKED_CAPACITY) {
+        kept[oldest] = kept[--count];
+        kept[count] = (PlayerPvpAttack){0};
+    }
+    kept[count].at = at;
+    StrCopy(kept[count].id, sizeof(kept[count].id), id);
+    memcpy(pvp->attacked, kept, sizeof(kept));
+    pvp->attacked_count = count + 1;
+}
+
+long long PvpAttackCooldownLeft(const PlayerPvp *pvp, const char *id, long long now) {
+    for (int i = 0; i < pvp->attacked_count; i++) {
+        long long left = pvp->attacked[i].at + PVP_REPEAT_ATTACK_SECONDS - now;
+        if (!strcmp(pvp->attacked[i].id, id)) return left > 0 ? left : 0;
+    }
+    return 0;
+}
+
+static void PvpNameDuelOpponent(PlayerPvp *pvp, PlayerPvpBattle *battle, const PvpOpponent *o, long long now) {
+    if (!o->duel) return;
+    StrCopy(battle->opponent, sizeof(battle->opponent), o->duel_name);
+    StrCopy(battle->opponent_id, sizeof(battle->opponent_id), o->duel_id);
+    PvpNoteAttack(pvp, o->duel_id, now);
+}
+
 PlayerPvpBattle PvpRecordAttack(PlayerPvp *pvp, const PvpOpponent *o, bool won, long long now) {
     int delta = PvpApplyTrophies(pvp, won ? o->gain : -o->loss, now);
     if (pvp->wins + pvp->losses == 0) pvp->defense_checked_at = now;
@@ -900,15 +940,19 @@ PlayerPvpBattle PvpRecordAttack(PlayerPvp *pvp, const PvpOpponent *o, bool won, 
         .seed = o->seed,
         .won = won,
     };
-    if (o->duel) StrCopy(battle.opponent, sizeof(battle.opponent), o->duel_name);
+    PvpNameDuelOpponent(pvp, &battle, o, now);
     PvpHistoryPush(pvp, &battle);
     return battle;
 }
 
+int PvpBotDefenseTrophies(int bot_trophies, int defender_trophies, bool bot_won) {
+    int share = PvpTableEnsure()->rules.defense_loss_share_pct;
+    if (bot_won) return -PvpTrophyGain(bot_trophies, defender_trophies) * share / 100;
+    return PvpTrophyLoss(bot_trophies, defender_trophies) * share / 100;
+}
+
 static void PvpRecordDefense(PlayerPvp *pvp, const PvpOpponent *o, bool won, long long at) {
-    const PvpRules *r = &PvpTableEnsure()->rules;
-    int stake = o->loss * r->defense_loss_share_pct / 100;
-    int delta = PvpApplyTrophies(pvp, won ? stake : -stake, at);
+    int delta = PvpApplyTrophies(pvp, PvpBotDefenseTrophies(o->trophies, pvp->trophies, !won), at);
     pvp->defense_wins += won;
     pvp->defense_losses += !won;
     PlayerPvpBattle battle = {
@@ -925,7 +969,17 @@ static void PvpRecordDefense(PlayerPvp *pvp, const PvpOpponent *o, bool won, lon
     PvpHistoryPush(pvp, &battle);
 }
 
-int PvpSimulateDefense(PlayerPvp *pvp, int level, long long now) {
+static bool PvpFirstSquadHolds(const Player *player, const PvpOpponent *attacker) {
+    if (PlayerSquadCount(player, PVP_DEFENSE_SQUAD) == 0) return false;
+    static BattleRoster roster;
+    static BattleSim sim;
+    PvpOpponentRoster(&roster, attacker);
+    BattleSimRunSquad(&sim, player, PVP_DEFENSE_SQUAD, &roster, attacker->seed);
+    return sim.player_won;
+}
+
+int PvpSimulateDefense(Player *player, long long now) {
+    PlayerPvp *pvp = &player->pvp;
     if (pvp->wins + pvp->losses == 0) return 0;
     const PvpRules *r = &PvpTableEnsure()->rules;
     if (pvp->defense_checked_at <= 0 || pvp->defense_checked_at > now) {
@@ -938,15 +992,23 @@ int PvpSimulateDefense(PlayerPvp *pvp, int level, long long now) {
     for (int i = 0; i < attacks; i++) {
         long long at = now - (long long)(attacks - 1 - i) * r->attack_interval_seconds;
         unsigned seed = PvpMix((unsigned)at, PVP_DEFENSE_SALT + (unsigned)i);
-        PvpOpponent o = PvpOpponentGenerate(level, pvp->trophies, PvpDay(at), seed);
-        PvpRecordDefense(pvp, &o, PvpRoll(seed, PVP_DEFENSE_SALT, 100) < r->defense_win_pct, at);
+        PvpOpponent o = PvpOpponentGenerate(player->level, pvp->trophies, PvpDay(at), seed);
+        PvpRecordDefense(pvp, &o, PvpFirstSquadHolds(player, &o), at);
     }
     pvp->defense_checked_at += due * r->attack_interval_seconds;
     return attacks;
 }
 
 bool PvpCanRevenge(const PlayerPvpBattle *battle) {
-    return battle->defense && !battle->won && !battle->revenged;
+    return battle->defense && !battle->opponent_id[0] && !battle->revenged;
+}
+
+bool PvpRevengesAPlayer(const PlayerPvpBattle *battle) {
+    return battle->defense && battle->opponent_id[0];
+}
+
+bool PvpBattleInEvent(const PlayerPvpBattle *battle) {
+    return battle->event || battle->banners > 0;
 }
 
 long long PvpEventCycle(long long now) {
@@ -1187,8 +1249,8 @@ PlayerPvpBattle PvpRecordEventAttack(PlayerPvp *pvp, const PvpOpponent *o, bool 
     if (pvp->win_streak > pvp->best_win_streak) pvp->best_win_streak = pvp->win_streak;
     PlayerPvpBattle battle = {
         .at = now,
-        .bot = o->bot,
-        .squad = o->squad,
+        .bot = o->duel ? 0 : o->bot,
+        .squad = o->duel ? 0 : o->squad,
         .level = o->level,
         .opponent_trophies = o->trophies,
         .gold = PvpGoldReward(o, won),
@@ -1196,7 +1258,9 @@ PlayerPvpBattle PvpRecordEventAttack(PlayerPvp *pvp, const PvpOpponent *o, bool 
         .banners = PvpEventBannerReward(o, pvp->event.banners, won),
         .seed = o->seed,
         .won = won,
+        .event = true,
     };
+    PvpNameDuelOpponent(pvp, &battle, o, now);
     pvp->event.banners += battle.banners;
     PvpHistoryPush(pvp, &battle);
     return battle;

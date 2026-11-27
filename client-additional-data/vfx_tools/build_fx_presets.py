@@ -138,14 +138,29 @@ def build_cab_index():
     return idx
 
 
+UNITY_MESH_RENDER_MODE = 4
+FLAT_MESH_MAX_THICKNESS_RATIO = 0.01
+
+
+def flat_mesh_width(mesh_obj):
+    extent = mesh_obj.read_typetree()["m_LocalAABB"]["m_Extent"]
+    width = 2.0 * max(extent["x"], extent["z"])
+    if width <= 0.0 or extent["y"] > width * FLAT_MESH_MAX_THICKNESS_RATIO:
+        return 0.0
+    return width
+
+
 class SharedContainer:
     def __init__(self, cab_path):
         self.env = UnityPy.load(cab_path)
         self.tex = {}
         self.shader = {}
+        self.mesh = {}
         for obj in self.env.objects:
             if obj.type.name == "Texture2D":
                 self.tex[obj.path_id] = (obj.read().m_Name, obj)
+            elif obj.type.name == "Mesh":
+                self.mesh[obj.path_id] = obj
             elif obj.type.name == "Shader":
                 try:
                     self.shader[obj.path_id] = obj.read().m_ParsedForm.m_Name
@@ -176,7 +191,7 @@ def probe_bundle(bundle, cab_path, shared_res, shared_shd):
             exts = [getattr(x, "path", "") for x in e]
             break
 
-    transforms, go_tr, mats, texs, shaders, renderers = {}, {}, {}, {}, {}, {}
+    transforms, go_tr, mats, texs, shaders, renderers, meshes = {}, {}, {}, {}, {}, {}, {}
     for obj in env.objects:
         t = obj.type.name
         if t == "Transform":
@@ -192,6 +207,8 @@ def probe_bundle(bundle, cab_path, shared_res, shared_shd):
             mats[obj.path_id] = obj.read()
         elif t == "Texture2D":
             texs[obj.path_id] = (obj.read().m_Name, obj)
+        elif t == "Mesh":
+            meshes[obj.path_id] = obj
         elif t == "Shader":
             try:
                 shaders[obj.path_id] = obj.read().m_ParsedForm.m_Name
@@ -203,8 +220,11 @@ def probe_bundle(bundle, cab_path, shared_res, shared_shd):
         elif t == "ParticleSystemRenderer":
             r = obj.read()
             m0 = r.m_Materials[0] if r.m_Materials else None
+            mode = getattr(r, "m_RenderMode", 0)
+            mesh = getattr(r, "m_Mesh", None) if mode == UNITY_MESH_RENDER_MODE else None
             renderers[r.m_GameObject.path_id] = {
-                "mode": getattr(r, "m_RenderMode", 0),
+                "mode": mode,
+                "mesh": (mesh.file_id, mesh.path_id) if mesh is not None and mesh.path_id else None,
                 "material": (m0.file_id, m0.path_id) if m0 is not None else None,
                 "max_screen_size": float(getattr(r, "m_MaxParticleSize", 0.0)),
                 "length_scale": float(getattr(r, "m_LengthScale", 0.0)),
@@ -213,6 +233,18 @@ def probe_bundle(bundle, cab_path, shared_res, shared_shd):
 
     def resolve_ext(file_id):
         return exts[file_id - 1].lower() if 0 < file_id <= len(exts) else ""
+
+    def particle_mesh_width(mesh_ref):
+        if mesh_ref is None:
+            return 0.0
+        fid, pid = mesh_ref
+        if fid == 0:
+            mesh = meshes.get(pid)
+        elif "shared_resourcecontainer" in resolve_ext(fid):
+            mesh = shared_res.mesh.get(pid)
+        else:
+            mesh = None
+        return flat_mesh_width(mesh) if mesh is not None else 0.0
 
     def compose(go_pid):
         chain = []
@@ -288,6 +320,7 @@ def probe_bundle(bundle, cab_path, shared_res, shared_shd):
         offset, rot, scale = compose(go_pid)
         out[go_pid] = {"offset": (offset[0], offset[1], -offset[2]),
                        "rot": rot, "scale": scale, "mode": mode,
+                       "mesh_width": particle_mesh_width(renderer["mesh"]),
                        "max_screen_size": renderer["max_screen_size"],
                        "length_scale": renderer["length_scale"],
                        "velocity_scale": renderer["velocity_scale"],
@@ -353,6 +386,8 @@ def decode_ps(bundle, psid, dump, probe):
         base["inherit_velocity"] = round(float(ini.get("inheritVelocity", 0.0)), 3)
     if rec["max_screen_size"] > 0:
         base["max_screen_size"] = round(rec["max_screen_size"], 4)
+    if rec["mesh_width"] > 0:
+        base["render_scale"] = round(rec["mesh_width"], 4)
     if base["orient"] == 2:
         if rec["length_scale"] > 0:
             base["stretch_length"] = round(rec["length_scale"], 4)

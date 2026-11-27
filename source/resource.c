@@ -18,6 +18,11 @@
 #define RESOURCE_WORKERS_MAX 16
 #define RESOURCE_REF_MAX 256
 #define RESOURCE_WORKER_STACK (8 * 1024 * 1024)
+#define RESOURCE_INDEX_HEADER "hoda-resource-index 1"
+#define RESOURCE_INDEX_BUNDLES_LABEL "bundles"
+#define RESOURCE_INDEX_OBJECTS_LABEL "objects"
+#define RESOURCE_INDEX_OBJECT_FIELDS 4
+#define RESOURCE_UNGROUPED (-1)
 
 typedef enum {
     RESOURCE_FILE,
@@ -67,6 +72,19 @@ typedef struct {
     int count;
     int capacity;
 } ResourceRecording;
+
+typedef struct {
+    int ref;
+    int container;
+    unsigned int offset;
+    unsigned int size;
+} ResourceImageRead;
+
+typedef struct {
+    int first;
+    int count;
+    unsigned int bytes;
+} ResourceReadGroup;
 
 static ResourcePrefetch resource_prefetched;
 static ResourceRecording resource_recorded;
@@ -178,7 +196,7 @@ static void ResourceIndexBundles(void) {
     for (int i = 1; i < worker_count; i++) threaded[i] = ResourceThreadStart(&threads[i], ResourceBundleWorker, &jobs[i]) == 0;
     ResourceBundleWorker(&jobs[0]);
     for (int i = 0; i < worker_count; i++) {
-        if (i > 0 && threaded[i]) pthread_join(threads[i], NULL);
+        if (i > 0 && threaded[i]) PlatformJoinThread(threads[i]);
         for (int e = 0; e < jobs[i].catalog.count; e++) {
             const ResourceEntry *entry = &jobs[i].catalog.entries[e];
             ResourceCatalogAdd(&resource_cache, entry->name, entry->container, entry->object);
@@ -188,10 +206,122 @@ static void ResourceIndexBundles(void) {
     MemFree(jobs);
 }
 
+static bool ResourceIndexReadLine(char **cursor, char *line, size_t capacity) {
+    char *end = strchr(*cursor, '\n');
+    if (!end) return false;
+    size_t length = (size_t)(end - *cursor);
+    if (length >= capacity) return false;
+    memcpy(line, *cursor, length);
+    line[length] = '\0';
+    *cursor = end + 1;
+    return true;
+}
+
+static bool ResourceIndexReadCount(char **cursor, const char *label, int *count) {
+    char line[RESOURCE_REF_MAX];
+    char expected[RESOURCE_REF_MAX];
+    snprintf(expected, sizeof(expected), "%s %%d", label);
+    return ResourceIndexReadLine(cursor, line, sizeof(line)) && sscanf(line, expected, count) == 1 && *count >= 0;
+}
+
+static bool ResourceIndexReadBundles(char **cursor) {
+    int count = 0;
+    if (!ResourceIndexReadCount(cursor, RESOURCE_INDEX_BUNDLES_LABEL, &count)) return false;
+    resource_bundle_files = (FilePathList){
+        .capacity = (unsigned int)count,
+        .paths = MemAlloc(sizeof(char *) * (count > 0 ? count : 1)),
+    };
+    char line[RESOURCE_REF_MAX];
+    for (int i = 0; i < count; i++) {
+        if (!ResourceIndexReadLine(cursor, line, sizeof(line))) return false;
+        size_t length = strlen(line) + 1;
+        char *path = MemAlloc((unsigned int)length);
+        memcpy(path, line, length);
+        resource_bundle_files.paths[resource_bundle_files.count++] = path;
+    }
+    return true;
+}
+
+static bool ResourceIndexReadObjects(char **cursor) {
+    int count = 0;
+    if (!ResourceIndexReadCount(cursor, RESOURCE_INDEX_OBJECTS_LABEL, &count)) return false;
+    char line[RESOURCE_REF_MAX];
+    for (int i = 0; i < count; i++) {
+        if (!ResourceIndexReadLine(cursor, line, sizeof(line))) return false;
+        int container = 0, name_start = 0;
+        UnityObject object = {0};
+        int fields =
+            sscanf(line, "%d %u %u %d %n", &container, &object.offset, &object.size, &object.class_id, &name_start);
+        if (fields != RESOURCE_INDEX_OBJECT_FIELDS) return false;
+        if (container < 0 || container >= (int)resource_bundle_files.count) return false;
+        ResourceCatalogAdd(&resource_cache, line + name_start, container, object);
+    }
+    return true;
+}
+
+static bool ResourceLoadIndex(const char *path) {
+    if (!path[0] || !FileExists(path)) return false;
+    char *text = LoadFileText(path);
+    if (!text) return false;
+    char *cursor = text;
+    char line[RESOURCE_REF_MAX];
+    bool loaded = ResourceIndexReadLine(&cursor, line, sizeof(line)) && strcmp(line, RESOURCE_INDEX_HEADER) == 0 &&
+                  ResourceIndexReadBundles(&cursor) && ResourceIndexReadObjects(&cursor);
+    UnloadFileText(text);
+    if (!loaded) TraceLog(LOG_WARNING, "Resource: %s is not a resource index", path);
+    return loaded;
+}
+
+static bool ResourceIndexNameWritable(const char *name) {
+    return name[0] && !strchr(name, '\n') && !strchr(name, '\r');
+}
+
+static void ResourceIndexCache(void);
+
+static bool ResourceWriteIndex(const char *path) {
+    ResourceIndexCache();
+    FILE *file = fopen(path, "wb");
+    if (!file) return false;
+    int writable = 0;
+    for (int i = 0; i < resource_cache.count; i++)
+        writable += ResourceIndexNameWritable(resource_cache.entries[i].name);
+    fprintf(file, "%s\n%s %u\n", RESOURCE_INDEX_HEADER, RESOURCE_INDEX_BUNDLES_LABEL, resource_bundle_files.count);
+    for (unsigned int i = 0; i < resource_bundle_files.count; i++)
+        fprintf(file, "%s\n", resource_bundle_files.paths[i]);
+    fprintf(file, "%s %d\n", RESOURCE_INDEX_OBJECTS_LABEL, writable);
+    for (int i = 0; i < resource_cache.count; i++) {
+        const ResourceEntry *entry = &resource_cache.entries[i];
+        if (!ResourceIndexNameWritable(entry->name)) continue;
+        fprintf(
+            file,
+            "%d %u %u %d %s\n",
+            entry->container,
+            entry->object.offset,
+            entry->object.size,
+            entry->object.class_id,
+            entry->name
+        );
+    }
+    bool written = !ferror(file);
+    written = fclose(file) == 0 && written;
+    TraceLog(LOG_INFO, "Resource: wrote %d objects in %u bundles to %s", writable, resource_bundle_files.count, path);
+    return written;
+}
+
 static void ResourceIndexCache(void) {
     if (resource_cache.indexed) return;
     ResourceCatalogReset(&resource_cache);
     resource_cache.indexed = true;
+    if (ResourceLoadIndex(HOD_RESOURCE_INDEX)) {
+        TraceLog(
+            LOG_INFO,
+            "Resource: loaded %d objects in %u cache bundles from %s",
+            resource_cache.count,
+            resource_bundle_files.count,
+            HOD_RESOURCE_INDEX
+        );
+        return;
+    }
     FilePathList bundle_dirs = LoadDirectoryFiles(ORIGINAL_BUNDLE_DIR);
     resource_bundle_files = (FilePathList){
         .capacity = bundle_dirs.count,
@@ -266,31 +396,36 @@ static ResourceRef ResourceParse(const char *ref) {
     return parsed;
 }
 
+static bool ResourceCacheEntryPrecedes(const ResourceCatalog *catalog, int entry, int other) {
+    int bundle_order = strcmp(
+        ResourceBundleName(catalog->entries[entry].container), ResourceBundleName(catalog->entries[other].container)
+    );
+    return bundle_order < 0 || (bundle_order == 0 && entry < other);
+}
+
 static const ResourceEntry *ResourceFind(const ResourceRef *ref, int class_id) {
     ResourceCatalog *catalog = ref->origin == RESOURCE_CACHE ? &resource_cache : &resource_apk;
     if (ref->origin == RESOURCE_CACHE)
         ResourceIndexCache();
     else
         ResourceIndexApk();
-    const ResourceEntry *found = NULL;
+    int found = -1;
     for (int i = catalog->buckets[ResourceHash(ref->name)]; i >= 0; i = catalog->entries[i].next) {
         const ResourceEntry *entry = &catalog->entries[i];
         if (entry->object.class_id != class_id || strcmp(entry->name, ref->name) != 0) continue;
         if (ref->origin != RESOURCE_CACHE) return entry;
-        const char *bundle = ResourceBundleName(entry->container);
-        if (ref->bundle[0] && strcmp(bundle, ref->bundle) != 0) continue;
-        if (!found || strcmp(bundle, ResourceBundleName(found->container)) < 0) found = entry;
+        if (ref->bundle[0] && strcmp(ResourceBundleName(entry->container), ref->bundle) != 0) continue;
+        if (found < 0 || ResourceCacheEntryPrecedes(catalog, i, found)) found = i;
     }
-    return found;
+    return found < 0 ? NULL : &catalog->entries[found];
 }
 
 static unsigned char *ResourceReadObject(const ResourceRef *ref, const ResourceEntry *entry) {
     unsigned char *object = MemAlloc(entry->object.size > 0 ? entry->object.size : 1);
     bool ok = false;
     if (ref->origin == RESOURCE_CACHE) {
-        FILE *file = fopen(resource_bundle_files.paths[entry->container], "rb");
-        ok = file && ResourceReadFileRange(file, entry->object.offset, object, entry->object.size);
-        if (file) fclose(file);
+        PlatformFileRange range = {.offset = entry->object.offset, .size = entry->object.size, .out = object};
+        ok = PlatformReadFileRanges(resource_bundle_files.paths[entry->container], &range, 1);
     } else {
         unsigned int size = 0;
         unsigned char *data =
@@ -337,7 +472,7 @@ static void ResourceIndexSources(const char *const *refs, int count) {
     bool apk_threaded = needs_apk && ResourceThreadStart(&apk_thread, ResourceApkIndexWorker, NULL) == 0;
     if (needs_apk && !apk_threaded) ResourceIndexApk();
     if (needs_cache) ResourceIndexCache();
-    if (apk_threaded) pthread_join(apk_thread, NULL);
+    if (apk_threaded) PlatformJoinThread(apk_thread);
 }
 
 static Image ResourceDecodeImage(const char *ref) {
@@ -350,31 +485,103 @@ static Image ResourceDecodeImage(const char *ref) {
     return image;
 }
 
+static ResourceImageRead ResourceImageReadFor(const char *ref, int index) {
+    ResourceRef parsed = ResourceParse(ref);
+    const ResourceEntry *entry = parsed.origin == RESOURCE_CACHE ? ResourceFind(&parsed, UNITY_CLASS_TEXTURE_2D) : NULL;
+    if (!entry) return (ResourceImageRead){.ref = index, .container = RESOURCE_UNGROUPED};
+    return (ResourceImageRead){
+        .ref = index, .container = entry->container, .offset = entry->object.offset, .size = entry->object.size
+    };
+}
+
+static int ResourceCompareImageReads(const void *a, const void *b) {
+    const ResourceImageRead *left = a, *right = b;
+    if (left->container != right->container) return left->container < right->container ? -1 : 1;
+    if (left->offset != right->offset) return left->offset < right->offset ? -1 : 1;
+    return left->ref - right->ref;
+}
+
+static int ResourceCompareReadGroups(const void *a, const void *b) {
+    const ResourceReadGroup *left = a, *right = b;
+    if (left->bytes != right->bytes) return left->bytes > right->bytes ? -1 : 1;
+    return left->first - right->first;
+}
+
+static int ResourceGroupImageReads(ResourceImageRead *reads, int count, ResourceReadGroup *groups) {
+    qsort(reads, (size_t)count, sizeof(*reads), ResourceCompareImageReads);
+    int group_count = 0;
+    for (int i = 0; i < count; i++) {
+        ResourceReadGroup *open = group_count > 0 ? &groups[group_count - 1] : NULL;
+        bool joins =
+            open && reads[i].container != RESOURCE_UNGROUPED && reads[open->first].container == reads[i].container;
+        if (!joins) groups[group_count++] = (ResourceReadGroup){.first = i};
+        groups[group_count - 1].count++;
+        groups[group_count - 1].bytes += reads[i].size;
+    }
+    qsort(groups, (size_t)group_count, sizeof(*groups), ResourceCompareReadGroups);
+    return group_count;
+}
+
 typedef struct {
     const char *const *refs;
     Image *images;
-    int count;
+    const ResourceImageRead *reads;
+    const ResourceReadGroup *groups;
+    int group_count;
     int next;
 } ResourceImageJob;
 
+static void ResourceDecodeImageGroup(const ResourceImageJob *job, const ResourceReadGroup *group) {
+    const ResourceImageRead *reads = job->reads + group->first;
+    if (reads[0].container == RESOURCE_UNGROUPED) {
+        job->images[reads[0].ref] = ResourceDecodeImage(job->refs[reads[0].ref]);
+        return;
+    }
+    PlatformFileRange *ranges = MemAlloc(sizeof(*ranges) * group->count);
+    for (int i = 0; i < group->count; i++)
+        ranges[i] = (PlatformFileRange){
+            .offset = reads[i].offset, .size = reads[i].size, .out = MemAlloc(reads[i].size > 0 ? reads[i].size : 1)
+        };
+    PlatformReadFileRanges(resource_bundle_files.paths[reads[0].container], ranges, group->count);
+    for (int i = 0; i < group->count; i++) {
+        if (ranges[i].read)
+            job->images[reads[i].ref] = UnityDecodeTexture(ranges[i].out, reads[i].size);
+        else
+            TraceLog(LOG_WARNING, "Resource: %s not found", job->refs[reads[i].ref]);
+        MemFree(ranges[i].out);
+    }
+    MemFree(ranges);
+}
+
 static void *ResourceImageWorker(void *argument) {
     ResourceImageJob *job = argument;
-    for (int i = __atomic_fetch_add(&job->next, 1, __ATOMIC_RELAXED); i < job->count;
+    for (int i = __atomic_fetch_add(&job->next, 1, __ATOMIC_RELAXED); i < job->group_count;
          i = __atomic_fetch_add(&job->next, 1, __ATOMIC_RELAXED))
-        job->images[i] = ResourceDecodeImage(job->refs[i]);
+        ResourceDecodeImageGroup(job, &job->groups[i]);
     return NULL;
 }
 
 static void ResourceDecodeImages(const char *const *refs, int count, Image *images) {
-    ResourceImageJob job = {.refs = refs, .images = images, .count = count};
     ResourceIndexSources(refs, count);
-    int worker_count = ResourceWorkerCount(count);
+    ResourceImageRead *reads = MemAlloc(sizeof(*reads) * (count > 0 ? count : 1));
+    ResourceReadGroup *groups = MemAlloc(sizeof(*groups) * (count > 0 ? count : 1));
+    for (int i = 0; i < count; i++) reads[i] = ResourceImageReadFor(refs[i], i);
+    ResourceImageJob job = {
+        .refs = refs,
+        .images = images,
+        .reads = reads,
+        .groups = groups,
+        .group_count = ResourceGroupImageReads(reads, count, groups),
+    };
+    int worker_count = ResourceWorkerCount(job.group_count);
     pthread_t workers[RESOURCE_WORKERS_MAX];
     int started = 0;
     for (int i = 1; i < worker_count; i++)
         if (ResourceThreadStart(&workers[started], ResourceImageWorker, &job) == 0) started++;
     ResourceImageWorker(&job);
-    for (int i = 0; i < started; i++) pthread_join(workers[i], NULL);
+    for (int i = 0; i < started; i++) PlatformJoinThread(workers[i]);
+    MemFree(groups);
+    MemFree(reads);
 }
 
 static bool ResourceIsRecordable(const char *ref) {

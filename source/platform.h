@@ -1,6 +1,7 @@
 #ifndef HOD_PLATFORM_H
 #define HOD_PLATFORM_H
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -38,9 +39,26 @@ typedef struct {
     char reply_header_value[PLATFORM_HTTP_HEADER_VALUE_CAP];
 } PlatformHttpResponse;
 
+typedef struct {
+    long long offset;
+    size_t size;
+    void *out;
+    bool read;
+} PlatformFileRange;
+
+typedef struct {
+    long long start;
+    long long end;
+} PlatformByteSpan;
+
+bool PlatformPrepareGameFiles(void);
+void PlatformJoinThread(pthread_t thread);
 bool PlatformHttpSend(const PlatformHttpRequest *request, PlatformHttpResponse *response);
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size);
+bool PlatformReadFileRanges(const char *path, PlatformFileRange *ranges, int count);
+int PlatformCoalesceRanges(const PlatformFileRange *ranges, int count, long long gap, PlatformByteSpan *spans);
 bool PlatformReplaceFile(const char *source, const char *target);
+bool PlatformRemoveFile(const char *path);
 int PlatformProcessorCount(void);
 time_t PlatformTimeFromUtc(struct tm *utc);
 PlatformDownloadResult PlatformDownload(
@@ -59,5 +77,11 @@ bool PlatformMakeExecutable(const char *path);
 bool PlatformRemoveTree(const char *path);
 bool PlatformStartProgram(const char *executable);
 bool PlatformContinueAs(const char *executable);
+
+#ifdef __APPLE__
+bool PlatformNativeFullscreen(void *window);
+void PlatformToggleNativeFullscreen(void *window);
+void PlatformHideApplication(void);
+#endif
 
 #endif

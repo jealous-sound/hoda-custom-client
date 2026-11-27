@@ -40,6 +40,7 @@ def build():
                 "id": character["id"],
                 "rarity": character["rarity"],
                 "original_rarity": character["original_rarity"],
+                "stars": character.get("stars") or 0,
                 "obtainable": bool(character.get("obtainable")),
                 "initial_tier": tier,
                 "name": character["name"],

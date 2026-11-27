@@ -25,12 +25,25 @@ typedef struct {
 
 static LoadingScreen loading_screen;
 
-static Texture2D LoadingScreenTexture(const char *ref) {
-    Image image = ResourceLoadImage(ref);
+static Texture2D LoadingScreenTextureFrom(Image image, const char *ref) {
     Texture2D texture = LoadTextureFromImage(image);
-    UnloadImage(image);
     if (texture.id == 0) TraceLog(LOG_WARNING, "LoadingScreen: failed to load %s", ref);
     SetTextureFilter(texture, TEXTURE_FILTER_BILINEAR);
+    return texture;
+}
+
+static Texture2D LoadingScreenTexture(const char *ref) {
+    Image image = ResourceLoadImage(ref);
+    Texture2D texture = LoadingScreenTextureFrom(image, ref);
+    UnloadImage(image);
+    return texture;
+}
+
+static Texture2D LoadingScreenRingTexture(void) {
+    Image image = ResourceLoadImage(LOADING_INDICATOR_RING);
+    WindowSetLoaderArt(image);
+    Texture2D texture = LoadingScreenTextureFrom(image, LOADING_INDICATOR_RING);
+    UnloadImage(image);
     return texture;
 }
 
@@ -52,10 +65,18 @@ Rectangle LoadingIndicatorBox(Rectangle parent, float x, float y, float height) 
     return LoadingFitAspect(parent, x, y, 1.0f, height, 1.0f);
 }
 
+void LoadingScreenDrawRing(Texture2D ring, Rectangle root) {
+    if (WindowShowPageLoader()) return;
+    LoadingIndicatorDraw(
+        ring,
+        LoadingIndicatorBox(root, LOADING_SCREEN_SPINNER_X, LOADING_SCREEN_SPINNER_Y, LOADING_SCREEN_SPINNER_HEIGHT)
+    );
+}
+
 void LoadingScreenBegin(void) {
     loading_screen.splash = LoadingScreenTexture(LOADING_SCREEN_SPLASH);
     loading_screen.plate = LoadingScreenTexture(LOADING_SCREEN_PLATE);
-    loading_screen.ring = LoadingScreenTexture(LOADING_INDICATOR_RING);
+    loading_screen.ring = LoadingScreenRingTexture();
     loading_screen.message = NULL;
 }
 
@@ -70,10 +91,7 @@ void LoadingScreenShowMessage(void) {
 static void LoadingScreenDraw(void) {
     Rectangle root = UiRoot();
     UiDrawTexture(loading_screen.splash, root, WHITE);
-    LoadingIndicatorDraw(
-        loading_screen.ring,
-        LoadingIndicatorBox(root, LOADING_SCREEN_SPINNER_X, LOADING_SCREEN_SPINNER_Y, LOADING_SCREEN_SPINNER_HEIGHT)
-    );
+    LoadingScreenDrawRing(loading_screen.ring, root);
     if (!loading_screen.message) return;
     Rectangle container = LoadingFitAspect(
         root,
@@ -90,12 +108,12 @@ static void LoadingScreenDraw(void) {
 }
 
 void LoadingScreenPresent(void) {
-    BeginDrawing();
+    WindowBeginFrame();
     ClearBackground(BLACK);
     UiFrameBegin();
     LoadingScreenDraw();
     UiFrameEnd();
-    EndDrawing();
+    WindowEndFrame();
 }
 
 void LoadingScreenEnd(void) {

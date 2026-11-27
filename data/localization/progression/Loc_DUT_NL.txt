@@ -1,3 +1,4 @@
+HODA_CHALLENGE_POPUP_DESC|Uitdagingen <color=orange>stellen je team</color> op specifieke manieren <color=orange>op de proef</color>. Doorloop een uitdaging zo vaak als je wilt voor <color=orange>een kans op helden en runen!</color>
 HODA_NEXUS_EVENT_BREACH_OPENS_AGAIN_TITLE|De Scheuring opent opnieuw
 HODA_NEXUS_EVENT_WOODLAND_SPIRITS_TITLE|Bosgeesten
 HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLACK_FACTION|Zwarte factie krijgt 150% energie en kracht.

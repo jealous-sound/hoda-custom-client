@@ -5,13 +5,13 @@ typedef enum { BK_LIGHTMAP, BK_GROUND, BK_CUTOUT, BK_BACKDROP, BK_GRASS, BK_FOG 
 #define BATTLE_AMBIENCE_VOLUME 0.5f
 
 static const char *const BATTLE_VS =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec3 vertexPosition; in vec2 vertexTexCoord; in vec2 vertexTexCoord2;\n"
     "uniform mat4 mvp;\n"
     "out vec2 vUV0; out vec2 vUV1;\n"
     "void main(){ vUV0=vertexTexCoord; vUV1=vertexTexCoord2; gl_Position=mvp*vec4(vertexPosition,1.0); }\n";
 
-static const char *const BATTLE_FS_LM = "#version 330\n"
+static const char *const BATTLE_FS_LM = SHADER_GLSL_HEADER
                                         "in vec2 vUV0; in vec2 vUV1;\n"
                                         "uniform sampler2D texture0;\n"
                                         "uniform sampler2D texture1;\n"
@@ -25,7 +25,7 @@ static const char *const BATTLE_FS_LM = "#version 330\n"
                                         "  finalColor=vec4(a.rgb*uTint*lm, 1.0);\n"
                                         "}\n";
 
-static const char *const BATTLE_FS_GROUND = "#version 330\n"
+static const char *const BATTLE_FS_GROUND = SHADER_GLSL_HEADER
                                             "in vec2 vUV0; in vec2 vUV1;\n"
                                             "uniform sampler2D texture0;\n"
                                             "uniform sampler2D texture1;\n"
@@ -44,14 +44,14 @@ static const char *const BATTLE_FS_GROUND = "#version 330\n"
                                             "  finalColor=vec4(0.7015*c*lm, 1.0);\n"
                                             "}\n";
 
-static const char *const BATTLE_FS_UNLIT = "#version 330\n"
+static const char *const BATTLE_FS_UNLIT = SHADER_GLSL_HEADER
                                            "in vec2 vUV0; in vec2 vUV1;\n"
                                            "uniform sampler2D texture0;\n"
                                            "out vec4 finalColor;\n"
                                            "void main(){ finalColor=texture(texture0,vUV0); }\n";
 
 static const char *const BATTLE_FS_RING =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec2 fragTexCoord;\n"
     "uniform sampler2D texture0; uniform float uCutoff; uniform vec4 uColor;\n"
     "out vec4 finalColor;\n"
@@ -59,7 +59,7 @@ static const char *const BATTLE_FS_RING =
     "  if (t.a < 0.5 || t.r < uCutoff) discard;\n"
     "  finalColor = vec4(uColor.rgb, 1.0); }\n";
 
-static const char *const BATTLE_FS_FOG = "#version 330\n"
+static const char *const BATTLE_FS_FOG = SHADER_GLSL_HEADER
                                          "in vec2 vUV0; in vec2 vUV1;\n"
                                          "uniform sampler2D texture0;\n"
                                          "uniform vec3 uTint;\n"

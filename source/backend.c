@@ -732,7 +732,7 @@ static void BackendWorkerAccountCall(BackendWorker *w) {
         state = BackendSendAccountCall(route, body, &answer);
         leaves_account = route->leaves_account && state == BACKEND_ACCOUNT_DONE;
     }
-    if (leaves_account) remove(BackendAccountPath());
+    if (leaves_account) PlatformRemoveFile(BackendAccountPath());
     free(body);
     pthread_mutex_lock(&w->lock);
     if (state == BACKEND_ACCOUNT_DONE && call == BACKEND_ACCOUNT_SIGN_IN) BackendWorkerSwitchAccount(w, &signed_in);

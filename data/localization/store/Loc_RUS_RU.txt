@@ -1,0 +1,12 @@
+HODA_STORE_ODDS_EACH_HERO|Шансы для каждого героя
+HODA_STORE_ODDS_OTHER_HEROES|Шансы для остальных героев
+HODA_STORE_ODDS_PERCENT|{0} %
+HODA_STORE_PITY_PACKS_LEFT|Наборов до гарантированного легендарного: {0}
+HODA_STORE_PITY_NEXT_PACK|В следующем наборе гарантирован легендарный герой
+HODA_STORE_PITY_SHARED|Общий счетчик для всех недельных наборов
+HODA_STORE_BULLET_PITY|Наборов до легендарного: {0}
+HODA_STORE_BULLET_PITY_NEXT|Легендарный в следующем наборе!
+HODA_STORE_STAR_GUARANTEE_TWO_PACKS_LEFT|Наборов до гарантированного легендарного героя с 2 или 3 звездами: {0}
+HODA_STORE_STAR_GUARANTEE_TWO_NEXT_PACK|В следующем наборе гарантирован легендарный герой с 2 или 3 звездами
+HODA_STORE_STAR_GUARANTEE_THREE_PACKS_LEFT|Наборов до гарантированного легендарного героя с 3 звездами: {0}
+HODA_STORE_STAR_GUARANTEE_THREE_NEXT_PACK|В следующем наборе гарантирован легендарный герой с 3 звездами

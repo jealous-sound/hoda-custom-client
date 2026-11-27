@@ -96,6 +96,17 @@ class SquadRulesTest(unittest.TestCase):
         characters = {"UNIT_A": hero()}
         self.assertFalse(build_pvp_rules.squad_fits(rares, characters, [{"id": "UNIT_A"}, {"id": "UNIT_A"}]))
 
+    def test_rarity_rules_judge_the_rarity_on_the_card(self):
+        rares = build_pvp_rules.squad_rules(rarities=["Rare"])
+        shown_legendary = {**hero(), "original_rarity": "Legendary"}
+        shown_rare = {**hero("Epic"), "original_rarity": "Rare"}
+        self.assertFalse(judged(rares, shown_legendary))
+        self.assertTrue(judged(rares, shown_rare))
+        characters = {"UNIT_A": shown_rare}
+        self.assertFalse(build_pvp_rules.squad_fits(rares, characters, [{"id": "UNIT_A", "ascended": True}]))
+        uncapped = build_pvp_rules.squad_rules(members=build_pvp_rules.heroes(factions=["Red"]))
+        self.assertTrue(build_pvp_rules.squad_fits(uncapped, characters, [{"id": "UNIT_A", "ascended": True}]))
+
     def test_factions_let_large_creatures_join_but_groups_do_not(self):
         red = build_pvp_rules.squad_rules(members=build_pvp_rules.heroes(factions=["Red"]))
         self.assertTrue(judged(red, hero(), hero(faction="White/Red"), hero(faction="All"), hero(giant=True)))

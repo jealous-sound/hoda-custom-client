@@ -19,6 +19,7 @@ typedef struct {
 #define DEBUG_EXPEDITION_JUST_LEFT 600
 #define DEBUG_TUTORIAL_SELECT_FRAME 5
 #define DEBUG_PVP_TROPHIES 640
+#define DEBUG_NO_DETAIL (-1)
 #define DEBUG_PVP_FIGHT_SEED 7
 #define DEBUG_PVP_BANNERS 320
 #define DEBUG_PVP_MILESTONES 2
@@ -27,6 +28,8 @@ typedef struct {
 #define DEBUG_PVP_BATTLES 5
 #define DEBUG_PVP_BATTLE_SPACING 5400
 #define DEBUG_PVP_DEFENSE_DELAY 90000
+#define DEBUG_PVP_PLAYER_ATTACK_AGO 3600
+#define DEBUG_PVP_PLAYER_TROPHY_SWING 31
 #define DEBUG_BFX_DEFAULT_AGE 30
 #define DEBUG_PACK_FUNDS 999999
 #define DEBUG_REVEAL_STEPS_PER_SECOND 60.0f
@@ -55,7 +58,8 @@ typedef struct {
     "{\"id\":\"anders\",\"name\":\"Anders\",\"level\":8,\"trophies\":5775,\"banners\":9100}]}"
 #define DEBUG_DUEL_RIVAL                                                                                               \
     "{\"id\":\"isabela\",\"name\":\"Isabela\",\"level\":100,\"trophies\":900,\"renown_rank\":41,\"vault_tier\":3,"     \
-    "\"units\":[{\"slot\":0,\"id\":\"UNIT_VIVIENNE\",\"tier\":\"II\",\"level\":9},"                                    \
+    "\"hero_builds\":true,\"units\":[{\"slot\":0,\"id\":\"UNIT_VIVIENNE\",\"tier\":\"II\",\"level\":9,"                \
+    "\"gear\":[\"augurs_witchstaff\",\"cobra_crown\",\"\",\"\",\"\"]},"                                                \
     "{\"slot\":1,\"id\":\"UNIT_ELVENMAGE\",\"tier\":\"I\",\"level\":2}],\"runes\":[]}"
 #define DEBUG_RESULTS_SETTLE_FRAMES 10
 #define DEBUG_MISSION_SUMMONS 600
@@ -170,12 +174,12 @@ static void DebugRenderNexusScene(const char *scene_name) {
     for (float settled = 0.0f; settled < DEBUG_NEXUS_SCENE_SETTLE_SECONDS; settled += MAP_SCENE_STEP)
         NexusBackgroundUpdate(&bg, MAP_SCENE_STEP);
     for (int frame = 0; frame < 4; frame++) {
-        BeginDrawing();
+        WindowBeginFrame();
         ClearBackground(BLACK);
         BeginMode3D(bg.cam);
         NexusBackgroundDraw(&bg);
         EndMode3D();
-        EndDrawing();
+        WindowEndFrame();
     }
     const char *output = getenv("HOD_SHOT");
     if (output) TakeScreenshot(GetFileName(output));
@@ -216,6 +220,17 @@ static void DebugSeedVault(Player *player) {
     };
 }
 
+static void DebugShowStorePackInfo(Store *store, Player *player) {
+    int pack = EnvInt("HOD_STORE_INFO", -1);
+    if (pack < 0 || pack >= store->pack_count) return;
+    store->info_pack = pack;
+    const char *counter = StorePackPityCounter(&store->packs[pack]);
+    PlayerSetPacksSinceLegendary(player, counter, EnvInt("HOD_PACKS_SINCE_LEGENDARY", 0));
+    for (int stars = STORE_STAR_GUARANTEE_LOWEST_STARS; stars <= STORE_LEGENDARY_STAR_MAX; stars++)
+        if (StorePackHasStarGuarantee(&store->packs[pack], stars))
+            PlayerSetPacksSinceStarGuarantee(player, counter, stars, EnvInt("HOD_PACKS_SINCE_STAR_GUARANTEE", 0));
+}
+
 static void DebugPrepareStore(Game *game, DebugShot *shot) {
     static const char *const names[] = {
         "store",
@@ -239,8 +254,10 @@ static void DebugPrepareStore(Game *game, DebugShot *shot) {
         StoreOpen(&game->store);
         game->store.clock_override = EnvInt("HOD_STORE_NOW", 0);
         game->store.scroll = EnvFloat("HOD_STORE_SCROLL", 0.0f);
+        game->store.bullet_time = EnvFloat("HOD_STORE_BULLET_TIME", 0.0f);
         for (int voucher = 0; voucher < game->store.voucher_count; voucher++)
             game->player.pack_vouchers[voucher] = EnvInt("HOD_VOUCHERS", 0);
+        DebugShowStorePackInfo(&game->store, &game->player);
         if (DebugShotIs(shot, "store_heroes")) {
             game->store.view = STORE_VIEW_HEROES;
         } else if (DebugShotIs(shot, "store_gems")) {
@@ -314,8 +331,14 @@ static void DebugPrepareNexus(Game *game, DebugShot *shot) {
         game->player.nexus_run.escrow_potions = EnvInt("HOD_NEXUS_POTIONS", 2);
         game->player.nexus_run.escrow_units[EnvInt("HOD_NEXUS_RARITY", RARITY_RARE)] = EnvInt("HOD_NEXUS_UNITS", 3);
     }
+    if (EnvFlag("HOD_NEXUS_REVIVE")) {
+        game->player.nexus_run.committed = true;
+        game->player.nexus_run.reset = true;
+        game->player.potions = EnvInt("HOD_NEXUS_POTIONS_HELD", game->player.potions);
+    }
     NexusEnterMap(&game->nexus, &game->player, event, difficulty);
-    game->nexus.quit_open = EnvFlag("HOD_NEXUS_QUIT");
+    if (EnvFlag("HOD_NEXUS_QUIT")) game->nexus.dialog = NEXUS_DIALOG_QUIT;
+    if (EnvFlag("HOD_NEXUS_DIALOG")) game->nexus.dialog = (NexusDialog)EnvInt("HOD_NEXUS_DIALOG", 0);
     shot->flow_started = true;
 }
 
@@ -350,6 +373,7 @@ static void DebugPrepareQuestLadder(Game *game, const DebugShot *shot) {
 static void DebugPrepareCampaignMap(Game *game, DebugShot *shot) {
     if (!DebugShotIs(shot, "map")) return;
     game->screen = SCREEN_MAP;
+    if (EnvFlag("HOD_MAP_TRAY")) game->map.tray_open = true;
     const char *map_number = getenv("HOD_MAP");
     if (!map_number || shot->flow_started) return;
     int map_index = Clamp(atoi(map_number) - 1, 0, game->map.map_count - 1);
@@ -363,7 +387,25 @@ static void DebugPrepareCampaignMap(Game *game, DebugShot *shot) {
     shot->flow_started = true;
 }
 
+static void DebugPrepareChallengeReveal(Game *game, DebugShot *shot) {
+    if (!DebugShotIs(shot, "map_progress_challenge")) return;
+    game->screen = SCREEN_MAP;
+    if (shot->flow_started) return;
+    PlayerCampaignProgress *progress = &game->player.campaign_progress;
+    int map_index = Clamp(EnvInt("HOD_MAP", 2) - 1, 0, game->map.map_count - 1);
+    for (int map = 0; map <= map_index; map++) {
+        int boss = CampaignBossNodeIndex(&game->map, map);
+        for (int node = map < map_index ? boss : 0; node <= boss; node++) progress->node_completions[map][node] = 1;
+    }
+    int boss = CampaignBossNodeIndex(&game->map, map_index);
+    progress->campaign_index = map_index;
+    progress->node_index = CampaignFrontierForMap(&game->map, progress, map_index);
+    CampaignBeginProgressionAnimation(&game->map, map_index, boss, map_index, progress->node_index);
+    shot->flow_started = true;
+}
+
 static void DebugPrepareMapProgress(Game *game, DebugShot *shot) {
+    DebugPrepareChallengeReveal(game, shot);
     bool is_new = DebugShotIs(shot, "map_progress_new");
     if (!is_new && !DebugShotIs(shot, "map_progress")) return;
     game->screen = SCREEN_MAP;
@@ -486,29 +528,65 @@ static BattleResultsPresentation DebugResultsPresentation(const DebugShot *shot,
     } else if (DebugShotIs(shot, "results_repeat")) {
         presentation.completions_pre = DEBUG_WINS_TO_MASTER;
         presentation.completions_post = DEBUG_WINS_TO_MASTER + 1;
+    } else if (DebugShotIs(shot, "results_challenge")) {
+        char map_id[32] = "PVE_MAP_02";
+        const char *node = getenv("HOD_NODE");
+        if (node) sscanf(node, "%31[^:]", map_id);
+        const char *drop = getenv("HOD_DROP");
+        ChallengeDropKind kind = drop && !strncmp(drop, "UNIT_", 5) ? CHALLENGE_DROP_UNIT : CHALLENGE_DROP_RUNE;
+        presentation.grind = true;
+        presentation.challenge_drop.drop = ChallengeDropFind(ChallengeDropsForMap(map_id), kind, drop);
     }
     return presentation;
 }
 
 static void DebugSeedRenown(Player *player, int rank, int free_points);
 
+static void DebugSeedPlayerDefense(PlayerPvp *pvp, const char *id, const char *name, bool won, bool event) {
+    long long at = (long long)time(NULL) - DEBUG_PVP_PLAYER_ATTACK_AGO;
+    PlayerPvpBattle line = {.at = at, .level = 100, .defense = true, .won = won, .event = event};
+    if (!event) line.trophy_delta = won ? DEBUG_PVP_PLAYER_TROPHY_SWING : -DEBUG_PVP_PLAYER_TROPHY_SWING;
+    StrCopy(line.opponent_id, sizeof(line.opponent_id), id);
+    StrCopy(line.opponent, sizeof(line.opponent), name);
+    PvpHistoryPush(pvp, &line);
+}
+
+static void DebugSeedPlayerAttacks(PlayerPvp *pvp, bool event) {
+    PvpNoteAttack(pvp, "varric", (long long)time(NULL) - DEBUG_PVP_PLAYER_ATTACK_AGO);
+    DebugSeedPlayerDefense(pvp, "varric", "Varric", true, event);
+    DebugSeedPlayerDefense(pvp, "isabela", "Isabela", false, event);
+}
+
 static void DebugSeedLadderRivals(Game *game) {
     cJSON *reply = cJSON_Parse(TextFormat(DEBUG_LADDER_RIVALS, PvpEventCycle((long long)time(NULL))));
     PvpLadderAdopt(&pvp_ladder, reply);
     PvpEventLadderAdopt(&pvp_event_ladder, reply);
     cJSON_Delete(reply);
+    PvpNoteAttack(&game->player.pvp, "varric", (long long)time(NULL) - DEBUG_PVP_PLAYER_ATTACK_AGO);
     DebugSeedRenown(&game->player, EnvInt("HOD_RENOWN_RANK", DEBUG_RENOWN_RANK), 0);
+}
+
+static void DebugOpenEnemyDetail(Game *game) {
+    int slot = EnvInt("HOD_DETAIL", DEBUG_NO_DETAIL);
+    BattleUi *ui = &game->battle_ui;
+    if (slot < 0 || slot >= SQUAD_SLOT_COUNT || ui->detail_open || !ui->plates[1][slot].ch) return;
+    BattleUiSetTacticalEx(ui, &game->battle, true, false);
+    BattleUiOpenPlateDetails(ui, &ui->plates[1][slot]);
+    ui->detail_gear_slot = EnvInt("HOD_DETAIL_GEAR", GEAR_NO_WORN_SLOT);
 }
 
 static bool DebugPrepareDuel(Game *game, DebugShot *shot) {
     if (!DebugShotIs(shot, "pvp_duel")) return false;
     game->screen = SCREEN_BATTLE;
-    if (game->battle.squads_loaded) return true;
+    if (game->battle.squads_loaded) {
+        DebugOpenEnemyDetail(game);
+        return true;
+    }
     cJSON *reply = cJSON_Parse(DEBUG_DUEL_RIVAL);
     GuildHandleDuel(&game->guild, reply);
     cJSON_Delete(reply);
     DebugSeedRenown(&game->player, EnvInt("HOD_RENOWN_RANK", DEBUG_RENOWN_RANK), 0);
-    GameEnterFixedPvpBattle(game, GameDuelOpponent(game), -1, SCREEN_MISSIONS);
+    GameEnterFixedPvpBattle(game, GameDuelOpponent(game), -1, false, SCREEN_MISSIONS);
     return true;
 }
 
@@ -560,6 +638,7 @@ static void DebugPreparePvp(Game *game, DebugShot *shot) {
                 PvpOpponent opponent =
                     PvpEventOpponentGenerate(game->player.level, pvp->trophies, pvp->event.banners, now, 0, 1);
                 PvpRecordEventAttack(pvp, &opponent, true, now);
+                DebugSeedPlayerAttacks(pvp, true);
             }
         }
         game->screen = SCREEN_PVP_EVENT;
@@ -574,10 +653,12 @@ static void DebugPreparePvp(Game *game, DebugShot *shot) {
     game->screen = SCREEN_BATTLE;
     if (!game->battle.squads_loaded) {
         game->player.pvp.trophies = DEBUG_PVP_TROPHIES;
+        game->player.level = EnvInt("HOD_PLAYER_LEVEL", game->player.level);
         bool event = DebugShotIsAny(shot, (const char *const[]){"pvp_event_match", "pvp_event_results"}, 2);
-        GameMatchPvp(game, event, GAME_PVP_MATCHMAKING, false, SCREEN_PVP_HUB);
+        GameMatchPvp(game, event, EnvInt("HOD_PVP_BOT", GAME_PVP_MATCHMAKING), false, SCREEN_PVP_HUB);
         return;
     }
+    DebugOpenEnemyDetail(game);
     const char *fight_seed = getenv("HOD_FIGHT");
     if (DebugShotIs(shot, "pvp_fight") && fight_seed && !BattlePlayActive(&game->battle_play))
         BattlePlayStart(&game->battle_play, &game->battle, &game->player, (unsigned)atoi(fight_seed));
@@ -599,7 +680,8 @@ static void DebugPrepareBattle(Game *game, DebugShot *shot) {
         "results",
         "completion_mastery",
         "results_repeat",
-        "results_loss"
+        "results_loss",
+        "results_challenge"
     };
     if (!DebugShotIsAny(shot, names, sizeof(names) / sizeof(names[0]))) return;
     game->screen = SCREEN_BATTLE;
@@ -751,7 +833,8 @@ static void DebugSeedGoals(Game *game, DebugShot *shot) {
             PvpOpponent o = PvpOpponentGenerate(game->player.level, pvp->trophies, PvpDay(now), seed);
             PvpRecordAttack(pvp, &o, seed % 3 != 0, now - seed * DEBUG_PVP_BATTLE_SPACING);
         }
-        PvpSimulateDefense(pvp, game->player.level, now + DEBUG_PVP_DEFENSE_DELAY);
+        PvpSimulateDefense(&game->player, now + DEBUG_PVP_DEFENSE_DELAY);
+        DebugSeedPlayerAttacks(pvp, false);
         pvp->event = (PlayerPvpEvent){.cycle = PvpEventCycle(now) - 1, .banners = DEBUG_PVP_BANNERS};
         if (DebugShotIs(shot, "goals_trophies_rivals")) DebugSeedLadderRivals(game);
         MissionsOpen(&game->missions, &game->player, shots[i].tab);
@@ -909,6 +992,10 @@ static void DebugPrepareGear(Game *game, DebugShot *shot) {
         int owned[GEAR_CATALOG_CAPACITY];
         if (GearViewFilteredItems(player, gear_view.filter, false, owned) > 0) gear_view.selected = owned[0];
         if (DebugShotIs(shot, "gear_sell")) GearViewRequestSell();
+        return;
+    }
+    if (DebugShotIs(shot, "gear_worn")) {
+        GearViewShow(hero, 0);
         return;
     }
     GearViewShow(hero, 1);
@@ -1139,7 +1226,7 @@ static bool DebugRenderPlayMode(const char *screen_name, const char *output) {
     bool install_started = false;
     for (int frame = 0; frame < frames && !WindowShouldClose(); frame++) {
         bool last = frame + 1 == frames || (live && DebugLiveInstallSettled(&install_started));
-        BeginDrawing();
+        WindowBeginFrame();
         ClearBackground(BLACK);
         UiFrameBegin();
         PlayModeScreenDraw(&screen);
@@ -1148,7 +1235,7 @@ static bool DebugRenderPlayMode(const char *screen_name, const char *output) {
             rlDrawRenderBatchActive();
             TakeScreenshot(output);
         }
-        EndDrawing();
+        WindowEndFrame();
         if (last) break;
     }
     PlayModeScreenUnload(&screen);
@@ -1253,7 +1340,7 @@ static bool DebugRenderAccountGate(const char *screen_name, const char *output) 
     int frames = EnvInt("HOD_SHOT_FRAMES", DEBUG_SHOT_DEFAULT_FRAMES);
     for (int frame = 0; frame < frames && !WindowShouldClose(); frame++) {
         bool last = frame + 1 == frames;
-        BeginDrawing();
+        WindowBeginFrame();
         ClearBackground(BLACK);
         UiFrameBegin();
         AccountGateDraw(&gate);
@@ -1262,7 +1349,7 @@ static bool DebugRenderAccountGate(const char *screen_name, const char *output) 
             rlDrawRenderBatchActive();
             TakeScreenshot(output);
         }
-        EndDrawing();
+        WindowEndFrame();
     }
     LocUnload();
     AssetsUnload();
@@ -1759,7 +1846,17 @@ static void DebugPrepareExpeditions(Game *game, DebugShot *shot) {
     }
 }
 
+static void DebugPrepareNotice(Game *game) {
+    const char *notice = getenv("HOD_NOTICE");
+    if (!notice || game->notice.open) return;
+    if (strcmp(notice, "energy") == 0)
+        GameOpenNotice(game, "REFRESH_ENERGY_MAX_CTA_TITLE", "REFRESH_ENERGY_MAX_CTA_MESSAGE");
+    if (strcmp(notice, "retreat") == 0) GameOpenNotice(game, NULL, "BACK_BUTTON_DURING_BATTLE_MESSAGE");
+    if (strcmp(notice, "revive") == 0) GameOpenNotice(game, "NEXUS_REVIVE_SUCCESS_TITLE", "NEXUS_REVIVE_SUCCESS_BODY");
+}
+
 static void DebugShotPrepare(Game *game, DebugShot *shot) {
+    DebugPrepareNotice(game);
     if (DebugPrepareTutorial(game, shot) || DebugPrepareNamePrompt(game, shot)) return;
     if (DebugPrepareOptions(game, shot) || DebugPrepareClientUpdate(game, shot)) return;
     if (DebugPrepareProfile(game, shot) || DebugPrepareRenown(game, shot)) return;

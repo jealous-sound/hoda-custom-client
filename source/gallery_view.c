@@ -12,6 +12,9 @@
 #define GALLERY_FIRST_MULTIBYTE 0x80
 #define GALLERY_LORE_FONT_SIZE 17.0f
 #define GALLERY_LABEL_FONT_SIZE 18.0f
+#define GALLERY_COUNT_ROW_X 591.0f
+#define GALLERY_RARITY_ICON_CENTRE_X 573.5f
+#define GALLERY_TIER_CAPTION_WIDTH 40.0f
 #define GALLERY_TITLE_FONT_SIZE 34.0f
 #define GALLERY_HEADER_FONT_SIZE 21.0f
 #define GALLERY_NAME_FONT_SIZE 14.0f
@@ -91,7 +94,7 @@ typedef struct {
 static Rectangle GalleryRect(float x, float y, float w, float h) {
     float k = GALLERY_DESIGN_SCALE;
     float origin = (UiWidth() - GALLERY_DESIGN_WIDTH * k) * 0.5f;
-    return (Rectangle){origin + x * k, y * k, w * k, h * k};
+    return (Rectangle){origin + x * k, UiCentredY(y * k), w * k, h * k};
 }
 
 void GalleryInitialize(Gallery *g, const char *catalog_path) {
@@ -294,17 +297,13 @@ static void GalleryDrawCenteredWrapped(Font font, const char *text, Rectangle r,
     }
 }
 
-static void GalleryDrawCountRow(Rectangle row, const char *caption, int owned, int total) {
+static void GalleryDrawCountRow(Rectangle row, int owned, int total) {
     Font font = GuiFont(FNT_MENU);
     DrawRectangleRec(row, Fade(BLACK, 0.8f));
     float fraction = total > 0 ? (float)owned / (float)total : 0.0f;
     Rectangle fill = {row.x, row.y, row.width * fraction, row.height};
     UiDrawTexture(GuiTex(GUI_GALLERY_ROW_FILL), fill, Fade(WHITE, 0.65f));
     UiDrawTextRight(font, TextFormat("(%d/%d)", owned, total), row, GALLERY_LABEL_FONT_SIZE, WHITE);
-    if (caption) {
-        Rectangle label = {row.x - 30.0f, row.y, 60.0f, row.height};
-        UiDrawTextCentered(GuiFont(FNT_COOL), caption, label, GALLERY_LABEL_FONT_SIZE, WHITE);
-    }
 }
 
 static void GalleryDrawStats(const Gallery *g) {
@@ -312,17 +311,23 @@ static void GalleryDrawStats(const Gallery *g) {
     static const float tier_rows[TIER_COUNT] = {261.0f, 230.0f, 199.0f, 167.0f};
     static const float rarity_rows[RARITY_LEGENDARY] = {457.0f, 426.0f, 395.0f, 366.0f, 334.0f};
     const GalleryTotals *totals = &g->totals;
-    for (int tier = 0; tier < TIER_COUNT; tier++)
+    for (int tier = 0; tier < TIER_COUNT; tier++) {
         GalleryDrawCountRow(
-            GalleryRect(591.0f, tier_rows[tier], 155.0f, 20.0f),
-            TIER_NAMES[tier],
+            GalleryRect(GALLERY_COUNT_ROW_X, tier_rows[tier], 155.0f, 20.0f),
             totals->tier_owned[tier],
             totals->tier_total[tier]
         );
+        Rectangle caption = GalleryRect(
+            GALLERY_RARITY_ICON_CENTRE_X - GALLERY_TIER_CAPTION_WIDTH * 0.5f,
+            tier_rows[tier],
+            GALLERY_TIER_CAPTION_WIDTH,
+            20.0f
+        );
+        UiDrawTextCentered(GuiFont(FNT_COOL), TIER_NAMES[tier], caption, GALLERY_LABEL_FONT_SIZE, WHITE);
+    }
     for (int rarity = 0; rarity < RARITY_LEGENDARY; rarity++)
         GalleryDrawCountRow(
-            GalleryRect(591.0f, rarity_rows[rarity], 155.0f, 20.0f),
-            NULL,
+            GalleryRect(GALLERY_COUNT_ROW_X, rarity_rows[rarity], 155.0f, 20.0f),
             totals->rarity_owned[rarity],
             totals->rarity_total[rarity]
         );
@@ -673,7 +678,7 @@ static void GalleryShowCurrentUnit(Gallery *g, Player *p, HomeBackground *scene)
 
     if (GalleryRecordClearNew(&p->gallery, definition->id)) ProgressionSave(p);
     const GalleryRecord *record = GalleryRecordFind(&p->gallery, definition->id);
-    bool owned = record && (record->owned_tiers & GalleryTierBit(tier));
+    bool owned = GalleryRecordShowsTier(record, tier);
     g->spin_yaw = 0.0f;
     HomeBackgroundGalleryShow(scene, &g->shown_unit, !owned, g->spin_yaw);
 }
@@ -724,7 +729,7 @@ GalleryScreenAction GalleryScreenDraw(Gallery *g, Heroes *h, Player *p, HomeBack
     for (int tier = 0; tier < TIER_COUNT; tier++) {
         Rectangle r = {
             GALLERY_TIER_BUTTONS_X + tier * GALLERY_TIER_BUTTON_STRIDE,
-            GALLERY_BOTTOM_BUTTONS_Y,
+            UiBottomY(GALLERY_BOTTOM_BUTTONS_Y),
             GALLERY_TIER_BUTTON_SIZE,
             GALLERY_TIER_BUTTON_SIZE,
         };
@@ -737,7 +742,7 @@ GalleryScreenAction GalleryScreenDraw(Gallery *g, Heroes *h, Player *p, HomeBack
     int step = 0;
     if (g->unit_count > 1) {
         float height = GALLERY_NAV_BUTTON_W / 3.5f;
-        Rectangle previous = {GALLERY_NAV_BUTTON_X, GALLERY_BOTTOM_BUTTONS_Y, GALLERY_NAV_BUTTON_W, height};
+        Rectangle previous = {GALLERY_NAV_BUTTON_X, UiBottomY(GALLERY_BOTTOM_BUTTONS_Y), GALLERY_NAV_BUTTON_W, height};
         Rectangle next = previous;
         next.x += GALLERY_NAV_BUTTON_W + GALLERY_NAV_BUTTON_GAP;
         if (ButtonDrawEx(&g->previous, previous, input)) step = -1;

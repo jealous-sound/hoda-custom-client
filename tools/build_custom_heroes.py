@@ -14,7 +14,8 @@ OUTPUT = ROOT / "data/custom_heroes.json"
 CATALOG = ROOT / "client-additional-data/characters.json"
 CHAR_PACK = ROOT / "client-additional-data/char_pack"
 PORTRAIT_DIR = ROOT / "client-additional-data/extra/portraits"
-DISPLAY_SCALES = ROOT / "client-additional-data/anim_tools/display_scales.json"
+ANIM_TOOLS = ROOT / "client-additional-data/anim_tools"
+DISPLAY_SCALES = ANIM_TOOLS / "display_scales.json"
 BAKE_COMMAND = "uv run --offline --with numpy --with Pillow --with UnityPy python tools/bake_custom_heroes.py"
 CLI_DESCRIPTION = (
     "Build data/custom_heroes.json, the catalog rows of heroes derived from shipped ones, "
@@ -23,8 +24,8 @@ CLI_DESCRIPTION = (
 
 CATALOG_VERSION = 1
 TIERS = ("I", "II", "III", "IV")
-POWER_FIELDS = ("base_power", "max_power", "power_per_level", "max_fortify_power")
-HEALTH_FIELDS = ("base_health", "max_health", "health_per_level", "max_fortify_health")
+POWER_FIELDS = ("base_power", "max_power", "max_fortify_power")
+HEALTH_FIELDS = ("base_health", "max_health", "max_fortify_health")
 RUNTIME_ID_CAPACITY = 64
 RUNTIME_NAME_CAPACITY = 64
 SPEC_FIELDS = {"id", "based_on", "prefab", "character", "stat_scale", "look"}

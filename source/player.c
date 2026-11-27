@@ -4,9 +4,13 @@
 #define PLAYER_MAX_LEVEL 100
 #define ENERGY_REFILL_GEM_COST 3
 #define STAMINA_REFILL_GEM_COST 3
+#define REVIVE_POTION_GEM_COST 5
 #define PLAYER_ROSTER_CAPACITY 1024
 #define PLAYER_STORE_PACK_COUNT 4
 #define PLAYER_VOUCHER_CAPACITY 16
+#define PLAYER_PACK_PITY_CAPACITY 72
+#define PLAYER_PACK_PITY_COUNTER_CAPACITY 32
+#define PLAYER_STAR_GUARANTEE_CAPACITY 32
 #define PLAYER_INSTANCE_ID_MAX 9007199254740991ULL
 #define PLAYER_NAME_MAX_CHARACTERS 25
 #define PLAYER_NAME_CAPACITY (PLAYER_NAME_MAX_CHARACTERS * 4 + 1)
@@ -86,6 +90,17 @@ typedef struct {
 } PlayerTutorial;
 
 typedef struct {
+    char counter[PLAYER_PACK_PITY_COUNTER_CAPACITY];
+    int packs_since_legendary;
+} PlayerPackPity;
+
+typedef struct {
+    char counter[PLAYER_PACK_PITY_COUNTER_CAPACITY];
+    int lowest_stars;
+    int packs_since_fired;
+} PlayerStarGuarantee;
+
+typedef struct {
     int level;
     int experience;
     int experience_min;
@@ -110,7 +125,10 @@ typedef struct {
     uint32_t store_rng_state;
     int store_opened_total;
     int store_opened_by_pack[PLAYER_STORE_PACK_COUNT];
-    int champion_since_legendary;
+    PlayerPackPity pack_pity[PLAYER_PACK_PITY_CAPACITY];
+    int pack_pity_count;
+    PlayerStarGuarantee star_guarantees[PLAYER_STAR_GUARANTEE_CAPACITY];
+    int star_guarantee_count;
     int pack_vouchers[PLAYER_VOUCHER_CAPACITY];
 
     PlayerCampaignProgress campaign_progress;
@@ -613,6 +631,63 @@ bool PlayerSpendGems(Player *p, int cost) {
     return true;
 }
 
+static PlayerPackPity *PlayerFindPackPity(Player *p, const char *counter) {
+    for (int i = 0; i < p->pack_pity_count; i++)
+        if (!strcmp(p->pack_pity[i].counter, counter)) return &p->pack_pity[i];
+    return NULL;
+}
+
+int PlayerPacksSinceLegendary(const Player *p, const char *counter) {
+    const PlayerPackPity *pity = PlayerFindPackPity((Player *)p, counter);
+    return pity ? pity->packs_since_legendary : 0;
+}
+
+bool PlayerCanTrackPackPity(const Player *p, const char *counter) {
+    if (PlayerFindPackPity((Player *)p, counter)) return true;
+    return p->pack_pity_count < PLAYER_PACK_PITY_CAPACITY && strlen(counter) < PLAYER_PACK_PITY_COUNTER_CAPACITY;
+}
+
+bool PlayerSetPacksSinceLegendary(Player *p, const char *counter, int packs) {
+    if (packs < 0 || !PlayerCanTrackPackPity(p, counter)) return false;
+    PlayerPackPity *pity = PlayerFindPackPity(p, counter);
+    if (!pity) {
+        pity = &p->pack_pity[p->pack_pity_count++];
+        StrCopy(pity->counter, sizeof(pity->counter), counter);
+    }
+    pity->packs_since_legendary = packs;
+    return true;
+}
+
+static PlayerStarGuarantee *PlayerFindStarGuarantee(Player *p, const char *counter, int lowest_stars) {
+    for (int i = 0; i < p->star_guarantee_count; i++)
+        if (p->star_guarantees[i].lowest_stars == lowest_stars && !strcmp(p->star_guarantees[i].counter, counter))
+            return &p->star_guarantees[i];
+    return NULL;
+}
+
+int PlayerPacksSinceStarGuarantee(const Player *p, const char *counter, int lowest_stars) {
+    const PlayerStarGuarantee *guarantee = PlayerFindStarGuarantee((Player *)p, counter, lowest_stars);
+    return guarantee ? guarantee->packs_since_fired : 0;
+}
+
+bool PlayerCanTrackStarGuarantee(const Player *p, const char *counter, int lowest_stars) {
+    if (PlayerFindStarGuarantee((Player *)p, counter, lowest_stars)) return true;
+    return p->star_guarantee_count < PLAYER_STAR_GUARANTEE_CAPACITY &&
+           strlen(counter) < PLAYER_PACK_PITY_COUNTER_CAPACITY;
+}
+
+bool PlayerSetPacksSinceStarGuarantee(Player *p, const char *counter, int lowest_stars, int packs) {
+    if (packs < 0 || !PlayerCanTrackStarGuarantee(p, counter, lowest_stars)) return false;
+    PlayerStarGuarantee *guarantee = PlayerFindStarGuarantee(p, counter, lowest_stars);
+    if (!guarantee) {
+        guarantee = &p->star_guarantees[p->star_guarantee_count++];
+        StrCopy(guarantee->counter, sizeof(guarantee->counter), counter);
+        guarantee->lowest_stars = lowest_stars;
+    }
+    guarantee->packs_since_fired = packs;
+    return true;
+}
+
 bool PlayerUnlockPrestigeRuneSlot(Player *p, int squad) {
     if (!p || squad < 0 || squad >= PLAYER_MAX_SQUADS || p->runes.prestige_unlocked[squad]) return false;
     if (!PlayerSpendGems(p, RUNE_PRESTIGE_UNLOCK_GEMS)) return false;
@@ -655,6 +730,13 @@ bool PlayerRefillEnergy(Player *p) {
     p->gems -= ENERGY_REFILL_GEM_COST;
     p->energy = p->energy_max;
     p->energy_regen_timer = 0.0f;
+    return true;
+}
+
+bool PlayerBuyRevivePotion(Player *p) {
+    if (!p || p->gems < REVIVE_POTION_GEM_COST || (p->potion_max > 0 && p->potions >= p->potion_max)) return false;
+    p->gems -= REVIVE_POTION_GEM_COST;
+    p->potions++;
     return true;
 }
 

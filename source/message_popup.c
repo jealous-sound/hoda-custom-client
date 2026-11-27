@@ -89,8 +89,8 @@ static void MessagePopupDrawScrim(void) {
 }
 
 static Rectangle MessagePopupRect(void) {
-    float height = UiHeight() * MESSAGE_POPUP_HEIGHT;
-    float width = fminf(height * MESSAGE_POPUP_ASPECT, UiWidth());
+    float height = UI_DESIGN_H * MESSAGE_POPUP_HEIGHT;
+    float width = fminf(height * MESSAGE_POPUP_ASPECT, UiFullScaleWidth());
     return (Rectangle){(UiWidth() - width) * 0.5f, (UiHeight() - height) * 0.5f, width, height};
 }
 

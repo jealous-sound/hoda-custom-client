@@ -83,6 +83,14 @@ const GalleryRecord *GalleryRecordFind(const PlayerGallery *gallery, const char 
     return NULL;
 }
 
+bool GalleryRecordShowsTier(const GalleryRecord *record, Tier tier) {
+    if (!record) return false;
+    unsigned bit = GalleryTierBit(tier);
+    bool owned_at_or_below = record->owned_tiers & ((bit << 1) - 1u);
+    bool owned_at_or_above = record->owned_tiers & ~(bit - 1u);
+    return owned_at_or_below && owned_at_or_above;
+}
+
 static GalleryRecord *GalleryRecordObtain(PlayerGallery *gallery, const char *id) {
     GalleryRecord *found = (GalleryRecord *)GalleryRecordFind(gallery, id);
     if (found) return found;
@@ -342,8 +350,7 @@ GalleryTotals GalleryTotalsCompute(const GalleryCatalog *catalog, const PlayerGa
     for (int i = 0; i < catalog->count; i++) {
         const Character *unit = &catalog->units[i];
         const GalleryRecord *record = GalleryRecordFind(gallery, unit->id);
-        unsigned char owned_tiers = record ? record->owned_tiers : 0;
-        bool lowest_owned = owned_tiers & GalleryTierBit(GalleryLowestTier(unit));
+        bool lowest_owned = GalleryRecordShowsTier(record, GalleryLowestTier(unit));
         totals.total++;
         totals.owned += lowest_owned;
         totals.rarity_total[unit->original_rarity - RARITY_COMMON]++;
@@ -351,7 +358,7 @@ GalleryTotals GalleryTotalsCompute(const GalleryCatalog *catalog, const PlayerGa
         for (int tier = 0; tier < TIER_COUNT; tier++) {
             if (!unit->has_tier[tier]) continue;
             totals.tier_total[tier]++;
-            totals.tier_owned[tier] += (owned_tiers & GalleryTierBit((Tier)tier)) != 0;
+            totals.tier_owned[tier] += GalleryRecordShowsTier(record, (Tier)tier);
         }
     }
     return totals;

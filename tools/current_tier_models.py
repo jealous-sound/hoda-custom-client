@@ -26,6 +26,7 @@ DEFAULT_INVENTORY = ANIM_TOOLS / "cache" / "current_tier_inventory.json"
 
 TIER_SUFFIX = re.compile(r"_t\d+$", re.IGNORECASE)
 BUILDABLE = {"source_ready", "rebuild_ready"}
+EVERY_TIER_ROSTER = "every tier of every catalog character"
 
 
 def prefab_base(prefab: str) -> str:
@@ -45,15 +46,23 @@ def read_json(path: Path) -> Any:
     return json.loads(path.read_text())
 
 
+def every_tier_roster(catalog: list[dict[str, Any]]) -> list[dict[str, str]]:
+    return [
+        {"id": character["id"], "tier": tier}
+        for character in catalog
+        for tier in character.get("models", {})
+    ]
+
+
 def audit_models(
     catalog_path: Path = DEFAULT_CATALOG,
-    player_path: Path = DEFAULT_PLAYER,
+    player_path: Path | None = DEFAULT_PLAYER,
     char_pack: Path = DEFAULT_CHAR_PACK,
     cab_index_path: Path = DEFAULT_CAB_INDEX,
     reference_fbx: Path = DEFAULT_REFERENCE_FBX,
 ) -> dict[str, Any]:
     catalog = read_json(catalog_path)["characters"]
-    player = read_json(player_path)["characters"]
+    player = read_json(player_path)["characters"] if player_path else every_tier_roster(catalog)
     cab_index = {key.casefold(): value for key, value in read_json(cab_index_path).items()}
     by_id = {character["id"]: character for character in catalog}
 
@@ -133,7 +142,7 @@ def audit_models(
     target_counts = Counter(target["status"] for target in targets.values())
     return {
         "catalog": str(catalog_path),
-        "player": str(player_path),
+        "player": str(player_path) if player_path else EVERY_TIER_ROSTER,
         "characters": rows,
         "targets": [targets[base] for base in sorted(targets)],
         "character_counts": dict(sorted(character_counts.items())),
@@ -254,6 +263,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=CLI_DESCRIPTION)
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
     parser.add_argument("--player", type=Path, default=DEFAULT_PLAYER)
+    parser.add_argument(
+        "--every-tier", action="store_true", help="audit every catalog character at every tier instead of --player"
+    )
     parser.add_argument("--char-pack", type=Path, default=DEFAULT_CHAR_PACK)
     parser.add_argument("--cab-index", type=Path, default=DEFAULT_CAB_INDEX)
     parser.add_argument("--reference-fbx", type=Path, default=DEFAULT_REFERENCE_FBX)
@@ -276,7 +288,11 @@ def main() -> None:
     args = parser.parse_args()
 
     report = audit_models(
-        args.catalog, args.player, args.char_pack, args.cab_index, args.reference_fbx
+        args.catalog,
+        None if args.every_tier else args.player,
+        args.char_pack,
+        args.cab_index,
+        args.reference_fbx,
     )
     print_summary(report)
     if args.report:

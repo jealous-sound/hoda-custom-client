@@ -22,6 +22,18 @@
 #define HOD_CACHE "client-additional-data/"
 #endif
 
+#ifndef HOD_RESOURCE_INDEX
+#define HOD_RESOURCE_INDEX ""
+#endif
+
+#define RESOURCE_INDEX_OUT_ENV "HOD_RESOURCE_INDEX_OUT"
+
+#ifdef __EMSCRIPTEN__
+#define SHADER_GLSL_HEADER "#version 300 es\nprecision highp float;\n"
+#else
+#define SHADER_GLSL_HEADER "#version 330\n"
+#endif
+
 #include "config.c"
 #include "window.c"
 #include "vendors/cJSON.c"
@@ -92,6 +104,7 @@
 #include "pack_fx.c"
 #include "pack_hero.c"
 #include "store.c"
+#include "challenge_drops.c"
 #include "map_scene.c"
 #include "campaign.c"
 #include "nexus_background.c"
@@ -136,12 +149,12 @@ static bool RunLoadedGame(Game *game) {
         if (mouse_override) SetMousePosition((int)(mouse_x * UiScale()), (int)(mouse_y * UiScale()));
         if (shot.output) DebugShotPrepare(game, &shot);
 
-        BeginDrawing();
+        WindowBeginFrame();
         GameDraw(game);
         GameBusyOverlayDraw();
         if (!shot.output) OptionsFrameRateCounterDraw();
         bool captured = shot.output && DebugShotCapture(&shot);
-        EndDrawing();
+        WindowEndFrame();
 
         if (captured || game->restart_requested || game->quit_requested) break;
     }
@@ -177,7 +190,9 @@ static void RunSelectedMode(void) {
 }
 
 int main(void) {
+    if (!PlatformPrepareGameFiles()) return 1;
     AppBundleEnterParentDirectory();
+    if (getenv(RESOURCE_INDEX_OUT_ENV)) return ResourceWriteIndex(getenv(RESOURCE_INDEX_OUT_ENV)) ? 0 : 1;
     if (ClientInstallHandOver()) return 0;
     bool screenshot_mode = EnvFlag("HOD_SHOT");
     if (screenshot_mode) SetTraceLogLevel(LOG_WARNING);
@@ -186,22 +201,25 @@ int main(void) {
     if (win) sscanf(win, "%dx%d", &win_w, &win_h);
 
     bool player_window = !win && !screenshot_mode;
-    unsigned int flags = FLAG_MSAA_4X_HINT | FLAG_WINDOW_RESIZABLE | WINDOW_PIXEL_DENSITY_FLAGS;
+    unsigned int flags = WINDOW_SAMPLING_FLAGS | WINDOW_RESIZE_FLAGS | WINDOW_PIXEL_DENSITY_FLAGS;
     if (screenshot_mode) flags |= FLAG_WINDOW_HIDDEN | FLAG_WINDOW_UNFOCUSED;
     if (!screenshot_mode && SettingsSwitchOn(SETTINGS_SWITCH_VSYNC)) flags |= FLAG_VSYNC_HINT;
     SetConfigFlags(flags);
     InitWindow(win_w, win_h, APP_NAME);
-    if (player_window) WindowGrowToMonitorDensity();
-    if (player_window && SettingsSwitchOn(SETTINGS_SWITCH_FULLSCREEN)) ToggleBorderlessWindowed();
+    if (player_window) WindowFitToDisplay();
+    UiSetChosenScale(screenshot_mode ? EnvFloat("HOD_UI_SCALE", SETTINGS_FULL_UI_SCALE) : SettingsUiScale());
+    if (player_window && SettingsSwitchOn(SETTINGS_SWITCH_FULLSCREEN)) WindowSetFullscreen(true);
     SetExitKey(KEY_NULL);
     InitAudioDevice();
     if (screenshot_mode || EnvFlag("HOD_MUTE")) SetMasterVolume(0.0f);
-    SetTargetFPS(screenshot_mode ? SETTINGS_DEFAULT_FRAME_RATE : SettingsFrameRateLimit());
+    WindowSetFrameRateLimit(screenshot_mode ? SETTINGS_DEFAULT_FRAME_RATE : SettingsFrameRateLimit());
     ClientInstallConfirmLaunch();
 
     if (!screenshot_mode) ClientUpdateCheckStart(BackendUrlOverride() ? BackendUrlOverride() : BackendDefaultUrl());
     if (ContentScreenRun()) RunSelectedMode();
 
+    if (player_window && WindowFullscreen() != SettingsSwitchOn(SETTINGS_SWITCH_FULLSCREEN))
+        SettingsSetSwitch(SETTINGS_SWITCH_FULLSCREEN, WindowFullscreen());
     SettingsSaveAdjustments();
     CloseAudioDevice();
     CloseWindow();

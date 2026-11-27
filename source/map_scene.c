@@ -15,7 +15,7 @@
 #define MAP_SCENE_WHOLE_SHEET (-2)
 #define MAP_SCENE_RANDOM_SEED 0x9e3779b9u
 
-static const char *const MAP_SCENE_FS_LAYER = "#version 330\n"
+static const char *const MAP_SCENE_FS_LAYER = SHADER_GLSL_HEADER
                                               "in vec2 fragTexCoord;\n"
                                               "uniform sampler2D texture0; uniform vec4 colDiffuse;\n"
                                               "uniform float opaque; uniform float cutoff;\n"
@@ -27,7 +27,7 @@ static const char *const MAP_SCENE_FS_LAYER = "#version 330\n"
                                               "}\n";
 
 static const char *const MAP_SCENE_FS_PARTICLE =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec2 fragTexCoord; in vec4 fragColor;\n"
     "uniform sampler2D texture0; uniform vec4 tint; uniform float premultiply;\n"
     "out vec4 finalColor;\n"
@@ -37,7 +37,7 @@ static const char *const MAP_SCENE_FS_PARTICLE =
     "}\n";
 
 static const char *const MAP_SCENE_VS_WIND =
-    "#version 330\n"
+    SHADER_GLSL_HEADER
     "in vec3 vertexPosition; in vec2 vertexTexCoord; in vec3 vertexNormal; in vec4 vertexColor;\n"
     "uniform mat4 mvp; uniform float time; uniform vec4 wind; uniform float phase;\n"
     "uniform float flutter; uniform float flutterFrequency; uniform float colorScale; uniform float colorShift;\n"
@@ -57,7 +57,7 @@ static const char *const MAP_SCENE_VS_WIND =
     "  gl_Position = mvp*vec4(p, 1.0);\n"
     "}\n";
 
-static const char *const MAP_SCENE_FS_WIND = "#version 330\n"
+static const char *const MAP_SCENE_FS_WIND = SHADER_GLSL_HEADER
                                              "in vec2 fragTexCoord; in vec3 fragTint;\n"
                                              "uniform sampler2D texture0;\n"
                                              "out vec4 finalColor;\n"

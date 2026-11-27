@@ -39,44 +39,82 @@ def animation_stack_fbx(name: str) -> bytes:
     return header + node + bytes(13)
 
 
-class ImportFbxTest(unittest.TestCase):
-    def test_bind_unit_correction_detects_meter_fbx_with_cm_donor(self) -> None:
-        class AvatarStub:
-            node_name = ["Root", "Hips", "Spine", "Chest"]
-            default_local = [
-                Xform(), Xform((0, 0.5, 0)), Xform((0, 0.3, 0)), Xform((0, 0.25, 0))
-            ]
-            acc_scale = [0.01] * 4
+SPINE_NAMES = ("Root", "Hips", "Spine", "Chest")
+SPINE_WORLDS_METRES = ((0.0, 0.0, 0.0), (0.0, 0.5, 0.0), (0.0, 0.8, 0.0), (0.0, 1.05, 0.0))
+CENTIMETRE_RIG_ROOT_SCALE = 0.01
 
-        gltf = {
-            "skins": [{"joints": [0, 1, 2, 3]}],
-            "nodes": [
-                {"name": "Root"},
-                {"name": "Hips", "translation": [0, 0.5, 0]},
-                {"name": "Spine", "translation": [0, 0.3, 0]},
-                {"name": "Chest", "translation": [0, 0.25, 0]},
-            ],
-        }
-        self.assertEqual(glb_writer.infer_bind_unit_correction(gltf, AvatarStub()), 100.0)
+
+class CentimetreAvatarStub:
+    node_name = list(SPINE_NAMES)
+    acc_scale = [CENTIMETRE_RIG_ROOT_SCALE] * len(SPINE_NAMES)
+
+    def avatar_worlds(self):
+        return [Xform(world) for world in SPINE_WORLDS_METRES]
+
+
+def spine_skin(mesh_units_per_metre: float, node_units_per_metre: float) -> tuple[dict, bytearray]:
+    nodes = []
+    blob = bytearray()
+    for index, name in enumerate(SPINE_NAMES):
+        parent = SPINE_WORLDS_METRES[index - 1] if index else (0.0, 0.0, 0.0)
+        world = SPINE_WORLDS_METRES[index]
+        node = {"name": name, "translation": [(c - p) * node_units_per_metre for c, p in zip(world, parent)]}
+        if index + 1 < len(SPINE_NAMES):
+            node["children"] = [index + 1]
+        nodes.append(node)
+        origin = [-c * mesh_units_per_metre for c in world]
+        blob += struct.pack("<16f", 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, *origin, 1)
+    gltf = {
+        "nodes": nodes,
+        "skins": [{"joints": list(range(len(SPINE_NAMES))), "inverseBindMatrices": 0}],
+        "bufferViews": [{"buffer": 0, "byteOffset": 0, "byteLength": len(blob)}],
+        "accessors": [{"bufferView": 0, "componentType": 5126, "count": len(SPINE_NAMES), "type": "MAT4"}],
+    }
+    return gltf, blob
+
+
+class ImportFbxTest(unittest.TestCase):
+    def test_bind_origin_and_scale_come_back_out_of_an_inverse_bind_matrix(self) -> None:
+        angle = math.radians(30.0)
+        scale = 0.25
+        origin = (1.5, -2.0, 7.0)
+        rotation = (
+            (math.cos(angle), -math.sin(angle), 0.0),
+            (math.sin(angle), math.cos(angle), 0.0),
+            (0.0, 0.0, 1.0),
+        )
+        linear = [[rotation[c][r] / scale for c in range(3)] for r in range(3)]
+        offset = [-sum(linear[r][c] * origin[c] for c in range(3)) for r in range(3)]
+        inverse_bind = (
+            linear[0][0], linear[1][0], linear[2][0], 0.0,
+            linear[0][1], linear[1][1], linear[2][1], 0.0,
+            linear[0][2], linear[1][2], linear[2][2], 0.0,
+            *offset, 1.0,
+        )
+        found_origin, found_scale = glb_writer.joint_bind_in_mesh(inverse_bind)
+        for found, expected in zip(found_origin, origin):
+            self.assertAlmostEqual(found, expected, places=9)
+        self.assertAlmostEqual(found_scale, scale, places=9)
+
+    def test_bind_unit_correction_detects_meter_fbx_with_cm_donor(self) -> None:
+        gltf, blob = spine_skin(mesh_units_per_metre=1.0, node_units_per_metre=1.0)
+        self.assertEqual(glb_writer.infer_bind_unit_correction(gltf, blob, CentimetreAvatarStub()), 100.0)
 
     def test_bind_unit_correction_keeps_native_cm_source(self) -> None:
-        class AvatarStub:
-            node_name = ["Root", "Hips", "Spine", "Chest"]
-            default_local = [
-                Xform(), Xform((0, 0.5, 0)), Xform((0, 0.3, 0)), Xform((0, 0.25, 0))
-            ]
-            acc_scale = [0.01] * 4
+        gltf, blob = spine_skin(mesh_units_per_metre=100.0, node_units_per_metre=100.0)
+        self.assertEqual(glb_writer.infer_bind_unit_correction(gltf, blob, CentimetreAvatarStub()), 1.0)
 
-        gltf = {
-            "skins": [{"joints": [0, 1, 2, 3]}],
-            "nodes": [
-                {"name": "Root"},
-                {"name": "Hips", "translation": [0, 50, 0]},
-                {"name": "Spine", "translation": [0, 30, 0]},
-                {"name": "Chest", "translation": [0, 25, 0]},
-            ],
-        }
-        self.assertEqual(glb_writer.infer_bind_unit_correction(gltf, AvatarStub()), 1.0)
+    def test_bind_unit_correction_trusts_cm_binds_over_fbx_nodes_imported_in_metres(self) -> None:
+        gltf, blob = spine_skin(mesh_units_per_metre=100.0, node_units_per_metre=1.0)
+        self.assertEqual(glb_writer.infer_bind_unit_correction(gltf, blob, CentimetreAvatarStub()), 1.0)
+
+    def test_every_wryme_tier_bakes_on_the_pride_demon_avatar_its_fbx_clips_were_made_for(self) -> None:
+        for tier in range(1, 5):
+            with self.subTest(tier=tier):
+                gltf = {"meshes": [{"name": f"c_wryme_t{tier}_mesh_0"}]}
+                self.assertEqual(
+                    donor_bake.authoritative_donor(f"c_wryme_t{tier}", gltf), "cab-c_pridedemon_t1_pre"
+                )
 
     def test_malformed_fourth_skin_weight_is_reconstructed(self) -> None:
         repaired = glb_writer.repair_float_skin_weights([
@@ -274,19 +312,37 @@ class ImportFbxTest(unittest.TestCase):
             self.assertIsNone(clips["sw_attack01_ani"])
 
     def test_special_mappings_are_explicit(self) -> None:
-        ice = import_fbx.SPECIAL_MANIFESTS["c_icegiant_t1"]
+        ice = import_fbx.SPECIAL_MANIFESTS["c_icegiant"]
         self.assertEqual(ice["clip_roles"]["idle"], "c_ogre_rdy_ani")
         self.assertEqual(ice["clip_roles"]["attack"], "c_ogre_atk_v03_ani")
 
-        titan = import_fbx.SPECIAL_MANIFESTS["c_titanheartguardian_t1"]
+        titan = import_fbx.SPECIAL_MANIFESTS["c_titanheartguardian"]
         self.assertEqual(
             titan["embedded_clip_roles"], ["idle", "cheer", "attack", "hit", "death"]
         )
         self.assertEqual(titan["embedded_durations"], [5.0, 2.2, 4.6667, 2.0, 2.0])
 
-        xenon = import_fbx.SPECIAL_MANIFESTS["hm_nc_xenontheantiquarian_t1"]
+        xenon = import_fbx.SPECIAL_MANIFESTS["hm_nc_xenontheantiquarian"]
         self.assertEqual(xenon["duplicate_embedded_clips"], {"hit": "idle"})
         self.assertEqual(xenon["intentionally_absent_roles"], ["attack", "death"])
+
+    def test_authoritative_donor_matches_every_tier_of_the_mesh(self) -> None:
+        for tier in (1, 2, 3, 4):
+            gltf = {"meshes": [{"name": f"c_desiredemon_t{tier}_tier_{tier}_0"}]}
+            self.assertEqual(
+                donor_bake.authoritative_donor(f"c_caress_t{tier}", gltf),
+                "cab-c_desiredemon_t1_pre",
+            )
+        stranger = {"meshes": [{"name": "c_imp_t2_tier_2_0"}]}
+        self.assertIsNone(donor_bake.authoritative_donor("c_caress_t2", stranger))
+
+    def test_special_mappings_cover_every_tier_of_the_family(self) -> None:
+        for tier in ("t1", "t2", "t3", "t4"):
+            self.assertEqual(
+                import_fbx.special_manifest(f"c_icegiant_{tier}"),
+                import_fbx.SPECIAL_MANIFESTS["c_icegiant"],
+            )
+        self.assertEqual(import_fbx.special_manifest("c_giant_t2"), {})
 
 
 if __name__ == "__main__":

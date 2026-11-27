@@ -8,7 +8,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -27,13 +27,16 @@ BULLET_PREFIX = re.compile(r"^[-*]\s+")
 CLI_DESCRIPTION = (
     "Write player-facing patch notes to the #patch-notes channel of the Hoda Reborn Discord server. "
     "'missing' lists releases that have no notes yet, 'sources' prints what a release changed (its pull "
-    "request titles and descriptions), and 'post' publishes the notes you wrote for one release."
+    "request titles and descriptions), 'post' publishes the notes you wrote for one release, and 'update' "
+    "publishes notes for a server or content change that went live without a release."
 )
 MISSING_HELP = "list published releases that have no notes in the channel"
 SOURCES_HELP = "print the pull requests and commits that went into a release"
 POST_HELP = "publish notes for one release; refuses a version that is already in the channel"
 NOTES_FILE_HELP = "text file with one change per line; '-' reads standard input"
+UPDATE_HELP = "publish notes for a change that went live without a release, under a dated Server update heading"
 DRY_RUN_HELP = "print the message instead of posting it"
+SERVER_UPDATE_TITLE = "Server update"
 
 
 def version_key(tag):
@@ -162,25 +165,57 @@ def print_sources(arguments):
     return 0
 
 
+def read_note_lines(notes):
+    source = sys.stdin.read() if notes == "-" else Path(notes).read_text(encoding="utf-8")
+    lines = note_lines(source)
+    if not lines:
+        raise SystemExit("the notes are empty")
+    return lines
+
+
+def within_message_limit(message):
+    if len(message) > DISCORD_MESSAGE_LIMIT:
+        raise SystemExit(f"the notes are {len(message)} characters; Discord allows {DISCORD_MESSAGE_LIMIT}")
+    return message
+
+
+def send_to_channel(channel_id, message):
+    discord("POST", f"/channels/{channel_id}/messages", {"content": message, "allowed_mentions": {"parse": []}})
+
+
+def server_update_note(published_at, lines):
+    return render_note(SERVER_UPDATE_TITLE, published_at, lines)
+
+
 def post_note(arguments):
     releases = published_releases()
     if arguments.tag not in releases:
         raise SystemExit(f"{arguments.tag} is not a published release")
-    source = sys.stdin.read() if arguments.notes == "-" else Path(arguments.notes).read_text(encoding="utf-8")
-    lines = note_lines(source)
-    if not lines:
-        raise SystemExit("the notes are empty")
-    message = render_note(arguments.tag, releases[arguments.tag], lines)
-    if len(message) > DISCORD_MESSAGE_LIMIT:
-        raise SystemExit(f"the notes are {len(message)} characters; Discord allows {DISCORD_MESSAGE_LIMIT}")
+    message = within_message_limit(
+        render_note(arguments.tag, releases[arguments.tag], read_note_lines(arguments.notes))
+    )
     if arguments.dry_run:
         print(message)
         return 0
     channel_id = patch_notes_channel_id()
     if arguments.tag in posted_versions(channel_contents(channel_id)):
         raise SystemExit(f"{arguments.tag} already has notes in #{PATCH_NOTES_CHANNEL}")
-    discord("POST", f"/channels/{channel_id}/messages", {"content": message, "allowed_mentions": {"parse": []}})
+    send_to_channel(channel_id, message)
     print(f"posted {arguments.tag} to #{PATCH_NOTES_CHANNEL}")
+    return 0
+
+
+def post_server_update(arguments):
+    today = datetime.now(timezone.utc).isoformat()
+    message = within_message_limit(server_update_note(today, read_note_lines(arguments.notes)))
+    if arguments.dry_run:
+        print(message)
+        return 0
+    channel_id = patch_notes_channel_id()
+    if message in channel_contents(channel_id):
+        raise SystemExit(f"these notes are already in #{PATCH_NOTES_CHANNEL}")
+    send_to_channel(channel_id, message)
+    print(f"posted a server update to #{PATCH_NOTES_CHANNEL}")
     return 0
 
 
@@ -196,6 +231,10 @@ def parse_arguments(argv):
     post.add_argument("notes", help=NOTES_FILE_HELP)
     post.add_argument("--dry-run", action="store_true", help=DRY_RUN_HELP)
     post.set_defaults(handler=post_note)
+    update = commands.add_parser("update", help=UPDATE_HELP)
+    update.add_argument("notes", help=NOTES_FILE_HELP)
+    update.add_argument("--dry-run", action="store_true", help=DRY_RUN_HELP)
+    update.set_defaults(handler=post_server_update)
     return parser.parse_args(argv)
 
 

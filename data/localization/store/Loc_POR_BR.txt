@@ -1,0 +1,12 @@
+HODA_STORE_ODDS_EACH_HERO|Chance de cada herói
+HODA_STORE_ODDS_OTHER_HEROES|Chance dos outros heróis
+HODA_STORE_ODDS_PERCENT|{0}%
+HODA_STORE_PITY_PACKS_LEFT|Lendário garantido em até {0} pacotes
+HODA_STORE_PITY_NEXT_PACK|Lendário garantido no próximo pacote
+HODA_STORE_PITY_SHARED|Compartilhado com os outros pacotes semanais
+HODA_STORE_BULLET_PITY|Lendário em até {0} pacotes
+HODA_STORE_BULLET_PITY_NEXT|Lendário no próximo pacote!
+HODA_STORE_STAR_GUARANTEE_TWO_PACKS_LEFT|Lendário de 2 ou 3 estrelas garantido em até {0} pacotes
+HODA_STORE_STAR_GUARANTEE_TWO_NEXT_PACK|Lendário de 2 ou 3 estrelas garantido no próximo pacote
+HODA_STORE_STAR_GUARANTEE_THREE_PACKS_LEFT|Lendário de 3 estrelas garantido em até {0} pacotes
+HODA_STORE_STAR_GUARANTEE_THREE_NEXT_PACK|Lendário de 3 estrelas garantido no próximo pacote

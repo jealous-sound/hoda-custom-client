@@ -29,6 +29,7 @@ Without a local copy the game downloads its data on first launch (see [Content](
 | `make format-check` | clang-format check; `make format` rewrites |
 | `make dist` | a playable copy in `../hoda-custom-dist` (`DIST_DIR=`, `DIST_BACKEND_URL=`) |
 | `make content` | publishes the data packs to R2 (`CONTENT_BUCKET=`, default `hoda-assets`; `npx wrangler login` once) |
+| `make web`, `make web-serve`, `make web-publish` | the experimental [browser build](#browser-build) in `build/web/`, a local server for it, and its upload to the CDN |
 | `python3 tools/check_comments.py` | fails on any comment or docstring in owned code |
 
 Build variables: `SERVER_URL` (default `https://api.hodareborn.com`; empty means local play only), `CONTENT_URL`
@@ -80,6 +81,14 @@ Name every original object with `CACHE_RESOURCE("name")`, `CACHE_BUNDLE_RESOURCE
 `APK_RESOURCE("name")`. Any other string is read as a file path and fails silently when it is missing;
 `tools/validate_cache_refs.py` rejects literal refs that miss the cache. Prefer an original object, and put anything
 the 4.4.0 data lacks in `client-additional-data/extra/`.
+
+`make dist`, `make content` and `make web` ship only the cache bundles the game can read (`tools/cache_reach.py`):
+the first bundle holding a name that a C string or a shipped JSON or text file (translations aside) spells, a bundle
+a `bundle/name` string points into, or a bundle the C code names that holds a name some string spells. A new ref in
+code or data ships its bundle by itself; a name built at runtime from pieces needs a `%` format or a `#define`d
+prefix ending in `_` or `.` for the check to see it. Meshes are an explicit list, `RUNTIME_MESHES` in
+`tools/build_dist.py`, plus the consume scene's meshes, and `make test` fails when C code names a mesh that is not
+on it.
 
 Text comes from the original `Loc_*.txt` tables. New strings go in `data/localization/<area>/Loc_*.txt`, one file per
 language for all twelve languages, with `HODA_` keys. `tools/validate_localization.py` checks keys and placeholders,
@@ -216,6 +225,135 @@ downloads only the packs that changed.
 changed packs, and uploads the manifest last. `python3 tools/publish_content.py --dry-run` builds the packs without
 uploading them. Whenever a data table changes shape, bump `CONTENT_MANIFEST_FORMAT` in `source/content_update.c`
 and `MANIFEST_FORMAT` in `tools/build_content_packs.py` together.
+
+## Browser build
+
+Experimental: the same C code compiled to WebAssembly with Emscripten (`brew install emscripten`), WebGL2 and
+pthreads. Needs the local asset cache.
+
+```sh
+make web-serve
+```
+
+Then open http://127.0.0.1:8077/ in Chrome or Safari. `--latency-ms 90` on `tools/serve_web.py` acts like the CDN's
+round trip and `--rate-mbps 40` like a player's connection, shared by every answer.
+`WEB_BACKEND=http://127.0.0.1:<port>` makes the server forward `/api/` to a backend; add
+`?HOD_BACKEND_URL=http://127.0.0.1:8077/api` to the page URL to play Online through it. Any `HOD_*` query parameter
+becomes an environment variable for the game.
+
+- `make web` clones raylib 5.5 into `build/` once and builds it for the web. It writes `build/web/index.{html,js,wasm}`,
+  an `objects/` folder holding each file `make dist` ships under its MD5 (links, one per distinct content), and
+  `game_files.txt`, the list the page mounts. Each line is `<location>  <size>  <path>`: where the bytes are,
+  relative to the list (`objects/<md5>` here, `../objects/<md5>` once published), their size in bytes, and the path
+  the game opens.
+- Game files are not downloaded up front. They start as empty files in memory; `fopen` is wrapped
+  (`-Wl,--wrap=fopen`) so the first open of a game file downloads it whole from its location with one GET. On the
+  main thread the download yields to the browser through Asyncify; worker threads use a synchronous request. Reaching
+  the tutorial battle reads about 735 files, 155 MB.
+- Cache bundles are read by object, not whole. Objects go through `PlatformReadFileRanges`, which on the web asks
+  the bundle's location for just their bytes with `Range: bytes=N-M` (a yielding `fetch` on the main thread, a
+  synchronous request on workers). An image batch is grouped by bundle, and objects of one bundle less than 64 KB
+  apart share one request. A bundle is downloaded whole instead, and later reads of it are local, when it is at most
+  64 KB, when the read needs three quarters of it, or when it has been read in pieces three times and those pieces
+  cover less than half of it (`CAB-audio_pool`, which battles keep reading). Native builds read the same objects from
+  disk.
+- Measured from the Local Game click to the home screen in headless Chrome with a fresh profile, `serve_web.py
+  --latency-ms 120`: bundles went from 117 MB to 80 MB and the whole download from 154 MB to 117 MB (737 → 814
+  requests); the startup-image prefetch reads 69 MB instead of 106 MB. With `--rate-mbps 40` that is 50.9 s →
+  45.1 s (the prefetch 24.9 s → 16.9 s); with no bandwidth limit both take about 20 s, since the time then goes to
+  round trips.
+- WebKit (Safari and every iPhone browser) sends worker threads' requests and storage calls through the page's main
+  thread, so the main thread must never wait for a worker that is waiting on the network or on storage. That is why
+  main-thread downloads yield, `PlatformJoinThread` yields while it waits, browser storage is mounted from a worker
+  and saves are copied into it by a background thread.
+- raylib 5.5 resizes the canvas without telling GLFW, which then maps the mouse into the window's creation size.
+  `WindowFitToDisplay` follows browser resizes through `SetWindowSize` instead.
+- The native game writes `resource_index.txt` (`HOD_RESOURCE_INDEX_OUT=<path>`), the cache bundle catalog. The
+  browser build loads it, cut down to the bundles that ship, instead of opening every bundle at startup.
+- Threads need cross-origin isolation: the page must be served with `Cross-Origin-Opener-Policy: same-origin` and
+  `Cross-Origin-Embedder-Policy: require-corp`. `tools/serve_web.py` sends both.
+- Local Game saves, `account.dat` and `settings.json` are copied into the browser's origin-private file system
+  (`/saves`) after each `PlatformReplaceFile` and restored at startup.
+- Phones: the page ships `manifest.json` (fullscreen, landscape) and icons from `packaging/web/`, so Add to Home
+  Screen opens the game without browser bars, held sideways on Android. In a phone browser the first tap asks for
+  fullscreen and a landscape lock where the browser has them (Android Chrome; iPhone Safari has neither). An upright
+  touch screen turns the page's stage a quarter turn (`Module.hodPageTurned`) and `WindowPointer` turns pointer input
+  back. The web build leaves out `FLAG_WINDOW_RESIZABLE`, so raylib's own resize handler, which would size the
+  canvas to the upright window, stays off and `WindowFillPage` alone sizes it from the canvas's layout box.
+- `WindowFillPage` sizes the canvas in device pixels (layout box × `devicePixelRatio`, at most 2), since raylib 5.5's
+  web backend has no high-DPI support. The UI scales with screen height, so a denser canvas only looks sharper.
+- Every frame is drawn into a 4× multisampled offscreen framebuffer and copied to the canvas whole
+  (`WindowBeginFrame` / `WindowEndFrame`). A download that yields mid-frame then leaves the last finished frame on
+  screen; drawing straight to the canvas showed the half-drawn frame, a white flash on each first-time attack effect.
+  Screens call the window pair, never raylib's `BeginDrawing` / `EndDrawing` (`tests/test_web_build.py` checks).
+- A phone needs HTTPS for cross-origin isolation, so `http://<LAN address>:8077` does not start there; test through
+  an HTTPS tunnel such as `cloudflared tunnel --url http://localhost:8077`.
+- Frames follow the display: the web link wraps raylib's `WindowShouldClose` (`-Wl,--wrap=WindowShouldClose`),
+  whose 16 ms sleep ran the game at about 54 uneven fps, so each frame waits for `requestAnimationFrame` instead
+  (or 100 ms while the tab is hidden). The frame rate limit skips display frames rather than letting raylib busy-wait;
+  screens set it through `WindowSetFrameRateLimit`, never `SetTargetFPS`.
+- The page, not the canvas, draws the loading ring: a CSS animation the browser turns on its compositor, so it keeps
+  spinning while the game thread downloads or decodes. It shows until the first frame, on every frame a loading
+  screen draws (`WindowShowPageLoader`, with the original `loadingSmooth` art handed over as a PNG) and whenever
+  no frame has reached the screen for 400 ms. Until then the page has a drawn stand-in for the art. During loading,
+  the status line counts the game files downloaded so far (`Module.hodDownloadedBytes`).
+
+### Hosting
+
+The page is `https://hodareborn.com/play/` (the website pulls `index.{html,js,wasm}`, `manifest.json` and the
+`icon-*.png` files for a pinned release), each release's page and `game_files.txt` are on the CDN under
+`web/<release>/`, the game files are under `web/objects/`, shared by every release, and the backend answers CORS for
+that origin (`-web-origins`).
+
+```sh
+make web WEB_RELEASE=2026-11-26
+make web-publish WEB_RELEASE=2026-11-26 WEB_PREVIOUS=2026-11-20 WEB_DRY_RUN=1
+make web-publish WEB_RELEASE=2026-11-26 WEB_PREVIOUS=2026-11-20
+```
+
+Name releases by date: a published folder is never replaced, so a version name would block that tag's own web
+release later. `WEB_REUSE_GAME_FILES=1` publishes a page-only release: it lists exactly `WEB_PREVIOUS`'s game files,
+uploads only the list and the page, and does not read the local asset cache. It keeps the sizes `WEB_PREVIOUS`'s list
+gives; a list published without them (up to `2026-11-26.3`) still loads, but the page then reads its small bundles in
+pieces rather than whole.
+
+- `WEB_RELEASE` bakes `HOD_GAME_FILES_URL=$(CONTENT_URL)/web/$(WEB_RELEASE)/` into the page; without it the files are
+  read next to the page. `?HOD_GAME_FILES_URL=` overrides it.
+- `tools/publish_web.py` writes only under `web/<release>/` and `web/objects/` through R2's S3 API, so
+  `manifest.json` and the content packs are untouched. It needs `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID` and
+  `R2_SECRET_ACCESS_KEY` from an R2 API token with Object Read & Write on the bucket.
+- A game file is published once, as `web/objects/<md5>`: its key comes from its bytes, so every release that ships
+  those bytes points at the same URL and a returning player's browser keeps it across releases (everything is
+  `immutable`); only files a release changes download again. An object's `Content-Type` comes from the first path
+  that names it, so the CDN still compresses text. Missing objects go first, then `game_files.txt` and the page
+  files, `index.html` last. A rerun skips what is there, and an object or release file already published with other
+  bytes stops it, so a changed build needs a new release. Nothing deletes objects: a kept release needs every object
+  its `game_files.txt` names.
+- Releases up to `2026-11-26.3` keep their game files in their own `web/<release>/game/` tree. With one of them as
+  `WEB_PREVIOUS`, objects it already holds are copied inside the bucket instead of uploaded (matched by its
+  `game_files.md5`), which makes the first release on `web/objects/` cheap, page-only ones included.
+- The bucket's CORS policy must allow the page's origin: `GET` and `HEAD`, header `Range`, exposing
+  `Content-Length`, `Content-Range`, `Accept-Ranges` and `ETag`. A single `bytes=N-M` range is a CORS-safelisted
+  header in current Chrome, Safari and Firefox, so ranged reads send no preflight; the policy's `Range` entry is
+  for older browsers.
+- Partial responses are cached like whole ones: Chrome serves a repeat visit's ranges from its HTTP cache, and
+  WebKit keys a cached 206 by its exact `Range` value. A visit asks for the same ranges as the last one because
+  bundles are grouped and coalesced the same way each time.
+- To rehearse locally, run an S3 endpoint that keeps the bucket in a folder, publish into it, then serve that folder
+  as the CDN, which answers files with the same `Cache-Control` as R2 and an `ETag`, and the release's page on its own
+  origin:
+
+  ```sh
+  python3 tests/fake_s3.py --root build/bucket --port 8079
+  make web WEB_RELEASE=r1 WEB_FILES_URL=http://127.0.0.1:8078/web/r1/
+  R2_ACCESS_KEY_ID=local R2_SECRET_ACCESS_KEY=local python3 tools/publish_web.py --root build/web --bucket hoda-assets \
+      --content-url http://127.0.0.1:8078 --endpoint http://127.0.0.1:8079 --release r1
+  python3 tools/serve_web.py --root build/bucket --port 8078 --allow-origin http://127.0.0.1:8080
+  python3 tools/serve_web.py --root build/bucket/web/r1 --port 8080
+  ```
+
+  `http://127.0.0.1:8078/__stats` counts what the CDN served, so a second release opened in the same browser shows
+  what its players download again. The website's Docker build can stand in for the page origin as well.
 
 ## Releases
 

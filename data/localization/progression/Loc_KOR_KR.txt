@@ -1,3 +1,4 @@
+HODA_CHALLENGE_POPUP_DESC|챌린지는 <color=orange>특정한 방식으로 분대를 시험</color>합니다. 원하는 만큼 완수해 <color=orange>영웅과 룬을 얻을 기회를 잡으세요!</color>
 HODA_NEXUS_EVENT_BREACH_OPENS_AGAIN_TITLE|다시 열린 균열
 HODA_NEXUS_EVENT_WOODLAND_SPIRITS_TITLE|숲의 유령
 HODA_NEXUS_GAME_CHANGER_PLUS150HEALTH_PLUS150POWER_TO_BLACK_FACTION|검은색 세력의 체력과 힘이 150% 증가합니다.

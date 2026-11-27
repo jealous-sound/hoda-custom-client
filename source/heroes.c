@@ -1,12 +1,19 @@
 
 #define HEROES_GEAR_COLUMN_WIDTH 64.0f
-#define HEROES_GEAR_BUTTON_X 284.0f
+#define HEROES_DETAILS_HEAD_HEIGHT 93.0f
+#define HEROES_DETAILS_LEVEL_RIGHT 460.0f
+#define HEROES_GEAR_BUTTON_GAP 6.0f
+#define HEROES_GEAR_BUTTON_X (ROSTER_PANEL_WIDTH + HEROES_GEAR_BUTTON_GAP)
 #define HEROES_DRAG_THRESHOLD 51.0f
 #define ROSTER_PREFAB_WIDTH 2030.0f
 #define ROSTER_PREFAB_HEIGHT 938.0f
 #define ROSTER_PREFAB_TOP 72.0f
-#define ROSTER_PANEL_WIDTH 278.0f
+#define ROSTER_PANEL_DESIGN_WIDTH 278.0f
+#define ROSTER_PANEL_WIDTH (ROSTER_PANEL_DESIGN_WIDTH * UiFullScaleWidth() / UI_DESIGN_W)
 #define ROSTER_GRID_COLS 2
+#define ROSTER_TRAY_FIXED_TOP 0.15f
+#define ROSTER_TRAY_FIXED_BOTTOM 0.15f
+#define ROSTER_TRAY_SLICES 3
 #define ROSTER_FILTER_ROW 65.0f
 #define ROSTER_SCROLL_STEP 50.0f
 
@@ -176,9 +183,9 @@ static void HeroCardBuild(HeroCard *card, const Character *ch) {
         {182, 252, 240, 255},
         {255, 0, 255, 255},
     };
-    card->rarity =
-        ch->original_rarity == RARITY_MYTHIC ? LocGet("HODA_RARITY_MYTHIC") : LocGet(rarity_keys[ch->original_rarity]);
-    card->rarity_color = rarity_colors[ch->original_rarity];
+    Rarity shown = CharacterShownRarity(ch);
+    card->rarity = shown == RARITY_MYTHIC ? LocGet("HODA_RARITY_MYTHIC") : LocGet(rarity_keys[shown]);
+    card->rarity_color = rarity_colors[shown];
 
     card->speed = LocGet(
         ch->speed == SPEED_QUICK  ? "INITIATIVE_FAST"
@@ -228,14 +235,61 @@ static void HeroCardBuild(HeroCard *card, const Character *ch) {
     card->desc_fs = 0.0f;
 }
 
+typedef struct {
+    float x;
+    float y;
+    bool fill_height;
+} RosterAnchor;
+
+static const RosterAnchor ROSTER_TOP_LEFT = {0.0f, 0.0f, false};
+static const RosterAnchor ROSTER_FILL_LEFT = {0.0f, 0.0f, true};
+static const RosterAnchor ROSTER_BOTTOM_LEFT = {0.0f, 1.0f, false};
+static const RosterAnchor ROSTER_TOP_CENTRE = {0.5f, 0.0f, false};
+static const RosterAnchor ROSTER_MIDDLE_CENTRE = {0.5f, 0.5f, false};
+static const RosterAnchor ROSTER_BOTTOM_CENTRE = {0.5f, 1.0f, false};
+static const RosterAnchor ROSTER_MIDDLE_RIGHT = {1.0f, 0.5f, false};
+static const RosterAnchor ROSTER_BOTTOM_RIGHT = {1.0f, 1.0f, false};
+
+static float RosterPrefabScale(void) {
+    return (UI_DESIGN_H - ROSTER_PREFAB_TOP) / ROSTER_PREFAB_HEIGHT;
+}
+
+static Rectangle RosterPxAt(RosterAnchor anchor, float x, float y, float w, float h) {
+    float sx = UiFullScaleWidth() / ROSTER_PREFAB_WIDTH, sy = RosterPrefabScale();
+    Rectangle r = {x * sx + UiSpareWidth() * anchor.x, ROSTER_PREFAB_TOP + y * sy, w * sx, h * sy};
+    if (anchor.fill_height)
+        r.height += UiSpareHeight();
+    else
+        r.y += UiSpareHeight() * anchor.y;
+    return r;
+}
+
 static Rectangle RosterPx(float x, float y, float w, float h) {
-    float sx = UiWidth() / ROSTER_PREFAB_WIDTH;
-    float sy = (UiHeight() - ROSTER_PREFAB_TOP) / ROSTER_PREFAB_HEIGHT;
-    return (Rectangle){x * sx, ROSTER_PREFAB_TOP + y * sy, w * sx, h * sy};
+    return RosterPxAt(ROSTER_TOP_LEFT, x, y, w, h);
+}
+
+static void RosterDrawTray(void) {
+    Texture2D tray = GuiTex(GUI_CONSUME_TRAY);
+    Rectangle full = RosterPx(-7.0f, 0.0f, 455.0f, 938.0f);
+    float top = full.height * ROSTER_TRAY_FIXED_TOP, bottom = full.height * ROSTER_TRAY_FIXED_BOTTOM;
+    float source_top = tray.height * ROSTER_TRAY_FIXED_TOP, source_bottom = tray.height * ROSTER_TRAY_FIXED_BOTTOM;
+    float stretched = full.height - top - bottom + UiSpareHeight();
+    Rectangle sources[ROSTER_TRAY_SLICES] = {
+        {0.0f, 0.0f, (float)tray.width, source_top},
+        {0.0f, source_top, (float)tray.width, tray.height - source_top - source_bottom},
+        {0.0f, tray.height - source_bottom, (float)tray.width, source_bottom},
+    };
+    Rectangle targets[ROSTER_TRAY_SLICES] = {
+        {full.x, full.y, full.width, top},
+        {full.x, full.y + top, full.width, stretched},
+        {full.x, full.y + top + stretched, full.width, bottom},
+    };
+    for (int i = 0; i < ROSTER_TRAY_SLICES; i++)
+        DrawTexturePro(tray, sources[i], targets[i], (Vector2){0.0f, 0.0f}, 0.0f, WHITE);
 }
 
 static Rectangle RosterGridView(void) {
-    return RosterPx(8.0f, 120.0f, 375.0f, 704.0f);
+    return RosterPxAt(ROSTER_FILL_LEFT, 8.0f, 120.0f, 375.0f, 704.0f);
 }
 
 static Rectangle RosterTileRect(const Roster *r, int index) {
@@ -345,7 +399,7 @@ static void RosterDrawFilterList(Roster *r, const Player *p, bool input) {
 
 static int
 RosterDraw(Roster *r, const HeroCard *cards, const Player *p, bool input, RosterCardDrawFn draw, const void *context) {
-    UiDrawTexture(GuiTex(GUI_CONSUME_TRAY), RosterPx(-7.0f, 0.0f, 455.0f, 938.0f), WHITE);
+    RosterDrawTray();
 
     r->category.label = LocGet(ROSTER_FILTER_KEYS[r->filter]);
     if (ButtonDrawEx(&r->category, RosterPx(16.0f, 56.0f, 276.0f, 68.0f), input)) {
@@ -460,6 +514,13 @@ bool HeroesSyncRoster(Heroes *h, const Player *p) {
 
 bool HeroesBoardInputBlocked(const Heroes *h) {
     return h->selected >= 0 || GearViewIsOpen();
+}
+
+bool HeroesCloseDetails(Heroes *h) {
+    if (h->selected < 0) return false;
+    h->selected = -1;
+    h->details_close_armed = false;
+    return true;
 }
 
 void HeroesRebuildCard(Heroes *h, const Player *p, int index) {
@@ -645,7 +706,7 @@ static float HeroesDrawRich(Font font, const char *text, Rectangle r, float fs, 
 
 static Rectangle HeroesDetailsBounds(float span_x, float span_w) {
     float width = 440.0f;
-    float header_height = 93.0f;
+    float header_height = HEROES_DETAILS_HEAD_HEIGHT;
     float body_height = width / 0.93f;
     return (Rectangle){
         span_x + (span_w - width) * 0.5f,
@@ -655,46 +716,48 @@ static Rectangle HeroesDetailsBounds(float span_x, float span_w) {
     };
 }
 
+static Rectangle HeroesDetailsHead(Rectangle bounds) {
+    return (Rectangle){bounds.x, bounds.y, bounds.width, HEROES_DETAILS_HEAD_HEIGHT};
+}
+
+static Rectangle HeroesDetailsBody(Rectangle bounds) {
+    return (Rectangle){
+        bounds.x, bounds.y + HEROES_DETAILS_HEAD_HEIGHT, bounds.width, bounds.height - HEROES_DETAILS_HEAD_HEIGHT
+    };
+}
+
+static void HeroesDrawDetailsHead(const HeroCard *card, Rectangle bounds) {
+    Font title_font = GuiFont(FNT_COOL);
+    Color off_white = {230, 230, 230, 255};
+    Rectangle head = HeroesDetailsHead(bounds);
+    float w = head.width, head_h = head.height;
+
+    int plaque_id = GUI_PLAQUE_COMMON + (CharacterShownRarity(card->ch) - RARITY_COMMON);
+    UiDrawTexture(GuiTex(plaque_id), head, WHITE);
+
+    float cw = head_h * 0.55f;
+    UiDrawTexture(card->coin, (Rectangle){head.x + (w - cw) * -0.02f, head.y + (head_h - cw) * -0.2f, cw, cw}, WHITE);
+
+    float fs = 24.0f;
+    Vector2 tsz = MeasureTextEx(title_font, card->name, fs, 1.0f);
+    DrawTextEx(title_font, card->name, (Vector2){head.x + (w - tsz.x) * 0.5f, head.y + 26.0f}, fs, 1.0f, off_white);
+    fs = 18.0f;
+    tsz = MeasureTextEx(title_font, card->rarity, fs, 1.0f);
+    DrawTextEx(
+        title_font, card->rarity, (Vector2){head.x + (w - tsz.x) * 0.5f, head.y + 53.0f}, fs, 1.0f, card->rarity_color
+    );
+}
+
 static void HeroesDrawDetailsAt(HeroCard *card, Rectangle bounds) {
     Font title_font = GuiFont(FNT_COOL), body_font = GuiFont(FNT_MENU);
     Color off_white = {230, 230, 230, 255}, grey = {127, 127, 127, 255};
 
-    float w = bounds.width, head_h = 93.0f, body_h = bounds.height - head_h;
-    float x = bounds.x, y = bounds.y;
-    Rectangle head = {x, y, w, head_h};
-    Rectangle body = {x, y + head_h, w, body_h};
+    Rectangle body = HeroesDetailsBody(bounds);
+    float w = body.width, body_h = body.height;
     float sx = w / 512.0f, sy = body_h / 512.0f;
 
-    {
-        Texture2D bg = GuiTex(GUI_UNIT_DETAILS);
-        UiDrawTexture(bg, body, WHITE);
-
-        int plaque_id = GUI_PLAQUE_COMMON + (card->ch->original_rarity - RARITY_COMMON);
-        Texture2D plaque = GuiTex(plaque_id);
-        UiDrawTexture(plaque, head, WHITE);
-    }
-
-    {
-        float cw = head_h * 0.55f;
-        Rectangle r = {head.x + (w - cw) * -0.02f, head.y + (head_h - cw) * -0.2f, cw, cw};
-        UiDrawTexture(card->coin, r, WHITE);
-    }
-
-    {
-        float fs = 24.0f;
-        Vector2 tsz = MeasureTextEx(title_font, card->name, fs, 1.0f);
-        DrawTextEx(title_font, card->name, (Vector2){head.x + (w - tsz.x) * 0.5f, head.y + 26.0f}, fs, 1.0f, off_white);
-        fs = 18.0f;
-        tsz = MeasureTextEx(title_font, card->rarity, fs, 1.0f);
-        DrawTextEx(
-            title_font,
-            card->rarity,
-            (Vector2){head.x + (w - tsz.x) * 0.5f, head.y + 53.0f},
-            fs,
-            1.0f,
-            card->rarity_color
-        );
-    }
+    UiDrawTexture(GuiTex(GUI_UNIT_DETAILS), body, WHITE);
+    HeroesDrawDetailsHead(card, bounds);
 
     {
         float bw = 76.0f;
@@ -731,11 +794,11 @@ static void HeroesDrawDetailsAt(HeroCard *card, Rectangle bounds) {
         snprintf(cur, sizeof(cur), "%s/", TIER_NAMES[tier]);
         Vector2 max_sz = MeasureTextEx(title_font, max_num, fs, 1.0f);
         Vector2 cur_sz = MeasureTextEx(title_font, cur, fs, 1.0f);
-        float lx = body.x + 460.0f * sx - max_sz.x - cur_sz.x;
+        float lx = body.x + HEROES_DETAILS_LEVEL_RIGHT * sx - max_sz.x - cur_sz.x;
         DrawTextEx(title_font, cur, (Vector2){lx, py0 - 3.0f}, fs, 1.0f, WHITE);
         DrawTextEx(title_font, max_num, (Vector2){lx + cur_sz.x, py0 - 3.0f}, fs, 1.0f, grey);
 
-        Rectangle bar = {px0, body.y + 68.0f * sy, 466.0f * sx - 232.0f * sx, 14.0f};
+        Rectangle bar = {px0, body.y + 68.0f * sy, body.x + HEROES_DETAILS_LEVEL_RIGHT * sx - px0, 14.0f};
         Texture2D bar_bg = GuiTex(GUI_DETAILS_BAR);
         UiDrawTexture(bar_bg, bar, (Color){62, 62, 62, 255});
         if (card->xp_frac > 0.0f) {
@@ -918,7 +981,7 @@ HeroesButton HeroesDrawNav(Heroes *h, HeroesButton active, bool interactive, int
     y += w + gap;
     Rectangle gallery = {x, y, w, w};
     if (ButtonDrawEx(&h->gallery, gallery, interactive)) clicked = HEROES_GALLERY;
-    if (active == HEROES_GALLERY) ButtonDrawVisual(&h->gallery, gallery, true);
+    if (active == HEROES_GALLERY) ButtonDrawVisual(&h->gallery, gallery, true, WHITE);
     ButtonDrawBadge(gallery, gallery_badge);
     y += w + gap;
     Rectangle squad = {x, y, w, w};
@@ -1001,6 +1064,18 @@ void GearViewDrawSlots(Player *p, int hero, Rectangle details);
 void GearViewDrawPanel(Player *p);
 void GearViewDrawDialogs(Player *p);
 int GearViewTakeChangedHero(void);
+int GearViewShownWornSlot(int hero);
+void GearDrawWornItemCard(const Character *ch, int slot, Rectangle area);
+
+static void HeroesDrawSelectedDetails(HeroCard *card, int hero, Rectangle details) {
+    int worn_slot = GearViewShownWornSlot(hero);
+    if (GearInSlot(card->ch, worn_slot)) {
+        HeroesDrawDetailsHead(card, details);
+        GearDrawWornItemCard(card->ch, worn_slot, HeroesDetailsBody(details));
+    } else {
+        HeroesDrawDetailsAt(card, details);
+    }
+}
 
 static const Rectangle HEROES_SQUAD_TABS = {8.0f, 644.0f, 246.0f, 64.0f};
 
@@ -1019,7 +1094,7 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
             &h->roster, h->cards, p, !UiInputBlocked() && h->selected < 0, HeroesDrawRosterCard, &card_context
         );
     {
-        int requested_squad = HeroesDrawSquadTabs(h, p, HEROES_SQUAD_TABS);
+        int requested_squad = HeroesDrawSquadTabs(h, p, UiBottomRect(HEROES_SQUAD_TABS));
         if (requested_squad >= 0) PlayerSquadSelect(p, requested_squad);
     }
 
@@ -1065,7 +1140,7 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
 
     {
         float gap = 8.0f;
-        float x = UiWidth() / 4.0f + 96.0f;
+        float x = UiFullScaleWidth() / 4.0f + 96.0f;
         float y = UiHeight() - h->gray.idle.height - 12.0f;
 
         Rectangle inventory = {HEROES_GEAR_BUTTON_X, y, x - HEROES_GEAR_BUTTON_X - gap, (float)h->gray.idle.height};
@@ -1090,10 +1165,10 @@ HeroesButton HeroesDraw(Heroes *h, Player *p) {
     }
 
     if (h->selected >= 0) {
-        HeroesDrawDetails(&h->cards[h->selected], 156.0f, UiWidth() - 256.0f);
-        GearViewDrawSlots(
-            p, (int)(h->cards[h->selected].ch - p->roster), HeroesDetailsBounds(156.0f, UiWidth() - 256.0f)
-        );
+        int hero = (int)(h->cards[h->selected].ch - p->roster);
+        Rectangle details = HeroesDetailsBounds(156.0f, UiWidth() - 256.0f);
+        HeroesDrawSelectedDetails(&h->cards[h->selected], hero, details);
+        GearViewDrawSlots(p, hero, details);
     }
     GearViewDrawDialogs(p);
     int changed_hero = GearViewTakeChangedHero();

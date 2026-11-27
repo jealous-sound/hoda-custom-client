@@ -20,6 +20,7 @@ AUTHORITATIVE_DONORS = {
     'c_theformlessone': ('cab-c_riftwraith_t4_pre', 'c_riftwraith_t1234_fbx'),
     'c_caress': ('cab-c_desiredemon_t1_pre', 'c_desiredemon_t1_tier_1_0'),
     'c_icegiant': ('cab-c_giant_t1_pre', 'c_icegiant_t1_mesh_0'),
+    'c_wryme': ('cab-c_pridedemon_t1_pre', 'c_wryme_t1_mesh_0'),
 }
 
 ABOMINATION_SKIN_BONES = {
@@ -397,14 +398,21 @@ def match_rig(gltf, avatar_tt, joints, keep, par):
     return g2a
 
 
+MESH_TIER_TOKEN = re.compile(r'(_t|_tier_)\d+')
+
+
+def tierless_mesh_name(name):
+    return MESH_TIER_TOKEN.sub(r'\1', name.lower())
+
+
 def authoritative_donor(base, gltf):
     family = re.sub(r'_t\d+$', '', base).lower()
     override = AUTHORITATIVE_DONORS.get(family)
     if override is None:
         return None
     donor, mesh_name = override
-    names = {mesh.get('name', '').lower() for mesh in gltf.get('meshes', [])}
-    return donor if mesh_name in names else None
+    names = {tierless_mesh_name(mesh.get('name', '')) for mesh in gltf.get('meshes', [])}
+    return donor if tierless_mesh_name(mesh_name) in names else None
 
 
 def donor_candidates(base, gltf, joints, clip_path, cab_paths, clip_name=None):
@@ -810,6 +818,8 @@ def process(dirname, base, row, cab_paths, clip_index, force, H):
                 bnotes.append(f"frames={info['frames']} neutral={info['neutral_check']:.4f}")
                 if info['unresolved']:
                     bnotes.append(f"unresolved_nodes={len(info['unresolved'])}")
+                if info.get('rehung_joints'):
+                    bnotes.append(f"rehung={info['rehung_joints']}")
                 if info.get('ground_shift'):
                     bnotes.append(f"grounded feet {info['ground_shift']:+.3f}")
             else:
