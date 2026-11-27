@@ -15,20 +15,26 @@ import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ElementTree
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Protocol
 
 import build_web
 
 CLI_DESCRIPTION = (
-    "Publish the browser build to web/<release>/ in the R2 bucket through its S3 API: the game files first (copied "
-    "inside the bucket from --previous when unchanged), then the file lists, then the page, so nothing points at a "
-    "file before it is there. A release is immutable: an object already published with other bytes stops the run."
+    "Publish the browser build to the R2 bucket through its S3 API: each game file as web/objects/<md5>, shared by "
+    "every release so unchanged bytes keep their URL and stay in players' browser caches, then the release's "
+    "game_files.txt and page under web/<release>/, so nothing points at a file before it is there. Objects missing "
+    "from web/objects/ are copied inside the bucket from a --previous release that still has its own game/ tree. "
+    "A release is immutable: an object already published with other bytes stops the run."
 )
 
 WEB_PREFIX = "web"
-HASH_LIST = "game_files.md5"
+OBJECTS_PREFIX = f"{WEB_PREFIX}/{build_web.OBJECTS_TREE}/"
+PUBLISHED_OBJECTS = f"../{build_web.OBJECTS_TREE}/"
+LEGACY_HASH_LIST = "game_files.md5"
+LEGACY_HASH_SEPARATOR = "  "
+LEGACY_GAME_TREE = "game"
 RELEASE_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*$")
 IMMUTABLE_CACHE_CONTROL = "public, max-age=31536000, immutable"
 DEFAULT_CONTENT_TYPE = "application/octet-stream"
@@ -62,7 +68,6 @@ REQUEST_ATTEMPTS = 4
 RETRY_SECONDS = 2
 REQUEST_TIMEOUT_SECONDS = 120
 DEFAULT_WORKERS = 16
-HASH_CHUNK_BYTES = 1 << 20
 MEGABYTE = 1_000_000
 
 
@@ -232,6 +237,10 @@ def release_key(release: str, relative: str) -> str:
     return f"{WEB_PREFIX}/{release}/{relative}"
 
 
+def object_key(digest: str) -> str:
+    return f"{OBJECTS_PREFIX}{digest}"
+
+
 def files_url(content_url: str, release: str) -> str:
     return f"{content_url.rstrip('/')}/{release_key(release, '')}"
 
@@ -240,48 +249,29 @@ def content_type(relative: str) -> str:
     return CONTENT_TYPES.get(Path(relative).suffix.lower(), DEFAULT_CONTENT_TYPE)
 
 
-def file_md5(path: Path) -> str:
-    digest = hashlib.md5(usedforsecurity=False)
-    with path.open("rb") as source:
-        while chunk := source.read(HASH_CHUNK_BYTES):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
-def hash_list(digests: dict[str, str]) -> bytes:
-    return "".join(f"{digests[relative]}  {relative}\n" for relative in sorted(digests)).encode()
-
-
-def parse_hash_list(text: bytes) -> dict[str, str]:
+def parse_legacy_hash_list(text: bytes) -> dict[str, str]:
     digests = {}
     for line in text.decode().splitlines():
-        digest, _, relative = line.partition("  ")
+        digest, _, relative = line.partition(LEGACY_HASH_SEPARATOR)
         if relative:
             digests[relative] = digest
     return digests
 
 
+def first_paths(digests: dict[str, str]) -> dict[str, str]:
+    paths: dict[str, str] = {}
+    for relative in sorted(digests):
+        paths.setdefault(digests[relative], relative)
+    return paths
+
+
 @dataclass
 class Plan:
+    files: int = 0
     upload: list[str] = field(default_factory=list)
-    copy: list[str] = field(default_factory=list)
+    copy: dict[str, str] = field(default_factory=dict)
     present: list[str] = field(default_factory=list)
     endings: list[str] = field(default_factory=list)
-
-
-def plan_game_files(release: str, digests: dict[str, str], published: dict[str, str], previous: dict[str, str]) -> Plan:
-    plan = Plan()
-    for relative in sorted(digests):
-        key = release_key(release, f"{build_web.GAME_TREE}/{relative}")
-        if key in published:
-            if published[key] != digests[relative]:
-                raise SystemExit(f"{key} is already published with other bytes; publish a new release instead")
-            plan.present.append(relative)
-        elif previous.get(relative) == digests[relative]:
-            plan.copy.append(relative)
-        else:
-            plan.upload.append(relative)
-    return plan
 
 
 @dataclass
@@ -290,19 +280,25 @@ class Release:
     name: str
     previous: str
     digests: dict[str, str]
-    endings: dict[str, tuple[bytes, str]]
+    pages: dict[str, tuple[bytes, str]]
     reused: bool = False
+    sizes: dict[str, int] = field(default_factory=dict)
 
 
-def read_release(
-    root: Path, name: str, previous: str, content_url: str, workers: int, reuse_game_files: bool = False
-) -> Release:
-    if not RELEASE_PATTERN.match(name):
-        raise SystemExit(f"release {name!r} must be letters, digits, '.', '_' or '-', such as v0.31.0")
-    if previous and (previous == name or not RELEASE_PATTERN.match(previous)):
+@dataclass
+class Previous:
+    digests: dict[str, str]
+    legacy_tree: bool
+    sizes: dict[str, int] = field(default_factory=dict)
+
+
+def read_release(root: Path, name: str, previous: str, content_url: str, reuse_game_files: bool = False) -> Release:
+    if not RELEASE_PATTERN.match(name) or name == build_web.OBJECTS_TREE:
+        raise SystemExit(f"release {name!r} must be letters, digits, '.', '_' or '-', such as 2026-11-26")
+    if previous and (previous == name or previous == build_web.OBJECTS_TREE or not RELEASE_PATTERN.match(previous)):
         raise SystemExit(f"--previous {previous!r} must be another release")
     if reuse_game_files and not previous:
-        raise SystemExit("--reuse-game-files needs --previous, the release whose game files to copy")
+        raise SystemExit("--reuse-game-files needs --previous, the release whose game files to keep")
     needed = build_web.PAGE_FILES if reuse_game_files else (*build_web.PAGE_FILES, build_web.FILE_LIST)
     missing = [page for page in needed if not (root / page).is_file()]
     if missing:
@@ -310,105 +306,122 @@ def read_release(
     expected = files_url(content_url, name)
     if expected.encode() not in (root / "index.wasm").read_bytes():
         raise SystemExit(f"{root}/index.wasm was not built to read {expected}; run make web WEB_RELEASE={name}")
+    pages = {page: ((root / page).read_bytes(), content_type(page)) for page in build_web.PAGE_FILES}
     if reuse_game_files:
-        pages = {page: ((root / page).read_bytes(), content_type(page)) for page in build_web.PAGE_FILES}
         return Release(root, name, previous, {}, pages, reused=True)
-    listed = build_web.listed_paths((root / build_web.FILE_LIST).read_text())
-    tree = root / build_web.GAME_TREE
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        digests = dict(zip(listed, pool.map(lambda relative: file_md5(tree / relative), listed)))
-    endings = {HASH_LIST: (hash_list(digests), content_type(HASH_LIST))}
-    for page in (build_web.FILE_LIST, *build_web.PAGE_FILES):
-        endings[page] = ((root / page).read_bytes(), content_type(page))
-    return Release(root, name, previous, digests, endings)
+    digests = build_web.list_digests((root / build_web.FILE_LIST).read_text(), build_web.LOCAL_OBJECTS)
+    absent = {digest for digest in digests.values() if not (root / build_web.OBJECTS_TREE / digest).exists()}
+    if absent:
+        raise SystemExit(f"{root}/{build_web.OBJECTS_TREE} lacks {len(absent)} listed objects; run make web")
+    sizes = {digest: (root / build_web.OBJECTS_TREE / digest).stat().st_size for digest in set(digests.values())}
+    return Release(root, name, previous, digests, pages, sizes=sizes)
 
 
-def previous_digests(bucket: Bucket, release: Release) -> dict[str, str]:
-    if not release.previous:
-        return {}
-    published = bucket.get(release_key(release.previous, HASH_LIST))
-    if published is None:
-        raise SystemExit(f"{release_key(release.previous, HASH_LIST)} is not published; check --previous")
-    return parse_hash_list(published)
+def required(bucket: Bucket, key: str) -> bytes:
+    body = bucket.get(key)
+    if body is None:
+        raise SystemExit(f"{key} is not published; check --previous")
+    return body
 
 
-def adopt_previous_game_files(bucket: Bucket, release: Release) -> Release:
-    digests = previous_digests(bucket, release)
-    listed = bucket.get(release_key(release.previous, build_web.FILE_LIST))
-    if listed is None:
-        raise SystemExit(f"{release_key(release.previous, build_web.FILE_LIST)} is not published; check --previous")
-    endings = {
-        HASH_LIST: (hash_list(digests), content_type(HASH_LIST)),
-        build_web.FILE_LIST: (listed, content_type(build_web.FILE_LIST)),
-        **release.endings,
-    }
-    return Release(release.root, release.name, release.previous, digests, endings, reused=True)
+def read_previous(bucket: Bucket, previous: str) -> Previous:
+    if not previous:
+        return Previous({}, legacy_tree=False)
+    listed = required(bucket, release_key(previous, build_web.FILE_LIST)).decode()
+    if listed.startswith(PUBLISHED_OBJECTS):
+        digests, sizes = build_web.read_list(listed, PUBLISHED_OBJECTS)
+        return Previous(digests, legacy_tree=False, sizes=sizes)
+    return Previous(parse_legacy_hash_list(required(bucket, release_key(previous, LEGACY_HASH_LIST))), legacy_tree=True)
 
 
-def put_game_file(bucket: Bucket, release: Release, relative: str) -> int:
-    body = (release.root / build_web.GAME_TREE / relative).read_bytes()
-    bucket.put(
-        release_key(release.name, f"{build_web.GAME_TREE}/{relative}"),
-        body,
-        release.digests[relative],
-        content_type(relative),
-    )
-    return len(body)
+def release_endings(release: Release) -> dict[str, tuple[bytes, str]]:
+    listed = build_web.file_list(release.digests, PUBLISHED_OBJECTS, release.sizes).encode()
+    return {build_web.FILE_LIST: (listed, content_type(build_web.FILE_LIST)), **release.pages}
 
 
-def copy_game_file(bucket: Bucket, release: Release, relative: str) -> int:
-    key = f"{build_web.GAME_TREE}/{relative}"
-    if bucket.copy(release_key(release.previous, key), release_key(release.name, key)):
-        return 0
-    if release.reused:
-        raise SystemExit(f"{release_key(release.previous, key)} is gone, so it cannot be reused")
-    return put_game_file(bucket, release, relative)
+def plan_objects(release: Release, stored: dict[str, str], previous: Previous) -> Plan:
+    plan = Plan(files=len(release.digests))
+    legacy_sources = first_paths(previous.digests) if previous.legacy_tree else {}
+    for digest in sorted(set(release.digests.values())):
+        key = object_key(digest)
+        if key in stored:
+            if stored[key] != digest:
+                raise SystemExit(f"{key} holds bytes whose MD5 is {stored[key]}; delete it and publish again")
+            plan.present.append(digest)
+        elif digest in legacy_sources:
+            plan.copy[digest] = release_key(release.previous, f"{LEGACY_GAME_TREE}/{legacy_sources[digest]}")
+        elif release.reused:
+            raise SystemExit(f"{key} is gone and {release.previous} has no copy of it, so it cannot be reused")
+        else:
+            plan.upload.append(digest)
+    return plan
 
 
-def ending_digest(release: Release, relative: str) -> str:
-    return hashlib.md5(release.endings[relative][0], usedforsecurity=False).hexdigest()
+def ending_digest(body: bytes) -> str:
+    return hashlib.md5(body, usedforsecurity=False).hexdigest()
 
 
-def plan_endings(release: Release, published: dict[str, str]) -> list[str]:
+def plan_endings(release: Release, endings: dict[str, tuple[bytes, str]], published: dict[str, str]) -> list[str]:
     missing = []
-    for relative in release.endings:
+    for relative, (body, _) in endings.items():
         key = release_key(release.name, relative)
         if key not in published:
             missing.append(relative)
-        elif published[key] != ending_digest(release, relative):
+        elif published[key] != ending_digest(body):
             raise SystemExit(f"{key} is already published with other bytes; publish a new release instead")
     return missing
 
 
+def put_object(bucket: Bucket, release: Release, paths: dict[str, str], digest: str) -> int:
+    body = (release.root / build_web.OBJECTS_TREE / digest).read_bytes()
+    if ending_digest(body) != digest:
+        raise SystemExit(f"{paths[digest]} changed after make web listed it; run make web again")
+    bucket.put(object_key(digest), body, digest, content_type(paths[digest]))
+    return len(body)
+
+
+def copy_object(bucket: Bucket, release: Release, paths: dict[str, str], digest: str, source: str) -> int:
+    if bucket.copy(source, object_key(digest)):
+        return 0
+    if release.reused:
+        raise SystemExit(f"{source} is gone, so it cannot be reused")
+    return put_object(bucket, release, paths, digest)
+
+
 def publish(bucket: Bucket, release: Release, dry_run: bool, workers: int) -> tuple[Plan, int]:
-    if release.reused and HASH_LIST not in release.endings:
-        release = adopt_previous_game_files(bucket, release)
-    published = bucket.listing(release_key(release.name, ""))
-    previous = release.digests if release.reused else previous_digests(bucket, release)
-    plan = plan_game_files(release.name, release.digests, published, previous)
-    plan.endings = plan_endings(release, published)
+    previous = read_previous(bucket, release.previous)
+    if release.reused:
+        release = replace(release, digests=previous.digests, sizes=previous.sizes)
+    plan = plan_objects(release, bucket.listing(OBJECTS_PREFIX), previous)
+    endings = release_endings(release)
+    plan.endings = plan_endings(release, endings, bucket.listing(release_key(release.name, "")))
     if dry_run:
-        return plan, sum((release.root / build_web.GAME_TREE / relative).stat().st_size for relative in plan.upload)
+        return plan, sum((release.root / build_web.OBJECTS_TREE / digest).stat().st_size for digest in plan.upload)
+    paths = first_paths(release.digests)
     with ThreadPoolExecutor(max_workers=workers) as pool:
-        uploads = [pool.submit(put_game_file, bucket, release, relative) for relative in plan.upload]
-        copies = [pool.submit(copy_game_file, bucket, release, relative) for relative in plan.copy]
+        uploads = [pool.submit(put_object, bucket, release, paths, digest) for digest in plan.upload]
+        copies = [
+            pool.submit(copy_object, bucket, release, paths, digest, source) for digest, source in plan.copy.items()
+        ]
         sent = sum(finished.result() for finished in uploads + copies)
     for relative in plan.endings:
-        body, kind = release.endings[relative]
-        bucket.put(release_key(release.name, relative), body, ending_digest(release, relative), kind)
+        body, kind = endings[relative]
+        bucket.put(release_key(release.name, relative), body, ending_digest(body), kind)
     return plan, sent
 
 
 def summary(release: Release, plan: Plan, sent: int, dry_run: bool) -> str:
+    objects = len(plan.upload) + len(plan.copy) + len(plan.present)
     verb = "would upload" if dry_run else "uploaded"
-    copied = f", {len(plan.copy)} copied from {release.previous}" if release.previous else ""
+    copied = f", {'would copy' if dry_run else 'copied'} {len(plan.copy)} from {release.previous}" if plan.copy else ""
     if not plan.endings:
-        ending = "lists and page were already there"
+        ending = "list and page were already there"
     else:
         ending = f"{'would publish' if dry_run else 'published'} {', '.join(plan.endings)} last"
     return (
-        f"{release_key(release.name, '')}: {len(release.digests)} game files; {verb} {len(plan.upload)} "
-        f"({sent / MEGABYTE:.1f} MB){copied}, {len(plan.present)} already there; {ending}"
+        f"{release_key(release.name, '')}: {plan.files} game files in {objects} objects under "
+        f"{OBJECTS_PREFIX}; {verb} {len(plan.upload)} ({sent / MEGABYTE:.1f} MB){copied}, "
+        f"{len(plan.present)} already there; {ending}"
     )
 
 
@@ -427,20 +440,20 @@ def main() -> int:
     parser.add_argument("--bucket", required=True, help="R2 bucket name")
     parser.add_argument("--content-url", required=True, help="public base URL of the bucket")
     parser.add_argument("--release", required=True, help="folder under web/ to publish, such as v0.31.0")
-    parser.add_argument("--previous", default="", help="published release to copy unchanged game files from")
+    parser.add_argument(
+        "--previous", default="", help="published release whose game files to copy where web/objects/ lacks them"
+    )
     parser.add_argument("--endpoint", default="", help=f"S3 endpoint; defaults to the one for ${ACCOUNT_ENV}")
     parser.add_argument("--workers", type=int, default=DEFAULT_WORKERS, help="parallel requests")
     parser.add_argument("--dry-run", action="store_true", help="show what would be uploaded without writing")
     parser.add_argument(
         "--reuse-game-files",
         action="store_true",
-        help="copy every game file and both lists from --previous on the server and upload only the page; "
-        "the local asset cache is not read",
+        help="keep every game file of --previous, copying into web/objects/ on the server any it lacks, and upload "
+        "only the list and page; the local asset cache is not read",
     )
     args = parser.parse_args()
-    release = read_release(
-        args.root.resolve(), args.release, args.previous, args.content_url, args.workers, args.reuse_game_files
-    )
+    release = read_release(args.root.resolve(), args.release, args.previous, args.content_url, args.reuse_game_files)
     bucket = bucket_from_environment(args.bucket, args.endpoint)
     plan, sent = publish(bucket, release, args.dry_run, args.workers)
     print(summary(release, plan, sent, args.dry_run))

@@ -530,7 +530,7 @@ static const char *const platform_curl_libraries[] = {"libcurl.so.4", "libcurl-g
 #define PLATFORM_WEB_ROOT "/"
 #define PLATFORM_WEB_NODE_ROOT "."
 #define PLATFORM_WEB_FILE_LIST "game_files.txt"
-#define PLATFORM_WEB_FILES_PATH "game/"
+#define PLATFORM_WEB_LIST_SEPARATOR "  "
 #define PLATFORM_WEB_URL_CAP 2048
 #define PLATFORM_WEB_PATH_CAP 1024
 #define PLATFORM_WEB_SAVES_DIR "/saves"
@@ -546,7 +546,6 @@ static const char *const platform_curl_libraries[] = {"libcurl.so.4", "libcurl-g
 #define PLATFORM_WEB_HEADER_SLOTS 16
 #define PLATFORM_WEB_HEADER_CAP 512
 #define PLATFORM_WEB_PROCESSOR_CAP 16
-#define PLATFORM_WEB_LIST_SIZE_SEPARATOR '\t'
 #define PLATFORM_WEB_SIZE_UNKNOWN (-1LL)
 #define PLATFORM_WEB_WHOLE_FILE_BYTES (64LL * 1024)
 #define PLATFORM_WEB_WHOLE_FILE_PERCENT 75
@@ -697,7 +696,8 @@ typedef enum {
 } PlatformWebFileState;
 
 typedef struct {
-    char *path;
+    const char *path;
+    const char *location;
     long long size;
     int state;
     int piecemeal_reads;
@@ -712,10 +712,15 @@ typedef struct {
 } PlatformWebGameFiles;
 
 static PlatformWebGameFiles platform_web_game_files;
+static unsigned int platform_web_downloaded_bytes;
 
 EM_JS_DEPS(platform_web_downloads, "malloc");
 
 // clang-format off
+EM_JS(void, PlatformWebShareDownloadCount, (unsigned int *count), {
+    Module.hodDownloadedBytes = function () { return Atomics.load(HEAPU32, count >> 2); };
+});
+
 EM_ASYNC_JS(int, PlatformWebDownloadYielding, (const char *url, const char *range, unsigned char **data, int *size), {
     try {
         var headers = range ? { Range: UTF8ToString(range) } : {};
@@ -753,8 +758,11 @@ EM_JS(int, PlatformWebDownloadBlocking, (const char *url, const char *range, uns
 // clang-format on
 
 static int PlatformWebDownload(const char *url, const char *range, unsigned char **data, int *size) {
-    return emscripten_is_main_browser_thread() ? PlatformWebDownloadYielding(url, range, data, size)
-                                               : PlatformWebDownloadBlocking(url, range, data, size);
+    int status = emscripten_is_main_browser_thread() ? PlatformWebDownloadYielding(url, range, data, size)
+                                                     : PlatformWebDownloadBlocking(url, range, data, size);
+    if (status >= 200 && status < 300)
+        __atomic_fetch_add(&platform_web_downloaded_bytes, (unsigned int)*size, __ATOMIC_RELAXED);
+    return status;
 }
 
 static bool PlatformWebMakeParents(const char *path, char *made, size_t capacity) {
@@ -799,13 +807,21 @@ static int PlatformWebFindGameFile(const void *relative, const void *file) {
     return strcmp(relative, ((const PlatformWebGameFile *)file)->path);
 }
 
-static long long PlatformWebListedSize(char *line) {
-    char *separator = strchr(line, PLATFORM_WEB_LIST_SIZE_SEPARATOR);
-    if (!separator) return PLATFORM_WEB_SIZE_UNKNOWN;
+static char *PlatformWebNextListField(char *field) {
+    char *separator = strstr(field, PLATFORM_WEB_LIST_SEPARATOR);
+    if (!separator) return NULL;
     *separator = '\0';
-    char *end = NULL;
-    long long size = strtoll(separator + 1, &end, 10);
-    return end != separator + 1 && *end == '\0' && size >= 0 ? size : PLATFORM_WEB_SIZE_UNKNOWN;
+    return separator + strlen(PLATFORM_WEB_LIST_SEPARATOR);
+}
+
+static long long PlatformWebListedSize(char **rest) {
+    char *end = *rest;
+    while (isdigit((unsigned char)*end)) end++;
+    size_t separator = strlen(PLATFORM_WEB_LIST_SEPARATOR);
+    if (end == *rest || strncmp(end, PLATFORM_WEB_LIST_SEPARATOR, separator) != 0) return PLATFORM_WEB_SIZE_UNKNOWN;
+    long long size = strtoll(*rest, NULL, 10);
+    *rest = end + separator;
+    return size;
 }
 
 static bool PlatformWebListGameFiles(PlatformWebGameFiles *game, char *list) {
@@ -816,13 +832,18 @@ static bool PlatformWebListGameFiles(PlatformWebGameFiles *game, char *list) {
     if (!game->files) return false;
     char made[PLATFORM_WEB_PATH_CAP] = "";
     for (char *line = strtok(list, "\r\n"); line; line = strtok(NULL, "\r\n")) {
-        long long size = PlatformWebListedSize(line);
         if (!line[0]) continue;
-        if (!PlatformWebCreatePlaceholder(line, made, sizeof(made))) {
-            fprintf(stderr, "Platform: could not expose %s\n", line);
+        char *path = PlatformWebNextListField(line);
+        if (!path) {
+            fprintf(stderr, "Platform: %s names no location for %s\n", PLATFORM_WEB_FILE_LIST, line);
             return false;
         }
-        game->files[game->count++] = (PlatformWebGameFile){.path = line, .size = size};
+        long long size = PlatformWebListedSize(&path);
+        if (!PlatformWebCreatePlaceholder(path, made, sizeof(made))) {
+            fprintf(stderr, "Platform: could not expose %s\n", path);
+            return false;
+        }
+        game->files[game->count++] = (PlatformWebGameFile){.path = path, .location = line, .size = size};
     }
     qsort(game->files, (size_t)game->count, sizeof(*game->files), PlatformWebCompareGameFiles);
     return game->count > 0;
@@ -880,7 +901,7 @@ static bool PlatformWebStoreGameFile(const char *relative, const unsigned char *
 
 static bool PlatformWebGameFileUrl(const PlatformWebGameFile *file, char *url, size_t capacity) {
     const PlatformWebGameFiles *game = &platform_web_game_files;
-    return (size_t)snprintf(url, capacity, "%s%s%s", game->files_url, PLATFORM_WEB_FILES_PATH, file->path) < capacity;
+    return (size_t)snprintf(url, capacity, "%s%s", game->files_url, file->location) < capacity;
 }
 
 static bool PlatformWebLoadGameFile(const PlatformWebGameFile *file) {
@@ -891,7 +912,7 @@ static bool PlatformWebLoadGameFile(const PlatformWebGameFile *file) {
     int status = PlatformWebDownload(url, NULL, &data, &size);
     bool loaded = status >= 200 && status < 300 && PlatformWebStoreGameFile(file->path, data, size);
     free(data);
-    if (!loaded) fprintf(stderr, "Platform: could not download %s (HTTP %d)\n", url, status);
+    if (!loaded) fprintf(stderr, "Platform: could not download %s from %s (HTTP %d)\n", file->path, url, status);
     return loaded;
 }
 
@@ -970,7 +991,8 @@ PlatformWebFetchSpan(PlatformWebGameFile *file, PlatformByteSpan span, PlatformF
         wanted->read = true;
     }
     free(data);
-    if (!whole && !partial) fprintf(stderr, "Platform: could not read %s %s (HTTP %d)\n", url, range, status);
+    if (!whole && !partial)
+        fprintf(stderr, "Platform: could not read %s %s from %s (HTTP %d)\n", file->path, range, url, status);
 }
 
 bool PlatformReadFileRanges(const char *path, PlatformFileRange *ranges, int count) {
@@ -1176,6 +1198,7 @@ void PlatformJoinThread(pthread_t thread) {
 bool PlatformPrepareGameFiles(void) {
     static PlatformWebFiles files;
     if (!PlatformWebFilesUrl(files.files_url, sizeof(files.files_url))) return false;
+    PlatformWebShareDownloadCount(&platform_web_downloaded_bytes);
     pthread_t thread;
     if (pthread_create(&thread, NULL, PlatformWebPrepare, &files) != 0) return false;
     while (!__atomic_load_n(&files.finished, __ATOMIC_ACQUIRE))
@@ -1186,10 +1209,10 @@ bool PlatformPrepareGameFiles(void) {
         return false;
     }
     printf(
-        "Platform: exposed %d game files from %s%s, restored %d saved files\n",
+        "Platform: exposed %d game files listed in %s%s, restored %d saved files\n",
         platform_web_game_files.count,
         files.files_url,
-        PLATFORM_WEB_FILES_PATH,
+        PLATFORM_WEB_FILE_LIST,
         files.restored
     );
     return chdir(PLATFORM_WEB_ROOT) == 0;

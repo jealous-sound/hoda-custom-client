@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
+import hashlib
 import http.client
 import json
 from pathlib import Path
@@ -17,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 import build_web
+import publish_web
 import serve_web
 
 
@@ -38,6 +40,8 @@ SHIPPED_INDEX = (
 WEB_PACKAGING = ROOT / "packaging" / "web"
 PNG_SIZE_FIELDS = slice(16, 24)
 WINDOW_SOURCE = "window.c"
+PAGE_FIELD = re.compile(r"Module\.(hod\w+)")
+PAGE_SHELL_FIELD = re.compile(r"(?:Module\.|^\s*)(hod\w+)\b", re.MULTILINE)
 
 
 def png_size(path: Path) -> str:
@@ -63,16 +67,46 @@ class AppFilesTest(unittest.TestCase):
         self.assertEqual(png_size(WEB_PACKAGING / "icon-180.png"), "180x180")
 
 
+def sources_outside_the_window_calling(call: re.Pattern[str]) -> list[str]:
+    return sorted(
+        path.name
+        for path in (ROOT / "source").glob("*.c")
+        if path.name != WINDOW_SOURCE and call.search(path.read_text(errors="replace"))
+    )
+
+
 class WholeFramesTest(unittest.TestCase):
     def test_every_screen_draws_its_frames_through_the_window(self) -> None:
         raylib_frames = re.compile(r"\b(?:Begin|End)Drawing\(")
-        bypassing = sorted(
-            path.name
-            for path in (ROOT / "source").glob("*.c")
-            if path.name != WINDOW_SOURCE and raylib_frames.search(path.read_text(errors="replace"))
-        )
-        self.assertEqual(bypassing, [])
+        self.assertEqual(sources_outside_the_window_calling(raylib_frames), [])
         self.assertTrue(raylib_frames.search((ROOT / "source" / WINDOW_SOURCE).read_text()))
+
+
+class FramePacingTest(unittest.TestCase):
+    def test_only_the_window_sets_the_frame_rate_limit(self) -> None:
+        raylib_limit = re.compile(r"\bSetTargetFPS\(")
+        self.assertEqual(sources_outside_the_window_calling(raylib_limit), [])
+        self.assertTrue(raylib_limit.search((ROOT / "source" / WINDOW_SOURCE).read_text()))
+
+    def test_the_web_link_swaps_raylibs_sleeping_frame_wait_for_the_windows(self) -> None:
+        makefile = (ROOT / "Makefile").read_text()
+        self.assertIn("--wrap=WindowShouldClose", re.search(r"^WEB_LDFLAGS = (?:.*\\\n)*.*$", makefile, re.M).group(0))
+        self.assertIn("bool __wrap_WindowShouldClose(void)", (ROOT / "source" / WINDOW_SOURCE).read_text())
+
+
+class PageLoaderTest(unittest.TestCase):
+    def test_every_page_field_the_game_uses_is_on_the_page(self) -> None:
+        game = set()
+        for name in (WINDOW_SOURCE, "platform.c"):
+            game |= set(PAGE_FIELD.findall((ROOT / "source" / name).read_text()))
+        page = set(PAGE_SHELL_FIELD.findall((WEB_PACKAGING / "shell.html").read_text()))
+        self.assertIn("hodFrameShown", game)
+        self.assertEqual(game - page, set())
+
+    def test_the_loader_shows_before_the_game_runs(self) -> None:
+        shell = (WEB_PACKAGING / "shell.html").read_text()
+        self.assertRegex(shell, r'<div id="loader"></div>')
+        self.assertIn("hodLoaderWanted: true", shell)
 
 
 class ParseRangeTest(unittest.TestCase):
@@ -128,39 +162,63 @@ class ShippedIndexTest(unittest.TestCase):
                 build_web.shipped_index(text, set())
 
 
+def md5(text: str) -> str:
+    return hashlib.md5(text.encode(), usedforsecurity=False).hexdigest()
+
+
 class BuildWebTest(unittest.TestCase):
-    def test_lists_links_and_index_the_page_mounts(self) -> None:
+    RUNTIME = ["data/rules.json", "client-additional-data/characters.json", SHIPPED_BUNDLE, LATER_BUNDLE]
+    TWIN = "data/rules-twin.json"
+
+    def build(self, base: Path) -> tuple[Path, int]:
+        root, out = base / "repo", base / "web"
+        for relative in self.RUNTIME:
+            (root / relative).parent.mkdir(parents=True, exist_ok=True)
+            (root / relative).write_text(relative)
+        (root / self.TWIN).write_text("data/rules.json")
+        out.mkdir(exist_ok=True)
+        for name in build_web.PAGE_FILES:
+            (out / name).write_text(name)
+        index = base / "resource_index.txt"
+        index.write_text(FULL_INDEX)
+        with mock.patch.object(build_web.build_dist, "content_files", return_value=[*self.RUNTIME, self.TWIN]):
+            count, _ = build_web.build(root, out, index, SERVED_INDEX, workers=2)
+        return out, count
+
+    def test_lists_each_file_the_page_mounts_beside_the_object_holding_its_bytes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            base = Path(temporary)
-            root, out = base / "repo", base / "web"
-            runtime = ["data/rules.json", "client-additional-data/characters.json", SHIPPED_BUNDLE, LATER_BUNDLE]
-            for relative in runtime:
-                (root / relative).parent.mkdir(parents=True, exist_ok=True)
-                (root / relative).write_text(relative)
-            out.mkdir()
-            for name in build_web.PAGE_FILES:
-                (out / name).write_text(name)
-            index = base / "resource_index.txt"
-            index.write_text(FULL_INDEX)
-            with mock.patch.object(build_web.build_dist, "content_files", return_value=runtime):
-                count, _ = build_web.build(root, out, index, SERVED_INDEX)
+            out, count = self.build(Path(temporary))
 
             listed = (out / build_web.FILE_LIST).read_text()
-            self.assertEqual(count, len(runtime) + 1)
-            self.assertEqual(build_web.listed_paths(listed), sorted(runtime + [SERVED_INDEX]))
-            sizes = dict(line.split(build_web.LIST_SIZE_SEPARATOR) for line in listed.splitlines())
-            self.assertEqual(sizes[SHIPPED_BUNDLE], str(len(SHIPPED_BUNDLE)))
-            self.assertEqual(sizes[SERVED_INDEX], str(len(SHIPPED_INDEX)))
-            tree = out / build_web.GAME_TREE
-            for relative in runtime:
-                self.assertTrue((tree / relative).is_symlink())
-                self.assertEqual((tree / relative).read_text(), relative)
-            self.assertEqual((tree / SERVED_INDEX).read_text(), SHIPPED_INDEX)
+            mounted = sorted([*self.RUNTIME, self.TWIN, SERVED_INDEX])
+            self.assertEqual(count, len(mounted))
+            digests, sizes = build_web.read_list(listed, build_web.LOCAL_OBJECTS)
+            self.assertEqual(list(digests), mounted)
+            self.assertEqual(sizes[digests[SERVED_INDEX]], len(SHIPPED_INDEX))
+            for relative in self.RUNTIME:
+                self.assertEqual(digests[relative], md5(relative))
+                self.assertEqual(sizes[digests[relative]], len(relative))
+                self.assertTrue((out / build_web.OBJECTS_TREE / md5(relative)).is_symlink())
+                self.assertEqual((out / build_web.LOCAL_OBJECTS / digests[relative]).read_text(), relative)
+            self.assertEqual((out / build_web.LOCAL_OBJECTS / digests[SERVED_INDEX]).read_text(), SHIPPED_INDEX)
 
-    def test_lists_written_before_sizes_still_name_their_files(self) -> None:
-        self.assertEqual(build_web.listed_paths("data/rules.json\ncache/a/CAB-hud\n"), ["data/rules.json", SHIPPED_BUNDLE])
-        sized = build_web.list_line("data/rules.json", FILE_SIZE) + build_web.list_line(SHIPPED_BUNDLE, 0)
-        self.assertEqual(build_web.listed_paths(sized), ["data/rules.json", SHIPPED_BUNDLE])
+    def test_identical_files_share_one_object(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            out, _ = self.build(Path(temporary))
+
+            digests = build_web.list_digests((out / build_web.FILE_LIST).read_text(), build_web.LOCAL_OBJECTS)
+            self.assertEqual(digests[self.TWIN], digests["data/rules.json"])
+            self.assertEqual(len(list((out / build_web.OBJECTS_TREE).iterdir())), len(self.RUNTIME) + 1)
+
+    def test_a_rebuild_drops_objects_no_file_holds_any_more(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            out, _ = self.build(Path(temporary))
+            stale = out / build_web.OBJECTS_TREE / md5("gone")
+            stale.write_text("gone")
+
+            out, _ = self.build(Path(temporary))
+
+            self.assertFalse(stale.exists())
 
     def test_refuses_an_output_without_the_compiled_page(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -169,6 +227,33 @@ class BuildWebTest(unittest.TestCase):
             index.write_text("hoda-resource-index 1\n")
             with self.assertRaises(SystemExit):
                 build_web.build(base, base, index, SERVED_INDEX)
+
+
+class FileListTest(unittest.TestCase):
+    DIGESTS = {"data/rules.json": md5("rules"), "data/with space.json": md5("space")}
+    SIZES = {md5("rules"): 5, md5("space"): 0}
+
+    def test_reads_back_what_it_writes(self) -> None:
+        for objects in (build_web.LOCAL_OBJECTS, "../objects/"):
+            with self.subTest(objects=objects):
+                text = build_web.file_list(self.DIGESTS, objects, self.SIZES)
+                self.assertEqual(build_web.read_list(text, objects), (self.DIGESTS, self.SIZES))
+
+    def test_lines_are_sorted_by_path_with_the_location_and_size_first(self) -> None:
+        self.assertEqual(
+            build_web.file_list(self.DIGESTS, "objects/", self.SIZES).splitlines(),
+            [f"objects/{md5('rules')}  5  data/rules.json", f"objects/{md5('space')}  0  data/with space.json"],
+        )
+
+    def test_an_object_of_unknown_size_is_listed_without_one(self) -> None:
+        text = build_web.file_list(self.DIGESTS, "objects/", {md5("rules"): 5})
+        self.assertEqual(text.splitlines()[1], f"objects/{md5('space')}  data/with space.json")
+        self.assertEqual(build_web.read_list(text, "objects/"), (self.DIGESTS, {md5("rules"): 5}))
+
+    def test_refuses_lines_that_name_no_object(self) -> None:
+        for line in ("data/rules.json", f"objects/{md5('rules')}  ", f"elsewhere/{md5('rules')}  a", "objects/xyz  a"):
+            with self.subTest(line=line), self.assertRaises(SystemExit):
+                build_web.list_digests(line, build_web.LOCAL_OBJECTS)
 
 
 class ServeWebTest(unittest.TestCase):
@@ -205,6 +290,7 @@ class ServeWebTest(unittest.TestCase):
         found = self.ask("GET", "/game/data/rules.json")
         self.assertEqual(found.status, 200)
         self.assertEqual(found.getheader("Cross-Origin-Embedder-Policy"), "require-corp")
+        self.assertEqual(found.getheader("Cache-Control"), serve_web.LOCAL_CACHE_CONTROL)
         self.assertEqual(self.ask("HEAD", "/game/data//rules.json").status, 404)
         self.assertEqual(self.ask("GET", "/game//data/rules.json").status, 404)
 
@@ -218,18 +304,14 @@ class ServeWebTest(unittest.TestCase):
         stranger = self.ask("GET", "/game/data/rules.json", {"Origin": "https://elsewhere.test"})
         self.assertIsNone(stranger.getheader("Access-Control-Allow-Origin"))
 
-    def test_cdn_files_are_immutable_like_the_bucket(self) -> None:
+    def test_cdn_files_carry_the_cache_control_the_publisher_stores_and_misses_do_not(self) -> None:
         self.serve(self.PAGE_ORIGIN)
-        reply = self.ask("GET", "/game/data/rules.json", {"Origin": self.PAGE_ORIGIN, "Range": "bytes=2-5"})
-        self.assertEqual(reply.status, 206)
-        self.assertEqual(reply.getheader("Cache-Control"), serve_web.CDN_CACHE_CONTROL)
-        self.assertTrue(reply.getheader("ETag"))
-
-    def test_page_files_are_revalidated(self) -> None:
-        self.serve("")
-        reply = self.ask("GET", "/game/data/rules.json")
-        self.assertEqual(reply.getheader("Cache-Control"), serve_web.PAGE_CACHE_CONTROL)
-        self.assertTrue(reply.getheader("ETag"))
+        found = self.ask("GET", "/game/data/rules.json", {"Origin": self.PAGE_ORIGIN})
+        self.assertEqual(found.getheader("Cache-Control"), publish_web.IMMUTABLE_CACHE_CONTROL)
+        self.assertTrue(found.getheader("ETag"))
+        missing = self.ask("GET", "/game/data/absent.json", {"Origin": self.PAGE_ORIGIN})
+        self.assertEqual(missing.status, 404)
+        self.assertIsNone(missing.getheader("Cache-Control"))
 
     def test_cdn_preflight_allows_only_ranged_reads_from_the_page_origin(self) -> None:
         self.serve(self.PAGE_ORIGIN)

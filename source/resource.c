@@ -512,8 +512,8 @@ static int ResourceGroupImageReads(ResourceImageRead *reads, int count, Resource
     int group_count = 0;
     for (int i = 0; i < count; i++) {
         ResourceReadGroup *open = group_count > 0 ? &groups[group_count - 1] : NULL;
-        bool joins = open && reads[i].container != RESOURCE_UNGROUPED &&
-                     reads[open->first].container == reads[i].container;
+        bool joins =
+            open && reads[i].container != RESOURCE_UNGROUPED && reads[open->first].container == reads[i].container;
         if (!joins) groups[group_count++] = (ResourceReadGroup){.first = i};
         groups[group_count - 1].count++;
         groups[group_count - 1].bytes += reads[i].size;
