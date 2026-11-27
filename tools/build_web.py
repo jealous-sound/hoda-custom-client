@@ -14,7 +14,7 @@ import build_dist
 CLI_DESCRIPTION = (
     "Lay out the browser build's game files: an objects/ folder holding each file the game reads at runtime under "
     "its MD5, the prebuilt resource index cut down to the bundles that ship among them, and game_files.txt, the list "
-    "the page mounts lazily over HTTP, pairing each object with the path the game opens it at."
+    "the page mounts lazily over HTTP, pairing each object and its size with the path the game opens it at."
 )
 
 ROOT = build_dist.ROOT
@@ -23,6 +23,7 @@ LOCAL_OBJECTS = f"{OBJECTS_TREE}/"
 FILE_LIST = "game_files.txt"
 LIST_SEPARATOR = "  "
 DIGEST_PATTERN = re.compile(r"[0-9a-f]{32}$")
+SIZE_PATTERN = re.compile(r"[0-9]+")
 HASH_WORKERS = 16
 HASH_CHUNK_BYTES = 1 << 20
 ENTRY_PAGE = "index.html"
@@ -77,30 +78,49 @@ def file_md5(path: Path) -> str:
     return digest.hexdigest()
 
 
-def file_list(digests: dict[str, str], objects: str) -> str:
-    return "".join(f"{objects}{digests[relative]}{LIST_SEPARATOR}{relative}\n" for relative in sorted(digests))
+def list_line(objects: str, digest: str, size: int | None, relative: str) -> str:
+    fields = [f"{objects}{digest}", *([] if size is None else [str(size)]), relative]
+    return LIST_SEPARATOR.join(fields) + "\n"
+
+
+def file_list(digests: dict[str, str], objects: str, sizes: dict[str, int]) -> str:
+    return "".join(
+        list_line(objects, digests[relative], sizes.get(digests[relative]), relative) for relative in sorted(digests)
+    )
+
+
+def read_list(text: str, objects: str) -> tuple[dict[str, str], dict[str, int]]:
+    digests: dict[str, str] = {}
+    sizes: dict[str, int] = {}
+    for number, line in enumerate(text.splitlines(), 1):
+        location, separator, rest = line.partition(LIST_SEPARATOR)
+        size, sized, relative = rest.partition(LIST_SEPARATOR)
+        if not (sized and SIZE_PATTERN.fullmatch(size)):
+            size, relative = "", rest
+        digest = location.removeprefix(objects)
+        if not (separator and relative and location.startswith(objects) and DIGEST_PATTERN.match(digest)):
+            raise SystemExit(
+                f"{FILE_LIST} line {number} should read {objects}<md5>{LIST_SEPARATOR}<size>{LIST_SEPARATOR}<path>"
+            )
+        digests[relative] = digest
+        if size:
+            sizes[digest] = int(size)
+    return digests, sizes
 
 
 def list_digests(text: str, objects: str) -> dict[str, str]:
-    digests = {}
-    for number, line in enumerate(text.splitlines(), 1):
-        location, separator, relative = line.partition(LIST_SEPARATOR)
-        digest = location.removeprefix(objects)
-        if not (separator and relative and location.startswith(objects) and DIGEST_PATTERN.match(digest)):
-            raise SystemExit(f"{FILE_LIST} line {number} should read {objects}<md5>{LIST_SEPARATOR}<path>")
-        digests[relative] = digest
-    return digests
+    return read_list(text, objects)[0]
 
 
-def link_objects(root: Path, tree: Path, digests: dict[str, str]) -> int:
-    total = 0
+def link_objects(root: Path, tree: Path, digests: dict[str, str]) -> dict[str, int]:
+    sizes = {}
     for relative, digest in digests.items():
         source = root / relative
         target = tree / digest
         if not target.is_symlink():
             target.symlink_to(source)
-        total += source.stat().st_size
-    return total
+        sizes[digest] = source.stat().st_size
+    return sizes
 
 
 def build(
@@ -118,14 +138,16 @@ def build(
     tree.mkdir(parents=True)
     with ThreadPoolExecutor(max_workers=workers) as pool:
         digests = dict(zip(files, pool.map(lambda relative: file_md5(root / relative), files)))
-    total = link_objects(root, tree, digests)
+    sizes = link_objects(root, tree, digests)
+    total = sum(sizes[digest] for digest in digests.values())
     index = shipped_index(resource_index.read_text(), set(files)).encode()
     digests[served_index] = hashlib.md5(index, usedforsecurity=False).hexdigest()
+    sizes[digests[served_index]] = len(index)
     index_target = tree / digests[served_index]
     if not index_target.exists():
         index_target.write_bytes(index)
     total += len(index)
-    (out / FILE_LIST).write_text(file_list(digests, LOCAL_OBJECTS))
+    (out / FILE_LIST).write_text(file_list(digests, LOCAL_OBJECTS, sizes))
     return len(digests), total
 
 

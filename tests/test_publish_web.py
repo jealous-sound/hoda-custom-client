@@ -44,7 +44,8 @@ def write_build(root: Path, release: str, files: dict[str, bytes], content_url: 
     for body in files.values():
         (objects / md5(body)).write_bytes(body)
     digests = {relative: md5(body) for relative, body in files.items()}
-    (out / build_web.FILE_LIST).write_text(build_web.file_list(digests, build_web.LOCAL_OBJECTS))
+    sizes = {md5(body): len(body) for body in files.values()}
+    (out / build_web.FILE_LIST).write_text(build_web.file_list(digests, build_web.LOCAL_OBJECTS, sizes))
     for name in build_web.APP_FILES:
         (out / name).write_bytes(name.encode())
     (out / "index.html").write_text("<script src=index.js></script>")
@@ -112,13 +113,14 @@ class PublishTest(unittest.TestCase):
         written, self.s3.writes[:] = list(self.s3.writes), []
         return written
 
-    def urls(self, release: str) -> dict[str, str]:
+    def published_list(self, release: str) -> tuple[dict[str, str], dict[str, int]]:
         listed = self.s3.stored(publish_web.release_key(release, build_web.FILE_LIST)).read_text()
+        return build_web.read_list(listed, publish_web.PUBLISHED_OBJECTS)
+
+    def urls(self, release: str) -> dict[str, str]:
         base = publish_web.files_url(CONTENT_URL, release)
-        return {
-            relative: urljoin(base, location)
-            for location, _, relative in (line.partition(build_web.LIST_SEPARATOR) for line in listed.splitlines())
-        }
+        digests, _ = self.published_list(release)
+        return {relative: urljoin(base, f"{publish_web.PUBLISHED_OBJECTS}{digest}") for relative, digest in digests.items()}
 
     def publish_legacy_release(self, release: str, files: dict[str, bytes]) -> None:
         for relative, body in files.items():
@@ -147,6 +149,17 @@ class PublishTest(unittest.TestCase):
 
         for relative, url in self.urls("v1").items():
             self.assertEqual(url, f"{CONTENT_URL}/web/objects/{md5(GAME_FILES[relative])}")
+
+    def test_the_published_list_gives_each_object_the_size_make_web_wrote(self) -> None:
+        out = write_build(self.base / "v1", "v1", GAME_FILES)
+        digests = {relative: md5(body) for relative, body in GAME_FILES.items()}
+        (out / build_web.FILE_LIST).write_text(build_web.file_list(digests, build_web.LOCAL_OBJECTS, {}))
+        built = publish_web.read_release(out, "v1", "", CONTENT_URL)
+
+        publish_web.publish(self.bucket, built, dry_run=False, workers=WORKERS)
+
+        _, sizes = self.published_list("v1")
+        self.assertEqual(sizes, {md5(body): len(body) for body in GAME_FILES.values()})
 
     def test_objects_keep_the_type_their_path_names_and_never_expire(self) -> None:
         self.publish("v1", GAME_FILES)
@@ -311,6 +324,7 @@ class PublishTest(unittest.TestCase):
         plan, sent = publish_web.publish(self.bucket, built, dry_run=False, workers=WORKERS)
 
         self.assertEqual((plan.upload, sent, len(plan.copy)), ([], 0, len(GAME_FILES)))
+        self.assertEqual(self.published_list("v1")[1], {})
         for relative, url in self.urls("v1").items():
             self.assertEqual(url, f"{CONTENT_URL}/web/objects/{md5(GAME_FILES[relative])}")
             self.assertEqual(

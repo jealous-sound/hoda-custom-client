@@ -131,6 +131,23 @@ class ParseRangeTest(unittest.TestCase):
                 self.assertIsNone(serve_web.parse_range(header, FILE_SIZE))
 
 
+class LinkTest(unittest.TestCase):
+    def test_answers_share_the_bandwidth_in_turn(self) -> None:
+        now = [0.0]
+        waits: list[float] = []
+        link = serve_web.Link(8, clock=lambda: now[0], sleep=waits.append)
+        link.carry(500_000)
+        link.carry(500_000)
+        now[0] = 3.0
+        link.carry(250_000)
+        self.assertEqual(waits, [0.5, 1.0, 0.25])
+
+    def test_an_unlimited_link_never_waits(self) -> None:
+        waits: list[float] = []
+        serve_web.Link(0, sleep=waits.append).carry(1 << 30)
+        self.assertEqual(waits, [])
+
+
 class ShippedIndexTest(unittest.TestCase):
     def test_drops_bundles_that_do_not_ship_and_renumbers_the_rest(self) -> None:
         self.assertEqual(build_web.shipped_index(FULL_INDEX, {SHIPPED_BUNDLE, LATER_BUNDLE}), SHIPPED_INDEX)
@@ -172,13 +189,15 @@ class BuildWebTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             out, count = self.build(Path(temporary))
 
-            listed = (out / build_web.FILE_LIST).read_text().splitlines()
+            listed = (out / build_web.FILE_LIST).read_text()
             mounted = sorted([*self.RUNTIME, self.TWIN, SERVED_INDEX])
             self.assertEqual(count, len(mounted))
-            self.assertEqual([line.partition(build_web.LIST_SEPARATOR)[2] for line in listed], mounted)
-            digests = build_web.list_digests("\n".join(listed), build_web.LOCAL_OBJECTS)
+            digests, sizes = build_web.read_list(listed, build_web.LOCAL_OBJECTS)
+            self.assertEqual(list(digests), mounted)
+            self.assertEqual(sizes[digests[SERVED_INDEX]], len(SHIPPED_INDEX))
             for relative in self.RUNTIME:
                 self.assertEqual(digests[relative], md5(relative))
+                self.assertEqual(sizes[digests[relative]], len(relative))
                 self.assertTrue((out / build_web.OBJECTS_TREE / md5(relative)).is_symlink())
                 self.assertEqual((out / build_web.LOCAL_OBJECTS / digests[relative]).read_text(), relative)
             self.assertEqual((out / build_web.LOCAL_OBJECTS / digests[SERVED_INDEX]).read_text(), SHIPPED_INDEX)
@@ -212,18 +231,24 @@ class BuildWebTest(unittest.TestCase):
 
 class FileListTest(unittest.TestCase):
     DIGESTS = {"data/rules.json": md5("rules"), "data/with space.json": md5("space")}
+    SIZES = {md5("rules"): 5, md5("space"): 0}
 
     def test_reads_back_what_it_writes(self) -> None:
         for objects in (build_web.LOCAL_OBJECTS, "../objects/"):
             with self.subTest(objects=objects):
-                text = build_web.file_list(self.DIGESTS, objects)
-                self.assertEqual(build_web.list_digests(text, objects), self.DIGESTS)
+                text = build_web.file_list(self.DIGESTS, objects, self.SIZES)
+                self.assertEqual(build_web.read_list(text, objects), (self.DIGESTS, self.SIZES))
 
-    def test_lines_are_sorted_by_path_with_the_location_first(self) -> None:
+    def test_lines_are_sorted_by_path_with_the_location_and_size_first(self) -> None:
         self.assertEqual(
-            build_web.file_list(self.DIGESTS, "objects/").splitlines(),
-            [f"objects/{md5('rules')}  data/rules.json", f"objects/{md5('space')}  data/with space.json"],
+            build_web.file_list(self.DIGESTS, "objects/", self.SIZES).splitlines(),
+            [f"objects/{md5('rules')}  5  data/rules.json", f"objects/{md5('space')}  0  data/with space.json"],
         )
+
+    def test_an_object_of_unknown_size_is_listed_without_one(self) -> None:
+        text = build_web.file_list(self.DIGESTS, "objects/", {md5("rules"): 5})
+        self.assertEqual(text.splitlines()[1], f"objects/{md5('space')}  data/with space.json")
+        self.assertEqual(build_web.read_list(text, "objects/"), (self.DIGESTS, {md5("rules"): 5}))
 
     def test_refuses_lines_that_name_no_object(self) -> None:
         for line in ("data/rules.json", f"objects/{md5('rules')}  ", f"elsewhere/{md5('rules')}  a", "objects/xyz  a"):
@@ -283,6 +308,7 @@ class ServeWebTest(unittest.TestCase):
         self.serve(self.PAGE_ORIGIN)
         found = self.ask("GET", "/game/data/rules.json", {"Origin": self.PAGE_ORIGIN})
         self.assertEqual(found.getheader("Cache-Control"), publish_web.IMMUTABLE_CACHE_CONTROL)
+        self.assertTrue(found.getheader("ETag"))
         missing = self.ask("GET", "/game/data/absent.json", {"Origin": self.PAGE_ORIGIN})
         self.assertEqual(missing.status, 404)
         self.assertIsNone(missing.getheader("Cache-Control"))

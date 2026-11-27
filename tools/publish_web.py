@@ -282,12 +282,14 @@ class Release:
     digests: dict[str, str]
     pages: dict[str, tuple[bytes, str]]
     reused: bool = False
+    sizes: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
 class Previous:
     digests: dict[str, str]
     legacy_tree: bool
+    sizes: dict[str, int] = field(default_factory=dict)
 
 
 def read_release(root: Path, name: str, previous: str, content_url: str, reuse_game_files: bool = False) -> Release:
@@ -311,7 +313,8 @@ def read_release(root: Path, name: str, previous: str, content_url: str, reuse_g
     absent = {digest for digest in digests.values() if not (root / build_web.OBJECTS_TREE / digest).exists()}
     if absent:
         raise SystemExit(f"{root}/{build_web.OBJECTS_TREE} lacks {len(absent)} listed objects; run make web")
-    return Release(root, name, previous, digests, pages)
+    sizes = {digest: (root / build_web.OBJECTS_TREE / digest).stat().st_size for digest in set(digests.values())}
+    return Release(root, name, previous, digests, pages, sizes=sizes)
 
 
 def required(bucket: Bucket, key: str) -> bytes:
@@ -326,12 +329,13 @@ def read_previous(bucket: Bucket, previous: str) -> Previous:
         return Previous({}, legacy_tree=False)
     listed = required(bucket, release_key(previous, build_web.FILE_LIST)).decode()
     if listed.startswith(PUBLISHED_OBJECTS):
-        return Previous(build_web.list_digests(listed, PUBLISHED_OBJECTS), legacy_tree=False)
+        digests, sizes = build_web.read_list(listed, PUBLISHED_OBJECTS)
+        return Previous(digests, legacy_tree=False, sizes=sizes)
     return Previous(parse_legacy_hash_list(required(bucket, release_key(previous, LEGACY_HASH_LIST))), legacy_tree=True)
 
 
 def release_endings(release: Release) -> dict[str, tuple[bytes, str]]:
-    listed = build_web.file_list(release.digests, PUBLISHED_OBJECTS).encode()
+    listed = build_web.file_list(release.digests, PUBLISHED_OBJECTS, release.sizes).encode()
     return {build_web.FILE_LIST: (listed, content_type(build_web.FILE_LIST)), **release.pages}
 
 
@@ -387,7 +391,7 @@ def copy_object(bucket: Bucket, release: Release, paths: dict[str, str], digest:
 def publish(bucket: Bucket, release: Release, dry_run: bool, workers: int) -> tuple[Plan, int]:
     previous = read_previous(bucket, release.previous)
     if release.reused:
-        release = replace(release, digests=previous.digests)
+        release = replace(release, digests=previous.digests, sizes=previous.sizes)
     plan = plan_objects(release, bucket.listing(OBJECTS_PREFIX), previous)
     endings = release_endings(release)
     plan.endings = plan_endings(release, endings, bucket.listing(release_key(release.name, "")))

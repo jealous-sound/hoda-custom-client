@@ -236,18 +236,32 @@ make web-serve
 ```
 
 Then open http://127.0.0.1:8077/ in Chrome or Safari. `--latency-ms 90` on `tools/serve_web.py` acts like the CDN's
-round trip. `WEB_BACKEND=http://127.0.0.1:<port>` makes the server forward `/api/`
-to a backend; add `?HOD_BACKEND_URL=http://127.0.0.1:8077/api` to the page URL to play Online through it. Any
-`HOD_*` query parameter becomes an environment variable for the game.
+round trip and `--rate-mbps 40` like a player's connection, shared by every answer.
+`WEB_BACKEND=http://127.0.0.1:<port>` makes the server forward `/api/` to a backend; add
+`?HOD_BACKEND_URL=http://127.0.0.1:8077/api` to the page URL to play Online through it. Any `HOD_*` query parameter
+becomes an environment variable for the game.
 
 - `make web` clones raylib 5.5 into `build/` once and builds it for the web. It writes `build/web/index.{html,js,wasm}`,
   an `objects/` folder holding each file `make dist` ships under its MD5 (links, one per distinct content), and
-  `game_files.txt`, the list the page mounts. Each line is `<location>  <path>`: where the bytes are, relative to the
-  list (`objects/<md5>` here, `../objects/<md5>` once published), and the path the game opens.
+  `game_files.txt`, the list the page mounts. Each line is `<location>  <size>  <path>`: where the bytes are,
+  relative to the list (`objects/<md5>` here, `../objects/<md5>` once published), their size in bytes, and the path
+  the game opens.
 - Game files are not downloaded up front. They start as empty files in memory; `fopen` is wrapped
   (`-Wl,--wrap=fopen`) so the first open of a game file downloads it whole from its location with one GET. On the
   main thread the download yields to the browser through Asyncify; worker threads use a synchronous request. Reaching
   the tutorial battle reads about 735 files, 155 MB.
+- Cache bundles are read by object, not whole. Objects go through `PlatformReadFileRanges`, which on the web asks
+  the bundle's location for just their bytes with `Range: bytes=N-M` (a yielding `fetch` on the main thread, a
+  synchronous request on workers). An image batch is grouped by bundle, and objects of one bundle less than 64 KB
+  apart share one request. A bundle is downloaded whole instead, and later reads of it are local, when it is at most
+  64 KB, when the read needs three quarters of it, or when it has been read in pieces three times and those pieces
+  cover less than half of it (`CAB-audio_pool`, which battles keep reading). Native builds read the same objects from
+  disk.
+- Measured from the Local Game click to the home screen in headless Chrome with a fresh profile, `serve_web.py
+  --latency-ms 120`: bundles went from 117 MB to 80 MB and the whole download from 154 MB to 117 MB (737 → 814
+  requests); the startup-image prefetch reads 69 MB instead of 106 MB. With `--rate-mbps 40` that is 50.9 s →
+  45.1 s (the prefetch 24.9 s → 16.9 s); with no bandwidth limit both take about 20 s, since the time then goes to
+  round trips.
 - WebKit (Safari and every iPhone browser) sends worker threads' requests and storage calls through the page's main
   thread, so the main thread must never wait for a worker that is waiting on the network or on storage. That is why
   main-thread downloads yield, `PlatformJoinThread` yields while it waits, browser storage is mounted from a worker
@@ -299,7 +313,9 @@ make web-publish WEB_RELEASE=2026-11-26 WEB_PREVIOUS=2026-11-20
 
 Name releases by date: a published folder is never replaced, so a version name would block that tag's own web
 release later. `WEB_REUSE_GAME_FILES=1` publishes a page-only release: it lists exactly `WEB_PREVIOUS`'s game files,
-uploads only the list and the page, and does not read the local asset cache.
+uploads only the list and the page, and does not read the local asset cache. It keeps the sizes `WEB_PREVIOUS`'s list
+gives; a list published without them (up to `2026-11-26.3`) still loads, but the page then reads its small bundles in
+pieces rather than whole.
 
 - `WEB_RELEASE` bakes `HOD_GAME_FILES_URL=$(CONTENT_URL)/web/$(WEB_RELEASE)/` into the page; without it the files are
   read next to the page. `?HOD_GAME_FILES_URL=` overrides it.
@@ -317,9 +333,15 @@ uploads only the list and the page, and does not read the local asset cache.
   `WEB_PREVIOUS`, objects it already holds are copied inside the bucket instead of uploaded (matched by its
   `game_files.md5`), which makes the first release on `web/objects/` cheap, page-only ones included.
 - The bucket's CORS policy must allow the page's origin: `GET` and `HEAD`, header `Range`, exposing
-  `Content-Length`, `Content-Range`, `Accept-Ranges` and `ETag`.
+  `Content-Length`, `Content-Range`, `Accept-Ranges` and `ETag`. A single `bytes=N-M` range is a CORS-safelisted
+  header in current Chrome, Safari and Firefox, so ranged reads send no preflight; the policy's `Range` entry is
+  for older browsers.
+- Partial responses are cached like whole ones: Chrome serves a repeat visit's ranges from its HTTP cache, and
+  WebKit keys a cached 206 by its exact `Range` value. A visit asks for the same ranges as the last one because
+  bundles are grouped and coalesced the same way each time.
 - To rehearse locally, run an S3 endpoint that keeps the bucket in a folder, publish into it, then serve that folder
-  as the CDN, which answers files with the same `Cache-Control` as R2, and the release's page on its own origin:
+  as the CDN, which answers files with the same `Cache-Control` as R2 and an `ETag`, and the release's page on its own
+  origin:
 
   ```sh
   python3 tests/fake_s3.py --root build/bucket --port 8079

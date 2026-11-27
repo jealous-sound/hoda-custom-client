@@ -39,10 +39,24 @@ typedef struct {
     char reply_header_value[PLATFORM_HTTP_HEADER_VALUE_CAP];
 } PlatformHttpResponse;
 
+typedef struct {
+    long long offset;
+    size_t size;
+    void *out;
+    bool read;
+} PlatformFileRange;
+
+typedef struct {
+    long long start;
+    long long end;
+} PlatformByteSpan;
+
 bool PlatformPrepareGameFiles(void);
 void PlatformJoinThread(pthread_t thread);
 bool PlatformHttpSend(const PlatformHttpRequest *request, PlatformHttpResponse *response);
 bool PlatformReadAt(FILE *file, long long offset, void *out, size_t size);
+bool PlatformReadFileRanges(const char *path, PlatformFileRange *ranges, int count);
+int PlatformCoalesceRanges(const PlatformFileRange *ranges, int count, long long gap, PlatformByteSpan *spans);
 bool PlatformReplaceFile(const char *source, const char *target);
 bool PlatformRemoveFile(const char *path);
 int PlatformProcessorCount(void);

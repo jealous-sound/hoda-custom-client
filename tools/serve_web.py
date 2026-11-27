@@ -9,6 +9,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from functools import partial
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -16,10 +17,11 @@ from pathlib import Path
 
 CLI_DESCRIPTION = (
     "Serve the browser build on localhost with the cross-origin isolation headers threads need, byte ranges for "
-    "lazily read game files, and an optional /api/ proxy to a backend; every answer is revalidated, so a rebuilt "
-    "file shows on reload. With --allow-origin it stands in for the CDN instead: paths are taken as they come, as R2 "
-    "does, a page on that origin gets the CORS answers the bucket policy gives, and each file comes with the "
-    "immutable Cache-Control the publisher stores, so the browser keeps game files across releases as it would."
+    "lazily read game files, an optional /api/ proxy to a backend, and an optional delay and bandwidth limit that "
+    "act like a distant CDN; every answer is revalidated, so a rebuilt file shows on reload. With --allow-origin it "
+    "stands in for the CDN instead: paths are taken as they come, as R2 does, a page on that origin gets the CORS "
+    "answers the bucket policy gives, and each file comes with the immutable Cache-Control the publisher stores, so "
+    "the browser keeps game files across releases as it would."
 )
 
 ISOLATION_HEADERS = {
@@ -41,6 +43,9 @@ HOP_HEADERS = frozenset(
     {"connection", "keep-alive", "transfer-encoding", "te", "trailer", "upgrade", "proxy-authorization", "host"}
 )
 COPY_BYTES = 1 << 20
+LINK_CHUNK_BYTES = 1 << 15
+BITS_PER_BYTE = 8
+MEGABIT = 1_000_000
 PROXY_TIMEOUT_SECONDS = 120
 
 
@@ -65,6 +70,30 @@ class Stats:
             return {"requests": self.requests, "bytes": self.bytes, "preflights": self.preflights}
 
 
+class Link:
+    def __init__(
+        self,
+        megabits_per_second: float,
+        clock: Callable[[], float] = time.monotonic,
+        sleep: Callable[[float], None] = time.sleep,
+    ) -> None:
+        self.bytes_per_second = megabits_per_second * MEGABIT / BITS_PER_BYTE
+        self.clock = clock
+        self.sleep = sleep
+        self.lock = threading.Lock()
+        self.free_at = clock()
+
+    def carry(self, size: int) -> None:
+        if self.bytes_per_second <= 0:
+            return
+        with self.lock:
+            now = self.clock()
+            self.free_at = max(now, self.free_at) + size / self.bytes_per_second
+            wait = self.free_at - now
+        if wait > 0:
+            self.sleep(wait)
+
+
 def parse_range(header: str, size: int) -> tuple[int, int] | None:
     match = RANGE_PATTERN.match(header.strip())
     if not match or (not match.group(1) and not match.group(2)):
@@ -79,6 +108,11 @@ def parse_range(header: str, size: int) -> tuple[int, int] | None:
     return (start, end) if start <= end else None
 
 
+def file_etag(path: Path) -> str:
+    status = path.stat()
+    return f'"{status.st_size:x}-{status.st_mtime_ns:x}"'
+
+
 def requested_headers(header: str) -> set[str]:
     return {name.strip().lower() for name in header.split(",") if name.strip()}
 
@@ -88,6 +122,7 @@ class GameHandler(SimpleHTTPRequestHandler):
     backend: str = ""
     allowed_origin: str = ""
     latency_seconds: float = 0.0
+    link: Link = Link(0)
     stats: Stats
 
     def end_headers(self) -> None:
@@ -180,6 +215,7 @@ class GameHandler(SimpleHTTPRequestHandler):
             self.send_header("Cache-Control", CDN_CACHE_CONTROL)
         self.send_header("Content-Type", self.guess_type(str(path)))
         self.send_header("Accept-Ranges", "bytes")
+        self.send_header("ETag", file_etag(path))
         self.send_header("Content-Length", str(length if include_body or span else size))
         if span:
             self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
@@ -190,10 +226,12 @@ class GameHandler(SimpleHTTPRequestHandler):
         with path.open("rb") as source:
             source.seek(start)
             remaining = length
+            chunk_bytes = LINK_CHUNK_BYTES if self.link.bytes_per_second > 0 else COPY_BYTES
             while remaining > 0:
-                chunk = source.read(min(COPY_BYTES, remaining))
+                chunk = source.read(min(chunk_bytes, remaining))
                 if not chunk:
                     break
+                self.link.carry(len(chunk))
                 self.wfile.write(chunk)
                 remaining -= len(chunk)
         self.stats.add(length)
@@ -238,6 +276,9 @@ def main() -> int:
     parser.add_argument(
         "--latency-ms", type=float, default=0.0, help="delay before each file answer, to act like a distant CDN"
     )
+    parser.add_argument(
+        "--rate-mbps", type=float, default=0.0, help="bandwidth all file answers share, in Mbit/s (default unlimited)"
+    )
     args = parser.parse_args()
     root = args.root.resolve()
     if not args.allow_origin and not (root / PAGE).is_file():
@@ -245,6 +286,7 @@ def main() -> int:
     GameHandler.backend = args.backend
     GameHandler.allowed_origin = args.allow_origin
     GameHandler.latency_seconds = args.latency_ms / 1000.0
+    GameHandler.link = Link(args.rate_mbps)
     GameHandler.stats = Stats()
     server = ThreadingHTTPServer(("127.0.0.1", args.port), partial(GameHandler, directory=str(root)))
     role = f", the CDN for {args.allow_origin}" if args.allow_origin else ""
