@@ -22,6 +22,7 @@
 #define RESOURCE_INDEX_BUNDLES_LABEL "bundles"
 #define RESOURCE_INDEX_OBJECTS_LABEL "objects"
 #define RESOURCE_INDEX_OBJECT_FIELDS 4
+#define RESOURCE_UNGROUPED (-1)
 
 typedef enum {
     RESOURCE_FILE,
@@ -71,6 +72,19 @@ typedef struct {
     int count;
     int capacity;
 } ResourceRecording;
+
+typedef struct {
+    int ref;
+    int container;
+    unsigned int offset;
+    unsigned int size;
+} ResourceImageRead;
+
+typedef struct {
+    int first;
+    int count;
+    unsigned int bytes;
+} ResourceReadGroup;
 
 static ResourcePrefetch resource_prefetched;
 static ResourceRecording resource_recorded;
@@ -410,9 +424,8 @@ static unsigned char *ResourceReadObject(const ResourceRef *ref, const ResourceE
     unsigned char *object = MemAlloc(entry->object.size > 0 ? entry->object.size : 1);
     bool ok = false;
     if (ref->origin == RESOURCE_CACHE) {
-        FILE *file = fopen(resource_bundle_files.paths[entry->container], "rb");
-        ok = file && ResourceReadFileRange(file, entry->object.offset, object, entry->object.size);
-        if (file) fclose(file);
+        PlatformFileRange range = {.offset = entry->object.offset, .size = entry->object.size, .out = object};
+        ok = PlatformReadFileRanges(resource_bundle_files.paths[entry->container], &range, 1);
     } else {
         unsigned int size = 0;
         unsigned char *data =
@@ -472,31 +485,103 @@ static Image ResourceDecodeImage(const char *ref) {
     return image;
 }
 
+static ResourceImageRead ResourceImageReadFor(const char *ref, int index) {
+    ResourceRef parsed = ResourceParse(ref);
+    const ResourceEntry *entry = parsed.origin == RESOURCE_CACHE ? ResourceFind(&parsed, UNITY_CLASS_TEXTURE_2D) : NULL;
+    if (!entry) return (ResourceImageRead){.ref = index, .container = RESOURCE_UNGROUPED};
+    return (ResourceImageRead){
+        .ref = index, .container = entry->container, .offset = entry->object.offset, .size = entry->object.size
+    };
+}
+
+static int ResourceCompareImageReads(const void *a, const void *b) {
+    const ResourceImageRead *left = a, *right = b;
+    if (left->container != right->container) return left->container < right->container ? -1 : 1;
+    if (left->offset != right->offset) return left->offset < right->offset ? -1 : 1;
+    return left->ref - right->ref;
+}
+
+static int ResourceCompareReadGroups(const void *a, const void *b) {
+    const ResourceReadGroup *left = a, *right = b;
+    if (left->bytes != right->bytes) return left->bytes > right->bytes ? -1 : 1;
+    return left->first - right->first;
+}
+
+static int ResourceGroupImageReads(ResourceImageRead *reads, int count, ResourceReadGroup *groups) {
+    qsort(reads, (size_t)count, sizeof(*reads), ResourceCompareImageReads);
+    int group_count = 0;
+    for (int i = 0; i < count; i++) {
+        ResourceReadGroup *open = group_count > 0 ? &groups[group_count - 1] : NULL;
+        bool joins = open && reads[i].container != RESOURCE_UNGROUPED &&
+                     reads[open->first].container == reads[i].container;
+        if (!joins) groups[group_count++] = (ResourceReadGroup){.first = i};
+        groups[group_count - 1].count++;
+        groups[group_count - 1].bytes += reads[i].size;
+    }
+    qsort(groups, (size_t)group_count, sizeof(*groups), ResourceCompareReadGroups);
+    return group_count;
+}
+
 typedef struct {
     const char *const *refs;
     Image *images;
-    int count;
+    const ResourceImageRead *reads;
+    const ResourceReadGroup *groups;
+    int group_count;
     int next;
 } ResourceImageJob;
 
+static void ResourceDecodeImageGroup(const ResourceImageJob *job, const ResourceReadGroup *group) {
+    const ResourceImageRead *reads = job->reads + group->first;
+    if (reads[0].container == RESOURCE_UNGROUPED) {
+        job->images[reads[0].ref] = ResourceDecodeImage(job->refs[reads[0].ref]);
+        return;
+    }
+    PlatformFileRange *ranges = MemAlloc(sizeof(*ranges) * group->count);
+    for (int i = 0; i < group->count; i++)
+        ranges[i] = (PlatformFileRange){
+            .offset = reads[i].offset, .size = reads[i].size, .out = MemAlloc(reads[i].size > 0 ? reads[i].size : 1)
+        };
+    PlatformReadFileRanges(resource_bundle_files.paths[reads[0].container], ranges, group->count);
+    for (int i = 0; i < group->count; i++) {
+        if (ranges[i].read)
+            job->images[reads[i].ref] = UnityDecodeTexture(ranges[i].out, reads[i].size);
+        else
+            TraceLog(LOG_WARNING, "Resource: %s not found", job->refs[reads[i].ref]);
+        MemFree(ranges[i].out);
+    }
+    MemFree(ranges);
+}
+
 static void *ResourceImageWorker(void *argument) {
     ResourceImageJob *job = argument;
-    for (int i = __atomic_fetch_add(&job->next, 1, __ATOMIC_RELAXED); i < job->count;
+    for (int i = __atomic_fetch_add(&job->next, 1, __ATOMIC_RELAXED); i < job->group_count;
          i = __atomic_fetch_add(&job->next, 1, __ATOMIC_RELAXED))
-        job->images[i] = ResourceDecodeImage(job->refs[i]);
+        ResourceDecodeImageGroup(job, &job->groups[i]);
     return NULL;
 }
 
 static void ResourceDecodeImages(const char *const *refs, int count, Image *images) {
-    ResourceImageJob job = {.refs = refs, .images = images, .count = count};
     ResourceIndexSources(refs, count);
-    int worker_count = ResourceWorkerCount(count);
+    ResourceImageRead *reads = MemAlloc(sizeof(*reads) * (count > 0 ? count : 1));
+    ResourceReadGroup *groups = MemAlloc(sizeof(*groups) * (count > 0 ? count : 1));
+    for (int i = 0; i < count; i++) reads[i] = ResourceImageReadFor(refs[i], i);
+    ResourceImageJob job = {
+        .refs = refs,
+        .images = images,
+        .reads = reads,
+        .groups = groups,
+        .group_count = ResourceGroupImageReads(reads, count, groups),
+    };
+    int worker_count = ResourceWorkerCount(job.group_count);
     pthread_t workers[RESOURCE_WORKERS_MAX];
     int started = 0;
     for (int i = 1; i < worker_count; i++)
         if (ResourceThreadStart(&workers[started], ResourceImageWorker, &job) == 0) started++;
     ResourceImageWorker(&job);
     for (int i = 0; i < started; i++) PlatformJoinThread(workers[i]);
+    MemFree(groups);
+    MemFree(reads);
 }
 
 static bool ResourceIsRecordable(const char *ref) {

@@ -97,6 +97,23 @@ class ParseRangeTest(unittest.TestCase):
                 self.assertIsNone(serve_web.parse_range(header, FILE_SIZE))
 
 
+class LinkTest(unittest.TestCase):
+    def test_answers_share_the_bandwidth_in_turn(self) -> None:
+        now = [0.0]
+        waits: list[float] = []
+        link = serve_web.Link(8, clock=lambda: now[0], sleep=waits.append)
+        link.carry(500_000)
+        link.carry(500_000)
+        now[0] = 3.0
+        link.carry(250_000)
+        self.assertEqual(waits, [0.5, 1.0, 0.25])
+
+    def test_an_unlimited_link_never_waits(self) -> None:
+        waits: list[float] = []
+        serve_web.Link(0, sleep=waits.append).carry(1 << 30)
+        self.assertEqual(waits, [])
+
+
 class ShippedIndexTest(unittest.TestCase):
     def test_drops_bundles_that_do_not_ship_and_renumbers_the_rest(self) -> None:
         self.assertEqual(build_web.shipped_index(FULL_INDEX, {SHIPPED_BUNDLE, LATER_BUNDLE}), SHIPPED_INDEX)
@@ -128,14 +145,22 @@ class BuildWebTest(unittest.TestCase):
             with mock.patch.object(build_web.build_dist, "content_files", return_value=runtime):
                 count, _ = build_web.build(root, out, index, SERVED_INDEX)
 
-            listed = (out / build_web.FILE_LIST).read_text().splitlines()
+            listed = (out / build_web.FILE_LIST).read_text()
             self.assertEqual(count, len(runtime) + 1)
-            self.assertEqual(listed, sorted(runtime + [SERVED_INDEX]))
+            self.assertEqual(build_web.listed_paths(listed), sorted(runtime + [SERVED_INDEX]))
+            sizes = dict(line.split(build_web.LIST_SIZE_SEPARATOR) for line in listed.splitlines())
+            self.assertEqual(sizes[SHIPPED_BUNDLE], str(len(SHIPPED_BUNDLE)))
+            self.assertEqual(sizes[SERVED_INDEX], str(len(SHIPPED_INDEX)))
             tree = out / build_web.GAME_TREE
             for relative in runtime:
                 self.assertTrue((tree / relative).is_symlink())
                 self.assertEqual((tree / relative).read_text(), relative)
             self.assertEqual((tree / SERVED_INDEX).read_text(), SHIPPED_INDEX)
+
+    def test_lists_written_before_sizes_still_name_their_files(self) -> None:
+        self.assertEqual(build_web.listed_paths("data/rules.json\ncache/a/CAB-hud\n"), ["data/rules.json", SHIPPED_BUNDLE])
+        sized = build_web.list_line("data/rules.json", FILE_SIZE) + build_web.list_line(SHIPPED_BUNDLE, 0)
+        self.assertEqual(build_web.listed_paths(sized), ["data/rules.json", SHIPPED_BUNDLE])
 
     def test_refuses_an_output_without_the_compiled_page(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -192,6 +217,19 @@ class ServeWebTest(unittest.TestCase):
         self.assertIsNone(reply.getheader("Cross-Origin-Embedder-Policy"))
         stranger = self.ask("GET", "/game/data/rules.json", {"Origin": "https://elsewhere.test"})
         self.assertIsNone(stranger.getheader("Access-Control-Allow-Origin"))
+
+    def test_cdn_files_are_immutable_like_the_bucket(self) -> None:
+        self.serve(self.PAGE_ORIGIN)
+        reply = self.ask("GET", "/game/data/rules.json", {"Origin": self.PAGE_ORIGIN, "Range": "bytes=2-5"})
+        self.assertEqual(reply.status, 206)
+        self.assertEqual(reply.getheader("Cache-Control"), serve_web.CDN_CACHE_CONTROL)
+        self.assertTrue(reply.getheader("ETag"))
+
+    def test_page_files_are_revalidated(self) -> None:
+        self.serve("")
+        reply = self.ask("GET", "/game/data/rules.json")
+        self.assertEqual(reply.getheader("Cache-Control"), serve_web.PAGE_CACHE_CONTROL)
+        self.assertTrue(reply.getheader("ETag"))
 
     def test_cdn_preflight_allows_only_ranged_reads_from_the_page_origin(self) -> None:
         self.serve(self.PAGE_ORIGIN)

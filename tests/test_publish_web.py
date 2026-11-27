@@ -36,7 +36,9 @@ def write_build(root: Path, release: str, files: dict[str, bytes], content_url: 
         target = out / build_web.GAME_TREE / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(body)
-    (out / build_web.FILE_LIST).write_text("".join(f"{relative}\n" for relative in sorted(files)))
+    (out / build_web.FILE_LIST).write_text(
+        "".join(build_web.list_line(relative, len(files[relative])) for relative in sorted(files))
+    )
     for name in build_web.APP_FILES:
         (out / name).write_bytes(name.encode())
     (out / "index.html").write_text("<script src=index.js></script>")

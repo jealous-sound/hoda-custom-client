@@ -313,7 +313,7 @@ def read_release(
     if reuse_game_files:
         pages = {page: ((root / page).read_bytes(), content_type(page)) for page in build_web.PAGE_FILES}
         return Release(root, name, previous, {}, pages, reused=True)
-    listed = (root / build_web.FILE_LIST).read_text().split()
+    listed = build_web.listed_paths((root / build_web.FILE_LIST).read_text())
     tree = root / build_web.GAME_TREE
     with ThreadPoolExecutor(max_workers=workers) as pool:
         digests = dict(zip(listed, pool.map(lambda relative: file_md5(tree / relative), listed)))

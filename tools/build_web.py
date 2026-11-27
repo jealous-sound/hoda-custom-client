@@ -10,13 +10,14 @@ import build_dist
 
 CLI_DESCRIPTION = (
     "Lay out the browser build's game files: a game/ tree of links to the files the game reads at runtime, the "
-    "prebuilt resource index cut down to the bundles that ship, and game_files.txt, the list the page mounts lazily "
-    "over HTTP."
+    "prebuilt resource index cut down to the bundles that ship, and game_files.txt, the list of paths and sizes the "
+    "page mounts lazily over HTTP."
 )
 
 ROOT = build_dist.ROOT
 GAME_TREE = "game"
 FILE_LIST = "game_files.txt"
+LIST_SIZE_SEPARATOR = "\t"
 ENTRY_PAGE = "index.html"
 APP_FILES = ("manifest.json", "icon-180.png", "icon-192.png", "icon-512.png")
 PAGE_FILES = ("index.wasm", "index.js", *APP_FILES, ENTRY_PAGE)
@@ -61,6 +62,14 @@ def shipped_index(text: str, shipped: set[str]) -> str:
     )
 
 
+def list_line(relative: str, size: int) -> str:
+    return f"{relative}{LIST_SIZE_SEPARATOR}{size}\n"
+
+
+def listed_paths(text: str) -> list[str]:
+    return [line.partition(LIST_SIZE_SEPARATOR)[0] for line in text.splitlines() if line]
+
+
 def link_tree(root: Path, tree: Path, files: list[str]) -> int:
     total = 0
     for relative in files:
@@ -88,7 +97,7 @@ def build(root: Path, out: Path, resource_index: Path, served_index: str) -> tup
     index_target.write_text(shipped_index(resource_index.read_text(), set(files)))
     total += index_target.stat().st_size
     listed = sorted(files + [served_index])
-    (out / FILE_LIST).write_text("".join(f"{relative}\n" for relative in listed))
+    (out / FILE_LIST).write_text("".join(list_line(relative, (tree / relative).stat().st_size) for relative in listed))
     return len(listed), total
 
 
