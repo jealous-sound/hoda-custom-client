@@ -656,6 +656,7 @@ typedef struct {
 } PlatformWebGameFiles;
 
 static PlatformWebGameFiles platform_web_game_files;
+static unsigned int platform_web_downloaded_bytes;
 
 EM_JS_DEPS(platform_web_downloads, "malloc");
 
@@ -673,6 +674,10 @@ EM_ASYNC_JS(int, PlatformWebDownloadYielding, (const char *url, unsigned char **
     } catch (failure) {
         return 0;
     }
+});
+
+EM_JS(void, PlatformWebShareDownloadCount, (unsigned int *count), {
+    Module.hodDownloadedBytes = function () { return Atomics.load(HEAPU32, count >> 2); };
 });
 
 EM_JS(int, PlatformWebDownloadBlocking, (const char *url, unsigned char **data, int *size), {
@@ -818,6 +823,7 @@ static bool PlatformWebLoadGameFile(const PlatformWebGameFiles *game, const char
     int status = emscripten_is_main_browser_thread() ? PlatformWebDownloadYielding(url, &data, &size)
                                                      : PlatformWebDownloadBlocking(url, &data, &size);
     bool loaded = status >= 200 && status < 300 && PlatformWebStoreGameFile(relative, data, size);
+    if (loaded) __atomic_fetch_add(&platform_web_downloaded_bytes, (unsigned int)size, __ATOMIC_RELAXED);
     free(data);
     if (!loaded) fprintf(stderr, "Platform: could not download %s (HTTP %d)\n", url, status);
     return loaded;
@@ -1030,6 +1036,7 @@ void PlatformJoinThread(pthread_t thread) {
 bool PlatformPrepareGameFiles(void) {
     static PlatformWebFiles files;
     if (!PlatformWebFilesUrl(files.files_url, sizeof(files.files_url))) return false;
+    PlatformWebShareDownloadCount(&platform_web_downloaded_bytes);
     pthread_t thread;
     if (pthread_create(&thread, NULL, PlatformWebPrepare, &files) != 0) return false;
     while (!__atomic_load_n(&files.finished, __ATOMIC_ACQUIRE))

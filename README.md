@@ -272,7 +272,15 @@ to a backend; add `?HOD_BACKEND_URL=http://127.0.0.1:8077/api` to the page URL t
   Screens call the window pair, never raylib's `BeginDrawing` / `EndDrawing` (`tests/test_web_build.py` checks).
 - A phone needs HTTPS for cross-origin isolation, so `http://<LAN address>:8077` does not start there; test through
   an HTTPS tunnel such as `cloudflared tunnel --url http://localhost:8077`.
-- Not done yet: a frame loop driven by `requestAnimationFrame` (frames now yield with a 16 ms sleep, about 50 fps).
+- Frames follow the display: the web link wraps raylib's `WindowShouldClose` (`-Wl,--wrap=WindowShouldClose`),
+  whose 16 ms sleep ran the game at about 54 uneven fps, so each frame waits for `requestAnimationFrame` instead
+  (or 100 ms while the tab is hidden). The frame rate limit skips display frames rather than letting raylib busy-wait;
+  screens set it through `WindowSetFrameRateLimit`, never `SetTargetFPS`.
+- The page, not the canvas, draws the loading ring: a CSS animation the browser turns on its compositor, so it keeps
+  spinning while the game thread downloads or decodes. It shows until the first frame, on every frame a loading
+  screen draws (`WindowShowPageLoader`, with the original `loadingSmooth` art handed over as a PNG) and whenever
+  no frame has reached the screen for 400 ms. Until then the page has a drawn stand-in for the art. During loading,
+  the status line counts the game files downloaded so far (`Module.hodDownloadedBytes`).
 
 ### Hosting
 

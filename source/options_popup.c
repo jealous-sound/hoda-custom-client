@@ -371,7 +371,7 @@ static void OptionsStepChoice(OptionsChoice choice, OptionsStep step) {
         return;
     }
     SettingsSetFrameRateLimit(OptionsSteppedFrameRate(SettingsFrameRateLimit(), step));
-    SetTargetFPS(SettingsFrameRateLimit());
+    WindowSetFrameRateLimit(SettingsFrameRateLimit());
 }
 
 static void OptionsApplySwitch(SettingsSwitch setting, bool on) {
