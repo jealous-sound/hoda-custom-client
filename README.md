@@ -241,11 +241,13 @@ to a backend; add `?HOD_BACKEND_URL=http://127.0.0.1:8077/api` to the page URL t
 `HOD_*` query parameter becomes an environment variable for the game.
 
 - `make web` clones raylib 5.5 into `build/` once and builds it for the web. It writes `build/web/index.{html,js,wasm}`,
-  a `game/` tree of links to the files `make dist` ships, and `game_files.txt`, the list the page mounts.
+  an `objects/` folder holding each file `make dist` ships under its MD5 (links, one per distinct content), and
+  `game_files.txt`, the list the page mounts. Each line is `<location>  <path>`: where the bytes are, relative to the
+  list (`objects/<md5>` here, `../objects/<md5>` once published), and the path the game opens.
 - Game files are not downloaded up front. They start as empty files in memory; `fopen` is wrapped
-  (`-Wl,--wrap=fopen`) so the first open of a game file downloads it whole with one GET. On the main thread the
-  download yields to the browser through Asyncify; worker threads use a synchronous request. Reaching the tutorial
-  battle reads about 735 files, 155 MB.
+  (`-Wl,--wrap=fopen`) so the first open of a game file downloads it whole from its location with one GET. On the
+  main thread the download yields to the browser through Asyncify; worker threads use a synchronous request. Reaching
+  the tutorial battle reads about 735 files, 155 MB.
 - WebKit (Safari and every iPhone browser) sends worker threads' requests and storage calls through the page's main
   thread, so the main thread must never wait for a worker that is waiting on the network or on storage. That is why
   main-thread downloads yield, `PlatformJoinThread` yields while it waits, browser storage is mounted from a worker
@@ -277,8 +279,9 @@ to a backend; add `?HOD_BACKEND_URL=http://127.0.0.1:8077/api` to the page URL t
 ### Hosting
 
 The page is `https://hodareborn.com/play/` (the website pulls `index.{html,js,wasm}`, `manifest.json` and the
-`icon-*.png` files for a pinned release), the game files are on the CDN under `web/<release>/`, and the backend
-answers CORS for that origin (`-web-origins`).
+`icon-*.png` files for a pinned release), each release's page and `game_files.txt` are on the CDN under
+`web/<release>/`, the game files are under `web/objects/`, shared by every release, and the backend answers CORS for
+that origin (`-web-origins`).
 
 ```sh
 make web WEB_RELEASE=2026-11-26
@@ -287,23 +290,40 @@ make web-publish WEB_RELEASE=2026-11-26 WEB_PREVIOUS=2026-11-20
 ```
 
 Name releases by date: a published folder is never replaced, so a version name would block that tag's own web
-release later. `WEB_REUSE_GAME_FILES=1` publishes a page-only release: every game file and both lists are copied
-from `WEB_PREVIOUS` on the server and the local asset cache is not read.
+release later. `WEB_REUSE_GAME_FILES=1` publishes a page-only release: it lists exactly `WEB_PREVIOUS`'s game files,
+uploads only the list and the page, and does not read the local asset cache.
 
 - `WEB_RELEASE` bakes `HOD_GAME_FILES_URL=$(CONTENT_URL)/web/$(WEB_RELEASE)/` into the page; without it the files are
   read next to the page. `?HOD_GAME_FILES_URL=` overrides it.
-- `tools/publish_web.py` writes only under `web/<release>/` through R2's S3 API, so `manifest.json` and the content
-  packs are untouched. It needs `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID` and `R2_SECRET_ACCESS_KEY` from an R2 API token
-  with Object Read & Write on the bucket.
-- Game files go first, copied inside the bucket from `WEB_PREVIOUS` when their MD5 matches its `game_files.md5`, then
-  `game_files.md5`, `game_files.txt` and the page files, `index.html` last. Everything is `immutable`. A rerun
-  skips what is there and an object already published with other bytes stops it, so a changed build needs a new
-  release.
+- `tools/publish_web.py` writes only under `web/<release>/` and `web/objects/` through R2's S3 API, so
+  `manifest.json` and the content packs are untouched. It needs `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID` and
+  `R2_SECRET_ACCESS_KEY` from an R2 API token with Object Read & Write on the bucket.
+- A game file is published once, as `web/objects/<md5>`: its key comes from its bytes, so every release that ships
+  those bytes points at the same URL and a returning player's browser keeps it across releases (everything is
+  `immutable`); only files a release changes download again. An object's `Content-Type` comes from the first path
+  that names it, so the CDN still compresses text. Missing objects go first, then `game_files.txt` and the page
+  files, `index.html` last. A rerun skips what is there, and an object or release file already published with other
+  bytes stops it, so a changed build needs a new release. Nothing deletes objects: a kept release needs every object
+  its `game_files.txt` names.
+- Releases up to `2026-11-26.3` keep their game files in their own `web/<release>/game/` tree. With one of them as
+  `WEB_PREVIOUS`, objects it already holds are copied inside the bucket instead of uploaded (matched by its
+  `game_files.md5`), which makes the first release on `web/objects/` cheap, page-only ones included.
 - The bucket's CORS policy must allow the page's origin: `GET` and `HEAD`, header `Range`, exposing
   `Content-Length`, `Content-Range`, `Accept-Ranges` and `ETag`.
-- To rehearse locally on three origins, serve the published folder as the CDN with
-  `tools/serve_web.py --root <bucket> --port 8078 --allow-origin http://localhost:8080`; `tests/fake_s3.py` is an S3
-  endpoint that writes into such a folder.
+- To rehearse locally, run an S3 endpoint that keeps the bucket in a folder, publish into it, then serve that folder
+  as the CDN, which answers files with the same `Cache-Control` as R2, and the release's page on its own origin:
+
+  ```sh
+  python3 tests/fake_s3.py --root build/bucket --port 8079
+  make web WEB_RELEASE=r1 WEB_FILES_URL=http://127.0.0.1:8078/web/r1/
+  R2_ACCESS_KEY_ID=local R2_SECRET_ACCESS_KEY=local python3 tools/publish_web.py --root build/web --bucket hoda-assets \
+      --content-url http://127.0.0.1:8078 --endpoint http://127.0.0.1:8079 --release r1
+  python3 tools/serve_web.py --root build/bucket --port 8078 --allow-origin http://127.0.0.1:8080
+  python3 tools/serve_web.py --root build/bucket/web/r1 --port 8080
+  ```
+
+  `http://127.0.0.1:8078/__stats` counts what the CDN served, so a second release opened in the same browser shows
+  what its players download again. The website's Docker build can stand in for the page origin as well.
 
 ## Releases
 

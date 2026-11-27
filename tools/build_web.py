@@ -2,21 +2,29 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
+import re
 import shutil
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import build_dist
 
 CLI_DESCRIPTION = (
-    "Lay out the browser build's game files: a game/ tree of links to the files the game reads at runtime, the "
-    "prebuilt resource index cut down to the bundles that ship, and game_files.txt, the list the page mounts lazily "
-    "over HTTP."
+    "Lay out the browser build's game files: an objects/ folder holding each file the game reads at runtime under "
+    "its MD5, the prebuilt resource index cut down to the bundles that ship among them, and game_files.txt, the list "
+    "the page mounts lazily over HTTP, pairing each object with the path the game opens it at."
 )
 
 ROOT = build_dist.ROOT
-GAME_TREE = "game"
+OBJECTS_TREE = "objects"
+LOCAL_OBJECTS = f"{OBJECTS_TREE}/"
 FILE_LIST = "game_files.txt"
+LIST_SEPARATOR = "  "
+DIGEST_PATTERN = re.compile(r"[0-9a-f]{32}$")
+HASH_WORKERS = 16
+HASH_CHUNK_BYTES = 1 << 20
 ENTRY_PAGE = "index.html"
 APP_FILES = ("manifest.json", "icon-180.png", "icon-192.png", "icon-512.png")
 PAGE_FILES = ("index.wasm", "index.js", *APP_FILES, ENTRY_PAGE)
@@ -61,35 +69,64 @@ def shipped_index(text: str, shipped: set[str]) -> str:
     )
 
 
-def link_tree(root: Path, tree: Path, files: list[str]) -> int:
+def file_md5(path: Path) -> str:
+    digest = hashlib.md5(usedforsecurity=False)
+    with path.open("rb") as source:
+        while chunk := source.read(HASH_CHUNK_BYTES):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def file_list(digests: dict[str, str], objects: str) -> str:
+    return "".join(f"{objects}{digests[relative]}{LIST_SEPARATOR}{relative}\n" for relative in sorted(digests))
+
+
+def list_digests(text: str, objects: str) -> dict[str, str]:
+    digests = {}
+    for number, line in enumerate(text.splitlines(), 1):
+        location, separator, relative = line.partition(LIST_SEPARATOR)
+        digest = location.removeprefix(objects)
+        if not (separator and relative and location.startswith(objects) and DIGEST_PATTERN.match(digest)):
+            raise SystemExit(f"{FILE_LIST} line {number} should read {objects}<md5>{LIST_SEPARATOR}<path>")
+        digests[relative] = digest
+    return digests
+
+
+def link_objects(root: Path, tree: Path, digests: dict[str, str]) -> int:
     total = 0
-    for relative in files:
+    for relative, digest in digests.items():
         source = root / relative
-        target = tree / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.symlink_to(source)
+        target = tree / digest
+        if not target.is_symlink():
+            target.symlink_to(source)
         total += source.stat().st_size
     return total
 
 
-def build(root: Path, out: Path, resource_index: Path, served_index: str) -> tuple[int, int]:
+def build(
+    root: Path, out: Path, resource_index: Path, served_index: str, workers: int = HASH_WORKERS
+) -> tuple[int, int]:
     missing = [name for name in PAGE_FILES if not (out / name).is_file()]
     if missing:
         raise SystemExit(f"{out} lacks {', '.join(missing)}; run make web")
     if not resource_index.is_file():
         raise SystemExit(f"missing resource index {resource_index}")
     files = [relative for relative in build_dist.content_files(root) if relative != served_index]
-    tree = out / GAME_TREE
+    tree = out / OBJECTS_TREE
     if tree.exists():
         shutil.rmtree(tree)
-    total = link_tree(root, tree, files)
-    index_target = tree / served_index
-    index_target.parent.mkdir(parents=True, exist_ok=True)
-    index_target.write_text(shipped_index(resource_index.read_text(), set(files)))
-    total += index_target.stat().st_size
-    listed = sorted(files + [served_index])
-    (out / FILE_LIST).write_text("".join(f"{relative}\n" for relative in listed))
-    return len(listed), total
+    tree.mkdir(parents=True)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        digests = dict(zip(files, pool.map(lambda relative: file_md5(root / relative), files)))
+    total = link_objects(root, tree, digests)
+    index = shipped_index(resource_index.read_text(), set(files)).encode()
+    digests[served_index] = hashlib.md5(index, usedforsecurity=False).hexdigest()
+    index_target = tree / digests[served_index]
+    if not index_target.exists():
+        index_target.write_bytes(index)
+    total += len(index)
+    (out / FILE_LIST).write_text(file_list(digests, LOCAL_OBJECTS))
+    return len(digests), total
 
 
 def main() -> int:
