@@ -37,12 +37,14 @@ typedef enum {
 typedef struct {
     long long id;
     long long at;
+    int side;
 } GamePvpMatch;
 
 typedef struct {
     bool event;
     int bot;
     bool next;
+    int side;
     Screen screen;
     Screen return_screen;
 } GamePvpMatchRequest;
@@ -110,6 +112,7 @@ typedef struct {
     Guild guild;
     GuildView guild_view;
     GuildNoticePopup guild_notice;
+    PvpRuleNotice pvp_rule_notice;
     GuildNoticePopup pvp_notice;
     MaintenanceNotice maintenance;
     bool battle_is_pvp;
@@ -247,10 +250,18 @@ static void GameEnterMatchedPvp(Game *g, PvpOpponent opponent, GamePvpMatch matc
 static PvpOpponent GameLocalOpponent(const Game *g, const GamePvpMatchRequest *request, long long now) {
     unsigned seed = (unsigned)GetRandomValue(1, 0x7FFFFFFF);
     const PlayerPvp *pvp = &g->player.pvp;
+    int level = g->player.level;
+    if (request->event && request->bot != GAME_PVP_MATCHMAKING)
+        return PvpEventOpponentFromBot(request->bot, level, pvp->trophies, now, request->side, seed);
     if (request->bot != GAME_PVP_MATCHMAKING)
-        return PvpOpponentFromBot(request->bot, g->player.level, pvp->trophies, PvpDay(now), seed);
-    if (request->event) return PvpEventOpponentGenerate(g->player.level, pvp->trophies, pvp->event.banners, now, seed);
-    return PvpOpponentGenerate(g->player.level, pvp->trophies, PvpDay(now), seed);
+        return PvpOpponentFromBot(request->bot, level, pvp->trophies, PvpDay(now), seed);
+    if (request->event)
+        return PvpEventOpponentGenerate(level, pvp->trophies, pvp->event.banners, now, request->side, seed);
+    return PvpOpponentGenerate(level, pvp->trophies, PvpDay(now), seed);
+}
+
+static const PvpEvent *GameCurrentPvpEvent(void) {
+    return PvpEventForCycle(PvpEventCycle(ServerNow()));
 }
 
 static cJSON *GamePvpMatchFields(const GamePvpMatchRequest *request) {
@@ -259,7 +270,21 @@ static cJSON *GamePvpMatchFields(const GamePvpMatchRequest *request) {
     cJSON_AddBoolToObject(fields, "event", request->event);
     if (request->bot != GAME_PVP_MATCHMAKING) cJSON_AddNumberToObject(fields, "bot", request->bot);
     if (request->next) cJSON_AddBoolToObject(fields, "next", true);
+    if (request->event && GameCurrentPvpEvent()->rules.side_count > 0)
+        cJSON_AddNumberToObject(fields, "side", request->side);
     return fields;
+}
+
+static bool GamePvpEventSquadEnters(Game *g, const PvpEvent *event, int side, bool matched) {
+    int squad = g->player.current_squad;
+    PvpSquadVerdict verdict = PvpEventJudgeSquad(event, &g->player, squad, side);
+    if (verdict.kind == PVP_SQUAD_ALLOWED || verdict.kind == PVP_SQUAD_EMPTY) return true;
+    PvpRuleNoticeShow(&g->pvp_rule_notice, event, &g->player, squad, verdict, matched);
+    return false;
+}
+
+static int GamePvpEventSide(const Game *g, const PvpEvent *event) {
+    return PvpEventJudgeSquad(event, &g->player, g->player.current_squad, PVP_RULE_ANY_SIDE).side;
 }
 
 static bool GameBattlesOnServer(const Game *g);
@@ -274,12 +299,19 @@ static void GameExplainHeldBattle(Game *g) {
 
 static void GameMatchPvp(Game *g, bool event, int bot, bool next, Screen return_screen) {
     if (g->pvp_match_waiting) return;
+    if (event && !GamePvpEventSquadEnters(g, GameCurrentPvpEvent(), PVP_RULE_ANY_SIDE, false)) return;
     GamePvpMatchRequest request = {
-        .event = event, .bot = bot, .next = next, .screen = g->screen, .return_screen = return_screen
+        .event = event,
+        .bot = bot,
+        .next = next,
+        .side = event ? GamePvpEventSide(g, GameCurrentPvpEvent()) : 0,
+        .screen = g->screen,
+        .return_screen = return_screen
     };
     if (!GameBattlesOnServer(g)) {
         long long now = ServerNow();
-        GameEnterMatchedPvp(g, GameLocalOpponent(g, &request, now), (GamePvpMatch){.at = now}, &request);
+        GamePvpMatch match = {.at = now, .side = request.side};
+        GameEnterMatchedPvp(g, GameLocalOpponent(g, &request, now), match, &request);
         return;
     }
     cJSON *fields = GamePvpMatchFields(&request);
@@ -303,7 +335,7 @@ static void GamePollPvpMatch(Game *g) {
     const GamePvpMatchRequest *request = &g->pvp_match_request;
     const cJSON *match = cJSON_GetObjectItemCaseSensitive(cJSON_GetObjectItemCaseSensitive(reply, "granted"), "match");
     PvpOpponent opponent;
-    GamePvpMatch issued = {.id = GameJsonWhole(match, "id"), .at = GameJsonWhole(match, "at")};
+    GamePvpMatch issued = {.id = GameJsonWhole(match, "id"), .at = GameJsonWhole(match, "at"), .side = request->side};
     bool matched = issued.id > 0 && PvpOpponentFromServerMatch(match, g->player.pvp.trophies, &opponent);
     if (!matched) {
         TraceLog(LOG_WARNING, "Server: no PvP opponent was matched");
@@ -317,10 +349,21 @@ static void GamePollPvpMatch(Game *g) {
     cJSON_Delete(reply);
 }
 
+static bool GamePvpNextSquadEnters(Game *g) {
+    return !g->pvp_event || GamePvpEventSquadEnters(g, GameCurrentPvpEvent(), PVP_RULE_ANY_SIDE, false);
+}
+
+static bool GameBattleSquadEnters(Game *g) {
+    if (!g->battle_is_pvp || !g->pvp_event) return true;
+    const PvpEvent *event = PvpEventForCycle(PvpEventCycle(g->pvp_match.at));
+    int side = event->rules.side_count > 0 ? g->pvp_match.side : PVP_RULE_ANY_SIDE;
+    return GamePvpEventSquadEnters(g, event, side, true);
+}
+
 static void
 GameEnterFixedPvpBattle(Game *g, PvpOpponent opponent, int revenge_index, bool event, Screen return_screen) {
     g->pvp_event = event;
-    g->pvp_match = (GamePvpMatch){.at = ServerNow()};
+    g->pvp_match = (GamePvpMatch){.at = ServerNow(), .side = PVP_RULE_ANY_SIDE};
     g->pvp_opponent = opponent;
     g->pvp_can_next = false;
     g->pvp_revenge_index = revenge_index;
@@ -1207,6 +1250,15 @@ static void GameDrawClientUpdate(Game *g) {
     if (!staying) g->quit_requested = true;
 }
 
+static void GameDrawPvpRuleNotice(Game *g) {
+    if (!PvpRuleNoticeIsOpen(&g->pvp_rule_notice)) return;
+    UiSetInputBlocked(false);
+    UiSetInputWindow(false, (Rectangle){0});
+    UiFrameBegin();
+    PvpRuleNoticeDraw(&g->pvp_rule_notice);
+    UiFrameEnd();
+}
+
 static void GameDrawMaintenance(Game *g) {
     if (BackendEnabled()) ClientUpdateKeepFresh();
     bool interruptible =
@@ -1378,6 +1430,7 @@ bool GameInitialize(Game *g) {
     GuildInitialize(&g->guild);
     GuildViewInitialize(&g->guild_view);
     GuildNoticePopupInitialize(&g->guild_notice);
+    PvpRuleNoticeInitialize(&g->pvp_rule_notice);
     GuildNoticePopupInitialize(&g->pvp_notice);
     MaintenanceNoticeInitialize(&g->maintenance);
     MissionsSync(&g->player, &g->map);
@@ -1510,7 +1563,7 @@ static bool GameHandleNexusMapBack(Game *g) {
 bool GameHandlePopupBack(Game *g) {
     if (ClientUpdateOnlineRefused()) return false;
     if (GameCloseNotice(g)) return true;
-    if (MaintenanceNoticeClose(&g->maintenance)) {
+    if (MaintenanceNoticeClose(&g->maintenance) || PvpRuleNoticeClose(&g->pvp_rule_notice)) {
         GuiSoundPlay(SND_UI_POPUP_CLOSE);
         return true;
     }
@@ -1965,8 +2018,8 @@ static void GameSyncServerActions(Game *g) {
 void GameDraw(Game *g) {
     float dt = GetFrameTime();
     TutorialHooksBeginFrame();
-    bool overlay_owns_input =
-        NamePromptIsOpen(&g->name_prompt) || ClientUpdateOnlineRefused() || MaintenanceNoticeIsOpen(&g->maintenance);
+    bool overlay_owns_input = NamePromptIsOpen(&g->name_prompt) || ClientUpdateOnlineRefused() ||
+                              MaintenanceNoticeIsOpen(&g->maintenance) || PvpRuleNoticeIsOpen(&g->pvp_rule_notice);
     if (overlay_owns_input) UiSetInputWindow(true, (Rectangle){0});
     Screen previous_screen = g->screen_drawn;
     bool pvp_battle = g->screen == SCREEN_BATTLE && g->battle_is_pvp;
@@ -2574,7 +2627,7 @@ void GameDraw(Game *g) {
                     GameSelectBattleSquad(g, g->battle_ui.requested_squad);
                 if (ba == BATTLE_UI_FIGHT && !combat && !starting && GameBattleHeld(g)) {
                     MaintenanceNoticeExplain(&g->maintenance);
-                } else if (ba == BATTLE_UI_FIGHT && !combat && !starting) {
+                } else if (ba == BATTLE_UI_FIGHT && !combat && !starting && GameBattleSquadEnters(g)) {
                     bool paid = g->battle_energy_spent ||
                                 (g->battle_is_pvp ? PlayerSpendStamina(&g->player, g->battle_energy_cost)
                                                   : PlayerSpendEnergy(&g->player, g->battle_energy_cost));
@@ -2592,7 +2645,8 @@ void GameDraw(Game *g) {
                         GameOpenResourceDialogSilently(g, g->battle_is_pvp);
                     }
                 }
-                if (ba == BATTLE_UI_NEXT && !combat && !starting && PvpSpendNext(&g->player.pvp, ServerNow())) {
+                if (ba == BATTLE_UI_NEXT && !combat && !starting && GamePvpNextSquadEnters(g) &&
+                    PvpSpendNext(&g->player.pvp, ServerNow())) {
                     ProgressionSave(&g->player);
                     GameMatchPvp(g, g->pvp_event, GAME_PVP_MATCHMAKING, true, g->pvp_return_screen);
                 }
@@ -2714,6 +2768,7 @@ void GameDraw(Game *g) {
         ProgressionSave(&g->player);
         GameSubmitSimpleAction("nexus_award");
     }
+    GameDrawPvpRuleNotice(g);
     g->screen_drawn = g->screen;
     GameDrawTutorial(g, dt);
     GameDrawNamePrompt(g, dt);

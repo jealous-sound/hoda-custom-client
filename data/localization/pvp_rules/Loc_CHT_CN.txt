@@ -1,0 +1,13 @@
+HODA_PVP_RULE_RARITY|允許的稀有度：{0}
+HODA_PVP_RULE_FACTIONS|只有{0}陣營的英雄可以參加。大型生物也可以參加。
+HODA_PVP_RULE_GROUPS|只有{0}可以參加。
+HODA_PVP_RULE_SIDES_FACTIONS|每支小隊只能有一個陣營：{0}。你將對戰另一個陣營的小隊。大型生物可加入任何小隊。
+HODA_PVP_RULE_SIDES_GROUPS|每支小隊只能有一方：{0}。你將對戰另一方的小隊。
+HODA_PVP_RULE_UNIQUE|不能有重複的英雄。
+HODA_PVP_RULE_LIST_JOIN|{0}、{1}
+HODA_PVP_RULE_BLOCKED_TITLE|小隊不符合規則
+HODA_PVP_RULE_BLOCKED|{0}不能參加此活動。
+HODA_PVP_RULE_BLOCKED_DUPLICATE|{0}在你的小隊中出現了不止一次。
+HODA_PVP_RULE_BLOCKED_SIDE|{0}與小隊中其他英雄不屬於同一方。
+HODA_PVP_RULE_BLOCKED_MATCHED_SIDE|這名對手是為你的{1}小隊配對的，所以{0}無法與其戰鬥。請換回該小隊或點擊下一個。
+HODA_PVP_RULE_CHANGE_SQUAD|請在英雄介面中更換小隊後重試。

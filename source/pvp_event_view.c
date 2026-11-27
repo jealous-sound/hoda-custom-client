@@ -406,16 +406,167 @@ static float PvpEventViewDrawRichMiddle(Font font, const char *text, Rectangle a
     return HeroesDrawRich(font, text, area, size, color);
 }
 
-void PvpEventViewRuleText(char *out, size_t size, const PvpEvent *event) {
-    const char *rule = NexusGameChangerText(&event->changer);
-    const StatBudget *scaling = PvpTableEnsure()->rules.stat_budget ? StatBudgetIfScaling(StatBudgetEnsure()) : NULL;
-    if (!scaling) {
-        StrCopy(out, size, rule);
+static const char *const PVP_RULE_RARITY_KEYS[] = {
+    [RARITY_COMMON] = "RARITY_COMMON",
+    [RARITY_UNCOMMON] = "RARITY_UNCOMMON",
+    [RARITY_RARE] = "RARITY_RARE",
+    [RARITY_EPIC] = "RARITY_EPIC",
+    [RARITY_LEGENDARY] = "RARITY_LEGENDARY",
+    [RARITY_MYTHIC] = "HODA_RARITY_MYTHIC",
+};
+
+static const char *PvpRuleName(const char *name) {
+    char key[PVP_EVENT_KEY_CAP];
+    snprintf(key, sizeof(key), "GALLERY_%s_TITLE", name);
+    for (char *c = key; *c; c++) *c = (char)toupper((unsigned char)*c);
+    const char *text = CharacterLocText(key);
+    return text[0] ? text : name;
+}
+
+static void PvpRuleListAdd(char *list, size_t size, const char *item) {
+    if (!list[0]) {
+        StrCopy(list, size, item);
         return;
     }
+    char joined[PVP_EVENT_VIEW_RULE_CAPACITY];
+    LocFormat2(joined, sizeof(joined), "HODA_PVP_RULE_LIST_JOIN", list, item);
+    StrCopy(list, size, joined);
+}
+
+static void PvpRuleFilterNames(char *out, size_t size, const PvpHeroFilter *filter) {
+    out[0] = '\0';
+    for (int i = 0; i < filter->count; i++) PvpRuleListAdd(out, size, PvpRuleName(filter->names[i]));
+}
+
+static void PvpRuleLineAdd(char *out, size_t size, const char *line) {
+    if (!line[0]) return;
+    size_t used = strlen(out);
+    snprintf(out + used, size - used, "%s%s", used ? "\n" : "", line);
+}
+
+static bool PvpRuleRarityLimited(const PvpSquadRules *rules) {
+    return rules->max_rarity < RARITY_MYTHIC || rules->rarity_mask != 0;
+}
+
+static void PvpRuleRarityLine(char *out, size_t size, const PvpSquadRules *rules) {
+    char list[PVP_EVENT_VIEW_RULE_CAPACITY] = "";
+    for (Rarity rarity = RARITY_COMMON; rarity <= RARITY_MYTHIC; rarity++)
+        if (rarity <= rules->max_rarity && (!rules->rarity_mask || (rules->rarity_mask & PvpRarityBit(rarity))))
+            PvpRuleListAdd(list, sizeof(list), LocGet(PVP_RULE_RARITY_KEYS[rarity]));
+    LocFormat1(out, size, "HODA_PVP_RULE_RARITY", list);
+}
+
+void PvpSquadRulesText(char *out, size_t size, const PvpSquadRules *rules) {
+    out[0] = '\0';
+    if (!rules->active) return;
+    char line[PVP_EVENT_VIEW_RULE_CAPACITY], names[PVP_EVENT_VIEW_RULE_CAPACITY];
+    if (PvpRuleRarityLimited(rules)) {
+        PvpRuleRarityLine(line, sizeof(line), rules);
+        PvpRuleLineAdd(out, size, line);
+    }
+    if (rules->members.count > 0) {
+        PvpRuleFilterNames(names, sizeof(names), &rules->members);
+        bool factions = rules->members.faction_mask != 0;
+        LocFormat1(line, sizeof(line), factions ? "HODA_PVP_RULE_FACTIONS" : "HODA_PVP_RULE_GROUPS", names);
+        PvpRuleLineAdd(out, size, line);
+    }
+    if (rules->side_count > 0) {
+        char sides[PVP_EVENT_VIEW_RULE_CAPACITY] = "";
+        for (int side = 0; side < rules->side_count; side++) {
+            PvpRuleFilterNames(names, sizeof(names), &rules->sides[side]);
+            PvpRuleListAdd(sides, sizeof(sides), names);
+        }
+        bool factions = rules->sides[0].faction_mask != 0;
+        LocFormat1(line, sizeof(line), factions ? "HODA_PVP_RULE_SIDES_FACTIONS" : "HODA_PVP_RULE_SIDES_GROUPS", sides);
+        PvpRuleLineAdd(out, size, line);
+    }
+    if (rules->unique_heroes) PvpRuleLineAdd(out, size, LocGet("HODA_PVP_RULE_UNIQUE"));
+}
+
+void PvpEventViewRuleText(char *out, size_t size, const PvpEvent *event) {
+    char squad[PVP_EVENT_VIEW_RULE_CAPACITY];
+    PvpSquadRulesText(squad, sizeof(squad), &event->rules);
+    StrCopy(out, size, NexusGameChangerText(&event->changer));
+    PvpRuleLineAdd(out, size, squad);
+    const StatBudget *scaling = PvpTableEnsure()->rules.stat_budget ? StatBudgetIfScaling(StatBudgetEnsure()) : NULL;
+    if (!scaling || event->changer.effect_count == 0) return;
     char cap[PVP_EVENT_VIEW_RULE_CAPACITY];
     LocFormatInt(cap, sizeof(cap), "HODA_PVP_EVENT_BUFF_CAP", scaling->changer_cap_pct);
-    snprintf(out, size, "%s\n%s", rule, cap);
+    PvpRuleLineAdd(out, size, cap);
+}
+
+typedef struct {
+    bool open;
+    char message[PVP_EVENT_VIEW_RULE_CAPACITY * 2];
+    Button ok;
+} PvpRuleNotice;
+
+void PvpRuleNoticeInitialize(PvpRuleNotice *notice) {
+    memset(notice, 0, sizeof(*notice));
+    notice->ok = ButtonLoadText(
+        GUI_BTN_GOLD, GUI_BTN_GOLD_ON, LocGet("MAIN_MESSAGE_DIALOG_OK"), GuiFont(FNT_COOL), (Vector2){0.5f, 0.5f}, 0.34f
+    );
+}
+
+static void PvpRuleNoticeReason(
+    char *out, size_t size, const PvpEvent *event, const Player *p, int squad, PvpSquadVerdict verdict, bool matched
+) {
+    int unit = PlayerSquadUnitAt(p, squad, verdict.slot);
+    const char *hero = unit >= 0 && unit < p->roster_count ? CharacterName(&p->roster[unit]) : "";
+    if (verdict.kind == PVP_SQUAD_DUPLICATE) {
+        LocFormat1(out, size, "HODA_PVP_RULE_BLOCKED_DUPLICATE", hero);
+    } else if (verdict.kind == PVP_SQUAD_SIDE && matched) {
+        char side[PVP_EVENT_VIEW_RULE_CAPACITY];
+        PvpRuleFilterNames(side, sizeof(side), &event->rules.sides[verdict.side]);
+        LocFormat2(out, size, "HODA_PVP_RULE_BLOCKED_MATCHED_SIDE", hero, side);
+    } else if (verdict.kind == PVP_SQUAD_SIDE) {
+        LocFormat1(out, size, "HODA_PVP_RULE_BLOCKED_SIDE", hero);
+    } else {
+        LocFormat1(out, size, "HODA_PVP_RULE_BLOCKED", hero);
+    }
+}
+
+void PvpRuleNoticeShow(
+    PvpRuleNotice *notice, const PvpEvent *event, const Player *p, int squad, PvpSquadVerdict verdict, bool matched
+) {
+    char reason[PVP_EVENT_VIEW_RULE_CAPACITY], rules[PVP_EVENT_VIEW_RULE_CAPACITY];
+    PvpRuleNoticeReason(reason, sizeof(reason), event, p, squad, verdict, matched);
+    PvpSquadRulesText(rules, sizeof(rules), &event->rules);
+    snprintf(
+        notice->message, sizeof(notice->message), "%s\n%s\n%s", reason, rules, LocGet("HODA_PVP_RULE_CHANGE_SQUAD")
+    );
+    notice->open = true;
+}
+
+bool PvpRuleNoticeIsOpen(const PvpRuleNotice *notice) {
+    return notice->open;
+}
+
+bool PvpRuleNoticeClose(PvpRuleNotice *notice) {
+    if (!notice->open) return false;
+    notice->open = false;
+    return true;
+}
+
+void PvpRuleNoticeDraw(PvpRuleNotice *notice) {
+    if (!notice->open) return;
+    Rectangle frame = MessagePopupDrawFrame();
+    Rectangle content = MessagePopupContent(frame);
+    UiDrawTextCentered(
+        GuiFont(FNT_COOL),
+        LocGet("HODA_PVP_RULE_BLOCKED_TITLE"),
+        UiRect(content, 0.5f, 0.0f, 1.0f, 0.2f),
+        MESSAGE_POPUP_TITLE_SIZE,
+        MESSAGE_POPUP_TEXT_COLOR
+    );
+    MessagePopupDrawText(
+        GuiFont(FNT_MENU),
+        notice->message,
+        UiRect(content, 0.5f, 1.0f, 1.0f, 0.78f),
+        MESSAGE_POPUP_MESSAGE_SIZE,
+        MESSAGE_POPUP_TEXT_COLOR
+    );
+    if (ButtonDraw(&notice->ok, MessagePopupOkButton(frame))) notice->open = false;
 }
 
 static PvpEventViewAction

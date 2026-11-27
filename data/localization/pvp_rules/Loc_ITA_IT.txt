@@ -1,0 +1,13 @@
+HODA_PVP_RULE_RARITY|Rarità consentite: {0}
+HODA_PVP_RULE_FACTIONS|Possono partecipare solo gli eroi della fazione {0}. Le creature grandi sono ammesse.
+HODA_PVP_RULE_GROUPS|Possono partecipare solo {0}.
+HODA_PVP_RULE_SIDES_FACTIONS|Una fazione per squadra: {0}. Affronterai una squadra di un'altra fazione. Le creature grandi possono unirsi a qualsiasi squadra.
+HODA_PVP_RULE_SIDES_GROUPS|Uno schieramento per squadra: {0}. Affronterai una squadra di un altro schieramento.
+HODA_PVP_RULE_UNIQUE|Nessun eroe doppio.
+HODA_PVP_RULE_LIST_JOIN|{0}, {1}
+HODA_PVP_RULE_BLOCKED_TITLE|Squadra non ammessa
+HODA_PVP_RULE_BLOCKED|{0} non può partecipare a questo evento.
+HODA_PVP_RULE_BLOCKED_DUPLICATE|{0} è nella tua squadra più di una volta.
+HODA_PVP_RULE_BLOCKED_SIDE|{0} non appartiene allo stesso schieramento del resto della squadra.
+HODA_PVP_RULE_BLOCKED_MATCHED_SIDE|Questo avversario è stato trovato per la tua squadra {1}, quindi {0} non può affrontarlo. Torna a quella squadra o tocca Successivo.
+HODA_PVP_RULE_CHANGE_SQUAD|Cambia la squadra in Eroi e riprova.

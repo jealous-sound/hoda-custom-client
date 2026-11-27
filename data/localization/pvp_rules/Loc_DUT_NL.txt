@@ -1,0 +1,13 @@
+HODA_PVP_RULE_RARITY|Toegestane zeldzaamheden: {0}
+HODA_PVP_RULE_FACTIONS|Alleen helden van de {0} factie mogen meedoen. Grote monsters mogen erbij.
+HODA_PVP_RULE_GROUPS|Alleen {0} mogen meedoen.
+HODA_PVP_RULE_SIDES_FACTIONS|Eén factie per team: {0}. Je vecht tegen een team van een andere factie. Grote monsters mogen bij elk team.
+HODA_PVP_RULE_SIDES_GROUPS|Eén kant per team: {0}. Je vecht tegen een team van een andere kant.
+HODA_PVP_RULE_UNIQUE|Geen dubbele helden.
+HODA_PVP_RULE_LIST_JOIN|{0}, {1}
+HODA_PVP_RULE_BLOCKED_TITLE|Team niet toegestaan
+HODA_PVP_RULE_BLOCKED|{0} mag niet meedoen aan dit evenement.
+HODA_PVP_RULE_BLOCKED_DUPLICATE|{0} zit meer dan eens in je team.
+HODA_PVP_RULE_BLOCKED_SIDE|{0} hoort niet bij dezelfde kant als de rest van je team.
+HODA_PVP_RULE_BLOCKED_MATCHED_SIDE|Deze tegenstander is gevonden voor je {1} team, dus {0} kan niet tegen hem vechten. Ga terug naar dat team of tik op Volgende.
+HODA_PVP_RULE_CHANGE_SQUAD|Pas je team aan bij Helden en probeer het opnieuw.

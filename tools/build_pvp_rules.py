@@ -141,6 +141,63 @@ def event(stem, ladder, *effects, suffix="_KEY"):
     }
 
 
+def heroes(factions=(), groups=()):
+    return {"factions": list(factions), "groups": list(groups)}
+
+
+def squad_rules(max_rarity="", rarities=(), unique_heroes=False, members=None, sides=()):
+    return {
+        "max_rarity": max_rarity,
+        "rarities": list(rarities),
+        "unique_heroes": unique_heroes,
+        "members": members or heroes(),
+        "sides": list(sides),
+    }
+
+
+def rule_event(stem, ladder, rules):
+    lower = stem.islower()
+    return {
+        "title_key": f"{stem}_title_key" if lower else f"{stem}_TITLE_KEY",
+        "text_key": "",
+        "original_text_key": f"{stem}_desc_key" if lower else f"{stem}_DESC_KEY",
+        "effects": [],
+        "squad_rules": rules,
+        "ladder": ladder,
+    }
+
+
+RARITY_ORDER = ("Common", "Uncommon", "Rare", "Epic", "Legendary", "Mythic")
+ASCENDED_SHOWN_RARITY = "Mythic"
+COLOUR_FACTIONS = ("Red", "Blue", "White", "Black")
+EVERY_FACTION = "All"
+FACTION_SEPARATOR = "/"
+RULE_EVENT_EVERY = (False, True, False, True, False)
+EVENT_POOL_MIN_SQUADS = 64
+TWIN_EXCLUDED_GROUP = "Wisp"
+
+RULE_EVENTS = [
+    rule_event("PVP_EPIC_BLITZ_MAY_27", "pvp|epic expectations", squad_rules(max_rarity="Epic")),
+    rule_event("PVP_PEASANT_REVOLT_MAR_5", "pvp|champions of the just", squad_rules(max_rarity="Uncommon")),
+    rule_event(
+        "PVP_GO_FOR_GOLD_JULY_21", "pvp|quick draw", squad_rules(rarities=["Rare"], unique_heroes=True)
+    ),
+    rule_event(
+        "PVP_RED_FACTION_BLITZ_OCTOBER_6", "pvp|a single strike", squad_rules(members=heroes(factions=["Red"]))
+    ),
+    rule_event(
+        "pvp_warden_wars_finals_october_2",
+        "pvp|weight of the crown",
+        squad_rules(members=heroes(groups=["Warden"])),
+    ),
+    rule_event(
+        "pvp_faction_wars_9_21",
+        "pvp|break the line",
+        squad_rules(sides=[heroes(factions=[colour]) for colour in COLOUR_FACTIONS]),
+    ),
+]
+
+
 LADDER_BANNERS = 2000
 EARLY_MILESTONES = [
     {"banners": 100, "gold": 500, "gems": 0, "prizes": []},
@@ -167,6 +224,7 @@ PRIZE_NAME_ALIASES = {
     "legionnaire hlemet": "legionnaire helmet",
     "asaarsh saddle": "asaarash saddle",
     "senior warden staff": "senior wardens staff",
+    "plaidweave vivienne": "plaideweave vivienne",
 }
 UNSUPPORTED_PRIZES = {
     "banished plane key",
@@ -278,19 +336,186 @@ def localization_keys():
         return {line.partition("|")[0] for line in file if "|" in line}
 
 
+def validate_heroes_filter(title, members, groups):
+    missing = set(members["groups"]) - groups
+    if missing:
+        raise ValueError(f"{title}: unknown groups {sorted(missing)}")
+    unknown = set(members["factions"]) - set(COLOUR_FACTIONS)
+    if unknown:
+        raise ValueError(f"{title}: unknown factions {sorted(unknown)}")
+
+
+def validate_squad_rules(title, rules, groups):
+    rarities = set(rules["rarities"]) | ({rules["max_rarity"]} if rules["max_rarity"] else set())
+    if rarities - set(RARITY_ORDER):
+        raise ValueError(f"{title}: unknown rarities {sorted(rarities - set(RARITY_ORDER))}")
+    validate_heroes_filter(title, rules["members"], groups)
+    if len(rules["sides"]) == 1:
+        raise ValueError(f"{title}: a side event needs two sides or more")
+    for side in rules["sides"]:
+        validate_heroes_filter(title, side, groups)
+        if not side["factions"] and not side["groups"]:
+            raise ValueError(f"{title}: a side names no faction or group")
+
+
 def validate_events(characters):
     keys = localization_keys()
     groups = {name for character in characters.values() for name in character["groups"]}
-    for entry in EVENTS["catalog"] + GUILD_EVENTS:
+    for entry in EVENTS["catalog"] + RULE_EVENTS + GUILD_EVENTS:
         if entry["effects"] and not entry["text_key"]:
             raise ValueError(f"{entry['title_key']}: an event with effects needs its text")
-        for key in (entry["title_key"], entry["text_key"]):
+        if not entry["effects"] and not entry["text_key"] and "squad_rules" not in entry and entry not in GUILD_EVENTS:
+            raise ValueError(f"{entry['title_key']}: an event needs effects or squad rules")
+        for key in (entry["title_key"], entry["text_key"], entry.get("original_text_key", "")):
             if key and key not in keys:
                 raise ValueError(f"missing text {key}")
         for effect in entry["effects"]:
             missing = set(effect["groups"]) - groups
             if missing:
                 raise ValueError(f"{entry['title_key']}: unknown groups {sorted(missing)}")
+        if "squad_rules" in entry:
+            validate_squad_rules(entry["title_key"], entry["squad_rules"], groups)
+
+
+def rarity_rank(name):
+    return RARITY_ORDER.index(name)
+
+
+def shown_rarity(character, ascended):
+    return ASCENDED_SHOWN_RARITY if ascended else character.get("original_rarity") or character["rarity"]
+
+
+def rarity_allowed(rules, rarity):
+    if rules["max_rarity"] and rarity_rank(rarity) > rarity_rank(rules["max_rarity"]):
+        return False
+    return not rules["rarities"] or rarity in rules["rarities"]
+
+
+def has_colour(character, colour):
+    faction = character["faction"]
+    return faction == EVERY_FACTION or colour in faction.split(FACTION_SEPARATOR)
+
+
+def fits_heroes(members, character):
+    if not members["factions"] and not members["groups"]:
+        return True
+    if members["factions"] and (character["giant"] or any(has_colour(character, f) for f in members["factions"])):
+        return True
+    return any(group in character["groups"] for group in members["groups"])
+
+
+def hero_allowed(rules, character, side, ascended=False):
+    if not rarity_allowed(rules, shown_rarity(character, ascended)) or not fits_heroes(rules["members"], character):
+        return False
+    return side is None or fits_heroes(rules["sides"][side], character)
+
+
+def squad_fits(rules, characters, cells, side=None):
+    fielded = [cell for cell in cells if cell is not None]
+    if not fielded:
+        return False
+    units = [cell["id"] for cell in fielded]
+    if rules["unique_heroes"] and len(set(units)) != len(units):
+        return False
+    return all(hero_allowed(rules, characters[cell["id"]], side, cell.get("ascended", False)) for cell in fielded)
+
+
+def squad_side(rules, characters, cells):
+    return next((side for side in range(len(rules["sides"])) if squad_fits(rules, characters, cells, side)), None)
+
+
+def opponent_fits(rules, characters, cells, player_side):
+    if player_side is None:
+        return squad_fits(rules, characters, cells)
+    if squad_fits(rules, characters, cells, player_side):
+        return False
+    return any(squad_fits(rules, characters, cells, side) for side in range(len(rules["sides"])) if side != player_side)
+
+
+def opponent_sides(rules):
+    return list(range(len(rules["sides"]))) if rules["sides"] else [None]
+
+
+def fieldable_tiers(character):
+    return [tier for tier, stats in character["tiers"].items() if stats and stats.get("max_level")]
+
+
+def twin_tier(character, tier):
+    tiers = fieldable_tiers(character)
+    return tier if tier in tiers else tiers[-1]
+
+
+def twin_cell(rules, characters, template_cell, index, side, used, rng):
+    if template_cell is None:
+        return None
+    template = characters[template_cell["id"]]
+    candidates = [
+        character
+        for character in characters.values()
+        if character["obtainable"]
+        and character["giant"] == (index == GIANT_CELL)
+        and TWIN_EXCLUDED_GROUP not in character["groups"]
+        and fieldable_tiers(character)
+        and character["id"] not in used
+        and hero_allowed(rules, character, side)
+    ]
+    if not candidates:
+        return None
+    distance = min(abs(rarity_rank(c["rarity"]) - rarity_rank(template["rarity"])) for c in candidates)
+    nearest = sorted(
+        (c for c in candidates if abs(rarity_rank(c["rarity"]) - rarity_rank(template["rarity"])) == distance),
+        key=lambda c: c["id"],
+    )
+    character = rng.choice(nearest)
+    tier = twin_tier(character, template_cell["tier"])
+    level = min(template_cell["level"], character["tiers"][tier]["max_level"])
+    used.add(character["id"])
+    return {"id": character["id"], "tier": tier, "level": level}
+
+
+def twin_squad(rules, characters, template, side, seed):
+    rng = random.Random(seed)
+    used = set()
+    cells = [twin_cell(rules, characters, cell, index, side, used, rng) for index, cell in enumerate(template)]
+    return cells if unit_count(cells) >= MIN_SQUAD_UNITS else None
+
+
+def spread_positions(count):
+    return sorted(range(count), key=lambda position: (bin(position)[2:].zfill(count.bit_length())[::-1], position))
+
+
+def twin_target_side(rules, characters, pool, player_side):
+    if player_side is None:
+        return None
+    others = [side for side in range(len(rules["sides"])) if side != player_side]
+    return min(others, key=lambda side: sum(squad_fits(rules, characters, cells, side) for cells in pool))
+
+
+def squad_heroes_key(cells):
+    heroes = [None if cell is None else {key: cell[key] for key in ("id", "tier", "level")} for cell in cells]
+    return json.dumps(heroes, sort_keys=True)
+
+
+def event_twins(entry, characters, base, pool):
+    rules = entry["squad_rules"]
+    twins = []
+    for player_side in opponent_sides(rules):
+        fielded = pool + [cells for cells, _ in twins]
+        fitting = sum(opponent_fits(rules, characters, cells, player_side) for cells in fielded)
+        wanted = EVENT_POOL_MIN_SQUADS - fitting
+        target = twin_target_side(rules, characters, fielded, player_side)
+        known = {squad_heroes_key(cells) for cells in fielded}
+        for position in spread_positions(len(base)):
+            if wanted <= 0:
+                break
+            seed = f"{entry['title_key']}:{player_side}:{position}"
+            cells = twin_squad(rules, characters, base[position], target, seed)
+            if cells is None or squad_heroes_key(cells) in known:
+                continue
+            known.add(squad_heroes_key(cells))
+            twins.append((cells, position))
+            wanted -= 1
+    return twins
 
 
 def normalized(name):
@@ -455,11 +680,22 @@ def guild_rank_rewards(key, catalog):
     return tiers
 
 
+def rotation():
+    buff_events, rule_events = iter(EVENTS["catalog"]), iter(RULE_EVENTS)
+    order = []
+    while len(order) < len(EVENTS["catalog"]) + len(RULE_EVENTS):
+        for rule_turn in RULE_EVENT_EVERY:
+            entry = next(rule_events if rule_turn else buff_events, None)
+            if entry is not None:
+                order.append(entry)
+    return order
+
+
 def resolve_ladders(characters):
     research = load_research()
     catalog = PrizeCatalog(characters)
     entries = []
-    for entry in EVENTS["catalog"]:
+    for entry in rotation():
         fields = {key: value for key, value in entry.items() if key != "ladder"}
         entries.append({**fields, **event_ladder(entry, research, catalog)})
     guild_entries = []
@@ -687,10 +923,18 @@ def build_squads(characters):
     runes = json.loads(RUNES.read_text(encoding="utf-8"))["runes"]
     campaign = campaign_squads(characters)
     elite = elite_squads(characters)
-    pool = list(zip(campaign, campaign_loadouts(characters, campaign))) + [(cells, ELITE_LOADOUT) for cells in elite]
+    loadouts = campaign_loadouts(characters, campaign)
+    pool = list(zip(campaign, loadouts)) + [(cells, ELITE_LOADOUT) for cells in elite]
     squads = [
         loadout_squad(characters, index, cells, loadout, gear, runes) for index, (cells, loadout) in enumerate(pool)
     ]
+    fielded = [squad["cells"] for squad in squads]
+    twins = []
+    for entry in RULE_EVENTS:
+        twins += event_twins(entry, characters, campaign, fielded + [cells for cells, _ in twins])
+    for offset, (cells, template) in enumerate(twins):
+        twin = loadout_squad(characters, len(pool) + offset, cells, loadouts[template], gear, runes)
+        squads.append({**twin, "events_only": True})
     return [{"strength": strength, **squad} for strength, squad in zip(measured_strengths(len(squads)), squads)]
 
 

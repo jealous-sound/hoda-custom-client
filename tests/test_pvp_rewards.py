@@ -131,9 +131,10 @@ class BotLoadoutTest(unittest.TestCase):
         self.assertFalse(any(worn_cells(squad) or squad["runes"] for squad in campaign[:tenth]))
         self.assertLess(mean_gear_rarity(campaign[-3 * tenth : -2 * tenth]), mean_gear_rarity(campaign[-tenth:]))
 
-    def test_elite_squads_close_the_pool_maxed_in_mythic_gear(self):
+    def test_elite_squads_close_the_ladder_maxed_in_mythic_gear(self):
         elite = [index for index, squad in enumerate(POOL) if squad.get("elite")]
-        self.assertEqual(elite, list(range(len(POOL) - build_pvp_rules.ELITE_SQUAD_COUNT, len(POOL))))
+        ladder = [index for index, squad in enumerate(POOL) if not squad.get("events_only")]
+        self.assertEqual(elite, ladder[-build_pvp_rules.ELITE_SQUAD_COUNT :])
         for index in elite:
             cells = POOL[index]["cells"]
             self.assertTrue(all(cell is not None and cell.get("ascended") for cell in cells))
