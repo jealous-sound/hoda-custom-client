@@ -40,6 +40,8 @@ SHIPPED_INDEX = (
 WEB_PACKAGING = ROOT / "packaging" / "web"
 PNG_SIZE_FIELDS = slice(16, 24)
 WINDOW_SOURCE = "window.c"
+PAGE_FIELD = re.compile(r"Module\.(hod\w+)")
+PAGE_SHELL_FIELD = re.compile(r"(?:Module\.|^\s*)(hod\w+)\b", re.MULTILINE)
 
 
 def png_size(path: Path) -> str:
@@ -65,16 +67,46 @@ class AppFilesTest(unittest.TestCase):
         self.assertEqual(png_size(WEB_PACKAGING / "icon-180.png"), "180x180")
 
 
+def sources_outside_the_window_calling(call: re.Pattern[str]) -> list[str]:
+    return sorted(
+        path.name
+        for path in (ROOT / "source").glob("*.c")
+        if path.name != WINDOW_SOURCE and call.search(path.read_text(errors="replace"))
+    )
+
+
 class WholeFramesTest(unittest.TestCase):
     def test_every_screen_draws_its_frames_through_the_window(self) -> None:
         raylib_frames = re.compile(r"\b(?:Begin|End)Drawing\(")
-        bypassing = sorted(
-            path.name
-            for path in (ROOT / "source").glob("*.c")
-            if path.name != WINDOW_SOURCE and raylib_frames.search(path.read_text(errors="replace"))
-        )
-        self.assertEqual(bypassing, [])
+        self.assertEqual(sources_outside_the_window_calling(raylib_frames), [])
         self.assertTrue(raylib_frames.search((ROOT / "source" / WINDOW_SOURCE).read_text()))
+
+
+class FramePacingTest(unittest.TestCase):
+    def test_only_the_window_sets_the_frame_rate_limit(self) -> None:
+        raylib_limit = re.compile(r"\bSetTargetFPS\(")
+        self.assertEqual(sources_outside_the_window_calling(raylib_limit), [])
+        self.assertTrue(raylib_limit.search((ROOT / "source" / WINDOW_SOURCE).read_text()))
+
+    def test_the_web_link_swaps_raylibs_sleeping_frame_wait_for_the_windows(self) -> None:
+        makefile = (ROOT / "Makefile").read_text()
+        self.assertIn("--wrap=WindowShouldClose", re.search(r"^WEB_LDFLAGS = (?:.*\\\n)*.*$", makefile, re.M).group(0))
+        self.assertIn("bool __wrap_WindowShouldClose(void)", (ROOT / "source" / WINDOW_SOURCE).read_text())
+
+
+class PageLoaderTest(unittest.TestCase):
+    def test_every_page_field_the_game_uses_is_on_the_page(self) -> None:
+        game = set()
+        for name in (WINDOW_SOURCE, "platform.c"):
+            game |= set(PAGE_FIELD.findall((ROOT / "source" / name).read_text()))
+        page = set(PAGE_SHELL_FIELD.findall((WEB_PACKAGING / "shell.html").read_text()))
+        self.assertIn("hodFrameShown", game)
+        self.assertEqual(game - page, set())
+
+    def test_the_loader_shows_before_the_game_runs(self) -> None:
+        shell = (WEB_PACKAGING / "shell.html").read_text()
+        self.assertRegex(shell, r'<div id="loader"></div>')
+        self.assertIn("hodLoaderWanted: true", shell)
 
 
 class ParseRangeTest(unittest.TestCase):
